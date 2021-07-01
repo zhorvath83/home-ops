@@ -55,7 +55,7 @@ spec:
     # Load dynamic configuration from one or more .yaml files.
     - "--providers.file.directory=/config"
     - "--providers.file.watch=true"
-    # Allow these IPs to set the X-Forwarded-* headers. Updated by GitLab CI when deploying.
+    # Allow these IPs to set the X-Forwarded-* headers.
     - "--entrypoints.websecure.forwardedHeaders.trustedIPs=${CLUSTER_CF_IPV4_IPS}"
     - "--serverstransport.insecureskipverify=true"
     - "--providers.kubernetesingress.ingressclass=traefik"
