@@ -1,0 +1,26 @@
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: TLSOption
+metadata:
+  # TLSOptions CR with the name default apply to all ingresses
+  name: default
+  namespace: traefik
+spec:
+  #maxVersion: VersionTLS12
+  minVersion: VersionTLS13
+  cipherSuites:
+    #- TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384   # TLS 1.2
+    #- TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305    # TLS 1.2
+    - TLS_AES_256_GCM_SHA384                  # TLS 1.3
+    - TLS_CHACHA20_POLY1305_SHA256            # TLS 1.3
+    #- TLS_FALLBACK_SCSV # Client is doing version fallback. See RFC 7507
+  curvePreferences:
+    - CurveP521
+    - CurveP384
+  #sniStrict: true
+  clientAuth:
+    # Authenticated Origin Pulls: https://support.cloudflare.com/hc/en-us/articles/204899617
+    # The CF CA certificate is extracted from key `tls.ca` of the given secret.
+    secretNames:
+      - cforiginpullca
+    clientAuthType: RequireAndVerifyClientCert

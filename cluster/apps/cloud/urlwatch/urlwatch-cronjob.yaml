@@ -1,0 +1,59 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: urlwatch
+  namespace: cloud
+  labels:
+    app: urlwatch
+spec:
+  schedule: "0 0 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+          - name: urlwatch
+            image: vimagick/urlwatch:latest
+            imagePullPolicy: Always
+            command:
+              -  sh
+              - -exec
+              - |
+                cd /root/.urlwatch
+                urlwatch --urls urls.yaml --config urlwatch.yaml --hooks hooks.py --cache cache.db
+            securityContext:
+              readOnlyRootFilesystem: true
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop:
+                  - all
+            resources:
+              requests:
+                cpu: 50m
+                memory: 100Mi
+              limits:
+                cpu: 500m
+                memory: 384Mi
+            volumeMounts:
+            - name: urlwatch-data
+              mountPath: /root/.urlwatch
+            - name: urlwatch-config
+              mountPath: /root/.urlwatch/urlwatch.yaml
+              subPath: urlwatch.yaml
+            - name: urlwatch-config
+              mountPath: /root/.urlwatch/urls.yaml
+              subPath: urls.yaml
+            - name: urlwatch-config
+              mountPath: /root/.urlwatch/hooks.py
+              subPath: hooks.py
+          volumes:
+          - name: urlwatch-config
+            configMap:
+              name: urlwatch-config
+          - name: urlwatch-data
+            persistentVolumeClaim:
+              claimName: urlwatch-data

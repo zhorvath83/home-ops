@@ -1,0 +1,120 @@
+title: App Dashboard
+subtitle: Homelab
+documentTitle: Home
+icon: fas fa-home
+
+header: true
+footer: false
+
+columns: "auto"
+connectivityCheck: true
+
+theme: default
+
+links:
+  - name: Code-server
+    icon: fas fa-code-branch
+    url: http://${CLUSTER_SVC_CODE_SERVER_IP}
+  - name: GitLab
+    icon: fab fa-gitlab
+    url: https://gitlab.com/zhorvath83
+  - name: GitHub
+    icon: fab fa-github
+    url: https://github.com/zhorvath83
+
+services:
+  - name: Mail & organizing
+    icon: fas fa-mail-bulk
+    items:
+      - name: Gmail
+        subtitle: Google mail
+        logo: assets/homer-icons/png/google-mail.png
+        url: https://gmail.com/
+      - name: Messenger
+        subtitle: Facebook messenger
+        logo: assets/homer-icons/png/facebook-messenger.png
+        url: https://www.messenger.com/
+      - name: Microsoft ToDo
+        subtitle: ToDo
+        logo: assets/homer-icons/png/microsoft-todo.png
+        url: https://to-do.live.com/tasks/
+      - name: Calendar
+        subtitle: Google calendar
+        logo: assets/homer-icons/png/google-calendar.png
+        url: https://calendar.google.com/
+      - name: Notes
+        subtitle: Google keep
+        logo: assets/homer-icons/png/google-keep.png
+        url: https://keep.google.com/
+
+  - name: Management
+    icon: fas fa-server
+    items:
+      - name: Kubernetes dashboard
+        subtitle: Kubernetes web admin
+        logo: assets/homer-icons/png/kubernetes-dashboard.png
+        url: https://${CLUSTER_SVC_KUBE_DASH_IP}/#/pod?namespace=_all
+      - name: Rook-CEPH
+        subtitle: Distributed block storage
+        logo: assets/homer-icons/png/rook.png
+        url: https://rook.${SECRET_CLUSTER_DOMAIN}
+      - name: Pi-hole
+        subtitle: DNS sinkhole
+        logo: assets/homer-icons/png/pihole.png
+        url: http://${CLUSTER_SVC_PIHOLE_IP}/admin
+      - name: OpenMediaVault
+        subtitle: NAS web UI
+        logo: assets/homer-icons/png/openmediavault.png
+        url: http://${CLUSTER_LAN_NAS_IP}
+      - name: Router
+        subtitle: Asus Router web UI
+        logo: assets/homer-icons/png/router.png
+        url: http://${CLUSTER_LAN_ROUTER_IP}
+
+  - name: Downloading
+    icon: fas fa-download
+    items:
+      - name: qBittorrent
+        subtitle: Torrent client
+        logo: assets/homer-icons/png/qbittorrent.png
+        url: https://qbittorrent.${SECRET_CLUSTER_DOMAIN}
+      - name: Ncore
+        subtitle: Ncore
+        logo: assets/homer-icons/png/ncore.png
+        url: https://ncore.pro
+      - name: Bithumen
+        subtitle: Bithumen
+        logo: assets/homer-icons/png/bithumen.png
+        url: https://bithumen.be
+
+  - name: Home & Media
+    icon: fas fa-compact-disc
+    items:
+      - name: Home Assistant
+        subtitle: Home automation
+        logo: assets/homer-icons/png/home-assistant.png
+        url: https://homeassistant.${SECRET_CLUSTER_DOMAIN}
+      - name: Jellyfin
+        subtitle: Jellyfin media server
+        logo: assets/homer-icons/png/jellyfin.png
+        url: http://${CLUSTER_SVC_JELLYFIN_IP}:8096
+      - name: Kodi
+        subtitle: Kodi media server
+        logo: assets/homer-icons/png/kodi.png
+        url: http://${CLUSTER_LAN_KODI_IP}:8080
+
+  - name: Monitoring
+    icon: fab fa-watchman-monitoring
+    items:
+      - name: Grafana
+        subtitle: Analytics & monitoring
+        logo: assets/homer-icons/png/grafana.png
+        url: https://grafana.${SECRET_CLUSTER_DOMAIN}
+      - name: Traefik
+        subtitle: Kube ingress dashboard
+        logo: assets/homer-icons/png/traefik.png
+        url: https://traefik.${SECRET_CLUSTER_DOMAIN}
+      - name: Prometheus
+        subtitle: Metrics collector
+        logo: assets/homer-icons/png/prometheus.png
+        url: https://prometheus.${SECRET_CLUSTER_DOMAIN}

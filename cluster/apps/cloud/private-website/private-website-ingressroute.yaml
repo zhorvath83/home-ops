@@ -1,0 +1,73 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: private-website
+  namespace: cloud
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.middlewares: traefik-middleware-chain-noauth@kubernetescrd,cloud-middleware-redirect-from-www@kubernetescrd
+spec:
+  ingressClassName: "traefik"
+  rules:
+  - host: "${SECRET_CLUSTER_DOMAIN}"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: private-website
+            port:
+              number: 80
+  - host: "www.${SECRET_CLUSTER_DOMAIN}"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: private-website
+            port:
+              number: 80
+
+
+#---
+#apiVersion: traefik.containo.us/v1alpha1
+#kind: IngressRoute
+#metadata:
+#  name: private-website
+#  namespace: cloud
+#  annotations:
+#    #external-dns/is-public: "true"
+#spec:
+#  entryPoints:
+#    - websecure
+#  routes:
+#    - match: Host(`${SECRET_CLUSTER_DOMAIN}`) || Host(`www.${SECRET_CLUSTER_DOMAIN}`)
+#      kind: Rule
+#      services:
+#      - kind: Service
+#        namespace: cloud
+#        name: private-website
+#        port: 80
+#      middlewares:
+#        - name: middleware-chain-noauth
+#          namespace: traefik
+#        - name: middleware-redirect-from-www
+#          namespace: cloud
+#      tls: {}
+
+---
+
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: middleware-redirect-from-www
+  namespace: cloud
+spec:
+  redirectRegex:
+    regex: ^https?://(www.)?${SECRET_CLUSTER_DOMAIN}/(.*)
+    replacement: https://${SECRET_CLUSTER_DOMAIN}/$${2}
+    permanent: true

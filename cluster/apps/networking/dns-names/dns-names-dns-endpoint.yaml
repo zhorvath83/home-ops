@@ -1,0 +1,111 @@
+---
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: amazon-ses-dkim
+  namespace: networking
+spec:
+  endpoints:
+  - dnsName: "6kez4pl3cf54n52yeuccsi3tmddblws5._domainkey.${SECRET_CLUSTER_DOMAIN}"
+    recordType: CNAME
+    targets:
+    - "6kez4pl3cf54n52yeuccsi3tmddblws5.dkim.amazonses.com"
+    providerSpecific:
+    - name: external-dns.alpha.kubernetes.io/cloudflare-proxied
+      value: 'false'
+  - dnsName: "chtkpsizkfr537wsdjudutgyjmrqkl27._domainkey.${SECRET_CLUSTER_DOMAIN}"
+    recordType: CNAME
+    targets:
+    - "chtkpsizkfr537wsdjudutgyjmrqkl27.dkim.amazonses.com"
+    providerSpecific:
+    - name: external-dns.alpha.kubernetes.io/cloudflare-proxied
+      value: 'false'
+  - dnsName: "yj3kkwbyzz7nxv4qevgyg5ytw344qkmy._domainkey.${SECRET_CLUSTER_DOMAIN}"
+    recordType: CNAME
+    targets:
+    - "yj3kkwbyzz7nxv4qevgyg5ytw344qkmy.dkim.amazonses.com"
+    providerSpecific:
+    - name: external-dns.alpha.kubernetes.io/cloudflare-proxied
+      value: 'false'
+
+# managed-record-types: Comma separated list of record types to manage (default: A, CNAME) 
+## supported records: CNAME, A, NS.  Default("A", "CNAME")
+
+---
+#apiVersion: externaldns.k8s.io/v1alpha1
+#kind: DNSEndpoint
+#metadata:
+#  name: amazon-ses-feedback-mx
+#  namespace: networking
+#spec:
+#  endpoints:
+#  - dnsName: "mail.${SECRET_CLUSTER_DOMAIN}"
+#    recordType: MX
+#    targets:
+#    - "10 feedback-smtp.eu-central-1.amazonses.com"
+#
+#---
+#apiVersion: externaldns.k8s.io/v1alpha1
+#kind: DNSEndpoint
+#metadata:
+#  name: amazon-ses-feedback-spf
+#  namespace: networking
+#spec:
+#  endpoints:
+#  - dnsName: "mail.${SECRET_CLUSTER_DOMAIN}"
+#    recordType: TXT
+#    targets:
+#    - "v=spf1 include:amazonses.com ~all"
+#
+#---
+#apiVersion: externaldns.k8s.io/v1alpha1
+#kind: DNSEndpoint
+#metadata:
+#  name: improvmx-mx
+#  namespace: networking
+#spec:
+#  endpoints:
+#  - dnsName: "${SECRET_CLUSTER_DOMAIN}"
+#    recordType: MX
+#    targets:
+#    - "10 mx1.improvmx.com"
+#    - "20 mx2.improvmx.com"
+#
+#---
+#apiVersion: externaldns.k8s.io/v1alpha1
+#kind: DNSEndpoint
+#metadata:
+#  name: amazon-ses-txt
+#  namespace: networking
+#spec:
+#  endpoints:
+#  - dnsName: "_amazonses.${SECRET_CLUSTER_DOMAIN}"
+#    recordType: TXT
+#    targets:
+#    - "naLKWxMq4LViUHX85OSOwGRzcooZY3WNpj+gcrt3SmQ="
+#
+#---
+#apiVersion: externaldns.k8s.io/v1alpha1
+#kind: DNSEndpoint
+#metadata:
+#  name: improvmx-spf
+#  namespace: networking
+#spec:
+#  endpoints:
+#  - dnsName: "${SECRET_CLUSTER_DOMAIN}"
+#    recordType: TXT
+#    targets:
+#    - "v=spf1 include:spf.improvmx.com ~all"
+#
+#---
+#apiVersion: externaldns.k8s.io/v1alpha1
+#kind: DNSEndpoint
+#metadata:
+#  name: dmarc
+#  namespace: networking
+#spec:
+#  endpoints:
+#  - dnsName: "_dmarc.${SECRET_CLUSTER_DOMAIN}"
+#    recordType: TXT
+#    targets:
+#    - "v=DMARC1; p=reject; fo=1; rua=mailto:${SECRET_CLUSTER_DOMAIN}.a@dmarcinput.com; ruf=mailto:${SECRET_CLUSTER_DOMAIN}.f@dmarcinput.com;"

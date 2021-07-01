@@ -1,0 +1,33 @@
+display:
+  error: true
+  new: true
+  unchanged: false
+job_defaults:
+  all: {}
+  browser: {}
+  shell: {}
+  url: {}
+report:
+  email:
+    enabled: true
+    from: '${SECRET_EMAIL_2}'
+    html: true
+    method: smtp
+    sendmail:
+      path: sendmail
+    smtp:
+      auth: true
+      host: '${SECRET_SMTP_HOST}'
+      port: '${SECRET_SMTP_PORT}'
+      starttls: true
+      user: '${SECRET_SMTP_USER}'
+      insecure_password: '${SECRET_SMTP_PASSWD}'
+    subject: '{count} website changed: {jobs}'
+    to: '${SECRET_EMAIL_2}'
+  stdout:
+    color: true
+    enabled: true
+  telegram:
+    enabled: false
+    bot_token: ''
+    chat_id: ''

@@ -1,0 +1,25 @@
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: traefik-dashboard
+  namespace: traefik
+spec:
+  entryPoints:
+  - websecure
+  routes:
+  - kind: Rule
+    match: Host(`traefik.${SECRET_CLUSTER_DOMAIN}`) #&& (PathPrefix(`/dashboard`) || PathPrefix(`/api`))
+    services:
+    - kind: TraefikService
+      name: api@internal
+    middlewares:
+    - name: middleware-chain-cf-auth
+      namespace: traefik
+  #- match: Host(`${SECRET_CLUSTER_DOMAIN}`) && PathPrefix(`/ping`)
+  #  kind: Rule
+  #  services:
+  #  - name: ping@internal
+  #    kind: TraefikService
+  #  middlewares:
+  #  - name: middleware-chain-noauth

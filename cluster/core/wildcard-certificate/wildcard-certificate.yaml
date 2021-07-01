@@ -1,0 +1,16 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: "${SECRET_CLUSTER_DOMAIN/./-}"
+  namespace: traefik
+spec:
+  secretName: "${SECRET_CLUSTER_DOMAIN/./-}-tls-secret"
+  issuerRef:
+    #name: letsencrypt-staging
+    name: letsencrypt-production
+    kind: ClusterIssuer
+  commonName: "${SECRET_CLUSTER_DOMAIN}"
+  dnsNames:
+  - "${SECRET_CLUSTER_DOMAIN}"
+  - "*.${SECRET_CLUSTER_DOMAIN}"

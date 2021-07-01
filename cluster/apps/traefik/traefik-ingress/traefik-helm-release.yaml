@@ -1,0 +1,149 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: traefik
+  namespace: traefik
+spec:
+  interval: 10m0s
+  chart:
+    spec:
+      # renovate: registryUrl=https://helm.traefik.io/traefik
+      chart: traefik
+      version: 9.19.1
+      sourceRef:
+        kind: HelmRepository
+        name: traefik-charts
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+  rollback:
+    timeout: 10m
+    recreate: true
+
+  values:
+    deployment:
+      kind: Deployment
+      replicas: 2
+
+    env:
+    - name: TZ
+      value: ${CLUSTER_TIMEZONE}
+
+    ingressClass:
+      enabled: true
+      isDefaultClass: true
+      fallbackApiVersion: v1
+    ingressRoute:
+      dashboard:
+        enabled: false
+
+    globalArguments:
+    - "--global.checknewversion=false"
+    - "--global.sendanonymoususage=true"
+    additionalArguments:
+      # Traefik API
+    #- "--ping=true"
+    #- "--api.dashboard=true"
+    - "--metrics.prometheus=true"
+    - "--metrics.prometheus.entryPoint=metrics"
+    # Load dynamic configuration from one or more .yaml files.
+    - "--providers.file.directory=/config"
+    - "--providers.file.watch=true"
+    # Allow these IPs to set the X-Forwarded-* headers. Updated by GitLab CI when deploying.
+    - "--entrypoints.websecure.forwardedHeaders.trustedIPs=${CLUSTER_CF_IPV4_IPS}"
+    - "--serverstransport.insecureskipverify=true"
+    - "--providers.kubernetesingress.ingressclass=traefik"
+    # providers.kubernetesingress.ingressendpoint.hostname is set for external-dns support
+    - "--providers.kubernetesingress.ingressendpoint.hostname=${SECRET_CLUSTER_DOMAIN}"
+
+    ports:
+      traefik:
+        expose: false
+        port: 9000
+        protocol: TCP
+      web:
+        expose: false
+        exposedPort: 80
+        port: 8000
+        protocol: TCP
+        #redirectTo: websecure
+      websecure:
+        expose: true
+        exposedPort: 443
+        port: 8443
+        protocol: TCP
+        tls:
+          enabled: true
+      metrics:
+        port: 8082
+        expose: true
+        exposedPort: 8082
+
+    service:
+      enabled: true
+      type: LoadBalancer
+      spec:
+        loadBalancerIP: ${CLUSTER_SVC_TRAEFIK_IP}
+        externalTrafficPolicy: Local
+
+    dnsPolicy: ClusterFirst
+
+    logs:
+      general:
+        # (Default: ERROR) DEBUG, INFO, WARN, ERROR, FATAL, PANIC
+        level: WARN
+      access:
+        enabled: true
+        bufferingSize: 100
+        filters:
+          statuscodes: "400-599"
+        fields:
+          general:
+            defaultmode: keep
+            names:
+              StartUTC: drop
+          headers:
+            defaultmode: drop
+            names: {}
+
+    pilot:
+      enabled: false
+
+    experimental:
+      plugins:
+        enabled: false
+
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                - traefik
+            topologyKey: kubernetes.io/hostname
+
+    volumes:
+      - name: "${SECRET_CLUSTER_DOMAIN/./-}-tls-secret"
+        mountPath: /certs
+        type: secret
+      - name: traefik-dynamic-config
+        mountPath: /config
+        type: configMap
+
+    resources:
+      requests:
+        cpu: 50m
+        memory: 80Mi
+      limits:
+        cpu: 500m
+        memory: 500Mi

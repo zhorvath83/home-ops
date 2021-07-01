@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# automatically generates the metallb-system namespace
+namespace: metallb-system
+
+resources:
+- metallb-secret.enc.yaml
+- github.com/metallb/metallb//manifests?ref=v0.9.6
+
+configMapGenerator:
+- name: config
+  files:
+    - config=metallb-config.yaml
+
+generatorOptions:
+ disableNameSuffixHash: true

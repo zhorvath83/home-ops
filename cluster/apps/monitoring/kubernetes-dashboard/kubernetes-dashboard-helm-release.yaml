@@ -1,0 +1,58 @@
+--- 
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: kubernetes-dashboard
+  namespace: monitoring
+spec:
+  interval: 10m0s
+  chart:
+    spec:
+      chart:  kubernetes-dashboard
+      version: 4.2.0
+      sourceRef:
+        kind: HelmRepository
+        name: kubernetes-dashboard-charts
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+  rollback:
+    timeout: 10m
+    recreate: true
+
+  values:
+    #extraArgs:
+    #- --enable-insecure-login
+
+    metricsScraper:
+      enabled: true
+
+    service:
+      type: LoadBalancer
+      externalPort: 443
+      loadBalancerIP: ${CLUSTER_SVC_KUBE_DASH_IP}
+
+    rbac:
+      create: true
+      clusterRoleMetrics: true
+      
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubernetes-dashboard
+  namespace: monitoring
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: kubernetes-dashboard
+    namespace: monitoring

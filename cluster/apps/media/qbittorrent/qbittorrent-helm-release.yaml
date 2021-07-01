@@ -1,0 +1,138 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: qbittorrent
+  namespace: media
+spec:
+  interval: 10m0s
+  chart:
+    spec:
+      # renovate: registryUrl=https://k8s-at-home.com/charts/
+      chart: qbittorrent
+      version: 11.2.0
+      sourceRef:
+        kind: HelmRepository
+        name: k8s-at-home-charts
+        namespace: flux-system
+      interval: 5m
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+  rollback:
+    timeout: 10m
+    recreate: true
+
+  values:
+    image:
+      repository: ghcr.io/k8s-at-home/qbittorrent
+      tag: v4.3.5
+    env:
+      TZ: "${CLUSTER_TIMEZONE}"
+    service:
+      main:
+        ports:
+          http:
+            port: 8080
+      bittorrent:
+        enabled: true
+        type: LoadBalancer
+        loadBalancerIP: ${CLUSTER_SVC_QBITTORRENT_IP}
+        externalTrafficPolicy: Local
+        ports:
+          bittorrent:
+            enabled: true
+            port: 50413
+            protocol: TCP
+            targetPort: 50413
+
+    ingress:
+      main:
+        enabled: true
+        annotations:
+          kubernetes.io/ingress.class: traefik
+          traefik.ingress.kubernetes.io/router.entrypoints: websecure
+          traefik.ingress.kubernetes.io/router.tls: "true"
+          traefik.ingress.kubernetes.io/router.middlewares: traefik-middleware-chain-cf-auth@kubernetescrd
+          #external-dns/is-public: "true"
+        hosts:
+        - host: qbittorrent.${SECRET_CLUSTER_DOMAIN}
+          paths:
+          - path: /
+            pathType: Prefix
+        tls: {}
+    podSecurityContext:
+      supplementalGroups:
+      - 100
+      - 1000
+
+    persistence:
+      qbittorrent-data:
+        enabled: true
+        existingClaim: qbittorrent-data
+        mountPath: /config
+      qbittorrent-downloads:
+        enabled: true
+        existingClaim: qbittorrent-downloads
+        mountPath: /downloads
+      qbittorrent-conf-ro:
+        enabled: true
+        mountPath: /qbittorrent_tmp/qBittorrent.conf
+        subPath: qBittorrent.conf
+        type: "custom"
+        volumeSpec:
+          configMap:
+            name: qbittorrent-config
+            items:
+            - key: qBittorrent.conf
+              path: qBittorrent.conf
+
+    #additionalVolumes:
+    #- name: qbittorrent-conf-ro
+    #  configMap:
+    #    name: qbittorrent-config
+    #    items:
+    #    - key: qBittorrent.conf
+    #      path: qBittorrent.conf
+    #- name: qbittorrent-data
+    #  persistentVolumeClaim:
+    #    claimName: qbittorrent-data
+    #- name: qbittorrent-downloads
+    #  persistentVolumeClaim:
+    #    claimName: qbittorrent-downloads
+
+    #additionalVolumeMounts:
+    #- mountPath: /config
+    #  name: qbittorrent-data
+    #- mountPath: /downloads
+    #  name: qbittorrent-downloads
+
+    initContainers:
+      - name: copy-qbittorrent-config
+        image: instrumentisto/rsync-ssh
+        command:
+          -  sh
+          - -exec
+          - |
+            mkdir -p /config/qBittorrent
+            rsync -av /qbittorrent_tmp/qBittorrent.conf /config/qBittorrent/qBittorrent.conf
+            chown -R 568 /config
+            chmod -R 775 /config
+        volumeMounts:
+        - name: qbittorrent-conf-ro
+          mountPath: /qbittorrent_tmp/qBittorrent.conf
+          subPath: qBittorrent.conf
+        - name: qbittorrent-data
+          mountPath: /config
+
+    resources:
+      requests:
+        memory: 250Mi
+        cpu: 100m
+      limits:
+        memory: 6000Mi
+        cpu: 2000m

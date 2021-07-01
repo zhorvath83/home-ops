@@ -1,0 +1,233 @@
+---
+
+name: "Asuswrt-Merlin firmware releases"
+url: "https://www.asuswrt-merlin.net/changelog"
+filter:
+  - css:
+      selector: 'pre'
+  - html2text: re
+  - strip
+
+---
+
+name: "Tasmota releases"
+url: "https://github.com/arendst/Tasmota/releases"
+filter:
+  - css:
+      selector: '.open'
+      exclude: '.mt-4, .verified, .text-md-left, .p-3'
+  - html2text: re
+  - strip
+
+---
+
+name: "MiLight HUB releases"
+url: "https://github.com/sidoh/esp8266_milight_hub/releases"
+filter:
+  - css:
+      selector: '.open'
+      exclude: '.mt-4, .verified, .text-md-left, .p-3'
+  - html2text: re
+  - strip
+
+---
+
+name: "Traefik releases"
+url: "https://github.com/traefik/traefik/releases"
+filter:
+  - css:
+      selector: '.open'
+      exclude: '.mt-4, .verified, .text-md-left, .p-3'
+  - html2text: re
+  - strip
+
+---
+
+name: "GoLang Alpine releases for handle-http-errors"
+url: "https://hub.docker.com/_/golang?tab=tags&page=1&name=latest"
+filter:
+  - css:
+      selector: '.styles__shadowCard___3t4U8'
+  - html2text: re
+
+---
+
+name: "Alpine releases for private-website"
+url: "https://hub.docker.com/_/alpine?tab=tags&page=1&name=latest"
+filter:
+  - css:
+      selector: '.styles__shadowCard___3t4U8'
+  - html2text: re
+
+---
+
+name: "nginx-unprivileged alpine releases for private-website"
+url: "https://hub.docker.com/r/nginxinc/nginx-unprivileged/tags?page=1&name=latest-arm64v8"
+filter:
+  - css:
+      selector: '.styles__shadowCard___3t4U8'
+  - html2text: re
+
+---
+
+name: "Homer releases"
+url: "https://github.com/bastienwirtz/homer/releases"
+filter:
+  - css:
+      selector: '.open'
+      exclude: '.mt-4, .verified, .text-md-left, .p-3'
+  - html2text: re
+  - strip
+
+---
+
+name: "Code-server releases"
+url: "https://fleet.linuxserver.io/image?name=linuxserver/code-server"
+filter:
+  - css:
+      selector: '.has-margin-bottom+ .is-full'
+  - html2text: re
+  - strip
+
+---
+
+name: "PiHole releases"
+url: "https://github.com/pi-hole/docker-pi-hole/releases"
+filter:
+  - css:
+      selector: '.open'
+      exclude: '.mt-4, .verified, .text-md-left, .p-3'
+  - html2text: re
+  - strip
+
+---
+
+name: "Qbittorrent releases"
+url: "https://fleet.linuxserver.io/image?name=linuxserver/qbittorrent"
+filter:
+  - css:
+      selector: '.has-margin-bottom+ .is-full'
+  - html2text: re
+  - strip
+
+---
+
+name: "h5ai releases"
+url: "https://hub.docker.com/r/bin20088/h5ai/tags?page=1&name=latest"
+filter:
+  - css:
+      selector: '.styles__shadowCard___3t4U8'
+  - html2text: re
+
+---
+
+name: "Home Assistant releases"
+url: "https://github.com/home-assistant/core/releases"
+filter:
+  - css:
+      selector: '.open'
+      exclude: '.mt-4, .verified, .text-md-left, .p-3'
+  - html2text: re
+  - strip
+
+---
+
+name: "Home Assistant alerts"
+url: "https://alerts.home-assistant.io/"
+filter:
+  - css: 'kb-main'
+  - html2text: re
+
+---
+
+name: "Duplicati releases"
+url: "https://fleet.linuxserver.io/image?name=linuxserver/duplicati"
+filter:
+  - css:
+      selector: '.has-margin-bottom+ .is-full'
+  - html2text: re
+  - strip
+
+---
+
+name: "Jellyfin releases"
+url: "https://github.com/jellyfin/jellyfin/releases"
+filter:
+  - css:
+      selector: '.open'
+      exclude: '.mt-4, .verified, .text-md-left, .p-3'
+  - html2text: re
+  - strip
+
+---
+
+name: "Portainer releases"
+url: "https://github.com/portainer/portainer/releases"
+filter:
+  - css:
+      selector: '.open'
+      exclude: '.mt-4, .verified, .text-md-left, .p-3'
+  - html2text: re
+  - strip
+
+---
+
+name: "Crazymax fail2ban releases"
+url: "https://hub.docker.com/r/crazymax/fail2ban/tags?page=1&name=latest"
+filter:
+  - css:
+      selector: '.styles__shadowCard___3t4U8'
+  - html2text: re
+
+---
+
+name: "Cloudflare-DDNS releases"
+url: "https://hub.docker.com/r/hotio/cloudflareddns/tags?page=1&name=latest"
+filter:
+  - css:
+      selector: '.styles__shadowCard___3t4U8'
+  - html2text: re
+
+---
+
+name: "Cloudflare-Traefik Companion releases"
+url: "https://hub.docker.com/r/tiredofit/traefik-cloudflare-companion/tags?page=1&name=latest"
+filter:
+  - css:
+      selector: '.styles__shadowCard___3t4U8'
+  - html2text: re
+
+---
+
+name: "Mosquitto releases"
+url: "https://github.com/eclipse/mosquitto/releases"
+filter:
+  - css:
+      selector: '.open'
+      exclude: '.mt-4, .verified, .text-md-left, .p-3'
+  - html2text: re
+  - strip
+
+---
+
+name: "UrlWatch releases"
+url: "https://github.com/thp/urlwatch/releases"
+filter:
+  - css:
+      selector: '.open'
+      exclude: '.mt-4, .verified, .text-md-left, .p-3'
+  - html2text: re
+  - strip
+
+---
+
+name: "K3s releases"
+url: "https://github.com/k3s-io/k3s/releases"
+filter:
+  - css:
+      selector: '.open'
+      exclude: '.mt-4, .verified, .text-md-left, .p-3'
+  - html2text: re
+  - strip
+
+...

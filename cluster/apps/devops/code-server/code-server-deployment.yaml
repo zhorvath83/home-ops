@@ -1,0 +1,43 @@
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: code-server
+  namespace: devops
+  labels:
+    app: code-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: code-server
+  strategy:
+    # All existing Pods are killed before new ones are created
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: code-server
+    spec:
+      containers:
+      - name: code-server
+        image: linuxserver/code-server:v3.10.2-ls82
+        env:
+          - name: TZ
+            value: ${CLUSTER_TIMEZONE}
+          - name: PASSWORD
+            value: ${SECRET_CODE_SERVER_PWD}
+          - name: PUID
+            value: "1000"
+          - name: PGID
+            value: "1000"
+        ports:
+          - containerPort: 8443
+            name: code-server
+        volumeMounts:
+          - name: code-server-data
+            mountPath: /config
+      volumes:
+        - name: code-server-data
+          persistentVolumeClaim:
+            claimName: code-server-data

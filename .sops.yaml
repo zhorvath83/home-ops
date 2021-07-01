@@ -1,0 +1,6 @@
+---
+creation_rules:
+- encrypted_regex: '^(data|stringData)$'
+  # flux, macbook, termux pgp keys
+  pgp: >-
+    D47F3549C509AF39E00BE4422182ED78F377744E

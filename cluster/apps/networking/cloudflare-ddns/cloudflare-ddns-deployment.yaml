@@ -1,0 +1,46 @@
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: cloudflare-ddns
+  namespace: networking
+  labels:
+    app: cloudflare-ddns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloudflare-ddns
+  strategy:
+    # All existing Pods are killed before new ones are created
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: cloudflare-ddns
+    spec:
+      containers:
+      - name: cloudflare-ddns
+        image: hotio/cloudflareddns:release-20210414211823
+        env:
+          - name: DETECTION_MODE
+            value: "dig-whoami.cloudflare"
+          - name: CF_APITOKEN
+            value: "${SECRET_CF_APITOKEN}"
+          - name: CF_ZONES
+            value: "${SECRET_CF_ZONES}"
+          - name: CF_HOSTS
+            value: "${SECRET_CLUSTER_DOMAIN}"
+          - name: CF_RECORDTYPES
+            value: "${SECRET_CF_RECORDTYPES}"
+          - name: LOG_LEVEL
+            value: "1"
+          - name: INTERVAL
+            value: "60"
+        resources:
+          requests:
+            cpu: 10m
+            memory: 15Mi
+          limits:
+            cpu: 100m
+            memory: 100Mi
