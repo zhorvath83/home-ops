@@ -32,7 +32,7 @@ spec:
           runAsGroup: 65534
           capabilities:
             drop:
-              - NET_RAW
+            - NET_RAW
         resources:
           requests:
             cpu: 50m
@@ -47,4 +47,3 @@ spec:
       volumes:
       - emptyDir: {}
         name: tmp
-

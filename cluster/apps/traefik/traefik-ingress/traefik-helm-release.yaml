@@ -47,9 +47,6 @@ spec:
     - "--global.checknewversion=false"
     - "--global.sendanonymoususage=true"
     additionalArguments:
-      # Traefik API
-    #- "--ping=true"
-    #- "--api.dashboard=true"
     - "--metrics.prometheus=true"
     - "--metrics.prometheus.entryPoint=metrics"
     # Load dynamic configuration from one or more .yaml files.
@@ -72,7 +69,7 @@ spec:
         exposedPort: 80
         port: 8000
         protocol: TCP
-        #redirectTo: websecure
+        # redirectTo: websecure
       websecure:
         expose: true
         exposedPort: 443
@@ -133,12 +130,12 @@ spec:
             topologyKey: kubernetes.io/hostname
 
     volumes:
-      - name: "${SECRET_CLUSTER_DOMAIN/./-}-tls-secret"
-        mountPath: /certs
-        type: secret
-      - name: traefik-dynamic-config
-        mountPath: /config
-        type: configMap
+    - name: "${SECRET_CLUSTER_DOMAIN/./-}-tls-secret"
+      mountPath: /certs
+      type: secret
+    - name: traefik-dynamic-config
+      mountPath: /config
+      type: configMap
 
     resources:
       requests:

@@ -38,8 +38,6 @@ spec:
     customResponseHeaders:
       X-Robots-Tag: "none,noarchive,nosnippet,notranslate,noimageindex,"
       server: ""
-      #Cache-Control: "no-store"
-      #Pragma: "no-cache"
 
 ---
 
@@ -72,5 +70,3 @@ metadata:
 spec:
   forwardAuth:
     address: "http://traefik-auth-cloudflare.traefik.svc.cluster.local/auth/${SECRET_CF_ACCESS_APP_AUD_TAG}"
-
----

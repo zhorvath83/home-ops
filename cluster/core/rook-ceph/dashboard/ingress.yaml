@@ -5,11 +5,9 @@ metadata:
   name: rook-ceph-mgr-dashboard
   namespace: rook-ceph
   annotations:
-    #kubernetes.io/ingress.class: traefik
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
     traefik.ingress.kubernetes.io/router.middlewares: traefik-middleware-chain-cf-auth@kubernetescrd
-    #external-dns/is-public: "true"
   labels:
     app.kubernetes.io/instance: rook-ceph-mgr-dashboard
     app.kubernetes.io/name: rook-ceph-mgr-dashboard

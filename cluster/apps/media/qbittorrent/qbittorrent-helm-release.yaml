@@ -58,7 +58,6 @@ spec:
           traefik.ingress.kubernetes.io/router.entrypoints: websecure
           traefik.ingress.kubernetes.io/router.tls: "true"
           traefik.ingress.kubernetes.io/router.middlewares: traefik-middleware-chain-cf-auth@kubernetescrd
-          #external-dns/is-public: "true"
         hosts:
         - host: qbittorrent.${SECRET_CLUSTER_DOMAIN}
           paths:
@@ -90,26 +89,6 @@ spec:
             items:
             - key: qBittorrent.conf
               path: qBittorrent.conf
-
-    #additionalVolumes:
-    #- name: qbittorrent-conf-ro
-    #  configMap:
-    #    name: qbittorrent-config
-    #    items:
-    #    - key: qBittorrent.conf
-    #      path: qBittorrent.conf
-    #- name: qbittorrent-data
-    #  persistentVolumeClaim:
-    #    claimName: qbittorrent-data
-    #- name: qbittorrent-downloads
-    #  persistentVolumeClaim:
-    #    claimName: qbittorrent-downloads
-
-    #additionalVolumeMounts:
-    #- mountPath: /config
-    #  name: qbittorrent-data
-    #- mountPath: /downloads
-    #  name: qbittorrent-downloads
 
     initContainers:
       - name: copy-qbittorrent-config

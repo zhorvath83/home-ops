@@ -1,3 +1,4 @@
+---
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 # automatically generates the metallb-system namespace
@@ -10,7 +11,7 @@ resources:
 configMapGenerator:
 - name: config
   files:
-    - config=metallb-config.yaml
+  - config=metallb-config.yaml
 
 generatorOptions:
- disableNameSuffixHash: true
+  disableNameSuffixHash: true

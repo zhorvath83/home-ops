@@ -63,13 +63,11 @@ spec:
       ingress:
         enabled: true
         pathType: Prefix
-        #ingressClassName: "traefik"
         annotations:
           kubernetes.io/ingress.class: traefik
           traefik.ingress.kubernetes.io/router.entrypoints: websecure
           traefik.ingress.kubernetes.io/router.tls: "true"
           traefik.ingress.kubernetes.io/router.middlewares: traefik-middleware-chain-cf-auth@kubernetescrd
-          #external-dns/is-public: "true"
         hosts:
         - "prometheus.${SECRET_CLUSTER_DOMAIN}"
         tls: {}

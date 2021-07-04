@@ -23,20 +23,20 @@ spec:
       - name: cloudflare-ddns
         image: hotio/cloudflareddns:release-20210414211823
         env:
-          - name: DETECTION_MODE
-            value: "dig-whoami.cloudflare"
-          - name: CF_APITOKEN
-            value: "${SECRET_CF_APITOKEN}"
-          - name: CF_ZONES
-            value: "${SECRET_CF_ZONES}"
-          - name: CF_HOSTS
-            value: "${SECRET_CLUSTER_DOMAIN}"
-          - name: CF_RECORDTYPES
-            value: "${SECRET_CF_RECORDTYPES}"
-          - name: LOG_LEVEL
-            value: "1"
-          - name: INTERVAL
-            value: "60"
+        - name: DETECTION_MODE
+          value: "dig-whoami.cloudflare"
+        - name: CF_APITOKEN
+          value: "${SECRET_CF_APITOKEN}"
+        - name: CF_ZONES
+          value: "${SECRET_CF_ZONES}"
+        - name: CF_HOSTS
+          value: "${SECRET_CLUSTER_DOMAIN}"
+        - name: CF_RECORDTYPES
+          value: "${SECRET_CF_RECORDTYPES}"
+        - name: LOG_LEVEL
+          value: "1"
+        - name: INTERVAL
+          value: "60"
         resources:
           requests:
             cpu: 10m

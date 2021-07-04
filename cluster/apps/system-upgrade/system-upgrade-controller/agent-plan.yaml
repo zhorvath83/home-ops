@@ -19,8 +19,8 @@ spec:
     - key: k3s-upgrade
       operator: NotIn
       values:
-        - "disabled"
-        - "false"
+      - "disabled"
+      - "false"
     - key: kubernetes.io/hostname
       operator: Exists
   prepare:

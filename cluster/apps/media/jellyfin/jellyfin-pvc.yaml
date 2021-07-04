@@ -14,28 +14,6 @@ spec:
 
 ---
 
-#apiVersion: v1
-#kind: PersistentVolume
-#metadata:
-#  name: jellyfin-video
-#spec:
-#  storageClassName: jellyfin-video-storage
-#  capacity:
-#    storage: 1Mi
-#  accessModes:
-#  - ReadWriteMany
-#  persistentVolumeReclaimPolicy: Retain
-#  nfs:
-#    server: ${CLUSTER_LAN_NAS_IP}
-#    path: /video
-#  mountOptions:
-#  - tcp
-#  - soft
-#  - noatime
-#  - nodiratime
-
----
-
 apiVersion: v1
 kind: PersistentVolume
 metadata:

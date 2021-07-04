@@ -20,17 +20,17 @@ spec:
             image: vimagick/urlwatch:latest
             imagePullPolicy: Always
             command:
-              -  sh
-              - -exec
-              - |
-                cd /root/.urlwatch
-                urlwatch --urls urls.yaml --config urlwatch.yaml --hooks hooks.py --cache cache.db
+            - sh
+            - -exec
+            - |
+              cd /root/.urlwatch
+              urlwatch --urls urls.yaml --config urlwatch.yaml --hooks hooks.py --cache cache.db
             securityContext:
               readOnlyRootFilesystem: true
               allowPrivilegeEscalation: false
               capabilities:
                 drop:
-                  - all
+                - all
             resources:
               requests:
                 cpu: 50m

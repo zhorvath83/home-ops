@@ -59,20 +59,19 @@ spec:
       hosts:
       - host: dash.${SECRET_CLUSTER_DOMAIN}
         paths:
-          - path: /
-            pathType: Prefix
+        - path: /
+          pathType: Prefix
       annotations:
         kubernetes.io/ingress.class: traefik
         traefik.ingress.kubernetes.io/router.entrypoints: websecure
         traefik.ingress.kubernetes.io/router.tls: "true"
         traefik.ingress.kubernetes.io/router.middlewares: traefik-middleware-chain-cf-auth@kubernetescrd
-        #external-dns/is-public: "true"
       tls: {}
 
     persistence:
       config:
         enabled: false
-        #existingClaim: homer-data-pvc
+        # existingClaim: homer-data-pvc
         # existingClaim: homer-data
 
     additionalVolumes:

@@ -23,21 +23,21 @@ spec:
       - name: code-server
         image: linuxserver/code-server:v3.10.2-ls82
         env:
-          - name: TZ
-            value: ${CLUSTER_TIMEZONE}
-          - name: PASSWORD
-            value: ${SECRET_CODE_SERVER_PWD}
-          - name: PUID
-            value: "1000"
-          - name: PGID
-            value: "1000"
+        - name: TZ
+          value: ${CLUSTER_TIMEZONE}
+        - name: PASSWORD
+          value: ${SECRET_CODE_SERVER_PWD}
+        - name: PUID
+          value: "1000"
+        - name: PGID
+          value: "1000"
         ports:
-          - containerPort: 8443
-            name: code-server
+        - containerPort: 8443
+          name: code-server
         volumeMounts:
-          - name: code-server-data
-            mountPath: /config
-      volumes:
         - name: code-server-data
-          persistentVolumeClaim:
-            claimName: code-server-data
+          mountPath: /config
+      volumes:
+      - name: code-server-data
+        persistentVolumeClaim:
+          claimName: code-server-data
