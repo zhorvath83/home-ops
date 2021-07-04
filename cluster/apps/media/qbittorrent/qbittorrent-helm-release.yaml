@@ -91,22 +91,22 @@ spec:
               path: qBittorrent.conf
 
     initContainers:
-      - name: copy-qbittorrent-config
-        image: instrumentisto/rsync-ssh
-        command:
-          -  sh
-          - -exec
-          - |
-            mkdir -p /config/qBittorrent
-            rsync -av /qbittorrent_tmp/qBittorrent.conf /config/qBittorrent/qBittorrent.conf
-            chown -R 568 /config
-            chmod -R 775 /config
-        volumeMounts:
-        - name: qbittorrent-conf-ro
-          mountPath: /qbittorrent_tmp/qBittorrent.conf
-          subPath: qBittorrent.conf
-        - name: qbittorrent-data
-          mountPath: /config
+    - name: copy-qbittorrent-config
+      image: instrumentisto/rsync-ssh
+      command:
+      -  sh
+      - -exec
+      - |
+        mkdir -p /config/qBittorrent
+        rsync -av /qbittorrent_tmp/qBittorrent.conf /config/qBittorrent/qBittorrent.conf
+        chown -R 568 /config
+        chmod -R 775 /config
+      volumeMounts:
+      - name: qbittorrent-conf-ro
+        mountPath: /qbittorrent_tmp/qBittorrent.conf
+        subPath: qBittorrent.conf
+      - name: qbittorrent-data
+        mountPath: /config
 
     resources:
       requests:

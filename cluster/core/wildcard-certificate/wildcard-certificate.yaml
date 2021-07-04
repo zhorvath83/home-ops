@@ -7,7 +7,6 @@ metadata:
 spec:
   secretName: "${SECRET_CLUSTER_DOMAIN/./-}-tls-secret"
   issuerRef:
-    #name: letsencrypt-staging
     name: letsencrypt-production
     kind: ClusterIssuer
   commonName: "${SECRET_CLUSTER_DOMAIN}"

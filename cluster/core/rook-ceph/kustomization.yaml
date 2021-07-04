@@ -7,5 +7,5 @@ resources:
 - storage
 - rook-direct-mount
 - service-monitors
- #- snapshot-controller
+ # - snapshot-controller
 - dashboard

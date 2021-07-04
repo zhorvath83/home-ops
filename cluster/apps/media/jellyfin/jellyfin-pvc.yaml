@@ -21,7 +21,7 @@ metadata:
 spec:
   storageClassName: jellyfin-video-storage
   accessModes:
-    - ReadWriteMany
+  - ReadWriteMany
   capacity:
     storage: 1Mi
   persistentVolumeReclaimPolicy: Retain

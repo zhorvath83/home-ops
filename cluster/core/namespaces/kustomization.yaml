@@ -13,5 +13,5 @@ resources:
 - media-namespace.yaml
 - cloud-namespace.yaml
 - devops-namespace.yaml
- # Generated from kustomization
- #- system-upgrade-namespace.yaml
+# Generated from kustomization
+# - system-upgrade-namespace.yaml

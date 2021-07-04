@@ -51,10 +51,10 @@ spec:
         traefik.ingress.kubernetes.io/router.tls: "true"
         traefik.ingress.kubernetes.io/router.middlewares: traefik-middleware-chain-noauth@kubernetescrd
       hosts:
-      - host: "homeassistant.${SECRET_CLUSTER_DOMAIN}"
-        paths:
-        - path: /
-          pathType: Prefix
+        - host: "homeassistant.${SECRET_CLUSTER_DOMAIN}"
+          paths:
+            - path: /
+              pathType: Prefix
       tls: {}
     prometheus:
       serviceMonitor:

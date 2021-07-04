@@ -21,7 +21,7 @@ metadata:
 spec:
   storageClassName: qbittorrent-downloads-storage
   accessModes:
-    - ReadWriteMany
+  - ReadWriteMany
   capacity:
     storage: 1Mi
   persistentVolumeReclaimPolicy: Retain
@@ -38,7 +38,7 @@ metadata:
 spec:
   storageClassName: qbittorrent-downloads-storage
   accessModes:
-    - ReadWriteMany
+  - ReadWriteMany
   resources:
     requests:
       storage: 1Mi
