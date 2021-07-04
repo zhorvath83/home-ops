@@ -1,1 +1,1 @@
-# My home Kubernetes (k3s) cluster managed by GitOps (Flux)
+# Kubernetes (k3s) cluster managed by GitOps (Flux)
