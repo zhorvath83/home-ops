@@ -33,7 +33,7 @@ spec:
 
     initContainers:
     - name: git-sync
-      image: k8s.gcr.io/git-sync/git-sync:v3.3.2
+      image: k8s.gcr.io/git-sync/git-sync:v3.3.4
       volumeMounts:
       - name: homer-config-dir
         mountPath: /homer-icons
