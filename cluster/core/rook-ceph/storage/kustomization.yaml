@@ -1,3 +1,4 @@
+---
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
@@ -5,4 +6,4 @@ resources:
 - ceph-cluster.yaml
 - ceph-file-system.yaml
 - storage-class.yaml
-#- volume-snapshot-class.yaml
+# - volume-snapshot-class.yaml

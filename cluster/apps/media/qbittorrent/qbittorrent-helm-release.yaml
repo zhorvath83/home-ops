@@ -94,7 +94,7 @@ spec:
     - name: copy-qbittorrent-config
       image: instrumentisto/rsync-ssh
       command:
-      -  sh
+      - sh
       - -exec
       - |
         mkdir -p /config/qBittorrent
