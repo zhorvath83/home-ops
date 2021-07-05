@@ -5,7 +5,8 @@ kind: Kustomization
 namespace: metallb-system
 
 resources:
-- metallb-secret.enc.yaml
+# TODO migrate to metallb helm chart
+# - metallb-secret.enc.yaml
 - github.com/metallb/metallb//manifests?ref=v0.10.2
 
 configMapGenerator:
