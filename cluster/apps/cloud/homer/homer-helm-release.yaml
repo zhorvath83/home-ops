@@ -33,7 +33,7 @@ spec:
 
     initContainers:
     - name: git-sync
-      image: k8s.gcr.io/git-sync/git-sync:v3.3.4
+      image: k8s.gcr.io/git-sync/git-sync
       volumeMounts:
       - name: homer-config-dir
         mountPath: /homer-icons
@@ -71,8 +71,6 @@ spec:
     persistence:
       config:
         enabled: false
-        # existingClaim: homer-data-pvc
-        # existingClaim: homer-data
 
     additionalVolumes:
     - name: homer-config-file
