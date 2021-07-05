@@ -6,7 +6,7 @@ namespace: metallb-system
 
 resources:
 - metallb-secret.enc.yaml
-- github.com/metallb/metallb//manifests?ref=v0.9.6
+- github.com/metallb/metallb//manifests?ref=v0.10.2
 
 configMapGenerator:
 - name: config
