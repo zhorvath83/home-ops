@@ -10,7 +10,7 @@ spec:
     spec:
       # renovate: registryUrl=https://k8s-at-home.com/charts/
       chart: homer
-      version: 4.4.0
+      version: 5.1.0
       sourceRef:
         kind: HelmRepository
         name: k8s-at-home-charts
@@ -35,8 +35,8 @@ spec:
     - name: git-sync
       image: k8s.gcr.io/git-sync/git-sync:v3.3.4
       volumeMounts:
-      - name: homer-config-dir
-        mountPath: /homer-icons
+      - name: config
+        mountPath: /www/assets
       env:
       - name: GIT_SYNC_REPO
         value: https://github.com/zhorvath83/homer-icons
@@ -70,19 +70,17 @@ spec:
 
     persistence:
       config:
-        enabled: false
-
-    additionalVolumes:
-    - name: homer-config-file
-      configMap:
-        name: homer-config
-    - name: homer-config-dir
-      emptyDir: {}
-
-
-    additionalVolumeMounts:
-    - name: homer-config-file
-      mountPath: /www/assets/config.yml
-      subPath: homer-config.yaml
-    - name: homer-config-dir
-      mountPath: /www/assets
+        enabled: true
+        type: emptyDir
+        mountPath: /www/assets
+      homer-config-file:
+        enabled: true
+        mountPath: /www/assets/config.yml
+        subPath: config.yml
+        type: custom
+        volumeSpec:
+          configMap:
+            name: homer-config
+            items:
+            - key: config.yml
+              path: config.yml

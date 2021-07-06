@@ -15,7 +15,7 @@ spec:
     spec:
       # renovate: registryUrl=https://k8s-at-home.com/charts/
       chart: home-assistant
-      version: 8.3.1
+      version: 9.2.0
       sourceRef:
         kind: HelmRepository
         name: k8s-at-home-charts
@@ -39,23 +39,31 @@ spec:
       TZ: "CLUSTER_TIMEZONE"
     hostNetwork: true
     dnsPolicy: ClusterFirstWithHostNet
+
     service:
-      type: LoadBalancer
-      loadBalancerIP: ${CLUSTER_SVC_HOMEASSISTANT_IP}
-      externalTrafficPolicy: Local
+      main:
+        externalTrafficPolicy: Local
+        type: LoadBalancer
+        loadBalancerIP: ${CLUSTER_SVC_HOMEASSISTANT_IP}
+        ports:
+          http:
+            port: 8123
+
     ingress:
-      enabled: true
-      ingressClassName: "traefik"
-      annotations:
-        traefik.ingress.kubernetes.io/router.entrypoints: websecure
-        traefik.ingress.kubernetes.io/router.tls: "true"
-        traefik.ingress.kubernetes.io/router.middlewares: traefik-middleware-chain-noauth@kubernetescrd
-      hosts:
-        - host: "homeassistant.${SECRET_CLUSTER_DOMAIN}"
-          paths:
-            - path: /
-              pathType: Prefix
-      tls: {}
+      main:
+        enabled: true
+        ingressClassName: "traefik"
+        annotations:
+          traefik.ingress.kubernetes.io/router.entrypoints: websecure
+          traefik.ingress.kubernetes.io/router.tls: "true"
+          traefik.ingress.kubernetes.io/router.middlewares: traefik-middleware-chain-noauth@kubernetescrd
+        hosts:
+          - host: "homeassistant.${SECRET_CLUSTER_DOMAIN}"
+            paths:
+              - path: /
+                pathType: Prefix
+        tls: {}
+
     prometheus:
       serviceMonitor:
         enabled: false
