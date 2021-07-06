@@ -87,5 +87,5 @@ spec:
           configMap:
             name: homer-config
             items:
-            - key: config.yml
-              path: config.yml
+            - key: homer-config.yaml
+              path: homer-config.yaml
