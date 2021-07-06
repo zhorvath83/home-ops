@@ -33,21 +33,37 @@ spec:
     env:
       TZ: "CLUSTER_TIMEZONE"
 
-    #initContainers:
-    #- name: git-sync
-    #  image: k8s.gcr.io/git-sync/git-sync:v3.3.4
-    #  volumeMounts:
-    #  - name: config
-    #    mountPath: /www/assets
-    #  env:
-    #  - name: GIT_SYNC_REPO
-    #    value: https://github.com/zhorvath83/homer-icons
-    #  - name: GIT_SYNC_ROOT
-    #    value: /www/assets
-    #  - name: GIT_SYNC_PERMISSIONS
-    #    value: "0777"
-    #  - name: GIT_SYNC_ONE_TIME
-    #    value: "true"
+    initContainers:
+    - name: git-sync
+      image: k8s.gcr.io/git-sync/git-sync:v3.3.4
+      volumeMounts:
+      - name: config
+        mountPath: /www/assets
+      env:
+      - name: GIT_SYNC_REPO
+        value: https://github.com/zhorvath83/homer-icons
+      - name: GIT_SYNC_ROOT
+        value: /www/assets
+      - name: GIT_SYNC_PERMISSIONS
+        value: "0777"
+      - name: GIT_SYNC_ONE_TIME
+        value: "true"
+
+    - name: copy-homer-config
+      image: instrumentisto/rsync-ssh
+      command:
+      - sh
+      - -exec
+      - |
+        rsync -av /homer_tmp/config.yml /www/assets/config.yml
+        chown -R 911 /www/assets
+        chmod -R 775 /www/assets
+      volumeMounts:
+      - name: config-file-ro
+        mountPath: /homer_tmp/config.yml
+        subPath: config.yml
+      - name: config
+        mountPath: /www/assets
 
     podAnnotations:
       reloader.stakater.com/auto: "true"
@@ -80,7 +96,7 @@ spec:
         mountPath: /www/assets
       config-file-ro:
         enabled: true
-        mountPath: /www/assets/config.yml
+        mountPath: /homer_tmp/config.yml
         subPath: config.yml
         type: custom
         volumeSpec:
