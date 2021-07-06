@@ -30,6 +30,8 @@ spec:
     image:
       repository: b4bz/homer
       tag: 21.03.2
+    env:
+      TZ: "CLUSTER_TIMEZONE"
 
     initContainers:
     - name: git-sync
@@ -51,22 +53,25 @@ spec:
       reloader.stakater.com/auto: "true"
 
     service:
-      port:
-        port: 8080
+      main:
+        ports:
+          http:
+            port: 8080
 
     ingress:
-      enabled: true
-      hosts:
-      - host: dash.${SECRET_CLUSTER_DOMAIN}
-        paths:
-        - path: /
-          pathType: Prefix
-      annotations:
-        kubernetes.io/ingress.class: traefik
-        traefik.ingress.kubernetes.io/router.entrypoints: websecure
-        traefik.ingress.kubernetes.io/router.tls: "true"
-        traefik.ingress.kubernetes.io/router.middlewares: traefik-middleware-chain-cf-auth@kubernetescrd
-      tls: {}
+      main:
+        enabled: true
+        hosts:
+        - host: dash.${SECRET_CLUSTER_DOMAIN}
+          paths:
+          - path: /
+            pathType: Prefix
+        annotations:
+          kubernetes.io/ingress.class: traefik
+          traefik.ingress.kubernetes.io/router.entrypoints: websecure
+          traefik.ingress.kubernetes.io/router.tls: "true"
+          traefik.ingress.kubernetes.io/router.middlewares: traefik-middleware-chain-cf-auth@kubernetescrd
+        tls: {}
 
     persistence:
       config:
