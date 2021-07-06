@@ -56,8 +56,8 @@ spec:
       - -exec
       - |
         rsync -av /homer_tmp/config.yml /www/assets/config.yml
-        chown -R 911 /www/assets
-        chmod -R 775 /www/assets
+        chown -R 911 /www
+        chmod -R 775 /www
       volumeMounts:
       - name: config-file-ro
         mountPath: /homer_tmp/config.yml
