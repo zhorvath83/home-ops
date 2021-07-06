@@ -32,6 +32,8 @@ spec:
       tag: 21.03.2
     env:
       TZ: "CLUSTER_TIMEZONE"
+      UID: "1000"
+      GID: "1000"
 
     initContainers:
     - name: git-sync
