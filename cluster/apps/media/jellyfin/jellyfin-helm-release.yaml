@@ -10,7 +10,7 @@ spec:
     spec:
       # renovate: registryUrl=https://k8s-at-home.com/charts/
       chart: jellyfin
-      version: 7.4.0
+      version: 8.2.0
       sourceRef:
         kind: HelmRepository
         name: k8s-at-home-charts
@@ -34,15 +34,20 @@ spec:
     env:
       TZ: "${CLUSTER_TIMEZONE}"
       JELLYFIN_CACHE_DIR: "/config/cache"
+
     service:
-      enabled: true
-      type: LoadBalancer
-      port:
-        port: 8096
-      loadBalancerIP: ${CLUSTER_SVC_JELLYFIN_IP}
-      externalTrafficPolicy: Local
+      main:
+        type: LoadBalancer
+        loadBalancerIP: ${CLUSTER_SVC_JELLYFIN_IP}
+        externalTrafficPolicy: Local
+        ports:
+          http:
+            port: 8096
+
     ingress:
-      enabled: false
+      main:
+        enabled: false
+
     persistence:
       config:
         enabled: true
