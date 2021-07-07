@@ -38,8 +38,8 @@ spec:
     customResponseHeaders:
       X-Robots-Tag: "none,noarchive,nosnippet,notranslate,noimageindex,"
       server: ""
-      Cache-Control: "no-cache"
-      Clear-Site-Data: "*"
+      # Cache-Control: "no-cache"
+      # Clear-Site-Data: "*"
 
 ---
 
