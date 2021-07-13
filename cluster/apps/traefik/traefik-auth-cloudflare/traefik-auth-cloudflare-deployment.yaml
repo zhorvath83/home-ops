@@ -32,8 +32,8 @@ spec:
               cpu: 250m
               memory: 100Mi
       affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
           - weight: 100
             podAffinityTerm:
               labelSelector:
