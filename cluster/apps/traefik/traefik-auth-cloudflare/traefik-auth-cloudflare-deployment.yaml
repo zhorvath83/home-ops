@@ -51,7 +51,7 @@ spec:
                       operator: In
                       values:
                         - traefik-auth-cloudflare
-              topologyKey: "kubernetes.io/hostname"
+                topologyKey: "kubernetes.io/hostname"
 
 ---
 
