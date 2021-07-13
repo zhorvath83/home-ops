@@ -41,6 +41,17 @@ spec:
                     values:
                       - traefik
               topologyKey: "kubernetes.io/hostname"
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/name
+                      operator: In
+                      values:
+                        - traefik-auth-cloudflare
+              topologyKey: "kubernetes.io/hostname"
 
 ---
 
