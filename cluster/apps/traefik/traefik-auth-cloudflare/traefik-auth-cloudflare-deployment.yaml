@@ -40,7 +40,7 @@ spec:
                     operator: In
                     values:
                       - traefik
-          topologyKey: "kubernetes.io/hostname"
+              topologyKey: "kubernetes.io/hostname"
 
 ---
 
