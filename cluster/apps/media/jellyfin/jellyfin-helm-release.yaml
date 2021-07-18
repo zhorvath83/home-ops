@@ -55,5 +55,6 @@ spec:
         mountPath: /config
       media:
         enabled: true
-        existingClaim: jellyfin-video
+        # existingClaim: jellyfin-video
+        existingClaim: media-share
         mountPath: /media

@@ -36,7 +36,7 @@ spec:
       repository: ghcr.io/home-assistant/home-assistant
       tag: 2021.7.3
     env:
-      TZ: "CLUSTER_TIMEZONE"
+      TZ: "${CLUSTER_TIMEZONE}"
     hostNetwork: true
     dnsPolicy: ClusterFirstWithHostNet
 

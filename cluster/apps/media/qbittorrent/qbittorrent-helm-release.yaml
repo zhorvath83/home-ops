@@ -76,7 +76,9 @@ spec:
         mountPath: /config
       qbittorrent-downloads:
         enabled: true
-        existingClaim: qbittorrent-downloads
+        # existingClaim: qbittorrent-downloads
+        existingClaim: media-share
+        subPath: downloads
         mountPath: /downloads
       qbittorrent-conf-ro:
         enabled: true
