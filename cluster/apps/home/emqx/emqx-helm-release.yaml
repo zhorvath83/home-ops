@@ -16,18 +16,35 @@ spec:
         name: emqx-charts
         namespace: flux-system
       interval: 5m
+
   values:
+    ingress:
+      dashboard:
+        enabled: true
+        annotations:
+          kubernetes.io/ingress.class: traefik
+          traefik.ingress.kubernetes.io/router.entrypoints: websecure
+          traefik.ingress.kubernetes.io/router.tls: "true"
+          traefik.ingress.kubernetes.io/router.middlewares: traefik-middleware-chain-cf-auth@kubernetescrd
+        path: /
+        hosts:
+        - emq.${SECRET_CLUSTER_DOMAIN}
+        tls: {}
+
     replicaCount: 3
     recreatePods: true
+
     service:
       type: LoadBalancer
       loadBalancerIP: ${CLUSTER_SVC_MQTT_IP}
+
     emqxConfig:
       EMQX_ALLOW_ANONYMOUS: "false"
       EMQX_ADMIN_PASSWORD: "${SECRET_EMQX_ADMIN_PASSWORD}"
       EMQX_AUTH__MNESIA__PASSWORD_HASH: plain
       EMQX_AUTH__USER__1__USERNAME: "${SECRET_CLUSTER_OWNER_USERNAME}"
       EMQX_AUTH__USER__1__PASSWORD: "${SECRET_MQTT_PASSWORD}"
+
     emqxLoadedPlugins: >
       {emqx_management, true}.
       {emqx_recon, true}.
@@ -37,6 +54,7 @@ spec:
       {emqx_rule_engine, true}.
       {emqx_bridge_mqtt, false}.
       {emqx_auth_mnesia, true}.
+
     affinity:
       podAntiAffinity:
         preferredDuringSchedulingIgnoredDuringExecution:
@@ -49,6 +67,7 @@ spec:
                     values:
                       - emqx
               topologyKey: kubernetes.io/hostname
+
     persistence:
       enabled: true
       storageClass: "rook-ceph-block"
