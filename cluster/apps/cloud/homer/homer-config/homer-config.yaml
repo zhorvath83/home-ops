@@ -48,6 +48,26 @@ services:
         logo: assets/homer-icons/png/google-keep.png
         url: https://keep.google.com/
 
+  - name: Finance
+    icon: fas fa-money-bill-alt
+    items:
+      - name: Buxfer
+        subtitle: Personal finance software
+        logo: assets/homer-icons/png/buxfer.png
+        url: https://www.buxfer.com
+      - name: Erste George
+        subtitle: Erste NetBank
+        logo: assets/homer-icons/png/erste-george.png
+        url: https://george.erstebank.hu
+      - name: Erste Investment
+        subtitle: Erste Befektetési Zrt.
+        logo: assets/homer-icons/png/erste.png
+        url: https://www.ersteinvestment.hu
+      - name: MÁK WebKincstár
+        subtitle: Magyar Államkincstár
+        logo: assets/homer-icons/png/mak.png
+        url: https://webkincstar.allamkincstar.gov.hu
+
   - name: Management
     icon: fas fa-server
     items:
@@ -95,10 +115,6 @@ services:
         subtitle: Home automation
         logo: assets/homer-icons/png/home-assistant.png
         url: https://homeassistant.${SECRET_CLUSTER_DOMAIN}
-      - name: EMQ dashboard
-        subtitle: EMQ MQTT Message Broker
-        logo: assets/homer-icons/png/emq.png
-        url: https://emq.${SECRET_CLUSTER_DOMAIN}
       - name: Jellyfin
         subtitle: Jellyfin media server
         logo: assets/homer-icons/png/jellyfin.png
@@ -115,6 +131,10 @@ services:
         subtitle: Analytics & monitoring
         logo: assets/homer-icons/png/grafana.png
         url: https://grafana.${SECRET_CLUSTER_DOMAIN}
+      - name: EMQ dashboard
+        subtitle: EMQ MQTT Message Broker
+        logo: assets/homer-icons/png/emq.png
+        url: https://emq.${SECRET_CLUSTER_DOMAIN}
       - name: Traefik
         subtitle: Kube ingress dashboard
         logo: assets/homer-icons/png/traefik.png
