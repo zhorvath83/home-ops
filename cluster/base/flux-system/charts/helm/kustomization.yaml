@@ -10,7 +10,8 @@ resources:
 - stakater-charts.yaml
 - pihole-charts.yaml
 - patrickjmcd-charts.yaml
-- vernemq-charts.yaml
 - kubernetes-dashboard-charts.yaml
 - prometheus-community-charts.yaml
 - grafana-charts.yaml
+- emqx-charts.yaml
+- vernemq-charts.yaml
