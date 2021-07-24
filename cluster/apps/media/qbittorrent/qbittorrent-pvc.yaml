@@ -11,34 +11,3 @@ spec:
     requests:
       storage: 500Mi
   storageClassName: rook-ceph-block
-
-# ---
-# 
-# apiVersion: v1
-# kind: PersistentVolume
-# metadata:
-#   name: qbittorrent-downloads
-# spec:
-#   storageClassName: qbittorrent-downloads-storage
-#   accessModes:
-#   - ReadWriteMany
-#   capacity:
-#     storage: 1Mi
-#   persistentVolumeReclaimPolicy: Retain
-#   hostPath:
-#     path: /mnt/torrent
-# 
-# ---
-# 
-# apiVersion: v1
-# kind: PersistentVolumeClaim
-# metadata:
-#   name: qbittorrent-downloads
-#   namespace: media
-# spec:
-#   storageClassName: qbittorrent-downloads-storage
-#   accessModes:
-#   - ReadWriteMany
-#   resources:
-#     requests:
-#       storage: 1Mi
