@@ -95,6 +95,10 @@ services:
         subtitle: Home automation
         logo: assets/homer-icons/png/home-assistant.png
         url: https://homeassistant.${SECRET_CLUSTER_DOMAIN}
+      - name: EMQ dashboard
+        subtitle: EMQ MQTT Message Broker
+        logo: assets/homer-icons/png/emq.png
+        url: https://emq.${SECRET_CLUSTER_DOMAIN}
       - name: Jellyfin
         subtitle: Jellyfin media server
         logo: assets/homer-icons/png/jellyfin.png
