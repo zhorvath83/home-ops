@@ -1,7 +1,7 @@
 ---
-title: App Dashboard
-subtitle: Homelab
-documentTitle: Home
+title: Dashboard
+subtitle: Home
+documentTitle: Home dashboard
 icon: fas fa-home
 
 header: true
@@ -52,7 +52,7 @@ services:
     icon: fas fa-money-bill-alt
     items:
       - name: Buxfer
-        subtitle: Personal finance software
+        subtitle: Personal finance management
         logo: assets/homer-icons/png/buxfer.png
         url: https://www.buxfer.com
       - name: Erste George

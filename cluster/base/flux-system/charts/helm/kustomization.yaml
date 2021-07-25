@@ -3,6 +3,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
 - rook-ceph-charts.yaml
+- kubernetes-sigs-descheduler-charts.yaml
 - bitnami-charts.yaml
 - k8s-at-home-charts.yaml
 - traefik-charts.yaml
