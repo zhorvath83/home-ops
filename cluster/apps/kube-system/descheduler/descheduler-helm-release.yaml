@@ -17,8 +17,7 @@ spec:
         namespace: flux-system
       interval: 5m
   values:
-    podAnnotations:
-      botkube.io/disable: "true"
+    schedule: "*/5 * * * *"
     deschedulerPolicy:
       strategies:
         RemoveDuplicates:
