@@ -51,22 +51,6 @@ spec:
       - name: GIT_SYNC_ONE_TIME
         value: "true"
 
-    # - name: copy-homer-config
-    #   image: instrumentisto/rsync-ssh
-    #   command:
-    #   - sh
-    #   - -exec
-    #   - |
-    #     rsync -av /homer_tmp/config.yml /www/assets/config.yml
-    #     chown -R 1000 /www
-    #     chmod -R 777 /www
-    #   volumeMounts:
-    #   - name: config-file-ro
-    #     mountPath: /homer_tmp/config.yml
-    #     subPath: config.yml
-    #   - name: config
-    #     mountPath: /www/assets
-
     podAnnotations:
       reloader.stakater.com/auto: "true"
 
@@ -98,7 +82,6 @@ spec:
         mountPath: /www/assets
       config-file-ro:
         enabled: true
-        # mountPath: /homer_tmp/config.yml
         mountPath: /www/assets/config.yml
         subPath: config.yml
         type: custom
