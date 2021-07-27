@@ -13,7 +13,7 @@ spec:
   curvePreferences:
     - CurveP521
     - CurveP384
-  # sniStrict: true
+  sniStrict: true
   clientAuth:
     # Authenticated Origin Pulls: https://support.cloudflare.com/hc/en-us/articles/204899617
     # The CF CA certificate is extracted from key `tls.ca` of the given secret.
