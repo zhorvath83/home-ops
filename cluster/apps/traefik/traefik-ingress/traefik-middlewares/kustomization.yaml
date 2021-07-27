@@ -1,0 +1,11 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- traefik-middleware-cf-access-auth.yaml
+- traefik-middleware-compress.yaml
+- traefik-middleware-rate-limit.yaml
+- traefik-middleware-retry.yaml
+- traefik-middleware-secure-headers.yaml
+- traefik-middleware-rfc1918-ips.yaml
+- traefik-middleware-cloudflare-ips.yaml

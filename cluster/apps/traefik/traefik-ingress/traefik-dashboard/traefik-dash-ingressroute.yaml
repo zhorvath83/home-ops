@@ -16,3 +16,5 @@ spec:
     middlewares:
     - name: middleware-chain-cf-auth
       namespace: traefik
+  tls:
+    secretName: "${SECRET_CLUSTER_DOMAIN/./-}-tls-secret"

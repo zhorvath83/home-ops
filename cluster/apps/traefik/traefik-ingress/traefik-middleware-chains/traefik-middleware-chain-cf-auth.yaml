@@ -2,26 +2,12 @@
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
-  name: middleware-chain-noauth
-  namespace: traefik
-spec:
-  chain:
-    middlewares:
-    - name: middleware-rate-limit
-    - name: middleware-secure-headers
-    - name: middleware-compress
-    - name: middleware-retry
-
----
-
-apiVersion: traefik.containo.us/v1alpha1
-kind: Middleware
-metadata:
   name: middleware-chain-cf-auth
   namespace: traefik
 spec:
   chain:
     middlewares:
+    - name: middleware-cloudflare-ips
     - name: middleware-rate-limit
     - name: middleware-secure-headers
     - name: middleware-compress

@@ -2,18 +2,6 @@
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
-  name: middleware-rate-limit
-  namespace: traefik
-spec:
-  rateLimit:
-    average: 100
-    burst: 50
-
----
-
-apiVersion: traefik.containo.us/v1alpha1
-kind: Middleware
-metadata:
   name: middleware-secure-headers
   namespace: traefik
 spec:
@@ -40,35 +28,3 @@ spec:
       server: ""
       # Cache-Control: "no-cache"
       # Clear-Site-Data: "*"
-
----
-
-apiVersion: traefik.containo.us/v1alpha1
-kind: Middleware
-metadata:
-  name: middleware-compress
-  namespace: traefik
-spec:
-  compress: {}
-
----
-
-apiVersion: traefik.containo.us/v1alpha1
-kind: Middleware
-metadata:
-  name: middleware-retry
-  namespace: traefik
-spec:
-  retry:
-    attempts: 3
-
----
-
-apiVersion: traefik.containo.us/v1alpha1
-kind: Middleware
-metadata:
-  name: middleware-cf-access-auth
-  namespace: traefik
-spec:
-  forwardAuth:
-    address: "http://traefik-auth-cloudflare.traefik.svc.cluster.local/auth/${SECRET_CF_ACCESS_APP_AUD_TAG}"

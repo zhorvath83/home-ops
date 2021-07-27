@@ -1,0 +1,9 @@
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: middleware-cf-access-auth
+  namespace: traefik
+spec:
+  forwardAuth:
+    address: "http://traefik-auth-cloudflare.traefik.svc.cluster.local/auth/${SECRET_CF_ACCESS_APP_AUD_TAG}"

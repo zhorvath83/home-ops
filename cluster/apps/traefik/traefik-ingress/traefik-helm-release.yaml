@@ -5,7 +5,7 @@ metadata:
   name: traefik
   namespace: traefik
 spec:
-  interval: 10m0s
+  interval: 5m
   chart:
     spec:
       # renovate: registryUrl=https://helm.traefik.io/traefik
@@ -15,6 +15,7 @@ spec:
         kind: HelmRepository
         name: traefik-charts
         namespace: flux-system
+      interval: 5m
   install:
     remediation:
       retries: 3
@@ -29,7 +30,7 @@ spec:
   values:
     deployment:
       kind: Deployment
-      replicas: 2
+      replicas: 3
 
     env:
     - name: TZ
@@ -54,6 +55,7 @@ spec:
     - "--providers.file.watch=true"
     # Allow these IPs to set the X-Forwarded-* headers.
     - "--entrypoints.websecure.forwardedHeaders.trustedIPs=${CLUSTER_CF_IPV4_IPS}"
+    # Disable SSL verification on backend
     - "--serverstransport.insecureskipverify=true"
     - "--providers.kubernetesingress.ingressclass=traefik"
     # providers.kubernetesingress.ingressendpoint.hostname is set for external-dns support
@@ -65,11 +67,11 @@ spec:
         port: 9000
         protocol: TCP
       web:
-        expose: false
-        exposedPort: 80
-        port: 8000
-        protocol: TCP
-        # redirectTo: websecure
+        # expose: false
+        # exposedPort: 80
+        # port: 8000
+        # protocol: TCP
+        redirectTo: websecure
       websecure:
         expose: true
         exposedPort: 443
@@ -77,6 +79,7 @@ spec:
         protocol: TCP
         tls:
           enabled: true
+          options: "default"
       metrics:
         port: 8082
         expose: true
@@ -110,7 +113,8 @@ spec:
             names: {}
 
     pilot:
-      enabled: false
+      enabled: true
+      token: "${SECRET_TRAEFIK_PILOT_TOKEN}"
 
     experimental:
       plugins:
@@ -128,14 +132,6 @@ spec:
                 values:
                 - traefik
             topologyKey: kubernetes.io/hostname
-
-    volumes:
-    - name: "${SECRET_CLUSTER_DOMAIN/./-}-tls-secret"
-      mountPath: /certs
-      type: secret
-    - name: traefik-dynamic-config
-      mountPath: /config
-      type: configMap
 
     resources:
       requests:
