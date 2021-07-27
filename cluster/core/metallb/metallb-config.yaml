@@ -1,7 +1,0 @@
-# yamllint disable
-address-pools:
-- name: default
-  protocol: layer2
-  auto-assign: false
-  addresses:
-  - ${CLUSTER_LAN_CIDR}

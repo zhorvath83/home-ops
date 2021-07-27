@@ -5,5 +5,5 @@ resources:
 - namespaces
 - rook-ceph
 - system-upgrade
-- metallb
+- metallb-system
 - cert-manager
