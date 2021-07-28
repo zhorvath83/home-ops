@@ -26,5 +26,5 @@ spec:
     customResponseHeaders:
       X-Robots-Tag: "none,noarchive,nosnippet,notranslate,noimageindex,"
       server: ""
-      # Cache-Control: "no-cache"
-      # Clear-Site-Data: "*"
+      # Browser cache TTL = One week
+      Cache-Control: "max-age=604800"
