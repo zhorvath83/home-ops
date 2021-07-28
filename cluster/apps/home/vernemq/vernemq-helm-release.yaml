@@ -31,6 +31,8 @@ spec:
       repository: vernemq/vernemq
       tag: 1.11.0-alpine
 
+    replicaCount: 2
+
     service:
       type: LoadBalancer
       loadBalancerIP: ${CLUSTER_SVC_MQTT_IP}

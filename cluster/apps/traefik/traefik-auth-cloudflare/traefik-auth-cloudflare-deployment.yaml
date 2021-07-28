@@ -5,7 +5,7 @@ metadata:
   name: traefik-auth-cloudflare
   namespace: traefik
 spec:
-  replicas: 2
+  replicas: 3
   selector:
     matchLabels:
       app.kubernetes.io/name: traefik-auth-cloudflare
