@@ -122,16 +122,14 @@ spec:
 
     affinity:
       podAntiAffinity:
-        preferredDuringSchedulingIgnoredDuringExecution:
-        - weight: 100
-          podAffinityTerm:
-            labelSelector:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
               matchExpressions:
-              - key: app.kubernetes.io/name
-                operator: In
-                values:
-                - traefik
-            topologyKey: kubernetes.io/hostname
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - traefik
+            topologyKey: "kubernetes.io/hostname"
 
     resources:
       requests:
