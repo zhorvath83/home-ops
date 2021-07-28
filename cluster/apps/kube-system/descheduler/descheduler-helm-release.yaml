@@ -17,7 +17,10 @@ spec:
         namespace: flux-system
       interval: 5m
   values:
-    schedule: "*/5 * * * *"
+    schedule: "*/10 * * * *"
+    successfulJobsHistoryLimit: 1
+    failedJobsHistoryLimit: 1
+
     deschedulerPolicy:
       strategies:
         RemoveDuplicates:
@@ -31,3 +34,11 @@ spec:
           enabled: true
         LowNodeUtilization:
           enabled: false
+
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi
