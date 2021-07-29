@@ -49,7 +49,6 @@ spec:
             port: 50413
             protocol: TCP
             targetPort: 50413
-
     ingress:
       main:
         enabled: true
@@ -68,7 +67,6 @@ spec:
       supplementalGroups:
       - 100
       - 1000
-
     persistence:
       qbittorrent-data:
         enabled: true
@@ -90,7 +88,6 @@ spec:
             items:
             - key: qBittorrent.conf
               path: qBittorrent.conf
-
     initContainers:
     - name: copy-qbittorrent-config
       image: instrumentisto/rsync-ssh
@@ -108,7 +105,6 @@ spec:
         subPath: qBittorrent.conf
       - name: qbittorrent-data
         mountPath: /config
-
     resources:
       requests:
         memory: 250Mi

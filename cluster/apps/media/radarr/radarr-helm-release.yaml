@@ -22,6 +22,14 @@ spec:
       tag: v3.2.2.5080
     env:
       TZ: "${CLUSTER_TIMEZONE}"
+    service:
+      main:
+        type: LoadBalancer
+        loadBalancerIP: ${CLUSTER_SVC_RADARR_IP}
+        externalTrafficPolicy: Local
+        ports:
+          http:
+            port: 7878
     ingress:
       main:
         enabled: true
@@ -34,21 +42,6 @@ spec:
         - host: "radarr.${SECRET_CLUSTER_DOMAIN}"
           paths:
           - path: /
-            pathType: Prefix
-        tls:
-        - hosts:
-          - "radarr.${SECRET_CLUSTER_DOMAIN}"
-      api:
-        enabled: true
-        ingressClassName: "traefik"
-        annotations:
-          traefik.ingress.kubernetes.io/router.entrypoints: "websecure"
-          traefik.ingress.kubernetes.io/router.tls: "true"
-          traefik.ingress.kubernetes.io/router.middlewares: traefik-middleware-chain-noauth@kubernetescrd
-        hosts:
-        - host: "radarr.${SECRET_CLUSTER_DOMAIN}"
-          paths:
-          - path: /api
             pathType: Prefix
         tls:
         - hosts:

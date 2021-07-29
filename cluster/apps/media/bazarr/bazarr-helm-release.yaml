@@ -2,15 +2,15 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
-  name: sonarr
+  name: bazarr
   namespace: media
 spec:
   interval: 5m
   chart:
     spec:
       # renovate: registryUrl=https://k8s-at-home.com/charts/
-      chart: sonarr
-      version: 12.3.0
+      chart: bazarr
+      version: 9.3.0
       sourceRef:
         kind: HelmRepository
         name: k8s-at-home-charts
@@ -18,18 +18,18 @@ spec:
       interval: 5m
   values:
     image:
-      repository: ghcr.io/k8s-at-home/sonarr
-      tag: v3.0.6.1265
+      repository: ghcr.io/k8s-at-home/bazarr
+      tag: v0.9.6
     env:
       TZ: "${CLUSTER_TIMEZONE}"
     service:
       main:
         type: LoadBalancer
-        loadBalancerIP: ${CLUSTER_SVC_SONARR_IP}
+        loadBalancerIP: ${CLUSTER_SVC_BAZARR_IP}
         externalTrafficPolicy: Local
         ports:
           http:
-            port: 8989
+            port: 6767
     ingress:
       main:
         enabled: true
@@ -39,55 +39,24 @@ spec:
           traefik.ingress.kubernetes.io/router.tls: "true"
           traefik.ingress.kubernetes.io/router.middlewares: traefik-middleware-chain-cf-auth@kubernetescrd
         hosts:
-        - host: "sonarr.${SECRET_CLUSTER_DOMAIN}"
+        - host: "bazarr.${SECRET_CLUSTER_DOMAIN}"
           paths:
           - path: /
             pathType: Prefix
         tls:
         - hosts:
-          - "sonarr.${SECRET_CLUSTER_DOMAIN}"
-    podSecurityContext:
-      supplementalGroups:
-      - 100
+          - "bazarr.${SECRET_CLUSTER_DOMAIN}"
     persistence:
       config:
         enabled: true
-        existingClaim: sonarr-data
+        existingClaim: bazarr-data
       media:
         enabled: true
         existingClaim: media-share
         mountPath: /media
     resources:
       requests:
-        memory: 250Mi
+        memory: 100Mi
         cpu: 100m
       limits:
-        memory: 1500Mi
-    prometheus:
-      podMonitor:
-        enabled: true
-        interval: 10m
-        scrapeTimeout: 2m
-    additionalContainers:
-    - name: exportarr
-      image: ghcr.io/onedr0p/exportarr:v0.6.1
-      imagePullPolicy: IfNotPresent
-      args: ["exportarr", "sonarr"]
-      env:
-      - name: PORT
-        value: "32123"
-      - name: URL
-        value: "http://localhost"
-      - name: CONFIG
-        value: "/config/config.xml"
-      - name: ENABLE_UNKNOWN_QUEUE_ITEMS
-        value: "true"
-      - name: ENABLE_ADDITIONAL_METRICS
-        value: "true"
-      ports:
-      - name: exportarr
-        containerPort: 32123
-      volumeMounts:
-      - name: config
-        mountPath: /config
-        readOnly: true
+        memory: 500Mi
