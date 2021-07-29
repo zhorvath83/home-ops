@@ -27,8 +27,9 @@ spec:
         enabled: true
         ingressClassName: "traefik"
         annotations:
-          traefik.ingress.kubernetes.io/router.entrypoints: "websecure"
-          traefik.ingress.kubernetes.io/router.middlewares: "networking-basic-auth@kubernetescrd"
+          traefik.ingress.kubernetes.io/router.entrypoints: websecure
+          traefik.ingress.kubernetes.io/router.tls: "true"
+          traefik.ingress.kubernetes.io/router.middlewares: traefik-middleware-chain-cf-auth@kubernetescrd
         hosts:
         - host: "sabnzbd.${SECRET_CLUSTER_DOMAIN}"
           paths:
@@ -41,7 +42,9 @@ spec:
         enabled: true
         ingressClassName: "traefik"
         annotations:
-          traefik.ingress.kubernetes.io/router.entrypoints: "websecure"
+          traefik.ingress.kubernetes.io/router.entrypoints: websecure
+          traefik.ingress.kubernetes.io/router.tls: "true"
+          traefik.ingress.kubernetes.io/router.middlewares: traefik-middleware-chain-noauth@kubernetescrd
         hosts:
         - host: "sabnzbd.${SECRET_CLUSTER_DOMAIN}"
           paths:
@@ -59,15 +62,11 @@ spec:
         existingClaim: sabnzbd-data
       media:
         enabled: true
-        type: custom
-        volumeSpec:
-          nfs:
-            server: 192.168.42.50
-            path: /media
+        existingClaim: media-share
         mountPath: /media
     resources:
       requests:
         memory: 250Mi
-        cpu: 500m
+        cpu: 100m
       limits:
-        memory: 7500Mi
+        memory: 600Mi

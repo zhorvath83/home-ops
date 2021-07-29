@@ -98,7 +98,7 @@ spec:
         traefik-dashboard:
           url: https://raw.githubusercontent.com/tcheronneau/grafana_dashboard/master/traefik.json
           datasource: Prometheus
-        # TODO PiHole exporter
+      # TODO PiHole exporter
     sidecar:
       dashboards:
         enabled: true

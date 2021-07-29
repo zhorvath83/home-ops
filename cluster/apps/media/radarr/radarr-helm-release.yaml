@@ -43,6 +43,8 @@ spec:
         ingressClassName: "traefik"
         annotations:
           traefik.ingress.kubernetes.io/router.entrypoints: "websecure"
+          traefik.ingress.kubernetes.io/router.tls: "true"
+          traefik.ingress.kubernetes.io/router.middlewares: traefik-middleware-chain-noauth@kubernetescrd
         hosts:
         - host: "radarr.${SECRET_CLUSTER_DOMAIN}"
           paths:
@@ -60,16 +62,12 @@ spec:
         existingClaim: radarr-data
       media:
         enabled: true
-        type: custom
-        volumeSpec:
-          nfs:
-            server: 192.168.42.50
-            path: /media
+        existingClaim: media-share
         mountPath: /media
     resources:
       requests:
         memory: 250Mi
-        cpu: 500m
+        cpu: 100m
       limits:
         memory: 1500Mi
     prometheus:
