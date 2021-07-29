@@ -5,7 +5,7 @@ resources:
 - shared-persistent-volume
 - jellyfin
 - qbittorrent
- - prowlarr
- - radarr
- - sonarr
- - sabnzbd
+- prowlarr
+- radarr
+- sonarr
+- sabnzbd
