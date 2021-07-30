@@ -35,13 +35,21 @@ spec:
       TZ: "${CLUSTER_TIMEZONE}"
     service:
       main:
+        type: LoadBalancer
+        loadBalancerIP: ${CLUSTER_SVC_DOWNLOADER_STACK_IP}
+        annotations:
+          metallb.universe.tf/allow-shared-ip: downloader-stack
+        externalTrafficPolicy: Local
         ports:
           http:
-            port: 8080
+            port: 8081
+            targetPort: 8080
       bittorrent:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: ${CLUSTER_SVC_QBITTORRENT_IP}
+        loadBalancerIP: ${CLUSTER_SVC_DOWNLOADER_STACK_IP}
+        annotations:
+          metallb.universe.tf/allow-shared-ip: downloader-stack
         externalTrafficPolicy: Local
         ports:
           bittorrent:

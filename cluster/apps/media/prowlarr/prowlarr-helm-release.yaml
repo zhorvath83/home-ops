@@ -25,7 +25,9 @@ spec:
     service:
       main:
         type: LoadBalancer
-        loadBalancerIP: ${CLUSTER_SVC_PROWLARR_IP}
+        loadBalancerIP: ${CLUSTER_SVC_DOWNLOADER_STACK_IP}
+        annotations:
+          metallb.universe.tf/allow-shared-ip: downloader-stack
         externalTrafficPolicy: Local
         ports:
           http:
