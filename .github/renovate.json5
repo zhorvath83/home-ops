@@ -120,12 +120,11 @@
       "labels": ["renovate/helm", "dep/patch"],
     },
     // custom version schemes
-
-    // {
-    //    "matchDatasources": ["helm"],
-    //    "allowedVersions": "<15",
-    //    "matchPackageNames": ["kube-prometheus-stack"]
-    // },
+    {
+      "matchDatasources": ["docker"],
+      "versioning": "regex:^version-v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)$",
+      "matchPackageNames": ["ghcr.io/linuxserver/code-server"]
+    },
     // version strategies
     {
       "matchDatasources": ["docker"],
