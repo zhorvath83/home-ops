@@ -28,6 +28,11 @@ spec:
     recreate: true
 
   values:
+
+    image:
+      name: traefik
+      tag: v2.4.13
+
     deployment:
       kind: Deployment
       replicas: 2

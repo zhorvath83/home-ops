@@ -131,10 +131,6 @@ services:
         subtitle: Analytics & monitoring
         logo: assets/homer-icons/png/grafana.png
         url: https://grafana.${SECRET_CLUSTER_DOMAIN}
-      - name: EMQ dashboard
-        subtitle: EMQ MQTT Message Broker
-        logo: assets/homer-icons/png/emq.png
-        url: https://emq.${SECRET_CLUSTER_DOMAIN}
       - name: Traefik
         subtitle: Kube ingress dashboard
         logo: assets/homer-icons/png/traefik.png
