@@ -2,15 +2,15 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
-  name: mealie
+  name: recipes
   namespace: home
 spec:
   interval: 5m
   chart:
     spec:
       # renovate: registryUrl=https://k8s-at-home.com/charts/
-      chart: mealie
-      version: 2.3.0
+      chart: recipes
+      version: 5.1.0
       sourceRef:
         kind: HelmRepository
         name: k8s-at-home-charts
@@ -28,6 +28,32 @@ spec:
     recreate: true
 
   values:
+    image:
+      repository: vabene1111/recipes
+      tag: 0.16.7
+      pullPolicy: IfNotPresent
+    sidecar:
+      image:
+        repository: nginx
+        tag: 1.19.6
+        pullPolicy: IfNotPresent
+    env:
+      TIMEZONE: ${CLUSTER_TIMEZONE}
+      DEBUG: "0"
+      ALLOWED_HOSTS: "*"
+      SECRET_KEY: changeme
+      DB_ENGINE: django.db.backends.sqlite3
+      POSTGRES_HOST:
+      POSTGRES_PORT:
+      POSTGRES_USER:
+      POSTGRES_DB:
+      POSTGRES_PASSWORD:
+      GUNICORN_MEDIA: "0"
+      FRACTION_PREF_DEFAULT: "0"
+      COMMENT_PREF_DEFAULT: "1"
+      SHOPPING_MIN_AUTOSYNC_INTERVAL: "5"
+
+      
     ingress:
       main:
         enabled: true
@@ -37,14 +63,14 @@ spec:
           traefik.ingress.kubernetes.io/router.tls: "true"
           traefik.ingress.kubernetes.io/router.middlewares: traefik-middleware-chain-cf-auth@kubernetescrd
         hosts:
-        - host: "mealie.${SECRET_CLUSTER_DOMAIN}"
+        - host: "recipes.${SECRET_CLUSTER_DOMAIN}"
           paths:
           - path: /
             pathType: Prefix
         tls:
         - hosts:
-          - "mealie.${SECRET_CLUSTER_DOMAIN}"
+          - "recipes.${SECRET_CLUSTER_DOMAIN}"
     persistence:
       config:
         enabled: true
-        existingClaim: mealie-data
+        existingClaim: recipes-data

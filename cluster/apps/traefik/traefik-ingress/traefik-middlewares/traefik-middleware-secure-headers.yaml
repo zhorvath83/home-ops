@@ -27,4 +27,4 @@ spec:
       X-Robots-Tag: "none,noarchive,nosnippet,notranslate,noimageindex,"
       server: ""
       # Browser cache TTL = One week
-      Cache-Control: "max-age=604800"
+      # Cache-Control: "max-age=604800"
