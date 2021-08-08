@@ -17,3 +17,4 @@ resources:
 - grafana-charts.yaml
 - emqx-charts.yaml
 - vernemq-charts.yaml
+- runix-charts.yaml

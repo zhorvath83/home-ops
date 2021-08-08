@@ -53,8 +53,11 @@ VSCode SOPS is a neat little plugin for those using VSCode. It will automaticall
 📍 Show the health of your HelmRepositorys
 `flux get sources helm -A`
 
-📍 Reconcile flux resources
+📍 Reconcile Flux resources
 `flux reconcile helmrelease traefik -n traefik`
+
+📍 Pause the Flux Helm Release
+`flux suspend hr home-assistant -n home`
 
 📍 Print the reconciliation logs of all Flux custom resources in your cluster
 `flux logs --all-namespaces`
