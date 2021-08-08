@@ -38,12 +38,6 @@ spec:
     postgresqlUsername: postgres
     postgresqlPassword: ${SECRET_PSQL_POSTGRES_PWD}
 
-    #service:
-    #  type: LoadBalancer
-    #  port: 5432
-    #  annotations: {}
-    #  loadBalancerIP: "${POSTGRES_ADDRESS}"
-
     persistence:
       enabled: true
       existingClaim: postgresql-data

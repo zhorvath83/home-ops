@@ -52,6 +52,20 @@ spec:
       tls:
         - hosts:
             - pgadmin.${SECRET_CLUSTER_DOMAIN}
+
+    serverDefinitions:
+      enabled: true
+      servers: |-
+        "1": {
+          "Name": "PostgreSQL",
+          "Group": "Servers",
+          "Port": 5432,
+          "Username": "postgres",
+          "Host": "postgresql.home.svc.cluster.local",
+          "SSLMode": "prefer",
+          "MaintenanceDB": "postgres"
+        }
+
     persistentVolume:
       enabled: true
       existingClaim: pgadmin-data
