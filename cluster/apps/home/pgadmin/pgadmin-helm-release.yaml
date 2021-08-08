@@ -35,7 +35,7 @@ spec:
       tag: 5.5
       pullPolicy: IfNotPresent
     env:
-      email: ${SECRET_EMAIL_1L}
+      email: ${SECRET_EMAIL_1}
       password: ${SECRET_PGADMIN_PWD}
     ingress:
       enabled: true
