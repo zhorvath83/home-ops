@@ -35,7 +35,7 @@ spec:
     sidecar:
       image:
         repository: nginx
-        tag: 1.21.1
+        tag: mainline-alpine
         pullPolicy: IfNotPresent
     env:
       TIMEZONE: ${CLUSTER_TIMEZONE}
