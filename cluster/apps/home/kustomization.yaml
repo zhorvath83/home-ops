@@ -6,5 +6,5 @@ resources:
 - pgadmin
 - vernemq
 - home-assistant
-- mealie
- #- recipes
+#- mealie
+- recipes

@@ -41,17 +41,25 @@ spec:
       TIMEZONE: ${CLUSTER_TIMEZONE}
       DEBUG: "0"
       ALLOWED_HOSTS: "*"
-      SECRET_KEY: changeme
-      DB_ENGINE: django.db.backends.sqlite3
-      POSTGRES_HOST:
-      POSTGRES_PORT:
-      POSTGRES_USER:
-      POSTGRES_DB:
-      POSTGRES_PASSWORD:
+      SECRET_KEY: ${SECRET_RECIPES_SECRET_KEY}
+      DB_ENGINE: django.db.backends.postgresql
+      POSTGRES_HOST: postgresql.home.svc.cluster.local
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: recipes
+      POSTGRES_DB: recipes
+      POSTGRES_PASSWORD: ${SECRET_PSQL_RECIPES_PWD}
       GUNICORN_MEDIA: "0"
       FRACTION_PREF_DEFAULT: "0"
-      COMMENT_PREF_DEFAULT: "1"
+      COMMENT_PREF_DEFAULT: "0"
       SHOPPING_MIN_AUTOSYNC_INTERVAL: "5"
+      EMAIL_HOST: '${SECRET_SMTP_HOST}'
+      EMAIL_PORT: '${SECRET_SMTP_PORT}'
+      EMAIL_HOST_USER: '${SECRET_SMTP_USER}'
+      EMAIL_HOST_PASSWORD: '${SECRET_SMTP_PASSWD}'
+      EMAIL_USE_TLS: 1
+      EMAIL_USE_SSL: 0
+      DEFAULT_FROM_EMAIL: '${SECRET_EMAIL_2}'
+      ACCOUNT_EMAIL_SUBJECT_PREFIX:  "[Tandoor Recipes] "
 
     ingress:
       main:
