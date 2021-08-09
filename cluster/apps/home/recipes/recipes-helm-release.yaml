@@ -78,6 +78,10 @@ spec:
         - hosts:
           - "recipes.${SECRET_CLUSTER_DOMAIN}"
     persistence:
-      config:
+      media:
         enabled: true
         existingClaim: recipes-data
+        mountPath: /opt/recipes/mediafiles
+      static:
+        enabled: true
+        type: emptyDir
