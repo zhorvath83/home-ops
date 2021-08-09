@@ -48,7 +48,7 @@ spec:
       POSTGRES_USER: recipes
       POSTGRES_DB: recipes
       POSTGRES_PASSWORD: ${SECRET_PSQL_RECIPES_PWD}
-      GUNICORN_MEDIA: "0"
+      GUNICORN_MEDIA: "1"
       FRACTION_PREF_DEFAULT: "0"
       COMMENT_PREF_DEFAULT: "0"
       SHOPPING_MIN_AUTOSYNC_INTERVAL: "5"
@@ -84,22 +84,3 @@ spec:
       static:
         enabled: true
         existingClaim: recipes-static-data
-
-    additionalContainers:
-    - name: nginx
-      image: nginx:1.21.1
-      ports:
-        - containerPort: 80
-          name: http
-      volumeMounts:
-      #
-      # If persistent volumes are enabled ; please uncomment the following lines
-      #
-      - name: media
-        mountPath: '/media'
-      - name: static
-        mountPath: '/static'
-      - name: recipes-config
-        mountPath: /etc/nginx/nginx.conf
-        subPath: nginx-config
-        readOnly: true
