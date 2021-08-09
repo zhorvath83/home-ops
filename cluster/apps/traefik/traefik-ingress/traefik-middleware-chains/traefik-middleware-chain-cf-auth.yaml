@@ -9,7 +9,7 @@ spec:
     middlewares:
     - name: middleware-cloudflare-ips
     - name: middleware-rate-limit
-    - name: middleware-secure-headers
+    #- name: middleware-secure-headers
     - name: middleware-compress
     - name: middleware-retry
     - name: middleware-cf-access-auth
