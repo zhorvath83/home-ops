@@ -78,6 +78,8 @@ spec:
         - hosts:
           - "recipes.${SECRET_CLUSTER_DOMAIN}"
     persistence:
+      config:
+        enabled: true
       media:
         enabled: true
         existingClaim: recipes-media-data
