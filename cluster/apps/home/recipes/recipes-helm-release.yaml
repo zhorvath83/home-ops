@@ -84,5 +84,5 @@ spec:
         enabled: true
         existingClaim: recipes-media-data
       static:
-        enabled: true
+        enabled: false
         existingClaim: recipes-static-data
