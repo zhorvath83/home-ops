@@ -80,9 +80,7 @@ spec:
     persistence:
       media:
         enabled: true
-        existingClaim: recipes-data
-        subPath: media
+        existingClaim: recipes-media-data
       static:
         enabled: true
-        existingClaim: recipes-data
-        subPath: static
+        existingClaim: recipes-static-data
