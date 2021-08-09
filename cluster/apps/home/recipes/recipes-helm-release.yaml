@@ -32,11 +32,11 @@ spec:
       repository: vabene1111/recipes
       tag: 0.16.7
       pullPolicy: IfNotPresent
-    sidecar:
-      image:
-        repository: nginx
-        tag: 1.21.1
-        pullPolicy: IfNotPresent
+    #sidecar:
+    #  image:
+    #    repository: nginx
+    #    tag: 1.21.1
+    #    pullPolicy: IfNotPresent
     env:
       TIMEZONE: ${CLUSTER_TIMEZONE}
       DEBUG: "0"
@@ -78,11 +78,28 @@ spec:
         - hosts:
           - "recipes.${SECRET_CLUSTER_DOMAIN}"
     persistence:
-      config:
-        enabled: true
       media:
         enabled: true
         existingClaim: recipes-media-data
       static:
         enabled: true
         existingClaim: recipes-static-data
+
+    additionalContainers:
+    - name: nginx
+      image: nginx:1.21.1
+      ports:
+        - containerPort: 80
+          name: http
+      volumeMounts:
+      #
+      # If persistent volumes are enabled ; please uncomment the following lines
+      #
+      - name: media
+        mountPath: '/media'
+      - name: static
+        mountPath: '/static'
+      - name: recipes-config
+        mountPath: /etc/nginx/nginx.conf
+        subPath: nginx-config
+        readOnly: true
