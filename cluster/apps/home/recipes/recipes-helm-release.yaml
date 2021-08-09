@@ -59,7 +59,7 @@ spec:
       EMAIL_USE_TLS: 1
       EMAIL_USE_SSL: 0
       DEFAULT_FROM_EMAIL: '${SECRET_EMAIL_2}'
-      ACCOUNT_EMAIL_SUBJECT_PREFIX:  "[Tandoor Recipes] "
+      ACCOUNT_EMAIL_SUBJECT_PREFIX: "[Tandoor Recipes] "
 
     ingress:
       main:
