@@ -81,7 +81,8 @@ spec:
       media:
         enabled: true
         existingClaim: recipes-data
-        mountPath: /opt/recipes/mediafiles
+        subPath: media
       static:
         enabled: true
-        type: emptyDir
+        existingClaim: recipes-data
+        subPath: static
