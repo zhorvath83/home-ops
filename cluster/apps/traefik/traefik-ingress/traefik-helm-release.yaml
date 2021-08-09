@@ -41,6 +41,14 @@ spec:
     - name: TZ
       value: ${CLUSTER_TIMEZONE}
 
+    logs:
+      general:
+        format: json
+        level: DEBUG
+      access:
+        enabled: true
+        format: json
+
     ingressClass:
       enabled: true
       isDefaultClass: true
@@ -55,11 +63,8 @@ spec:
     additionalArguments:
     - "--metrics.prometheus=true"
     - "--metrics.prometheus.entryPoint=metrics"
-    # Load dynamic configuration from one or more .yaml files.
-    - "--providers.file.directory=/config"
-    - "--providers.file.watch=true"
     # Allow these IPs to set the X-Forwarded-* headers.
-    - "--entrypoints.websecure.forwardedHeaders.trustedIPs=${CLUSTER_CF_IPV4_IPS}"
+    - "--entryPoints.websecure.forwardedHeaders.trustedIPs=${CLUSTER_CF_IPV4_IPS}"
     # Disable SSL verification on backend
     - "--serverstransport.insecureskipverify=true"
     - "--providers.kubernetesingress.ingressclass=traefik"
@@ -98,24 +103,6 @@ spec:
         externalTrafficPolicy: Local
 
     dnsPolicy: ClusterFirst
-
-    logs:
-      general:
-        # (Default: ERROR) DEBUG, INFO, WARN, ERROR, FATAL, PANIC
-        level: WARN
-      access:
-        enabled: true
-        bufferingSize: 100
-        filters:
-          statuscodes: "400-599"
-        fields:
-          general:
-            defaultmode: keep
-            names:
-              StartUTC: drop
-          headers:
-            defaultmode: drop
-            names: {}
 
     pilot:
       enabled: true
