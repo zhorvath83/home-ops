@@ -94,19 +94,11 @@ spec:
       imagePullPolicy: IfNotPresent
       env:
       - name: POSTGRES_PASSWORD
-        valueFrom:
-          secretKeyRef:
-            name: cluster-secrets
-            namespace: flux-system
-            key: SECRET_PSQL_POSTGRES_PWD
+        value: ${SECRET_PSQL_POSTGRES_PWD}
       - name: POSTGRES_USER
         value: postgres
       - name: POSTGRES_DB_PASSWORD
-        valueFrom:
-          secretKeyRef:
-            name: cluster-secrets
-            namespace: flux-system
-            key: SECRET_PSQL_RECIPES_PWD
+        value: ${SECRET_PSQL_RECIPES_PWD}
       - name: POSTGRES_DB_USER
         value: recipes
       - name: POSTGRES_HOST
