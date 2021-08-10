@@ -27,6 +27,9 @@ spec:
     timeout: 10m
     recreate: true
 
+  dependsOn:
+    - name: postgresql
+
   values:
     image:
       repository: vabene1111/recipes
@@ -35,7 +38,7 @@ spec:
     sidecar:
       image:
         repository: nginx
-        tag: mainline-alpine
+        tag: 1.21.1-alpine
         pullPolicy: IfNotPresent
     env:
       TIMEZONE: ${CLUSTER_TIMEZONE}
@@ -52,8 +55,6 @@ spec:
       FRACTION_PREF_DEFAULT: "0"
       COMMENT_PREF_DEFAULT: "0"
       SHOPPING_MIN_AUTOSYNC_INTERVAL: "5"
-      #REVERSE_PROXY_AUTH: "1"
-      #MEDIA_URL: https://recipes.${SECRET_CLUSTER_DOMAIN}/media/
       EMAIL_HOST: '${SECRET_SMTP_HOST}'
       EMAIL_PORT: '${SECRET_SMTP_PORT}'
       EMAIL_HOST_USER: '${SECRET_SMTP_USER}'
@@ -70,7 +71,7 @@ spec:
         annotations:
           traefik.ingress.kubernetes.io/router.entrypoints: websecure
           traefik.ingress.kubernetes.io/router.tls: "true"
-          #traefik.ingress.kubernetes.io/router.middlewares: traefik-middleware-chain-cf-auth@kubernetescrd
+          traefik.ingress.kubernetes.io/router.middlewares: traefik-middleware-chain-cf-auth@kubernetescrd
         hosts:
         - host: "recipes.${SECRET_CLUSTER_DOMAIN}"
           paths:
@@ -85,4 +86,48 @@ spec:
         existingClaim: recipes-media-data
       static:
         enabled: true
-        existingClaim: recipes-static-data
+        type: emptyDir
+
+    initContainers:
+    - name: database-bootstrap
+      image: "postgres:9.6-alpine"
+      imagePullPolicy: IfNotPresent
+      env:
+      - name: POSTGRES_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: cluster-secrets
+            namespace: flux-system
+            key: SECRET_PSQL_POSTGRES_PWD
+      - name: POSTGRES_USER
+        value: postgres
+      - name: POSTGRES_DB_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: cluster-secrets
+            namespace: flux-system
+            key: SECRET_PSQL_RECIPES_PWD
+      - name: POSTGRES_DB_USER
+        value: recipes
+      - name: POSTGRES_HOST
+        value: postgresql.home.svc.cluster.local
+      - name: POSTGRES_PORT
+        value: "5432"
+      - name: POSTGRES_DB_NAME
+        value: recipes
+      command:
+        - sh
+        - "-c"
+        - |
+          if PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -lqt | cut -d \| -f 1 | grep -qw $POSTGRES_DB_NAME; then
+            echo "database already exist, exiting initContainer"
+            exit 0
+          else
+            echo "Database does not exist. creating...."
+            PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER <<-EOSQL
+            CREATE DATABASE $POSTGRES_DB_NAME;
+            CREATE USER POSTGRES_DB_USER WITH ENCRYPTED PASSWORD 'POSTGRES_DB_PASSWORD';
+            GRANT all privileges ON database $POSTGRES_DB_NAME TO POSTGRES_DB_USER;
+          EOSQL
+          echo "Done"
+          fi
