@@ -24,7 +24,6 @@ spec:
     referrerPolicy: "same-origin"
     featurePolicy: "camera 'none'; geolocation 'none'; microphone 'none'; payment 'none'; usb 'none'; vr 'none';"
     customResponseHeaders:
-      X-Robots-Tag: "none,noarchive,nosnippet,notranslate,noimageindex,"
+      X-Robots-Tag: "none,noarchive,nosnippet,notranslate,noimageindex"
       server: ""
-      # Browser cache TTL = One week
-      # Cache-Control: "max-age=604800"
+      Cache-Control: "max-age=604800"
