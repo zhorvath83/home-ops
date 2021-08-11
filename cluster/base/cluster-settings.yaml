@@ -5,6 +5,9 @@ metadata:
   namespace: flux-system
   name: cluster-settings
 data:
+  CLUSTER_K8S_NODE_1: lenovo-m93p-1
+  CLUSTER_K8S_NODE_2: lenovo-m93p-2
+  CLUSTER_K8S_NODE_3: lenovo-m93p-3
   CLUSTER_LAN_CIDR: "192.168.1.0/24"
   CLUSTER_LAN_DOMAIN: "LAN"
   CLUSTER_LAN_ROUTER_IP: "192.168.1.1"
