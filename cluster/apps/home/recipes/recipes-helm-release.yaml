@@ -90,7 +90,7 @@ spec:
 
     initContainers:
     - name: database-bootstrap
-      image: "postgres:9.6-alpine"
+      image: postgres:9.6-alpine
       imagePullPolicy: IfNotPresent
       env:
       - name: POSTGRES_PASSWORD
@@ -111,6 +111,11 @@ spec:
         - sh
         - "-c"
         - |
+          until pg_isready -h $POSTGRES_HOST -p 5432 -U postgres
+          do
+            echo "Waiting for postgres at: $pg_uri"
+            sleep 2;
+          done
           if PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -lqt | cut -d \| -f 1 | grep -qw $POSTGRES_DB_NAME; then
             echo "database already exist, exiting initContainer"
             exit 0
