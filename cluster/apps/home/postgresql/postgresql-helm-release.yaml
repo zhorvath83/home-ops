@@ -8,12 +8,12 @@ spec:
   interval: 5m
   chart:
     spec:
-      # renovate: registryUrl=https://k8s-at-home.com/charts/
-      chart: zalando-postgres-cluster
-      version: 2.3.0
+      # renovate: registryUrl=https://charts.bitnami.com/bitnami
+      chart: postgresql
+      version: 10.9.1
       sourceRef:
         kind: HelmRepository
-        name: k8s-at-home-charts
+        name: bitnami-charts
         namespace: flux-system
       interval: 5m
   install:
@@ -28,22 +28,18 @@ spec:
     recreate: true
 
   values:
-    postgresql:
-      users:
-        postgres:
-        - superuser
-        - createdb
-      databases:
-        postgres: postgres
-      postgresql:
-        version: "13"
+    image:
+      registry: docker.io
+      repository: bitnami/postgresql
+      tag: 13.3.0
+      pullPolicy: IfNotPresent
 
-    superuser:
-      secret: postgres.postgres.credentials.postgresql.acid.zalan.do
+    postgresqlDatabase: postgres
+    postgresqlUsername: postgres
+    postgresqlPassword: ${SECRET_PSQL_POSTGRES_PWD}
 
-    persistentVolumes:
+    persistence:
+      enabled: true
       existingClaim: postgresql-data
-      replicaNodes:
-      - ${CLUSTER_K8S_NODE_1}
-      - ${CLUSTER_K8S_NODE_2}
-      - ${CLUSTER_K8S_NODE_3}
+    volumePermissions:
+      enabled: true
