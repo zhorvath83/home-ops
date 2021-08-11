@@ -16,6 +16,16 @@ spec:
       labels:
         app: private-website
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - private-website
+            topologyKey: "kubernetes.io/hostname"
       containers:
       - name: private-website
         image: ${SECRET_CLUSTER_OWNER_USERNAME}/private-website:latest
