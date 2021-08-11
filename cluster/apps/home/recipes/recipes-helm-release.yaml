@@ -90,7 +90,7 @@ spec:
 
     initContainers:
       - name: database-bootstrap
-        image: postgres:9.6-alpine
+        image: postgres:13.3-alpine
         imagePullPolicy: IfNotPresent
         env:
           - name: POSTGRES_PASSWORD
