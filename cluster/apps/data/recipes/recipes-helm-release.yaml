@@ -89,7 +89,8 @@ spec:
         type: emptyDir
 
     initContainers:
-      - name: database-bootstrap
+      database-bootstrap:
+        name: database-bootstrap
         image: postgres:13.3-alpine
         imagePullPolicy: IfNotPresent
         env:

@@ -36,20 +36,21 @@ spec:
       GID: "1000"
 
     initContainers:
-    - name: git-sync
-      image: k8s.gcr.io/git-sync/git-sync:v3.3.4
-      volumeMounts:
-      - name: config
-        mountPath: /www/assets
-      env:
-      - name: GIT_SYNC_REPO
-        value: https://github.com/zhorvath83/homer-icons
-      - name: GIT_SYNC_ROOT
-        value: /www/assets
-      - name: GIT_SYNC_PERMISSIONS
-        value: "0777"
-      - name: GIT_SYNC_ONE_TIME
-        value: "true"
+      download-homer-icons:
+        name: git-sync
+        image: k8s.gcr.io/git-sync/git-sync:v3.3.4
+        volumeMounts:
+        - name: config
+          mountPath: /www/assets
+        env:
+        - name: GIT_SYNC_REPO
+          value: https://github.com/zhorvath83/homer-icons
+        - name: GIT_SYNC_ROOT
+          value: /www/assets
+        - name: GIT_SYNC_PERMISSIONS
+          value: "0777"
+        - name: GIT_SYNC_ONE_TIME
+          value: "true"
 
     podAnnotations:
       reloader.stakater.com/auto: "true"
