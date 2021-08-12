@@ -5,6 +5,7 @@ resources:
 - kube-system
 - system-upgrade
 - traefik
+- data
 - monitoring
 - networking
 - media
