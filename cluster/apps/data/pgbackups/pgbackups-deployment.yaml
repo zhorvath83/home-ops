@@ -24,7 +24,7 @@ spec:
                   - key: app.kubernetes.io/name
                     operator: In
                     values:
-                     - postgresql
+                      - postgresql
               topologyKey: "kubernetes.io/hostname"
       containers:
         - name: pgbackups
