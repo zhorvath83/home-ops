@@ -1,0 +1,68 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgbackups
+  namespace: data
+  labels:
+    app: pgbackups
+spec:
+  selector:
+    matchLabels:
+      app: pgbackups
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: pgbackups
+    spec:
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - postgresql
+              topologyKey: "kubernetes.io/hostname"
+      containers:
+        - name: pgbackups
+          image: prodrigestivill/postgres-backup-local:13
+          env:
+            - name: TZ
+              value: ${CLUSTER_TIMEZONE}
+            - name: POSTGRES_HOST
+              value: postgresql.data.svc.cluster.local
+            - name: POSTGRES_DB
+              value: postgres,recipes
+            - name: POSTGRES_USER
+              value: postgres
+            - name: POSTGRES_PASSWORD
+              value: ${SECRET_PSQL_POSTGRES_PWD}
+            - name: POSTGRES_EXTRA_OPTS
+              value: "-Z9 --schema=public --blobs"
+            - name: SCHEDULE
+              value: "@daily"
+            - name: BACKUP_KEEP_DAYS
+              value: "7"
+            - name: BACKUP_KEEP_WEEKS
+              value: "4"
+            - name: BACKUP_KEEP_MONTHS
+              value: "3"
+            - name: HEALTHCHECK_PORT
+              value: "8080"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: backup-share
+              mountPath: /backups
+              subPath: postgresql
+      volumes:
+        - name: backup-share
+          persistentVolumeClaim:
+            claimName: backup-share

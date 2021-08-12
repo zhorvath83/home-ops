@@ -3,7 +3,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: recipes-media-data
-  namespace: home
+  namespace: data
 spec:
   accessModes:
   - ReadWriteOnce

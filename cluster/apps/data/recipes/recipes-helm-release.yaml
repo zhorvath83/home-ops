@@ -3,7 +3,7 @@ apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
   name: recipes
-  namespace: home
+  namespace: data
 spec:
   interval: 5m
   chart:
@@ -46,7 +46,7 @@ spec:
       ALLOWED_HOSTS: "*"
       SECRET_KEY: ${SECRET_RECIPES_SECRET_KEY}
       DB_ENGINE: django.db.backends.postgresql
-      POSTGRES_HOST: postgresql.home.svc.cluster.local
+      POSTGRES_HOST: postgresql.data.svc.cluster.local
       POSTGRES_PORT: 5432
       POSTGRES_USER: recipes
       POSTGRES_DB: recipes
@@ -102,7 +102,7 @@ spec:
           - name: POSTGRES_DB_USER
             value: recipes
           - name: POSTGRES_HOST
-            value: postgresql.home.svc.cluster.local
+            value: postgresql.data.svc.cluster.local
           - name: POSTGRES_PORT
             value: "5432"
           - name: POSTGRES_DB_NAME

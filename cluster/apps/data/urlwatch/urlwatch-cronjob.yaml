@@ -3,7 +3,7 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: urlwatch
-  namespace: cloud
+  namespace: data
   labels:
     app: urlwatch
 spec:

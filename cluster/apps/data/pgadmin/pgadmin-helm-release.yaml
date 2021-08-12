@@ -3,7 +3,7 @@ apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
   name: pgadmin
-  namespace: home
+  namespace: data
 spec:
   interval: 5m
   chart:
@@ -65,7 +65,7 @@ spec:
           "Group": "Servers",
           "Port": 5432,
           "Username": "postgres",
-          "Host": "postgresql.home.svc.cluster.local",
+          "Host": "postgresql.data.svc.cluster.local",
           "SSLMode": "prefer",
           "MaintenanceDB": "postgres"
         }
