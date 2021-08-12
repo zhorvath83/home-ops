@@ -21,10 +21,10 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             - labelSelector:
                 matchExpressions:
-                   - key: app.kubernetes.io/name
-                     operator: In
-                     values:
-                      - postgresql
+                  - key: app.kubernetes.io/name
+                    operator: In
+                    values:
+                     - postgresql
               topologyKey: "kubernetes.io/hostname"
       containers:
         - name: pgbackups
