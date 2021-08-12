@@ -5,25 +5,25 @@ metadata:
   name: pgbackups
   namespace: data
   labels:
-    app: pgbackups
+    app.kubernetes.io/name: pgbackups
 spec:
   selector:
     matchLabels:
-      app: pgbackups
+      app.kubernetes.io/name: pgbackups
   replicas: 1
   template:
     metadata:
       labels:
-        app: pgbackups
+        app.kubernetes.io/name: pgbackups
     spec:
       affinity:
         podAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             - labelSelector:
                 matchExpressions:
-                  - key: app
-                    operator: In
-                    values:
+                   - key: app.kubernetes.io/name
+                     operator: In
+                     values:
                       - postgresql
               topologyKey: "kubernetes.io/hostname"
       containers:

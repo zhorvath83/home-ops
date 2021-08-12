@@ -5,23 +5,23 @@ metadata:
   name: private-website
   namespace: cloud
   labels:
-    app: private-website
+    app.kubernetes.io/name: private-website
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: private-website
+      app.kubernetes.io/name: private-website
   template:
     metadata:
       labels:
-        app: private-website
+        app.kubernetes.io/name: private-website
     spec:
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
           - labelSelector:
               matchExpressions:
-              - key: app
+              - key: app.kubernetes.io/name
                 operator: In
                 values:
                 - private-website

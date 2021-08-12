@@ -10,6 +10,6 @@ spec:
     port: 80
     targetPort: 8443
   selector:
-    app: code-server
+    app.kubernetes.io/name: code-server
   type: LoadBalancer
   loadBalancerIP: ${CLUSTER_SVC_CODE_SERVER_IP}
