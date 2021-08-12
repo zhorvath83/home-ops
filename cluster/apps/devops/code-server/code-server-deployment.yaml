@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
       - name: code-server
-        image: ghcr.io/linuxserver/code-server:version-v3.11.0
+        image: ghcr.io/linuxserver/code-server:version-v3.11.1
         env:
         - name: TZ
           value: ${CLUSTER_TIMEZONE}
