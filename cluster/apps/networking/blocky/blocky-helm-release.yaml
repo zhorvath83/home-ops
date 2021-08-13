@@ -79,6 +79,8 @@ spec:
         blockType: zeroIp
         blackLists:
           ads:
+          - https://raw.githubusercontent.com/kboghdady/youTube_ads_4_pi-hole/master/youtubelist.txt
+          - https://github.com/hufilter/hufilter/blob/master/hufilter-dns.txt
           - https://dbl.oisd.nl
         whiteLists:
           ads:
