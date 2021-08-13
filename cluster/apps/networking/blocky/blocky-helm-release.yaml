@@ -89,6 +89,9 @@ spec:
         clientGroupsBlock:
           default:
           - ads
+      conditional:
+        mapping:
+          lan: udp:${CLUSTER_LAN_ROUTER_IP}
       clientLookup:
         upstream: udp:${CLUSTER_LAN_ROUTER_IP}
       prometheus:
