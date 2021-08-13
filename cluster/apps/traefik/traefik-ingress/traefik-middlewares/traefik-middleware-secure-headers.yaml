@@ -26,4 +26,4 @@ spec:
     customResponseHeaders:
       X-Robots-Tag: "none,noarchive,nosnippet,notranslate,noimageindex"
       server: ""
-      Cache-Control: "max-age=604800"
+      Cache-Control: "max-age=0, must-revalidate"
