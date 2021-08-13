@@ -35,7 +35,7 @@ spec:
       enabled: true
       type: deployment
       strategy: RollingUpdate
-      replicas: 3
+      replicas: 2
     env:
       TZ: ${CLUSTER_TIMEZONE}
     service:
@@ -73,7 +73,7 @@ spec:
     config: |
       upstream:
         externalResolvers:
-        - tcp-tls:cloudflare-dns.com:853
+        - tcp-tls:1.1.1.1:853
         - tcp-tls:dot.sb:853
       blocking:
         blockType: zeroIp
@@ -102,16 +102,14 @@ spec:
       reloader.stakater.com/auto: "true"
     affinity:
       podAntiAffinity:
-        preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                  - key: app.kubernetes.io/name
-                    operator: In
-                    values:
-                      - blocky
-              topologyKey: kubernetes.io/hostname
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - blocky
+            topologyKey: "kubernetes.io/hostname"
     resources:
       requests:
         memory: 100Mi
