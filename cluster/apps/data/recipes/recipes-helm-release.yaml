@@ -125,6 +125,7 @@ spec:
               sleep 5;
             done
             if PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -lqt | cut -d \| -f 1 | grep -qw $POSTGRES_DB_NAME; then
+              ALTER USER $POSTGRES_DB_USER WITH NOSUPERUSER;
               echo "database already exist, exiting initContainer"
               exit 0
             else
