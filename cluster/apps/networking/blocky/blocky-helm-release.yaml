@@ -76,6 +76,7 @@ spec:
         - tcp-tls:cloudflare-dns.com:853
         - tcp-tls:dot.sb:853
       blocking:
+        blockType: zeroIp
         blackLists:
           ads:
           - https://dbl.oisd.nl
@@ -86,7 +87,6 @@ spec:
         clientGroupsBlock:
           default:
           - ads
-      blockType: zeroIp
       clientLookup:
         upstream: udp:${CLUSTER_LAN_ROUTER_IP}
       prometheus:
