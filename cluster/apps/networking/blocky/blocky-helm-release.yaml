@@ -73,8 +73,10 @@ spec:
     config: |
       upstream:
         externalResolvers:
+        - tcp-tls:9.9.9.9:853
         - tcp-tls:1.1.1.1:853
         - tcp-tls:dot.sb:853
+        - https://doh.opendns.com/dns-query
       blocking:
         blockType: zeroIp
         blackLists:
