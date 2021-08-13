@@ -40,6 +40,13 @@ spec:
         repository: nginx
         tag: 1.21.1-alpine
         pullPolicy: IfNotPresent
+
+    service:
+      main:
+        externalTrafficPolicy: Local
+        type: LoadBalancer
+        loadBalancerIP: ${CLUSTER_SVC_RECIPES_IP}
+
     env:
       TIMEZONE: ${CLUSTER_TIMEZONE}
       DEBUG: "0"
