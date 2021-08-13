@@ -31,7 +31,7 @@ spec:
     image:
       registry: docker.io
       repository: bitnami/postgresql
-      tag: 13.3.0
+      tag: 13.4.0
       pullPolicy: IfNotPresent
 
     postgresqlDatabase: postgres
