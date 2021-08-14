@@ -10,6 +10,6 @@ sudo kubectl describe pod <pod>
 kubectl get events --all-namespaces  --sort-by='.metadata.creationTimestamp'
 kubectl logs <pod> -c <initcontainer-name> --timestamps=true
 
-kubectl exec --stdin --tty nameOfPosd -n nameSpace  -- /bin/ash
+kubectl exec --stdin --tty nameOfPosd -n <nameSpace>  -- /bin/ash
 
-kubectl delete pods <pod> --grace-period=0 --force
+kubectl delete pods <pod> --grace-period=0 --force -n <nameSpace>
