@@ -37,7 +37,7 @@ spec:
         traefik.ingress.kubernetes.io/router.entrypoints: websecure
         traefik.ingress.kubernetes.io/router.tls: "true"
         traefik.ingress.kubernetes.io/router.middlewares: traefik-middleware-chain-cf-auth@kubernetescrd
-      urlPath: /
+      urlPath: ""
       hosts:
         - "k10.${SECRET_CLUSTER_DOMAIN}"
       tls:
