@@ -5,4 +5,5 @@ resources:
   - k10-helm-release.yaml
   # - blueprints
   - monitoring
+  - policies
   - profiles
