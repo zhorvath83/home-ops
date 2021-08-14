@@ -42,20 +42,19 @@ spec:
         profile:
           name: data
           namespace: kasten-io
-    # - action: export
-    #   exportParameters:
-    #     frequency: "@daily"
-    #     receiveString: bIzAPpoanmFRkSBfnTozov5CHX4/I3K97xWl3RplcJ0HZcN0vUaaesK0ZtarvPQsf1jKzKuNGU+u7zELhTr93WotnTA5csyiRdO+3fOs7KaOhIIwvWdbHEKI0aD0KaMzbo0Xk0dPwboSlbOQ7NyRmlmFP/yX5np/s2DrMWm3+N6n7NJLGUWrwUC+mUX1KU5K+6FUao21+TVm00o3MTiL9929XXSzHSjrpihO/IrbWJdep4bOOnTYbsUDs6SuidqyZJbfJa+PK9pzW2/4vBon4DLZ9f/TMqvL3AmLD2A4QDQjGX3OvHcz4H20vpDF9MRkykliNZYKlW8ak4hw2BiXFOV94rtTbl8eptUyjYG6t6j5w0SUxZrUvXR3xQDp2HE3m5iyKZBcw7z3QCFWO3KSTufiHR/tntxmnKAP
-    #     profile:
-    #       name: data
-    #       namespace: kasten-io
-    #     hooks:
-    #       onSuccess:
-    #         blueprint: data
-    #         actionName: post-export
-    #     migrationToken:
-    #       name: data-migration-token-8kvp9
-    #       namespace: kasten-io
-    #     exportData:
-    #       enabled: true
-    #   retention: {}
+    - action: export
+      exportParameters:
+        frequency: "@daily"
+        profile:
+          name: data
+          namespace: kasten-io
+        #hooks:
+        #  onSuccess:
+        #    blueprint: data
+        #    actionName: post-export
+        exportData:
+          enabled: true
+      retention:
+        daily: 7
+        weekly: 2
+        monthly: 2

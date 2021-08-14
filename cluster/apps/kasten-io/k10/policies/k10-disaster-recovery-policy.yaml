@@ -25,3 +25,16 @@ spec:
         profile:
           name: kasten-io
           namespace: kasten-io
+    - action: export
+      exportParameters:
+        frequency: "@daily"
+        profile:
+          name: kasten-io
+          namespace: kasten-io
+        #hooks:
+        #  onSuccess:
+        #    blueprint: disaster-recovery
+        #    actionName: post-export
+        exportData:
+          enabled: true
+      retention: {}
