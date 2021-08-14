@@ -2,28 +2,28 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: backup-share
+  name: k10-data
 spec:
-  storageClassName: backup-share-storage
+  storageClassName: k10-data-storage
   accessModes:
   - ReadWriteMany
   capacity:
     storage: 1Mi
   persistentVolumeReclaimPolicy: Retain
   hostPath:
-    path: /mnt/backup
+    path: /mnt/backup/k10
 
 ---
 
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: backup-share
-  namespace: data
+  name: k10-data
+  namespace: kasten-io
 spec:
   accessModes:
   - ReadWriteMany
-  storageClassName: backup-share-storage
+  storageClassName: k10-data-storage
   resources:
     requests:
       storage: 1Mi

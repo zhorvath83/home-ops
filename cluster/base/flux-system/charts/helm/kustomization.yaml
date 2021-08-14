@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
 - metallb-charts.yaml
 - rook-ceph-charts.yaml
+- kasten-charts.yaml
 - kubernetes-sigs-descheduler-charts.yaml
 - bitnami-charts.yaml
 - k8s-at-home-charts.yaml

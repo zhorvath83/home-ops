@@ -5,6 +5,7 @@ resources:
 - kube-system.yaml
 - flux-system-namespace.yaml
 - rook-ceph-namespace.yaml
+- kasten-io-namespace.yaml
 - networking-namespace.yaml
 - monitoring-namespace.yaml
 - cert-manager-namespace.yaml

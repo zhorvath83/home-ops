@@ -59,10 +59,9 @@ spec:
           ports:
             - containerPort: 8080
           volumeMounts:
-            - name: backup-share
+            - name: pgbackups-data
               mountPath: /backups
-              subPath: postgresql
       volumes:
-        - name: backup-share
+        - name: pgbackups-data
           persistentVolumeClaim:
-            claimName: backup-share
+            claimName: pgbackups-data
