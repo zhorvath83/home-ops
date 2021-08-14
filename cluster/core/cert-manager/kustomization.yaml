@@ -5,4 +5,4 @@ resources:
 - cert-manager-helm-release.yaml
 - letsencrypt-prod-clusterissuer.yaml
 - letsencrypt-staging-clusterissuer.yaml
-- cert-manager-secret.enc.yaml
+- cert-manager-secret.sops.yaml
