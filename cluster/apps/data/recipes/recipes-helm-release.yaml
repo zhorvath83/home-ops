@@ -43,7 +43,7 @@ spec:
 
     env:
       TIMEZONE: ${CLUSTER_TIMEZONE}
-      DEBUG: "1"
+      DEBUG: "0"
       ALLOWED_HOSTS: "*"
       SECRET_KEY: ${SECRET_RECIPES_SECRET_KEY}
       DB_ENGINE: django.db.backends.postgresql
