@@ -18,19 +18,19 @@ spec:
         - args:
             - --auth-domain
             - https://${SECRET_CF_ACCESS_AUTH_DOMAIN}
-          image: akohlbecker/traefik-auth-cloudflare:2.0
+          image: akohlbecker/traefik-auth-cloudflare:1.0
           name: traefik-auth-cloudflare
           ports:
-            - containerPort: 8080
+            - containerPort: 80
               name: http
               protocol: TCP
           resources:
             requests:
               cpu: 50m
               memory: 20Mi
-            #limits:
-            #  cpu: 250m
-            #  memory: 100Mi
+            limits:
+              cpu: 250m
+              memory: 100Mi
       affinity:
         podAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
