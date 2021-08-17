@@ -29,7 +29,7 @@ spec:
       containers:
       - name: private-website
         image: ${SECRET_CLUSTER_OWNER_USERNAME}/private-website:latest
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
           protocol: TCP

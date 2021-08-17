@@ -21,7 +21,8 @@ spec:
     spec:
       containers:
       - name: cloudflare-ddns
-        image: hotio/cloudflareddns:release-20210414211823
+        image: ghcr.io/hotio/cloudflareddns:release-20210814151806
+        imagePullPolicy: IfNotPresent
         env:
         - name: DETECTION_MODE
           value: "dig-whoami.cloudflare"

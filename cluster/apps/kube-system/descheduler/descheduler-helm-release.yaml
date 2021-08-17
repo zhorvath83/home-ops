@@ -17,6 +17,10 @@ spec:
         namespace: flux-system
       interval: 5m
   values:
+    image:
+      repository: k8s.gcr.io/descheduler/descheduler
+      pullPolicy: IfNotPresent
+
     schedule: "*/10 * * * *"
     successfulJobsHistoryLimit: 1
     failedJobsHistoryLimit: 1

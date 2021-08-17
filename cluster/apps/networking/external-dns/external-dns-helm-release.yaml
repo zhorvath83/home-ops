@@ -27,6 +27,10 @@ spec:
     recreate: true
 
   values:
+    image:
+      registry: public.ecr.aws
+      repository: bitnami/external-dns
+      pullPolicy: IfNotPresent
     dryRun: false
     nameOverride: external-dns
     logLevel: debug

@@ -31,6 +31,7 @@ spec:
     image:
       repository: ghcr.io/0xerr0r/blocky
       tag: v0.15
+      pullPolicy: IfNotPresent
     controller:
       enabled: true
       type: deployment

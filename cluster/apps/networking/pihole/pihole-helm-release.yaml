@@ -33,6 +33,7 @@ spec:
     image:
       repository: "pihole/pihole"
       tag: v5.8.1
+      pullPolicy: IfNotPresent
 
     podAnnotations:
       reloader.stakater.com/auto: "true"

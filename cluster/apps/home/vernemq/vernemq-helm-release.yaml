@@ -30,6 +30,7 @@ spec:
     image:
       repository: vernemq/vernemq
       tag: 1.11.0-alpine
+      pullPolicy: IfNotPresent
 
     replicaCount: 2
 

@@ -31,6 +31,7 @@ spec:
     image:
       repository: ghcr.io/k8s-at-home/qbittorrent
       tag: v4.3.7
+      pullPolicy: IfNotPresent
     env:
       TZ: "${CLUSTER_TIMEZONE}"
     service:
@@ -98,7 +99,8 @@ spec:
     initContainers:
       copy-qbittorrent-config:
         name: copy-qbittorrent-config
-        image: instrumentisto/rsync-ssh
+        image: instrumentisto/rsync-ssh:alpine3.14
+        imagePullPolicy: IfNotPresent
         command:
         - sh
         - -exec

@@ -29,7 +29,7 @@ spec:
 
   values:
     image:
-      registry: docker.io
+      registry: public.ecr.aws
       repository: bitnami/postgresql
       tag: 13.4.0
       pullPolicy: IfNotPresent

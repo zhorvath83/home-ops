@@ -19,7 +19,7 @@ spec:
           containers:
           - name: urlwatch
             image: vimagick/urlwatch:latest
-            imagePullPolicy: Always
+            imagePullPolicy: IfNotPresent
             command:
             - sh
             - -exec

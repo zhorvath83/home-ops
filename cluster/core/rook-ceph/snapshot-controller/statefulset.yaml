@@ -19,7 +19,7 @@ spec:
       containers:
         - name: snapshot-controller
           image: k8s.gcr.io/sig-storage/snapshot-controller:v4.2.0
+          imagePullPolicy: IfNotPresent
           args:
             - "--v=5"
             - "--leader-election=false"
-          imagePullPolicy: IfNotPresent

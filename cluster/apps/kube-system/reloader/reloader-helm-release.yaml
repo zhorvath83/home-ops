@@ -27,6 +27,9 @@ spec:
     recreate: true
 
   values:
+    image:
+      name: ghcr.io/k8s-at-home/reloader
+      pullPolicy: IfNotPresent
     nameOverride: reloader
     fullnameOverride: reloader
     reloader:

@@ -29,6 +29,7 @@ spec:
       containers:
         - name: pgbackups
           image: prodrigestivill/postgres-backup-local:13
+          imagePullPolicy: IfNotPresent
           env:
             - name: TZ
               value: ${CLUSTER_TIMEZONE}
