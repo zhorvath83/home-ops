@@ -1,0 +1,9 @@
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+imageGCHighThresholdPercent: 70
+imageGCLowThresholdPercent: 50
+featureGates:
+  GracefulNodeShutdown: true
+shutdownGracePeriod: 30s
+shutdownGracePeriodCriticalPods: 10s
