@@ -28,9 +28,9 @@ spec:
             requests:
               cpu: 50m
               memory: 20Mi
-            limits:
-              cpu: 250m
-              memory: 100Mi
+            #limits:
+            #  cpu: 250m
+            #  memory: 100Mi
       affinity:
         podAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -63,7 +63,7 @@ metadata:
 spec:
   ports:
     - name: http
-      port: 8080
+      port: 80
       protocol: TCP
       targetPort: http
   type: ClusterIP
