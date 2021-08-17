@@ -18,10 +18,10 @@ spec:
         - args:
             - --auth-domain
             - https://${SECRET_CF_ACCESS_AUTH_DOMAIN}
-          image: akohlbecker/traefik-auth-cloudflare
+          image: akohlbecker/traefik-auth-cloudflare:2.0
           name: traefik-auth-cloudflare
           ports:
-            - containerPort: 80
+            - containerPort: 8080
               name: http
               protocol: TCP
           resources:
@@ -63,7 +63,7 @@ metadata:
 spec:
   ports:
     - name: http
-      port: 80
+      port: 8080
       protocol: TCP
       targetPort: http
   type: ClusterIP
