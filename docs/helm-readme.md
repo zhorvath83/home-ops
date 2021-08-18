@@ -3,6 +3,6 @@ In case of `Reconciler error Helm upgrade failed: another operation (install/upg
 
 helm history <HelmReleaseName> -n <HelmReleaseNameSpace>
 
-helm history <HelmReleaseName> <Revision> -n <HelmReleaseNameSpace>
+helm rollback <HelmReleaseName> <RevisionNr> -n <HelmReleaseNameSpace>
 
 flux reconcile HelmRelease <HelmReleaseName> -n <HelmReleaseNameSpace>
