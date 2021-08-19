@@ -21,7 +21,7 @@ spec:
       repository: k8s.gcr.io/descheduler/descheduler
       pullPolicy: IfNotPresent
 
-    schedule: "*/10 * * * *"
+    schedule: "*/15 * * * *"
     successfulJobsHistoryLimit: 1
     failedJobsHistoryLimit: 1
 
