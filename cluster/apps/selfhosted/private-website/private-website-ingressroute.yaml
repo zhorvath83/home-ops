@@ -7,7 +7,7 @@ metadata:
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
-    traefik.ingress.kubernetes.io/router.middlewares: networking-middleware-chain-noauth@kubernetescrd,cloud-middleware-redirect-from-www@kubernetescrd
+    traefik.ingress.kubernetes.io/router.middlewares: networking-middleware-chain-noauth@kubernetescrd,selfhosted-middleware-redirect-from-www@kubernetescrd
 spec:
   ingressClassName: "traefik"
   rules:
