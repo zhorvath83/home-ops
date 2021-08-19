@@ -9,7 +9,6 @@ resources:
 - networking-namespace.yaml
 - monitoring-namespace.yaml
 - cert-manager-namespace.yaml
-- traefik-namespace.yaml
 - data-namesapce.yaml
 - home-namesapce.yaml
 - media-namespace.yaml

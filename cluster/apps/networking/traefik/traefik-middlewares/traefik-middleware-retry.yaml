@@ -2,7 +2,8 @@
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
-  name: middleware-compress
-  namespace: traefik
+  name: middleware-retry
+  namespace: networking
 spec:
-  compress: {}
+  retry:
+    attempts: 3

@@ -3,8 +3,8 @@ apiVersion: traefik.containo.us/v1alpha1
 kind: TLSOption
 metadata:
   # TLSOptions CR with the name default apply to all ingresses
-  name: tlsoption-noclientauth
-  namespace: traefik
+  name: default
+  namespace: networking
 spec:
   minVersion: VersionTLS13
   cipherSuites:
@@ -14,4 +14,9 @@ spec:
     - CurveP521
     - CurveP384
   sniStrict: true
-  # NO cert based client AUTH!
+  clientAuth:
+    # Authenticated Origin Pulls: https://support.cloudflare.com/hc/en-us/articles/204899617
+    # The CF CA certificate is extracted from key `tls.ca` of the given secret.
+    secretNames:
+      - cforiginpullca
+    clientAuthType: RequireAndVerifyClientCert

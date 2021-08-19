@@ -2,8 +2,8 @@
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
-  name: middleware-chain-cf-auth
-  namespace: traefik
+  name: middleware-chain-noauth
+  namespace: networking
 spec:
   chain:
     middlewares:
@@ -12,4 +12,3 @@ spec:
     - name: middleware-secure-headers
     - name: middleware-compress
     - name: middleware-retry
-    - name: middleware-cf-access-auth

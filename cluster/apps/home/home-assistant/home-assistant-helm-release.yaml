@@ -57,7 +57,7 @@ spec:
         annotations:
           traefik.ingress.kubernetes.io/router.entrypoints: websecure
           traefik.ingress.kubernetes.io/router.tls: "true"
-          traefik.ingress.kubernetes.io/router.middlewares: traefik-middleware-chain-noauth@kubernetescrd
+          traefik.ingress.kubernetes.io/router.middlewares: networking-middleware-chain-noauth@kubernetescrd
         hosts:
           - host: "homeassistant.${SECRET_CLUSTER_DOMAIN}"
             paths:

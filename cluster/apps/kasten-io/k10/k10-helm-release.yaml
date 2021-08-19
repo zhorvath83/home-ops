@@ -36,20 +36,10 @@ spec:
       annotations:
         traefik.ingress.kubernetes.io/router.entrypoints: websecure
         traefik.ingress.kubernetes.io/router.tls: "true"
-        traefik.ingress.kubernetes.io/router.middlewares: traefik-middleware-chain-cf-auth@kubernetescrd
+        traefik.ingress.kubernetes.io/router.middlewares: networking-middleware-chain-cf-auth@kubernetescrd
       urlPath: k10
       hosts:
         - "k10.${SECRET_CLUSTER_DOMAIN}"
       tls:
         enabled: true
         secretName: "${SECRET_CLUSTER_DOMAIN/./-}-tls"
-  # postRenderers:
-  #   - kustomize:
-  #       patchesJson6902:
-  #         - target:
-  #             kind: Ingress
-  #             name: k10-ingress
-  #           patch:
-  #             - op: add
-  #               path: /spec/ingressClassName
-  #               value: traefik
