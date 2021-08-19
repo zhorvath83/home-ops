@@ -7,4 +7,4 @@ By default this container makes daily backups, but you can start a manual backup
 
 📍  Restore to a remote server
 
-zcat backupFileName.sql.gz | psql --host=postgresql.selfhosted.svc.cluster.local --port=5432 --username=postgres --dbname=databasenameToRestore -W
+zcat recipes-20210819-000003.sql.gz | psql --host=postgresql.selfhosted.svc.cluster.local --port=5432 --username=postgres --dbname=recipes -W
