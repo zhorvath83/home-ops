@@ -19,7 +19,7 @@ spec:
             - --auth-domain
             - https://${SECRET_CF_ACCESS_AUTH_DOMAIN}
           image: akohlbecker/traefik-auth-cloudflare:2.0
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           name: traefik-auth-cloudflare
           ports:
             - containerPort: 8080
