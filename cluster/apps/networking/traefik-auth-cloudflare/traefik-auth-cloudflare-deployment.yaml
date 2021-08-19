@@ -22,7 +22,7 @@ spec:
           imagePullPolicy: IfNotPresent
           name: traefik-auth-cloudflare
           ports:
-            - containerPort: 80
+            - containerPort: 8080
               name: http
               protocol: TCP
           resources:
