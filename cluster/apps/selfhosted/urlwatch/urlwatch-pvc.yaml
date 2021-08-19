@@ -2,14 +2,12 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: recipes-media-data
-  namespace: data
-  labels:
-    kasten.io/backup-volume: "enabled"
+  name: urlwatch-data
+  namespace: selfhosted
 spec:
   accessModes:
   - ReadWriteOnce
   resources:
     requests:
-      storage: 2Gi
+      storage: 100Mi
   storageClassName: rook-ceph-block

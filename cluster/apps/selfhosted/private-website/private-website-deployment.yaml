@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: private-website
-  namespace: cloud
+  namespace: selfhosted
   labels:
     app.kubernetes.io/name: private-website
 spec:

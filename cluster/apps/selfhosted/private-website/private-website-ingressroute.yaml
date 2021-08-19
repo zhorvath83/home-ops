@@ -3,7 +3,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: private-website
-  namespace: cloud
+  namespace: selfhosted
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
@@ -38,7 +38,7 @@ apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
   name: middleware-redirect-from-www
-  namespace: cloud
+  namespace: selfhosted
 spec:
   redirectRegex:
     regex: ^https?://(www.)?${SECRET_CLUSTER_DOMAIN}/(.*)

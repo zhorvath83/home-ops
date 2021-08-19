@@ -5,10 +5,9 @@ resources:
 - kube-system
 - kasten-io
 - system-upgrade
-- data
 - monitoring
 - networking
 - media
-- cloud
+- selfhosted
 - home
 - devops

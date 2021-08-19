@@ -3,7 +3,7 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: urlwatch
-  namespace: data
+  namespace: selfhosted
   labels:
     app.kubernetes.io/name: urlwatch
 spec:

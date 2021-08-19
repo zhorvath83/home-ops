@@ -19,7 +19,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: pgbackups-data
-  namespace: data
+  namespace: selfhosted
 spec:
   accessModes:
   - ReadWriteMany
