@@ -6,4 +6,3 @@ resources:
 - ceph-cluster.yaml
 - ceph-file-system.yaml
 - storage-class.yaml
-- volume-snapshot-class.yaml
