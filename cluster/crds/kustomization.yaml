@@ -5,5 +5,4 @@ resources:
 - rook-ceph
 - cert-manager
 - external-dns
-- kube-prometheus-stack
 - traefik
