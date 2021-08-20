@@ -6,5 +6,4 @@ resources:
 - rook-ceph-helm-release.yaml
 - storage
 - rook-direct-mount
-- snapshot-controller
 - dashboard
