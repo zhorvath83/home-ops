@@ -4,7 +4,6 @@ kind: Kustomization
 resources:
 - kube-system
 #- system-upgrade
-- monitoring
 - networking
 - media
 - selfhosted
