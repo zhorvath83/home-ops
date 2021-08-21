@@ -19,10 +19,7 @@
     "fileMatch": ["cluster/.+/helm-release\\.yaml$"]
   },
   "kubernetes": {
-    "fileMatch": ["cluster/.+\\.yaml$"],
-    "ignorePaths": ["cluster/base/"]
-  },
-  "dockerfile": {
+    "datasourceTemplate": "docker",
     "fileMatch": ["cluster/.+\\.yaml$"],
     "ignorePaths": ["cluster/base/"]
   },
