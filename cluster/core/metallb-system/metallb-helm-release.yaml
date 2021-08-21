@@ -39,10 +39,10 @@ spec:
 
     prometheus:
       podMonitor:
-        enabled: true
+        enabled: false
 
       prometheusRule:
-        enabled: true
+        enabled: false
 
     speaker:
       tolerations:

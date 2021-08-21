@@ -6,6 +6,7 @@ metadata:
   namespace: networking
 spec:
   interval: 10m0s
+  # TODO switch to kubernetes-sigs.github.io/external-dns chart
   chart:
     spec:
       # renovate: registryUrl=https://charts.bitnami.com/bitnami

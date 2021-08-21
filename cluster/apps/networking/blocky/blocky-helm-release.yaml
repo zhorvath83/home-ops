@@ -101,14 +101,13 @@ spec:
       clientLookup:
         upstream: udp:${CLUSTER_LAN_ROUTER_IP}
       prometheus:
-        enable: true
-        path: /metrics
+        enable: false
       httpPort: 4000
       logLevel: info
 
     prometheus:
       serviceMonitor:
-        enabled: true
+        enabled: false
     podAnnotations:
       reloader.stakater.com/auto: "true"
     affinity:
