@@ -35,7 +35,6 @@ spec:
 
     image:
       name: ghcr.io/k8s-at-home/traefik
-      tag: 2.4.13
       pullPolicy: IfNotPresent
 
     deployment:
