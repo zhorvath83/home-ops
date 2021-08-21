@@ -22,6 +22,10 @@
     "fileMatch": ["cluster/.+\\.yaml$"],
     "ignorePaths": ["cluster/base/"]
   },
+  "dockerfile": {
+    "fileMatch": ["cluster/.+\\.yaml$"],
+    "ignorePaths": ["cluster/base/"]
+  },
   "regexManagers": [
     // regexManager to read and process HelmRelease files
     {
