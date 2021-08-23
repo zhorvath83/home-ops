@@ -38,6 +38,9 @@ spec:
       pullPolicy: IfNotPresent
     env:
       TZ: "${CLUSTER_TIMEZONE}"
+    envFrom:
+      - secretRef:
+          name: home-assistant-secret
     hostNetwork: true
     dnsPolicy: ClusterFirstWithHostNet
 
