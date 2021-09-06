@@ -177,7 +177,7 @@ spec:
         local_domain_name: lan
         resolve_clients: true
         use_private_ptr_resolvers: true
-        local_ptr_upstreams: ${CLUSTER_LAN_ROUTER_IP}
+        local_ptr_upstreams: "${CLUSTER_LAN_ROUTER_IP}"
       tls:
         enabled: false
         server_name: ""
