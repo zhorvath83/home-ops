@@ -35,7 +35,7 @@ spec:
                 pathType: Prefix
         tls:
           - hosts:
-              - "adguard-home.${SECRET_DOMAIN}"
+              - "adguard-home.${SECRET_CLUSTER_DOMAIN}"
     persistence:
       config:
         enabled: true
