@@ -5,7 +5,7 @@ resources:
 - wildcard-certificate
 - traefik-auth-cloudflare
 - traefik
-- blocky
+# - blocky
 - adguard-home
 - cloudflare-ddns
 - external-dns
