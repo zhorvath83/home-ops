@@ -41,6 +41,11 @@ spec:
     service:
       main:
         primary: true
+        annotations:
+          metallb.universe.tf/allow-shared-ip: adguard-home-svc
+        type: LoadBalancer
+        loadBalancerIP: ${CLUSTER_SVC_PIHOLE_IP}
+        externalTrafficPolicy: Local
         ports:
           http:
             port: 3000
