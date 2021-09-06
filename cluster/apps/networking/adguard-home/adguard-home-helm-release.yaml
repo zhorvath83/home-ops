@@ -28,6 +28,8 @@ spec:
         ingressClassName: "traefik"
         annotations:
           traefik.ingress.kubernetes.io/router.entrypoints: "websecure"
+          traefik.ingress.kubernetes.io/router.tls: "true"
+          traefik.ingress.kubernetes.io/router.middlewares: networking-middleware-chain-cf-auth@kubernetescrd
         hosts:
           - host: "adguard-home.${SECRET_CLUSTER_DOMAIN}"
             paths:
