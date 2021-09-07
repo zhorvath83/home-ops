@@ -198,15 +198,15 @@ spec:
         name: AdAway
         id: 2
       - enabled: true
-        url: https://www.malwaredomainlist.com/hostslist/hosts.txt
-        name: MalwareDomainList.com Hosts List
+        url: https://hosts.ubuntu101.co.za/domains.list
+        name: https://github.com/Ultimate-Hosts-Blacklist/Ultimate.Hosts.Blacklist
         id: 3
       - enabled: true
         url: https://raw.githubusercontent.com/kboghdady/youTube_ads_4_pi-hole/master/youtubelist.txt
         name: Youtube List
         id: 4
       - enabled: true
-        url: https://github.com/hufilter/hufilter/blob/master/hufilter-dns.txt
+        url: https://raw.githubusercontent.com/hufilter/hufilter/master/hufilter-adguard.txt
         name: HuFilter List
         id: 5
       - enabled: true
