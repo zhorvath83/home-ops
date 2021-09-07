@@ -142,10 +142,24 @@ spec:
         ratelimit_whitelist: []
         refuse_any: true
         upstream_dns:
-        - https://dns.quad9.net/dns-query
-        - https://cloudflare-dns.com/dns-query
-        - https://doh.dns.sb/dns-query
-        - https://doh.opendns.com/dns-query
+        # DIGI
+        - "193.110.57.4"
+        # CloudFlare
+        - "1.1.1.1"
+        # Hurricane
+        - "74.82.42.42"
+        # Cogent
+        - "66.28.0.45"
+        # NTT Communications
+        - "129.250.35.250"
+        # OpenDNS
+        - "208.67.220.222"
+        # SwissCOM
+        - "195.186.4.107"
+        # DOH
+        # https://cloudflare-dns.com/dns-query
+        # https://doh.dns.sb/dns-query
+        # https://doh.opendns.com/dns-query
         upstream_dns_file: ""
         bootstrap_dns:
         - 1.1.1.1
