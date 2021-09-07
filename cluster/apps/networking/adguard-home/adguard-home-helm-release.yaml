@@ -90,7 +90,7 @@ spec:
                 - key: app.kubernetes.io/name
                   operator: In
                   values:
-                    - blocky
+                    - adguard-home
             topologyKey: "kubernetes.io/hostname"
 
     # config -- AdGuard Home configuration. 
@@ -144,6 +144,8 @@ spec:
         - "208.67.220.222"
         # SwissCOM
         - "195.186.4.107"
+        # Lan
+        - "[/lan/]${CLUSTER_LAN_ROUTER_IP}:53"
         # DOH
         # https://cloudflare-dns.com/dns-query
         # https://doh.dns.sb/dns-query
