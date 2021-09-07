@@ -211,6 +211,22 @@ spec:
         url: https://dbl.oisd.nl
         name: OISD NL List
         id: 5
+      - enabled: true
+        url: https://raw.githubusercontent.com/notracking/hosts-blocklists/master/adblock/adblock.txt
+        name: Notracking blocklist
+        id: 6
+      - enabled: true
+        url: https://blocklistproject.github.io/Lists/alt-version/malware-nl.txt
+        name: Blocklistproject malware list
+        id: 7
+      - enabled: true
+        url: https://blocklistproject.github.io/Lists/alt-version/ransomware-nl.txt
+        name: Blocklistproject ransomware list
+        id: 8
+      - enabled: true
+        url: https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling/hosts
+        name: StevenBlack hosts list
+        id: 9
       whitelist_filters:
       - enabled: true
         url: https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/whitelist.txt
