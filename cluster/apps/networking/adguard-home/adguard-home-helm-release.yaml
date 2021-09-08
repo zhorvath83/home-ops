@@ -130,6 +130,8 @@ spec:
         ratelimit_whitelist: []
         refuse_any: true
         upstream_dns:
+        # Local DNS
+        - "[/lan/]${CLUSTER_LAN_ROUTER_IP}:53"
         # DIGI
         - "193.110.57.4"
         # CloudFlare
@@ -144,12 +146,8 @@ spec:
         - "208.67.220.222"
         # SwissCOM
         - "195.186.4.107"
-        # Lan
-        - "[/lan/]${CLUSTER_LAN_ROUTER_IP}:53"
-        # DOH
-        # https://cloudflare-dns.com/dns-query
-        # https://doh.dns.sb/dns-query
-        # https://doh.opendns.com/dns-query
+        # DNS.sb
+        - "45.11.45.11"
         upstream_dns_file: ""
         bootstrap_dns:
         - 1.1.1.1
@@ -167,7 +165,7 @@ spec:
         cache_ttl_max: 0
         cache_optimistic: true
         bogus_nxdomain: []
-        aaaa_disabled: false
+        aaaa_disabled: true
         enable_dnssec: false
         edns_client_subnet: false
         max_goroutines: 300
