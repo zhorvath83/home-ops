@@ -189,42 +189,72 @@ spec:
       tls:
         enabled: false
       filters:
-      - enabled: true
-        url: https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt
-        name: AdGuard DNS filter
-        id: 1
-      - enabled: true
-        url: https://adaway.org/hosts.txt
-        name: AdAway
-        id: 2
-      - enabled: true
-        url: https://raw.githubusercontent.com/kboghdady/youTube_ads_4_pi-hole/master/youtubelist.txt
-        name: Youtube List
-        id: 3
-      - enabled: true
-        url: https://raw.githubusercontent.com/hufilter/hufilter/master/hufilter-adguard.txt
-        name: HuFilter List
-        id: 4
-      - enabled: true
-        url: https://dbl.oisd.nl
-        name: OISD NL List
-        id: 5
-      - enabled: true
-        url: https://raw.githubusercontent.com/notracking/hosts-blocklists/master/adblock/adblock.txt
-        name: Notracking blocklist
-        id: 6
+      ########## Malware, phising, ransomware, tracking blocklists
       - enabled: true
         url: https://blocklistproject.github.io/Lists/alt-version/malware-nl.txt
         name: Blocklistproject malware list
-        id: 7
+        id: 1
       - enabled: true
         url: https://blocklistproject.github.io/Lists/alt-version/ransomware-nl.txt
         name: Blocklistproject ransomware list
+        id: 2
+      - enabled: true
+        url: https://blocklistproject.github.io/Lists/alt-version/abuse-nl.txt
+        name: Blocklistproject abuse list
+        id: 3
+      - enabled: true
+        url: https://blocklistproject.github.io/Lists/alt-version/crypto-nl.txt
+        name: Blocklistproject cryptojacking list
+        id: 4
+      - enabled: true
+        url: https://blocklistproject.github.io/Lists/alt-version/drugs-nl.txt
+        name: Blocklistproject drugs list
+        id: 5
+      - enabled: true
+        url: https://blocklistproject.github.io/Lists/alt-version/fraud-nl.txt
+        name: Blocklistproject fraud list
+        id: 6
+      - enabled: true
+        url: https://blocklistproject.github.io/Lists/alt-version/gambling-nl.txt
+        name: Blocklistproject gambling list
+        id: 7
+      - enabled: true
+        url: https://blocklistproject.github.io/Lists/alt-version/phishing-nl.txt
+        name: Blocklistproject phising list
         id: 8
+      - enabled: true
+        url: https://blocklistproject.github.io/Lists/alt-version/scam-nl.txt
+        name: Blocklistproject scam list
+        id: 9
+      ########## Adblock lists
+      - enabled: true
+        url: https://raw.githubusercontent.com/notracking/hosts-blocklists/master/adblock/adblock.txt
+        name: Notracking blocklist
+        id: 10
+      - enabled: true
+        url: https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt
+        name: AdGuard DNS filter
+        id: 11
+      - enabled: true
+        url: https://adaway.org/hosts.txt
+        name: AdAway
+        id: 12
+      - enabled: true
+        url: https://raw.githubusercontent.com/kboghdady/youTube_ads_4_pi-hole/master/youtubelist.txt
+        name: Youtube List
+        id: 13
+      - enabled: true
+        url: https://raw.githubusercontent.com/hufilter/hufilter/master/hufilter-adguard.txt
+        name: HuFilter List
+        id: 14
+      - enabled: true
+        url: https://dbl.oisd.nl
+        name: OISD NL List
+        id: 15
       - enabled: true
         url: https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling/hosts
         name: StevenBlack hosts list
-        id: 9
+        id: 16
       whitelist_filters:
       - enabled: true
         url: https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/whitelist.txt
