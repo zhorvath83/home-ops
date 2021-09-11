@@ -120,6 +120,7 @@
       "matchDatasources": ["docker"],
       "matchUpdateTypes": ["minor"],
       "semanticCommitType": "feat",
+      "stabilityDays": 2,
       "labels": ["renovate/image", "dep/minor"]
     },
     {
