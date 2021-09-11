@@ -1,5 +1,4 @@
 {
-  "extends": ["docker:enableMajor"],
   "enabled": true,
   "timezone": "Europe/Budapest",
   "semanticCommits": "enabled",

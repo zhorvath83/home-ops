@@ -4,4 +4,4 @@ kind: Kustomization
 resources:
 - home-assistant-secret.sops.yaml
 - home-assistant-pvc.yaml
-- helm-release.yaml
+- home-assistant-helm-release.yaml
