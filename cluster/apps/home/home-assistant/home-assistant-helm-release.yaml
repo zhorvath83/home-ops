@@ -13,6 +13,7 @@ spec:
   interval: 10m0s
   chart:
     spec:
+      # renovate: registryUrl=https://k8s-at-home.com/charts/
       chart: home-assistant
       version: 10.1.1
       sourceRef:
