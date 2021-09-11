@@ -127,6 +127,7 @@
       "matchDatasources": ["docker"],
       "matchUpdateTypes": ["patch"],
       "semanticCommitType": "fix",
+      "stabilityDays": 1,
       "labels": ["renovate/image", "dep/patch"]
     },
     {
