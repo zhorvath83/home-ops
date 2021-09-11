@@ -113,6 +113,7 @@
       "matchDatasources": ["docker"],
       "matchUpdateTypes": ["major"],
       "commitMessagePrefix": "feat(images)!: ",
+      "stabilityDays": 5,
       "labels": ["renovate/image", "dep/major"]
     },
     {
