@@ -255,6 +255,10 @@ spec:
         url: https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling/hosts
         name: StevenBlack hosts list
         id: 16
+      - enabled: true
+        url: https://raw.githubusercontent.com/${SECRET_CLUSTER_OWNER_USERNAME}/domain-lists/main/blacklist.txt
+        name: My own blacklist
+        id: 17
       whitelist_filters:
       - enabled: true
         url: https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/whitelist.txt
@@ -264,6 +268,10 @@ spec:
         url: https://raw.githubusercontent.com/Ultimate-Hosts-Blacklist/whitelist/master/domains.list
         name: Ultimate-Hosts whitelist
         id: 2
+      - enabled: true
+        url: https://raw.githubusercontent.com/${SECRET_CLUSTER_OWNER_USERNAME}/domain-lists/main/whitelist.txt
+        name: My own whitelist
+        id: 3
       user_rules: []
       dhcp:
         enabled: false
