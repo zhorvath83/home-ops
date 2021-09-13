@@ -277,7 +277,7 @@ spec:
         enabled: false
       clients: []
       log_compress: false
-      log_localtime: false
+      log_localtime: true
       log_max_backups: 0
       log_max_size: 100
       log_max_age: 3
