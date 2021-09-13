@@ -22,7 +22,7 @@ spec:
     updateStrategy: RollingUpdate
     configuration:
       timeZone: "${CLUSTER_TIMEZONE}"
-      startTime: "12:00"
+      startTime: "01:00"
       endTime: "6:00"
       #notifyUrl: "${SECRET_KURED_DISCORD_WEBHOOK}"
       #messageTemplateDrain: "⏳ Draining node %s"
