@@ -18,3 +18,4 @@ resources:
 - grafana-charts.yaml
 - vernemq-charts.yaml
 - runix-charts.yaml
+- weaveworks-kured-charts.yaml
