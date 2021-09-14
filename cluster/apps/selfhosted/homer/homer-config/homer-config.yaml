@@ -71,18 +71,14 @@ services:
   - name: Management
     icon: fas fa-server
     items:
-      - name: Kubernetes dashboard
-        subtitle: Kubernetes web admin
-        logo: assets/homer-icons/png/kubernetes-dashboard.png
-        url: https://${CLUSTER_SVC_KUBE_DASH_IP}/#/pod?namespace=_all
       - name: Rook-CEPH
         subtitle: Distributed block storage
         logo: assets/homer-icons/png/rook.png
         url: https://rook.${SECRET_CLUSTER_DOMAIN}
-      - name: Pi-hole
+      - name: AdGuard Home
         subtitle: DNS sinkhole
-        logo: assets/homer-icons/png/pihole.png
-        url: http://${CLUSTER_SVC_PIHOLE_IP}/admin
+        logo: assets/homer-icons/png/adguardhome.png
+        url: http://${CLUSTER_SVC_PIHOLE_IP}
       - name: OpenMediaVault
         subtitle: NAS web UI
         logo: assets/homer-icons/png/openmediavault.png
