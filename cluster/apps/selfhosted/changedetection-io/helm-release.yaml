@@ -1,0 +1,63 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: changedetection-io
+  namespace: selfhosted
+spec:
+  interval: 10m0s
+  chart:
+    spec:
+      # renovate: registryUrl=https://k8s-at-home.com/charts/
+      chart: changedetection-io
+      version: 1.0.1
+      sourceRef:
+        kind: HelmRepository
+        name: k8s-at-home-charts
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+  rollback:
+    timeout: 10m
+    recreate: true
+
+  values:
+    image:
+      tag: "0.39"
+      pullPolicy: IfNotPresent
+    env:
+      TZ: "${CLUSTER_TIMEZONE}"
+
+    service:
+      main:
+        ports:
+          http:
+            port: 5000
+
+    ingress:
+      main:
+        enabled: true
+        hosts:
+        - host: changedetection-io.${SECRET_CLUSTER_DOMAIN}
+          paths:
+          - path: /
+            pathType: Prefix
+        annotations:
+          kubernetes.io/ingress.class: traefik
+          traefik.ingress.kubernetes.io/router.entrypoints: websecure
+          traefik.ingress.kubernetes.io/router.tls: "true"
+          traefik.ingress.kubernetes.io/router.middlewares: networking-middleware-chain-cf-auth@kubernetescrd
+        tls:
+          - hosts:
+              - "change-detection.${SECRET_CLUSTER_DOMAIN}"
+
+    persistence:
+      data:
+        enabled: true
+        type: emptyDir
+        mountPath: /datastore
