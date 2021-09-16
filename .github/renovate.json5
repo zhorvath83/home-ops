@@ -15,7 +15,11 @@
     "fileMatch": ["charts/.+/Chart\\.yaml$"]
   },
   "helm-values": {
-    "fileMatch": ["cluster/.+helm-release\\.yaml$"]
+    "fileMatch": [
+      "cluster/.+helm-release\\.yaml$",
+      "cluster/.+deployment\\.yaml$",
+      "cluster/.+cronjob\\.yaml$"
+      ]
   },
   "kubernetes": {
     "fileMatch": [
