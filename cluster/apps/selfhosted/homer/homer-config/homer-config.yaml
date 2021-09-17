@@ -58,6 +58,7 @@ services:
       - name: Gmail
         subtitle: Google mail
         tag: "Mail"
+        tagstyle: "is-info"
         logo: assets/homer-icons/png/google-mail.png
         url: https://gmail.com/
       - name: Messenger
@@ -106,10 +107,10 @@ services:
         url: https://rook.${SECRET_CLUSTER_DOMAIN}
       - name: AdGuard Home
         subtitle: DNS sinkhole
+        tag: "AdBlocker"
+        tagstyle: "is-info"
         logo: assets/homer-icons/png/adguardhome.png
         url: http://${CLUSTER_SVC_PIHOLE_IP}
-        tag: "AdBlocker"
-        type: "AdGuardHome"
       - name: OpenMediaVault
         subtitle: NAS web UI
         logo: assets/homer-icons/png/openmediavault.png

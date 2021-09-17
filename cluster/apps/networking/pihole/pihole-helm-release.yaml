@@ -123,3 +123,11 @@ spec:
 
     ftl:
       MAXDBDAYS: 14
+
+    dnsmasq:
+      upstreamServers:
+      - server=193.110.57.4
+      - server=1.1.1.1
+
+      customSettings:
+        all-servers
