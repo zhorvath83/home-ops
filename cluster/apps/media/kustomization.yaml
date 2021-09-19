@@ -4,8 +4,8 @@ kind: Kustomization
 resources:
 - shared-persistent-volume
 - jellyfin
-# - qbittorrent
-- rtorrent
+- qbittorrent
+#- rtorrent
 - prowlarr
 - bazarr
 - radarr

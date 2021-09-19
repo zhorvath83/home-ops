@@ -34,16 +34,13 @@ spec:
       pullPolicy: IfNotPresent
     env:
       TZ: "${CLUSTER_TIMEZONE}"
-      # -- Folder where Flood stores it's configuration
       HOME: "/config"
-      # -- The host that Flood should listen for web connections on
       FLOOD_OPTION_HOST: "0.0.0.0"
-      # -- The port that Flood should listen for web connections on
       FLOOD_OPTION_PORT: "3000"
-      # -- ADVANCED: rTorrent daemon managed by Flood
       FLOOD_OPTION_RTORRENT: "true"
-      # -- Allowed path for file operations
       FLOOD_OPTION_ALLOWEDPATH: "/downloads"
+      FLOOD_SECRET: ${SECRET_RECIPES_SECRET_KEY}
+      RTORRENT_SOCK: "/config/.local/share/rtorrent/rtorrent.sock"
     service:
       main:
         type: LoadBalancer
