@@ -105,7 +105,7 @@ spec:
       fs.mkdir = (cat,(cfg.watch),"/start")
       schedule2 = watch_load, 11, 10, ((load.verbose, (cat, (cfg.watch), "load/*.torrent")))
       schedule2 = watch_start, 10, 10, ((load.start_verbose, (cat, (cfg.watch), "start/*.torrent")))
-      dht.add_bootstrap = dht.transmissionbt.com:50413
+      dht.add_bootstrap = dht.transmissionbt.com:6881
       dht.add_bootstrap = dht.libtorrent.org:25401
       throttle.max_uploads.set = 100
       throttle.max_uploads.global.set = 250
