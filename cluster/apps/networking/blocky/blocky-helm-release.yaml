@@ -30,7 +30,7 @@ spec:
   values:
     image:
       repository: ghcr.io/0xerr0r/blocky
-      tag: v0.15
+      tag: v0.16
       pullPolicy: IfNotPresent
     controller:
       enabled: true
