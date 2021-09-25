@@ -32,7 +32,7 @@ sudo sysctl --system
 
 ## System
 
-- For a trade-off in speed over security, disable `AppArmor` and `Mitigations` on Ubuntu:
+- For a trade-off in speed over security, disable `AppArmor` and `Mitigations` on Debian/Ubuntu:
 
 ```sh
 # /etc/default/grub

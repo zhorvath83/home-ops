@@ -143,6 +143,10 @@ services:
         subtitle: Home automation
         logo: assets/homer-icons/png/home-assistant.png
         url: https://homeassistant.${SECRET_CLUSTER_DOMAIN}
+      - name: Tandoor recipes
+        subtitle: Private recipe collection
+        logo: https://raw.githubusercontent.com/${SECRET_CLUSTER_OWNER_USERNAME}/homer-icons/master/png/tandoorrecipes.png
+        url: https://recipes.${SECRET_CLUSTER_DOMAIN}
       - name: Jellyfin
         subtitle: Jellyfin media server
         logo: assets/homer-icons/png/jellyfin.png
