@@ -30,7 +30,7 @@ spec:
   values:
     image:
       repository: jesec/rtorrent-flood
-      tag: latest@sha256:c3eff83345dd55c577c5e18b50670bf7983c37234624ac8abe662384aa3150b6
+      tag: latest@sha256:029cbbebbf8b1b088e28f0112b4f949d082b4da55104c9f852ecac48cfec5181
       pullPolicy: IfNotPresent
     env:
       TZ: "${CLUSTER_TIMEZONE}"
