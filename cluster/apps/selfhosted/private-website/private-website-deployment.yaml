@@ -28,7 +28,7 @@ spec:
             topologyKey: "kubernetes.io/hostname"
       containers:
       - name: private-website
-        image: ${SECRET_CLUSTER_OWNER_USERNAME}/private-website:latest
+        image: ghcr.io/${SECRET_CLUSTER_OWNER_USERNAME}/private-website:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
