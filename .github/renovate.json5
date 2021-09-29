@@ -177,7 +177,8 @@
       "versioning": "loose",
       "matchPackageNames": [
         "ghcr.io/k8s-at-home/plex",
-        "ghcr.io/k8s-at-home/qbittorrent"
+        "ghcr.io/k8s-at-home/qbittorrent",
+        "ghcr.io/zhorvath83/private-website"
       ]
     },
     // enable auto-merge
