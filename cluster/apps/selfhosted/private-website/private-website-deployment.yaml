@@ -29,8 +29,7 @@ spec:
       containers:
       - name: private-website
         image: ghcr.io/${SECRET_CLUSTER_OWNER_USERNAME}/private-website:20210929075626
-        # imagePullPolicy: IfNotPresent
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
           protocol: TCP
