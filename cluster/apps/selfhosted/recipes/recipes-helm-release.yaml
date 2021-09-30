@@ -92,7 +92,7 @@ spec:
     initContainers:
       database-bootstrap:
         name: database-bootstrap
-        image: postgres:13.4-alpine
+        image: postgres:14.0-alpine
         imagePullPolicy: IfNotPresent
         env:
           - name: POSTGRES_PASSWORD
