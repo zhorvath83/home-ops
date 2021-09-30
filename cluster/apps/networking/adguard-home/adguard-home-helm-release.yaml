@@ -256,7 +256,7 @@ spec:
         name: StevenBlack hosts list
         id: 16
       - enabled: true
-        url: https://raw.githubusercontent.com/${SECRET_CLUSTER_OWNER_USERNAME}/domain-lists/main/blacklist.txt
+        url: https://raw.githubusercontent.com/${SECRET_CLUSTER_OWNER_USERNAME}/domain-filter-lists/main/blacklist.txt
         name: My own blacklist
         id: 17
       whitelist_filters:
@@ -269,7 +269,7 @@ spec:
         name: Ultimate-Hosts whitelist
         id: 2
       - enabled: true
-        url: https://raw.githubusercontent.com/${SECRET_CLUSTER_OWNER_USERNAME}/domain-lists/main/whitelist.txt
+        url: https://raw.githubusercontent.com/${SECRET_CLUSTER_OWNER_USERNAME}/domain-filter-lists/main/whitelist.txt
         name: My own whitelist
         id: 3
       user_rules: []
