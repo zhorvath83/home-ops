@@ -168,7 +168,7 @@
       "matchDatasources": ["docker"],
       "allowedVersions": "<14",
       "matchPackageNames": [
-        "bitnami/postgresql"
+        "public.ecr.aws/bitnami/postgresql"
       ]
     },
     // version strategies

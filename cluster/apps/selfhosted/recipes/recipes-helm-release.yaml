@@ -92,7 +92,7 @@ spec:
     initContainers:
       database-bootstrap:
         name: database-bootstrap
-        image: postgres:13.4-alpine
+        image: public.ecr.aws/bitnami/postgresql:13.4.0
         imagePullPolicy: IfNotPresent
         env:
           - name: POSTGRES_PASSWORD
