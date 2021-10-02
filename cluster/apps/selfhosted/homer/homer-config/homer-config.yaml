@@ -15,17 +15,17 @@ connectivityCheck: true
 theme: default
 colors:
   light:
-    highlight-primary: "#3367d6"
-    highlight-secondary: "#4285f4"
-    highlight-hover: "#5a95f5"
-    background: "#f5f5f5"
-    card-background: "#ffffff"
-    text: "#363636"
-    text-header: "#ffffff"
-    text-title: "#303030"
-    text-subtitle: "#424242"
-    card-shadow: rgba(0, 0, 0, 0.1)
-    link-hover: "#363636"
+    highlight-primary: "#2E3440"
+    highlight-secondary: "#4C566A"
+    highlight-hover: "#81A1C1"
+    background: "#3B4252"
+    card-background: "#2E3440"
+    text: "#D8DEE9"
+    text-header: "#D8DEE9"
+    text-title: "#81A1C1"
+    text-subtitle: "#81A1C1"
+    card-shadow: rgba(0, 0, 0, 0.4)
+    link-hover: "#BF616A"
   dark:
     highlight-primary: "#2E3440"
     highlight-secondary: "#4C566A"
@@ -59,23 +59,23 @@ services:
         subtitle: Google mail
         tag: "Mail"
         tagstyle: "is-info"
-        logo: assets/homer-icons/png/google-mail.png
+        logo: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/google-mail.png
         url: https://gmail.com/
       - name: Messenger
         subtitle: Facebook messenger
-        logo: assets/homer-icons/png/facebook-messenger.png
+        logo: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/facebook-messenger.png
         url: https://www.messenger.com/
       - name: Microsoft ToDo
         subtitle: ToDo
-        logo: assets/homer-icons/png/microsoft-todo.png
+        logo: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/microsoft-todo.png
         url: https://to-do.live.com/tasks/
       - name: Calendar
         subtitle: Google calendar
-        logo: assets/homer-icons/png/google-calendar.png
+        logo: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/google-calendar.png
         url: https://calendar.google.com/
       - name: Notes
         subtitle: Google keep
-        logo: assets/homer-icons/png/google-keep.png
+        logo: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/google-keep.png
         url: https://keep.google.com/
 
   - name: Finance
