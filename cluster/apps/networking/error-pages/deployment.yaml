@@ -1,0 +1,64 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: error-pages
+  namespace: networking
+  labels:
+    app.kubernetes.io/name: error-pages
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: error-pages
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: error-pages
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                - error-pages
+            topologyKey: "kubernetes.io/hostname"
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - traefik
+            topologyKey: "kubernetes.io/hostname"
+      containers:
+      - name: error-pages
+        image: ghcr.io/tarampampam/error-pages:2.0.0
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: TEMPLATE_NAME
+          value: "hacker-terminal"
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        securityContext:
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          # Run the container as nobody:nogroup
+          runAsUser: 65534
+          runAsGroup: 65534
+          capabilities:
+            drop:
+            - NET_RAW
+        resources:
+          requests:
+            cpu: 50m
+            memory: 10Mi
+          limits:
+            cpu: 250m
+            memory: 30Mi
