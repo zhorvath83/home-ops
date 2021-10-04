@@ -41,7 +41,7 @@ spec:
         imagePullPolicy: IfNotPresent
         env:
         - name: TEMPLATE_NAME
-          value: "hacker-terminal"
+          value: "shuffle"
         ports:
         - containerPort: 8080
           protocol: TCP

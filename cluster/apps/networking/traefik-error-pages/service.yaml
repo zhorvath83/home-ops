@@ -8,6 +8,7 @@ spec:
   ports:
     - protocol: TCP
       name: web
-      port: 8080
+      port: 80
+      targetPort: 8080
   selector:
     app.kubernetes.io/name: traefik-error-pages
