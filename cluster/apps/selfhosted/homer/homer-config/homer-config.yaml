@@ -15,17 +15,17 @@ connectivityCheck: true
 theme: default
 colors:
   light:
-    highlight-primary: "#677590"
-    highlight-secondary: "#65728C"
-    highlight-hover: "#507aa3"
-    background: "#64708b"
-    card-background: "#677590"
-    text: "#e5e9f0"
-    text-header: "#e5e9f0"
-    text-title: "#9bb5ce"
-    text-subtitle: "#9bb5ce"
+    highlight-primary: "#2E3440"
+    highlight-secondary: "#4C566A"
+    highlight-hover: "#81A1C1"
+    background: "#3B4252"
+    card-background: "#2E3440"
+    text: "#D8DEE9"
+    text-header: "#D8DEE9"
+    text-title: "#81A1C1"
+    text-subtitle: "#81A1C1"
     card-shadow: rgba(0, 0, 0, 0.4)
-    link-hover: "#c56f77"
+    link-hover: "#BF616A"
   dark:
     highlight-primary: "#2E3440"
     highlight-secondary: "#4C566A"

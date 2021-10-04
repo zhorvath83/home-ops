@@ -2,7 +2,7 @@
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
-  name: error-pages
+  name: traefik-error-pages
   namespace: networking
 spec:
   entryPoints:
@@ -13,7 +13,7 @@ spec:
       priority: 1
       services:
         - kind: Service
-          name: error-pages
+          name: traefik-error-pages
           port: 8080
   tls:
     secretName: "${SECRET_CLUSTER_DOMAIN/./-}-tls"

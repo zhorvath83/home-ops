@@ -1,0 +1,23 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: filestash
+  namespace: selfhosted
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.middlewares: networking-middleware-chain-cf-auth@kubernetescrd
+spec:
+  ingressClassName: "traefik"
+  rules:
+  - host: "filestash.${SECRET_CLUSTER_DOMAIN}"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: filestash
+            port:
+              number: 80
