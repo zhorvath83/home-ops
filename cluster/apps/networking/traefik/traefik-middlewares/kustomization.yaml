@@ -9,3 +9,4 @@ resources:
 - middleware-secure-headers.yaml
 - middleware-rfc1918-ips.yaml
 - middleware-cloudflare-ips.yaml
+- middleware-error-pages.yaml

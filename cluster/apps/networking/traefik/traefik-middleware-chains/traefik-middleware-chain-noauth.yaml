@@ -11,3 +11,4 @@ spec:
     - name: middleware-rate-limit
     - name: middleware-secure-headers
     - name: middleware-retry
+    - name: middleware-error-pages
