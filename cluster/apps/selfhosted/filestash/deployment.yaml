@@ -21,8 +21,10 @@ spec:
         image: machines/filestash:latest@sha256:68ff47fda2c42e0a2389409bb8c25e5d4480581ad4e65cab3b0f14beeb95a05e
         imagePullPolicy: IfNotPresent
         env:
-          APPLICATION_URL: "https://filestash.${SECRET_CLUSTER_DOMAIN}"
-          TZ: "${CLUSTER_TIMEZONE}"
+        - name: TZ
+          value: ${CLUSTER_TIMEZONE}
+        - name: APPLICATION_URL
+          value: "https://filestash.${SECRET_CLUSTER_DOMAIN}"
         ports:
         - containerPort: 8334
           protocol: TCP
