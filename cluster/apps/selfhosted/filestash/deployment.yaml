@@ -7,7 +7,7 @@ metadata:
   labels:
     app.kubernetes.io/name: filestash
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: filestash
@@ -28,16 +28,6 @@ spec:
         ports:
         - containerPort: 8334
           protocol: TCP
-        securityContext:
-          readOnlyRootFilesystem: true
-          runAsNonRoot: true
-          allowPrivilegeEscalation: false
-          # Run the container as nobody:nogroup
-          runAsUser: 65534
-          runAsGroup: 65534
-          capabilities:
-            drop:
-            - NET_RAW
         resources:
           requests:
             cpu: 100m
