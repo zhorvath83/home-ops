@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
       - name: filestash
-        image: machines/filestash:latest@sha256:68ff47fda2c42e0a2389409bb8c25e5d4480581ad4e65cab3b0f14beeb95a05e
+        image: machines/filestash:3eb0384
         imagePullPolicy: IfNotPresent
         env:
         - name: TZ
