@@ -11,4 +11,4 @@ spec:
     query: /{status}.html
     service:
       name: traefik-error-pages
-      port: 8080
+      port: 80
