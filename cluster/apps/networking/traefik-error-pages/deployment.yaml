@@ -37,7 +37,7 @@ spec:
             topologyKey: "kubernetes.io/hostname"
       containers:
       - name: traefik-error-pages
-        image: ghcr.io/tarampampam/traefik-error-pages:2.0.0
+        image: ghcr.io/tarampampam/error-pages:2.0.0
         imagePullPolicy: IfNotPresent
         env:
         - name: TEMPLATE_NAME
