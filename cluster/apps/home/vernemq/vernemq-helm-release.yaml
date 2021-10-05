@@ -34,6 +34,11 @@ spec:
 
     replicaCount: 1
 
+    statefulset:
+      podAnnotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8888"
+
     service:
       type: LoadBalancer
       loadBalancerIP: ${CLUSTER_SVC_MQTT_IP}
@@ -55,14 +60,3 @@ spec:
     podAntiAffinity: hard
 
     envFrom: []
-
-    affinity:
-      podAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-                - key: app.kubernetes.io/name
-                  operator: In
-                  values:
-                    - home-assistant
-            topologyKey: "kubernetes.io/hostname"
