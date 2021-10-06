@@ -34,7 +34,7 @@ spec:
   values:
     image:
       repository: ghcr.io/home-assistant/home-assistant
-      tag: 2021.9.7
+      tag: 2021.10.0
       pullPolicy: IfNotPresent
     env:
       TZ: "${CLUSTER_TIMEZONE}"
