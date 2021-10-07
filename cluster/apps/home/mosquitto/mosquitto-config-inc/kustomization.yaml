@@ -2,10 +2,10 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 configMapGenerator:
-  - name: mosquitto-config
+  - name: mosquitto-config-inc
     namespace: home
     files:
-      - mosquitto.conf
+      - mosquitto-inc.conf
       - mosquitto.pwd
 generatorOptions:
   disableNameSuffixHash: true
