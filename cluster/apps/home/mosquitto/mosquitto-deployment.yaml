@@ -1,0 +1,53 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mosquitto
+  namespace: home
+  labels:
+    app.kubernetes.io/name: mosquitto
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mosquitto
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mosquitto
+    spec:
+      containers:
+      - name: mosquitto
+        image: eclipse-mosquitto:2.0.12
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 1883
+          protocol: TCP
+        resources:
+          requests:
+            cpu: 50m
+            memory: 16Mi
+          limits:
+            cpu: 150m
+            memory: 64Mi
+        volumeMounts:
+          - name: mosquitto-config
+            mountPath: /mosquitto/config/mosquitto.conf
+            subPath: mosquitto.conf
+          - name: mosquitto-secret
+            mountPath: /mosquitto/config/mosquitto.pwd
+            subPath: mosquitto.pwd
+          - name: mosquitto-data
+            mountPath: /mosquitto/data
+    volumes:
+      - name: mosquitto-config
+        configMap:
+          name: mosquitto-config
+      - name: mosquitto-secret
+        secret:
+          secretName: mosquitto-secret
+      - name: mosquitto-data
+        persistentVolumeClaim:
+          claimName: mosquitto-data

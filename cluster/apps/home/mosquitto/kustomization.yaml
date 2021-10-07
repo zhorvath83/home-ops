@@ -2,7 +2,8 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-- pvc.yaml
-- mosquitto-config-inc
-- helm-release.yaml
-
+- mosquitto-pvc.yaml
+- mosquitto-secret.sops.yaml
+- mosquitto-config
+- mosquitto-deployment.yaml
+- mosquitto-service.yaml
