@@ -6,6 +6,6 @@ configMapGenerator:
     namespace: home
     files:
       - mosquitto-inc.conf
-      - mosquitto.pwd
+      - mosquitto-inc.pwd
 generatorOptions:
   disableNameSuffixHash: true
