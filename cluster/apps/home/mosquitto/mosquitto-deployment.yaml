@@ -41,13 +41,13 @@ spec:
             subPath: mosquitto.pwd
           - name: mosquitto-data
             mountPath: /mosquitto/data
-    volumes:
-      - name: mosquitto-config
-        configMap:
-          name: mosquitto-config
-      - name: mosquitto-secret
-        secret:
-          secretName: mosquitto-secret
-      - name: mosquitto-data
-        persistentVolumeClaim:
-          claimName: mosquitto-data
+      volumes:
+        - name: mosquitto-config
+          configMap:
+            name: mosquitto-config
+        - name: mosquitto-secret
+          secret:
+            secretName: mosquitto-secret
+        - name: mosquitto-data
+          persistentVolumeClaim:
+            claimName: mosquitto-data
