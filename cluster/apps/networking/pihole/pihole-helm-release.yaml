@@ -15,6 +15,17 @@ spec:
         kind: HelmRepository
         name: pihole-charts
         namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+  rollback:
+    timeout: 10m
+    recreate: true
+
   values:
 
     replicaCount: 1
@@ -119,4 +130,4 @@ spec:
       - server=1.1.1.1
 
       customSettings:
-        all-servers
+      - all-servers
