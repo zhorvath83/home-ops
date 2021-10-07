@@ -8,6 +8,11 @@ metadata:
     app.kubernetes.io/name: private-website
 spec:
   replicas: 2
+  strategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+    type: RollingUpdate
   selector:
     matchLabels:
       app.kubernetes.io/name: private-website

@@ -6,6 +6,11 @@ metadata:
   namespace: networking
 spec:
   replicas: 2
+  strategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+    type: RollingUpdate
   selector:
     matchLabels:
       app.kubernetes.io/name: traefik-auth-cloudflare
