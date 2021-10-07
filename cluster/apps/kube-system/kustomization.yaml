@@ -5,4 +5,3 @@ resources:
 - kured
 - kube-vip
 - reloader
-- descheduler
