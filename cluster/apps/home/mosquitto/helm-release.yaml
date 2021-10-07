@@ -42,7 +42,7 @@ spec:
         type: custom
         volumeSpec:
           secret:
-            secretName: mosquitto-config
+            secretName: mosquitto-config-inc
 
     resources:
       requests:
