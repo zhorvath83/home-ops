@@ -110,7 +110,7 @@ services:
         tag: "AdBlocker"
         tagstyle: "is-info"
         logo: https://raw.githubusercontent.com/${SECRET_CLUSTER_OWNER_USERNAME}/homer-icons/master/png/adguardhome.png
-        url: http://${CLUSTER_SVC_PIHOLE_IP}
+        url: http://${CLUSTER_SVC_LAN_DNS_IP}
       - name: OpenMediaVault
         subtitle: NAS web UI
         logo: https://raw.githubusercontent.com/${SECRET_CLUSTER_OWNER_USERNAME}/homer-icons/master/png/openmediavault.png

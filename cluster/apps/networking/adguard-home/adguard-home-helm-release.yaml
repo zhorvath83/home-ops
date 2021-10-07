@@ -31,7 +31,7 @@ spec:
         annotations:
           metallb.universe.tf/allow-shared-ip: adguard-home-svc
         type: LoadBalancer
-        loadBalancerIP: ${CLUSTER_SVC_PIHOLE_IP}
+        loadBalancerIP: ${CLUSTER_SVC_LAN_DNS_IP}
         externalTrafficPolicy: Local
         ports:
           http:
@@ -42,7 +42,7 @@ spec:
         annotations:
           metallb.universe.tf/allow-shared-ip: adguard-home-svc
         type: LoadBalancer
-        loadBalancerIP: ${CLUSTER_SVC_PIHOLE_IP}
+        loadBalancerIP: ${CLUSTER_SVC_LAN_DNS_IP}
         ports:
           dns-tcp:
             enabled: true
@@ -55,7 +55,7 @@ spec:
         annotations:
           metallb.universe.tf/allow-shared-ip: adguard-home-svc
         type: LoadBalancer
-        loadBalancerIP: ${CLUSTER_SVC_PIHOLE_IP}
+        loadBalancerIP: ${CLUSTER_SVC_LAN_DNS_IP}
         ports:
           dns-udp:
             enabled: true
