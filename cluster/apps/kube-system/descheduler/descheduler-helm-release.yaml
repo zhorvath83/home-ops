@@ -29,7 +29,7 @@ spec:
           enabled: true
           params:
             nodeAffinityType:
-            - requiredDuringSchedulingIgnoredDuringExecution
+            - preferredDuringSchedulingIgnoredDuringExecution
         RemovePodsViolatingInterPodAntiAffinity:
           enabled: true
         LowNodeUtilization:

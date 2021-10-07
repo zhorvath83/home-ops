@@ -30,7 +30,7 @@ spec:
                 operator: In
                 values:
                 - private-website
-            topologyKey: "kubernetes.io/hostname"
+            topologyKey: kubernetes.io/hostname
       containers:
       - name: private-website
         image: ghcr.io/zhorvath83/private-website:1.0.57

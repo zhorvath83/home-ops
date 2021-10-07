@@ -91,7 +91,7 @@ spec:
                   operator: In
                   values:
                     - adguard-home
-            topologyKey: "kubernetes.io/hostname"
+              topologyKey: kubernetes.io/hostname
 
     # config -- AdGuard Home configuration. 
     # For a full list of options see https://github.com/AdguardTeam/AdGuardHome/wiki/Configuration
