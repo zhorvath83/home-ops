@@ -46,10 +46,10 @@ links:
     url: http://${CLUSTER_SVC_CODE_SERVER_IP}
   - name: GitLab
     icon: fab fa-gitlab
-    url: https://gitlab.com/zhorvath83
+    url: https://gitlab.com/${SECRET_CLUSTER_OWNER_USERNAME}
   - name: GitHub
     icon: fab fa-github
-    url: https://github.com/zhorvath83
+    url: https://github.com/${SECRET_CLUSTER_OWNER_USERNAME}
 
 services:
   - name: Mail & organizing
@@ -59,23 +59,23 @@ services:
         subtitle: Google mail
         tag: "Mail"
         tagstyle: "is-info"
-        logo: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/google-mail.png
+        logo: https://raw.githubusercontent.com/${SECRET_CLUSTER_OWNER_USERNAME}/homer-icons/master/png/google-mail.png
         url: https://gmail.com/
       - name: Messenger
         subtitle: Facebook messenger
-        logo: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/facebook-messenger.png
+        logo: https://raw.githubusercontent.com/${SECRET_CLUSTER_OWNER_USERNAME}/homer-icons/master/png/facebook-messenger.png
         url: https://www.messenger.com/
       - name: Microsoft ToDo
         subtitle: ToDo
-        logo: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/microsoft-todo.png
+        logo: https://raw.githubusercontent.com/${SECRET_CLUSTER_OWNER_USERNAME}/homer-icons/master/png/microsoft-todo.png
         url: https://to-do.live.com/tasks/
       - name: Calendar
         subtitle: Google calendar
-        logo: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/google-calendar.png
+        logo: https://raw.githubusercontent.com/${SECRET_CLUSTER_OWNER_USERNAME}/homer-icons/master/png/google-calendar.png
         url: https://calendar.google.com/
       - name: Notes
         subtitle: Google keep
-        logo: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/google-keep.png
+        logo: https://raw.githubusercontent.com/${SECRET_CLUSTER_OWNER_USERNAME}/homer-icons/master/png/google-keep.png
         url: https://keep.google.com/
 
   - name: Finance
@@ -83,19 +83,19 @@ services:
     items:
       - name: Buxfer
         subtitle: Personal finance management
-        logo: assets/homer-icons/png/buxfer.png
+        logo: https://raw.githubusercontent.com/${SECRET_CLUSTER_OWNER_USERNAME}/homer-icons/master/png/buxfer.png
         url: https://www.buxfer.com
       - name: Erste George
         subtitle: Erste NetBank
-        logo: assets/homer-icons/png/erste-george.png
+        logo: https://raw.githubusercontent.com/${SECRET_CLUSTER_OWNER_USERNAME}/homer-icons/master/png/erste-george.png
         url: https://george.erstebank.hu
       - name: Erste Investment
         subtitle: Erste Befektetési Zrt.
-        logo: assets/homer-icons/png/erste.png
+        logo: https://raw.githubusercontent.com/${SECRET_CLUSTER_OWNER_USERNAME}/homer-icons/master/png/erste.png
         url: https://www.ersteinvestment.hu
       - name: MÁK WebKincstár
         subtitle: Magyar Államkincstár
-        logo: assets/homer-icons/png/mak.png
+        logo: https://raw.githubusercontent.com/${SECRET_CLUSTER_OWNER_USERNAME}/homer-icons/master/png/mak.png
         url: https://webkincstar.allamkincstar.gov.hu
 
   - name: Management
@@ -103,21 +103,21 @@ services:
     items:
       - name: Rook-CEPH
         subtitle: Distributed block storage
-        logo: assets/homer-icons/png/rook.png
+        logo: https://raw.githubusercontent.com/${SECRET_CLUSTER_OWNER_USERNAME}/homer-icons/master/png/rook.png
         url: https://rook.${SECRET_CLUSTER_DOMAIN}
       - name: AdGuard Home
         subtitle: DNS sinkhole
         tag: "AdBlocker"
         tagstyle: "is-info"
-        logo: assets/homer-icons/png/adguardhome.png
+        logo: https://raw.githubusercontent.com/${SECRET_CLUSTER_OWNER_USERNAME}/homer-icons/master/png/adguardhome.png
         url: http://${CLUSTER_SVC_PIHOLE_IP}
       - name: OpenMediaVault
         subtitle: NAS web UI
-        logo: assets/homer-icons/png/openmediavault.png
+        logo: https://raw.githubusercontent.com/${SECRET_CLUSTER_OWNER_USERNAME}/homer-icons/master/png/openmediavault.png
         url: http://${CLUSTER_LAN_NAS_IP}
       - name: Router
         subtitle: Asus Router web UI
-        logo: assets/homer-icons/png/router.png
+        logo: https://raw.githubusercontent.com/${SECRET_CLUSTER_OWNER_USERNAME}/homer-icons/master/png/router.png
         url: http://${CLUSTER_LAN_ROUTER_IP}
 
   - name: Downloading
@@ -125,15 +125,15 @@ services:
     items:
       - name: qBittorrent
         subtitle: Torrent client
-        logo: assets/homer-icons/png/qbittorrent.png
+        logo: https://raw.githubusercontent.com/${SECRET_CLUSTER_OWNER_USERNAME}/homer-icons/master/png/qbittorrent.png
         url: https://qbittorrent.${SECRET_CLUSTER_DOMAIN}
       - name: Ncore
         subtitle: Ncore
-        logo: assets/homer-icons/png/ncore.png
+        logo: https://raw.githubusercontent.com/${SECRET_CLUSTER_OWNER_USERNAME}/homer-icons/master/png/ncore.png
         url: https://ncore.pro
       - name: Bithumen
         subtitle: Bithumen
-        logo: assets/homer-icons/png/bithumen.png
+        logo: https://raw.githubusercontent.com/${SECRET_CLUSTER_OWNER_USERNAME}/homer-icons/master/png/bithumen.png
         url: https://bithumen.be
 
   - name: Home & Media
@@ -141,7 +141,7 @@ services:
     items:
       - name: Home Assistant
         subtitle: Home automation
-        logo: assets/homer-icons/png/home-assistant.png
+        logo: https://raw.githubusercontent.com/${SECRET_CLUSTER_OWNER_USERNAME}/homer-icons/master/png/home-assistant.png
         url: https://homeassistant.${SECRET_CLUSTER_DOMAIN}
       - name: Tandoor recipes
         subtitle: Private recipe collection
@@ -149,11 +149,11 @@ services:
         url: https://recipes.${SECRET_CLUSTER_DOMAIN}
       - name: Jellyfin
         subtitle: Jellyfin media server
-        logo: assets/homer-icons/png/jellyfin.png
+        logo: https://raw.githubusercontent.com/${SECRET_CLUSTER_OWNER_USERNAME}/homer-icons/master/png/jellyfin.png
         url: http://${CLUSTER_SVC_JELLYFIN_IP}:8096
       - name: Kodi
         subtitle: Kodi media server
-        logo: assets/homer-icons/png/kodi.png
+        logo: https://raw.githubusercontent.com/${SECRET_CLUSTER_OWNER_USERNAME}/homer-icons/master/png/kodi.png
         url: http://${CLUSTER_LAN_KODI_IP}:8080
 
   - name: Monitoring
@@ -161,13 +161,13 @@ services:
     items:
       - name: Grafana
         subtitle: Analytics & monitoring
-        logo: assets/homer-icons/png/grafana.png
+        logo: https://raw.githubusercontent.com/${SECRET_CLUSTER_OWNER_USERNAME}/homer-icons/master/png/grafana.png
         url: https://grafana.${SECRET_CLUSTER_DOMAIN}
       - name: Traefik
         subtitle: Kube ingress dashboard
-        logo: assets/homer-icons/png/traefik.png
+        logo: https://raw.githubusercontent.com/${SECRET_CLUSTER_OWNER_USERNAME}/homer-icons/master/png/traefik.png
         url: https://traefik.${SECRET_CLUSTER_DOMAIN}
       - name: Prometheus
         subtitle: Metrics collector
-        logo: assets/homer-icons/png/prometheus.png
+        logo: https://raw.githubusercontent.com/${SECRET_CLUSTER_OWNER_USERNAME}/homer-icons/master/png/prometheus.png
         url: https://prometheus.${SECRET_CLUSTER_DOMAIN}
