@@ -18,6 +18,16 @@ spec:
       labels:
         app.kubernetes.io/name: mosquitto
     spec:
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app.kubernetes.io/name
+                    operator: In
+                    values:
+                      - home-assistant
+              topologyKey: "kubernetes.io/hostname"
       containers:
       - name: mosquitto
         image: eclipse-mosquitto:2.0.12
