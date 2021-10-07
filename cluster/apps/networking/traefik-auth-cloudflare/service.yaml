@@ -1,0 +1,17 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: traefik-auth-cloudflare
+  namespace: networking
+  labels:
+    app.kubernetes.io/name: traefik-auth-cloudflare
+spec:
+  ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: traefik-auth-cloudflare
