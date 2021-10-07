@@ -6,9 +6,7 @@ resources:
 - traefik-auth-cloudflare
 - traefik
 - traefik-error-pages
-# - blocky
-#- adguard-home
+- adguard-home
 - cloudflare-ddns
 - external-dns
-- pihole
 - whoami
