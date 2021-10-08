@@ -1,6 +1,7 @@
 ---
 apiVersion: source.toolkit.fluxcd.io/v1beta1
 kind: HelmRepository
+# Helm Chart Repo for Kured (KUbernetes REboot Daemon)
 metadata:
   name: weaveworks-kured-charts
   namespace: flux-system

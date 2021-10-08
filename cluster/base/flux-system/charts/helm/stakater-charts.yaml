@@ -1,6 +1,7 @@
 ---
 apiVersion: source.toolkit.fluxcd.io/v1beta1
 kind: HelmRepository
+# Helm Chart repo for Reloader
 metadata:
   name: stakater-charts
   namespace: flux-system

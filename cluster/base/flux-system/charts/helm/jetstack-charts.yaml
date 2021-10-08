@@ -1,6 +1,7 @@
 ---
 apiVersion: source.toolkit.fluxcd.io/v1beta1
 kind: HelmRepository
+# cert-manager Helm Chart repo
 metadata:
   name: jetstack-charts
   namespace: flux-system
