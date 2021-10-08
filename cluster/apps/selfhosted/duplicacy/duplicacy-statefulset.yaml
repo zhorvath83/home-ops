@@ -21,6 +21,15 @@ spec:
       - name: duplicacy
         image: ghcr.io/hotio/duplicacy:release-a93a7a4
         imagePullPolicy: IfNotPresent
+        env:
+        - name: PUID
+          value: "1000"
+        - name: PGID
+          value: "1000"
+        - name: UMASK
+          value: "002"
+        - name: TZ
+          value: "${CLUSTER_TIMEZONE}"
         ports:
         - containerPort: 3875
           protocol: TCP
