@@ -31,7 +31,7 @@ spec:
       - name: EXTERNAL_DNS_CLOUDFLARE_PROXIED
         value: "1"
       - name: EXTERNAL_DNS_DRY_RUN
-        value: "1"
+        value: "0"
     policy: sync
     sources:
     - crd
