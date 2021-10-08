@@ -65,6 +65,7 @@ spec:
     - "--global.checknewversion=false"
     - "--global.sendanonymoususage=true"
     additionalArguments:
+    - "--api.insecure=true"
     - "--metrics.prometheus=false"
     - "--metrics.prometheus.entryPoint=metrics"
     # Allow these IPs to set the X-Forwarded-* headers.
