@@ -43,7 +43,7 @@ spec:
       main:
         enabled: true
         hosts:
-        - host: changedetection-io.${SECRET_CLUSTER_DOMAIN}
+        - host: changedetection-io.${SECRET_DOMAIN}
           paths:
           - path: /
             pathType: Prefix
@@ -54,7 +54,7 @@ spec:
           traefik.ingress.kubernetes.io/router.middlewares: networking-middleware-chain-cf-auth@kubernetescrd
         tls:
           - hosts:
-              - "change-detection.${SECRET_CLUSTER_DOMAIN}"
+              - "change-detection.${SECRET_DOMAIN}"
 
     persistence:
       data:

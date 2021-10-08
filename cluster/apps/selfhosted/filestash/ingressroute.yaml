@@ -11,7 +11,7 @@ metadata:
 spec:
   ingressClassName: "traefik"
   rules:
-  - host: "filestash.${SECRET_CLUSTER_DOMAIN}"
+  - host: "filestash.${SECRET_DOMAIN}"
     http:
       paths:
       - path: /

@@ -11,7 +11,7 @@ metadata:
 spec:
   ingressClassName: "traefik"
   rules:
-  - host: "whoami.${SECRET_CLUSTER_DOMAIN}"
+  - host: "whoami.${SECRET_DOMAIN}"
     http:
       paths:
       - path: /

@@ -67,7 +67,7 @@ spec:
       main:
         enabled: true
         hosts:
-        - host: dash.${SECRET_CLUSTER_DOMAIN}
+        - host: dash.${SECRET_DOMAIN}
           paths:
           - path: /
             pathType: Prefix

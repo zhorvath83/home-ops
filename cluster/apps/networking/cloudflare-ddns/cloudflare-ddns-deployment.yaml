@@ -31,7 +31,7 @@ spec:
         - name: CF_ZONES
           value: "${SECRET_CF_ZONES}"
         - name: CF_HOSTS
-          value: "${SECRET_CLUSTER_DOMAIN}"
+          value: "${SECRET_DOMAIN}"
         - name: CF_RECORDTYPES
           value: "${SECRET_CF_RECORDTYPES}"
         - name: LOG_LEVEL

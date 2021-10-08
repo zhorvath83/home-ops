@@ -11,7 +11,7 @@ metadata:
 spec:
   ingressClassName: "traefik"
   rules:
-  - host: "${SECRET_CLUSTER_DOMAIN}"
+  - host: "${SECRET_DOMAIN}"
     http:
       paths:
       - path: /
@@ -21,7 +21,7 @@ spec:
             name: private-website
             port:
               number: 80
-  - host: "www.${SECRET_CLUSTER_DOMAIN}"
+  - host: "www.${SECRET_DOMAIN}"
     http:
       paths:
       - path: /
@@ -41,6 +41,6 @@ metadata:
   namespace: selfhosted
 spec:
   redirectRegex:
-    regex: ^https?://(www.)?${SECRET_CLUSTER_DOMAIN}/(.*)
-    replacement: https://${SECRET_CLUSTER_DOMAIN}/$${2}
+    regex: ^https?://(www.)?${SECRET_DOMAIN}/(.*)
+    replacement: https://${SECRET_DOMAIN}/$${2}
     permanent: true

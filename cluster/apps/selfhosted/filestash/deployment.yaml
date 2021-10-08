@@ -24,7 +24,7 @@ spec:
         - name: TZ
           value: ${CLUSTER_TIMEZONE}
         - name: APPLICATION_URL
-          value: "https://filestash.${SECRET_CLUSTER_DOMAIN}"
+          value: "https://filestash.${SECRET_DOMAIN}"
         ports:
         - containerPort: 8334
           protocol: TCP

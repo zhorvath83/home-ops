@@ -100,7 +100,7 @@ spec:
       bind_port: 3000
       beta_bind_port: 0
       users:
-      - name: ${SECRET_CLUSTER_OWNER_USERNAME}
+      - name: ${SECRET_OWNER_USERNAME}
         password: ${SECRET_ADGUARD_PWD}
       auth_attempts: 5
       block_auth_min: 15
@@ -256,7 +256,7 @@ spec:
         name: StevenBlack hosts list
         id: 16
       - enabled: true
-        url: https://raw.githubusercontent.com/${SECRET_CLUSTER_OWNER_USERNAME}/domain-filter-lists/main/blacklist.txt
+        url: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/domain-filter-lists/main/blacklist.txt
         name: My own blacklist
         id: 17
       - enabled: true
@@ -273,7 +273,7 @@ spec:
         name: Ultimate-Hosts whitelist
         id: 2
       - enabled: true
-        url: https://raw.githubusercontent.com/${SECRET_CLUSTER_OWNER_USERNAME}/domain-filter-lists/main/whitelist.txt
+        url: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/domain-filter-lists/main/whitelist.txt
         name: My own whitelist
         id: 3
       user_rules: []

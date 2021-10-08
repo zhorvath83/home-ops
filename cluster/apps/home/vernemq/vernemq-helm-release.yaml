@@ -54,7 +54,7 @@ spec:
     additionalEnv:
     - name: DOCKER_VERNEMQ_ACCEPT_EULA
       value: "yes"
-    - name: DOCKER_VERNEMQ_USER_${SECRET_CLUSTER_OWNER_USERNAME}
+    - name: DOCKER_VERNEMQ_USER_${SECRET_OWNER_USERNAME}
       value: "${SECRET_MQTT_PASSWORD}"
     # PodAntiAffinity configured to ensure the scheduler does not co-locate replicas on a single node.
     podAntiAffinity: hard

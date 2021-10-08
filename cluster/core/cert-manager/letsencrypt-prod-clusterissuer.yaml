@@ -18,5 +18,5 @@ spec:
             key: cloudflare-api-key
       selector:
         dnsZones:
-        - "${SECRET_CLUSTER_DOMAIN}"
-        - "*.${SECRET_CLUSTER_DOMAIN}"
+        - "${SECRET_DOMAIN}"
+        - "*.${SECRET_DOMAIN}"

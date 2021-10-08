@@ -38,7 +38,7 @@ spec:
     - ingress
     txtPrefix: "k8s."
     domainFilters:
-    - "${SECRET_CLUSTER_DOMAIN}"
+    - "${SECRET_DOMAIN}"
     resources:
       requests:
         cpu: 10m

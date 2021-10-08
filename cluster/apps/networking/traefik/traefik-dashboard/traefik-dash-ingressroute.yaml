@@ -9,7 +9,7 @@ spec:
   - websecure
   routes:
   - kind: Rule
-    match: Host(`traefik.${SECRET_CLUSTER_DOMAIN}`)
+    match: Host(`traefik.${SECRET_DOMAIN}`)
     services:
     - kind: TraefikService
       name: api@internal
@@ -17,4 +17,4 @@ spec:
     - name: middleware-chain-cf-auth
       namespace: networking
   tls:
-    secretName: "${SECRET_CLUSTER_DOMAIN/./-}-tls-secret"
+    secretName: "${SECRET_DOMAIN/./-}-tls"

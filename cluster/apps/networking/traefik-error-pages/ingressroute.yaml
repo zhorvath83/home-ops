@@ -16,4 +16,4 @@ spec:
           name: traefik-error-pages
           port: 80
   tls:
-    secretName: "${SECRET_CLUSTER_DOMAIN/./-}-tls"
+    secretName: "${SECRET_DOMAIN/./-}-tls"

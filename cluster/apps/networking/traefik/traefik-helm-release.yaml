@@ -73,7 +73,7 @@ spec:
     - "--serverstransport.insecureskipverify=true"
     - "--providers.kubernetesingress.ingressclass=traefik"
     # providers.kubernetesingress.ingressendpoint.hostname is set for external-dns support
-    - "--providers.kubernetesingress.ingressendpoint.hostname=${SECRET_CLUSTER_DOMAIN}"
+    - "--providers.kubernetesingress.ingressendpoint.hostname=${SECRET_DOMAIN}"
 
     ports:
       traefik:

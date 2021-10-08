@@ -40,13 +40,13 @@ spec:
           traefik.ingress.kubernetes.io/router.tls: "true"
           traefik.ingress.kubernetes.io/router.middlewares: networking-middleware-chain-cf-auth@kubernetescrd
         hosts:
-        - host: "sabnzbd.${SECRET_CLUSTER_DOMAIN}"
+        - host: "sabnzbd.${SECRET_DOMAIN}"
           paths:
           - path: /
             pathType: Prefix
         tls:
         - hosts:
-          - "sabnzbd.${SECRET_CLUSTER_DOMAIN}"
+          - "sabnzbd.${SECRET_DOMAIN}"
     podSecurityContext:
       supplementalGroups:
       - 100

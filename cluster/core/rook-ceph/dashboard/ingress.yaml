@@ -14,7 +14,7 @@ metadata:
 spec:
   ingressClassName: "traefik"
   rules:
-  - host: "rook.${SECRET_CLUSTER_DOMAIN}"
+  - host: "rook.${SECRET_DOMAIN}"
     http:
       paths:
       - path: /
