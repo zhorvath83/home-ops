@@ -4,4 +4,4 @@ kind: Kustomization
 resources:
 - whoami-deployment.yaml
 - whoami-service.yaml
-- whoami-ingressroute.yaml
+- whoami-ingress.yaml

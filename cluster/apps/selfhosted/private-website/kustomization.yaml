@@ -4,4 +4,4 @@ kind: Kustomization
 resources:
 - private-website-deployment.yaml
 - private-website-service.yaml
-- private-website-ingressroute.yaml
+- private-website-ingress.yaml

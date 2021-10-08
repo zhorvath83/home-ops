@@ -1,0 +1,45 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: duplicacy
+  namespace: selfhosted
+  labels:
+    app.kubernetes.io/name: duplicacy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: duplicacy
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: duplicacy
+    spec:
+      containers:
+      - name: duplicacy
+        image: ghcr.io/hotio/duplicacy:release-a93a7a4
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3875
+          protocol: TCP
+        resources:
+          requests:
+            cpu: 50m
+            memory: 10Mi
+          limits:
+            cpu: 2000m
+            memory: 4Gi
+        volumeMounts:
+        - mountPath: /config
+          name: duplicacy-data
+          subPath: config
+        - mountPath: /cache
+          name: duplicacy-data
+          subPath: cache
+        - mountPath: /logs
+          name: duplicacy-data
+          subPath: logs
+      volumes:
+      - existingClaim: duplicacy-data
+        name: duplicacy-data
