@@ -12,7 +12,7 @@ spec:
   tls:
     - hosts:
         - "traefik.${SECRET_CLUSTER_DOMAIN}"
-      secretName: "${SECRET_CLUSTER_DOMAIN/./-}-tls"
+      secretName: "${SECRET_CLUSTER_DOMAIN/./-}-tls-secret"
   rules:
     - host: "traefik.${SECRET_CLUSTER_DOMAIN}"
       http:
