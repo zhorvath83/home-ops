@@ -41,5 +41,6 @@ spec:
           name: duplicacy-data
           subPath: logs
       volumes:
-      - persistentVolumeClaim:
+      - name: duplicacy-data
+        persistentVolumeClaim:
           claimName: duplicacy-data
