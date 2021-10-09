@@ -27,9 +27,8 @@ spec:
       #notifyUrl: "${SECRET_KURED_DISCORD_WEBHOOK}"
       #messageTemplateDrain: "⏳ Draining node %s"
       #messageTemplateReboot: "♻️ Rebooted node %s"
+      rebootSentinel: "/var/run/reboot-required"
       rebootCommand: "/usr/bin/systemctl reboot"
     tolerations:
       - key: "node-role.kubernetes.io/master"
         operator: "Exists"
-    #metrics:
-    #  create: true
