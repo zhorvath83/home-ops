@@ -2,28 +2,28 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: pgbackups-data
+  name: backup-share
 spec:
-  storageClassName: pgbackups-data-storage
+  storageClassName: backup-share-storage
   accessModes:
   - ReadWriteMany
   capacity:
     storage: 1Mi
   persistentVolumeReclaimPolicy: Retain
   hostPath:
-    path: /mnt/backup/pgbackups
+    path: /mnt/backup
 
 ---
 
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: pgbackups-data
+  name: backup-share
   namespace: selfhosted
 spec:
   accessModes:
   - ReadWriteMany
-  storageClassName: pgbackups-data-storage
+  storageClassName: backup-share-storage
   resources:
     requests:
       storage: 1Mi

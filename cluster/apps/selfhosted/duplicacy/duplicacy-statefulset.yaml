@@ -19,17 +19,17 @@ spec:
     spec:
       containers:
       - name: duplicacy
-        image: ghcr.io/hotio/duplicacy:release-a93a7a4
+        image: saspus/duplicacy-web:v1.5.0
         imagePullPolicy: IfNotPresent
         env:
-        - name: PUID
-          value: "1000"
-        - name: PGID
-          value: "1000"
-        - name: UMASK
-          value: "002"
+        # - name: USR_ID
+        #   value: "1000"
+        # - name: GRP_ID
+        #   value: "1000"
         - name: TZ
           value: "${CLUSTER_TIMEZONE}"
+        - name: DWE_PASSWORD
+          value: "${SECRET_DUPLICACY_DWE_PWD}"
         ports:
         - containerPort: 3875
           protocol: TCP
@@ -44,13 +44,19 @@ spec:
         - mountPath: /config
           name: duplicacy-data
           subPath: config
-        - mountPath: /cache
-          name: duplicacy-data
-          subPath: cache
         - mountPath: /logs
           name: duplicacy-data
           subPath: logs
+        - mountPath: /cache
+          name: duplicacy-cache
+        - name: backup-share
+          mountPath: /backups
       volumes:
       - name: duplicacy-data
         persistentVolumeClaim:
           claimName: duplicacy-data
+      - name: duplicacy-cache
+        emptyDir: {}
+      - name: backup-share
+        persistentVolumeClaim:
+          claimName: backup-share
