@@ -16,9 +16,7 @@
   },
   "helm-values": {
     "fileMatch": [
-      "cluster/.+helm-release\\.yaml$",
-      "cluster/.+deployment\\.yaml$",
-      "cluster/.+cronjob\\.yaml$"
+      "cluster/.+helm-release\\.yaml$"
       ]
   },
   "kubernetes": {
