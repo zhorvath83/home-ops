@@ -6,8 +6,7 @@ metadata:
   namespace: rook-ceph
 spec:
   cephVersion:
-    image: ceph/ceph:v16.2.5
-    imagePullPolicy: IfNotPresent
+    image: quay.io/ceph/ceph:v16.2.6
     allowUnsupported: false
   dataDirHostPath: /var/lib/rook
   skipUpgradeChecks: false
@@ -16,6 +15,10 @@ spec:
   mon:
     count: 3
     allowMultiplePerNode: false
+  placement:
+    all:
+      tolerations:
+        - operator: "Exists"
   monitoring:
     enabled: false
     rulesNamespace: rook-ceph
@@ -30,8 +33,8 @@ spec:
       iteration: 1
   mgr:
     modules:
-    - name: pg_autoscaler
-      enabled: true
+      - name: pg_autoscaler
+        enabled: true
   dashboard:
     enabled: true
     port: 7000
