@@ -18,6 +18,7 @@ spec:
       interval: 5m
 
   values:
+    fullnameOverride: external-dns
     image:
       pullPolicy: IfNotPresent
     interval: 5m
