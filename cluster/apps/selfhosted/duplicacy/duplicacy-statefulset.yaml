@@ -21,6 +21,13 @@ spec:
       - name: duplicacy
         image: saspus/duplicacy-web:v1.5.0
         imagePullPolicy: IfNotPresent
+        livenessProbe:
+          exec:
+            command:
+            - sh | - '-c'|- exit $(test $(date +%H) -eq 3 && echo 1 || echo 0)
+          failureThreshold: 1
+          initialDelaySeconds: 3600
+          periodSeconds: 60
         env:
         # - name: USR_ID
         #   value: "1000"
