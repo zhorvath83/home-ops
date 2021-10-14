@@ -125,6 +125,10 @@ services:
   - name: Management
     icon: fas fa-server
     items:
+      - name: Duplicacy
+        subtitle: Backup solution
+        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/duplicacy.png
+        url: https://duplicacy.${SECRET_DOMAIN}
       - name: Rook-CEPH
         subtitle: Distributed block storage
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/rook.png
