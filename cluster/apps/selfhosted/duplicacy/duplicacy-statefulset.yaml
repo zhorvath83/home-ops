@@ -39,9 +39,10 @@ spec:
         lifecycle:
           preStop:
             exec:
-            - /bin/sh
-            - -c
-            - "${SECRET_DUPLICACY_INIT_CMD}"
+              command:
+              - /bin/sh
+              - -c
+              - "${SECRET_DUPLICACY_INIT_CMD}"
         env:
         # - name: USR_ID
         #   value: "1000"
