@@ -34,7 +34,7 @@ spec:
             - -c
             - exit $(test $(date +%d%H%M%S) -eq 01180001 || test $(date +%d%H%M%S) -eq 16180001 && echo 1 || echo 0)
           failureThreshold: 1
-          initialDelaySeconds: 3600
+          initialDelaySeconds: 60
           periodSeconds: 60
         lifecycle:
           preStop:
