@@ -32,10 +32,11 @@ spec:
             command:
             - /bin/sh
             - -c
-            - exit $(test $(date +%d%H) -eq 0118 || test $(date +%d%H) -eq 1618 && echo 1 || echo 0)
+            #- exit $(test $(date +%d%H) -eq 0118 || test $(date +%d%H) -eq 1618 && echo 1 || echo 0)
+            - exit $(test $(uptime=$(</proc/uptime) ;  uptime=${uptime%%.*} ; days=$(( uptime/60/60/24 )); currenttime=$(date +%H%M); echo $days$currenttime) -eq 01800 && echo 1 || echo 0)
           failureThreshold: 1
-          initialDelaySeconds: 3600
-          periodSeconds: 1800
+          initialDelaySeconds: 60
+          periodSeconds: 60
         lifecycle:
           preStop:
             exec:
