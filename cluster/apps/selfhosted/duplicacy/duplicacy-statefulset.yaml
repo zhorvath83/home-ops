@@ -32,10 +32,10 @@ spec:
             command:
             - /bin/sh
             - -c
-            - exit $(test $(date +%d%H%M%S) -eq 01180001 || test $(date +%d%H%M%S) -eq 16180001 && echo 1 || echo 0)
+            - exit $(test $(date +%d%H) -eq 0118 || test $(date +%d%H) -eq 1618 && echo 1 || echo 0)
           failureThreshold: 1
-          initialDelaySeconds: 60
-          periodSeconds: 60
+          initialDelaySeconds: 3600
+          periodSeconds: 1800
         lifecycle:
           preStop:
             exec:
