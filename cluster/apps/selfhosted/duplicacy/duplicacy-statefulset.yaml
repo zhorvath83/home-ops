@@ -37,9 +37,11 @@ spec:
           #initialDelaySeconds: 3600
           periodSeconds: 60
         lifecycle:
-          PreStop:
+          preStop:
             exec:
-              command: ['sh', '-c', "${SECRET_DUPLICACY_INIT_CMD}"]
+            - /bin/sh
+            - -c
+            - ${SECRET_DUPLICACY_INIT_CMD}
         env:
         # - name: USR_ID
         #   value: "1000"
