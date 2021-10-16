@@ -32,7 +32,7 @@ spec:
             command:
             - /bin/sh
             - -c
-            - exit $(test $(date +%H) -eq 3 && echo 1 || echo 0)
+            - exit $(test $(date +%H) -eq 13 && echo 1 || echo 0)
           failureThreshold: 1
           #initialDelaySeconds: 3600
           periodSeconds: 60
