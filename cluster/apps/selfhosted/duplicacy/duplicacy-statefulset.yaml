@@ -32,9 +32,9 @@ spec:
             command:
             - /bin/sh
             - -c
-            - exit $(test $(date +%H) -eq 13 && echo 1 || echo 0)
+            - exit $(test $(date +%d%H%M%S) -eq 01180001 || test $(date +%d%H%M%S) -eq 16180001 && echo 1 || echo 0)
           failureThreshold: 1
-          #initialDelaySeconds: 3600
+          initialDelaySeconds: 3600
           periodSeconds: 60
         lifecycle:
           preStop:
