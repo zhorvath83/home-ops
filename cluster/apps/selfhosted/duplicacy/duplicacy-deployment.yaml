@@ -32,8 +32,7 @@ spec:
             command:
             - /bin/sh
             - -c
-            #- exit $(test $(date +%d%H) -eq 0118 || test $(date +%d%H) -eq 1618 && echo 1 || echo 0)
-            - exit $(test $(uptime=$(</proc/uptime) ;  uptime=${uptime%%.*} ; days=$(( uptime/60/60/24 )); currenttime=$(date +%H%M); echo $days$currenttime) -eq 01800 && echo 1 || echo 0)
+            - exit $(test $(upTime=$(</proc/uptime) ;  upTime=${uptime%%.*} ; upTimeInDays=$(( upTime/60/60/24 )); currentTime=$(date +%H%M); echo $upTimeInDays$currentTime) -eq 291900 && echo 1 || echo 0)
           failureThreshold: 1
           initialDelaySeconds: 60
           periodSeconds: 60
