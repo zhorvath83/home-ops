@@ -30,9 +30,11 @@ spec:
         livenessProbe:
           exec:
             command:
+            - /bin/sh
+            - -c
             - exit $(test $(date +%H) -eq 3 && echo 1 || echo 0)
           failureThreshold: 1
-          initialDelaySeconds: 3600
+          #initialDelaySeconds: 3600
           periodSeconds: 60
         env:
         # - name: USR_ID
