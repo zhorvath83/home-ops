@@ -1,0 +1,33 @@
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: mailrise
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: mailrise
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mailrise
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mailrise
+    spec:
+      containers:
+      - name: mailrise
+        image: yoryan/mailrise:release-1.2.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8025
+          name: mailrise
+        volumeMounts:
+        - name: mailrise-config
+          mountPath: /etc/mailrise.conf
+          subPath: mailrise.conf
+      volumes:
+      - name: mailrise-config
+        configMap:
+          name: mailrise-config
