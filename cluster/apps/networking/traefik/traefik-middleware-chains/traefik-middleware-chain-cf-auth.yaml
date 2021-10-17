@@ -12,4 +12,3 @@ spec:
     - name: middleware-secure-headers
     - name: middleware-retry
     - name: middleware-cf-access-auth
-    - name: middleware-error-pages
