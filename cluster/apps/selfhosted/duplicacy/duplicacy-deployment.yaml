@@ -32,7 +32,7 @@ spec:
             command:
             - /bin/sh
             - -c
-            - exit $(test $(upTime=$(</proc/uptime) ;  upTime=${uptime%%.*} ; upTimeInDays=$(( upTime/60/60/24 )); currentTime=$(date +%H%M); echo $upTimeInDays$currentTime) -eq 291900 && echo 1 || echo 0)
+            - exit $(test $(upTime=$(</proc/uptime) ;  upTime=${uptime%%.*} ; upTimeInDays=$(( upTime/60/60/24 )); currentTime=$(date +%H%M); echo $upTimeInDays$currentTime) -eq 290000 && echo 1 || echo 0)
           failureThreshold: 1
           initialDelaySeconds: 60
           periodSeconds: 60
@@ -60,8 +60,8 @@ spec:
             cpu: 50m
             memory: 10Mi
           limits:
-            cpu: 2000m
-            memory: 4Gi
+            cpu: 3000m
+            memory: 6Gi
         volumeMounts:
         - mountPath: /config
           name: duplicacy-data
