@@ -103,7 +103,7 @@ services:
     items:
       - name: Home Assistant
         subtitle: Home automation
-        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/home-assistant.png
+        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/home-assistant.svg
         url: https://homeassistant.${SECRET_DOMAIN}
       - name: Tandoor recipes
         subtitle: Private recipe collection
@@ -137,7 +137,7 @@ services:
         subtitle: DNS sinkhole
         tag: "AdBlocker"
         tagstyle: "is-info"
-        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/adguardhome.png
+        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/adguardhome.svg
         url: http://${CLUSTER_SVC_LAN_DNS_IP}
       - name: OpenMediaVault
         subtitle: NAS web UI
@@ -147,6 +147,10 @@ services:
         subtitle: Asus Router web UI
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/router.png
         url: http://${CLUSTER_LAN_ROUTER_IP}
+      - name: Cloudflare
+        subtitle: DNS / CDN
+        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/cloudflare.svg
+        url: https://dash.cloudflare.com
 
   - name: Downloading
     icon: fas fa-download
@@ -157,11 +161,11 @@ services:
         url: https://qbittorrent.${SECRET_DOMAIN}
       - name: Bazarr
         subtitle: Search for missing subtitles
-        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/bazarr.png
+        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/bazarr.svg
         url: https://bazarr.${SECRET_DOMAIN}
       - name: Prowlarr
         subtitle: Indexer manager/proxy
-        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/prowlarr.png
+        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/prowlarr.svg
         url: https://prowlarr.${SECRET_DOMAIN}
       - name: Radarr
         subtitle: Movie collection manager
