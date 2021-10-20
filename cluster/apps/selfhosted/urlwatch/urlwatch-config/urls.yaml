@@ -48,4 +48,16 @@ filter:
   - html2text: re
   - strip
 
+---
+
+name: "Jellyfin Plugin for Kodi"
+url: "https://github.com/jellyfin/jellyfin-kodi/releases"
+filter:
+  - css:
+      selector: '.open'
+      exclude: '.mt-4, .verified, .text-md-left, .p-3'
+  - html2text: re
+  - strip
+
+
 ...
