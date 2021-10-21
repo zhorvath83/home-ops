@@ -10,25 +10,25 @@ job_defaults:
   url: {}
 report:
   email:
-    enabled: true
+    enabled: false
     from: '${SECRET_EMAIL_2}'
     html: true
     method: smtp
     sendmail:
       path: sendmail
     smtp:
-      #auth: true
+      auth: true
       host: '${CLUSTER_SVC_SMTP_GATEWAY_IP}'
-      #port: '${SECRET_SMTP_PORT}'
-      #starttls: true
-      #user: '${SECRET_SMTP_USER}'
-      #insecure_password: '${SECRET_SMTP_PASSWD}'
+      port: '${SECRET_SMTP_PORT}'
+      starttls: true
+      user: '${SECRET_SMTP_USER}'
+      insecure_password: '${SECRET_SMTP_PASSWD}'
     subject: '{count} website changed: {jobs}'
     to: 'telegram@mailrise.xyz'
   stdout:
     color: true
     enabled: true
   telegram:
-    enabled: false
-    bot_token: ''
-    chat_id: ''
+    enabled: true
+    bot_token: '${SECRET_TELEGRAM_BOT_TOKEN}'
+    chat_id: '${SECRET_TELEGRAM_CHAT_ID}'
