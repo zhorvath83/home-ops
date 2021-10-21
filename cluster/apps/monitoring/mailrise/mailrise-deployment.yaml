@@ -6,6 +6,8 @@ metadata:
   namespace: monitoring
   labels:
     app.kubernetes.io/name: mailrise
+  annotations:
+    reloader.stakater.com/auto: "true"
 spec:
   replicas: 2
   selector:
