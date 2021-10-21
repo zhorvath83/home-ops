@@ -17,14 +17,14 @@ report:
     sendmail:
       path: sendmail
     smtp:
-      auth: true
-      host: '${SECRET_SMTP_HOST}'
-      port: '${SECRET_SMTP_PORT}'
-      starttls: true
-      user: '${SECRET_SMTP_USER}'
-      insecure_password: '${SECRET_SMTP_PASSWD}'
+      #auth: true
+      host: '${CLUSTER_SVC_SMTP_GATEWAY_IP}'
+      #port: '${SECRET_SMTP_PORT}'
+      #starttls: true
+      #user: '${SECRET_SMTP_USER}'
+      #insecure_password: '${SECRET_SMTP_PASSWD}'
     subject: '{count} website changed: {jobs}'
-    to: '${SECRET_EMAIL_2}'
+    to: 'telegram@mailrise.xyz'
   stdout:
     color: true
     enabled: true

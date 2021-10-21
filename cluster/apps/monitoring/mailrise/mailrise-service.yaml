@@ -7,7 +7,8 @@ metadata:
 spec:
   ports:
   - protocol: TCP
-    port: 8025
+    port: 25
+    targetPort: 8025
   selector:
     app.kubernetes.io/name: mailrise
   type: LoadBalancer
