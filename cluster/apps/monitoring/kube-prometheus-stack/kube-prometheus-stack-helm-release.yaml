@@ -117,9 +117,6 @@ spec:
         serviceMonitorSelectorNilUsesHelmValues: false
         podMonitorSelectorNilUsesHelmValues: false
         probeSelectorNilUsesHelmValues: false
-        enableAdminAPI: false
+        enableAdminAPI: true
         walCompression: false
         storageSpec: {}
-        additionalScrapeConfigs:
-          - job_name: "node-exporter"
-            honor_timestamps: true
