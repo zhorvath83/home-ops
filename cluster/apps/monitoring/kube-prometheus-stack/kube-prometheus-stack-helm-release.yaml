@@ -105,7 +105,7 @@ spec:
           username: ${SECRET_GRAFANA_CLOUD_INSTANCE}
           password: ${SECRET_GRAFANA_CLOUD_APIKEY}
       ## Enable/Disable Grafana dashboards provisioning for prometheus remote write feature
-      remoteWriteDashboards: false
+      remoteWriteDashboards: true
       thanosService:
         enabled: false
       thanosServiceMonitor:
