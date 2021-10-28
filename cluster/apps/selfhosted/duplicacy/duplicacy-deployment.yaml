@@ -7,6 +7,10 @@ metadata:
   labels:
     app.kubernetes.io/name: duplicacy
 spec:
+  replicas: 1
+  strategy:
+    # All existing Pods are killed before new ones are created
+    type: Recreate
   selector:
     matchLabels:
       app.kubernetes.io/name: duplicacy
