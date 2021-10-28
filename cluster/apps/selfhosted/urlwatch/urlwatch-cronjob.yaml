@@ -35,9 +35,8 @@ spec:
             resources:
               requests:
                 cpu: 50m
-                memory: 100Mi
+                memory: 96Mi
               limits:
-                cpu: 500m
                 memory: 384Mi
             volumeMounts:
             - name: urlwatch-data
