@@ -11,10 +11,8 @@ metadata:
 spec:
   replicas: 1
   strategy:
-    rollingUpdate:
-      maxSurge: 0
-      maxUnavailable: 1
-    type: RollingUpdate
+    # All existing Pods are killed before new ones are created
+    type: Recreate
   selector:
     matchLabels:
       app.kubernetes.io/name: mosquitto

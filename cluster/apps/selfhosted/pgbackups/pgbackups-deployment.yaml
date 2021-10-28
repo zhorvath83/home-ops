@@ -7,15 +7,13 @@ metadata:
   labels:
     app.kubernetes.io/name: pgbackups
 spec:
+  replicas: 1
+  strategy:
+    # All existing Pods are killed before new ones are created
+    type: Recreate
   selector:
     matchLabels:
       app.kubernetes.io/name: pgbackups
-  replicas: 1
-  strategy:
-    rollingUpdate:
-      maxSurge: 0
-      maxUnavailable: 1
-    type: RollingUpdate
   template:
     metadata:
       labels:
