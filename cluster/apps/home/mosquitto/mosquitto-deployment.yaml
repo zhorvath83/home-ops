@@ -35,7 +35,7 @@ spec:
                 topologyKey: kubernetes.io/hostname
       containers:
       - name: mosquitto
-        image: eclipse-mosquitto:2.0.12
+        image: eclipse-mosquitto:2.0.13
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 1883
