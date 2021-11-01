@@ -63,5 +63,6 @@ spec:
           secret:
             secretName: mosquitto-secret
         - name: mosquitto-data
-          persistentVolumeClaim:
-            claimName: mosquitto-data
+          emptyDir: {}
+          # persistentVolumeClaim:
+          #   claimName: mosquitto-data
