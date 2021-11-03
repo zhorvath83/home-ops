@@ -18,7 +18,7 @@ spec:
           restartPolicy: Never
           containers:
           - name: urlwatch
-            image: vimagick/urlwatch@sha256:21d5d63c69e881f59ecd07fd5917164bafeec4907fa7039977a61964ec500240
+            image: vimagick/urlwatch@sha256:b49b0d4aedbfcc7ab189549696754e79e07fd796bfca277de8004f08c6bd1332
             imagePullPolicy: IfNotPresent
             command:
             - sh
