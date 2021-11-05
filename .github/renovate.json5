@@ -169,6 +169,13 @@
         "public.ecr.aws/bitnami/postgresql"
       ]
     },
+    {
+      "matchDatasources": ["docker"],
+      "allowedVersions": "21d5d63c69e881f59ecd07fd5917164bafeec4907fa7039977a61964ec500240",
+      "matchPackageNames": [
+        "vimagick/urlwatch"
+      ]
+    },
     // version strategies
     {
       "matchDatasources": ["docker"],
