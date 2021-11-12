@@ -19,7 +19,7 @@ spec:
           containers:
           - name: urlwatch
             # Pinned version because of non working release
-            image: vimagick/urlwatch@sha256:21d5d63c69e881f59ecd07fd5917164bafeec4907fa7039977a61964ec500240
+            image: vimagick/urlwatch@sha256:495f49c4e3917cbe9ba8e4b23223e2a16631c8773d378f386b076a860499a18d
             imagePullPolicy: IfNotPresent
             command:
             - sh
