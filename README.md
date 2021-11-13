@@ -13,7 +13,7 @@ _managed by Flux CD (GitOps) and Renovate_
 <div align="center">
 
 
-[![k3s](https://img.shields.io/badge/k3s-v1.21.5-brightgreen?style=for-the-badge&logo=kubernetes&logoColor=white)](https://k3s.io/)
+[![k3s](https://img.shields.io/badge/k3s-v1.22.3-brightgreen?style=for-the-badge&logo=kubernetes&logoColor=white)](https://k3s.io/)
 [![renovate](https://img.shields.io/badge/renovate-enabled-brightgreen?style=for-the-badge&logo=renovatebot&logoColor=white)](https://github.com/renovatebot/renovate)
 [![Lines of code](https://img.shields.io/tokei/lines/github/zhorvath83/kube-cluster?style=for-the-badge&color=brightgreen&label=lines&logo=codefactor&logoColor=white)](https://github.com/zhorvath83/kube-cluster/graphs/contributors)
   
