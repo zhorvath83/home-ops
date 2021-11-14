@@ -23,7 +23,6 @@ sudo kubectl create secret generic sops-gpg \
 `kubectl apply --kustomize=./cluster/base/flux-system`
 
 
-
 **📣  Post installation**
 
 📍  Verify Flux
@@ -32,6 +31,7 @@ sudo kubectl create secret generic sops-gpg \
 
 📍 [VSCode SOPS extension](https://marketplace.visualstudio.com/items?itemName=signageos.signageos-vscode-sops)
 VSCode SOPS is a neat little plugin for those using VSCode. It will automatically decrypt you SOPS secrets when you click on the file in the editor and encrypt them when you save and exit the file.
+
 
 **👉  Debugging**
 
@@ -54,10 +54,10 @@ VSCode SOPS is a neat little plugin for those using VSCode. It will automaticall
 `flux get sources helm -A`
 
 📍 Reconcile Flux resources
-`flux reconcile helmrelease traefik -n traefik`
+`flux reconcile helmrelease <release> -n <name-space>`
 
 📍 Pause the Flux Helm Release
-`flux suspend hr home-assistant -n home`
+`flux suspend hr <release> -n <name-space>`
 
 📍 Print the reconciliation logs of all Flux custom resources in your cluster
 `flux logs --all-namespaces`
@@ -69,4 +69,16 @@ VSCode SOPS is a neat little plugin for those using VSCode. It will automaticall
 `flux logs --kind=Kustomization --name=podinfo --namespace=default`
 
 📍 Print logs when Flux is installed in a different namespace than flux-system
-`flux logs --flux-namespace=my-namespace`
+`flux logs --flux-namespace=<name-space>`
+
+
+**👉  Troubleshooting**
+
+📍 Use the following command to also see charts in all namespaces and also the ones where installation is in progress
+`helm list -Aa`
+
+📍 If experiencing "Helm upgrade failed: another operation (install/upgrade/rollback) is in progress..."
+`helm history <release> -n <name-space>`
+
+📍 Then apply a rollback to the latest helathy revision.
+`helm rollback <release> <revision> -n <name-space>`
