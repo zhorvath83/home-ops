@@ -46,12 +46,15 @@ spec:
             - name: urlwatch-config
               mountPath: /root/.urlwatch/urlwatch.yaml
               subPath: urlwatch.yaml
+              readOnly: true
             - name: urlwatch-config
               mountPath: /root/.urlwatch/urls.yaml
               subPath: urls.yaml
+              readOnly: true
             - name: urlwatch-config
               mountPath: /root/.urlwatch/hooks.py
               subPath: hooks.py
+              readOnly: true
           volumes:
           - name: urlwatch-config
             configMap:
