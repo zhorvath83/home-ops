@@ -16,6 +16,7 @@ spec:
       template:
         spec:
           restartPolicy: Never
+          automountServiceAccountToken: false
           containers:
           - name: urlwatch
             # Pinned version because of non working release
