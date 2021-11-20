@@ -69,6 +69,14 @@ spec:
         - ${CLUSTER_HOST1_IP}
         - ${CLUSTER_HOST2_IP}
         - ${CLUSTER_HOST3_IP}
+      service:
+        enabled: true
+        port: 10259
+        targetPort: 10259
+      serviceMonitor:
+        enabled: true
+        https: true
+        insecureSkipVerify: true
     kubeProxy:
       enabled: true
       endpoints:
