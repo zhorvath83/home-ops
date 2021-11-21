@@ -24,7 +24,7 @@ spec:
       timeZone: "${CLUSTER_TIMEZONE}"
       startTime: "00:00"
       endTime: "01:00"
-      notifyUrl: "smtp://${CLUSTER_SVC_SMTP_GATEWAY_IP}/?fromAddress=${SECRET_EMAIL_2}&toAddresses=telegram@mailrise.xyz"
+      notifyUrl: "${SECRET_KURED_DISCORD_WEBHOOK}"
       messageTemplateDrain: "⏳ Draining node %s"
       messageTemplateReboot: "♻️ Rebooted node %s"
       rebootSentinel: "/var/run/reboot-required"
@@ -32,3 +32,5 @@ spec:
     tolerations:
       - key: "node-role.kubernetes.io/master"
         operator: "Exists"
+    metrics:
+      create: true

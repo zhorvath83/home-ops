@@ -32,3 +32,8 @@ report:
     enabled: true
     bot_token: '${SECRET_TELEGRAM_BOT_TOKEN}'
     chat_id: '${SECRET_TELEGRAM_CHAT_ID}'
+  discord:
+    enabled: true
+    webhook_url: '${SECRET_URLWATCH_DISCORD_WEBHOOK}'
+    embed: true
+    subject: '{count} changes: {jobs}'
