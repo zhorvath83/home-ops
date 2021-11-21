@@ -171,10 +171,6 @@ services:
         subtitle: Movie collection manager
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/radarr.png
         url: https://radarr.${SECRET_DOMAIN}
-      - name: SABnzbd
-        subtitle: Automated Usenet download tool
-        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/sabnzbd.png
-        url: https://sabnzbd.${SECRET_DOMAIN}
       - name: Sonarr
         subtitle: PVR for Usenet and BitTorrent
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/sonarr.png
@@ -203,3 +199,7 @@ services:
         subtitle: Metrics collector
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/prometheus.png
         url: https://prometheus.${SECRET_DOMAIN}
+      - name: Alertmanager
+        subtitle: Prometheus alert manager
+        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/alertmanager.png
+        url: https://alert-manager.${SECRET_DOMAIN}
