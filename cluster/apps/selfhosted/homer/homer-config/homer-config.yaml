@@ -85,14 +85,14 @@ services:
         subtitle: Personal finance management
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/buxfer.png
         url: https://www.buxfer.com
-      - name: Erste George
-        subtitle: Erste NetBank
+      - name: Erste NetBank
+        subtitle: Erste Bank Hungary Zrt.
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/erste-george.png
         url: https://george.erstebank.hu
-      - name: Erste Investment
+      - name: Erste NetBroker
         subtitle: Erste Befektetési Zrt.
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/erste.png
-        url: https://www.ersteinvestment.hu
+        url: https://netbroker.erstebroker.hu/
       - name: MÁK WebKincstár
         subtitle: Magyar Államkincstár
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/mak.png
