@@ -11,4 +11,4 @@ resources:
 - private-website
 - homer
 - duplicacy
-- vikunja
+#- vikunja
