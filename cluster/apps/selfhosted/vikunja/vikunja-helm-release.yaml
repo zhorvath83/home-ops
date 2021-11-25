@@ -17,6 +17,11 @@ spec:
         namespace: flux-system
       interval: 5m
   values:
+    caddy:
+      noTls: true
+    vikunja:
+      config: "service:\n timezone: \"${CLUSTER_TIMEZONE}\""
+
     image:
       repository: caddy
       tag: 2.4.6-alpine
@@ -108,7 +113,6 @@ spec:
             done
             if PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -lqt | cut -d \| -f 1 | grep -qw $POSTGRES_DB_NAME; then
               PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER <<-EOSQL
-              ALTER USER $POSTGRES_DB_USER WITH SUPERUSER;
             EOSQL
               echo "database already exist, exiting initContainer"
               exit 0
