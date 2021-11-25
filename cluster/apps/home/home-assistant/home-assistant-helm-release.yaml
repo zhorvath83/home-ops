@@ -59,14 +59,16 @@ spec:
         annotations:
           traefik.ingress.kubernetes.io/router.entrypoints: websecure
           traefik.ingress.kubernetes.io/router.tls: "true"
-          traefik.ingress.kubernetes.io/router.middlewares: networking-middleware-chain-noauth@kubernetescrd
+          traefik.ingress.kubernetes.io/router.middlewares: networking-middleware-chain-cf-auth@kubernetescrd
         hosts:
           - host: "homeassistant.${SECRET_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix
-        tls: {}
-
+        tls:
+          - hosts:
+              - "homeassistant.${SECRET_DOMAIN}"
+            secretName: "${SECRET_DOMAIN/./-}-tls"
     prometheus:
       serviceMonitor:
         enabled: false
