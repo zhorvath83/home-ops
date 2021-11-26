@@ -155,6 +155,12 @@ services:
         subtitle: DNS / CDN
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/cloudflare.svg
         url: https://dash.cloudflare.com
+      - name: PGAdmin
+        subtitle: PostgreSQL administration platform
+        tag: "Database"
+        tagstyle: "is-info"
+        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/pgadmin.png
+        url: https://pgadmin.${SECRET_DOMAIN}
 
   - name: Downloading
     icon: fas fa-download
@@ -196,7 +202,7 @@ services:
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/grafana.png
         url: https://grafana.${SECRET_DOMAIN}
       - name: Traefik
-        subtitle: Kube ingress dashboard
+        subtitle: Traefik ingress dashboard
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/traefik.png
         url: https://traefik.${SECRET_DOMAIN}
       - name: Prometheus
