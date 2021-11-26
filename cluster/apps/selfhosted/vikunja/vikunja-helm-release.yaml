@@ -53,7 +53,7 @@ spec:
           traefik.ingress.kubernetes.io/router.tls: "true"
           traefik.ingress.kubernetes.io/router.middlewares: networking-middleware-chain-cf-auth@kubernetescrd
         hosts:
-          - host: "todo.${SECRET_CLUSTER_DOMAIN}"
+          - host: "todo.${SECRET_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix
