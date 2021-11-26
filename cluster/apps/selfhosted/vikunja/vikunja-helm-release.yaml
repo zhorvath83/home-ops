@@ -125,7 +125,6 @@ spec:
               ALTER DATABASE $POSTGRES_DB_NAME OWNER TO $POSTGRES_DB_USER;
               ALTER ROLE $POSTGRES_DB_USER SET client_encoding TO 'utf8';
               ALTER ROLE $POSTGRES_DB_USER SET timezone TO 'UTC';
-              ALTER USER $POSTGRES_DB_USER WITH SUPERUSER;
             EOSQL
             echo "Done"
             fi
