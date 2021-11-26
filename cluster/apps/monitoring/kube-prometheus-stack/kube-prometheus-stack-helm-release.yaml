@@ -70,10 +70,10 @@ spec:
           traefik.ingress.kubernetes.io/router.tls: "true"
           traefik.ingress.kubernetes.io/router.middlewares: networking-middleware-chain-cf-auth@kubernetescrd
         hosts:
-          - "alert-manager.${SECRET_DOMAIN}"
+          - "alertmanager.${SECRET_DOMAIN}"
         tls:
           - hosts:
-              - "alert-manager.${SECRET_DOMAIN}"
+              - "alertmanager.${SECRET_DOMAIN}"
       alertmanagerSpec: {}
     nodeExporter:
       serviceMonitor:

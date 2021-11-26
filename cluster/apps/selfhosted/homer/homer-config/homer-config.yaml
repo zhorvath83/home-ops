@@ -212,4 +212,4 @@ services:
       - name: Alertmanager
         subtitle: Prometheus alert manager
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/alertmanager.png
-        url: https://alert-manager.${SECRET_DOMAIN}
+        url: https://alertmanager.${SECRET_DOMAIN}
