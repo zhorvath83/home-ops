@@ -159,7 +159,7 @@ services:
         subtitle: PostgreSQL administration platform
         tag: "Database"
         tagstyle: "is-info"
-        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/pgadmin.png
+        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/pgadmin.png
         url: https://pgadmin.${SECRET_DOMAIN}
 
   - name: Downloading
