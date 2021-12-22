@@ -158,7 +158,7 @@ spec:
         bogus_nxdomain: []
         aaaa_disabled: true
         enable_dnssec: false
-        upstream_timeout: 2
+        upstream_timeout: 2s
         edns_client_subnet: false
         max_goroutines: 300
         ipset: []
