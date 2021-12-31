@@ -11,6 +11,7 @@ spec:
       # renovate: registryUrl=https://charts.rook.io/release
       chart: rook-ceph
       version: v1.8.1
+      # https://github.com/rook/rook/blob/master/Documentation/ceph-upgrade.md
       sourceRef:
         kind: HelmRepository
         name: rook-ceph-charts
