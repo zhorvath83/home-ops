@@ -5,4 +5,4 @@ helm history <HelmReleaseName> -n <HelmReleaseNameSpace>
 
 helm rollback <HelmReleaseName> <RevisionNr> -n <HelmReleaseNameSpace>
 
-flux reconcile HelmRelease <HelmReleaseName> -n <HelmReleaseNameSpace>
+flux reconcile helmrelease <HelmReleaseName> -n <HelmReleaseNameSpace>
