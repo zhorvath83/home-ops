@@ -18,7 +18,6 @@ spec:
       interval: 5m
   values:
     image:
-      repository: ghcr.io/k8s-at-home/prowlarr
       tag: v0.1.10.1343
       pullPolicy: IfNotPresent
     env:

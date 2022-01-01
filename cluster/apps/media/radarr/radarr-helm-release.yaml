@@ -18,7 +18,6 @@ spec:
       interval: 5m
   values:
     image:
-      repository: ghcr.io/k8s-at-home/radarr
       tag: v3.2.2.5080
       pullPolicy: IfNotPresent
     env:
