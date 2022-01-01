@@ -20,8 +20,6 @@ spec:
   values:
     image:
       pullPolicy: IfNotPresent
-    rbac:
-      create: true
     interval: 5m
     logLevel: debug
     provider: cloudflare
