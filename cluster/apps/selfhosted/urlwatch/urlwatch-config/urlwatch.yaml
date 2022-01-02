@@ -9,22 +9,6 @@ job_defaults:
   shell: {}
   url: {}
 report:
-  email:
-    enabled: false
-    from: '${SECRET_EMAIL_2}'
-    html: true
-    method: smtp
-    sendmail:
-      path: sendmail
-    smtp:
-      auth: true
-      host: '${CLUSTER_SVC_SMTP_GATEWAY_IP}'
-      port: '${SECRET_SMTP_PORT}'
-      starttls: true
-      user: '${SECRET_SMTP_USER}'
-      insecure_password: '${SECRET_SMTP_PASSWD}'
-    subject: '{count} website changed: {jobs}'
-    to: 'telegram@mailrise.xyz'
   stdout:
     color: true
     enabled: true
