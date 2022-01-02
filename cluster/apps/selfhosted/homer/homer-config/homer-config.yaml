@@ -125,6 +125,10 @@ services:
         subtitle: Kodi media server
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/kodi.png
         url: http://${CLUSTER_LAN_KODI_IP}:8080
+      - name: Vikunja
+        subtitle: Open-Source To-Do app
+        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/vikunja.png
+        url: https://todo.${SECRET_DOMAIN}
 
   - name: Management
     icon: fas fa-server
