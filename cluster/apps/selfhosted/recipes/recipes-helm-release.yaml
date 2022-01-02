@@ -33,12 +33,12 @@ spec:
   values:
     image:
       repository: vabene1111/recipes
-      tag: 1.0.3
+      tag: 1.0.4
       pullPolicy: IfNotPresent
     sidecar:
       image:
         repository: nginx
-        tag: 1.21.4-alpine
+        tag: 1.21.5-alpine
         pullPolicy: IfNotPresent
 
     env:
