@@ -63,9 +63,6 @@ spec:
     config:
       osdsPerDevice: "1"
     nodes:
-    - name: "lenovo-m93p-1"
-      devices:
-      - name: "sda3"
     - name: "lenovo-m93p-2"
       devices:
       - name: "sda3"
