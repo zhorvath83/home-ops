@@ -11,7 +11,7 @@ spec:
   dataDirHostPath: /var/lib/rook
   skipUpgradeChecks: false
   continueUpgradeAfterChecksEvenIfNotHealthy: false
-  removeOSDsIfOutAndSafeToRemove: false
+  removeOSDsIfOutAndSafeToRemove: true
   mon:
     count: 2
     allowMultiplePerNode: false
