@@ -1,0 +1,45 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: longhorn
+  namespace: longhorn-system
+spec:
+  interval: 5m
+  chart:
+    spec:
+      # renovate: registryUrl=https://charts.longhorn.io
+      chart: longhorn
+      version: 1.2.3
+      sourceRef:
+        kind: HelmRepository
+        name: longhorn-charts
+        namespace: flux-system
+  values:
+    persistence:
+      defaultClass: true
+      defaultClassReplicaCount: 2
+      reclaimPolicy: Retain
+
+    defaultSettings:
+      defaultReplicaCount: 2
+      allowNodeDrainWithLastHealthyReplica: true
+      defaultDataLocality: best-effort
+      defaultDataPath: /var/lib/longhorn
+      concurrentAutomaticEngineUpgradePerNodeLimit: 1
+      nodeDownPodDeletionPolicy: delete-both-statefulset-and-deployment-pod
+      replicaAutoBalance: best-effort
+      storageMinimalAvailablePercentage: 10      
+      backupstorePollInterval: 300
+      backupTarget: nfs://${CLUSTER_LAN_NAS_IP}:/backup/LonghornBackupstore
+
+    ingress:
+      enabled: true
+      ingressClassName: "traefik"
+      host: "longhorn.${SECRET_DOMAIN}"
+      tls: true
+      tlsSecret: "${SECRET_DOMAIN/./-}-tls"
+      annotations:
+        traefik.ingress.kubernetes.io/router.entrypoints: websecure
+        traefik.ingress.kubernetes.io/router.tls: "true"
+        traefik.ingress.kubernetes.io/router.middlewares: networking-middleware-chain-cf-auth@kubernetescrd
