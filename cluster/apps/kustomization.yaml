@@ -6,7 +6,7 @@ resources:
 - system-upgrade
 - monitoring
 - networking
-- media
-- selfhosted
-- home
-- devops
+# - media
+# - selfhosted
+# - home
+# - devops
