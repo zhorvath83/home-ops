@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
 - kube-system.yaml
 - flux-system-namespace.yaml
+- longhorn-system-namespace.yaml
 # - rook-ceph-namespace.yaml
 - monitoring-namespace.yaml
 - networking-namespace.yaml
