@@ -7,6 +7,6 @@ resources:
 - monitoring
 - networking
 # - media
-# - selfhosted
+- selfhosted
 # - home
 # - devops
