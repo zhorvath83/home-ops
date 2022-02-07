@@ -33,6 +33,12 @@ spec:
       backupstorePollInterval: 300
       backupTarget: nfs://${CLUSTER_LAN_NAS_IP}:/backup/LonghornBackupstore
 
+    csi:
+      attacherReplicaCount: 2
+      provisionerReplicaCount: 2
+      resizerReplicaCount: 2
+      snapshotterReplicaCount: 2
+
     ingress:
       enabled: true
       ingressClassName: "traefik"
