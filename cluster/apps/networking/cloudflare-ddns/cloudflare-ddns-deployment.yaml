@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
       - name: cloudflare-ddns
-        image: ghcr.io/hotio/cloudflareddns@sha256:02d043209755382b09513ac9c34b8b5d389ce9154a1b0c21c31f063c1b3959d6
+        image: ghcr.io/hotio/cloudflareddns@sha256:5c8e74ec7c465b8d597a2e857d3d6deb053d07266c433b4f9294018771528fa0
         imagePullPolicy: IfNotPresent
         env:
         - name: DETECTION_MODE
