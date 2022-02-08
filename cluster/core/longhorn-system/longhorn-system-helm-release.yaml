@@ -26,7 +26,7 @@ spec:
 
     defaultSettings:
       upgradeChecker: false
-      priorityClass: high-priority
+      priorityClass: system-cluster-critical
       defaultDataPath: /var/lib/longhorn
       storageOverProvisioningPercentage: 200
       storageMinimalAvailablePercentage: 25
