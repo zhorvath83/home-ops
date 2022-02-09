@@ -6,7 +6,7 @@ metadata:
 spec:
   cron: "30 */4 * * *"
   task: "snapshot"
-  groups: {}
+  groups: []
   retain: 6
   concurrency: 1
 
@@ -20,7 +20,7 @@ metadata:
 spec:
   cron: "0 3 * * *"
   task: "backup"
-  groups: {}
+  groups: []
   retain: 6
   concurrency: 5
   labels:
@@ -36,6 +36,6 @@ metadata:
 spec:
   cron: "0 5 * * 0"
   task: "backup"
-  groups: {}
+  groups: []
   retain: 4
   concurrency: 5
