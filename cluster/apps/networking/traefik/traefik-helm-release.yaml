@@ -37,7 +37,7 @@ spec:
 
     deployment:
       kind: Deployment
-      replicas: 2
+      replicas: 1
 
     env:
     - name: TZ

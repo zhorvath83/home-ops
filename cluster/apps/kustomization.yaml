@@ -6,6 +6,6 @@ resources:
 - system-upgrade
 - monitoring
 - networking
-# - media
+- media
 - selfhosted
-# - home
+- home
