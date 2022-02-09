@@ -22,7 +22,11 @@ spec:
       reclaimPolicy: Retain
       recurringJobSelector:
         enabled: true
-        jobList: '[{"name":"default", "isGroup":true}]'
+        jobList: '[
+          {"name":"snapshot-recurring", "isGroup":false},
+          {"name":"backup-daily", "isGroup":false},
+          {"name":"backup-weekly", "isGroup":false}
+          ]'
 
     defaultSettings:
       upgradeChecker: false
