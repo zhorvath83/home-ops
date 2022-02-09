@@ -9,6 +9,7 @@ spec:
   groups: []
   retain: 6
   concurrency: 1
+  labels: {}
 
 ---
 
@@ -23,8 +24,7 @@ spec:
   groups: []
   retain: 6
   concurrency: 5
-  labels:
-    backup: daily
+  labels: {}
 
 ---
 
@@ -39,3 +39,4 @@ spec:
   groups: []
   retain: 4
   concurrency: 5
+  labels: {}
