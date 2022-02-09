@@ -4,7 +4,6 @@ kind: Kustomization
 resources:
 - namespaces
 - longhorn-system
-# - rook-ceph
 - system-upgrade
 - metallb-system
 - cert-manager

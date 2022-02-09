@@ -5,7 +5,6 @@ resources:
 - metallb-charts.yaml
 - longhorn-charts.yaml
 - metrics-server-charts.yaml
-- rook-ceph-charts.yaml
 - bitnami-charts.yaml
 - external-dns-charts.yaml
 - k8s-at-home-charts.yaml
