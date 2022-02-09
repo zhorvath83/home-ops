@@ -4,12 +4,12 @@ kind: Kustomization
 resources:
 - shared-persistent-volume
 - code-server
-# - postgresql
-# - pgbackups
-# - pgadmin
+- postgresql
+- pgbackups
+- pgadmin
 # - recipes
-# - urlwatch
+- urlwatch
 - private-website
 - homer
-# - duplicacy
-# - vikunja
+- duplicacy
+- vikunja
