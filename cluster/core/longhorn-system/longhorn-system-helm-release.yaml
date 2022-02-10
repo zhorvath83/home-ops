@@ -36,6 +36,7 @@ spec:
       storageMinimalAvailablePercentage: 25
       guaranteedEngineManagerCPU: 8
       guaranteedReplicaManagerCPU: 8
+      allowRecurringJobWhileVolumeDetached: true
       autoDeletePodWhenVolumeDetachedUnexpectedly: true
       disableSchedulingOnCordonedNode: false
       replicaZoneSoftAntiAffinity: false
