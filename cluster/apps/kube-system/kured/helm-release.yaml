@@ -21,7 +21,7 @@ spec:
     configuration:
       timeZone: "${CLUSTER_TIMEZONE}"
       startTime: "00:00"
-      endTime: "01:00"
+      endTime: "02:00"
       notifyUrl: "${SECRET_KURED_DISCORD_WEBHOOK}"
       messageTemplateDrain: "⏳ Draining node %s"
       messageTemplateReboot: "♻️ Rebooted node %s"

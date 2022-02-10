@@ -23,11 +23,9 @@ spec:
       recurringJobSelector:
         enable: true
         jobList: '[
-          {"name":"snapshot-recurring", "isGroup":false},
           {"name":"backup-daily", "isGroup":false},
           {"name":"backup-weekly", "isGroup":false}
           ]'
-
     defaultSettings:
       upgradeChecker: false
       priorityClass: system-cluster-critical
@@ -50,13 +48,11 @@ spec:
       nodeDownPodDeletionPolicy: delete-both-statefulset-and-deployment-pod
       backupstorePollInterval: 500
       backupTarget: nfs://${CLUSTER_LAN_NAS_IP}:/backup/LonghornBackupstore
-
     csi:
       attacherReplicaCount: 2
       provisionerReplicaCount: 2
       resizerReplicaCount: 2
       snapshotterReplicaCount: 2
-
     # BEST PRACTICES - https://longhorn.io/docs/1.2.2/best-practices/
     longhornManager:
       priorityClass: "system-node-critical"
@@ -68,7 +64,6 @@ spec:
           effect: "NoExecute"
           # Evict pods from the node if the node becomes unreachable after this toleration timer expires.
           tolerationSeconds: 15
-
     ingress:
       enabled: true
       ingressClassName: "traefik"
@@ -79,11 +74,3 @@ spec:
         traefik.ingress.kubernetes.io/router.entrypoints: websecure
         traefik.ingress.kubernetes.io/router.tls: "true"
         traefik.ingress.kubernetes.io/router.middlewares: networking-middleware-chain-cf-auth@kubernetescrd
-
-    resources:
-      requests:
-        cpu: "50m"
-        memory: "50Mi"
-      limits:
-        cpu: "250m"
-        memory: "500Mi"
