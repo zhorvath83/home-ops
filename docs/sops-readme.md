@@ -4,6 +4,9 @@ The integrity of each document is guaranteed by calculating a Message Authentica
 
 https://fluxcd.io/docs/guides/mozilla-sops/
 
+Import public key: gpg --import gpg-public.asc
+Import private key: gpg --import gpg-private.asc
+
 Encrypt file:
 sops --encrypt --in-place basic-auth.yaml
 
