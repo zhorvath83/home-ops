@@ -47,8 +47,9 @@ spec:
       concurrentAutomaticEngineUpgradePerNodeLimit: 1
       nodeDownPodDeletionPolicy: delete-both-statefulset-and-deployment-pod
       backupstorePollInterval: 500
-      backupTarget: nfs://${CLUSTER_LAN_NAS_IP}:/backup/LonghornBackupstore
-      backupTargetCredentialSecret:
+      #backupTarget: nfs://${CLUSTER_LAN_NAS_IP}:/backup/LonghornBackupstore
+      backupTarget: s3://${SECRET_OWNER_USERNAME}-longhorn-backup@eu-central-003/
+      backupTargetCredentialSecret: longhorn-s3-secret
     csi:
       attacherReplicaCount: 2
       provisionerReplicaCount: 2

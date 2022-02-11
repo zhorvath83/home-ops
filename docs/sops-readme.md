@@ -4,11 +4,15 @@ The integrity of each document is guaranteed by calculating a Message Authentica
 
 https://fluxcd.io/docs/guides/mozilla-sops/
 
+brew install gnupg sops
+
+Copy .sops.yaml from the root to the client.
+
 Import public key: gpg --import gpg-public.asc
 Import private key: gpg --import gpg-private.asc
 
 Encrypt file:
-sops --encrypt --in-place basic-auth.yaml
+sops --encrypt --in-place YOUR_SECRET.yaml
 
 In case of MAC mismatch:
-sops --ignore-mac cluster-secrets.yaml
+sops --ignore-mac YOUR_SECRET.yaml
