@@ -7,7 +7,7 @@ resources:
 - postgresql
 - pgbackups
 - pgadmin
-# - recipes
+- recipes
 - urlwatch
 - private-website
 - homer
