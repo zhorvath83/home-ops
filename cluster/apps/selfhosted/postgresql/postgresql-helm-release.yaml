@@ -36,8 +36,6 @@ spec:
 
     auth:
       enablePostgresUser: true
-      # postgresqlDatabase: postgres
-      # postgresqlUsername: postgres
       postgresPassword: ${SECRET_PSQL_POSTGRES_PWD}
 
     persistence:
