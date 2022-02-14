@@ -29,14 +29,16 @@ spec:
 
   values:
     image:
-      registry: public.ecr.aws
+      registry: docker.io
       repository: bitnami/postgresql
-      tag: 13.4.0
+      tag: 14.1.0-debian-10-r88
       pullPolicy: IfNotPresent
 
-    postgresqlDatabase: postgres
-    postgresqlUsername: postgres
-    postgresqlPassword: ${SECRET_PSQL_POSTGRES_PWD}
+    auth:
+      enablePostgresUser: true
+      # postgresqlDatabase: postgres
+      # postgresqlUsername: postgres
+      postgresPassword: ${SECRET_PSQL_POSTGRES_PWD}
 
     persistence:
       enabled: true

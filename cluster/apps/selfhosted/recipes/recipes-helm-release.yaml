@@ -92,7 +92,7 @@ spec:
     initContainers:
       database-bootstrap:
         name: database-bootstrap
-        image: public.ecr.aws/bitnami/postgresql:13.4.0
+        image: bitnami/postgresql:14.1.0-debian-10-r88
         imagePullPolicy: IfNotPresent
         env:
           - name: POSTGRES_PASSWORD
