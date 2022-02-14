@@ -11,6 +11,7 @@ spec:
       # renovate: registryUrl=https://charts.bitnami.com/bitnami
       chart: postgresql
       version: 11.0.4
+      # https://docs.bitnami.com/kubernetes/infrastructure/postgresql/administration/upgrade/
       sourceRef:
         kind: HelmRepository
         name: bitnami-charts
