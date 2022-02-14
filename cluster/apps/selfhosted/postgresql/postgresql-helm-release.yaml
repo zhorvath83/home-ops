@@ -39,8 +39,10 @@ spec:
       enablePostgresUser: true
       postgresPassword: ${SECRET_PSQL_POSTGRES_PWD}
 
-    persistence:
-      enabled: true
-      existingClaim: postgresql-data
-    volumePermissions:
-      enabled: true
+    primary:
+      persistence:
+        enabled: true
+        existingClaim: postgresql-data
+
+    #volumePermissions:
+    #  enabled: true
