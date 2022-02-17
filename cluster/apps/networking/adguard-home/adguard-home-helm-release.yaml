@@ -75,10 +75,10 @@ spec:
         mountPath: /opt/adguardhome/work
     resources:
       requests:
-        memory: 128Mi
+        memory: 384Mi
         cpu: 100m
       limits:
-        memory: 750Mi
+        memory: 1536Mi
 
     podAnnotations:
       reloader.stakater.com/auto: "true"

@@ -45,7 +45,7 @@ spec:
             cpu: 50m
             memory: 16Mi
           limits:
-            memory: 96Mi
+            memory: 256Mi
         volumeMounts:
           - name: mosquitto-config
             mountPath: /mosquitto/config/mosquitto.conf

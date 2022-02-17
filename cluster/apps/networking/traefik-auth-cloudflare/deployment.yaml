@@ -35,7 +35,7 @@ spec:
               cpu: 50m
               memory: 24Mi
             limits:
-              memory: 128Mi
+              memory: 256Mi
       affinity:
         podAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
