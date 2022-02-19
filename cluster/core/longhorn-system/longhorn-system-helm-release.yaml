@@ -18,7 +18,7 @@ spec:
   values:
     persistence:
       defaultClass: true
-      defaultClassReplicaCount: 2
+      defaultClassReplicaCount: 1
       reclaimPolicy: Retain
       recurringJobSelector:
         enable: true
@@ -39,7 +39,7 @@ spec:
       disableSchedulingOnCordonedNode: false
       replicaZoneSoftAntiAffinity: false
       replicaSoftAntiAffinity: false
-      defaultReplicaCount: 2
+      defaultReplicaCount: 1
       defaultLonghornStaticStorageClass: longhorn
       defaultDataLocality: best-effort
       replicaAutoBalance: best-effort
@@ -53,10 +53,10 @@ spec:
       backupTarget: s3://${SECRET_OWNER_USERNAME}-longhorn-backup@eu-central-003/
       backupTargetCredentialSecret: longhorn-s3-secret
     csi:
-      attacherReplicaCount: 2
-      provisionerReplicaCount: 2
-      resizerReplicaCount: 2
-      snapshotterReplicaCount: 2
+      attacherReplicaCount: 1
+      provisionerReplicaCount: 1
+      resizerReplicaCount: 1
+      snapshotterReplicaCount: 1
     # BEST PRACTICES - https://longhorn.io/docs/1.2.2/best-practices/
     longhornManager:
       priorityClass: "system-node-critical"
