@@ -22,15 +22,12 @@ spec:
   values:
     nodeFeatureRule:
       createCRD: true
-    master:
+    worker:
       annotations:
         reloader.stakater.com/auto: "true"
-      nodeSelector:
-        node-role.kubernetes.io/master: "true"
       config:
         core:
-          sources:
-            - custom
+          sleepInterval: 1800s
         sources:
           custom:
             - name: intel-gpu
