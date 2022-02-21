@@ -11,6 +11,9 @@
 📍 Manual K3s upgrade:
 `sudo curl -sfL https://get.k3s.io | sh -s - server --server https://<IP>:6443 --disable=traefik,servicelb,local-storage --kubelet-arg=image-gc-high-threshold=70 --kubelet-arg=image-gc-low-threshold=50`
 
+📍 Remove K3s node from the cluster:
+`sudo kubectl delete node <node-name>`
+`sudo /usr/local/bin/k3s-uninstall.sh`
 
 📍 To see what container images have been pulled locally: `sudo k3s crictl image`
 
