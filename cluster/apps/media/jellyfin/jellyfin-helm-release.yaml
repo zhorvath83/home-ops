@@ -44,10 +44,11 @@ spec:
       # To obtain those IDs run the following grep statement on the host:
       # $ cat /etc/group | grep "video\|render"
       # video:x:44:
-      # render:x:109:
+      # render:x:107:
       supplementalGroups:
         - 44
         - 107
+        - 100
         - 1000
 
     service:
@@ -79,6 +80,8 @@ spec:
 
     resources:
       requests:
+        # Hardware acceleration using an Intel iGPU w/ QuickSync and
+        # using intel-gpu-plugin (https://github.com/intel/intel-device-plugins-for-kubernetes)
         gpu.intel.com/i915: 1
         memory: 500m
       limits:
