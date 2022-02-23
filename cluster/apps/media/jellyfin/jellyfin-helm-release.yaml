@@ -35,8 +35,20 @@ spec:
       TZ: "${CLUSTER_TIMEZONE}"
       JELLYFIN_CACHE_DIR: "/config/cache"
     podSecurityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+      fsGroupChangePolicy: "OnRootMismatch"
+      # Hardware acceleration using an Intel iGPU w/ QuickSync
+      # These IDs below should be matched to your `video` and `render` group on the host
+      # To obtain those IDs run the following grep statement on the host:
+      # $ cat /etc/group | grep "video\|render"
+      # video:x:44:
+      # render:x:109:
       supplementalGroups:
-        - 100
+        - 44
+        - 107
+        - 1000
 
     service:
       main:
@@ -64,11 +76,20 @@ spec:
         enabled: true
         type: emptyDir
         medium: Memory
+
     resources:
       requests:
-        gpu.intel.com/i915: 1
-        cpu: 500m
-        memory: 500Mi
+        memory: 1Gi
       limits:
-        gpu.intel.com/i915: 1
-        memory: 4000Mi
+        cpu: 3500m
+        memory: 8Gi
+
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: feature.node.kubernetes.io/custom-intel-gpu
+                  operator: In
+                  values:
+                    - 'true'
