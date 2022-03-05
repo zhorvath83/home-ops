@@ -60,6 +60,11 @@ spec:
     # BEST PRACTICES - https://longhorn.io/docs/1.2.2/best-practices/
     longhornManager:
       priorityClass: "system-node-critical"
+      tolerations:
+        - effect: "NoExecute"
+          operator: "Exists"
+        - effect: "NoSchedule"
+          operator: "Exists"
     longhornDriver:
       priorityClass: "system-node-critical"
       tolerations:
