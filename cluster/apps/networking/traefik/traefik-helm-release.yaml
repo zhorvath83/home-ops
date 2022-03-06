@@ -125,10 +125,10 @@ spec:
         # protocol: TCP
         redirectTo: websecure
       websecure:
-        expose: true
-        exposedPort: 443
-        port: 8443
-        protocol: TCP
+        #expose: true
+        #exposedPort: 443
+        #port: 8443
+        #protocol: TCP
         tls:
           enabled: true
           options: "default"
