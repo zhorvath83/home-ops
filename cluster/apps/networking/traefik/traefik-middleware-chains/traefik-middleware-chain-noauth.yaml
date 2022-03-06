@@ -7,7 +7,7 @@ metadata:
 spec:
   chain:
     middlewares:
-    - name: middleware-cloudflare-ips
+    #- name: middleware-cloudflare-ips
     - name: middleware-rate-limit
     - name: middleware-secure-headers
     - name: middleware-retry
