@@ -139,10 +139,10 @@ spec:
 
     service:
       enabled: true
-      type: LoadBalancer
-      spec:
-        loadBalancerIP: ${CLUSTER_SVC_TRAEFIK_IP}
-        externalTrafficPolicy: Local
+      #type: LoadBalancer
+      #spec:
+      #  loadBalancerIP: ${CLUSTER_SVC_TRAEFIK_IP}
+      #  externalTrafficPolicy: Local
 
     dnsPolicy: ClusterFirst
 
