@@ -41,11 +41,12 @@ spec:
       kind: Deployment
       replicas: 1
 
+      podAnnotations:
+        reloader.stakater.com/auto: "true"
+
       additionalContainers:
         - name: cloudflared
           image: cloudflare/cloudflared:2022.3.0
-          annotations:
-            reloader.stakater.com/auto: "true"
           args:
           - tunnel
           # Points cloudflared to the config file, which configures what
