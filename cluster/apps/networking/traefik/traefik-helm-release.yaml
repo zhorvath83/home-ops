@@ -106,7 +106,7 @@ spec:
     - "--metrics.prometheus=false"
     - "--metrics.prometheus.entryPoint=metrics"
     # Allow these IPs to set the X-Forwarded-* headers.
-    - "--entryPoints.websecure.forwardedHeaders.trustedIPs=${CLUSTER_CF_IPV4_IPS}"
+    #- "--entryPoints.websecure.forwardedHeaders.trustedIPs=${CLUSTER_CF_IPV4_IPS}"
     # Disable SSL verification on backend
     - "--serverstransport.insecureskipverify=true"
     - "--providers.kubernetesingress.ingressclass=traefik"
@@ -125,10 +125,10 @@ spec:
         # protocol: TCP
         redirectTo: websecure
       websecure:
-        #expose: true
-        #exposedPort: 443
-        #port: 8443
-        #protocol: TCP
+        expose: true
+        exposedPort: 443
+        port: 8443
+        protocol: TCP
         tls:
           enabled: true
           options: "default"
