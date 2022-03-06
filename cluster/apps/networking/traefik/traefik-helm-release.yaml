@@ -44,6 +44,8 @@ spec:
       additionalContainers:
         - name: cloudflared
           image: cloudflare/cloudflared:2022.3.0
+          annotations:
+            reloader.stakater.com/auto: "true"
           args:
           - tunnel
           # Points cloudflared to the config file, which configures what
@@ -146,10 +148,6 @@ spec:
     service:
       enabled: true
       type: ClusterIP
-      #type: LoadBalancer
-      #spec:
-      #  loadBalancerIP: ${CLUSTER_SVC_TRAEFIK_IP}
-      #  externalTrafficPolicy: Local
 
     dnsPolicy: ClusterFirst
 
