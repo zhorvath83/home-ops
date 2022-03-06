@@ -13,5 +13,5 @@ spec:
   curvePreferences:
     - CurveP521
     - CurveP384
-  sniStrict: true
+  # sniStrict: true
   # NO cert based client AUTH!
