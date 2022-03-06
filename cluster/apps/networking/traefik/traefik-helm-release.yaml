@@ -139,6 +139,7 @@ spec:
 
     service:
       enabled: true
+      type: ClusterIP
       #type: LoadBalancer
       #spec:
       #  loadBalancerIP: ${CLUSTER_SVC_TRAEFIK_IP}
