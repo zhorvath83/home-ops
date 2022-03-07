@@ -8,6 +8,7 @@ spec:
   chain:
     middlewares:
     #- name: middleware-cloudflare-ips
+    - name: middleware-compress
     - name: middleware-rate-limit
     - name: middleware-secure-headers
     - name: middleware-retry
