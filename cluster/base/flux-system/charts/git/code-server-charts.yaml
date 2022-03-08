@@ -1,0 +1,13 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1beta1
+kind: HelmRepository
+metadata:
+  name: bitnami-charts
+  namespace: flux-system
+spec:
+  interval: 1h
+  timeout: 2m
+  chart:
+    git: https://github.com/coder/code-server.git
+    ref: master
+    path: ci/helm-chart
