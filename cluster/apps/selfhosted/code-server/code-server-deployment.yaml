@@ -23,15 +23,19 @@ spec:
       - name: code-server
         image: ghcr.io/zhorvath83/code-server:1.0.7
         imagePullPolicy: IfNotPresent
-        env:
-        - name: TZ
-          value: ${CLUSTER_TIMEZONE}
-        - name: PASSWORD
-          value: ${SECRET_CODE_SERVER_PWD}
-        - name: PUID
-          value: "1000"
-        - name: PGID
-          value: "1000"
+        args:
+          - --auth
+          - "none"
+          - --user-data-dir
+          - "/config/.vscode"
+          - --extensions-dir
+          - "/config/.vscode"
+        securityContext:
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          # Run the container as nobody:nogroup
+          runAsUser: 1000
+          runAsGroup: 1000
         ports:
         - containerPort: 8443
           name: code-server
