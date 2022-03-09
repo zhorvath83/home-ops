@@ -36,12 +36,12 @@ spec:
           runAsUser: 1000
           runAsGroup: 1000
         ports:
-        - containerPort: 8443
-          name: code-server
+          - containerPort: 8080
+            name: code-server
         volumeMounts:
-        - name: code-server-data
-          mountPath: /config
+          - name: code-server-data
+            mountPath: /config
       volumes:
-      - name: code-server-data
-        persistentVolumeClaim:
-          claimName: code-server-data
+        - name: code-server-data
+          persistentVolumeClaim:
+            claimName: code-server-data
