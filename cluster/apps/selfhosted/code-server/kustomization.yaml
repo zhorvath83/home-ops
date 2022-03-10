@@ -5,3 +5,4 @@ resources:
 - code-server-pvc.yaml
 - code-server-deployment.yaml
 - code-server-service.yaml
+- code-server-ingress.yaml
