@@ -21,26 +21,37 @@ spec:
     spec:
       containers:
       - name: code-server
-        image: ghcr.io/zhorvath83/code-server:1.0.8
+        image: ghcr.io/zhorvath83/code-server:1.0.9
         imagePullPolicy: IfNotPresent
-        args:
-          - --auth
-          - "none"
-          - --user-data-dir
-          - "/config/.vscode"
-          - --extensions-dir
-          - "/config/.vscode"
+        env:
+          - name: TZ 
+            value: ${CLUSTER_TIMEZONE}
+          - name: PASSWORD
+            value: ${SECRET_CODE_SERVER_PWD}
         securityContext:
           runAsNonRoot: true
-          # allowPrivilegeEscalation: false
           runAsUser: 1000
           runAsGroup: 1000
+        livenessProbe:
+          httpGet:
+            port: 8080
+            path: /healthz
+          initialDelaySeconds: 30
+          periodSeconds: 60
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            port: 8080
+            path: /healthz
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
         ports:
           - containerPort: 8080
             name: code-server
         volumeMounts:
           - name: code-server-data
-            mountPath: /config
+            mountPath: /home/coder
       volumes:
         - name: code-server-data
           persistentVolumeClaim:
