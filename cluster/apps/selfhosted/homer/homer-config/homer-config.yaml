@@ -43,7 +43,7 @@ colors:
 links:
   - name: Code-server
     icon: fas fa-code-branch
-    url: http://${CLUSTER_SVC_CODE_SERVER_IP}
+    url: https://code.${SECRET_DOMAIN}
   - name: GitLab
     icon: fab fa-gitlab
     url: https://gitlab.com/${SECRET_OWNER_USERNAME}
