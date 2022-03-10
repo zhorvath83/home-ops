@@ -7,6 +7,5 @@ resources:
 - traefik
 - traefik-error-pages
 - adguard-home
-#- cloudflare-ddns
 - external-dns
 - whoami
