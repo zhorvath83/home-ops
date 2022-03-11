@@ -115,7 +115,7 @@ spec:
     - "--metrics.prometheus=false"
     - "--metrics.prometheus.entryPoint=metrics"
     # Allow these IPs to set the X-Forwarded-* headers.
-    #- "--entryPoints.websecure.forwardedHeaders.trustedIPs=${CLUSTER_CF_IPV4_IPS}"
+    - "--entryPoints.websecure.forwardedHeaders.trustedIPs=0.0.0.0/0"
     # Disable SSL verification on backend
     - "--serverstransport.insecureskipverify=true"
     - "--providers.kubernetesingress.ingressclass=traefik"
@@ -128,10 +128,9 @@ spec:
         port: 9000
         protocol: TCP
       web:
-        # expose: false
-        # exposedPort: 80
-        # port: 8000
-        # protocol: TCP
+        expose: false
+        port: 8000
+        protocol: TCP
         redirectTo: websecure
       websecure:
         expose: true

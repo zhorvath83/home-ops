@@ -146,13 +146,13 @@ services:
         tag: "AdBlocker"
         tagstyle: "is-info"
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/adguardhome.svg
-        url: http://${CLUSTER_SVC_LAN_DNS_IP}
+        url: https://adguard.${SECRET_DOMAIN}
       - name: OpenMediaVault
         subtitle: NAS web UI
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/openmediavault.png
         url: http://${CLUSTER_LAN_NAS_IP}
       - name: Router
-        subtitle: Asus Router web UI
+        subtitle: Router WEB UI
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/router.png
         url: http://${CLUSTER_LAN_ROUTER_IP}
       - name: Cloudflare

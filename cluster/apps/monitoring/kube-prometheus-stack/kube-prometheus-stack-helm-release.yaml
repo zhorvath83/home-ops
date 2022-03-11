@@ -111,8 +111,6 @@ spec:
       enabled: true
       endpoints:
         - ${CLUSTER_HOST1_IP}
-        - ${CLUSTER_HOST2_IP}
-        - ${CLUSTER_HOST3_IP}
       service:
         enabled: true
         port: 10257
@@ -125,8 +123,6 @@ spec:
       enabled: true
       endpoints:
         - ${CLUSTER_HOST1_IP}
-        - ${CLUSTER_HOST2_IP}
-        - ${CLUSTER_HOST3_IP}
       service:
         enabled: true
         port: 10259
@@ -139,14 +135,10 @@ spec:
       enabled: true
       endpoints:
         - ${CLUSTER_HOST1_IP}
-        - ${CLUSTER_HOST2_IP}
-        - ${CLUSTER_HOST3_IP}
     kubeEtcd:
       enabled: true
       endpoints:
         - ${CLUSTER_HOST1_IP}
-        - ${CLUSTER_HOST2_IP}
-        - ${CLUSTER_HOST3_IP}
       service:
         enabled: true
         port: 2381
