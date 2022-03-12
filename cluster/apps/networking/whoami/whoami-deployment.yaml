@@ -18,12 +18,10 @@ spec:
     spec:
       containers:
         - name: whoami
-          # image: stefanscherer/whoami:2.0.2
-          image: traefik/whoami:v1.8.0
+          image: stefanscherer/whoami:2.0.2
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 80
-              # - containerPort: 8080
+            - containerPort: 8080
               protocol: TCP
           securityContext:
             runAsNonRoot: true

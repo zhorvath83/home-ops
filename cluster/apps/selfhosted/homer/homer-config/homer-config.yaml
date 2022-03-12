@@ -202,9 +202,9 @@ services:
     icon: fab fa-watchman-monitoring
     items:
       - name: WhoAMI
-        subtitle: Analytics & monitoring
-        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/grafana.png
-        url: https://grafana.${SECRET_DOMAIN}
+        subtitle: whoami service
+        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/whoami.png
+        url: https://whoami.${SECRET_DOMAIN}
       - name: Traefik
         subtitle: Traefik ingress dashboard
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/traefik.png
