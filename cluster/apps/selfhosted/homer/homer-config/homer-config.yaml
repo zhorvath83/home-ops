@@ -201,7 +201,7 @@ services:
   - name: Monitoring
     icon: fab fa-watchman-monitoring
     items:
-      - name: Grafana
+      - name: WhoAMI
         subtitle: Analytics & monitoring
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/grafana.png
         url: https://grafana.${SECRET_DOMAIN}
@@ -213,6 +213,10 @@ services:
         subtitle: Metrics collector
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/prometheus.png
         url: https://prometheus.${SECRET_DOMAIN}
+      - name: Grafana
+        subtitle: Analytics & monitoring
+        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/grafana.png
+        url: https://grafana.${SECRET_DOMAIN}
       - name: Alertmanager
         subtitle: Prometheus alert manager
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/alertmanager.png

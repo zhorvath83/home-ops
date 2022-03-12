@@ -17,21 +17,23 @@ spec:
         app.kubernetes.io/name: whoami
     spec:
       containers:
-      - name: whoami
-        image: stefanscherer/whoami:2.0.2
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 8080
-          protocol: TCP
-        securityContext:
-          runAsNonRoot: true
-          allowPrivilegeEscalation: false
-          # Run the container as nobody:nogroup
-          runAsUser: 65534
-          runAsGroup: 65534
-        resources:
-          requests:
-            cpu: 50m
-            memory: 16Mi
-          limits:
-            memory: 64Mi
+        - name: whoami
+          # image: stefanscherer/whoami:2.0.2
+          image: traefik/whoami:v1.8.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+              # - containerPort: 8080
+              protocol: TCP
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            # Run the container as nobody:nogroup
+            runAsUser: 65534
+            runAsGroup: 65534
+          resources:
+            requests:
+              cpu: 50m
+              memory: 16Mi
+            limits:
+              memory: 64Mi
