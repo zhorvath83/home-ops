@@ -7,7 +7,7 @@ metadata:
 data:
   config.yaml: |
     tunnel: kubernetes-cf-tunnel
-    protocol: quic
+    # protocol: quic
     credentials-file: /etc/cloudflared/creds/credentials.json
     # Serves the metrics server under /metrics and the readiness server under /ready
     metrics: 0.0.0.0:2000
