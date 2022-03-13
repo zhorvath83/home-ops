@@ -4,7 +4,7 @@ kind: Kustomization
 resources:
   - wildcard-certificate
   - traefik-auth-cloudflare
-  # - traefik
+  - traefik
   - traefik-error-pages
   - adguard-home
   - external-dns
