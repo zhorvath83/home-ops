@@ -141,13 +141,15 @@ spec:
           options: "default"
         # Allow these IPs to set the X-Forwarded-* headers.
         forwardedHeaders:
-          trustedIPs:
-            - "::/0"
-            - "0.0.0.0/0"
+          insecure: true
+          # trustedIPs:
+          #   - "::/0"
+          #   - "0.0.0.0/0"
         proxyProtocol:
-          trustedIPs:
-            - "::/0"
-            - "0.0.0.0/0"
+          insecure: true
+          # trustedIPs:
+          #   - "::/0"
+          #   - "0.0.0.0/0"
 
     service:
       enabled: true
