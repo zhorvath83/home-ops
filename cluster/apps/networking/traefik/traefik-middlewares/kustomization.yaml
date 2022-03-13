@@ -2,11 +2,9 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-- middleware-cf-access-auth.yaml
-- middleware-compress.yaml
-- middleware-rate-limit.yaml
-- middleware-retry.yaml
-- middleware-secure-headers.yaml
-- middleware-rfc1918-ips.yaml
-- middleware-cloudflare-ips.yaml
-- middleware-error-pages.yaml
+  - middleware-cf-access-auth.yaml
+  - middleware-compress.yaml
+  - middleware-rate-limit.yaml
+  - middleware-retry.yaml
+  - middleware-secure-headers.yaml
+  - middleware-error-pages.yaml
