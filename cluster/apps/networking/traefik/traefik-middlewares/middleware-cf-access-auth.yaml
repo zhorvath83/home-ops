@@ -7,3 +7,4 @@ metadata:
 spec:
   forwardAuth:
     address: "http://traefik-auth-cloudflare.networking.svc.cluster.local/auth/${SECRET_CF_ACCESS_APP_AUD_TAG}"
+    trustForwardHeader: true
