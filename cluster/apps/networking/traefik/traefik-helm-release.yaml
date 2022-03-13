@@ -152,8 +152,6 @@ spec:
     service:
       enabled: true
       type: ClusterIP
-      spec:
-        externalTrafficPolicy: Local
 
     dnsPolicy: ClusterFirst
 
