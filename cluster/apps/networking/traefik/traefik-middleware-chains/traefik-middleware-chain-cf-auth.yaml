@@ -9,6 +9,7 @@ spec:
     middlewares:
       - name: middleware-compress
       - name: middleware-rate-limit
+      - name: middleware-traefik-real-ip
       - name: middleware-cf-access-auth
       - name: middleware-secure-headers
       - name: middleware-retry

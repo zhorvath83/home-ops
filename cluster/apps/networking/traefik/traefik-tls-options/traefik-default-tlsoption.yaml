@@ -7,13 +7,13 @@ metadata:
   namespace: networking
 spec:
   minVersion: VersionTLS13
-  cipherSuites:
-    - TLS_AES_256_GCM_SHA384                  # TLS 1.3
-    - TLS_CHACHA20_POLY1305_SHA256            # TLS 1.3
-  curvePreferences:
-    - CurveP521
-    - CurveP384
-  # sniStrict: true
+  # cipherSuites:
+  #   - TLS_AES_256_GCM_SHA384                  # TLS 1.3
+  #   - TLS_CHACHA20_POLY1305_SHA256            # TLS 1.3
+  # curvePreferences:
+  #   - CurveP521
+  #   - CurveP384
+  sniStrict: true
   # clientAuth:
   #   # Authenticated Origin Pulls: https://support.cloudflare.com/hc/en-us/articles/204899617
   #   # The CF CA certificate is extracted from key `tls.ca` of the given secret.

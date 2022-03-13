@@ -2,6 +2,4 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-- traefik-default-tlsoption.yaml
-# - traefik-mTLS-secret.sops.yaml
-# - traefik-noclientauth-tlsoption.yaml
+  - traefik-default-tlsoption.yaml

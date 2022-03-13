@@ -120,6 +120,20 @@ spec:
       # providers.kubernetesingress.ingressendpoint.hostname is set for external-dns support
       - "--providers.kubernetesingress.ingressendpoint.hostname=78abaffc-b9bf-445d-a12c-7d7e3fdbf35a.cfargotunnel.com"
 
+    pilot:
+      enabled: true
+      token: ${SECRET_TRAEFIK_PILOT_TOKEN}
+
+    experimental:
+      http3:
+        enabled: true
+      plugins:
+        enabled: true
+        traefik-real-ip:
+          modulename: github.com/soulbalz/traefik-real-ip
+          # renovate: datasource=github-releases depName=soulbalz/traefik-real-ip
+          version: v1.0.3
+
     ports:
       traefik:
         expose: false
@@ -135,6 +149,8 @@ spec:
         exposedPort: 443
         port: 8443
         protocol: TCP
+        # Enable HTTP/3. Requires enabling experimental http3 feature and tls.
+        http3: true
         tls:
           enabled: true
           options: "default"
@@ -153,12 +169,6 @@ spec:
       type: ClusterIP
 
     dnsPolicy: ClusterFirst
-
-    pilot:
-      enabled: false
-    experimental:
-      plugins:
-        enabled: false
 
     affinity:
       podAntiAffinity:

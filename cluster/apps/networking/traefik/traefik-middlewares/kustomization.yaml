@@ -8,3 +8,4 @@ resources:
   - middleware-retry.yaml
   - middleware-secure-headers.yaml
   - middleware-error-pages.yaml
+  - middleware-traefik-real-ip.yaml
