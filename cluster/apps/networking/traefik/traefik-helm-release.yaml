@@ -48,13 +48,13 @@ spec:
         - name: cloudflared
           image: cloudflare/cloudflared:2022.3.0
           args:
-          - tunnel
-          # Points cloudflared to the config file, which configures what
-          # cloudflared will actually do. This file is created by a ConfigMap
-          # below.
-          - --config
-          - /etc/cloudflared/config/config.yaml
-          - run
+            - tunnel
+            # Points cloudflared to the config file, which configures what
+            # cloudflared will actually do. This file is created by a ConfigMap
+            # below.
+            - --config
+            - /etc/cloudflared/config/config.yaml
+            - run
           livenessProbe:
             httpGet:
               # Cloudflared has a /ready endpoint which returns 200 if and only if
@@ -65,15 +65,15 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 10
           volumeMounts:
-          - name: cloudflared-config
-            mountPath: /etc/cloudflared/config
-            readOnly: true
-          - name: cloudflared-tunnel-credentials
-            mountPath: /etc/cloudflared/creds
-            readOnly: true
-          - name: cloudflared-tunnel-cert
-            mountPath: /etc/cloudflared
-            readOnly: true
+            - name: cloudflared-config
+              mountPath: /etc/cloudflared/config
+              readOnly: true
+            - name: cloudflared-tunnel-credentials
+              mountPath: /etc/cloudflared/creds
+              readOnly: true
+            - name: cloudflared-tunnel-cert
+              mountPath: /etc/cloudflared
+              readOnly: true
       additionalVolumes:
         - name: cloudflared-tunnel-credentials
           secret:
@@ -85,12 +85,12 @@ spec:
           configMap:
             name: cloudflared-config
             items:
-            - key: config.yaml
-              path: config.yaml
+              - key: config.yaml
+                path: config.yaml
 
     env:
-    - name: TZ
-      value: ${CLUSTER_TIMEZONE}
+      - name: TZ
+        value: ${CLUSTER_TIMEZONE}
 
     logs:
       general:
@@ -109,28 +109,27 @@ spec:
         enabled: false
 
     globalArguments:
-    - "--global.checknewversion=false"
-    - "--global.sendanonymoususage=true"
+      - "--global.checknewversion=false"
+      - "--global.sendanonymoususage=true"
     additionalArguments:
-    - "--metrics.prometheus=false"
-    - "--metrics.prometheus.entryPoint=metrics"
-    # Allow these IPs to set the X-Forwarded-* headers.
-    - "--entryPoints.websecure.forwardedHeaders.trustedIPs=0.0.0.0/0"
-    # Disable SSL verification on backend
-    - "--serverstransport.insecureskipverify=true"
-    - "--providers.kubernetesingress.ingressclass=traefik"
-    # providers.kubernetesingress.ingressendpoint.hostname is set for external-dns support
-    - "--providers.kubernetesingress.ingressendpoint.hostname=78abaffc-b9bf-445d-a12c-7d7e3fdbf35a.cfargotunnel.com"
+      - "--metrics.prometheus=false"
+      - "--metrics.prometheus.entryPoint=metrics"
+      - "--entryPoints.websecure.forwardedHeaders.trustedIPs=0.0.0.0/0"
+      # Disable SSL verification on backends
+      - "--serverstransport.insecureskipverify=true"
+      - "--providers.kubernetesingress.ingressclass=traefik"
+      # providers.kubernetesingress.ingressendpoint.hostname is set for external-dns support
+      - "--providers.kubernetesingress.ingressendpoint.hostname=78abaffc-b9bf-445d-a12c-7d7e3fdbf35a.cfargotunnel.com"
 
     ports:
       traefik:
         expose: false
-        port: 9000
-        protocol: TCP
+      metrics:
+        port: 8082
+        expose: true
+        exposedPort: 8082
       web:
         expose: false
-        port: 8000
-        protocol: TCP
         redirectTo: websecure
       websecure:
         expose: true
@@ -140,14 +139,21 @@ spec:
         tls:
           enabled: true
           options: "default"
-      metrics:
-        port: 8082
-        expose: true
-        exposedPort: 8082
+        # Allow these IPs to set the X-Forwarded-* headers.
+        forwardedHeaders:
+          trustedIPs:
+            - "::/0"
+            - "0.0.0.0/0"
+        proxyProtocol:
+          trustedIPs:
+            - "::/0"
+            - "0.0.0.0/0"
 
     service:
       enabled: true
       type: ClusterIP
+      spec:
+        externalTrafficPolicy: Local
 
     dnsPolicy: ClusterFirst
 
@@ -160,13 +166,13 @@ spec:
     affinity:
       podAntiAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
-        - labelSelector:
-            matchExpressions:
-            - key: app.kubernetes.io/name
-              operator: In
-              values:
-              - traefik
-          topologyKey: kubernetes.io/hostname
+          - labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - traefik
+            topologyKey: kubernetes.io/hostname
 
     resources:
       requests:
