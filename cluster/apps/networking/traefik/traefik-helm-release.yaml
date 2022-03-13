@@ -114,7 +114,6 @@ spec:
     additionalArguments:
       - "--metrics.prometheus=false"
       - "--metrics.prometheus.entryPoint=metrics"
-      - "--entryPoints.websecure.forwardedHeaders.trustedIPs=0.0.0.0/0"
       # Disable SSL verification on backends
       - "--serverstransport.insecureskipverify=true"
       - "--providers.kubernetesingress.ingressclass=traefik"
@@ -141,15 +140,13 @@ spec:
           options: "default"
         # Allow these IPs to set the X-Forwarded-* headers.
         forwardedHeaders:
-          insecure: true
-          # trustedIPs:
-          #   - "::/0"
-          #   - "0.0.0.0/0"
+          trustedIPs:
+            - "::/0"
+            - "0.0.0.0/0"
         proxyProtocol:
-          insecure: true
-          # trustedIPs:
-          #   - "::/0"
-          #   - "0.0.0.0/0"
+          trustedIPs:
+            - "::/0"
+            - "0.0.0.0/0"
 
     service:
       enabled: true
