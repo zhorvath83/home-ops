@@ -32,7 +32,7 @@ spec:
       type: Recreate
     image:
       repository: dpage/pgadmin4
-      tag: 6.5
+      tag: 6.7
       pullPolicy: IfNotPresent
     env:
       email: ${SECRET_EMAIL_1}
