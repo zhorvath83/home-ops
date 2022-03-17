@@ -10,7 +10,7 @@ spec:
     spec:
       # renovate: registryUrl=https://helm.traefik.io/traefik
       chart: traefik
-      version: 10.14.2
+      version: 10.15.0
       sourceRef:
         kind: HelmRepository
         name: traefik-charts
@@ -46,7 +46,7 @@ spec:
 
       additionalContainers:
         - name: cloudflared
-          image: cloudflare/cloudflared:2022.3.0
+          image: cloudflare/cloudflared:2022.3.2
           args:
             - tunnel
             # Points cloudflared to the config file, which configures what
