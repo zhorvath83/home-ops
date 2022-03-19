@@ -23,7 +23,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 15m
-  prune: true
+  prune: false
   wait: true
   sourceRef:
     kind: GitRepository
