@@ -113,6 +113,10 @@ services:
         subtitle: Private recipe collection
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/tandoorrecipes.png
         url: https://recipes.${SECRET_DOMAIN}
+      - name: Changedetection.IO
+        subtitle: Website change detection
+        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/changedetection.svg
+        url: https://changedetection.${SECRET_DOMAIN}
       - name: Private website
         subtitle: Private website
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/hugo.png
