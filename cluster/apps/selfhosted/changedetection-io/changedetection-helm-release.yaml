@@ -30,9 +30,7 @@ spec:
       PUID: "1000"
       PGID: "1000"
 
-    securityContext:
-      runAsNonRoot: true
-      allowPrivilegeEscalation: false
+    podSecurityContext:
       runAsUser: 1000
       runAsGroup: 1000
       fsGroup: 1000
@@ -85,11 +83,6 @@ spec:
         name: chrome-webdriver
         image: selenium/standalone-chrome-debug:3.141.59
         imagePullPolicy: IfNotPresent
-        securityContext:
-          runAsNonRoot: true
-          allowPrivilegeEscalation: false
-          runAsUser: 1000
-          runAsGroup: 1000
         env:
           - name: SCREEN_WIDTH
             value: "1920"
