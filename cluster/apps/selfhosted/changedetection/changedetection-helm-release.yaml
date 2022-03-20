@@ -1,0 +1,81 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: changedetection
+  namespace: selfhosted
+spec:
+  interval: 10m0s
+  chart:
+    spec:
+      # renovate: registryUrl=https://k8s-at-home.com/charts/
+      chart: changedetection-io
+      version: 1.3.0
+      sourceRef:
+        kind: HelmRepository
+        name: k8s-at-home-charts
+        namespace: flux-system
+
+  values:
+    image:
+      repository: dgtlmoon/changedetection.io
+      tag: "0.39"
+      pullPolicy: IfNotPresent
+    env:
+      TZ: "${CLUSTER_TIMEZONE}"
+      BASE_URL: "https://changedetection.${SECRET_DOMAIN}"
+      WEBDRIVER_URL: "http://localhost:4444/wd/hub"
+
+    service:
+      main:
+        ports:
+          http:
+            port: 5000
+
+    ingress:
+      main:
+        enabled: true
+        hosts:
+          - host: changedetection.${SECRET_DOMAIN}
+            paths:
+              - path: /
+                pathType: Prefix
+        annotations:
+          kubernetes.io/ingress.class: traefik
+          traefik.ingress.kubernetes.io/router.entrypoints: websecure
+          traefik.ingress.kubernetes.io/router.tls: "true"
+          traefik.ingress.kubernetes.io/router.middlewares: networking-middleware-chain-cf-auth@kubernetescrd
+        tls:
+          - hosts:
+              - "changedetection.${SECRET_DOMAIN}"
+
+    persistence:
+      data:
+        enabled: true
+        existingClaim: changedetection-data
+        mountPath: /datastore
+      cache:
+        enabled: true
+        type: emptyDir
+        medium: Memory
+        sizeLimit: 2Gi
+        mountPath: /dev/shm
+
+    resources:
+      requests:
+        memory: 100Mi
+        cpu: 100m
+      limits:
+        memory: 750Mi
+
+    additionalContainers:
+      chrome-webdriver:
+        name: chrome-webdriver
+        image: selenium/standalone-chrome-debug:3.141.59
+        imagePullPolicy: IfNotPresent
+        ports:
+          - name: web
+            containerPort: 4444
+        volumeMounts:
+          - name: cache
+            mountPath: /dev/shm
