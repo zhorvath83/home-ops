@@ -84,9 +84,12 @@ spec:
         image: selenium/standalone-chrome-debug:3.141.59
         imagePullPolicy: IfNotPresent
         env:
-          SCREEN_WIDTH: "1920"
-          SCREEN_HEIGHT: "1080"
-          SCREEN_DEPTH: "24"
+          - name: SCREEN_WIDTH
+            value: "1920"
+          - name: SCREEN_HEIGHT
+            value: "1080"
+          - name: SCREEN_DEPTH
+            value: "24"
         ports:
           - name: web
             containerPort: 4444
