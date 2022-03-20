@@ -13,4 +13,4 @@ resources:
   - homer
   - duplicacy
   - vikunja
-  - changedetection-io
+  # - changedetection-io
