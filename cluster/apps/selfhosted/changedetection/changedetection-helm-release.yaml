@@ -25,6 +25,14 @@ spec:
       TZ: "${CLUSTER_TIMEZONE}"
       BASE_URL: "https://changedetection.${SECRET_DOMAIN}"
       WEBDRIVER_URL: "http://localhost:4444/wd/hub"
+      USE_X_SETTINGS: 1
+      PORT: 5000
+
+    securityContext:
+      runAsNonRoot: true
+      allowPrivilegeEscalation: false
+      runAsUser: 1000
+      runAsGroup: 1000
 
     service:
       main:
@@ -73,6 +81,15 @@ spec:
         name: chrome-webdriver
         image: selenium/standalone-chrome-debug:3.141.59
         imagePullPolicy: IfNotPresent
+        env:
+          SCREEN_WIDTH: 1920
+          SCREEN_HEIGHT: 1080
+          SCREEN_DEPTH: 24
+        securityContext:
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          runAsUser: 1000
+          runAsGroup: 1000
         ports:
           - name: web
             containerPort: 4444
