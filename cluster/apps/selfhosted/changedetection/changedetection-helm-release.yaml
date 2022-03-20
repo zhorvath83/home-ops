@@ -19,7 +19,7 @@ spec:
   values:
     image:
       repository: dgtlmoon/changedetection.io
-      tag: "0.39"
+      tag: 0.39.9
       pullPolicy: IfNotPresent
     env:
       TZ: "${CLUSTER_TIMEZONE}"
