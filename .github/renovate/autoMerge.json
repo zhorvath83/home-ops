@@ -1,0 +1,22 @@
+{
+    "packageRules": [
+      {
+        "matchDatasources": [
+          "docker",
+          "github-tags"
+        ],
+        "automerge": true,
+        "automergeType": "branch",
+        "requiredStatusChecks": null,
+        "matchUpdateTypes": [
+          "major",
+          "minor",
+          "patch"
+        ],
+        "matchPackageNames": [
+          "ghcr.io/zhorvath83/private-website",
+          "renovatebot/github-action"
+        ]
+      }
+    ]
+  }

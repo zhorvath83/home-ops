@@ -8,7 +8,6 @@ resources:
   - pgbackups
   - pgadmin
   - recipes
-  - urlwatch
   - private-website
   - homer
   - duplicacy
