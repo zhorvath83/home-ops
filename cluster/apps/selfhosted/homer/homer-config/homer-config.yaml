@@ -41,15 +41,12 @@ colors:
     # colors from Nord theme: https://github.com/arcticicestudio/nord
 
 links:
-  - name: Code-server
-    icon: fas fa-code-branch
-    url: https://code.${SECRET_DOMAIN}
-  - name: GitLab
-    icon: fab fa-gitlab
-    url: https://gitlab.com/${SECRET_OWNER_USERNAME}
   - name: GitHub
     icon: fab fa-github
     url: https://github.com/${SECRET_OWNER_USERNAME}
+  - name: Code-server
+    icon: fas fa-code-branch
+    url: https://code.${SECRET_DOMAIN}
 
 services:
   - name: Mail & organizing
