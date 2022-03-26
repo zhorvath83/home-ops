@@ -6,7 +6,7 @@
           "github-tags"
         ],
         "automerge": true,
-        "automergeType": "branch",
+        "automergeType": "pr",
         "requiredStatusChecks": null,
         "matchUpdateTypes": [
           "major",
