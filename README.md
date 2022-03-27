@@ -2,7 +2,7 @@
 
 <img src="https://camo.githubusercontent.com/5b298bf6b0596795602bd771c5bddbb963e83e0f/68747470733a2f2f692e696d6775722e636f6d2f7031527a586a512e706e67" align="center" width="144px" height="144px"/>
 
-### My Kubernetes (Rancher k3s) cluster 
+### My Kubernetes (Rancher k3s) cluster
 
 _managed by Flux CD (GitOps) and Renovate_
 
@@ -14,9 +14,10 @@ _managed by Flux CD (GitOps) and Renovate_
 
 
 [![k3s](https://img.shields.io/badge/k3s-v1.23.4-brightgreen?style=for-the-badge&logo=kubernetes&logoColor=white)](https://k3s.io/)
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white&style=for-the-badge)](https://github.com/pre-commit/pre-commit)
 [![renovate](https://img.shields.io/badge/renovate-enabled-brightgreen?style=for-the-badge&logo=renovatebot&logoColor=white)](https://github.com/renovatebot/renovate)
 [![Lines of code](https://img.shields.io/tokei/lines/github/zhorvath83/kube-cluster?style=for-the-badge&color=brightgreen&label=lines&logo=codefactor&logoColor=white)](https://github.com/zhorvath83/kube-cluster/graphs/contributors)
-  
+
 </div>
 
 
