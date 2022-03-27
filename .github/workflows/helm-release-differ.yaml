@@ -6,7 +6,7 @@ on: # yamllint disable-line rule:truthy
     branches:
       - main
     paths:
-      - "cluster/**.yaml"
+      - "cluster/**/*-helm-release.yaml"
 
 env:
   DEFAULT_BRANCH: main
