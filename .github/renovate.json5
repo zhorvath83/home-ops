@@ -6,7 +6,7 @@
   "suppressNotifications": ["prIgnoreNotification"],
   "rebaseWhen": "conflicted",
   "assignees": ["@zhorvath83"],
-  "timezone": "Europe/Budapest"
+  "timezone": "Europe/Budapest",
   "schedule": [
     "after 1am and before 6am",
   ],
