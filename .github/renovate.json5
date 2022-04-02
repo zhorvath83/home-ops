@@ -113,7 +113,7 @@
       "matchDatasources": ["helm"],
       "matchUpdateTypes": ["patch"],
       "labels": ["renovate/helm", "dep/patch"]
-    }
+    },
     // packages with loose versioning
     {
       "matchDatasources": [
