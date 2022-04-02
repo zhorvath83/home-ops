@@ -1,6 +1,6 @@
 **Upgrade k3s kubernetes cluster with a system upgrade controller**
 
-It is advisable to track the security vulnarabilities published by Rancher Labs around k3s. For example, in November 2020 a critical bug was detected in k3s. Therefore, it is quite important to be able to update k3s without interupting the k3s cluster, hence this procedure from Rancher Labs.
+It is advisable to track the security vulnerabilities published by Rancher Labs around k3s. For example, in November 2020 a critical bug was detected in k3s. Therefore, it is quite important to be able to update k3s without interupting the k3s cluster, hence this procedure from Rancher Labs.
 
 ```bash
 $ kubectl get nodes

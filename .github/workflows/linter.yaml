@@ -28,11 +28,23 @@ jobs:
           # VALIDATE_ALL_CODEBASE: ${{ github.event_name == 'workflow_dispatch' }}
           VALIDATE_ALL_CODEBASE: true
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-          # ENABLE_LINTERS: ACTION_ACTIONLINT, ANSIBLE_ANSIBLE_LINT, BASH_SHELLCHECK, DOCKERFILE_HADOLINT, ENV_DOTENV_LINTER, GIT_GIT_DIFF, JSON_JSONLINT, KUBERNETES_KUBEVAL, MARKDOWN_MARKDOWNLINT, TERRAFORM_TFLINT, YAML_YAMLLINT
-          ANSIBLE_DIRECTORY: cluster
+          ENABLE_LINTERS:
+            - ACTION_ACTIONLINT
+            - ANSIBLE_ANSIBLE_LINT
+            - BASH_SHELLCHECK
+            - DOCKERFILE_HADOLINT
+            - ENV_DOTENV_LINTER
+            - GIT_GIT_DIFF
+            - JSON_JSONLINT
+            - KUBERNETES_KUBEVAL
+            - MARKDOWN_MARKDOWNLINT
+            - MARKDOWN_MARKDOWN_LINK_CHECK
+            - TERRAFORM_TFLINT
+            - YAML_YAMLLINT
+          ANSIBLE_DIRECTORY: ansible
           ANSIBLE_ANSIBLE_LINT_CONFIG_FILE: .ansible-lint
           KUBERNETES_DIRECTORY: cluster
-          KUBERNETES_KUBEVAL_ARGUMENTS: --ignore-missing-schemas --skip-kinds Secret --ignored-filename-patterns='^(?:.+/)?(?:Kustomization|kustomization\.ya?ml)$'
+          KUBERNETES_KUBEVAL_ARGUMENTS: --ignore-missing-schemas --skip-kinds Secret --ignored-filename-patterns=(kustomization\.ya?ml|gotk-patches.yaml)
           MARKDOWN_MARKDOWNLINT_CONFIG_FILE: .markdownlint.yaml
           TERRAFORM_TFLINT_CONFIG_FILE: .tflint.hcl
           YAML_YAMLLINT_CONFIG_FILE: .yamllint.yaml
