@@ -5,8 +5,10 @@
   "dependencyDashboardTitle": "Renovate Dashboard 🤖",
   "suppressNotifications": ["prIgnoreNotification"],
   "rebaseWhen": "conflicted",
+  "assignees": ["@zhorvath83"],
+  "timezone": "Europe/Budapest"
   "schedule": [
-    "every 12 hours"
+    "after 1am and before 6am",
   ],
   // set up ignored deps
   "ignoreDeps": [
