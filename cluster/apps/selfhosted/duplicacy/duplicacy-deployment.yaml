@@ -19,70 +19,58 @@ spec:
       labels:
         app.kubernetes.io/name: duplicacy
     spec:
-      # initContainers:
-      # - name: init-duplicacy
-      #   image: busybox:1.34.0
-      #   command: ['sh', '-c', "${SECRET_DUPLICACY_INIT_CMD}"]
-      #   volumeMounts:
-      #   - mountPath: /config
-      #     name: duplicacy-data
-      #     subPath: config
       containers:
-      - name: duplicacy
-        image: saspus/duplicacy-web:v1.5.0
-        imagePullPolicy: IfNotPresent
-        livenessProbe:
-          exec:
-            command:
-            - /bin/sh
-            - -c
-            - exit $(test $(upTime=$(</proc/uptime) ;  upTime=${uptime%%.*} ; upTimeInDays=$(( upTime/60/60/24 )); currentTime=$(date +%H%M); echo $upTimeInDays$currentTime) -eq 290000 && echo 1 || echo 0)
-          failureThreshold: 1
-          initialDelaySeconds: 60
-          periodSeconds: 60
-        lifecycle:
-          preStop:
+        - name: duplicacy
+          image: saspus/duplicacy-web:v1.5.0
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
             exec:
               command:
-              - /bin/sh
-              - -c
-              - "${SECRET_DUPLICACY_INIT_CMD}"
-        env:
-        # - name: USR_ID
-        #   value: "1000"
-        # - name: GRP_ID
-        #   value: "1000"
-        - name: TZ
-          value: "${CLUSTER_TIMEZONE}"
-        - name: DWE_PASSWORD
-          value: "${SECRET_DUPLICACY_DWE_PWD}"
-        ports:
-        - containerPort: 3875
-          protocol: TCP
-        resources:
-          requests:
-            cpu: 50m
-            memory: 64Mi
-          limits:
-            cpu: 3000m
-            memory: 6Gi
-        volumeMounts:
-        - mountPath: /config
-          name: duplicacy-data
-          subPath: config
-        - mountPath: /logs
-          name: duplicacy-data
-          subPath: logs
-        - mountPath: /cache
-          name: duplicacy-cache
-        - name: backup-share
-          mountPath: /backups
+                - /bin/sh
+                - -c
+                - exit $(test $(upTime=$(</proc/uptime) ;  upTime=${uptime%%.*} ; upTimeInDays=$(( upTime/60/60/24 )); currentTime=$(date +%H%M); echo $upTimeInDays$currentTime) -eq 290000 && echo 1 || echo 0)
+            failureThreshold: 1
+            initialDelaySeconds: 60
+            periodSeconds: 60
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - "${SECRET_DUPLICACY_INIT_CMD}"
+          env:
+            - name: TZ
+              value: "${CLUSTER_TIMEZONE}"
+            - name: DWE_PASSWORD
+              value: "${SECRET_DUPLICACY_DWE_PWD}"
+          ports:
+            - containerPort: 3875
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 3000m
+              memory: 6Gi
+          volumeMounts:
+            - mountPath: /config
+              name: duplicacy-data
+              subPath: config
+            - mountPath: /logs
+              name: duplicacy-data
+              subPath: logs
+            - mountPath: /cache
+              name: duplicacy-cache
+            - name: backup-share
+              mountPath: /backups
       volumes:
-      - name: duplicacy-data
-        persistentVolumeClaim:
-          claimName: duplicacy-data
-      - name: duplicacy-cache
-        emptyDir: {}
-      - name: backup-share
-        persistentVolumeClaim:
-          claimName: backup-share
+        - name: duplicacy-data
+          persistentVolumeClaim:
+            claimName: duplicacy-data
+        - name: duplicacy-cache
+          emptyDir: {}
+        - name: backup-share
+          persistentVolumeClaim:
+            claimName: backup-share

@@ -31,11 +31,11 @@ spec:
   values:
     configInline:
       address-pools:
-      - name: default
-        protocol: layer2
-        auto-assign: false
-        addresses:
-        - ${CLUSTER_LAN_CIDR}
+        - name: default
+          protocol: layer2
+          auto-assign: false
+          addresses:
+            - ${CLUSTER_LAN_CIDR}
 
     prometheus:
       podMonitor:
@@ -46,7 +46,7 @@ spec:
 
     speaker:
       tolerations:
-      - effect: "NoExecute"
-        operator: "Exists"
-      - effect: "NoSchedule"
-        operator: "Exists"
+        - effect: "NoExecute"
+          operator: "Exists"
+        - effect: "NoSchedule"
+          operator: "Exists"

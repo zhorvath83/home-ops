@@ -34,11 +34,11 @@ spec:
         value: "0"
     policy: sync
     sources:
-    - crd
-    - ingress
+      - crd
+      - ingress
     txtPrefix: "k8s."
     domainFilters:
-    - "${SECRET_DOMAIN}"
+      - "${SECRET_DOMAIN}"
     resources:
       requests:
         cpu: 50m

@@ -10,13 +10,13 @@ spec:
     privateKeySecretRef:
       name: letsencrypt-staging
     solvers:
-    - dns01:
-        cloudflare:
-          email: "${SECRET_EMAIL_1}"
-          apiKeySecretRef:
-            name: cloudflare-api-key-secret
-            key: cloudflare-api-key
-      selector:
-        dnsZones:
-        - "${SECRET_DOMAIN}"
-        - "*.${SECRET_DOMAIN}"
+      - dns01:
+          cloudflare:
+            email: "${SECRET_EMAIL_1}"
+            apiKeySecretRef:
+              name: cloudflare-api-key-secret
+              key: cloudflare-api-key
+        selector:
+          dnsZones:
+            - "${SECRET_DOMAIN}"
+            - "*.${SECRET_DOMAIN}"

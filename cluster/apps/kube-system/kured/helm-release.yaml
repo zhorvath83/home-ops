@@ -27,7 +27,7 @@ spec:
       messageTemplateReboot: "♻️ Rebooted node %s"
       annotateNodes: true
       rebootSentinel: "/var/run/reboot-required"
-      period:  "10m"
+      period: "10m"
       rebootCommand: "/usr/bin/systemctl reboot"
       logFormat: "text"
     rbac:

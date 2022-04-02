@@ -24,40 +24,40 @@ spec:
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-              - key: app.kubernetes.io/name
-                operator: In
-                values:
-                - private-website
-            topologyKey: kubernetes.io/hostname
+            - labelSelector:
+                matchExpressions:
+                  - key: app.kubernetes.io/name
+                    operator: In
+                    values:
+                      - private-website
+              topologyKey: kubernetes.io/hostname
       containers:
-      - name: private-website
-        image: ghcr.io/zhorvath83/private-website:1.21.6.92
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 8080
-          protocol: TCP
-        securityContext:
-          readOnlyRootFilesystem: true
-          runAsNonRoot: true
-          allowPrivilegeEscalation: false
-          # Run the container as nobody:nogroup
-          runAsUser: 65534
-          runAsGroup: 65534
-          capabilities:
-            drop:
-            - NET_RAW
-        resources:
-          requests:
-            cpu: 50m
-            memory: 10Mi
-          limits:
-            memory: 64Mi
-        # This is a workaround due to readOnlyRootFilesystem: true
-        volumeMounts:
-        - mountPath: /tmp
-          name: tmp
+        - name: private-website
+          image: ghcr.io/zhorvath83/private-website:1.21.6.92
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            # Run the container as nobody:nogroup
+            runAsUser: 65534
+            runAsGroup: 65534
+            capabilities:
+              drop:
+                - NET_RAW
+          resources:
+            requests:
+              cpu: 50m
+              memory: 10Mi
+            limits:
+              memory: 64Mi
+          # This is a workaround due to readOnlyRootFilesystem: true
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
       volumes:
-      - emptyDir: {}
-        name: tmp
+        - emptyDir: {}
+          name: tmp

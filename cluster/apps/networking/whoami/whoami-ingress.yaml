@@ -11,13 +11,13 @@ metadata:
 spec:
   ingressClassName: "traefik"
   rules:
-  - host: "whoami.${SECRET_DOMAIN}"
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: whoami
-            port:
-              number: 80
+    - host: "whoami.${SECRET_DOMAIN}"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: whoami
+                port:
+                  number: 80

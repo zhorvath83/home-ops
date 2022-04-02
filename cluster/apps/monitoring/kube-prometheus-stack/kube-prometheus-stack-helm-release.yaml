@@ -161,15 +161,15 @@ spec:
           - hosts:
               - "prometheus.${SECRET_DOMAIN}"
       remoteRead:
-      - url: https://prometheus-blocks-prod-us-central1.grafana.net/api/prom
-        basic_auth:
-          username: ${SECRET_GRAFANA_CLOUD_INSTANCE}
-          password: ${SECRET_GRAFANA_CLOUD_APIKEY}
+        - url: https://prometheus-blocks-prod-us-central1.grafana.net/api/prom
+          basic_auth:
+            username: ${SECRET_GRAFANA_CLOUD_INSTANCE}
+            password: ${SECRET_GRAFANA_CLOUD_APIKEY}
       remoteWrite:
-      - url: https://prometheus-blocks-prod-us-central1.grafana.net/api/prom/push
-        basic_auth:
-          username: ${SECRET_GRAFANA_CLOUD_INSTANCE}
-          password: ${SECRET_GRAFANA_CLOUD_APIKEY}
+        - url: https://prometheus-blocks-prod-us-central1.grafana.net/api/prom/push
+          basic_auth:
+            username: ${SECRET_GRAFANA_CLOUD_INSTANCE}
+            password: ${SECRET_GRAFANA_CLOUD_APIKEY}
       ## Enable/Disable Grafana dashboards provisioning for prometheus remote write feature
       remoteWriteDashboards: true
       thanosService:

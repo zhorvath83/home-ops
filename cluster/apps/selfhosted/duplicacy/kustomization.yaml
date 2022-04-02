@@ -2,7 +2,7 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-- duplicacy-pvc.yaml
-- duplicacy-deployment.yaml
-- duplicacy-service.yaml
-- duplicacy-ingress.yaml
+  - duplicacy-pvc.yaml
+  - duplicacy-deployment.yaml
+  - duplicacy-service.yaml
+  - duplicacy-ingress.yaml

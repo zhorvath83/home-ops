@@ -19,17 +19,17 @@ spec:
         app.kubernetes.io/name: mailrise
     spec:
       containers:
-      - name: mailrise
-        image: yoryan/mailrise:release-1.2.0
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 8025
-          name: mailrise
-        volumeMounts:
-        - name: mailrise-config
-          mountPath: /etc/mailrise.conf
-          subPath: mailrise.conf
+        - name: mailrise
+          image: yoryan/mailrise:release-1.2.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8025
+              name: mailrise
+          volumeMounts:
+            - name: mailrise-config
+              mountPath: /etc/mailrise.conf
+              subPath: mailrise.conf
       volumes:
-      - name: mailrise-config
-        configMap:
-          name: mailrise-config
+        - name: mailrise-config
+          configMap:
+            name: mailrise-config

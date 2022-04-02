@@ -6,15 +6,15 @@ metadata:
   namespace: networking
 spec:
   entryPoints:
-  - websecure
+    - websecure
   routes:
-  - kind: Rule
-    match: Host(`traefik.${SECRET_DOMAIN}`)
-    services:
-    - kind: TraefikService
-      name: api@internal
-    middlewares:
-    - name: middleware-chain-cf-auth
-      namespace: networking
+    - kind: Rule
+      match: Host(`traefik.${SECRET_DOMAIN}`)
+      services:
+        - kind: TraefikService
+          name: api@internal
+      middlewares:
+        - name: middleware-chain-cf-auth
+          namespace: networking
   tls:
     secretName: "${SECRET_DOMAIN/./-}-tls"

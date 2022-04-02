@@ -35,36 +35,36 @@ spec:
                 topologyKey: kubernetes.io/hostname
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-              - key: app.kubernetes.io/name
-                operator: In
-                values:
-                - traefik-error-pages
-            topologyKey: kubernetes.io/hostname
+            - labelSelector:
+                matchExpressions:
+                  - key: app.kubernetes.io/name
+                    operator: In
+                    values:
+                      - traefik-error-pages
+              topologyKey: kubernetes.io/hostname
       containers:
-      - name: traefik-error-pages
-        image: ghcr.io/tarampampam/error-pages:2.12.1
-        imagePullPolicy: IfNotPresent
-        env:
-        - name: TEMPLATE_NAME
-          value: "lost-in-space	"
-        ports:
-        - containerPort: 8080
-          protocol: TCP
-        securityContext:
-          readOnlyRootFilesystem: true
-          runAsNonRoot: true
-          allowPrivilegeEscalation: false
-          # Run the container as nobody:nogroup
-          runAsUser: 65534
-          runAsGroup: 65534
-          capabilities:
-            drop:
-            - NET_RAW
-        resources:
-          requests:
-            cpu: 50m
-            memory: 16Mi
-          limits:
-            memory: 64Mi
+        - name: traefik-error-pages
+          image: ghcr.io/tarampampam/error-pages:2.12.1
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: TEMPLATE_NAME
+              value: "lost-in-space"
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            # Run the container as nobody:nogroup
+            runAsUser: 65534
+            runAsGroup: 65534
+            capabilities:
+              drop:
+                - NET_RAW
+          resources:
+            requests:
+              cpu: 50m
+              memory: 16Mi
+            limits:
+              memory: 64Mi

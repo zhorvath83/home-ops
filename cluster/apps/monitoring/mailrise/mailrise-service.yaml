@@ -6,9 +6,9 @@ metadata:
   namespace: monitoring
 spec:
   ports:
-  - protocol: TCP
-    port: 25
-    targetPort: 8025
+    - protocol: TCP
+      port: 25
+      targetPort: 8025
   selector:
     app.kubernetes.io/name: mailrise
   type: LoadBalancer

@@ -65,15 +65,15 @@ spec:
           traefik.ingress.kubernetes.io/router.tls: "true"
           traefik.ingress.kubernetes.io/router.middlewares: networking-middleware-chain-cf-auth@kubernetescrd
         hosts:
-        - host: qbittorrent.${SECRET_DOMAIN}
-          paths:
-          - path: /
-            pathType: Prefix
+          - host: qbittorrent.${SECRET_DOMAIN}
+            paths:
+              - path: /
+                pathType: Prefix
         tls: {}
     podSecurityContext:
       supplementalGroups:
-      - 100
-      - 1000
+        - 100
+        - 1000
     persistence:
       qbittorrent-data:
         enabled: true
@@ -93,27 +93,27 @@ spec:
           configMap:
             name: qbittorrent-config
             items:
-            - key: qBittorrent.conf
-              path: qBittorrent.conf
+              - key: qBittorrent.conf
+                path: qBittorrent.conf
     initContainers:
       copy-qbittorrent-config:
         name: copy-qbittorrent-config
         image: instrumentisto/rsync-ssh:alpine3.14
         imagePullPolicy: IfNotPresent
         command:
-        - sh
-        - -exec
-        - |
-          mkdir -p /config/qBittorrent
-          rsync -av /qbittorrent_tmp/qBittorrent.conf /config/qBittorrent/qBittorrent.conf
-          chown -R 568 /config
-          chmod -R 775 /config
+          - sh
+          - -exec
+          - |
+            mkdir -p /config/qBittorrent
+            rsync -av /qbittorrent_tmp/qBittorrent.conf /config/qBittorrent/qBittorrent.conf
+            chown -R 568 /config
+            chmod -R 775 /config
         volumeMounts:
-        - name: qbittorrent-conf-ro
-          mountPath: /qbittorrent_tmp/qBittorrent.conf
-          subPath: qBittorrent.conf
-        - name: qbittorrent-data
-          mountPath: /config
+          - name: qbittorrent-conf-ro
+            mountPath: /qbittorrent_tmp/qBittorrent.conf
+            subPath: qBittorrent.conf
+          - name: qbittorrent-data
+            mountPath: /config
 
     resources:
       requests:

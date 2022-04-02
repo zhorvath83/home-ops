@@ -39,16 +39,16 @@ spec:
           traefik.ingress.kubernetes.io/router.tls: "true"
           traefik.ingress.kubernetes.io/router.middlewares: networking-middleware-chain-cf-auth@kubernetescrd
         hosts:
-        - host: "radarr.${SECRET_DOMAIN}"
-          paths:
-          - path: /
-            pathType: Prefix
+          - host: "radarr.${SECRET_DOMAIN}"
+            paths:
+              - path: /
+                pathType: Prefix
         tls:
-        - hosts:
-          - "radarr.${SECRET_DOMAIN}"
+          - hosts:
+              - "radarr.${SECRET_DOMAIN}"
     podSecurityContext:
       supplementalGroups:
-      - 100
+        - 100
     persistence:
       config:
         enabled: true

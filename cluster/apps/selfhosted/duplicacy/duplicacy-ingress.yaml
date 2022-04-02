@@ -11,13 +11,13 @@ metadata:
 spec:
   ingressClassName: "traefik"
   rules:
-  - host: "duplicacy.${SECRET_DOMAIN}"
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: duplicacy
-            port:
-              number: 80
+    - host: "duplicacy.${SECRET_DOMAIN}"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: duplicacy
+                port:
+                  number: 80

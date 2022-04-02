@@ -34,27 +34,27 @@ spec:
                         - home-assistant
                 topologyKey: kubernetes.io/hostname
       containers:
-      - name: mosquitto
-        image: eclipse-mosquitto:2.0.14
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 1883
-          protocol: TCP
-        resources:
-          requests:
-            cpu: 50m
-            memory: 16Mi
-          limits:
-            memory: 256Mi
-        volumeMounts:
-          - name: mosquitto-config
-            mountPath: /mosquitto/config/mosquitto.conf
-            subPath: mosquitto.conf
-          - name: mosquitto-secret
-            mountPath: /mosquitto/config/mosquitto.pwd
-            subPath: mosquitto.pwd
-          - name: mosquitto-data
-            mountPath: /mosquitto/data
+        - name: mosquitto
+          image: eclipse-mosquitto:2.0.14
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 1883
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 50m
+              memory: 16Mi
+            limits:
+              memory: 256Mi
+          volumeMounts:
+            - name: mosquitto-config
+              mountPath: /mosquitto/config/mosquitto.conf
+              subPath: mosquitto.conf
+            - name: mosquitto-secret
+              mountPath: /mosquitto/config/mosquitto.pwd
+              subPath: mosquitto.pwd
+            - name: mosquitto-data
+              mountPath: /mosquitto/data
       volumes:
         - name: mosquitto-config
           configMap:

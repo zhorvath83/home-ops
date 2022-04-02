@@ -43,6 +43,3 @@ spec:
       persistence:
         enabled: true
         existingClaim: postgresql-data
-
-    #volumePermissions:
-    #  enabled: true

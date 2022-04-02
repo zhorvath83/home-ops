@@ -6,7 +6,7 @@ metadata:
 spec:
   storageClassName: backup-share-storage
   accessModes:
-  - ReadWriteMany
+    - ReadWriteMany
   capacity:
     storage: 1Mi
   persistentVolumeReclaimPolicy: Retain
@@ -22,7 +22,7 @@ metadata:
   namespace: selfhosted
 spec:
   accessModes:
-  - ReadWriteMany
+    - ReadWriteMany
   storageClassName: backup-share-storage
   resources:
     requests:

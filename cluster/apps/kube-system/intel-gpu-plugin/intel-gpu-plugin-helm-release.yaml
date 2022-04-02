@@ -21,16 +21,16 @@ spec:
       tag: 0.23.0
       pullPolicy: IfNotPresent
     args:
-    - -shared-dev-num
-    - "1"
+      - -shared-dev-num
+      - "1"
     securityContext:
       readOnlyRootFilesystem: true
     affinity:
       nodeAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
           nodeSelectorTerms:
-          - matchExpressions:
-            - key: feature.node.kubernetes.io/custom-intel-gpu
-              operator: In
-              values:
-              - "true"
+            - matchExpressions:
+                - key: feature.node.kubernetes.io/custom-intel-gpu
+                  operator: In
+                  values:
+                    - "true"

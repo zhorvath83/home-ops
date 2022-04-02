@@ -1,3 +1,4 @@
+---
 apiVersion: longhorn.io/v1beta1
 kind: RecurringJob
 metadata:
@@ -10,9 +11,7 @@ spec:
   retain: 6
   concurrency: 5
   labels: {}
-
 ---
-
 apiVersion: longhorn.io/v1beta1
 kind: RecurringJob
 metadata:

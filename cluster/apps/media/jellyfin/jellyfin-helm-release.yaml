@@ -6,10 +6,10 @@ metadata:
   namespace: media
 spec:
   dependsOn:
-  - name: longhorn
-    namespace: longhorn-system
-  - name: intel-gpu-plugin
-    namespace: kube-system
+    - name: longhorn
+      namespace: longhorn-system
+    - name: intel-gpu-plugin
+      namespace: kube-system
   maxHistory: 5
   interval: 10m0s
   suspend: false

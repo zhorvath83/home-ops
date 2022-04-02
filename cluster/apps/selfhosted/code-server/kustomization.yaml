@@ -2,7 +2,7 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-- code-server-pvc.yaml
-- code-server-deployment.yaml
-- code-server-service.yaml
-- code-server-ingress.yaml
+  - code-server-pvc.yaml
+  - code-server-deployment.yaml
+  - code-server-service.yaml
+  - code-server-ingress.yaml

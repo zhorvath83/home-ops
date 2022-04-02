@@ -67,10 +67,10 @@ spec:
       main:
         enabled: true
         hosts:
-        - host: dash.${SECRET_DOMAIN}
-          paths:
-          - path: /
-            pathType: Prefix
+          - host: dash.${SECRET_DOMAIN}
+            paths:
+              - path: /
+                pathType: Prefix
         annotations:
           kubernetes.io/ingress.class: traefik
           traefik.ingress.kubernetes.io/router.entrypoints: websecure
@@ -92,5 +92,5 @@ spec:
           configMap:
             name: homer-config
             items:
-            - key: homer-config.yaml
-              path: config.yml
+              - key: homer-config.yaml
+                path: config.yml

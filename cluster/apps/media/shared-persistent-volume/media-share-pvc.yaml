@@ -6,7 +6,7 @@ metadata:
 spec:
   storageClassName: media-share-storage
   accessModes:
-  - ReadWriteMany
+    - ReadWriteMany
   capacity:
     storage: 1Mi
   persistentVolumeReclaimPolicy: Retain
@@ -22,7 +22,7 @@ metadata:
   namespace: media
 spec:
   accessModes:
-  - ReadWriteMany
+    - ReadWriteMany
   storageClassName: media-share-storage
   resources:
     requests:
