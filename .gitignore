@@ -1,0 +1,14 @@
+# Trash
+.DS_Store
+Thumbs.db
+# Terraform
+.terraform
+.terraform.tfstate*
+terraform.tfstate*
+# Sops
+.decrypted~*
+*.asc
+*gpg*
+# Kubernetes
+kubeconfig*
+talosconfig*
