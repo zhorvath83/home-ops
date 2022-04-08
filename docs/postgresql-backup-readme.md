@@ -10,7 +10,7 @@ By default this container makes daily backups, but you can start a manual backup
 📍  Drop existing tables and data
 
 DO $$
-DECLARE 
+DECLARE
     r record;
 BEGIN
     FOR r IN SELECT quote_ident(tablename) AS tablename, quote_ident(schemaname) AS schemaname FROM pg_tables WHERE schemaname = 'public'

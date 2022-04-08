@@ -4,3 +4,7 @@ creation_rules:
     encrypted_regex: "^(data|stringData)$"
     pgp: >-
       D47F3549C509AF39E00BE4422182ED78F377744E
+  - path_regex: provision/.*\.sops\.ya?ml
+    unencrypted_regex: "^(kind)$"
+    pgp: >-
+      D47F3549C509AF39E00BE4422182ED78F377744E
