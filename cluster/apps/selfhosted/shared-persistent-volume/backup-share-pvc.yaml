@@ -14,7 +14,6 @@ spec:
     path: /mnt/backup
 
 ---
-
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:

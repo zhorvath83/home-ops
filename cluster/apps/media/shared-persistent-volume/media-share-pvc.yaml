@@ -14,7 +14,6 @@ spec:
     path: /mnt/media
 
 ---
-
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
