@@ -4,4 +4,3 @@ kind: Kustomization
 resources:
   - cloudflared-config.yaml
   - cloudflared-credentials-secret.sops.yaml
-  - cloudflared-tunnel-cert-secret.sops.yaml

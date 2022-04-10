@@ -1,5 +1,5 @@
 resource "cloudflare_record" "cname_root" {
-  name    = data.sops_file.cloudflare_secrets.data["cloudflare_domain"]
+  name    = data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]
   zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
   value   = "private-website-93q.pages.dev"
   proxied = true
@@ -10,7 +10,7 @@ resource "cloudflare_record" "cname_root" {
 resource "cloudflare_record" "cname_www" {
   name    = "www"
   zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
-  value   = "private-website-93q.pages.dev"
+  value   = data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]
   proxied = true
   type    = "CNAME"
   ttl     = 1
@@ -21,7 +21,7 @@ resource "cloudflare_record" "cname_www" {
 #
 
 resource "cloudflare_record" "mx_cloudflare_1" {
-  name    = data.sops_file.cloudflare_secrets.data["cloudflare_domain"]
+  name    = data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]
   zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
   value   = "route1.mx.cloudflare.net"
   proxied = false
@@ -31,7 +31,7 @@ resource "cloudflare_record" "mx_cloudflare_1" {
 }
 
 resource "cloudflare_record" "mx_cloudflare_2" {
-  name    = data.sops_file.cloudflare_secrets.data["cloudflare_domain"]
+  name    = data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]
   zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
   value   = "route2.mx.cloudflare.net"
   proxied = false
@@ -41,7 +41,7 @@ resource "cloudflare_record" "mx_cloudflare_2" {
 }
 
 resource "cloudflare_record" "mx_cloudflare_3" {
-  name    = data.sops_file.cloudflare_secrets.data["cloudflare_domain"]
+  name    = data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]
   zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
   value   = "route3.mx.cloudflare.net"
   proxied = false
@@ -50,13 +50,12 @@ resource "cloudflare_record" "mx_cloudflare_3" {
   priority = 96
 }
 
-
 #
 # SPF record
 #
 
 resource "cloudflare_record" "txt_mailjet_spf" {
-  name    = data.sops_file.cloudflare_secrets.data["cloudflare_domain"]
+  name    = data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]
   zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
   value   = "v=spf1 include:_spf.mx.cloudflare.net include:spf.mailjet.com ~all"
   proxied = false

@@ -1,11 +1,7 @@
-resource "random_id" "argo_tunnel_secret" {
-  byte_length = 35
-}
-
 resource "cloudflare_argo_tunnel" "cf_argo_tunnel" {
-  account_id = data.sops_file.cloudflare_secrets.data["cloudflare_account_id"]
-  name       = "${data.sops_file.cloudflare_secrets.data["cloudflare_domain"]}-tunnel"
-  secret     = random_id.argo_tunnel_secret.b64_std
+  account_id = data.sops_file.cluster_secrets.data["stringData.SECRET_CF_ACCOUNT_ID"]
+  name       = "${data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]}-tunnel"
+  secret     = data.sops_file.cluster_secrets.data["stringData.SECRET_CF_ARGO_TUNNEL_SECRET"]
 }
 
 resource "cloudflare_record" "cf_argo_tunnel_cname" {
@@ -15,4 +11,10 @@ resource "cloudflare_record" "cf_argo_tunnel_cname" {
   type    = "CNAME"
   proxied = true
   ttl     = 1
+}
+
+output "cf_argo_tunnel_id" {
+ value       = cloudflare_argo_tunnel.cf_argo_tunnel.id
+ description = "Cloudflare Argo Tunnel ID"
+ sensitive   = false
 }

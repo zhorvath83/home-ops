@@ -13,20 +13,28 @@ terraform {
       source  = "carlpett/sops"
       version = "0.7.0"
     }
+    external = {
+      source  = "hashicorp/external"
+      version = "2.2.2"
+    }
   }
 }
 
-data "sops_file" "cloudflare_secrets" {
-  source_file = "secret.sops.yaml"
+data "external" "git_root_path" {
+  program = ["bash", "-c", "echo {\\\"result\\\":\\\"$(git rev-parse --show-toplevel)\\\"}"]
+}
+
+data "sops_file" "cluster_secrets" {
+  source_file = "${data.external.git_root_path.result.result}/cluster/base/cluster-secrets.sops.yaml"
 }
 
 provider "cloudflare" {
-  email   = data.sops_file.cloudflare_secrets.data["cloudflare_email"]
-  api_key = data.sops_file.cloudflare_secrets.data["cloudflare_apikey"]
+  email   = data.sops_file.cluster_secrets.data["stringData.SECRET_CF_EMAIL"]
+  api_key = data.sops_file.cluster_secrets.data["stringData.SECRET_CF_APIKEY"]
 }
 
 data "cloudflare_zones" "domain" {
   filter {
-    name = data.sops_file.cloudflare_secrets.data["cloudflare_domain"]
+    name = data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]
   }
 }
