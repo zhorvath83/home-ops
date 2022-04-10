@@ -10,6 +10,8 @@ bin
 .private/
 .logs/
 .task/
+# Log files
+*.log
 # Ansible
 xanmanning.k3s*
 mrlesmithjr.zfs*
