@@ -140,6 +140,18 @@
       ],
       "additionalBranchPrefix": "",
       "separateMinorPatch": true
+    },
+    // Additional links in PR's
+    {
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "cloudflare/cloudflared"
+      ],
+      "prBodyNotes": [
+        "[Release notes](https://github.com/cloudflare/cloudflared/blob/master/RELEASE_NOTES)"
+      ]
     }
   ]
 }
