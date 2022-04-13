@@ -152,6 +152,17 @@
       "prBodyNotes": [
         "[Release notes](https://github.com/cloudflare/cloudflared/blob/master/RELEASE_NOTES)"
       ]
+    },
+    {
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "ghcr.io/dgtlmoon/changedetection.io    "
+      ],
+      "prBodyNotes": [
+        "[Release notes](https://github.com/dgtlmoon/changedetection.io/releases)"
+      ]
     }
   ]
 }
