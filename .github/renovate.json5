@@ -1,12 +1,17 @@
 {
   "extends": [
+    ":enableRenovate",
+    "config:base",
+    ":disableRateLimiting",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    ":separatePatchReleases",
+    "docker:enableMajor",
+    ":enablePreCommit",
     "github>zhorvath83/kube-cluster//.github/renovate/groupPackages",
-    "github>zhorvath83/kube-cluster//.github/renovate/looseVersioning",
+    "github>zhorvath83/kube-cluster//.github/renovate/versioning",
     "github>zhorvath83/kube-cluster//.github/renovate/prBodyNotes"
   ],
-  "enabled": true,
-  "semanticCommits": "enabled",
-  "dependencyDashboard": true,
   "dependencyDashboardTitle": "Renovate Dashboard 🤖",
   "suppressNotifications": ["prIgnoreNotification"],
   "rebaseWhen": "conflicted",

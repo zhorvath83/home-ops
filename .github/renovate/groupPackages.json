@@ -1,16 +1,16 @@
 {
   "packageRules": [
     {
-        "groupName": "system-upgrade-controller-suite",
-        "matchDatasources": [
-        "docker",
-        "github-tags"
-        ],
-        "matchPackagePatterns": [
-        "rancher/system-upgrade-controller"
-        ],
-        "additionalBranchPrefix": "",
-        "separateMinorPatch": true
+      "groupName": "system-upgrade-controller-suite",
+      "matchDatasources": [
+      "docker",
+      "github-tags"
+      ],
+      "matchPackagePatterns": [
+      "rancher/system-upgrade-controller"
+      ],
+      "additionalBranchPrefix": "",
+      "separateMinorPatch": true
     }
   ]
 }

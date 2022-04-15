@@ -1,37 +1,37 @@
 {
   "packageRules": [
     {
-        "matchDatasources": [
-        "docker"
-        ],
-        "matchPackageNames": [
-        "cloudflare/cloudflared"
-        ],
-        "prBodyNotes": [
-        "[Release notes](https://github.com/cloudflare/cloudflared/blob/master/RELEASE_NOTES)"
-        ]
+      "matchDatasources": [
+      "docker"
+      ],
+      "matchPackageNames": [
+      "cloudflare/cloudflared"
+      ],
+      "prBodyNotes": [
+      "[Release notes](https://github.com/cloudflare/cloudflared/blob/master/RELEASE_NOTES)"
+      ]
     },
     {
-        "matchDatasources": [
-        "docker"
-        ],
-        "matchPackageNames": [
-        "ghcr.io/dgtlmoon/changedetection.io"
-        ],
-        "prBodyNotes": [
-        "[Release notes](https://github.com/dgtlmoon/changedetection.io/releases)"
-        ]
+      "matchDatasources": [
+      "docker"
+      ],
+      "matchPackageNames": [
+      "ghcr.io/dgtlmoon/changedetection.io"
+      ],
+      "prBodyNotes": [
+      "[Release notes](https://github.com/dgtlmoon/changedetection.io/releases)"
+      ]
     },
     {
-        "matchDatasources": [
-        "docker"
-        ],
-        "matchPackageNames": [
-        "ghcr.io/home-assistant/home-assistant"
-        ],
-        "prBodyNotes": [
-        "[Release notes](https://www.home-assistant.io/blog/categories/release-notes/)"
-        ]
+      "matchDatasources": [
+      "docker"
+      ],
+      "matchPackageNames": [
+      "ghcr.io/home-assistant/home-assistant"
+      ],
+      "prBodyNotes": [
+      "[Release notes](https://www.home-assistant.io/blog/categories/release-notes/)"
+      ]
     }
   ]
 }
