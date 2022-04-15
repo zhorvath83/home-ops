@@ -1,4 +1,9 @@
 {
+  "extends": [
+    "github>zhorvath83/kube-cluster//.github/renovate/groupPackages",
+    "github>zhorvath83/kube-cluster//.github/renovate/looseVersioning",
+    "github>zhorvath83/kube-cluster//.github/renovate/prBodyNotes"
+  ],
   "enabled": true,
   "semanticCommits": "enabled",
   "dependencyDashboard": true,
@@ -115,54 +120,6 @@
       "matchDatasources": ["helm"],
       "matchUpdateTypes": ["patch"],
       "labels": ["renovate/helm", "dep/patch"]
-    },
-    // packages with loose versioning
-    {
-      "matchDatasources": [
-        "docker"
-      ],
-      "versioning": "loose",
-      "matchPackageNames": [
-        "ghcr.io/k8s-at-home/qbittorrent",
-        "ghcr.io/zhorvath83/code-server",
-        "ghcr.io/zhorvath83/private-website"
-      ]
-    },
-    // group packages
-    {
-      "groupName": "system-upgrade-controller-suite",
-      "matchDatasources": [
-        "docker",
-        "github-tags"
-      ],
-      "matchPackagePatterns": [
-        "rancher/system-upgrade-controller"
-      ],
-      "additionalBranchPrefix": "",
-      "separateMinorPatch": true
-    },
-    // Additional links in PR's
-    {
-      "matchDatasources": [
-        "docker"
-      ],
-      "matchPackageNames": [
-        "cloudflare/cloudflared"
-      ],
-      "prBodyNotes": [
-        "[Release notes](https://github.com/cloudflare/cloudflared/blob/master/RELEASE_NOTES)"
-      ]
-    },
-    {
-      "matchDatasources": [
-        "docker"
-      ],
-      "matchPackageNames": [
-        "ghcr.io/dgtlmoon/changedetection.io    "
-      ],
-      "prBodyNotes": [
-        "[Release notes](https://github.com/dgtlmoon/changedetection.io/releases)"
-      ]
     }
   ]
 }
