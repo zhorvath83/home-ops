@@ -202,6 +202,10 @@ services:
   - name: Monitoring
     icon: fab fa-watchman-monitoring
     items:
+      - name: Discord
+        subtitle: Messaging service
+        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/discord.png
+        url: https://discord.com/channels/@me
       - name: WhoAMI
         subtitle: whoami service
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/whoami.png
