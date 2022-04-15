@@ -1,6 +1,5 @@
 {
   "packageRules": [
-    // packages with loose versioning
     {
         "matchDatasources": [
         "docker"

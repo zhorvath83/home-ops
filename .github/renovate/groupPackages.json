@@ -1,6 +1,5 @@
 {
   "packageRules": [
-    // group packages
     {
         "groupName": "system-upgrade-controller-suite",
         "matchDatasources": [

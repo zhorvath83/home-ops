@@ -1,6 +1,5 @@
 {
   "packageRules": [
-    // Additional links in PR's
     {
         "matchDatasources": [
         "docker"
