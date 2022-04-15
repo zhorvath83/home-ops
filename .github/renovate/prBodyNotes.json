@@ -30,7 +30,7 @@
       "ghcr.io/home-assistant/home-assistant"
       ],
       "prBodyNotes": [
-      "[Release notes](https://www.home-assistant.io/blog/categories/release-notes/){:target=\"_blank\" rel=\"noopener\"}"
+      "<a href=\"https://www.home-assistant.io/blog/categories/release-notes/\" target=\"_blank\">Release notes</a>"
       ]
     }
   ]
