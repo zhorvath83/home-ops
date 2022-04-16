@@ -90,3 +90,8 @@ resource "cloudflare_access_policy" "flux_webhook_bypass_policy" {
     everyone = true
   }
 }
+
+output "private_cloud_aud" {
+ value       = cloudflare_access_application.private_cloud.aud
+ description = "Private Cloud AUD. Paste it to cluster-secrets."
+}

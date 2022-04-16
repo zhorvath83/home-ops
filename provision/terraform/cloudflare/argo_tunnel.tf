@@ -15,6 +15,5 @@ resource "cloudflare_record" "cf_argo_tunnel_cname" {
 
 output "cf_argo_tunnel_id" {
  value       = cloudflare_argo_tunnel.cf_argo_tunnel.id
- description = "Cloudflare Argo Tunnel ID"
- sensitive   = false
+ description = "Cloudflare Argo Tunnel ID.  Paste it to cluster-settings."
 }
