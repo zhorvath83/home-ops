@@ -8,7 +8,7 @@ resources:
   - pgbackups
   - pgadmin
   - recipes
-  - private-website
+  # - private-website
   - homer
   - duplicacy
   - vikunja
