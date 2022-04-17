@@ -72,7 +72,12 @@ spec:
       transcode:
         enabled: true
         type: emptyDir
-        medium: Memory
+        accessMode: ReadWriteOnce
+        mountPath: /config/transcodes
+        emptyDir:
+          enabled: true
+          medium: "Memory"
+          sizeLimit: 6Gi
 
     resources:
       requests:
