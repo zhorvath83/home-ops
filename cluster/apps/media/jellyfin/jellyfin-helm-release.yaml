@@ -66,14 +66,17 @@ spec:
         existingClaim: jellyfin-data
         mountPath: /config
       media:
+        # enabled: true
+        # existingClaim: media-share
+        # mountPath: /media
         enabled: true
         existingClaim: media-share
-        mountPath: /media
-      transcode:
-        enabled: true
-        existingClaim: media-share
-        mountPath: /config/transcodes
-        subPath: transcode-tmp
+        mountPath: ""
+        subPath:
+          - path: .
+            mountPath: /media
+          - path: transcode-tmp
+            mountPath: /config/transcodes
       # transcode:
       #   enabled: true
       #   type: emptyDir
