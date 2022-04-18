@@ -68,12 +68,12 @@ spec:
       media:
         enabled: true
         existingClaim: media-share
-        # mountPath: /media
-        subPath:
-          - path: .
-            mountPath: /media
-          - path: transcode-tmp
-            mountPath: /config/transcodes
+        mountPath: /media
+      transcode:
+        enabled: true
+        existingClaim: media-share
+        mountPath: /config/transcodes
+        subPath: transcode-tmp
       # transcode:
       #   enabled: true
       #   type: emptyDir
