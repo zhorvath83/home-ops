@@ -29,7 +29,7 @@ sudo kubectl create secret generic sops-gpg \
 `kubectl --kubeconfig=./kubeconfig get pods -n flux-system`
 
 
-📍 [VSCode SOPS extension](https://marketplace.visualstudio.com/items?itemName=signageos.signageos-vscode-sops)
+📍 VSCode SOPS extension
 VSCode SOPS is a neat little plugin for those using VSCode. It will automatically decrypt you SOPS secrets when you click on the file in the editor and encrypt them when you save and exit the file.
 
 
