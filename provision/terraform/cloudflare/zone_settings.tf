@@ -26,6 +26,8 @@ resource "cloudflare_zone_settings_override" "cloudflare_settings" {
     # /caching/configuration
     always_online    = "off"
     development_mode = "off"
+    # Respect Existing Headers
+    browser_cache_ttl = "0"
     # /network
     http3               = "on"
     zero_rtt            = "on"
@@ -34,6 +36,7 @@ resource "cloudflare_zone_settings_override" "cloudflare_settings" {
     opportunistic_onion = "on"
     pseudo_ipv4         = "off"
     ip_geolocation      = "on"
+    max_upload          = "100"
     # /content-protection
     email_obfuscation   = "on"
     server_side_exclude = "on"
