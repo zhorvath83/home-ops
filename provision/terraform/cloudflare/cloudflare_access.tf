@@ -36,7 +36,7 @@ resource "cloudflare_access_application" "private_cloud" {
   name             = "Private Cloud"
   domain           = "*.${data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]}"
   type             = "self_hosted"
-  session_duration = "168h"
+  session_duration = "720h"
 }
 
 resource "cloudflare_access_policy" "private_cloud_user_auth_policy" {
