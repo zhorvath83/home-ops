@@ -22,6 +22,14 @@ spec:
       pullPolicy: IfNotPresent
     env:
       TZ: "${CLUSTER_TIMEZONE}"
+    podSecurityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+      fsGroupChangePolicy: "OnRootMismatch"
+      supplementalGroups:
+        - 100
+        - 1000
     service:
       main:
         type: LoadBalancer

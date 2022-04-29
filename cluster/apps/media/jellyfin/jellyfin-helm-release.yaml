@@ -46,7 +46,7 @@ spec:
         - 44
         - 107
         - 100
-
+        - 1000
     service:
       main:
         type: LoadBalancer
