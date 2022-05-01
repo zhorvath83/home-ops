@@ -51,7 +51,7 @@ spec:
         annotations:
           traefik.ingress.kubernetes.io/router.entrypoints: websecure
           traefik.ingress.kubernetes.io/router.tls: "true"
-          traefik.ingress.kubernetes.io/router.middlewares: networking-middleware-chain-cf-auth@kubernetescrd
+          traefik.ingress.kubernetes.io/router.middlewares: networking-middleware-chain-noauth@kubernetescrd
         hosts:
           - host: "todo.${SECRET_DOMAIN}"
             paths:

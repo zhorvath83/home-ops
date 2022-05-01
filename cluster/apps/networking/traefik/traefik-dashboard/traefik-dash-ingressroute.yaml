@@ -14,7 +14,7 @@ spec:
         - kind: TraefikService
           name: api@internal
       middlewares:
-        - name: middleware-chain-cf-auth
+        - name: middleware-chain-noauth
           namespace: networking
   tls:
     secretName: "${SECRET_DOMAIN/./-}-tls"
