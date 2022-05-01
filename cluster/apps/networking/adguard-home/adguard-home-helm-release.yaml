@@ -186,19 +186,19 @@ spec:
         parental_cache_size: 1048576
         cache_time: 30
         rewrites:
-        - domain: "${SECRET_DOMAIN}"
+        - domain: "*.${SECRET_DOMAIN}"
           answer: "${CLUSTER_SVC_INGRESS_CONTROLLER_IP}"
-        - domain: "nas"
+        - domain: "nas.${CLUSTER_LAN_DOMAIN}"
           answer: "${CLUSTER_LAN_NAS_IP}"
-        - domain: "jellyfin"
+        - domain: "jellyfin.${CLUSTER_LAN_DOMAIN}"
           answer: "${CLUSTER_SVC_JELLYFIN_IP}"
-        - domain: "vsc"
+        - domain: "vsc.${CLUSTER_LAN_DOMAIN}"
           answer: "${CLUSTER_SVC_CODE_SERVER_IP}"
-        - domain: "hass"
+        - domain: "hass.${CLUSTER_LAN_DOMAIN}"
           answer: "${CLUSTER_SVC_HOMEASSISTANT_IP}"
-        - domain: "mqtt"
+        - domain: "mqtt.${CLUSTER_LAN_DOMAIN}"
           answer: "${CLUSTER_SVC_MQTT_IP}"
-        - domain: "kubernetes"
+        - domain: "kubernetes.${CLUSTER_LAN_DOMAIN}"
           answer: "${CLUSTER_SVC_KUBE_VIP_IP}"
         blocked_services: []
         local_domain_name: lan
