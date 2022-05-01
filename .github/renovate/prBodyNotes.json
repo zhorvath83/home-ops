@@ -27,6 +27,28 @@
       "docker"
       ],
       "matchPackageNames": [
+      "b4bz/homer"
+      ],
+      "prBodyNotes": [
+      "[Release notes](https://github.com/bastienwirtz/homer/releases)"
+      ]
+    },
+    {
+      "matchDatasources": [
+      "docker"
+      ],
+      "matchPackageNames": [
+      "saspus/duplicacy-web"
+      ],
+      "prBodyNotes": [
+      "[Release notes](https://bitbucket.org/saspus/duplicacy-web-docker-container/src/master/CHANGELOG.md)"
+      ]
+    },
+    {
+      "matchDatasources": [
+      "docker"
+      ],
+      "matchPackageNames": [
       "ghcr.io/home-assistant/home-assistant"
       ],
       "prBodyNotes": [
