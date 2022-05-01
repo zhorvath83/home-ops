@@ -185,7 +185,21 @@ spec:
         safesearch_cache_size: 1048576
         parental_cache_size: 1048576
         cache_time: 30
-        rewrites: []
+        rewrites:
+        - domain: "${SECRET_DOMAIN}"
+          answer: "${CLUSTER_SVC_INGRESS_CONTROLLER_IP}"
+        - domain: "nas"
+          answer: "${CLUSTER_LAN_NAS_IP}"
+        - domain: "jellyfin"
+          answer: "${CLUSTER_SVC_JELLYFIN_IP}"
+        - domain: "vsc"
+          answer: "${CLUSTER_SVC_CODE_SERVER_IP}"
+        - domain: "hass"
+          answer: "${CLUSTER_SVC_HOMEASSISTANT_IP}"
+        - domain: "mqtt"
+          answer: "${CLUSTER_SVC_MQTT_IP}"
+        - domain: "kubernetes"
+          answer: "${CLUSTER_SVC_KUBE_VIP_IP}"
         blocked_services: []
         local_domain_name: lan
         resolve_clients: true
