@@ -159,7 +159,10 @@ spec:
 
     service:
       enabled: true
-      type: ClusterIP
+      type: LoadBalancer
+      spec:
+        loadBalancerIP: ${CLUSTER_SVC_INGRESS_CONTROLLER_IP}
+        externalTrafficPolicy: Local
 
     dnsPolicy: ClusterFirst
 
