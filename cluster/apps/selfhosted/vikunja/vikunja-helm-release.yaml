@@ -24,7 +24,7 @@ spec:
 
     image:
       repository: caddy
-      tag: 2.5.0-alpine
+      tag: 2.5.1-alpine
       pullPolicy: IfNotPresent
 
     postgresql:
