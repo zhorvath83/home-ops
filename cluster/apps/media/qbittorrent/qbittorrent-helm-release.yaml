@@ -44,7 +44,7 @@ spec:
         ports:
           http:
             port: 8080
-      bittorrent:
+      bittorrent-tcp:
         enabled: true
         type: LoadBalancer
         loadBalancerIP: ${CLUSTER_SVC_QBITTORRENT_IP}
@@ -56,6 +56,19 @@ spec:
             enabled: true
             port: 50413
             protocol: TCP
+            targetPort: 50413
+      bittorrent-udp:
+        enabled: true
+        type: LoadBalancer
+        loadBalancerIP: ${CLUSTER_SVC_QBITTORRENT_IP}
+        externalTrafficPolicy: Local
+        annotations:
+          metallb.universe.tf/allow-shared-ip: qbittorrent-svc
+        ports:
+          bittorrent:
+            enabled: true
+            port: 50413
+            protocol: UDP
             targetPort: 50413
     ingress:
       main:
