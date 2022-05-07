@@ -84,11 +84,10 @@ spec:
         enabled: true
         existingClaim: qbittorrent-data
         mountPath: /config
-      qbittorrent-downloads:
+      media:
         enabled: true
         existingClaim: media-share
-        subPath: downloads
-        mountPath: /downloads
+        mountPath: /media
       qbittorrent-conf-ro:
         enabled: true
         mountPath: /qbittorrent_tmp/qBittorrent.conf
