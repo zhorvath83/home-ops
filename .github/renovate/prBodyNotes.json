@@ -54,6 +54,17 @@
       "prBodyNotes": [
       "[Release notes](https://www.home-assistant.io/blog/categories/release-notes/)"
       ]
+    },
+    {
+      "matchDatasources": [
+      "docker"
+      ],
+      "matchPackageNames": [
+      "vabene1111/recipes"
+      ],
+      "prBodyNotes": [
+      "[Release notes](https://github.com/TandoorRecipes/recipes/releases/latest/)"
+      ]
     }
   ]
 }
