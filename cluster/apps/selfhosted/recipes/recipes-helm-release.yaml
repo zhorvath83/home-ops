@@ -33,7 +33,7 @@ spec:
   values:
     image:
       repository: vabene1111/recipes
-      tag: 1.2.6
+      tag: 1.2.7
       pullPolicy: IfNotPresent
     sidecar:
       image:
