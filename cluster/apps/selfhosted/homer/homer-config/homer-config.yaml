@@ -86,6 +86,10 @@ services:
         subtitle: Erste Bank Hungary Zrt.
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/erste-george.png
         url: https://george.erstebank.hu
+      - name: MKB NetBank
+        subtitle: Erste Bank Hungary Zrt.
+        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/mkb.svg
+        url: https://login-online.mkb.hu/authenticate
       - name: Erste NetBroker
         subtitle: Erste Befektetési Zrt.
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/erste.png
@@ -204,7 +208,7 @@ services:
     items:
       - name: Discord
         subtitle: Messaging service
-        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/discord.png
+        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/discord.svg
         url: https://discord.com/channels/@me
       - name: WhoAMI
         subtitle: whoami service
