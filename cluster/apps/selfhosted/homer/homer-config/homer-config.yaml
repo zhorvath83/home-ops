@@ -87,7 +87,7 @@ services:
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/erste-george.png
         url: https://george.erstebank.hu
       - name: MKB NetBank
-        subtitle: Erste Bank Hungary Zrt.
+        subtitle: MKB Bank Nyrt.
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/mkb.svg
         url: https://login-online.mkb.hu/authenticate
       - name: Erste NetBroker
