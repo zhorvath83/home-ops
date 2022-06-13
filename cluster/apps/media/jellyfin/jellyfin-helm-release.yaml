@@ -51,7 +51,9 @@ spec:
     service:
       main:
         type: LoadBalancer
-        loadBalancerIP: ${CLUSTER_SVC_JELLYFIN_IP}
+        annotations:
+          metallb.universe.tf/loadBalancerIPs: |-
+            "${CLUSTER_SVC_JELLYFIN_IP}"
         externalTrafficPolicy: Local
         ports:
           http:

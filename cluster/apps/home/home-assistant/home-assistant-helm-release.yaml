@@ -47,7 +47,9 @@ spec:
       main:
         externalTrafficPolicy: Local
         type: LoadBalancer
-        loadBalancerIP: ${CLUSTER_SVC_HOMEASSISTANT_IP}
+        annotations:
+          metallb.universe.tf/loadBalancerIPs: |-
+            "${CLUSTER_SVC_HOMEASSISTANT_IP}"
         ports:
           http:
             port: 8123

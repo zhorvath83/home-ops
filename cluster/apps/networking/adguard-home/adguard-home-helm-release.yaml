@@ -44,6 +44,8 @@ spec:
         primary: true
         # annotations:
         #   metallb.universe.tf/allow-shared-ip: adguard-home-svc
+        #   metallb.universe.tf/loadBalancerIPs: |-
+        #     "${CLUSTER_SVC_LAN_DNS_IP}"
         # type: LoadBalancer
         # loadBalancerIP: ${CLUSTER_SVC_LAN_DNS_IP}
         # externalTrafficPolicy: Local
@@ -53,10 +55,11 @@ spec:
         #     targetPort: 3000
       dns-tcp:
         enabled: true
+        type: LoadBalancer
         annotations:
           metallb.universe.tf/allow-shared-ip: adguard-home-svc
-        type: LoadBalancer
-        loadBalancerIP: ${CLUSTER_SVC_LAN_DNS_IP}
+          metallb.universe.tf/loadBalancerIPs: |-
+            "${CLUSTER_SVC_LAN_DNS_IP}"
         ports:
           dns-tcp:
             enabled: true
@@ -66,10 +69,11 @@ spec:
         externalTrafficPolicy: Local
       dns-udp:
         enabled: true
+        type: LoadBalancer
         annotations:
           metallb.universe.tf/allow-shared-ip: adguard-home-svc
-        type: LoadBalancer
-        loadBalancerIP: ${CLUSTER_SVC_LAN_DNS_IP}
+          metallb.universe.tf/loadBalancerIPs: |-
+            "${CLUSTER_SVC_LAN_DNS_IP}"
         ports:
           dns-udp:
             enabled: true

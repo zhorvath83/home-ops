@@ -162,8 +162,9 @@ spec:
       type: LoadBalancer
       annotations:
         metallb.universe.tf/allow-shared-ip: traefik-svc
+        metallb.universe.tf/loadBalancerIPs: |-
+          "${CLUSTER_SVC_INGRESS_CONTROLLER_IP}"
       spec:
-        loadBalancerIP: ${CLUSTER_SVC_INGRESS_CONTROLLER_IP}
         externalTrafficPolicy: Local
 
     dnsPolicy: ClusterFirst

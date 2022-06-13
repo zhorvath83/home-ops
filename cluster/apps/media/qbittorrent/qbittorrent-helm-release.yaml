@@ -37,20 +37,22 @@ spec:
     service:
       main:
         type: LoadBalancer
-        loadBalancerIP: ${CLUSTER_SVC_QBITTORRENT_IP}
-        externalTrafficPolicy: Local
         annotations:
           metallb.universe.tf/allow-shared-ip: qbittorrent-svc
+          metallb.universe.tf/loadBalancerIPs: |-
+            "${CLUSTER_SVC_QBITTORRENT_IP}"
+        externalTrafficPolicy: Local
         ports:
           http:
             port: 8080
       bittorrent-tcp:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: ${CLUSTER_SVC_QBITTORRENT_IP}
-        externalTrafficPolicy: Local
         annotations:
           metallb.universe.tf/allow-shared-ip: qbittorrent-svc
+          metallb.universe.tf/loadBalancerIPs: |-
+            "${CLUSTER_SVC_QBITTORRENT_IP}"
+        externalTrafficPolicy: Local
         ports:
           bittorrent:
             enabled: true
@@ -60,10 +62,11 @@ spec:
       bittorrent-udp:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: ${CLUSTER_SVC_QBITTORRENT_IP}
-        externalTrafficPolicy: Local
         annotations:
           metallb.universe.tf/allow-shared-ip: qbittorrent-svc
+          metallb.universe.tf/loadBalancerIPs: |-
+            "${CLUSTER_SVC_QBITTORRENT_IP}"
+        externalTrafficPolicy: Local
         ports:
           bittorrent:
             enabled: true

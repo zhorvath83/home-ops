@@ -34,7 +34,9 @@ spec:
     service:
       main:
         type: LoadBalancer
-        loadBalancerIP: ${CLUSTER_SVC_PROWLARR_IP}
+        annotations:
+          metallb.universe.tf/loadBalancerIPs: |-
+            "${CLUSTER_SVC_PROWLARR_IP}"
         externalTrafficPolicy: Local
         ports:
           http:

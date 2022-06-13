@@ -26,7 +26,9 @@ spec:
     service:
       main:
         type: LoadBalancer
-        loadBalancerIP: ${CLUSTER_SVC_RADARR_IP}
+        annotations:
+          metallb.universe.tf/loadBalancerIPs: |-
+            "${CLUSTER_SVC_RADARR_IP}"
         externalTrafficPolicy: Local
         ports:
           http:

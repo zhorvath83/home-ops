@@ -12,4 +12,6 @@ spec:
   selector:
     app.kubernetes.io/name: mosquitto
   type: LoadBalancer
-  loadBalancerIP: ${CLUSTER_SVC_MQTT_IP}
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: |-
+      "${CLUSTER_SVC_MQTT_IP}"

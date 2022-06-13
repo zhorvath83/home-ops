@@ -12,4 +12,6 @@ spec:
   selector:
     app.kubernetes.io/name: mailrise
   type: LoadBalancer
-  loadBalancerIP: ${CLUSTER_SVC_SMTP_GATEWAY_IP}
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: |-
+      "${CLUSTER_SVC_SMTP_GATEWAY_IP}"
