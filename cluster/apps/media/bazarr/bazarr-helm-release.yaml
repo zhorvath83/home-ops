@@ -36,7 +36,7 @@ spec:
         type: LoadBalancer
         annotations:
           metallb.universe.tf/loadBalancerIPs: |-
-            "${CLUSTER_SVC_BAZARR_IP}"
+            ${CLUSTER_SVC_BAZARR_IP}
         externalTrafficPolicy: Local
         ports:
           http:

@@ -28,7 +28,7 @@ spec:
         type: LoadBalancer
         annotations:
           metallb.universe.tf/loadBalancerIPs: |-
-            "${CLUSTER_SVC_SONARR_IP}"
+            ${CLUSTER_SVC_SONARR_IP}
         externalTrafficPolicy: Local
         ports:
           http:

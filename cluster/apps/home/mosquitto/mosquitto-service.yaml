@@ -14,4 +14,4 @@ spec:
   type: LoadBalancer
   annotations:
     metallb.universe.tf/loadBalancerIPs: |-
-      "${CLUSTER_SVC_MQTT_IP}"
+      ${CLUSTER_SVC_MQTT_IP}

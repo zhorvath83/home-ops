@@ -163,7 +163,7 @@ spec:
       annotations:
         metallb.universe.tf/allow-shared-ip: traefik-svc
         metallb.universe.tf/loadBalancerIPs: |-
-          "${CLUSTER_SVC_INGRESS_CONTROLLER_IP}"
+          ${CLUSTER_SVC_INGRESS_CONTROLLER_IP}
       spec:
         externalTrafficPolicy: Local
 
