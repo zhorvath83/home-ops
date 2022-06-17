@@ -46,7 +46,7 @@ spec:
 
       additionalContainers:
         - name: cloudflared
-          image: cloudflare/cloudflared:2022.5.3
+          image: cloudflare/cloudflared:2022.6.2
           args:
             - tunnel
             # Points cloudflared to the config file, which configures what
