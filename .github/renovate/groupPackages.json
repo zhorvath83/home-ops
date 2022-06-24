@@ -1,7 +1,7 @@
 {
   "packageRules": [
     {
-      "groupName": "system-upgrade-controller-suite",
+      "groupName": "Group system-upgrade-controller-suite",
       "matchDatasources": [
       "docker",
       "github-tags"
@@ -10,6 +10,14 @@
       "rancher/system-upgrade-controller"
       ],
       "additionalBranchPrefix": "",
+      "separateMinorPatch": true
+    },
+    {
+      "description": "Group Cert-Manager image (for CRDs) and chart",
+      "groupName": "Cert-Manager",
+      "matchPackagePatterns": ["cert-manager"],
+      "matchDatasources": ["docker", "helm"],
+      "group": { "commitMessageTopic": "{{{groupName}}} group" },
       "separateMinorPatch": true
     }
   ]
