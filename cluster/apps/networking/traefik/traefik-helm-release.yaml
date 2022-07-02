@@ -29,7 +29,7 @@ spec:
 
   dependsOn:
     - name: cert-manager
-      namespace: cert-manager
+      namespace: kube-system
 
   values:
     image:
