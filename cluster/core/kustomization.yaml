@@ -6,4 +6,5 @@ resources:
   - longhorn-system
   - system-upgrade
   - metallb-system
-  - cert-manager
+  # - cert-manager
+  - cluster-issuers
