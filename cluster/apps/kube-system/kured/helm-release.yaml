@@ -5,7 +5,7 @@ metadata:
   name: kured
   namespace: kube-system
 spec:
-  interval: 5m
+  interval: 15m
   chart:
     spec:
       # renovate: registryUrl=https://weaveworks.github.io/kured
@@ -15,9 +15,8 @@ spec:
         kind: HelmRepository
         name: weaveworks-kured-charts
         namespace: flux-system
-      interval: 5m
+      interval: 15m
   values:
-    updateStrategy: RollingUpdate
     configuration:
       timeZone: "${CLUSTER_TIMEZONE}"
       startTime: "00:00"
@@ -30,16 +29,3 @@ spec:
       period: "10m"
       rebootCommand: "/usr/bin/systemctl reboot"
       logFormat: "text"
-    rbac:
-      create: true
-    serviceAccount:
-      create: true
-    tolerations:
-      - key: "node-role.kubernetes.io/master"
-        operator: "Exists"
-      - effect: "NoExecute"
-        operator: "Exists"
-      - effect: "NoSchedule"
-        operator: "Exists"
-    metrics:
-      create: true
