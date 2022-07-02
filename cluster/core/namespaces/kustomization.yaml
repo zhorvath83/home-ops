@@ -7,7 +7,7 @@ resources:
   - longhorn-system-namespace.yaml
   - monitoring-namespace.yaml
   - networking-namespace.yaml
-  - cert-manager-namespace.yaml
+  # - cert-manager-namespace.yaml
   - home-namesapce.yaml
   - media-namespace.yaml
   - selfhosted-namespace.yaml
