@@ -10,4 +10,3 @@ resources:
   - kube-vip
   - reloader
   - reflector
-  - config-syncer
