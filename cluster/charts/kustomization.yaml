@@ -17,3 +17,4 @@ resources:
   - weaveworks-kured-charts.yaml
   - node-feature-discovery-charts.yaml
   - emberstack-charts.yaml
+  - appscode-charts.yaml
