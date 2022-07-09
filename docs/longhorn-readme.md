@@ -18,3 +18,6 @@ helm upgrade longhorn ./chart --namespace longhorn-system \
 - SSH into node-x. Run `ls -l /dev/longhorn`. You will see the block device with the name "VOLUME-NAME"
 - Mount the block device to a directory on the node-x by: `sudo mount /dev/longhorn/<VOLUME-NAME> /mnt/longhornvolume`
 - Now you can access the data at /mnt/longhornvolume. Try `ls /mnt/longhornvolume`
+
+# CLI tool to easily migrate Kubernetes persistent volumes
+https://github.com/utkuozdemir/pv-migrate
