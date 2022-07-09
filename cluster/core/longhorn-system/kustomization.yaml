@@ -5,3 +5,4 @@ resources:
   - longhorn-s3-secret.sops.yaml
   - longhorn-system-helm-release.yaml
   - longhorn-recurringjobs.yaml
+  - storage-classes.yaml
