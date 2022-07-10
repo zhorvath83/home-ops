@@ -4,12 +4,10 @@ kind: PersistentVolumeClaim
 metadata:
   name: recipes-media-data
   namespace: selfhosted
-  labels:
-    kasten.io/backup-volume: "enabled"
 spec:
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 2Gi
-  storageClassName: longhorn
+      storage: 512Gi
+  storageClassName: longhorn-durable
