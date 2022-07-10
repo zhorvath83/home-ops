@@ -29,14 +29,6 @@ spec:
     recreate: true
 
   values:
-    configInline:
-      address-pools:
-        - name: default
-          protocol: layer2
-          auto-assign: false
-          addresses:
-            - ${CLUSTER_LAN_CIDR}
-
     prometheus:
       podMonitor:
         enabled: false
