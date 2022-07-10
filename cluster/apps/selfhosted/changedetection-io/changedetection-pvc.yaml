@@ -10,4 +10,4 @@ spec:
   resources:
     requests:
       storage: 512Mi
-  storageClassName: longhorn
+  storageClassName: longhorn-durable
