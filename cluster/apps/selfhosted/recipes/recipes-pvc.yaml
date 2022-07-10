@@ -9,5 +9,5 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 512Gi
+      storage: 512Mi
   storageClassName: longhorn-durable
