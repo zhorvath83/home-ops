@@ -2,16 +2,20 @@
 apiVersion: metallb.io/v1beta1
 kind: IPAddressPool
 metadata:
-  name: default
+  name: default-pool
   namespace: metallb-system
 spec:
   addresses:
     - ${CLUSTER_LAN_CIDR}
+  autoAssign: false
 
 ---
 
 apiVersion: metallb.io/v1beta1
 kind: L2Advertisement
 metadata:
-  name: default
+  name: default-advertisement
   namespace: metallb-system
+spec:
+  ipAddressPools:
+    - default-pool
