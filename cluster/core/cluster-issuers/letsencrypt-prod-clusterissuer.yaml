@@ -4,6 +4,7 @@ kind: ClusterIssuer
 metadata:
   name: letsencrypt-production
 spec:
+  wait: true
   acme:
     server: https://acme-v02.api.letsencrypt.org/directory
     email: "${SECRET_EMAIL_1}"

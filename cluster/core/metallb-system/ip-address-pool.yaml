@@ -8,14 +8,4 @@ spec:
   addresses:
     - ${CLUSTER_LAN_CIDR}
   autoAssign: false
-
----
-
-apiVersion: metallb.io/v1beta1
-kind: L2Advertisement
-metadata:
-  name: default-advertisement
-  namespace: metallb-system
-spec:
-  ipAddressPools:
-    - default-pool
+  wait: true
