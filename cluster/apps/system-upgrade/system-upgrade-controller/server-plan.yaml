@@ -15,19 +15,8 @@ spec:
         operator: In
         values:
           - "true"
-      - key: k3s-upgrade
-        operator: NotIn
-        values:
-          - "disabled"
-          - "false"
-      - key: kubernetes.io/hostname
-        operator: Exists
   tolerations:
     - key: "node-role.kubernetes.io/master"
-      operator: "Exists"
-    - effect: "NoExecute"
-      operator: "Exists"
-    - effect: "NoSchedule"
       operator: "Exists"
   upgrade:
     image: rancher/k3s-upgrade
