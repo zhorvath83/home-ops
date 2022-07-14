@@ -4,7 +4,6 @@ kind: ClusterIssuer
 metadata:
   name: letsencrypt-staging
 spec:
-  wait: true
   acme:
     server: https://acme-staging-v02.api.letsencrypt.org/directory
     email: "${SECRET_EMAIL_1}"

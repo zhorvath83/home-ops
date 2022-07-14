@@ -8,4 +8,3 @@ spec:
   addresses:
     - ${CLUSTER_LAN_CIDR}
   autoAssign: false
-  wait: true

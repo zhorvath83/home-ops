@@ -7,4 +7,3 @@ metadata:
 spec:
   ipAddressPools:
     - default-pool
-  wait: true
