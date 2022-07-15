@@ -44,43 +44,43 @@ spec:
       podAnnotations:
         reloader.stakater.com/auto: "true"
 
-      additionalContainers:
-        - name: cloudflared
-          image: cloudflare/cloudflared:2022.6.3
-          args:
-            - tunnel
-            # Points cloudflared to the config file, which configures what
-            # cloudflared will actually do. This file is created by a ConfigMap
-            # below.
-            - --config
-            - /etc/cloudflared/config/config.yaml
-            - run
-          livenessProbe:
-            httpGet:
-              # Cloudflared has a /ready endpoint which returns 200 if and only if
-              # it has an active connection to the edge.
-              path: /ready
-              port: 2000
-            failureThreshold: 1
-            initialDelaySeconds: 10
-            periodSeconds: 10
-          volumeMounts:
-            - name: cloudflared-config
-              mountPath: /etc/cloudflared/config
-              readOnly: true
-            - name: cloudflared-tunnel-credentials
-              mountPath: /etc/cloudflared/creds
-              readOnly: true
-      additionalVolumes:
-        - name: cloudflared-tunnel-credentials
-          secret:
-            secretName: cloudflared-tunnel-credentials
-        - name: cloudflared-config
-          configMap:
-            name: cloudflared-config
-            items:
-              - key: config.yaml
-                path: config.yaml
+      # additionalContainers:
+      #   - name: cloudflared
+      #     image: cloudflare/cloudflared:2022.6.3
+      #     args:
+      #       - tunnel
+      #       # Points cloudflared to the config file, which configures what
+      #       # cloudflared will actually do. This file is created by a ConfigMap
+      #       # below.
+      #       - --config
+      #       - /etc/cloudflared/config/config.yaml
+      #       - run
+      #     livenessProbe:
+      #       httpGet:
+      #         # Cloudflared has a /ready endpoint which returns 200 if and only if
+      #         # it has an active connection to the edge.
+      #         path: /ready
+      #         port: 2000
+      #       failureThreshold: 1
+      #       initialDelaySeconds: 10
+      #       periodSeconds: 10
+      #     volumeMounts:
+      #       - name: cloudflared-config
+      #         mountPath: /etc/cloudflared/config
+      #         readOnly: true
+      #       - name: cloudflared-tunnel-credentials
+      #         mountPath: /etc/cloudflared/creds
+      #         readOnly: true
+      # additionalVolumes:
+      #   - name: cloudflared-tunnel-credentials
+      #     secret:
+      #       secretName: cloudflared-tunnel-credentials
+      #   - name: cloudflared-config
+      #     configMap:
+      #       name: cloudflared-config
+      #       items:
+      #         - key: config.yaml
+      #           path: config.yaml
 
     env:
       - name: TZ
