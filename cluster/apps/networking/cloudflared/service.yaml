@@ -6,9 +6,9 @@ metadata:
   namespace: networking
 spec:
   ports:
-    - protocol: TCP
-      name: web
-      port: 443
+    - protocol: UDP
+      name: dns
+      port: 53
       targetPort: 5053
   selector:
     app.kubernetes.io/name: cloudflared
