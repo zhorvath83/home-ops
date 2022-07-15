@@ -58,6 +58,8 @@ spec:
         enabled: false
       podAnnotations:
         reloader.stakater.com/auto: "true"
+      extraArgs:
+        default-ssl-certificate: "networking/${SECRET_DOMAIN/./-}-tls"
       resources:
         requests:
           cpu: 10m

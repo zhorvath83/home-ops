@@ -21,5 +21,4 @@ spec:
                   number: 80
   tls:
     - hosts:
-      - *host
-      secretName: "${SECRET_DOMAIN/./-}-tls"
+        - *host
