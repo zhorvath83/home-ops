@@ -30,11 +30,11 @@ spec:
       replicaCount: 1
       extraEnvs:
         - name: TZ
-          value: "${TIMEZONE}"
+          value: "${CLUSTER_TIMEZONE}"
       service:
         annotations:
           metallb.universe.tf/loadBalancerIPs: |-
-            ${METALLB_INGRESS_ADDR}
+            ${CLUSTER_SVC_INGRESS_CONTROLLER_IP}
         externalTrafficPolicy: Local
       publishService:
         enabled: true
@@ -57,7 +57,7 @@ spec:
       metrics:
         enabled: false
       podAnnotations:
-        configmap.reloader.stakater.com/reload: "cloudflare-proxied-networks"
+        reloader.stakater.com/auto: "true"
       resources:
         requests:
           cpu: 10m

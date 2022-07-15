@@ -4,8 +4,8 @@ kind: Kustomization
 resources:
   - wildcard-certificate
   - cloudflared
-  # - ingress-nginx
-  - traefik
+  - ingress-nginx
+  # - traefik
   - traefik-error-pages
   - adguard-home
   - external-dns

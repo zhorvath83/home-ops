@@ -5,11 +5,9 @@ metadata:
   name: code-server
   namespace: selfhosted
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    traefik.ingress.kubernetes.io/router.tls: "true"
-    traefik.ingress.kubernetes.io/router.middlewares: networking-middleware-chain-noauth@kubernetescrd
+    external-dns.alpha.kubernetes.io/target: "cf-argo-tunnel.${SECRET_DOMAIN}"
 spec:
-  ingressClassName: "traefik"
+  ingressClassName: "nginx"
   rules:
     - host: "code.${SECRET_DOMAIN}"
       http:
