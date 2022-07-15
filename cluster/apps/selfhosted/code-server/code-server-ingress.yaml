@@ -22,3 +22,4 @@ spec:
   tls:
     - hosts:
       - *host
+      secretName: "${SECRET_DOMAIN/./-}-tls"
