@@ -19,6 +19,6 @@ spec:
                 name: code-server
                 port:
                   number: 80
-      tls:
-        - hosts:
-            - *host
+  tls:
+    - hosts:
+      - *host
