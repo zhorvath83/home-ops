@@ -25,6 +25,8 @@ spec:
       containers:
         - name: cloudflared
           image: cloudflare/cloudflared:2022.6.3
+          ports:
+            - containerPort: 5053
           # Security items for one container. We lock it down.
           securityContext:
             readOnlyRootFilesystem: true
