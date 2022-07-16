@@ -37,7 +37,7 @@ spec:
             ${CLUSTER_SVC_INGRESS_CONTROLLER_IP}
         externalTrafficPolicy: Local
       publishService:
-        enabled: true
+        enabled: false
       ingressClassResource:
         default: true
       config:
