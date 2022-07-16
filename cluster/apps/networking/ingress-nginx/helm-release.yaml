@@ -37,9 +37,12 @@ spec:
             ${CLUSTER_SVC_INGRESS_CONTROLLER_IP}
         externalTrafficPolicy: Local
       publishService:
+        # --publish-service and --publish-status-address are mutually exclusive
         enabled: false
       ingressClassResource:
         default: true
+      # https://kubernetes.github.io/ingress-nginx/#what-is-the-flag-watch-ingress-without-class
+      watchIngressWithoutClass: true
       config:
         client-header-timeout: 120
         client-body-buffer-size: "100M"
@@ -59,8 +62,10 @@ spec:
       podAnnotations:
         reloader.stakater.com/auto: "true"
       extraArgs:
+        # https://kubernetes.github.io/ingress-nginx/user-guide/cli-arguments/
         default-ssl-certificate: "networking/${SECRET_DOMAIN/./-}-tls"
         publish-status-address: "cf-argo-tunnel.${SECRET_DOMAIN}"
+        update-status: true
       resources:
         requests:
           cpu: 10m
