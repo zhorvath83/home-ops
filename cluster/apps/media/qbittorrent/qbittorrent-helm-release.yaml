@@ -76,17 +76,15 @@ spec:
     ingress:
       main:
         enabled: true
-        annotations:
-          kubernetes.io/ingress.class: traefik
-          traefik.ingress.kubernetes.io/router.entrypoints: websecure
-          traefik.ingress.kubernetes.io/router.tls: "true"
-          traefik.ingress.kubernetes.io/router.middlewares: networking-middleware-chain-noauth@kubernetescrd
+        annotations: {}
         hosts:
-          - host: qbittorrent.${SECRET_DOMAIN}
+          - host: &host qbittorrent.${SECRET_DOMAIN}
             paths:
               - path: /
                 pathType: Prefix
-        tls: {}
+        tls:
+          - hosts:
+              - *host
     podSecurityContext:
       runAsUser: 1000
       runAsGroup: 1000

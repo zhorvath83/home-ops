@@ -214,10 +214,6 @@ services:
         subtitle: whoami service
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/whoami.png
         url: https://whoami.${SECRET_DOMAIN}
-      - name: Traefik
-        subtitle: Traefik ingress dashboard
-        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/traefik.png
-        url: https://traefik.${SECRET_DOMAIN}
       - name: Prometheus
         subtitle: Metrics collector
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/prometheus.png

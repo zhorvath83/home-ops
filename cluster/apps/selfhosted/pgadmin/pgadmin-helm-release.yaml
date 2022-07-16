@@ -43,19 +43,15 @@ spec:
       PROXY_X_PORT_COUNT: 2
     ingress:
       enabled: true
-      annotations:
-        kubernetes.io/ingress.class: traefik
-        traefik.ingress.kubernetes.io/router.entrypoints: websecure
-        traefik.ingress.kubernetes.io/router.tls: "true"
-        traefik.ingress.kubernetes.io/router.middlewares: networking-middleware-chain-noauth@kubernetescrd
+      annotations: {}
       hosts:
-        - host: pgadmin.${SECRET_DOMAIN}
+        - host: &host "pgadmin.${SECRET_DOMAIN}"
           paths:
             - path: /
               pathType: Prefix
       tls:
         - hosts:
-            - pgadmin.${SECRET_DOMAIN}
+            - *host
 
     serverDefinitions:
       enabled: true

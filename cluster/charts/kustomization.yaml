@@ -8,7 +8,6 @@ resources:
   - bitnami-charts.yaml
   - external-dns-charts.yaml
   - k8s-at-home-charts.yaml
-  - traefik-charts.yaml
   - jetstack-charts.yaml
   - stakater-charts.yaml
   - prometheus-community-charts.yaml

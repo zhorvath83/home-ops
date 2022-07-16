@@ -65,16 +65,12 @@ spec:
       ingress:
         enabled: true
         pathType: Prefix
-        annotations:
-          kubernetes.io/ingress.class: traefik
-          traefik.ingress.kubernetes.io/router.entrypoints: websecure
-          traefik.ingress.kubernetes.io/router.tls: "true"
-          traefik.ingress.kubernetes.io/router.middlewares: networking-middleware-chain-noauth@kubernetescrd
+        annotations: {}
         hosts:
-          - "alertmanager.${SECRET_DOMAIN}"
+          - &host "alertmanager.${SECRET_DOMAIN}"
         tls:
           - hosts:
-              - "alertmanager.${SECRET_DOMAIN}"
+              - *host
       alertmanagerSpec: {}
     nodeExporter:
       serviceMonitor:
@@ -150,16 +146,12 @@ spec:
       ingress:
         enabled: true
         pathType: Prefix
-        annotations:
-          kubernetes.io/ingress.class: traefik
-          traefik.ingress.kubernetes.io/router.entrypoints: websecure
-          traefik.ingress.kubernetes.io/router.tls: "true"
-          traefik.ingress.kubernetes.io/router.middlewares: networking-middleware-chain-noauth@kubernetescrd
+        annotations: {}
         hosts:
-          - "prometheus.${SECRET_DOMAIN}"
+          - &host "prometheus.${SECRET_DOMAIN}"
         tls:
           - hosts:
-              - "prometheus.${SECRET_DOMAIN}"
+              - *host
       remoteRead:
         - url: https://prometheus-blocks-prod-us-central1.grafana.net/api/prom
           basic_auth:

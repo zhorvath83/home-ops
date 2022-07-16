@@ -64,6 +64,7 @@ spec:
       extraArgs:
         # https://kubernetes.github.io/ingress-nginx/user-guide/cli-arguments/
         default-ssl-certificate: "networking/${SECRET_DOMAIN/./-}-tls"
+        # Used indirectly by Cert-manager
         publish-status-address: "cf-argo-tunnel.${SECRET_DOMAIN}"
         update-status: true
       resources:

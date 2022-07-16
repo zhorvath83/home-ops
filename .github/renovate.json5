@@ -60,15 +60,6 @@
       "datasourceTemplate": "{{#if datasource}}{{{datasource}}}{{else}}helm{{/if}}"
     },
     {
-      description: "regexManager to read and process Traefik CRD's",
-      fileMatch: ["cluster/crds/traefik/.+\\.yaml$"],
-      matchStrings: [
-        "registryUrl=(?<registryUrl>.*?) chart=(?<depName>.*?)\n *tag: v(?<currentValue>.*)\n",
-      ],
-      datasourceTemplate: "helm",
-      depTypeTemplate: "helm",
-    },
-    {
       "description": "Process various other dependencies",
       "fileMatch": [
         "provision/ansible/.+\\.ya?ml$",

@@ -46,18 +46,14 @@ spec:
       main:
         enabled: true
         hosts:
-          - host: changedetection.${SECRET_DOMAIN}
+          - host: &host "changedetection.${SECRET_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix
-        annotations:
-          kubernetes.io/ingress.class: traefik
-          traefik.ingress.kubernetes.io/router.entrypoints: websecure
-          traefik.ingress.kubernetes.io/router.tls: "true"
-          traefik.ingress.kubernetes.io/router.middlewares: networking-middleware-chain-noauth@kubernetescrd
+        annotations: {}
         tls:
           - hosts:
-              - "changedetection.${SECRET_DOMAIN}"
+              - *host
 
     persistence:
       data:

@@ -4,14 +4,10 @@ kind: Ingress
 metadata:
   name: private-website
   namespace: selfhosted
-  annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    traefik.ingress.kubernetes.io/router.tls: "true"
-    traefik.ingress.kubernetes.io/router.middlewares: networking-middleware-chain-noauth@kubernetescrd,selfhosted-middleware-redirect-from-www@kubernetescrd
+  annotations: {}
 spec:
-  ingressClassName: "traefik"
   rules:
-    - host: "${SECRET_DOMAIN}"
+    - host: &host "${SECRET_DOMAIN}"
       http:
         paths:
           - path: /
@@ -21,7 +17,7 @@ spec:
                 name: private-website
                 port:
                   number: 80
-    - host: "www.${SECRET_DOMAIN}"
+    - host: &host "www.${SECRET_DOMAIN}"
       http:
         paths:
           - path: /
@@ -31,15 +27,6 @@ spec:
                 name: private-website
                 port:
                   number: 80
-
----
-apiVersion: traefik.containo.us/v1alpha1
-kind: Middleware
-metadata:
-  name: middleware-redirect-from-www
-  namespace: selfhosted
-spec:
-  redirectRegex:
-    regex: ^https?://(www.)?${SECRET_DOMAIN}/(.*)
-    replacement: https://${SECRET_DOMAIN}/$${2}
-    permanent: true
+  tls:
+    - hosts:
+        - *host

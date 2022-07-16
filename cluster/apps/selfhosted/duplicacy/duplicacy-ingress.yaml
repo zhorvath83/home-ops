@@ -4,14 +4,10 @@ kind: Ingress
 metadata:
   name: duplicacy
   namespace: selfhosted
-  annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    traefik.ingress.kubernetes.io/router.tls: "true"
-    traefik.ingress.kubernetes.io/router.middlewares: networking-middleware-chain-noauth@kubernetescrd
+  annotations: {}
 spec:
-  ingressClassName: "traefik"
   rules:
-    - host: "duplicacy.${SECRET_DOMAIN}"
+    - host: &host "duplicacy.${SECRET_DOMAIN}"
       http:
         paths:
           - path: /
@@ -21,3 +17,6 @@ spec:
                 name: duplicacy
                 port:
                   number: 80
+  tls:
+    - hosts:
+        - *host

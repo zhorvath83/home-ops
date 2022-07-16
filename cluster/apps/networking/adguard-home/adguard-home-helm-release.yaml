@@ -25,9 +25,7 @@ spec:
     ingress:
       main:
         enabled: true
-        # ingressClassName: nginx
-        # annotations:
-        #   external-dns.alpha.kubernetes.io/target: "cf-argo-tunnel.${SECRET_DOMAIN}"
+        annotations: {}
         hosts:
           - host: &host "adguard.${SECRET_DOMAIN}"
             paths:
