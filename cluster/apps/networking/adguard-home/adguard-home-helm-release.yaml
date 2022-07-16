@@ -25,20 +25,17 @@ spec:
     ingress:
       main:
         enabled: true
-        ingressClassName: "traefik"
+        ingressClassName: nginx
         annotations:
-          traefik.ingress.kubernetes.io/router.entrypoints: websecure
-          traefik.ingress.kubernetes.io/router.tls: "true"
-          traefik.ingress.kubernetes.io/router.middlewares: networking-middleware-chain-noauth@kubernetescrd
+          external-dns.alpha.kubernetes.io/target: "cf-argo-tunnel.${SECRET_DOMAIN}"
         hosts:
-          - host: "adguard.${SECRET_DOMAIN}"
+          - host: &host "adguard.${SECRET_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix
         tls:
           - hosts:
-              - "adguard.${SECRET_DOMAIN}"
-            secretName: "${SECRET_DOMAIN/./-}-tls"
+              - *host
     service:
       main:
         primary: true
