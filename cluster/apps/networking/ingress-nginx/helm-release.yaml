@@ -60,6 +60,7 @@ spec:
         reloader.stakater.com/auto: "true"
       extraArgs:
         default-ssl-certificate: "networking/${SECRET_DOMAIN/./-}-tls"
+        publish-status-address: "cf-argo-tunnel.${SECRET_DOMAIN}"
       resources:
         requests:
           cpu: 10m
