@@ -80,15 +80,15 @@ spec:
             mountPath: /media
           - path: transcode-tmp
             mountPath: /config/transcodes
-      # transcode:
-      #   enabled: true
-      #   type: emptyDir
-      #   accessMode: ReadWriteOnce
-      #   mountPath: /config/transcodes
-      #   emptyDir:
-      #     enabled: true
-      #     medium: "Memory"
-      #     sizeLimit: 6Gi
+    # transcode:
+    #   enabled: true
+    #   type: emptyDir
+    #   accessMode: ReadWriteOnce
+    #   mountPath: /config/transcodes
+    #   emptyDir:
+    #     enabled: true
+    #     medium: "Memory"
+    #     sizeLimit: 6Gi
 
     resources:
       requests:

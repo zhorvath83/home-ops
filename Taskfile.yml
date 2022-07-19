@@ -12,7 +12,7 @@ env:
   KUBECONFIG: "{{.PROJECT_DIR}}/provision/kubeconfig"
 
 includes:
-  #ansible: .taskfiles/ansible.yml
+  # ansible: .taskfiles/ansible.yml
   flux: .taskfiles/flux.yml
   format: .taskfiles/format.yml
   lint: .taskfiles/lint.yml
