@@ -60,6 +60,14 @@
       "datasourceTemplate": "{{#if datasource}}{{{datasource}}}{{else}}helm{{/if}}"
     },
     {
+      "description": "Process MetalLB CRD dependencies",
+      "fileMatch": ["crds\\/metallb\\/crds\\.yaml$"],
+      "matchStrings": [
+        "registryUrl=(?<registryUrl>.*) chart=(?<depName>.*)\\s.*tag: v(?<currentValue>.*)"
+      ],
+      "datasourceTemplate": "helm"
+    },
+    {
       "description": "Process various other dependencies",
       "fileMatch": [
         "provision/ansible/.+\\.ya?ml$",
