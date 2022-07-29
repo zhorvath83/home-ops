@@ -1,14 +1,11 @@
 {
   "packageRules": [
     {
-      "groupName": "Group system-upgrade-controller-suite",
-      "matchDatasources": [
-      "docker",
-      "github-tags"
-      ],
-      "matchPackagePatterns": [
-      "rancher/system-upgrade-controller"
-      ],
+      "description": "Group system-upgrade-controller-suite",
+      "groupName": "system-upgrade-controller",
+      "matchDatasources": ["docker", "github-tags"],
+      "matchPackagePatterns": ["rancher/system-upgrade-controller"],
+      "group": { "commitMessageTopic": "{{{groupName}}} group" },
       "additionalBranchPrefix": "",
       "separateMinorPatch": true
     },
@@ -16,6 +13,14 @@
       "description": "Group Cert-Manager image (for CRDs) and chart",
       "groupName": "Cert-Manager",
       "matchPackagePatterns": ["cert-manager"],
+      "matchDatasources": ["docker", "helm"],
+      "group": { "commitMessageTopic": "{{{groupName}}} group" },
+      "separateMinorPatch": true
+    },
+    {
+      "description": "Group metallb image (for CRDs) and chart",
+      "groupName": "metallb",
+      "matchPackagePatterns": ["metallb"],
       "matchDatasources": ["docker", "helm"],
       "group": { "commitMessageTopic": "{{{groupName}}} group" },
       "separateMinorPatch": true
