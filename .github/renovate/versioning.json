@@ -6,6 +6,7 @@
       ],
       "versioning": "loose",
       "matchPackageNames": [
+      "bitnami/postgresql",
       "ghcr.io/k8s-at-home/qbittorrent",
       "ghcr.io/zhorvath83/code-server",
       "ghcr.io/zhorvath83/private-website"
