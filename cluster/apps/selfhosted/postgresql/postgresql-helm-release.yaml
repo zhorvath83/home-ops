@@ -29,6 +29,12 @@ spec:
     recreate: true
 
   values:
+    image:
+      registry: docker.io
+      repository: bitnami/postgresql
+      tag: 14.4.0
+      pullPolicy: IfNotPresent
+
     auth:
       enablePostgresUser: true
       postgresPassword: ${SECRET_PSQL_POSTGRES_PWD}
