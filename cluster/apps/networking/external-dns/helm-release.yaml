@@ -5,7 +5,7 @@ metadata:
   name: external-dns
   namespace: networking
 spec:
-  interval: 5m
+  interval: 15m
   chart:
     spec:
       # renovate: registryUrl=https://kubernetes-sigs.github.io/external-dns
@@ -15,7 +15,14 @@ spec:
         kind: HelmRepository
         name: external-dns-charts
         namespace: flux-system
-      interval: 5m
+      interval: 15m
+  install:
+    createNamespace: true
+    remediation:
+      retries: 5
+  upgrade:
+    remediation:
+      retries: 5
 
   values:
     image:
@@ -34,14 +41,14 @@ spec:
         value: "0"
     policy: sync
     sources:
-      - crd
       - ingress
     txtPrefix: "k8s."
+    txtOwnerId: "default"
     domainFilters:
       - "${SECRET_DOMAIN}"
     resources:
       requests:
-        cpu: 50m
+        cpu: 25m
         memory: 32Mi
       limits:
         memory: 256Mi
