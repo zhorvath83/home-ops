@@ -17,8 +17,10 @@ spec:
         namespace: flux-system
   values:
     persistence:
+      defaultClassReplicaCount: 1
       defaultClass: false
     defaultSettings:
+      defaultReplicaCount: 1
       upgradeChecker: false
       defaultDataPath: /var/lib/longhorn
       storageOverProvisioningPercentage: 200
@@ -30,7 +32,6 @@ spec:
       disableSchedulingOnCordonedNode: false
       replicaZoneSoftAntiAffinity: false
       replicaSoftAntiAffinity: false
-      defaultReplicaCount: 1
       defaultLonghornStaticStorageClass: longhorn-durable
       allowNodeDrainWithLastHealthyReplica: true
       concurrentAutomaticEngineUpgradePerNodeLimit: 1
