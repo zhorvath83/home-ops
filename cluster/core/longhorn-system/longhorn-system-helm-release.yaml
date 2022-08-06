@@ -17,7 +17,6 @@ spec:
         namespace: flux-system
   values:
     persistence:
-      defaultClassReplicaCount: 1
       defaultClass: false
     defaultSettings:
       defaultReplicaCount: 1
@@ -56,6 +55,7 @@ spec:
           # Evict pods from the node if the node becomes unreachable after this toleration timer expires.
           tolerationSeconds: 15
     longhornUI:
+      replicas: 1
       tolerations:
         - key: node.kubernetes.io/unreachable
           operator: Exists
