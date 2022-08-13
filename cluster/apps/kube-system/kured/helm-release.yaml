@@ -20,10 +20,12 @@ spec:
     configuration:
       timeZone: "${CLUSTER_TIMEZONE}"
       startTime: "00:00"
-      endTime: "02:00"
+      # endTime: "02:00"
+      endTime: "23:59"
       notifyUrl: "${SECRET_KURED_DISCORD_WEBHOOK}"
       messageTemplateDrain: "⏳ Draining node %s"
       messageTemplateReboot: "♻️ Rebooted node %s"
+      message-template-uncordon: "♻️ Uncordoned node %s"
       annotateNodes: true
       rebootSentinel: "/var/run/reboot-required"
       period: "10m"
