@@ -18,6 +18,9 @@ spec:
         app.kubernetes.io/name: *app
     spec:
       securityContext:
+        # container requires root to launch and then run as node user 1000
+        runAsUser: 0
+        runAsGroup: 0
         fsGroup: 1000
       containers:
         - name: *app
@@ -25,18 +28,18 @@ spec:
             capabilities:
               drop:
                 - ALL
-            runAsNonRoot: true
-            runAsUser: 1000
-            allowPrivilegeEscalation: false
-          image: docker.io/zadam/trilium:0.54.2
+            # runAsNonRoot: false
+            # readOnlyRootFilesystem: false
+            # allowPrivilegeEscalation: false
+          image: docker.io/zadam/trilium:v0.54.2
           imagePullPolicy: IfNotPresent
           env:
             - name: TRILIUM_DATA_DIR
               value: &datadir "/home/node/trilium-data"
-            # - name: USER_UID
-            #   value: "1000"
-            # - name: USER_GID
-            #   value: "1000"
+            - name: USER_UID
+              value: "1000"
+            - name: USER_GID
+              value: "1000"
           ports:
             - name: http
               containerPort: 8080
