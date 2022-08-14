@@ -33,10 +33,10 @@ spec:
           env:
             - name: TRILIUM_DATA_DIR
               value: &datadir "/home/node/trilium-data"
-            - name: USER_UID
-              value: "1000"
-            - name: USER_GID
-              value: "1000"
+            # - name: USER_UID
+            #   value: "1000"
+            # - name: USER_GID
+            #   value: "1000"
           ports:
             - name: http
               containerPort: 8080
