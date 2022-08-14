@@ -2,18 +2,19 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - metallb-charts.yaml
-  - longhorn-charts.yaml
-  - metrics-server-charts.yaml
-  - bitnami-charts.yaml
-  - external-dns-charts.yaml
-  - k8s-at-home-charts.yaml
-  - jetstack-charts.yaml
-  - stakater-charts.yaml
-  - prometheus-community-charts.yaml
-  - grafana-charts.yaml
-  - runix-charts.yaml
-  - weaveworks-kured-charts.yaml
-  - node-feature-discovery-charts.yaml
-  - emberstack-charts.yaml
+  - metallb.yaml
+  - longhorn.yaml
+  - metrics-server.yaml
+  - bitnami.yaml
+  - external-dns.yaml
+  - k8s-at-home.yaml
+  - jetstack.yaml
+  - stakater.yaml
+  - prometheus-community.yaml
+  - grafana.yaml
+  - runix.yaml
+  - weaveworks-kured.yaml
+  - node-feature-discovery.yaml
+  - emberstack.yaml
   - ingress-nginx.yaml
+  - trilium-notes.yaml
