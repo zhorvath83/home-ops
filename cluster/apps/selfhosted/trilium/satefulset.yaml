@@ -24,13 +24,13 @@ spec:
         fsGroup: 1000
       containers:
         - name: *app
-          securityContext:
-            capabilities:
-              drop:
-                - ALL
-            # runAsNonRoot: false
-            # readOnlyRootFilesystem: false
-            # allowPrivilegeEscalation: false
+          # securityContext:
+          #   capabilities:
+          #     drop:
+          #       - ALL
+          #   runAsNonRoot: false
+          #   readOnlyRootFilesystem: false
+          #   allowPrivilegeEscalation: false
           image: docker.io/zadam/trilium:0.54.2
           imagePullPolicy: IfNotPresent
           env:
