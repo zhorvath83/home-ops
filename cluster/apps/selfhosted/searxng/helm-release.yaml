@@ -23,6 +23,9 @@ spec:
       type: deployment
       replicas: 1
 
+    podAnnotations:
+      reloader.stakater.com/auto: "true"
+
     ingress:
       main:
         enabled: true
