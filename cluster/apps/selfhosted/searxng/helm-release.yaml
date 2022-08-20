@@ -52,10 +52,10 @@ spec:
           enable_metrics: true
         search:
           safe_search: 2
-          autocomplete: "google"
-          default_lang: "en"
+          autocomplete: google
+          default_lang: hu-HU
         server:
-          secret_key: "${SECRET_SEARXNG_SECRET_KEY}"
+          secret_key: ${SECRET_SEARXNG_SECRET_KEY}
           bind_address: 0.0.0.0
           limiter: false
           method: "GET"
@@ -64,6 +64,6 @@ spec:
           - name: google
             engine: google
             use_mobile_ui: true
-            language: hu
+            language: hu-HU
         ui:
           static_use_hash: true
