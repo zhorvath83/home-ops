@@ -12,3 +12,4 @@ resources:
   - duplicacy
   - changedetection
   - trilium
+  - searxng
