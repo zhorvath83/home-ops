@@ -17,11 +17,12 @@ spec:
         name: searxng-charts
         namespace: flux-system
       interval: 5m
+
   values:
     controller:
-      enabled: true
-      type: deployment
-      replicas: 1
+      enabled: false
+      # type: deployment
+      # replicas: 1
 
     podAnnotations:
       reloader.stakater.com/auto: "true"
@@ -57,6 +58,9 @@ spec:
           safe_search: 2
           autocomplete: google
           default_lang: hu-HU
+          languages:
+            - hu-HU
+            - en
         server:
           secret_key: ${SECRET_SEARXNG_SECRET_KEY}
           bind_address: 0.0.0.0
