@@ -17,3 +17,4 @@ resources:
   - node-feature-discovery.yaml
   - emberstack.yaml
   - ingress-nginx.yaml
+  - searxng.yaml
