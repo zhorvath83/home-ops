@@ -67,6 +67,6 @@ spec:
           - name: google
             engine: google
             use_mobile_ui: true
-            language: hu-HU
+            language: en
         ui:
           static_use_hash: true
