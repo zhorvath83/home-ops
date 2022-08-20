@@ -69,4 +69,4 @@ spec:
 
     persistence:
       config:
-        enabled: false
+        enabled: true
