@@ -50,7 +50,7 @@ spec:
           autocomplete: "google"
           default_lang: "en"
         server:
-          secret_key: "{$SECRET_SEARXNG_SECRET_KEY}"
+          secret_key: "${SECRET_SEARXNG_SECRET_KEY}"
           bind_address: 0.0.0.0
           limiter: false
           method: "GET"
