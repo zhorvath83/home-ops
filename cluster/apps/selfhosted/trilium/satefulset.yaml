@@ -31,7 +31,7 @@ spec:
               add:
                 - SETUID
                 - SETGID
-          #       - CAP_CHOWN
+                - CHOWN
           #   runAsNonRoot: false
           #   readOnlyRootFilesystem: false
           #   allowPrivilegeEscalation: true
