@@ -20,9 +20,10 @@ spec:
 
   values:
     controller:
-      enabled: false
-      # type: deployment
-      # replicas: 1
+      enabled: true
+      type: deployment
+      strategy: "Recreate"
+      replicas: 1
 
     podAnnotations:
       reloader.stakater.com/auto: "true"
