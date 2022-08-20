@@ -32,9 +32,9 @@ spec:
                 - SETUID
                 - SETGID
                 - CHOWN
-          #   runAsNonRoot: false
-          #   readOnlyRootFilesystem: false
-          #   allowPrivilegeEscalation: true
+            runAsNonRoot: false
+            readOnlyRootFilesystem: false
+            allowPrivilegeEscalation: true
           image: docker.io/zadam/trilium:0.54.2
           imagePullPolicy: IfNotPresent
           env:
