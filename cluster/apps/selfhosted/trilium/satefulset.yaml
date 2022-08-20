@@ -24,13 +24,13 @@ spec:
         fsGroup: 1000
       containers:
         - name: *app
-          # securityContext:
-          #   capabilities:
-          #     drop:
-          #       - ALL
-          #     add:
-          #       - CAP_SETUID
-          #       - CAP_SETGID
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - CAP_SETUID
+                - CAP_SETGID
           #   runAsNonRoot: false
           #   readOnlyRootFilesystem: false
           #   allowPrivilegeEscalation: true
