@@ -61,13 +61,9 @@ spec:
           method: "GET"
           image_proxy: true
         engines:
-          - name: google hu
+          - name: google
             engine: google
             use_mobile_ui: true
             language: hu
-          - name: google en
-            engine: google
-            use_mobile_ui: true
-            language: en
         ui:
           static_use_hash: true
