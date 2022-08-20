@@ -69,9 +69,4 @@ spec:
 
     persistence:
       config:
-        enabled: true
-        type: configMap
-        existingClaim: searxng-config
-        readOnly: true
-        mountPoint: /etc/searxng/
-        name: searxng-config
+        enabled: false
