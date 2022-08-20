@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: code-server
-          image: ghcr.io/zhorvath83/code-server:4.5.1.76
+          image: ghcr.io/zhorvath83/code-server:4.5.1.79
           imagePullPolicy: IfNotPresent
           env:
             - name: TZ
