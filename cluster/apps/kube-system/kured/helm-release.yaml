@@ -30,3 +30,4 @@ spec:
       period: "10m"
       rebootCommand: "/usr/bin/systemctl reboot"
       logFormat: "text"
+
