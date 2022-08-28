@@ -19,6 +19,12 @@ spec:
       labels:
         app.kubernetes.io/name: code-server
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: "OnRootMismatch"
       containers:
         - name: code-server
           image: ghcr.io/zhorvath83/code-server:4.6.0.80
@@ -28,12 +34,6 @@ spec:
               value: ${CLUSTER_TIMEZONE}
             - name: PASSWORD
               value: ${SECRET_CODE_SERVER_PWD}
-          securityContext:
-            runAsNonRoot: true
-            runAsUser: 1000
-            runAsGroup: 1000
-            fsGroup: 1000
-            fsGroupChangePolicy: "OnRootMismatch"
           livenessProbe:
             httpGet:
               port: 8080
