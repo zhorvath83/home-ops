@@ -10,7 +10,7 @@ spec:
     spec:
       # renovate: registryUrl=https://charts.bitnami.com/bitnami
       chart: postgresql
-      version: 11.6.26
+      version: 11.8.1
       # https://docs.bitnami.com/kubernetes/infrastructure/postgresql/administration/upgrade/
       sourceRef:
         kind: HelmRepository
@@ -32,7 +32,7 @@ spec:
     image:
       registry: docker.io
       repository: bitnami/postgresql
-      tag: 14.4.0
+      tag: 14.5.0
       pullPolicy: IfNotPresent
 
     auth:
