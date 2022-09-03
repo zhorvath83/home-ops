@@ -13,3 +13,5 @@ resources:
   - changedetection
   - trilium
   - searxng
+  - dokuwiki
+  
