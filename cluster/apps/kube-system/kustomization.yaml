@@ -10,3 +10,4 @@ resources:
   - kube-vip
   - reloader
   - reflector
+  - kubevious

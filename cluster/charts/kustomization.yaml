@@ -18,3 +18,5 @@ resources:
   - emberstack.yaml
   - ingress-nginx.yaml
   - searxng.yaml
+  - kubevious.yaml
+  - wikijs.yaml
