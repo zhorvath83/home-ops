@@ -14,4 +14,4 @@ resources:
   - trilium
   - searxng
   # - dokuwiki
-  - wikijs
+  # - wikijs
