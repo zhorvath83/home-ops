@@ -18,7 +18,7 @@ db:
   port: 5432
   user: wikijs
   pass: ${SECRET_PSQL_WIKIJS_PWD}
-  db: wiki
+  db: wikijs
   ssl: false
   sslOptions:
     auto: true
