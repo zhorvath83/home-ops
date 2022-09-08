@@ -1,0 +1,88 @@
+---
+#######################################################################
+# Wiki.js - CONFIGURATION                                             #
+#######################################################################
+# Full documentation + examples:
+# https://docs.requarks.io/install
+
+# ---------------------------------------------------------------------
+# Port the server should listen to
+# ---------------------------------------------------------------------
+port: 3000
+
+db:
+  type: postgres
+
+  # PostgreSQL / MySQL / MariaDB / MS SQL Server only:
+  host: postgresql.selfhosted.svc.cluster.local
+  port: 5432
+  user: wikijs
+  pass: ${SECRET_PSQL_WIKIJS_PWD}
+  db: wiki
+  ssl: false
+  sslOptions:
+    auto: true
+  schema: public
+
+#######################################################################
+# ADVANCED OPTIONS                                                    #
+#######################################################################
+
+# ---------------------------------------------------------------------
+# SSL/TLS Settings
+# ---------------------------------------------------------------------
+ssl:
+  enabled: false
+
+# ---------------------------------------------------------------------
+# Database Pool Options
+# ---------------------------------------------------------------------
+# Refer to https://github.com/vincit/tarn.js for all possible options
+pool:
+  # min: 2
+  # max: 10
+
+# ---------------------------------------------------------------------
+# IP address the server should listen to
+# ---------------------------------------------------------------------
+bindIP: 0.0.0.0
+
+# ---------------------------------------------------------------------
+# Log Level
+# ---------------------------------------------------------------------
+# Possible values: error, warn, info (default), verbose, debug, silly
+logLevel: info
+
+# ---------------------------------------------------------------------
+# Log Format
+# ---------------------------------------------------------------------
+# Output format for logging, possible values: default, json
+logFormat: default
+
+# ---------------------------------------------------------------------
+# Offline Mode
+# ---------------------------------------------------------------------
+# If your server cannot access the internet. Set to true and manually
+# download the offline files for sideloading.
+offline: false
+
+# ---------------------------------------------------------------------
+# High-Availability
+# ---------------------------------------------------------------------
+# Set to true if you have multiple concurrent instances running off the
+# same DB (e.g. Kubernetes pods / load balanced instances). Leave false
+# otherwise. You MUST be using PostgreSQL to use this feature.
+ha: false
+
+# ---------------------------------------------------------------------
+# Data Path
+# ---------------------------------------------------------------------
+# Writeable data path used for cache and temporary user uploads.
+dataPath: ./data
+
+# ---------------------------------------------------------------------
+# Body Parser Limit
+# ---------------------------------------------------------------------
+# Maximum size of API requests body that can be parsed. Does not affect
+# file uploads.
+bodyParserLimit: 5mb
