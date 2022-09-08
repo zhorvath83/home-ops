@@ -108,6 +108,8 @@ spec:
               if PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -lqt | cut -d \| -f 1 | grep -qw $POSTGRES_DB_NAME; then
                 PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER <<-EOSQL
                 ALTER USER $POSTGRES_DB_USER WITH NOSUPERUSER;
+                \c "$POSTGRES_DB_NAME"
+                CREATE EXTENSION IF NOT EXISTS pg_trgm;
               EOSQL
                 echo "database already exist, exiting initContainer"
                 exit 0
@@ -117,7 +119,8 @@ spec:
                 CREATE DATABASE $POSTGRES_DB_NAME;
                 CREATE USER $POSTGRES_DB_USER WITH ENCRYPTED PASSWORD '$POSTGRES_DB_PASSWORD';
                 GRANT all privileges ON database $POSTGRES_DB_NAME TO $POSTGRES_DB_USER;
-                CREATE EXTENSION pg_trgm;
+                \c "$POSTGRES_DB_NAME"
+                CREATE EXTENSION IF NOT EXISTS pg_trgm;
               EOSQL
               echo "Done"
               fi
