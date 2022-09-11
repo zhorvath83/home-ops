@@ -74,9 +74,9 @@ spec:
               containerPort: 3000
               protocol: TCP
 
-          volumeMounts:
-            - name: ttrss-data
-              mountPath: /var/www/feed-icons
+          # volumeMounts:
+          #   - name: ttrss-data
+          #     mountPath: /var/www/feed-icons
           resources:
             requests:
               memory: 50Mi
