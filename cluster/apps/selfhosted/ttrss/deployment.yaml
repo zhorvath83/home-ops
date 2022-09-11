@@ -47,10 +47,10 @@ spec:
               value: ${SECRET_PSQL_TTRSS_PWD}
             - name: SESSION_COOKIE_LIFETIME
               value: "168"
-            - name: PUID
-              value: "1000"
-            - name: PGID
-              value: "1000"
+            # - name: PUID
+            #   value: "1000"
+            # - name: PGID
+            #   value: "1000"
       
           livenessProbe:
             httpGet:
