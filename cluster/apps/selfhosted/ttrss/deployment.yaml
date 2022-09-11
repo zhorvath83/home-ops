@@ -19,16 +19,17 @@ spec:
       labels:
         app.kubernetes.io/name: ttrss
     spec:
-      # securityContext:
-      #   runAsNonRoot: true
-      #   runAsUser: 1000
-      #   runAsGroup: 1000
-      #   fsGroup: 1000
-      #   fsGroupChangePolicy: "OnRootMismatch"
-      # volumes:
-      #   - name: ttrss-data
-      #     persistentVolumeClaim:
-      #       claimName: ttrss-data
+      securityContext:
+        allowPrivilegeEscalation: false
+        # runAsNonRoot: true
+        # runAsUser: 1000
+        # runAsGroup: 1000
+        # fsGroup: 1000
+        # fsGroupChangePolicy: "OnRootMismatch"
+      volumes:
+        - name: ttrss-data
+          persistentVolumeClaim:
+            claimName: ttrss-data
 
       containers:
         - name: ttrss
