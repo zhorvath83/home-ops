@@ -71,7 +71,7 @@ spec:
               port: http
           ports:
             - name: http
-              containerPort: 3000
+              containerPort: 80
               protocol: TCP
 
           # volumeMounts:
