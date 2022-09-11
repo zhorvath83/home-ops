@@ -95,7 +95,7 @@ spec:
             - name: POSTGRES_USER
               value: postgres
             - name: POSTGRES_DB_PASSWORD
-              value: ${SECRET_PSQL_ttrss_PWD}
+              value: ${SECRET_PSQL_TTRSS_PWD}
             - name: POSTGRES_DB_USER
               value: ttrss
             - name: POSTGRES_HOST
