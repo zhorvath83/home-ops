@@ -57,36 +57,19 @@ spec:
               value: ${SECRET_PSQL_TTRSS_PWD}
             - name: SESSION_COOKIE_LIFETIME
               value: "168"
-            # - name: PUID
-            #   value: "1000"
-            # - name: PGID
-            #   value: "1000"
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
       
-          livenessProbe:
-            httpGet:
-              path: /
-              port: http
-          readinessProbe:
-            httpGet:
-              path: /
-              port: http
-          startupProbe:
-            initialDelaySeconds: 15
-            periodSeconds: 5
-            timeoutSeconds: 5
-            successThreshold: 1
-            failureThreshold: 60
-            httpGet:
-              path: /
-              port: http
           ports:
             - name: http
               containerPort: 80
               protocol: TCP
 
-          # volumeMounts:
-          #   - name: ttrss-data
-          #     mountPath: /var/www/feed-icons
+          volumeMounts:
+            - name: ttrss-data
+              mountPath: /var/www/feed-icons
           resources:
             requests:
               memory: 50Mi
