@@ -59,15 +59,15 @@ spec:
               containerPort: 80
               protocol: TCP
 
-          # volumeMounts:
-          #   - name: freshrss-config-custom
-          #     mountPath: /var/www/FreshRSS/data/config.custom.php
-          #     subPath: config.custom.php
-          #   - name: freshrss-config-user-custom
-          #     mountPath: /var/www/FreshRSS/data/config-user.custom.php
-          #     subPath: config-user.custom.php
-          #   - name: freshrss-data
-          #     mountPath: /var/www/FreshRSS
+          volumeMounts:
+            - name: freshrss-config-custom
+              mountPath: /var/www/FreshRSS/data/config.custom.php
+              subPath: config.custom.php
+            # - name: freshrss-config-user-custom
+            #   mountPath: /var/www/FreshRSS/data/config-user.custom.php
+            #   subPath: config-user.custom.php
+            - name: freshrss-data
+              mountPath: /var/www/FreshRSS
           resources:
             requests:
               memory: 50Mi
