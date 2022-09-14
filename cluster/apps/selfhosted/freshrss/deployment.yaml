@@ -66,8 +66,8 @@ spec:
             # - name: freshrss-config-user-custom
             #   mountPath: /var/www/FreshRSS/data/config-user.custom.php
             #   subPath: config-user.custom.php
-            - name: freshrss-data
-              mountPath: /var/www/FreshRSS
+            # - name: freshrss-data
+            #   mountPath: /var/www/FreshRSS
           resources:
             requests:
               memory: 50Mi
