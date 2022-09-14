@@ -2,7 +2,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: ttrss
+  name: freshrss
   namespace: default
 spec:
   rules:
@@ -13,7 +13,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: ttrss
+                name: freshrss
                 port:
                   number: 80
   tls:

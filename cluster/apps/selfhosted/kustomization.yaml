@@ -13,4 +13,4 @@ resources:
   - changedetection
   - trilium
   - searxng
-  - ttrss
+  - freshrss

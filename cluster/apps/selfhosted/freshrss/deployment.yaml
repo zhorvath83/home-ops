@@ -2,10 +2,10 @@
 kind: Deployment
 apiVersion: apps/v1
 metadata:
-  name: ttrss
+  name: freshrss
   namespace: default
   labels:
-    app.kubernetes.io/name: ttrss
+    app.kubernetes.io/name: freshrss
 spec:
   replicas: 1
   strategy:
@@ -13,54 +13,46 @@ spec:
     type: Recreate
   selector:
     matchLabels:
-      app.kubernetes.io/name: ttrss
+      app.kubernetes.io/name: freshrss
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: ttrss
+        app.kubernetes.io/name: freshrss
     spec:
       securityContext:
         # container requires root to launch and then run as node user 1000
         runAsUser: 0
         runAsGroup: 0
         fsGroup: 1000
+        fsGroupChangePolicy: "OnRootMismatch"
         runAsNonRoot: false
-        readOnlyRootFilesystem: false
-        allowPrivilegeEscalation: true
+        readOnlyRootFilesystem: true
+        allowPrivilegeEscalation: false
         capabilities:
           drop:
             - ALL
-        # runAsNonRoot: true
-        # runAsUser: 1000
-        # runAsGroup: 1000
-        # fsGroup: 1000
-        # fsGroupChangePolicy: "OnRootMismatch"
+
       volumes:
-        - name: ttrss-data
+        - name: freshrss-data
           persistentVolumeClaim:
-            claimName: ttrss-data
+            claimName: freshrss-data
+        - name: freshrss-config-custom
+          configMap:
+            name: freshrss-config-custom
+        - name: freshrss-config-user-custom
+          configMap:
+            name: freshrss-config-user-custom
 
       containers:
-        - name: ttrss
-          image: wangqiru/ttrss:latest-2022-08-07
+        - name: freshrss
+          image: freshrss/freshrss:1.20.0
           imagePullPolicy: IfNotPresent
+          # https://github.com/FreshRSS/FreshRSS/tree/edge/Docker#docker-compose
           env:
-            - name: SELF_URL_PATH
-              value: "https://rss.${SECRET_DOMAIN}"
-            - name: DB_HOST
-              value: postgresql.selfhosted.svc.cluster.local
-            - name: DB_NAME
-              value: ttrss
-            - name: DB_USER
-              value: ttrss
-            - name: DB_PASS
-              value: ${SECRET_PSQL_TTRSS_PWD}
-            - name: SESSION_COOKIE_LIFETIME
-              value: "168"
-            - name: PUID
-              value: "1000"
-            - name: PGID
-              value: "1000"
+            - name: TZ
+              value: "${CLUSTER_TIMEZONE}"
+            - name: CRON_MIN
+              value: "*/20"
 
           ports:
             - name: http
@@ -68,8 +60,14 @@ spec:
               protocol: TCP
 
           volumeMounts:
-            - name: ttrss-data
-              mountPath: /var/www/feed-icons
+            - name: freshrss-config-custom
+              mountPath: /var/www/FreshRSS/data/config.custom.php
+              subPath: config.custom.php
+            - name: freshrss-config-user-custom
+              mountPath: /var/www/FreshRSS/data/config-user.custom.php
+              subPath: config-user.custom.php
+            - name: freshrss-data
+              mountPath: /var/www/FreshRSS
           resources:
             requests:
               memory: 50Mi
@@ -88,15 +86,15 @@ spec:
             - name: POSTGRES_USER
               value: postgres
             - name: POSTGRES_DB_PASSWORD
-              value: ${SECRET_PSQL_TTRSS_PWD}
+              value: ${SECRET_PSQL_FRESHRSS_PWD}
             - name: POSTGRES_DB_USER
-              value: ttrss
+              value: freshrss
             - name: POSTGRES_HOST
               value: postgresql.selfhosted.svc.cluster.local
             - name: POSTGRES_PORT
               value: "5432"
             - name: POSTGRES_DB_NAME
-              value: ttrss
+              value: freshrss
           command:
             - sh
             - "-c"

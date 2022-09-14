@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: ttrss
+  name: freshrss
   namespace: default
 spec:
   ports:
@@ -10,5 +10,5 @@ spec:
       port: 80
       targetPort: 80
   selector:
-    app.kubernetes.io/name: ttrss
+    app.kubernetes.io/name: freshrss
   type: ClusterIP
