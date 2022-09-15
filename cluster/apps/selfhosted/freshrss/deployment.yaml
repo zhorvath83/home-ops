@@ -21,8 +21,8 @@ spec:
     spec:
       securityContext:
         # container requires root to launch and then run as node user 1000
-        runAsUser: 1000
-        runAsGroup: 1000
+        runAsUser: 0
+        runAsGroup: 0
         fsGroup: 1000
         fsGroupChangePolicy: "OnRootMismatch"
         runAsNonRoot: false
