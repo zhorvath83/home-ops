@@ -53,12 +53,10 @@ spec:
               value: "${CLUSTER_TIMEZONE}"
             - name: CRON_MIN
               value: "*/20"
-
           ports:
             - name: http
               containerPort: 80
               protocol: TCP
-
           volumeMounts:
             - name: freshrss-data
               mountPath: /var/www/FreshRSS/data
@@ -66,12 +64,6 @@ spec:
             - name: freshrss-data
               mountPath: /var/www/FreshRSS/extensions
               subPath: extensions
-            - name: freshrss-config-custom
-              mountPath: /var/www/FreshRSS/data/config.custom.php
-              subPath: config.custom.php
-            - name: freshrss-config-user-custom
-              mountPath: /var/www/FreshRSS/data/config-user.custom.php
-              subPath: config-user.custom.php
           resources:
             requests:
               memory: 50Mi
@@ -81,6 +73,25 @@ spec:
               cpu: 500m
 
       initContainers:
+        - name: copy-freshrss-config
+          image: instrumentisto/rsync-ssh:alpine3.16
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -exec
+            - |
+              rsync -av /tmp/config.custom.php /var/www/FreshRSS/data/config.custom.php
+              rsync -av /tmp/config-user.custom.php /var/www/FreshRSS/data/config-user.custom.php
+          volumeMounts:
+            - name: freshrss-data
+              mountPath: /var/www/FreshRSS/data
+              subPath: data
+            - name: freshrss-config-custom
+              mountPath: /tmp/config.custom.php
+              subPath: config.custom.php
+            - name: freshrss-config-user-custom
+              mountPath: /tmp/config-user.custom.php
+              subPath: config-user.custom.php
         - name: database-bootstrap
           image: bitnami/postgresql:14.2.0-debian-10-r88
           imagePullPolicy: IfNotPresent

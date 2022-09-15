@@ -116,7 +116,7 @@ spec:
     initContainers:
       copy-qbittorrent-config:
         name: copy-qbittorrent-config
-        image: instrumentisto/rsync-ssh:alpine3.14
+        image: instrumentisto/rsync-ssh:alpine3.16
         imagePullPolicy: IfNotPresent
         command:
           - sh
