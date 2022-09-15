@@ -19,18 +19,18 @@ spec:
       labels:
         app.kubernetes.io/name: freshrss
     spec:
-      # securityContext:
-      #   # container requires root to launch and then run as node user 1000
-      #   runAsUser: 0
-      #   runAsGroup: 0
-      #   fsGroup: 1000
-      #   fsGroupChangePolicy: "OnRootMismatch"
-      #   runAsNonRoot: false
-      #   readOnlyRootFilesystem: true
-      #   allowPrivilegeEscalation: false
-      #   capabilities:
-      #     drop:
-      #       - ALL
+      securityContext:
+        # container requires root to launch and then run as node user 1000
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: "OnRootMismatch"
+        runAsNonRoot: false
+        readOnlyRootFilesystem: true
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
 
       volumes:
         - name: freshrss-data
