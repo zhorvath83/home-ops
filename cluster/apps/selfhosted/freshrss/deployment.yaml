@@ -49,6 +49,8 @@ spec:
           imagePullPolicy: IfNotPresent
           # https://github.com/FreshRSS/FreshRSS/tree/edge/Docker#docker-compose
           env:
+            - name: FRESHRSS_INSTALL
+              value: ""
             - name: TZ
               value: "${CLUSTER_TIMEZONE}"
             - name: CRON_MIN
