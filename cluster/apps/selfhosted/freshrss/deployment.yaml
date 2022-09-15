@@ -61,7 +61,11 @@ spec:
 
           volumeMounts:
             - name: freshrss-data
-              mountPath: /var/www/FreshRSS
+              mountPath: /var/www/FreshRSS/data
+              subPath: data
+            - name: freshrss-data
+              mountPath: /var/www/FreshRSS/extensions
+              subPath: extensions
             - name: freshrss-config-custom
               mountPath: /var/www/FreshRSS/data/config.custom.php
               subPath: config.custom.php
