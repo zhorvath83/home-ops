@@ -1,0 +1,20 @@
+---
+name: Schedule - Find Kubernetes resources that have been deprecated
+
+on: # yamllint disable-line rule:truthy
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * *"
+
+
+jobs:
+  scan-deprecated-kube-resources:
+    name: Scanning deprecated Kubernetes resources
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Pluto
+        uses: FairwindsOps/pluto/github-action@master
+
+      - name: Use pluto
+        run: |
+          pluto detect-files -d cluster
