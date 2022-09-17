@@ -50,7 +50,9 @@ spec:
           # https://github.com/FreshRSS/FreshRSS/tree/edge/Docker#docker-compose
           env:
             - name: FRESHRSS_INSTALL
-              value: ""
+              value: "--language en"
+            - name: FRESHRSS_USER
+              value: "--language en"
             - name: TZ
               value: "${CLUSTER_TIMEZONE}"
             - name: CRON_MIN
