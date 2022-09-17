@@ -24,3 +24,18 @@ jobs:
       - name: Use pluto
         run: |
           pluto detect-files -d cluster
+
+      - name: Create Issue on Failed workflow
+        if: ${{ failure() }}
+        uses: dacbd/create-issue-action@main
+        with:
+          token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
+          title: Action workflow failed.
+          body: |
+            ### Context
+            [Failed Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            [Codebase](https://github.com/${{ github.repository }}/tree/${{ github.sha }})
+            Workflow name - `${{ github.workflow }}`
+            Job -           `${{ github.job }}`
+            status -        `${{ job.status }}`
+          assignees: zhorvath83
