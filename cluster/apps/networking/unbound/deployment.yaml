@@ -24,7 +24,7 @@ spec:
       #   runAsUser: 65532
       containers:
         - name: unbound
-          image: klutchell/unbound:1.16.2
+          image: crazymax/unbound:1.16.2
           ports:
             - containerPort: 5053
           # Security items for one container. We lock it down.
