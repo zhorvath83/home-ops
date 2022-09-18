@@ -136,22 +136,24 @@ spec:
         upstream_dns:
         # Local DNS
         - "[/lan/]${CLUSTER_LAN_ROUTER_IP}:53"
-        # DIGI
-        - "193.110.57.4"
-        # CloudFlare
-        - "1.1.1.1"
-        # Hurricane
-        - "74.82.42.42"
-        # Cogent
-        - "66.28.0.45"
-        # NTT Communications
-        - "129.250.35.250"
-        # OpenDNS
-        - "208.67.220.222"
-        # SwissCOM
-        - "195.186.4.107"
-        # DNS.sb
-        - "45.11.45.11"
+        # Unbound
+        - "udp://unbound.networking.svc.cluster.local"
+        # # DIGI
+        # - "193.110.57.4"
+        # # CloudFlare
+        # - "1.1.1.1"
+        # # Hurricane
+        # - "74.82.42.42"
+        # # Cogent
+        # - "66.28.0.45"
+        # # NTT Communications
+        # - "129.250.35.250"
+        # # OpenDNS
+        # - "208.67.220.222"
+        # # SwissCOM
+        # - "195.186.4.107"
+        # # DNS.sb
+        # - "45.11.45.11"
         upstream_dns_file: ""
         bootstrap_dns:
         - 1.1.1.1
