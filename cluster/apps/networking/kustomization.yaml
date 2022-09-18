@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - wildcard-certificate
   - cloudflared
+  - unbound
   - ingress-nginx
   - adguard-home
   - external-dns
