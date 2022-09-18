@@ -19,7 +19,7 @@ spec:
         reloader.stakater.com/auto: "true"
     spec:
       securityContext:
-        runAsUser: 1000
+        runAsUser: 1500
         readOnlyRootFilesystem: false
         allowPrivilegeEscalation: false
         capabilities:
