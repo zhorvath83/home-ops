@@ -67,4 +67,10 @@ spec:
       enabled: true
       host: &host "longhorn.${SECRET_DOMAIN}"
       tls: true
-      annotations: {}
+      annotations:
+        # type of authentication
+        nginx.ingress.kubernetes.io/auth-type: basic
+        # name of the secret that contains the user/password definitions
+        nginx.ingress.kubernetes.io/auth-secret: longhorn-htpasswd
+        # message to display with an appropriate context
+        nginx.ingress.kubernetes.io/auth-realm: 'Authentication Required'
