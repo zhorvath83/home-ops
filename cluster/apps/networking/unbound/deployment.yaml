@@ -26,7 +26,7 @@ spec:
         - name: unbound
           image: klutchell/unbound:1.16.2
           ports:
-            - containerPort: 5053
+            - containerPort: 53
           # Security items for one container. We lock it down.
           # securityContext:
           #   readOnlyRootFilesystem: true
