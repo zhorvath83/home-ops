@@ -18,16 +18,16 @@ spec:
       annotations:
         reloader.stakater.com/auto: "true"
     spec:
-      securityContext:
-        runAsUser: 1000
-        runAsGroup: 1000
-        fsGroup: 1000
-        fsGroupChangePolicy: "OnRootMismatch"
-        readOnlyRootFilesystem: true
-        allowPrivilegeEscalation: false
-        capabilities:
-          drop:
-            - ALL
+      # securityContext:
+      #   runAsUser: 1000
+      #   runAsGroup: 1000
+      #   fsGroup: 1000
+      #   fsGroupChangePolicy: "OnRootMismatch"
+      #   readOnlyRootFilesystem: true
+      #   allowPrivilegeEscalation: false
+      #   capabilities:
+      #     drop:
+      #       - ALL
       containers:
         - name: unbound
           image: crazymax/unbound:1.16.2
