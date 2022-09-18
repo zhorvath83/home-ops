@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: unbound
-  namespace: default
+  namespace: networking
   labels:
     app.kubernetes.io/name: unbound
 spec:

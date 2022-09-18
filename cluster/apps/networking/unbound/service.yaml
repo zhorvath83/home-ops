@@ -3,7 +3,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: unbound
-  namespace: default
+  namespace: networking
 spec:
   ports:
     - protocol: UDP
