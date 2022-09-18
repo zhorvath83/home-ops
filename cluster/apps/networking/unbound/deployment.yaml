@@ -18,10 +18,10 @@ spec:
       annotations:
         reloader.stakater.com/auto: "true"
     spec:
-      securityContext:
-        # Security items common to everything in the pod.
-        runAsNonRoot: true
-        runAsUser: 65532
+      # securityContext:
+      #   # Security items common to everything in the pod.
+      #   runAsNonRoot: true
+      #   runAsUser: 65532
       containers:
         - name: unbound
           image: klutchell/unbound:1.16.2
