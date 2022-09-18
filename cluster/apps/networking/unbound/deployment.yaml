@@ -20,7 +20,7 @@ spec:
     spec:
       securityContext:
         runAsUser: 1500
-        readOnlyRootFilesystem: false
+        readOnlyRootFilesystem: true
         allowPrivilegeEscalation: false
         capabilities:
           drop:
