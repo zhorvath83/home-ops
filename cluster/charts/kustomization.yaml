@@ -13,7 +13,7 @@ resources:
   - prometheus-community.yaml
   - grafana.yaml
   - runix.yaml
-  - weaveworks-kured.yaml
+  - kubereboot.yaml
   - node-feature-discovery.yaml
   - emberstack.yaml
   - ingress-nginx.yaml
