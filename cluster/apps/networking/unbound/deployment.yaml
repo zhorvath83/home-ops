@@ -27,6 +27,6 @@ spec:
             - ALL
       containers:
         - name: unbound
-          image: crazymax/unbound:1.16.2
+          image: crazymax/unbound:1.16.3
           ports:
             - containerPort: 5053
