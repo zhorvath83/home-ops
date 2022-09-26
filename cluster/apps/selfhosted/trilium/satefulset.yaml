@@ -17,8 +17,8 @@ spec:
       labels:
         app.kubernetes.io/name: *app
     spec:
+      # container requires root to launch and then run as node user 1000
       securityContext:
-        # container requires root to launch and then run as node user 1000
         runAsUser: 0
         runAsGroup: 0
         fsGroup: 1000
@@ -40,6 +40,8 @@ spec:
           env:
             - name: TRILIUM_DATA_DIR
               value: &datadir "/home/node/trilium-data"
+            - name: TRILIUM_PORT
+              value: "8080"
             - name: USER_UID
               value: "1000"
             - name: USER_GID
