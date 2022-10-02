@@ -5,6 +5,9 @@ metadata:
   name: bazarr
   namespace: media
 spec:
+  dependsOn:
+    - name: longhorn
+      namespace: longhorn-system
   interval: 5m
   chart:
     spec:

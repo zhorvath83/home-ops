@@ -5,6 +5,9 @@ metadata:
   name: &app changedetection
   namespace: selfhosted
 spec:
+  dependsOn:
+    - name: longhorn
+      namespace: longhorn-system
   interval: 10m0s
   chart:
     spec:
