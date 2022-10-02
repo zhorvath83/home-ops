@@ -5,10 +5,11 @@ metadata:
   name: home-assistant
   namespace: home
 spec:
-  # dependsOn:
-  #   - name: mosquitto
-  #     namespace: home
-
+  dependsOn:
+    - name: longhorn
+      namespace: longhorn-system
+    - name: mosquitto
+      namespace: home
   interval: 10m0s
   chart:
     spec:
