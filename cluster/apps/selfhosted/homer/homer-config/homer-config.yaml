@@ -93,7 +93,7 @@ services:
       - name: MKB NetBank
         subtitle: MKB Bank Nyrt.
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/mkb_bank.svg
-        url: https://login-online.mkb.hu/authenticate
+        url: https://online.mkb.hu/
       - name: Erste NetBroker
         subtitle: Erste Befektetési Zrt.
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/erste.png
@@ -102,10 +102,6 @@ services:
         subtitle: Magyar Államkincstár
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/mak.png
         url: https://webkincstar.allamkincstar.gov.hu
-      - name: Random Capital Netboon
-        subtitle: Random Capital Zrt.
-        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/randomcapital.png
-        url: https://netboon.randomcapital.hu/
 
   - name: Home & Media
     icon: fas fa-compact-disc
