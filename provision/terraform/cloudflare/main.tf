@@ -8,6 +8,10 @@ terraform {
   }
 
   required_providers {
+    github = {
+      source  = "integrations/github"
+      version = "~> 4.0"
+    }
     cloudflare = {
       source  = "cloudflare/cloudflare"
       version = "3.24.0"
@@ -32,7 +36,7 @@ data "external" "git_root_path" {
 }
 
 data "sops_file" "cluster_secrets" {
-  source_file = "${data.external.git_root_path.result.result}/cluster/base/cluster-secrets.sops.yaml"
+  source_file = "${data.external.git_root_path.result.result}/cluster/config/cluster-secrets.sops.yaml"
 }
 
 provider "cloudflare" {

@@ -1,4 +1,8 @@
-# Custom user group
+data "github_ip_ranges" "cidrs" {}
+
+# Access groups
+
+## My custom user group
 resource "cloudflare_access_group" "my_users" {
   account_id     = data.sops_file.cluster_secrets.data["stringData.SECRET_CF_ACCOUNT_ID"]
   name           = "MyUsers"
@@ -30,7 +34,9 @@ resource "cloudflare_access_identity_provider" "google_oauth" {
   }
 }
 
-# Private cloud
+# Applications
+
+## Private cloud
 resource "cloudflare_access_application" "private_cloud" {
   zone_id          = lookup(data.cloudflare_zones.domain.zones[0], "id")
   name             = "Private Cloud"
@@ -51,7 +57,7 @@ resource "cloudflare_access_policy" "private_cloud_user_auth_policy" {
   }
 }
 
-# Private website www exclude from UserAuth
+## Private website www exclude from UserAuth
 resource "cloudflare_access_application" "private_website" {
   zone_id          = lookup(data.cloudflare_zones.domain.zones[0], "id")
   name             = "Private website"
@@ -71,7 +77,7 @@ resource "cloudflare_access_policy" "private_website_bypass_policy" {
   }
 }
 
-# Flux webhook exclude from UserAuth
+## Flux webhook exclude from UserAuth
 resource "cloudflare_access_application" "flux_webhook" {
   zone_id          = lookup(data.cloudflare_zones.domain.zones[0], "id")
   name             = "Flux webhook"
@@ -82,12 +88,12 @@ resource "cloudflare_access_application" "flux_webhook" {
 resource "cloudflare_access_policy" "flux_webhook_bypass_policy" {
   application_id = cloudflare_access_application.flux_webhook.id
   zone_id        = lookup(data.cloudflare_zones.domain.zones[0], "id")
-  name           = "Bypass"
+  name           = "CIDRbasedBypass"
   precedence     = "1"
   decision       = "bypass"
 
   include {
-    everyone = true
+    ip = data.github_ip_ranges.cidrs.hooks
   }
 }
 
