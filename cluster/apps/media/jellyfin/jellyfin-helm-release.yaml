@@ -10,6 +10,8 @@ spec:
       namespace: longhorn-system
     - name: intel-gpu-plugin
       namespace: kube-system
+    - name: node-feature-discovery
+      namespace: kube-system
   maxHistory: 5
   interval: 10m0s
   suspend: false
