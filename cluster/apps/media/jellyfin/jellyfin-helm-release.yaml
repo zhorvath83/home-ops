@@ -63,7 +63,7 @@ spec:
 
     ingress:
       main:
-        enabled: false
+        enabled: true
         annotations:
           # type of authentication
           nginx.ingress.kubernetes.io/auth-type: basic
@@ -71,6 +71,14 @@ spec:
           nginx.ingress.kubernetes.io/auth-secret: jellyfin-htpasswd
           # message to display with an appropriate context
           nginx.ingress.kubernetes.io/auth-realm: 'Authentication Required'
+        hosts:
+          - host: &host "media.${SECRET_DOMAIN}"
+            paths:
+              - path: /
+                pathType: Prefix
+        tls:
+          - hosts:
+              - *host
 
     persistence:
       config:
