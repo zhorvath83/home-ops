@@ -134,10 +134,18 @@ services:
   - name: Management
     icon: fas fa-server
     items:
+      - name: Router
+        subtitle: Router WEB UI
+        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/router.png
+        url: http://${CLUSTER_LAN_ROUTER_IP}
       - name: Hypervisor
         subtitle: Proxmox WEB UI
-        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/proxmox.svg
+        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/proxmox.png
         url: http://${CLUSTER_HOST1_IP}
+      - name: OpenMediaVault NAS
+        subtitle: NAS web UI
+        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/openmediavault.png
+        url: http://${CLUSTER_LAN_NAS_IP}
       - name: Duplicacy
         subtitle: Backup solution
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/duplicacy.png
@@ -152,14 +160,8 @@ services:
         tagstyle: "is-info"
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/adguardhome.svg
         url: https://adguard.${SECRET_DOMAIN}
-      - name: OpenMediaVault
-        subtitle: NAS web UI
-        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/openmediavault.png
-        url: http://${CLUSTER_LAN_NAS_IP}
-      - name: Router
-        subtitle: Router WEB UI
-        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/router.png
-        url: http://${CLUSTER_LAN_ROUTER_IP}
+
+
       - name: Cloudflare
         subtitle: DNS / CDN
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/cloudflare.svg
