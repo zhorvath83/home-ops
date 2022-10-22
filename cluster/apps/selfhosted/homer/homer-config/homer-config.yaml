@@ -136,7 +136,7 @@ services:
     items:
       - name: Hypervisor
         subtitle: Proxmox WEB UI
-        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/proxmox.svg
+        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/proxmox.svg
         url: http://${CLUSTER_HOST1_IP}
       - name: Duplicacy
         subtitle: Backup solution
