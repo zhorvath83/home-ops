@@ -70,14 +70,6 @@ services:
         subtitle: Google calendar
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/google-calendar.png
         url: https://calendar.google.com/
-      - name: Notes
-        subtitle: Google keep
-        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/google-keep.png
-        url: https://keep.google.com/
-      - name: Notes
-        subtitle: Trilium notes
-        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/trilium.png
-        url: https://notes.${SECRET_DOMAIN}
 
   - name: Finance
     icon: fas fa-money-bill-alt
@@ -103,29 +95,45 @@ services:
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/mak.png
         url: https://webkincstar.allamkincstar.gov.hu
 
-  - name: Home & Media
-    icon: fas fa-compact-disc
+  - name: News and notes
+    icon: fas fa-note
     items:
-      - name: Home Assistant
-        subtitle: Home automation
-        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/home-assistant.svg
-        url: https://homeassistant.${SECRET_DOMAIN}
-      - name: Tandoor recipes
-        subtitle: Private recipe collection
-        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/tandoorrecipes.png
-        url: https://recipes.${SECRET_DOMAIN}
+      - name: Notes
+        subtitle: Trilium notes
+        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/trilium.png
+        url: https://notes.${SECRET_DOMAIN}
+      - name: Notes
+        subtitle: Google keep
+        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/google-keep.png
+        url: https://keep.google.com/
+      - name: RSS
+        subtitle: FreshRSS
+        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/freshrss.svg
+        url: https://notes.${SECRET_DOMAIN}
       - name: Changedetection.IO
         subtitle: Website change detection
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/changedetection.svg
         url: https://changedetection.${SECRET_DOMAIN}
-      - name: Private website
-        subtitle: Private website
-        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/hugo.png
-        url: https://${SECRET_DOMAIN}
+
+  - name: Home & Media
+    icon: fas fa-compact-disc
+    items:
+      - name: Tandoor recipes
+        subtitle: Private recipe collection
+        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/tandoorrecipes.png
+        url: https://recipes.${SECRET_DOMAIN}
+      - name: Home Assistant
+        subtitle: Home automation
+        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/home-assistant.svg
+        url: https://homeassistant.${SECRET_DOMAIN}
       - name: Jellyfin
         subtitle: Jellyfin media server
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/jellyfin.png
         url: http://${CLUSTER_SVC_JELLYFIN_IP}:8096
+      - name: Private website
+        subtitle: Private website
+        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/hugo.png
+        url: https://${SECRET_DOMAIN}
       - name: Kodi
         subtitle: Kodi media server
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/kodi.png
