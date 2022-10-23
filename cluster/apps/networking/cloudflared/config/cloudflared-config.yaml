@@ -6,12 +6,9 @@ metadata:
   namespace: networking
 data:
   config.yaml: |
-    proxy-dns: true
-    proxy-dns-address: 0.0.0.0
-    proxy-dns-port: 5053
-    proxy-dns-upstream:
-      - https://1.1.1.1/dns-query
-      - https://1.0.0.1/dns-query
+    proxy-dns: false
+    warp-routing:
+        enabled: false
     tunnel: kubernetes-cf-tunnel
     protocol: quic
     credentials-file: /etc/cloudflared/creds/credentials.json
