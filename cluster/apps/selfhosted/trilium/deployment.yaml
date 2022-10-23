@@ -35,7 +35,7 @@ spec:
             runAsNonRoot: false
             readOnlyRootFilesystem: false
             allowPrivilegeEscalation: true
-          image: docker.io/zadam/trilium:0.55.1
+          image: docker.io/zadam/trilium:0.56.1
           imagePullPolicy: IfNotPresent
           env:
             - name: TRILIUM_DATA_DIR
