@@ -95,7 +95,7 @@ services:
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/mak.png
         url: https://webkincstar.allamkincstar.gov.hu
 
-  - name: News and notes
+  - name: News & notes
     icon: fas fa-note
     items:
       - name: Notes
