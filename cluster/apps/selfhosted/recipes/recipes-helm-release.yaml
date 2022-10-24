@@ -40,7 +40,7 @@ spec:
     sidecar:
       image:
         repository: nginx
-        tag: 1.23.1-alpine
+        tag: 1.23.2-alpine
         pullPolicy: IfNotPresent
 
     env:
