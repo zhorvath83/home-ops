@@ -65,6 +65,17 @@
       "prBodyNotes": [
       "[Release notes](https://github.com/TandoorRecipes/recipes/releases/latest/)"
       ]
+    },
+    {
+      "matchDatasources": [
+      "docker"
+      ],
+      "matchPackageNames": [
+      "zadam/trilium"
+      ],
+      "prBodyNotes": [
+      "[Release notes](https://github.com/zadam/trilium/releases/latest/)"
+      ]
     }
   ]
 }
