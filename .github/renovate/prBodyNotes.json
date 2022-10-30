@@ -76,6 +76,17 @@
       "prBodyNotes": [
       "[Release notes](https://github.com/zadam/trilium/releases/latest/)"
       ]
+    },
+    {
+      "matchDatasources": [
+      "docker"
+      ],
+      "matchPackageNames": [
+      "jellyfin/jellyfin"
+      ],
+      "prBodyNotes": [
+      "[Release notes](https://github.com/jellyfin/jellyfin/releases/latest/)"
+      ]
     }
   ]
 }
