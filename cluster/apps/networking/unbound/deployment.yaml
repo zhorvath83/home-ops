@@ -30,6 +30,10 @@ spec:
           image: crazymax/unbound:1.16.3
           ports:
             - containerPort: 5053
+          volumeMounts:
+            - name: unbound-config
+              mountPath: /etc/unbound
+              readOnly: true
           resources:
             requests:
               cpu: 10m
@@ -37,3 +41,10 @@ spec:
             limits:
               cpu: 500m
               memory: 64Mi
+      volumes:
+        - name: unbound-config
+          configMap:
+            name: unbound-config
+            items:
+              - key: unbound.conf
+                path: unbound.conf
