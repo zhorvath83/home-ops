@@ -32,7 +32,8 @@ spec:
             - containerPort: 5053
           volumeMounts:
             - name: unbound-config
-              mountPath: /etc/unbound
+              mountPath: /etc/unbound/unbound.conf
+              subPath: unbound.conf
               readOnly: true
           resources:
             requests:
