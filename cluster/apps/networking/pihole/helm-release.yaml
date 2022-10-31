@@ -79,8 +79,8 @@ spec:
       IPv6: false
       WEBUIBOXEDLAYOUT: traditional
 
-    DNS1: "udp://unbound.default.svc.cluster.local"
-    DNS2: "udp://unbound.default.svc.cluster.local"
+    DNS1: ${CLUSTER_SVC_LAN_UNBOUND_IP}
+    DNS2: ${CLUSTER_SVC_LAN_UNBOUND_IP}
 
     customDnsEntries: []
     additionalHostsEntries: []

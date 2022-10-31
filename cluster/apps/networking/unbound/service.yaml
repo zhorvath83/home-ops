@@ -2,12 +2,34 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: unbound
+  name: unbound-tcp
   namespace: default
+  annotations:
+    metallb.universe.tf/allow-shared-ip: "unbound-svc"
 spec:
+  type: LoadBalancer
+  loadBalancerIP: 1.2.3.4
   ports:
-    - protocol: UDP
-      name: dns
+    - name: dnstcp
+      protocol: TCP
+      port: 53
+      targetPort: 5053
+  selector:
+    app.kubernetes.io/name: unbound
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: unbound-udp
+  namespace: default
+  annotations:
+    metallb.universe.tf/allow-shared-ip: "unbound-svc"
+spec:
+  type: LoadBalancer
+  loadBalancerIP: 1.2.3.4
+  ports:
+    - name: dnsudp
+      protocol: UDP
       port: 53
       targetPort: 5053
   selector:
