@@ -8,7 +8,7 @@ metadata:
     metallb.universe.tf/allow-shared-ip: "unbound-svc"
 spec:
   type: LoadBalancer
-  loadBalancerIP: 1.2.3.4
+  loadBalancerIP: ${CLUSTER_SVC_LAN_UNBOUND_IP}
   ports:
     - name: dnstcp
       protocol: TCP
@@ -26,7 +26,7 @@ metadata:
     metallb.universe.tf/allow-shared-ip: "unbound-svc"
 spec:
   type: LoadBalancer
-  loadBalancerIP: 1.2.3.4
+  loadBalancerIP: ${CLUSTER_SVC_LAN_UNBOUND_IP}
   ports:
     - name: dnsudp
       protocol: UDP
