@@ -20,3 +20,4 @@ resources:
   - searxng.yaml
   - kubevious.yaml
   - wikijs.yaml
+  - pihole-charts.yaml
