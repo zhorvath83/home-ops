@@ -30,3 +30,10 @@ spec:
           image: crazymax/unbound:1.16.3
           ports:
             - containerPort: 5053
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 500m
+              memory: 64Mi
