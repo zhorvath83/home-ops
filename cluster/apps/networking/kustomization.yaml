@@ -6,6 +6,7 @@ resources:
   - cloudflared
   - unbound
   - ingress-nginx
-  - adguard-home
+  - pihole
+  # - adguard-home
   - external-dns
   - whoami

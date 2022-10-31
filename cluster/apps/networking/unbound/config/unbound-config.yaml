@@ -3,7 +3,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: unbound-config
-  namespace: networking
+  namespace: default
 data:
   unbound.conf: |
     server:
