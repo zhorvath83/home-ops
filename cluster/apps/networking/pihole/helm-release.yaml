@@ -54,13 +54,10 @@ spec:
       enabled: true
       annotations: {}
       hosts:
-        - host: &host "pihole.${SECRET_DOMAIN}"
-          paths:
-            - path: /
-              pathType: Prefix
+        - pihole.${SECRET_DOMAIN}
       tls:
         - hosts:
-            - *host
+            - pihole.${SECRET_DOMAIN}
 
     resources: {}
 
