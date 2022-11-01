@@ -120,9 +120,51 @@ spec:
       - https://urlhaus.abuse.ch/downloads/hostfile/
       - https://zerodot1.gitlab.io/CoinBlockerLists/hosts_browser
 
-    whitelist: {}
     blacklist: {}
-    regex: {}
+
+    whitelist:
+      - ichnaea.netflix.com
+      - nrdp.nccp.netflix.com
+      - collector-medium.lightstep.com
+      - android.clients.google.com
+      - clients1.google.com
+      - clients2.google.com
+      - clients3.google.com
+      - clients4.google.com
+      - clients5.google.com
+      - clients6.google.com
+      - cdn.cloudflare.net
+      - ctldl.windowsupdate.com
+      - gdlp01.c-wss.com
+      - googleapis.com
+      - www.msftncsi.com
+      - sls.update.microsoft.com.akadns.net
+      - fe3.delivery.dsp.mp.microsoft.com.nsatc.net
+      - tlu.dl.delivery.mp.microsoft.com
+      - spclient.wg.spotify.com
+      - apresolve.spotify.com
+      - api-tv.spotify.com
+      - gfwsl.geforce.com
+
+    regex:
+      - ^(.+[-.])??adse?rv(er?|ice)?s?[0-9][-.]
+      - ^analytics?[-.]
+      - ^banners?[-.]
+      - ^count(ers?)?[0-9][-.] ^pixels?[-.]
+      - ^stat(s|istics)?[0-9][-.]
+      - ^telemetry[-.]
+      - ^track(ers?|ing)?[0-9]*[-.]
+      - ^traff(ic)?[-.]
+      - ^adim(age|g)s?[0-9][-.]
+      - ^adtrack(er|ing)?[0-9][-.]
+      - ^advert(s|is(ing|ements?))?[0-9][-_.]
+      - ^aff(iliat(es?|ion))?[-.]
+      - ^(.+[-.])??m?ad[sxv]?[0-9][-.]
 
     ftl:
       MAXDBDAYS: 14
+
+    podDnsConfig:
+      nameservers:
+        - 127.0.0.1
+        - 9.9.9.9
