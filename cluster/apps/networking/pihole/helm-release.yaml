@@ -21,7 +21,7 @@ spec:
 
     image:
       repository: "pihole/pihole"
-      tag: 2022.09.4
+      tag: v5.8.1
       pullPolicy: IfNotPresent
 
     podAnnotations:
