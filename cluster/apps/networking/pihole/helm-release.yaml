@@ -20,8 +20,8 @@ spec:
     replicaCount: 1
 
     image:
-      repository: "pihole/pihole"
-      tag: v5.8.1
+      repository: pihole/pihole
+      tag: 2022.09.4
       pullPolicy: IfNotPresent
 
     podAnnotations:
