@@ -24,7 +24,7 @@ spec:
       nameOverride: *app
     image:
       repository: ghcr.io/dgtlmoon/changedetection.io
-      tag: 0.39.19
+      tag: 0.39.21
       pullPolicy: IfNotPresent
     env:
       TZ: "${CLUSTER_TIMEZONE}"
