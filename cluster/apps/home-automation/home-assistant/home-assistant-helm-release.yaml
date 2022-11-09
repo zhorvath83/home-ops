@@ -8,8 +8,6 @@ spec:
   dependsOn:
     - name: longhorn
       namespace: longhorn-system
-    - name: mosquitto
-      namespace: default
   interval: 10m0s
   chart:
     spec:
