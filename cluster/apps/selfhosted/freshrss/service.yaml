@@ -5,10 +5,10 @@ metadata:
   name: freshrss
   namespace: default
 spec:
+  type: ClusterIP
   ports:
     - protocol: TCP
       port: 80
       targetPort: 80
   selector:
     app.kubernetes.io/name: freshrss
-  type: ClusterIP

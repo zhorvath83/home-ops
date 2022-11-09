@@ -4,14 +4,14 @@ kind: Service
 metadata:
   name: mailrise
   namespace: monitoring
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: |-
+      ${CLUSTER_SVC_SMTP_GATEWAY_IP}
 spec:
+  type: LoadBalancer
   ports:
     - protocol: TCP
       port: 25
       targetPort: 8025
   selector:
     app.kubernetes.io/name: mailrise
-  type: LoadBalancer
-  annotations:
-    metallb.universe.tf/loadBalancerIPs: |-
-      ${CLUSTER_SVC_SMTP_GATEWAY_IP}

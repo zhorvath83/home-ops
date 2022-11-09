@@ -4,14 +4,14 @@ kind: Service
 metadata:
   name: mosquitto
   namespace: default
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: |-
+      ${CLUSTER_SVC_MQTT_IP}
 spec:
+  type: LoadBalancer
   ports:
     - protocol: TCP
       name: mqtt
       port: 1883
   selector:
     app.kubernetes.io/name: mosquitto
-  type: LoadBalancer
-  annotations:
-    metallb.universe.tf/loadBalancerIPs: |-
-      ${CLUSTER_SVC_MQTT_IP}
