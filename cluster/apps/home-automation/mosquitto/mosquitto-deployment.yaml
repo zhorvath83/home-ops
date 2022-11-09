@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mosquitto
-  namespace: home
+  namespace: default
   labels:
     app.kubernetes.io/name: mosquitto
   annotations:
@@ -42,9 +42,10 @@ spec:
               protocol: TCP
           resources:
             requests:
-              cpu: 50m
+              cpu: 10m
               memory: 16Mi
             limits:
+              cpu: 1000m
               memory: 256Mi
           volumeMounts:
             - name: mosquitto-config
