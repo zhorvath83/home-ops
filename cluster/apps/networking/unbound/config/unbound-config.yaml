@@ -52,6 +52,11 @@ data:
         private-address: fe80::/10
 
 
+      # Use this only when you downloaded the list of primary root servers!
+      # Read  the  root  hints from this file. Make sure to 
+      # update root.hints evry 5-6 months.
+      root-hints: "/var/lib/unbound/root.hints"
+
       # Will trust glue only if it is within the servers authority.
       # Harden against out of zone rrsets, to avoid spoofing attempts. 
       # Hardening queries multiple name servers for the same data to make
