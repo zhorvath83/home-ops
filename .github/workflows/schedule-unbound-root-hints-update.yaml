@@ -22,7 +22,7 @@ jobs:
 
       - name: Unbound root hints
         run: |
-          bash wget https://www.internic.net/domain/named.root -O ${{ env.UNBOUND_ROOT_HINTS_FILE }}
+          wget https://www.internic.net/domain/named.root -O ${{ env.UNBOUND_ROOT_HINTS_FILE }}
 
       - name: Create pull request
         uses: peter-evans/create-pull-request@v4
