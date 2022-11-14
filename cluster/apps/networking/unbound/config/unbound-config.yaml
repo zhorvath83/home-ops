@@ -158,10 +158,6 @@ data:
       # Faster UDP with multithreading (only on Linux).
         so-reuseport: yes
       
-      # Ensure kernel buffer is large enough to not lose messages in traffix spikes
-        so-rcvbuf: 4m
-        so-sndbuf: 4m
-      
       # Set the total number of unwanted replies to keep track of in every thread.
       # When it reaches the threshold, a defensive action of clearing the rrset
       # and message caches is taken, hopefully flushing away any poison.
