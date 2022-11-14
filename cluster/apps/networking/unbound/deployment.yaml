@@ -35,6 +35,10 @@ spec:
               mountPath: /etc/unbound/unbound.conf
               subPath: unbound.conf
               readOnly: true
+            - name: unbound-root-hints
+              mountPath: /var/lib/unbound/root.hints
+              subPath: root.hints
+              readOnly: true
           resources:
             requests:
               cpu: 10m
@@ -49,3 +53,9 @@ spec:
             items:
               - key: unbound.conf
                 path: unbound.conf
+        - name: unbound-root-hints
+          configMap:
+            name: unbound-root-hints
+            items:
+              - key: root.hints
+                path: root.hints
