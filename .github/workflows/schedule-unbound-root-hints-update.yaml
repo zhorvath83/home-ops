@@ -4,7 +4,7 @@ name: Schedule - Unbound root hints update
 on: # yamllint disable-line rule:truthy
   workflow_dispatch:
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "0 0 1 * *"
 
 env:
   UNBOUND_ROOT_HINTS_FILE: >-
@@ -38,18 +38,3 @@ jobs:
             Update Unbound root hints configmap from https://www.internic.net/domain/named.root
           labels: |
             renovate/github-action
-
-      - name: Auto approve
-        if: steps.cpr.outputs.pull-request-operation == 'created'
-        uses: juliangruber/approve-pull-request-action@v2
-        with:
-          github-token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
-          number: ${{ steps.cpr.outputs.pull-request-number }}
-
-      - name: Pull Request Automerge
-        if: steps.cpr.outputs.pull-request-operation == 'created'
-        uses: peter-evans/enable-pull-request-automerge@v2
-        with:
-          token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
-          pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
-          merge-method: squash

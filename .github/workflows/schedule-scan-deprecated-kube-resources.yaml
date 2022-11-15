@@ -4,7 +4,7 @@ name: Schedule - Find Kubernetes resources that have been deprecated
 on: # yamllint disable-line rule:truthy
   workflow_dispatch:
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "0 0 * * 5"
 
 
 jobs:
