@@ -35,15 +35,15 @@ spec:
         - name: pihole
           image: jacklul/pihole:2022.11.1
           ports:
-          - containerPort: 80
-            name: pihole-web
-            protocol: TCP
-          - containerPort: 53
-            name: dns-dnc-tcp
-            protocol: TCP
-          - containerPort: 53
-            name: dns-dns-udp
-            protocol: UDP
+            - containerPort: 80
+              name: pihole-web
+              protocol: TCP
+            - containerPort: 53
+              name: pihole-dns-tcp
+              protocol: TCP
+            - containerPort: 53
+              name: pihole-dns-udp
+              protocol: UDP
           securityContext:
             capabilities: {}
           envFrom:
@@ -84,6 +84,11 @@ spec:
           image: crazymax/unbound:1.16.3
           ports:
             - containerPort: 5053
+              name: unbound-dns-tcp
+              protocol: TCP
+            - containerPort: 5053
+              name: unbound-dns-udp
+              protocol: UDP
           volumeMounts:
             - name: unbound-config
               mountPath: /etc/unbound/unbound.conf
