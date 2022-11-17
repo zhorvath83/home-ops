@@ -6,3 +6,4 @@ metadata:
   namespace: default
 data:
   TZ: "${CLUSTER_TIMEZONE}"
+  WEBPASSWORD: "${SECRET_PIHOLE_PASSWORD}"
