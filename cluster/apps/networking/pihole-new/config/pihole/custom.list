@@ -1,0 +1,2 @@
+${CLUSTER_SVC_LAN_DNS_IP} dns.lan
+${CLUSTER_SVC_LAN_DNS_IP} pihole.lan

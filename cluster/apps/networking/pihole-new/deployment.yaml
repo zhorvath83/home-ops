@@ -1,0 +1,132 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pihole
+  namespace: default
+  labels:
+    app.kubernetes.io/name: pihole
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pihole
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pihole
+      annotations:
+        reloader.stakater.com/auto: "true"
+    spec:
+      # securityContext:
+      #   runAsUser: 1500
+      #   readOnlyRootFilesystem: true
+      #   allowPrivilegeEscalation: false
+      #   capabilities:
+      #     drop:
+      #       - ALL
+      dnsPolicy: "None"
+      dnsConfig:
+        nameservers:
+          # upstream DNS used by pihole.
+          - 127.0.0.1
+          - 9.9.9.9
+      containers:
+        - name: pihole
+          image: jacklul/pihole:2022.11.1
+          ports:
+          - containerPort: 80
+            name: pihole-web
+            protocol: TCP
+          - containerPort: 53
+            name: dns-dnc-tcp
+            protocol: TCP
+          - containerPort: 53
+            name: dns-dns-udp
+            protocol: UDP
+          securityContext:
+            capabilities: {}
+          envFrom:
+            - configMapRef:
+                name: pihole-env-vars
+          resources:
+            requests:
+              cpu: 10m
+              memory: 56Mi
+            limits:
+              cpu: 1000m
+              memory: 384Mi
+          livenessProbe:
+            tcpSocket:
+              port: 53
+            initialDelaySeconds: 25
+            periodSeconds: 5
+          readinessProbe:
+            tcpSocket:
+              port: 53
+            initialDelaySeconds: 25
+            periodSeconds: 5
+          volumeMounts:
+            - name: pihole-ftl-conf
+              mountPath: "/etc/pihole/pihole-FTL.conf"
+              subPath: pihole-FTL.conf
+            - name: pihole-custom-list
+              mountPath: "/etc/pihole/custom.list"
+              subPath: custom.list
+            - name: pihole-dnsmasq-conf
+              mountPath: "/etc/dnsmasq.d/pihole-dnsmasq.conf"
+              subPath: pihole-dnsmasq.conf
+
+        - name: unbound
+          image: crazymax/unbound:1.16.3
+          ports:
+            - containerPort: 5053
+          volumeMounts:
+            - name: unbound-config
+              mountPath: /etc/unbound/unbound.conf
+              subPath: unbound.conf
+              readOnly: true
+            - name: unbound-root-hints
+              mountPath: /var/lib/unbound/root.hints
+              subPath: root.hints
+              readOnly: true
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 1000m
+              memory: 256Mi
+
+
+      volumes:
+      - name: pihole-ftl-conf
+        configMap:
+          name: pihole-ftl-conf
+          items:
+            - key: pihole-FTL.conf
+              path: pihole-FTL.conf
+      - name: pihole-custom-list
+        configMap:
+          name: pihole-custom-list
+          items:
+            - key: custom.list
+              path: custom.list
+      - name: pihole-dnsmasq-conf
+        configMap:
+          name: pihole-dnsmasq-conf
+          items:
+            - key: pihole-dnsmasq.conf
+              path: pihole-dnsmasq.conf
+      - name: unbound-config
+        configMap:
+          name: unbound-config
+          items:
+            - key: unbound.conf
+              path: unbound.conf
+      - name: unbound-root-hints
+        configMap:
+          name: unbound-root-hints
+          items:
+            - key: root.hints
+              path: root.hints
