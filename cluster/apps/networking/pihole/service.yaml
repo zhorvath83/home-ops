@@ -7,7 +7,7 @@ metadata:
   annotations:
     metallb.universe.tf/allow-shared-ip: "pihole-svc"
     metallb.universe.tf/loadBalancerIPs: |-
-      ${CLUSTER_SVC_LAN_PIHOLE_IP}
+      ${CLUSTER_SVC_LAN_DNS_IP}
 spec:
   type: LoadBalancer
   externalTrafficPolicy: Local
@@ -27,7 +27,7 @@ metadata:
   annotations:
     metallb.universe.tf/allow-shared-ip: "pihole-svc"
     metallb.universe.tf/loadBalancerIPs: |-
-      ${CLUSTER_SVC_LAN_PIHOLE_IP}
+      ${CLUSTER_SVC_LAN_DNS_IP}
 spec:
   type: LoadBalancer
   externalTrafficPolicy: Local
@@ -47,7 +47,7 @@ metadata:
   annotations:
     metallb.universe.tf/allow-shared-ip: "pihole-svc"
     metallb.universe.tf/loadBalancerIPs: |-
-      ${CLUSTER_SVC_LAN_PIHOLE_IP}
+      ${CLUSTER_SVC_LAN_DNS_IP}
 spec:
   type: LoadBalancer
   externalTrafficPolicy: Local
