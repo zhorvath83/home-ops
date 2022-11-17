@@ -16,5 +16,9 @@ configMapGenerator:
     namespace: default
     files:
       - pihole-dnsmasq.conf
+  - name: pihole-setupvars-conf
+    namespace: default
+    files:
+      - setupVars.conf
 generatorOptions:
   disableNameSuffixHash: true

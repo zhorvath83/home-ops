@@ -67,6 +67,9 @@ spec:
             initialDelaySeconds: 25
             periodSeconds: 5
           volumeMounts:
+            - name: pihole-setupvars-conf
+              mountPath: "/etc/pihole/setupVars.conf"
+              subPath: setupVars.conf
             - name: pihole-ftl-conf
               mountPath: "/etc/pihole/pihole-FTL.conf"
               subPath: pihole-FTL.conf
@@ -108,6 +111,12 @@ spec:
 
 
       volumes:
+      - name: pihole-setupvars-conf
+        configMap:
+          name: pihole-setupvars-conf
+          items:
+            - key: setupVars.conf
+              path: setupVars.conf
       - name: pihole-ftl-conf
         configMap:
           name: pihole-ftl-conf
