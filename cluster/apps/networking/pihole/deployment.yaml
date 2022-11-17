@@ -77,7 +77,7 @@ spec:
               mountPath: "/etc/dnsmasq.d/pihole-dnsmasq.conf"
               subPath: pihole-dnsmasq.conf
             - name: pihole-dnsmasq-conf
-              mountPath: "/etc/pihole-updatelists/"
+              mountPath: "/etc/pihole-updatelists/pihole-dnsmasq.conf"
               subPath: pihole-dnsmasq.conf
 
         - name: unbound
