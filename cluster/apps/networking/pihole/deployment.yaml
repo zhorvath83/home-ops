@@ -76,6 +76,9 @@ spec:
             - name: pihole-dnsmasq-conf
               mountPath: "/etc/dnsmasq.d/pihole-dnsmasq.conf"
               subPath: pihole-dnsmasq.conf
+            - name: pihole-dnsmasq-conf
+              mountPath: "/etc/pihole-updatelists/"
+              subPath: pihole-dnsmasq.conf
 
         - name: unbound
           image: crazymax/unbound:1.16.3
@@ -118,6 +121,12 @@ spec:
           items:
             - key: pihole-dnsmasq.conf
               path: pihole-dnsmasq.conf
+      - name: pihole-updatelists-conf
+        configMap:
+          name: pihole-updatelists-conf
+          items:
+            - key: pihole-updatelists.conf
+              path: pihole-updatelists.conf
       - name: unbound-config
         configMap:
           name: unbound-config
