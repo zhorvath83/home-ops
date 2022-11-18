@@ -80,7 +80,7 @@ spec:
             - name: pihole-custom-list
               mountPath: "/etc/pihole/custom.list"
               subPath: custom.list
-            - name: pihole-dnsmasq-conf
+            - name: custom-dnsmasq-conf
               mountPath: "/etc/dnsmasq.d/custom-dnsmasq.conf"
               subPath: pihole-dnsmasq.conf
             - name: pihole-updatelists-conf
@@ -135,12 +135,12 @@ spec:
           items:
             - key: custom.list
               path: custom.list
-      - name: pihole-dnsmasq-conf
+      - name: custom-dnsmasq-conf
         configMap:
-          name: pihole-dnsmasq-conf
+          name: custom-dnsmasq-conf
           items:
-            - key: pihole-dnsmasq.conf
-              path: pihole-dnsmasq.conf
+            - key: custom-dnsmasq.conf
+              path: custom-dnsmasq.conf
       - name: pihole-updatelists-conf
         configMap:
           name: pihole-updatelists-conf
