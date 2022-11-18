@@ -68,9 +68,9 @@ spec:
             periodSeconds: 5
           volumeMounts:
             - name: pihole-data
-              mountPath: "/etc/pihole/"
+              mountPath: "/etc/pihole"
             - name: pihole-data
-              mountPath: "/etc/dnsmasq.d/"
+              mountPath: "/etc/dnsmasq.d"
             - name: pihole-setupvars-conf
               mountPath: "/etc/pihole/setupVars.conf"
               subPath: setupVars.conf
