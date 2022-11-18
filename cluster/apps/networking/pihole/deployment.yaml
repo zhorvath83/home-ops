@@ -124,13 +124,11 @@ spec:
             - name: pihole-custom-list
               mountPath: "/tmp/pihole/custom.list"
               subPath: custom.list
-            #- name: pihole-updatelists-conf
-            #  mountPath: "/tmp/pihole-updatelists.conf"
-            #  subPath: pihole-updatelists.conf
 
       volumes:
       - name: pihole-data
-        emptyDir: {}
+        persistentVolumeClaim:
+          claimName: pihole-data
       - name: pihole-adlists-list
         configMap:
           name: pihole-adlists-list
