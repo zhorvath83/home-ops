@@ -15,7 +15,7 @@ configMapGenerator:
   - name: custom-dnsmasq-conf
     namespace: default
     files:
-      - pihole-dnsmasq.conf
+      - custom-dnsmasq.conf
   - name: pihole-setupvars-conf
     namespace: default
     files:
