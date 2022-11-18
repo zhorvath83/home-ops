@@ -67,6 +67,10 @@ spec:
             initialDelaySeconds: 25
             periodSeconds: 5
           volumeMounts:
+            - name: pihole-data
+              mountPath: "/etc/pihole/"
+            - name: pihole-data
+              mountPath: "/etc/dnsmasq.d/"
             - name: pihole-setupvars-conf
               mountPath: "/etc/pihole/setupVars.conf"
               subPath: setupVars.conf
@@ -77,7 +81,7 @@ spec:
               mountPath: "/etc/pihole/custom.list"
               subPath: custom.list
             - name: pihole-dnsmasq-conf
-              mountPath: "/etc/dnsmasq.d/pihole-dnsmasq.conf"
+              mountPath: "/etc/dnsmasq.d/custom-dnsmasq.conf"
               subPath: pihole-dnsmasq.conf
             - name: pihole-updatelists-conf
               mountPath: "/etc/pihole-updatelists/pihole-updatelists.conf"
@@ -111,6 +115,8 @@ spec:
 
 
       volumes:
+      - name: pihole-data
+        emptyDir: {}
       - name: pihole-setupvars-conf
         configMap:
           name: pihole-setupvars-conf
