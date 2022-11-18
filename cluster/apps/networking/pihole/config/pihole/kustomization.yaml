@@ -4,21 +4,13 @@ kind: Kustomization
 resources:
   - pihole-env-vars.yaml
 configMapGenerator:
-  - name: pihole-ftl-conf
+  - name: pihole-adlists-list
     namespace: default
     files:
-      - pihole-FTL.conf
+      - adlists.list
   - name: pihole-custom-list
     namespace: default
     files:
       - custom.list
-  - name: custom-dnsmasq-conf
-    namespace: default
-    files:
-      - custom-dnsmasq.conf
-  - name: pihole-setupvars-conf
-    namespace: default
-    files:
-      - setupVars.conf
 generatorOptions:
   disableNameSuffixHash: true
