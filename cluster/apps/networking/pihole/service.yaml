@@ -52,9 +52,13 @@ spec:
   type: LoadBalancer
   externalTrafficPolicy: Local
   ports:
-    - name: pihole-web
+    - name: pihole-web-http
       protocol: TCP
       port: 80
       targetPort: 80
+    - name: pihole-web-https
+      protocol: TCP
+      port: 443
+      targetPort: 443
   selector:
     app.kubernetes.io/name: pihole
