@@ -36,10 +36,10 @@ spec:
           image: jacklul/pihole:2022.11.1
           ports:
             - containerPort: 80
-              name: pihole-web-http
+              name: pihole-http
               protocol: TCP
             - containerPort: 443
-              name: pihole-web-https
+              name: pihole-https
               protocol: TCP
             - containerPort: 53
               name: pihole-dns-tcp
