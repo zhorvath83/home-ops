@@ -78,6 +78,9 @@ spec:
             - name: pihole-updatelists-conf
               mountPath: "/etc/pihole-updatelists.conf"
               subPath: pihole-updatelists.conf
+            - name: pihole-updatelists-cron
+              mountPath: "/etc/cron.d/pihole-updatelists-cron"
+              subPath: pihole-updatelists-cron
 
         - name: unbound
           image: crazymax/unbound:1.16.3
@@ -150,6 +153,12 @@ spec:
           items:
             - key: pihole-updatelists.conf
               path: pihole-updatelists.conf
+      - name: pihole-updatelists-cron
+        configMap:
+          name: pihole-updatelists-cron
+          items:
+            - key: pihole-updatelists-cron
+              path: pihole-updatelists-cron
       - name: unbound-config
         configMap:
           name: unbound-config
