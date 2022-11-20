@@ -6,9 +6,9 @@ configMapGenerator:
     namespace: default
     files:
       - pihole-updatelists.conf
-  - name: pihole-updatelist-cron
+  - name: pihole-updatelists-cron
     namespace: default
     files:
-      - pihole-updatelist-cron
+      - pihole-updatelists-cron
 generatorOptions:
   disableNameSuffixHash: true
