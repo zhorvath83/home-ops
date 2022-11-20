@@ -138,12 +138,14 @@ spec:
               path: adlists.list
       - name: pihole-custom-list
         configMap:
+          defaultMode: 0644
           name: pihole-custom-list
           items:
             - key: custom.list
               path: custom.list
       - name: pihole-updatelists-conf
         configMap:
+          defaultMode: 0644
           name: pihole-updatelists-conf
           items:
             - key: pihole-updatelists.conf
