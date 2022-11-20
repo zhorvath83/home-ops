@@ -145,7 +145,7 @@ spec:
               path: custom.list
       - name: pihole-updatelists-conf
         configMap:
-          defaultMode: 0644
+          defaultMode: 0666
           name: pihole-updatelists-conf
           items:
             - key: pihole-updatelists.conf
