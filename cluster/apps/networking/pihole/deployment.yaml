@@ -105,25 +105,25 @@ spec:
               cpu: 1000m
               memory: 256Mi
 
-      # initContainers:
-      #   - name: copy-pihole-config
-      #     image: instrumentisto/rsync-ssh:alpine3.16
-      #     imagePullPolicy: IfNotPresent
-      #     command:
-      #       - sh
-      #       - -exec
-      #       - |
-      #         rsync -av /tmp/pihole/adlists.list /etc/pihole/adlists.list
-      #         rsync -av /tmp/pihole/custom.list /etc/pihole/custom.list
-      #     volumeMounts:
-      #       - name: pihole-data
-      #         mountPath: "/etc/pihole"
-      #       - name: pihole-adlists-list
-      #         mountPath: "/tmp/pihole/adlists.list"
-      #         subPath: adlists.list
-      #       - name: pihole-custom-list
-      #         mountPath: "/tmp/pihole/custom.list"
-      #         subPath: custom.list
+      initContainers:
+        - name: copy-pihole-config
+          image: instrumentisto/rsync-ssh:alpine3.16
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -exec
+            - |
+              rsync -av /tmp/pihole/adlists.list /etc/pihole/adlists.list
+              rsync -av /tmp/pihole/custom.list /etc/pihole/custom.list
+          volumeMounts:
+            - name: pihole-data
+              mountPath: "/etc/pihole"
+            - name: pihole-adlists-list
+              mountPath: "/tmp/pihole/adlists.list"
+              subPath: adlists.list
+            - name: pihole-custom-list
+              mountPath: "/tmp/pihole/custom.list"
+              subPath: custom.list
 
       volumes:
       - name: pihole-data
@@ -131,7 +131,6 @@ spec:
           claimName: pihole-data
       - name: pihole-adlists-list
         configMap:
-          defaultMode: 0644
           name: pihole-adlists-list
           items:
             - key: adlists.list
