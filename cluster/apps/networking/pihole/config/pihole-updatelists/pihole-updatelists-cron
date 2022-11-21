@@ -1,1 +1,1 @@
-@reboot   root   /usr/local/sbin/pihole-updatelists --config=/etc/pihole-updatelists/pihole-updatelists.conf > /dev/stdout
+5 5 * * *   root   /usr/local/sbin/pihole-updatelists --config=/etc/pihole-updatelists/pihole-updatelists.conf > /dev/stdout

@@ -79,8 +79,8 @@ spec:
               mountPath: "/etc/pihole-updatelists.conf"
               subPath: pihole-updatelists.conf
             - name: pihole-updatelists-cron
-              mountPath: "/etc/cron.d/pihole-updatelists-cron"
-              subPath: pihole-updatelists-cron
+              mountPath: "/etc/cron.d/pihole-updatelists"
+              subPath: pihole-updatelists
 
         - name: unbound
           image: crazymax/unbound:1.16.3
