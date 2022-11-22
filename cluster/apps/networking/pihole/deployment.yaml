@@ -78,7 +78,7 @@ spec:
             - name: pihole-updatelists-conf
               mountPath: "/etc/pihole-updatelists.conf"
               subPath: pihole-updatelists.conf
-            - name: pihole-updatelists-cron
+            - name: pihole-updatelists-schedule
               mountPath: "/etc/cron.d/pihole-updatelists"
               subPath: pihole-updatelists
 
@@ -153,12 +153,12 @@ spec:
           items:
             - key: pihole-updatelists.conf
               path: pihole-updatelists.conf
-      - name: pihole-updatelists-cron
+      - name: pihole-updatelists-schedule
         configMap:
-          name: pihole-updatelists-cron
+          name: pihole-updatelists-schedule
           items:
-            - key: pihole-updatelists-cron
-              path: pihole-updatelists-cron
+            - key: pihole-updatelists-schedule
+              path: pihole-updatelists-schedule
       - name: unbound-config
         configMap:
           name: unbound-config
