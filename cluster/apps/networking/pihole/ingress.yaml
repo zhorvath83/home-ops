@@ -5,7 +5,7 @@ metadata:
   name: pihole
   namespace: default
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /admin/$1
+    nginx.ingress.kubernetes.io/app-root: /admin
 spec:
   rules:
     - host: &host "pihole.${SECRET_DOMAIN}"
