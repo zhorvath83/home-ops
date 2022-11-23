@@ -3,7 +3,7 @@ apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
   name: &app searxng
-  namespace: selfhosted
+  namespace: default
 spec:
   # dependsOn:
   #   - name: redis
