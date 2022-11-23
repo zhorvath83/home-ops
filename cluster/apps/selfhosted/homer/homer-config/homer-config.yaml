@@ -162,12 +162,12 @@ services:
         subtitle: Distributed block storage
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/longhorn.png
         url: https://longhorn.${SECRET_DOMAIN}
-      - name: AdGuard Home
-        subtitle: DNS sinkhole
+      - name: Pi-hole
+        subtitle: Black hole for Internet adverts
         tag: "AdBlocker"
         tagstyle: "is-info"
-        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/adguardhome.svg
-        url: https://adguard.${SECRET_DOMAIN}
+        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/pihole.png
+        url: https://dns.${SECRET_DOMAIN}
 
 
       - name: Cloudflare
