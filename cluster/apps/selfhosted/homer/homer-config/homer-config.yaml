@@ -166,7 +166,7 @@ services:
         subtitle: Black hole for Internet adverts
         tag: "AdBlocker"
         tagstyle: "is-info"
-        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/pihole.png
+        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/pihole.png
         url: https://dns.${SECRET_DOMAIN}
 
 
