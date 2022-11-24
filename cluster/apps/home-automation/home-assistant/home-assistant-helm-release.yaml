@@ -48,17 +48,17 @@ spec:
         image: k8s.gcr.io/git-sync/git-sync:v3.3.4
         imagePullPolicy: IfNotPresent
         volumeMounts:
-        - name: home-assistant-data
-          mountPath: /config
+          - name: home-assistant-data
+            mountPath: /config
         env:
-        - name: GIT_SYNC_REPO
-          value: https://github.com/zhorvath83/home-assistant-config
-        - name: GIT_SYNC_ROOT
-          value: /config
-        - name: GIT_SYNC_PERMISSIONS
-          value: "0777"
-        - name: GIT_SYNC_ONE_TIME
-          value: "true"
+          - name: GIT_SYNC_REPO
+            value: https://github.com/zhorvath83/home-assistant-config
+          - name: GIT_SYNC_ROOT
+            value: /config
+          - name: GIT_SYNC_PERMISSIONS
+            value: "0777"
+          - name: GIT_SYNC_ONE_TIME
+            value: "true"
 
     service:
       main:
