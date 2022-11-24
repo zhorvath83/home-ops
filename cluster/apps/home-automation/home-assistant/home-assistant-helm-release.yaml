@@ -97,7 +97,8 @@ spec:
     persistence:
       config:
         enabled: true
-        existingClaim: home-assistant-data
+        emptyDir: {}
+        # existingClaim: home-assistant-data
     resources:
       requests:
         cpu: 100m
