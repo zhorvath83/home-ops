@@ -129,45 +129,45 @@ spec:
       #         subPath: custom.list
 
       volumes:
-      - name: pihole-data
-        persistentVolumeClaim:
-          claimName: pihole-data
-      - name: pihole-adlists-list
-        configMap:
-          defaultMode: 0644
-          name: pihole-adlists-list
-          items:
-            - key: adlists.list
-              path: adlists.list
-      - name: pihole-custom-list
-        configMap:
-          defaultMode: 0644
-          name: pihole-custom-list
-          items:
-            - key: custom.list
-              path: custom.list
-      - name: pihole-updatelists-conf
-        configMap:
-          defaultMode: 0666
-          name: pihole-updatelists-conf
-          items:
-            - key: pihole-updatelists.conf
-              path: pihole-updatelists.conf
-      - name: pihole-updatelists-schedule
-        configMap:
-          name: pihole-updatelists-schedule
-          items:
-            - key: pihole-updatelists-schedule
-              path: pihole-updatelists-schedule
-      - name: unbound-config
-        configMap:
-          name: unbound-config
-          items:
-            - key: unbound.conf
-              path: unbound.conf
-      - name: unbound-root-hints
-        configMap:
-          name: unbound-root-hints
-          items:
-            - key: root.hints
-              path: root.hints
+        - name: pihole-data
+          persistentVolumeClaim:
+            claimName: pihole-data
+        - name: pihole-adlists-list
+          configMap:
+            defaultMode: 0644
+            name: pihole-adlists-list
+            items:
+              - key: adlists.list
+                path: adlists.list
+        - name: pihole-custom-list
+          configMap:
+            defaultMode: 0644
+            name: pihole-custom-list
+            items:
+              - key: custom.list
+                path: custom.list
+        - name: pihole-updatelists-conf
+          configMap:
+            defaultMode: 0666
+            name: pihole-updatelists-conf
+            items:
+              - key: pihole-updatelists.conf
+                path: pihole-updatelists.conf
+        - name: pihole-updatelists-schedule
+          configMap:
+            name: pihole-updatelists-schedule
+            items:
+              - key: pihole-updatelists-schedule
+                path: pihole-updatelists-schedule
+        - name: unbound-config
+          configMap:
+            name: unbound-config
+            items:
+              - key: unbound.conf
+                path: unbound.conf
+        - name: unbound-root-hints
+          configMap:
+            name: unbound-root-hints
+            items:
+              - key: root.hints
+                path: root.hints
