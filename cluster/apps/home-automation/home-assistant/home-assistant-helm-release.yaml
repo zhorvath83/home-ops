@@ -42,6 +42,24 @@ spec:
     hostNetwork: true
     dnsPolicy: ClusterFirstWithHostNet
 
+    initContainers:
+      download-hass_config:
+        name: git-sync
+        image: k8s.gcr.io/git-sync/git-sync:v3.3.4
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: home-assistant-data
+          mountPath: /config
+        env:
+        - name: GIT_SYNC_REPO
+          value: https://github.com/zhorvath83/home-assistant-config
+        - name: GIT_SYNC_ROOT
+          value: /config
+        - name: GIT_SYNC_PERMISSIONS
+          value: "0777"
+        - name: GIT_SYNC_ONE_TIME
+          value: "true"
+
     service:
       main:
         externalTrafficPolicy: Local
@@ -56,7 +74,8 @@ spec:
     ingress:
       main:
         enabled: true
-        annotations: {}
+        annotations:
+          nginx.org/websocket-services: home-assistant
         hosts:
           - host: &host "homeassistant.${SECRET_DOMAIN}"
             paths:
