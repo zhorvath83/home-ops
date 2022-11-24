@@ -53,7 +53,7 @@ spec:
         image: k8s.gcr.io/git-sync/git-sync:v3.3.4
         imagePullPolicy: IfNotPresent
         volumeMounts:
-          - name: config-temp
+          - name: home-assistant-config-temp
             mountPath: /src/config
         env:
           - name: GIT_SYNC_REPO
