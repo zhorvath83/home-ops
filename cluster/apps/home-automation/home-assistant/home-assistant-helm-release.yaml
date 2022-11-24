@@ -34,6 +34,11 @@ spec:
       repository: ghcr.io/home-assistant/home-assistant
       tag: 2022.11.4
       pullPolicy: IfNotPresent
+    lifecycle:
+      postStart:
+        exec:
+          command:
+            ['/bin/sh', '-c', 'cp -rf /src/config/* /config']
     env:
       TZ: "${CLUSTER_TIMEZONE}"
     envFrom:
@@ -48,8 +53,8 @@ spec:
         image: k8s.gcr.io/git-sync/git-sync:v3.3.4
         imagePullPolicy: IfNotPresent
         volumeMounts:
-          - name: config
-            mountPath: /config
+          - name: config-temp
+            mountPath: /src/config
         env:
           - name: GIT_SYNC_REPO
             value: https://github.com/zhorvath83/home-assistant-config
@@ -97,8 +102,12 @@ spec:
     persistence:
       config:
         enabled: true
+        existingClaim: home-assistant-data
+        mountPath: /config
+      config-temp:
+        enabled: true
         emptyDir: {}
-        # existingClaim: home-assistant-data
+        mountPath: /src/config
     resources:
       requests:
         cpu: 100m
