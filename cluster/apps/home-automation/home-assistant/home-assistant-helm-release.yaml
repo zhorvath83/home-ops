@@ -50,7 +50,7 @@ spec:
     initContainers:
       download-hass_config:
         name: git-sync
-        image: k8s.gcr.io/git-sync/git-sync:v3.3.4
+        image: k8s.gcr.io/git-sync/git-sync:v3.3.5
         imagePullPolicy: IfNotPresent
         volumeMounts:
           - name: home-assistant-config-temp
