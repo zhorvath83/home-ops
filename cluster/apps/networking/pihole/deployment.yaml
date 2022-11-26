@@ -83,7 +83,7 @@ spec:
               subPath: pihole-updatelists-schedule
 
         - name: unbound
-          image: crazymax/unbound:1.16.3
+          image: crazymax/unbound:1.17.0
           ports:
             - containerPort: 5053
               name: unbound-dns-tcp
