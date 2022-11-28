@@ -33,7 +33,7 @@ spec:
           - 9.9.9.9
       containers:
         - name: pihole
-          image: jacklul/pihole:2022.11.1
+          image: jacklul/pihole:2022.11.2
           ports:
             - containerPort: 80
               name: pihole-web
