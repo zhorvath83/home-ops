@@ -69,12 +69,15 @@ spec:
           volumeMounts:
             - name: pihole-data
               mountPath: "/etc/pihole"
-            - name: pihole-adlists-list
+            - name: pihole-config
               mountPath: "/etc/pihole/adlists.list"
               subPath: adlists.list
-            - name: pihole-custom-list
+            - name: pihole-config
               mountPath: "/etc/pihole/custom.list"
               subPath: custom.list
+            - name: pihole-config
+              mountPath: "/etc/dnsmasq.d/10-subnet-dns.conf"
+              subPath: 10-subnet-dns.conf
             - name: pihole-updatelists-conf
               mountPath: "/etc/pihole-updatelists.conf"
               subPath: pihole-updatelists.conf
@@ -132,20 +135,17 @@ spec:
         - name: pihole-data
           persistentVolumeClaim:
             claimName: pihole-data
-        - name: pihole-adlists-list
+        - name: pihole-config
           configMap:
             defaultMode: 0644
-            name: pihole-adlists-list
+            name: pihole-config
             items:
               - key: adlists.list
                 path: adlists.list
-        - name: pihole-custom-list
-          configMap:
-            defaultMode: 0644
-            name: pihole-custom-list
-            items:
               - key: custom.list
                 path: custom.list
+              - key: 10-subnet-dns.conf
+                path: 10-subnet-dns.conf
         - name: pihole-updatelists-conf
           configMap:
             defaultMode: 0666

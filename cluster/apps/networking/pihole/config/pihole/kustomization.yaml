@@ -4,13 +4,11 @@ kind: Kustomization
 resources:
   - pihole-env-vars.yaml
 configMapGenerator:
-  - name: pihole-adlists-list
+  - name: pihole-config
     namespace: default
     files:
       - adlists.list
-  - name: pihole-custom-list
-    namespace: default
-    files:
       - custom.list
+      - 10-subnet-dns.conf
 generatorOptions:
   disableNameSuffixHash: true
