@@ -75,9 +75,9 @@ spec:
             - name: pihole-config
               mountPath: "/etc/pihole/custom.list"
               subPath: custom.list
-            - name: pihole-config
-              mountPath: "/etc/dnsmasq.d/10-subnet-dns.conf"
-              subPath: 10-subnet-dns.conf
+            # - name: pihole-config
+            #   mountPath: "/etc/dnsmasq.d/10-subnet-dns.conf"
+            #   subPath: 10-subnet-dns.conf
             - name: pihole-updatelists-conf
               mountPath: "/etc/pihole-updatelists.conf"
               subPath: pihole-updatelists.conf
