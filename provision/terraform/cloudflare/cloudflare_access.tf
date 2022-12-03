@@ -77,6 +77,26 @@ resource "cloudflare_access_policy" "private_website_bypass_policy" {
   }
 }
 
+## Private R2 downloads exclude from UserAuth
+resource "cloudflare_access_application" "private_r2_downloads" {
+  zone_id          = lookup(data.cloudflare_zones.domain.zones[0], "id")
+  name             = "Private R2 downloads"
+  domain           = "downloads.${data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]}"
+  type             = "self_hosted"
+}
+
+resource "cloudflare_access_policy" "private_r2_downloads_bypass_policy" {
+  application_id = cloudflare_access_application.flux_webhook.id
+  zone_id        = lookup(data.cloudflare_zones.domain.zones[0], "id")
+  name           = "Bypass"
+  precedence     = "1"
+  decision       = "bypass"
+
+  include {
+    everyone = true
+  }
+}
+
 ## Flux webhook exclude from UserAuth
 resource "cloudflare_access_application" "flux_webhook" {
   zone_id          = lookup(data.cloudflare_zones.domain.zones[0], "id")
