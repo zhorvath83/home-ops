@@ -68,7 +68,7 @@ spec:
         #       name: home-assistant-customcomponents
       containers:
         - name: home-assistant
-          image: homeassistant/home-assistant:13.4.2
+          image: homeassistant/home-assistant:2022.11.5
           resources:
             requests:
               cpu: 10m
