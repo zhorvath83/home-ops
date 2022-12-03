@@ -13,7 +13,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: home-assistant-web
+                name: home-assistant
                 port:
                   number: 80
   tls:
