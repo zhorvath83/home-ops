@@ -118,14 +118,14 @@ services:
   - name: Home & Media
     icon: fas fa-compact-disc
     items:
+      - name: Home Assistant
+        subtitle: Home automation
+        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/home-assistant.svg
+        url: https://ha.${SECRET_DOMAIN}
       - name: Tandoor recipes
         subtitle: Private recipe collection
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/tandoorrecipes.png
         url: https://recipes.${SECRET_DOMAIN}
-      - name: Home Assistant
-        subtitle: Home automation
-        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/home-assistant.svg
-        url: https://homeassistant.${SECRET_DOMAIN}
       - name: Jellyfin
         subtitle: Jellyfin media server
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/jellyfin.png
@@ -146,6 +146,12 @@ services:
         subtitle: Router WEB UI
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/router.png
         url: http://${CLUSTER_LAN_ROUTER_IP}
+      - name: Pi-hole
+        subtitle: Black hole for Internet adverts
+        tag: "AdBlocker"
+        tagstyle: "is-info"
+        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/pihole.png
+        url: https://dns.${SECRET_DOMAIN}
       - name: Hypervisor
         subtitle: Proxmox WEB UI
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/proxmox.png
@@ -162,14 +168,6 @@ services:
         subtitle: Distributed block storage
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/longhorn.png
         url: https://longhorn.${SECRET_DOMAIN}
-      - name: Pi-hole
-        subtitle: Black hole for Internet adverts
-        tag: "AdBlocker"
-        tagstyle: "is-info"
-        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/pihole.png
-        url: https://dns.${SECRET_DOMAIN}
-
-
       - name: Cloudflare
         subtitle: DNS / CDN
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/cloudflare.svg
