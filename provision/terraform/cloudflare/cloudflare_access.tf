@@ -86,7 +86,7 @@ resource "cloudflare_access_application" "private_r2_downloads" {
 }
 
 resource "cloudflare_access_policy" "private_r2_downloads_bypass_policy" {
-  application_id = cloudflare_access_application.flux_webhook.id
+  application_id = cloudflare_access_application.private_r2_downloads.id
   zone_id        = lookup(data.cloudflare_zones.domain.zones[0], "id")
   name           = "Bypass"
   precedence     = "1"
