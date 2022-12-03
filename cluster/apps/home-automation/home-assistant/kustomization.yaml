@@ -6,3 +6,5 @@ resources:
   - pvc.yaml
   # - home-assistant-helm-release.yaml
   - deployment.yaml
+  - service.yaml
+  - ingress.yaml
