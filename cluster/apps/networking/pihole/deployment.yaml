@@ -34,7 +34,7 @@ spec:
       hostAliases:
       - ip: "127.0.0.1"
         hostnames:
-        - "unbound.local"
+        - "unbound"
       containers:
         - name: pihole
           image: jacklul/pihole:2022.11.2
