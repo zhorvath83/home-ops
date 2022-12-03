@@ -4,8 +4,6 @@ kind: Ingress
 metadata:
   name: home-assistant
   namespace: default
-  annotations:
-    nginx.ingress.kubernetes.io/app-root: /admin
 spec:
   rules:
     - host: &host "ha.${SECRET_DOMAIN}"
