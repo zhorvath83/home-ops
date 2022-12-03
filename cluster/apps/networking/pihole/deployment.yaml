@@ -8,10 +8,6 @@ metadata:
     app.kubernetes.io/name: pihole
 spec:
   replicas: 1
-  hostAliases:
-  - ip: "127.0.0.1"
-    hostnames:
-    - "unbound.local"
   selector:
     matchLabels:
       app.kubernetes.io/name: pihole
@@ -35,6 +31,10 @@ spec:
           # upstream DNS used by pihole.
           - 127.0.0.1
           - 9.9.9.9
+      hostAliases:
+      - ip: "127.0.0.1"
+        hostnames:
+        - "unbound.local"
       containers:
         - name: pihole
           image: jacklul/pihole:2022.11.2
