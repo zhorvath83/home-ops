@@ -6,7 +6,6 @@ metadata:
   namespace: default
 spec:
   type: ClusterIP
-  externalTrafficPolicy: Local
   ports:
     - name: home-assistant-web
       protocol: TCP
