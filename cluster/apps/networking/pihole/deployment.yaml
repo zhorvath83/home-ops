@@ -8,6 +8,10 @@ metadata:
     app.kubernetes.io/name: pihole
 spec:
   replicas: 1
+  hostAliases:
+  - ip: "127.0.0.1"
+    hostnames:
+    - "unbound.local"
   selector:
     matchLabels:
       app.kubernetes.io/name: pihole
