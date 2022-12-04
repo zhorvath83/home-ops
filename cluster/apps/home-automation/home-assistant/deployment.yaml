@@ -41,31 +41,31 @@ spec:
         - name: home-assistant-config
           configMap:
             name: home-assistant-config
-      initContainers:
-        - name: cc-dwains-dashboard
-          image: alpine/git
-          command: ["/bin/sh"]
-          args:
-            - -c
-            - |
-              git clone --branch 3.0 https://github.com/dwainscheeren/dwains-lovelace-dashboard.git /config/custom_components/dwains_dashboard_repo 
-              mv /config/custom_components/dwains_dashboard_repo/custom_components/dwains_dashboard/ /config/custom_components/dwains_dashboard 
-              rm -rf /config/custom_components/dwains_dashboard_repo
-          volumeMounts:
-            - mountPath: /config/custom_components
-              name: home-assistant-customcomponents
-        # - name: cc-alarmo
-        #   image: alpine/git
-        #   command: ["/bin/sh"]
-        #   args:
-        #     - -c
-        #     - |
-        #       git clone --branch v1.9.6 https://github.com/nielsfaber/alarmo.git /config/custom_components/alarmo_repo 
-        #       mv /config/custom_components/alarmo_repo/custom_components/alarmo/ /config/custom_components/alarmo 
-        #       rm -rf /config/custom_components/alarmo_repo
-        #   volumeMounts:
-        #     - mountPath: /config/custom_components
-        #       name: home-assistant-customcomponents
+      # initContainers:
+      #   - name: cc-dwains-dashboard
+      #     image: alpine/git
+      #     command: ["/bin/sh"]
+      #     args:
+      #       - -c
+      #       - |
+      #         git clone --branch 3.0 https://github.com/dwainscheeren/dwains-lovelace-dashboard.git /config/custom_components/dwains_dashboard_repo 
+      #         mv /config/custom_components/dwains_dashboard_repo/custom_components/dwains_dashboard/ /config/custom_components/dwains_dashboard 
+      #         rm -rf /config/custom_components/dwains_dashboard_repo
+      #     volumeMounts:
+      #       - mountPath: /config/custom_components
+      #         name: home-assistant-customcomponents
+      #   - name: cc-alarmo
+      #     image: alpine/git
+      #     command: ["/bin/sh"]
+      #     args:
+      #       - -c
+      #       - |
+      #         git clone --branch v1.9.6 https://github.com/nielsfaber/alarmo.git /config/custom_components/alarmo_repo 
+      #         mv /config/custom_components/alarmo_repo/custom_components/alarmo/ /config/custom_components/alarmo 
+      #         rm -rf /config/custom_components/alarmo_repo
+      #     volumeMounts:
+      #       - mountPath: /config/custom_components
+      #         name: home-assistant-customcomponents
       containers:
         - name: home-assistant
           image: homeassistant/home-assistant:2022.11.5

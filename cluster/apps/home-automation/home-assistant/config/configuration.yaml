@@ -8,7 +8,7 @@ homeassistant:
 http:
   server_host: 0.0.0.0
   ip_ban_enabled: true
-  login_attempts_threshold: 100
+  login_attempts_threshold: 10
   use_x_forwarded_for: true
   trusted_proxies:
     - 10.0.0.0/8
