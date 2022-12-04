@@ -121,7 +121,7 @@ services:
       - name: Home Assistant
         subtitle: Home automation
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/home-assistant.svg
-        url: https://ha.${SECRET_DOMAIN}
+        url: https://hass.${SECRET_DOMAIN}
       - name: Tandoor recipes
         subtitle: Private recipe collection
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/tandoorrecipes.png

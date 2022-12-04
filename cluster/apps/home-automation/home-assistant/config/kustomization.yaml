@@ -9,5 +9,10 @@ configMapGenerator:
     namespace: default
     files:
       - configuration.yaml
+# secretGenerator:
+#   - name: home-assistant-secret
+#     namespace: default
+#     files:
+#       - secrets.sops.yaml
 generatorOptions:
   disableNameSuffixHash: true
