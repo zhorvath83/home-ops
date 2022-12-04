@@ -28,27 +28,6 @@ spec:
         fsGroup: 1000
         fsGroupChangePolicy: "OnRootMismatch"
       #hostNetwork: true
-      volumes:
-        - name: home-assistant-data
-          persistentVolumeClaim:
-            claimName: home-assistant-data
-        - name: home-assistant-customcomponents
-          emptyDir: {}
-        # - name: home-assistant-binarysensors
-        #   configMap:
-        #     name: home-assistant-binarysensors
-        # - name: home-assistant-templates
-        #   configMap:
-        #     name: home-assistant-templates
-        - name: home-assistant-config
-          configMap:
-            name: home-assistant-config
-        - name: home-assistant-secret
-          secret:
-            secretName: home-assistant-secret
-            items:
-              - key: secrets.yaml
-                path: secrets.yaml
       initContainers:
         - name: cc-dwains-dashboard
           image: alpine/git
@@ -115,3 +94,22 @@ spec:
             - name: home-assistant-secret
               mountPath: /config/secrets.yaml
               subPath: secrets.yaml
+
+      volumes:
+        - name: home-assistant-data
+          persistentVolumeClaim:
+            claimName: home-assistant-data
+        - name: home-assistant-customcomponents
+          emptyDir: {}
+        # - name: home-assistant-binarysensors
+        #   configMap:
+        #     name: home-assistant-binarysensors
+        # - name: home-assistant-templates
+        #   configMap:
+        #     name: home-assistant-templates
+        - name: home-assistant-config
+          configMap:
+            name: home-assistant-config
+        - name: home-assistant-secret
+          secret:
+            secretName: home-assistant-secret
