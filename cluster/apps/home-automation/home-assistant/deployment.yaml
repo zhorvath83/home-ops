@@ -79,11 +79,11 @@ spec:
               name: http
               protocol: TCP
           volumeMounts:
+            # - name: home-assistant-data
+            #   mountPath: /config
+            #   subPath: config
             - name: home-assistant-customcomponents
               mountPath: /config/custom_components
-            - name: home-assistant-data
-              mountPath: /config
-              subPath: config
             # - mountPath: /config/binarysensors
             #   name: home-assistant-binarysensors
             # - mountPath: /config/templates
