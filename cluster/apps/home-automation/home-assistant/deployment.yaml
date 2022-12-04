@@ -94,6 +94,7 @@ spec:
             - name: home-assistant-secret
               mountPath: /config/secrets.yaml
               subPath: secrets.yaml
+              readOnly: true
       volumes:
         - name: home-assistant-data
           persistentVolumeClaim:
