@@ -46,6 +46,9 @@ spec:
         - name: home-assistant-secret
           secret:
             secretName: home-assistant-secret
+            items:
+              - key: secrets.yaml
+                path: secrets.yaml
       initContainers:
         - name: cc-dwains-dashboard
           image: alpine/git
