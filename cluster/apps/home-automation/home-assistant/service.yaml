@@ -4,6 +4,9 @@ kind: Service
 metadata:
   name: home-assistant
   namespace: default
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: |-
+      ${CLUSTER_SVC_HOMEASSISTANT_IP}
 spec:
   type: ClusterIP
   ports:
