@@ -4,6 +4,8 @@ kind: Ingress
 metadata:
   name: home-assistant
   namespace: default
+  annotations:
+    nginx.ingress.kubernetes.io/backend-protocol: HTTP
 spec:
   rules:
     - host: &host "ha.${SECRET_DOMAIN}"
