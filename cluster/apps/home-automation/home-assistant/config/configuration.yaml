@@ -1,5 +1,17 @@
 homeassistant:
+  name: Home
+  external_url: https://hass.${SECRET_DOMAIN}
+  internal_url: http://hass.${CLUSTER_LAN_DOMAIN}
+  country: HU
+  temperature_unit: C
+  elevation: !env_var ELEVATION
+  unit_system: metric
+  latitude: !env_var LATITUDE
+  longitude: !env_var LONGITUDE
+  time_zone: ${CLUSTER_TIMEZONE}
+
   auth_providers:
+    - type: homeassistant
     - type: trusted_networks
       trusted_networks:
         - 10.0.0.0/8
@@ -8,7 +20,7 @@ homeassistant:
 http:
   server_host: 0.0.0.0
   ip_ban_enabled: true
-  login_attempts_threshold: 10
+  login_attempts_threshold: 3
   use_x_forwarded_for: true
   trusted_proxies:
     - 10.0.0.0/8

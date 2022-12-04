@@ -69,9 +69,12 @@ spec:
             limits:
               cpu: 3000m
               memory: 1024Mi
+          env:
+            - name: TZ
+              value: "${CLUSTER_TIMEZONE}"
           envFrom:
-            - configMapRef:
-                name: home-assistant-env-vars
+            - secretKeyRef:
+                name: home-assistant-secret
           # securityContext:
           #   privileged: true
           ports:
@@ -79,9 +82,9 @@ spec:
               name: http
               protocol: TCP
           volumeMounts:
-            # - name: home-assistant-data
-            #   mountPath: /config
-            #   subPath: config
+            - name: home-assistant-data
+              mountPath: /config
+              subPath: config
             - name: home-assistant-customcomponents
               mountPath: /config/custom_components
             # - mountPath: /config/binarysensors
@@ -91,10 +94,6 @@ spec:
             - name: home-assistant-config
               mountPath: /config/configuration.yaml
               subPath: configuration.yaml
-            - name: home-assistant-secret
-              mountPath: /config/secrets.yaml
-              subPath: secrets.yaml
-              readOnly: true
       volumes:
         - name: home-assistant-data
           persistentVolumeClaim:
@@ -110,9 +109,3 @@ spec:
         - name: home-assistant-config
           configMap:
             name: home-assistant-config
-        - name: home-assistant-secret
-          secret:
-            secretName: home-assistant-secret
-            items:
-              - key: secrets.yaml
-                path: secrets.yaml
