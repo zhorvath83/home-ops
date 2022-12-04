@@ -8,7 +8,7 @@ metadata:
     metallb.universe.tf/loadBalancerIPs: |-
       ${CLUSTER_SVC_HOMEASSISTANT_IP}
 spec:
-  type: ClusterIP
+  type: LoadBalancer
   ports:
     - protocol: TCP
       port: 8123
