@@ -1,27 +1,70 @@
 # yamllint disable
 homeassistant:
+  # Name of the location where Home Assistant is running
   name: Home
   external_url: https://hass.${SECRET_DOMAIN}
   internal_url: http://hass.${CLUSTER_LAN_DOMAIN}
+  # Pick yours from here: http://en.wikipedia.org/wiki/List_of_tz_database_time_zones
   time_zone: ${CLUSTER_TIMEZONE}
   unit_system: metric
   currency: HUF
   temperature_unit: C
-  elevation: !env_var ELEVATION
+  # Location required to calculate the time the sun rises and sets
   latitude: !env_var LATITUDE
   longitude: !env_var LONGITUDE
+  # Impacts weather/sunrise data (altitude above sea level in meters)
+  elevation: !env_var ELEVATION
 
   auth_providers:
     - type: homeassistant
     - type: trusted_networks
       trusted_networks:
-        - 10.0.0.0/8
-        - 192.168.0.0/16
+        - 192.168.1.0/24
+  auth_mfa_modules:
+    - type: totp
 
 http:
+  server_port: 8123
   server_host: 0.0.0.0
   ip_ban_enabled: true
-  login_attempts_threshold: 3
+  login_attempts_threshold: 2
   use_x_forwarded_for: true
   trusted_proxies:
     - 10.0.0.0/8
+
+logger:
+  default: warn
+
+mobile_app:
+
+# Enables the frontend
+frontend:
+
+my:
+
+mqtt:
+  broker: mqtt.default.svc.cluster.local
+  port: 1883
+  client_id: home-assistant
+  keepalive: 60
+  username: !env_var MQTT_USERNAME
+  password: !env_var MQTT_PASSWORD
+
+recorder:
+  purge_days: 7
+
+# Discover some devices automatically
+discovery:
+
+# Enables support for tracking state changes over time.
+history:
+
+# View all events in a logbook
+logbook:
+
+# Track the sun
+sun:
+
+media_player:
+
+notify:
