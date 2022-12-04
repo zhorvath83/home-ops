@@ -51,7 +51,7 @@ mqtt:
   password: !env_var MQTT_PASSWORD
 
 recorder:
-  purge_days: 7
+  purge_keep_days: 7
 
 # Discover some devices automatically
 discovery:
