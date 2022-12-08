@@ -3,7 +3,7 @@ kind: Deployment
 apiVersion: apps/v1
 metadata:
   name: code-server
-  namespace: selfhosted
+  namespace: default
   labels:
     app.kubernetes.io/name: code-server
 spec:
@@ -51,9 +51,9 @@ spec:
           ports:
             - containerPort: 8080
               name: code-server
-          volumeMounts:
-            - name: code-server-data
-              mountPath: /home/coder
+          #volumeMounts:
+          #  - name: code-server-data
+          #    mountPath: /home/coder
       volumes:
         - name: code-server-data
           persistentVolumeClaim:
