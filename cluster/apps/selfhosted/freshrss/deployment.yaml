@@ -45,7 +45,7 @@ spec:
 
       containers:
         - name: freshrss
-          image: freshrss/freshrss:1.20.1-alpine
+          image: freshrss/freshrss:1.20.2-alpine
           imagePullPolicy: IfNotPresent
           # https://github.com/FreshRSS/FreshRSS/tree/edge/Docker#docker-compose
           env:
