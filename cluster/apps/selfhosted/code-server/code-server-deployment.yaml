@@ -34,6 +34,9 @@ spec:
               value: ${CLUSTER_TIMEZONE}
             - name: PASSWORD
               value: ${SECRET_CODE_SERVER_PWD}
+              # Hide Getting Started sceen
+            - name: CS_DISABLE_GETTING_STARTED_OVERRIDE
+              value: "true"
           livenessProbe:
             httpGet:
               port: 8080
