@@ -62,10 +62,10 @@ spec:
           volumeMounts:
             - name: code-server-data
               mountPath: /home/coder/projects
-            - name: code-server-secret_vol1
+            - name: code-server-secret-vol1
               mountPath: /home/coder/.config/sops/age/keys.txt
               subPath: keys.txt
-            - name: code-server-secret_vol2
+            - name: code-server-secret-vol2
               mountPath: /home/coder/.ssh/id_rsa
               subPath: id_rsa
       volumes:
