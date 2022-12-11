@@ -40,6 +40,8 @@ spec:
               # Needed for  MichaelCurrin/auto-commit-msg extension
             - name: GIT_DISCOVERY_ACROSS_FILESYSTEM
               value: "1"
+            - name: ENTRYPOINTD
+              value: "${HOME}/entrypoint.d"
           livenessProbe:
             httpGet:
               port: 8080
