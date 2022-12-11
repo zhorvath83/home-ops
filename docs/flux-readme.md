@@ -8,13 +8,17 @@
 2.)Pre-create the flux-system namespace
 `kubectl create namespace flux-system`
 
-3.)Add the Flux GPG key in-order for Flux to decrypt SOPS secrets
+3.)Add the Flux age key in-order for Flux to decrypt SOPS secrets
+
+Create age public / private key:
+`age-keygen -o age.agekey`
+
+
 ```
-export KEY_FP=...
-gpg --export-secret-keys --armor "${KEY_FP}" |
-sudo kubectl create secret generic sops-gpg \
---namespace=flux-system \
---from-file=sops.asc=/dev/stdin
+mkdir -p ~/.config/sops/age
+mv age.agekey ~/.config/sops/age/keys.txt
+echo "export SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt" | tee -a "$HOME/.profile" 
+source ~/.profile
 ```
 
 4.)Pull repo source

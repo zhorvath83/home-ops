@@ -2,12 +2,10 @@
 creation_rules:
   - path_regex: cluster/.*\.sops\.ya?ml
     encrypted_regex: "^(data|stringData)$"
-    pgp: >-
-      D47F3549C509AF39E00BE4422182ED78F377744E
-  - path_regex: provision/.*\.sops\.ya?ml
-    unencrypted_regex: "^(kind)$"
-    pgp: >-
-      D47F3549C509AF39E00BE4422182ED78F377744E
-  - path_regex: provision/.*\.sops\.*
-    pgp: >-
-      D47F3549C509AF39E00BE4422182ED78F377744E
+    key_groups:
+      - age:
+          - age1el7uu5gzqsdp8wz7y9mcpqsy08l894twxg0jm5cm0jps3hkp2veqdpn5az
+  - path_regex: provision/.*\.sops\.conf
+    key_groups:
+      - age:
+          - age1el7uu5gzqsdp8wz7y9mcpqsy08l894twxg0jm5cm0jps3hkp2veqdpn5az
