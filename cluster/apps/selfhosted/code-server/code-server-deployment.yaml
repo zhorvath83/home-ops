@@ -74,6 +74,5 @@ spec:
             claimName: code-server-data
         - name: code-server-secret
           secret:
-            secretName:
-              defaultMode: 0600
-              name: code-server-secret
+            secretName: code-server-secret
+            defaultMode: 0600
