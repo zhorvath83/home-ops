@@ -65,9 +65,9 @@ spec:
             - name: code-server-secret-vol1
               mountPath: /home/coder/.config/sops/age/keys.txt
               subPath: keys.txt
-            #- name: code-server-secret-vol2
-            #  mountPath: /home/coder/.ssh/id_ed25519_git
-            #  subPath: id_ed25519_git
+            - name: code-server-secret-vol2
+              mountPath: /home/coder/.ssh/id_ed25519_git
+              subPath: id_ed25519_git
       volumes:
         - name: code-server-data
           persistentVolumeClaim:
