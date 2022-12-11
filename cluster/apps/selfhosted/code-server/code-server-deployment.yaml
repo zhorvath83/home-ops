@@ -27,7 +27,7 @@ spec:
         fsGroupChangePolicy: "OnRootMismatch"
       containers:
         - name: code-server
-          image: ghcr.io/zhorvath83/code-server:4.8.2.156
+          image: ghcr.io/zhorvath83/code-server:4.8.2.157
           imagePullPolicy: IfNotPresent
           env:
             - name: TZ
@@ -40,8 +40,8 @@ spec:
               # Needed for  MichaelCurrin/auto-commit-msg extension
             - name: GIT_DISCOVERY_ACROSS_FILESYSTEM
               value: "1"
-            - name: ENTRYPOINTD
-              value: "${HOME}/entrypoint.d"
+            #- name: ENTRYPOINTD
+            #  value: "/entrypoint.d"
           livenessProbe:
             httpGet:
               port: 8080
