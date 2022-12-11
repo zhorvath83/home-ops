@@ -27,7 +27,7 @@ spec:
         fsGroupChangePolicy: "OnRootMismatch"
       containers:
         - name: code-server
-          image: ghcr.io/zhorvath83/code-server:4.8.2.151
+          image: ghcr.io/zhorvath83/code-server:4.8.2.156
           imagePullPolicy: IfNotPresent
           env:
             - name: TZ
@@ -57,9 +57,9 @@ spec:
           ports:
             - containerPort: 8080
               name: code-server
-          #volumeMounts:
-          #  - name: code-server-data
-          #    mountPath: /home/coder/projects
+          volumeMounts:
+            - name: code-server-data
+              mountPath: /home/coder/projects
       volumes:
         - name: code-server-data
           persistentVolumeClaim:
