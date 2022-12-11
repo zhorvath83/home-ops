@@ -62,7 +62,17 @@ spec:
           volumeMounts:
             - name: code-server-data
               mountPath: /home/coder/projects
+            - name: code-server-secret
+              mountPath: /home/coder/.config/sops/age/keys.txt
+              subPath: keys.txt
+            - name: code-server-secret
+              mountPath: /home/coder/.ssh/id_rsa
+              subPath: id_rsa
       volumes:
         - name: code-server-data
           persistentVolumeClaim:
             claimName: code-server-data
+        - name: code-server-secret
+          secretName:
+            defaultMode: 0600
+            name: code-server-secret
