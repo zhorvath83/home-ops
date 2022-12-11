@@ -72,11 +72,11 @@ spec:
         - name: code-server-data
           persistentVolumeClaim:
             claimName: code-server-data
-        - name: code-server-secret_vol1
+        - name: code-server-secret-vol1
           secret:
             secretName: code-server-secret
             defaultMode: 0600
-        - name: code-server-secret_vol2
+        - name: code-server-secret-vol2
           secret:
             secretName: code-server-secret
             defaultMode: 0600
