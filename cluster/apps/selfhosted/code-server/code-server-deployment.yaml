@@ -6,6 +6,8 @@ metadata:
   namespace: default
   labels:
     app.kubernetes.io/name: code-server
+  annotations:
+    reloader.stakater.com/auto: "true"
 spec:
   replicas: 1
   strategy:
