@@ -42,8 +42,10 @@ spec:
               # Needed for  MichaelCurrin/auto-commit-msg extension
             - name: GIT_DISCOVERY_ACROSS_FILESYSTEM
               value: "1"
-            #- name: ENTRYPOINTD
-            #  value: "/entrypoint.d"
+            - name: ENTRYPOINTD
+              value: "/home/coder/entrypoint.d"
+            - name: DEFAULT_WORKSPACE
+              value: "/home/coder/projects/kube-cluster"
           livenessProbe:
             httpGet:
               port: 8080
