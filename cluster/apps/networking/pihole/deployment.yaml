@@ -32,9 +32,9 @@ spec:
           - 127.0.0.1
           - 9.9.9.9
       hostAliases:
-      - ip: "127.0.0.1"
-        hostnames:
-        - "unbound"
+        - ip: "127.0.0.1"
+          hostnames:
+            - "unbound"
       containers:
         - name: pihole
           image: jacklul/pihole:2022.11.2

@@ -27,7 +27,7 @@ spec:
         runAsGroup: 1000
         fsGroup: 1000
         fsGroupChangePolicy: "OnRootMismatch"
-      #hostNetwork: true
+      # hostNetwork: true
       initContainers:
         - name: cc-dwains-dashboard
           image: alpine/git
@@ -35,30 +35,30 @@ spec:
           args:
             - -c
             - |
-              git clone --branch 3.0 https://github.com/dwainscheeren/dwains-lovelace-dashboard.git /config/custom_components/dwains_dashboard_repo 
-              mv /config/custom_components/dwains_dashboard_repo/custom_components/dwains_dashboard/ /config/custom_components/dwains_dashboard 
+              git clone --branch 3.0 https://github.com/dwainscheeren/dwains-lovelace-dashboard.git /config/custom_components/dwains_dashboard_repo
+              mv /config/custom_components/dwains_dashboard_repo/custom_components/dwains_dashboard/ /config/custom_components/dwains_dashboard
               rm -rf /config/custom_components/dwains_dashboard_repo
           volumeMounts:
             - mountPath: /config/custom_components
               name: home-assistant-customcomponents
-        # - name: cc-alarmo
-        #   image: alpine/git
-        #   command: ["/bin/sh"]
-        #   args:
-        #     - -c
-        #     - |
-        #       git clone --branch v1.9.6 https://github.com/nielsfaber/alarmo.git /config/custom_components/alarmo_repo 
-        #       mv /config/custom_components/alarmo_repo/custom_components/alarmo/ /config/custom_components/alarmo 
-        #       rm -rf /config/custom_components/alarmo_repo
-        #   volumeMounts:
-        #     - mountPath: /config/custom_components
-        #       name: home-assistant-customcomponents
-        # - name: permission-fix
-        #   image: busybox
-        #   command: ["sh", "-c", "chown -R 1001:1001 /config"]
-        #   volumeMounts:
-        #   - name: storage
-        #     mountPath: /config
+      # - name: cc-alarmo
+      #   image: alpine/git
+      #   command: ["/bin/sh"]
+      #   args:
+      #     - -c
+      #     - |
+      #       git clone --branch v1.9.6 https://github.com/nielsfaber/alarmo.git /config/custom_components/alarmo_repo
+      #       mv /config/custom_components/alarmo_repo/custom_components/alarmo/ /config/custom_components/alarmo
+      #       rm -rf /config/custom_components/alarmo_repo
+      #   volumeMounts:
+      #     - mountPath: /config/custom_components
+      #       name: home-assistant-customcomponents
+      # - name: permission-fix
+      #   image: busybox
+      #   command: ["sh", "-c", "chown -R 1001:1001 /config"]
+      #   volumeMounts:
+      #   - name: storage
+      #     mountPath: /config
       containers:
         - name: home-assistant
           image: homeassistant/home-assistant:2022.11.5
