@@ -72,6 +72,9 @@ spec:
             - name: code-server-secret-vol2
               mountPath: /home/coder/.ssh/id_ed25519_git
               subPath: id_ed25519_git
+            - name: code-server-secret-vol3
+              mountPath: /home/coder/.terraform.d/credentials.tfrc.json
+              subPath: credentials.tfrc.json
       volumes:
         - name: code-server-data
           persistentVolumeClaim:
@@ -81,6 +84,10 @@ spec:
             secretName: code-server-secret
             defaultMode: 0600
         - name: code-server-secret-vol2
+          secret:
+            secretName: code-server-secret
+            defaultMode: 0600
+        - name: code-server-secret-vol3
           secret:
             secretName: code-server-secret
             defaultMode: 0600

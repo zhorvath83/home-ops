@@ -20,44 +20,44 @@ resource "cloudflare_record" "cname_www" {
 # Mx records
 #
 
-resource "cloudflare_record" "mx_cloudflare_1" {
+resource "cloudflare_record" "mx_record_1" {
   name    = data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]
   zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
-  value   = "route1.mx.cloudflare.net"
+  value   = "mx.zoho.eu"
   proxied = false
   type    = "MX"
   ttl     = 1
-  priority = 19
+  priority = 10
 }
 
-resource "cloudflare_record" "mx_cloudflare_2" {
+resource "cloudflare_record" "mx_record_2" {
   name    = data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]
   zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
-  value   = "route2.mx.cloudflare.net"
+  value   = "mx2.zoho.eu"
   proxied = false
   type    = "MX"
   ttl     = 1
-  priority = 78
+  priority = 20
 }
 
-resource "cloudflare_record" "mx_cloudflare_3" {
+resource "cloudflare_record" "mx_record_3" {
   name    = data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]
   zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
-  value   = "route3.mx.cloudflare.net"
+  value   = "mx3.zoho.eu"
   proxied = false
   type    = "MX"
   ttl     = 1
-  priority = 96
+  priority = 50
 }
 
 #
 # SPF record
 #
 
-resource "cloudflare_record" "txt_mailjet_spf" {
+resource "cloudflare_record" "txt_record_spf" {
   name    = data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]
   zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
-  value   = "v=spf1 include:_spf.mx.cloudflare.net include:spf.mailjet.com ~all"
+  value   = "v=spf1 include:zoho.eu ~all"
   proxied = false
   type    = "TXT"
   ttl     = 1
@@ -67,10 +67,10 @@ resource "cloudflare_record" "txt_mailjet_spf" {
 # DKIM record
 #
 
-resource "cloudflare_record" "txt_mailjet_dkim" {
-  name    = "mailjet._domainkey"
+resource "cloudflare_record" "txt_record_dkim" {
+  name    = "zmail._domainkey"
   zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
-  value   = "k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC1BJw7Se7ThsNr7viitwLgZowXqql4AwfXf1hZ8FiMa+6KbrMHCXxngw3Qp5OUQ24/Etg9XJ7kfEfx4CpONTg+m/fdBnbFlWa+BZFZQdnC8cNZj7ETd9GDm04pKo/Ph3zXRe0TyEpp+tCBmi5sY60o+r3rg5BXk5X8r4/11iOa/QIDAQAB"
+  value   = "v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCg59RywF6hZDuGEeXBDECSH7o8FJY5HNItGbT1Wy2AGCjrfR0GV1GR67PKe5+Qx5Eb2tI7Fs9Ti3RH5xPEz8Q4J5muhhUbjl2qveH4EREv+J5fcKRG85+wxWHBK6O1QU8XXIdcT1nfiUvozaZkTXm5rZ6p3BXWu+xVWBvoKem9uQIDAQAB"
   proxied = false
   type    = "TXT"
   ttl     = 1
@@ -80,10 +80,10 @@ resource "cloudflare_record" "txt_mailjet_dkim" {
 # DMARC record
 #
 
-resource "cloudflare_record" "txt_dmarc" {
+resource "cloudflare_record" "txt_record_dmarc" {
   name    = "_dmarc"
   zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
-  value   = "v=DMARC1; p=reject; rua=mailto:horvathzoltan-d@dmarc.report-uri.com; fo=1"
+  value   = "v=DMARC1; p=reject; rua=mailto:530aa4aa3c83.a@dmarcinput.com; ruf=mailto:530aa4aa3c83.a@dmarcinput.com; sp=reject; adkim=s; aspf=s; pct=100"
   proxied = false
   type    = "TXT"
   ttl     = 1
