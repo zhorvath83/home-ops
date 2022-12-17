@@ -23,31 +23,31 @@ resource "cloudflare_record" "cname_www" {
 resource "cloudflare_record" "mx_record_1" {
   name    = data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]
   zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
-  value   = "mx.zoho.eu"
+  value   = "route1.mx.cloudflare.net"
   proxied = false
   type    = "MX"
   ttl     = 1
-  priority = 10
+  priority = 19
 }
 
 resource "cloudflare_record" "mx_record_2" {
   name    = data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]
   zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
-  value   = "mx2.zoho.eu"
+  value   = "route2.mx.cloudflare.net"
   proxied = false
   type    = "MX"
   ttl     = 1
-  priority = 20
+  priority = 78
 }
 
 resource "cloudflare_record" "mx_record_3" {
   name    = data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]
   zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
-  value   = "mx3.zoho.eu"
+  value   = "route3.mx.cloudflare.net"
   proxied = false
   type    = "MX"
   ttl     = 1
-  priority = 50
+  priority = 96
 }
 
 #
@@ -57,7 +57,7 @@ resource "cloudflare_record" "mx_record_3" {
 resource "cloudflare_record" "txt_record_spf" {
   name    = data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]
   zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
-  value   = "v=spf1 include:zoho.eu ~all"
+  value   = "v=spf1 include:_spf.mx.cloudflare.net ~all"
   proxied = false
   type    = "TXT"
   ttl     = 1
@@ -68,9 +68,9 @@ resource "cloudflare_record" "txt_record_spf" {
 #
 
 resource "cloudflare_record" "txt_record_dkim" {
-  name    = "zmail._domainkey"
+  name    = "20221216235325pm._domainkey"
   zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
-  value   = "v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCg59RywF6hZDuGEeXBDECSH7o8FJY5HNItGbT1Wy2AGCjrfR0GV1GR67PKe5+Qx5Eb2tI7Fs9Ti3RH5xPEz8Q4J5muhhUbjl2qveH4EREv+J5fcKRG85+wxWHBK6O1QU8XXIdcT1nfiUvozaZkTXm5rZ6p3BXWu+xVWBvoKem9uQIDAQAB"
+  value   = "k=rsa;p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCLdSPNvh5DlPT4jCbXPQbohbZ9Nc+dzRXh7P7ldBxjL4TEQ9tatnsvFupI36gSrJ/2az4cLvwR72gvQMMbCwt11sVUpjEWeVnpDFquH/yvI6uedDsQpUQdS6BorMdVgNQSczCtQ0goQT2Wu6cZXFzHEG9RR8LTPfcHLcc3ImDUCwIDAQAB"
   proxied = false
   type    = "TXT"
   ttl     = 1
@@ -86,5 +86,14 @@ resource "cloudflare_record" "txt_record_dmarc" {
   value   = "v=DMARC1; p=reject; rua=mailto:530aa4aa3c83.a@dmarcinput.com; ruf=mailto:530aa4aa3c83.a@dmarcinput.com; sp=reject; adkim=s; aspf=s; pct=100"
   proxied = false
   type    = "TXT"
+  ttl     = 1
+}
+
+resource "cloudflare_record" "cname_bounce" {
+  name    = "bounce"
+  zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
+  value   = "pm.mtasv.net"
+  proxied = false
+  type    = "CNAME"
   ttl     = 1
 }
