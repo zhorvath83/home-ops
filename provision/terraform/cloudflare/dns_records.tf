@@ -83,14 +83,14 @@ resource "cloudflare_record" "txt_record_dkim" {
 resource "cloudflare_record" "txt_record_dmarc" {
   name    = "_dmarc"
   zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
-  value   = "v=DMARC1; p=reject; rua=mailto:530aa4aa3c83.a@dmarcinput.com; ruf=mailto:530aa4aa3c83.a@dmarcinput.com; sp=reject; adkim=s; aspf=s; pct=100"
+  value   = "v=DMARC1; p=reject; sp=reject; rua=mailto:530aa4aa3c83.a@dmarcinput.com; ruf=mailto:530aa4aa3c83.a@dmarcinput.com"
   proxied = false
   type    = "TXT"
   ttl     = 1
 }
 
-resource "cloudflare_record" "cname_bounce" {
-  name    = "bounce"
+resource "cloudflare_record" "cname_mail_return_path" {
+  name    = "pm_bounces"
   zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
   value   = "pm.mtasv.net"
   proxied = false
