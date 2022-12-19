@@ -1,14 +1,33 @@
 dns_mx_records = {
     mx_record_1 = {
-      server    = "route1.mx.cloudflare.net"
+      host    = "route1.mx.cloudflare.net"
       priority  = 19
     },
     mx_record_2 = {
-      server    = "route2.mx.cloudflare.net"
+      host    = "route2.mx.cloudflare.net"
       priority  = 78
     },
     mx_record_3 = {
-      server    = "route3.mx.cloudflare.net"
+      host    = "route3.mx.cloudflare.net"
       priority  = 96
     }
 }
+
+mail_mta_sts_params = {
+  mode = "testing" # Sending MTA policy application, https://tools.ietf.org/html/rfc8461#section-5
+  max_age = 604800 # 1 week
+  rua_mail = "35be510b@in.mailhardener.com"
+}
+
+dns_spf_record_value = "v=spf1 include:_spf.mx.cloudflare.net -all"
+
+dns_dkim_record_params = {
+  name = "20221216235325pm._domainkey"
+  value = "k=rsa;p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCLdSPNvh5DlPT4jCbXPQbohbZ9Nc+dzRXh7P7ldBxjL4TEQ9tatnsvFupI36gSrJ/2az4cLvwR72gvQMMbCwt11sVUpjEWeVnpDFquH/yvI6uedDsQpUQdS6BorMdVgNQSczCtQ0goQT2Wu6cZXFzHEG9RR8LTPfcHLcc3ImDUCwIDAQAB"
+}
+
+dns_dmarc_record_value = "v=DMARC1; p=reject; sp=reject; rua=mailto:530aa4aa3c83.a@dmarcinput.com; ruf=mailto:530aa4aa3c83.f@dmarcinput.com"
+
+dns_mail_return_path_target = "pm.mtasv.net"
+
+private_website_target_url = "private-website-93q.pages.dev"

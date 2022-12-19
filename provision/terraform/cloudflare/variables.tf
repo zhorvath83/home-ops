@@ -5,9 +5,48 @@
 
 variable "dns_mx_records" {
   type = map(object({
-    server = string
+    host = string
     priority = number
   }))
 
-  description = "List of permitted MX hosts"
+  description = "Permitted MX hosts"
+}
+
+variable "dns_spf_record_value" {
+  description = "Value of SPF DNS record."
+  type        = string
+}
+
+variable "dns_dkim_record_params" {
+  type = object({
+    name = string
+    value = string
+  })
+
+  description = "Params of DKIM DNS record."
+}
+
+variable "dns_dmarc_record_value" {
+  description = "Value of DMARC DNS record."
+  type        = string
+}
+
+variable "dns_mail_return_path_target" {
+  description = "Value of mail return path CNAME DNS record."
+  type        = string
+}
+
+variable "mail_mta_sts_params" {
+  type = object({
+    mode = string
+    max_age = number
+    rua_mail = string
+  })
+
+  description = "MTA-STS mail params"
+}
+
+variable "private_website_target_url" {
+  description = "CNAME target URL of my private website."
+  type        = string
 }

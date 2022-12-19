@@ -40,8 +40,9 @@ data "sops_file" "cluster_secrets" {
 }
 
 provider "cloudflare" {
-  email   = data.sops_file.cluster_secrets.data["stringData.SECRET_CF_EMAIL"]
-  api_key = data.sops_file.cluster_secrets.data["stringData.SECRET_CF_APIKEY"]
+  account_id  = data.sops_file.cluster_secrets.data["stringData.SECRET_CF_ACCOUNT_ID"]
+  email       = data.sops_file.cluster_secrets.data["stringData.SECRET_CF_EMAIL"]
+  api_key     = data.sops_file.cluster_secrets.data["stringData.SECRET_CF_APIKEY"]
 }
 
 data "cloudflare_zones" "domain" {
@@ -49,3 +50,12 @@ data "cloudflare_zones" "domain" {
     name = data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]
   }
 }
+
+data "http" "github_ip_ranges" {
+  url = "https://api.github.com/meta"
+  request_headers = {
+    Accept = "application/json"
+  }
+}
+
+data "cloudflare_ip_ranges" "cloudflare" {}

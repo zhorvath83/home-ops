@@ -1,17 +1,10 @@
-data "http" "github_ips" {
-  url = "https://api.github.com/meta"
-  request_headers = {
-    Accept = "application/json"
-  }
-}
-
 resource "cloudflare_list" "github_hooks_cidr_list" {
   account_id  = data.sops_file.cluster_secrets.data["stringData.SECRET_CF_ACCOUNT_ID"]
   name        = "github_hooks_cidr_list"
   kind        = "ip"
   description = "List of Github hooks IP Addresses"
   dynamic "item" {
-    for_each = (jsondecode(data.http.github_ips.response_body)).hooks
+    for_each = (jsondecode(data.http.github_ip_ranges.response_body)).hooks
     content {
       value {
         ip = item.value
