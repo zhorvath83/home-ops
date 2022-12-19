@@ -20,35 +20,50 @@ resource "cloudflare_record" "cname_www" {
 # Mx records
 #
 
-resource "cloudflare_record" "mx_record_1" {
+
+resource "cloudflare_record" "mx_record" {
+  # count = length(var.dns_mx_records)
+  for_each = var.dns_mx_records
   name    = data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]
   zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
-  value   = "route1.mx.cloudflare.net"
+  # value   = var.dns_mx_records[count.index].server
+  value   = each.value.server
   proxied = false
   type    = "MX"
   ttl     = 1
-  priority = 19
+  priority = each.value.priority
 }
 
-resource "cloudflare_record" "mx_record_2" {
-  name    = data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]
-  zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
-  value   = "route2.mx.cloudflare.net"
-  proxied = false
-  type    = "MX"
-  ttl     = 1
-  priority = 78
-}
 
-resource "cloudflare_record" "mx_record_3" {
-  name    = data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]
-  zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
-  value   = "route3.mx.cloudflare.net"
-  proxied = false
-  type    = "MX"
-  ttl     = 1
-  priority = 96
-}
+# resource "cloudflare_record" "mx_record_1" {
+#   name    = data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]
+#   zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
+#   value   = "route1.mx.cloudflare.net"
+#   proxied = false
+#   type    = "MX"
+#   ttl     = 1
+#   priority = 19
+# }
+# 
+# resource "cloudflare_record" "mx_record_2" {
+#   name    = data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]
+#   zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
+#   value   = "route2.mx.cloudflare.net"
+#   proxied = false
+#   type    = "MX"
+#   ttl     = 1
+#   priority = 78
+# }
+# 
+# resource "cloudflare_record" "mx_record_3" {
+#   name    = data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]
+#   zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
+#   value   = "route3.mx.cloudflare.net"
+#   proxied = false
+#   type    = "MX"
+#   ttl     = 1
+#   priority = 96
+# }
 
 #
 # SPF record
