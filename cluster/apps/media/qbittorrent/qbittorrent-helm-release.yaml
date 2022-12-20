@@ -57,7 +57,7 @@ spec:
             ${CLUSTER_SVC_QBITTORRENT_IP}
         externalTrafficPolicy: Local
         ports:
-          bittorrent:
+          bittorrent-tcp:
             enabled: true
             port: 50413
             protocol: TCP
@@ -71,7 +71,7 @@ spec:
             ${CLUSTER_SVC_QBITTORRENT_IP}
         externalTrafficPolicy: Local
         ports:
-          bittorrent:
+          bittorrent-udp:
             enabled: true
             port: 50413
             protocol: UDP
