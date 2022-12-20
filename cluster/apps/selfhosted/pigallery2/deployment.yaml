@@ -18,13 +18,13 @@ spec:
       annotations:
         reloader.stakater.com/auto: "true"
     spec:
-      securityContext:
-        runAsUser: 1000
-        readOnlyRootFilesystem: true
-        allowPrivilegeEscalation: false
-        capabilities:
-          drop:
-            - ALL
+      # securityContext:
+      #   runAsUser: 1000
+      #   readOnlyRootFilesystem: true
+      #   allowPrivilegeEscalation: false
+      #   capabilities:
+      #     drop:
+      #       - ALL
       containers:
         - name: pigallery2
           image: bpatrik/pigallery2:1.9.3-debian-bullseye
