@@ -1,0 +1,8 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pigallery2-env-vars
+  namespace: default
+data:
+  TZ: "${CLUSTER_TIMEZONE}"
