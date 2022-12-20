@@ -3,7 +3,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: qbittorrent-data
-  namespace: media
+  namespace: default
 spec:
   accessModes:
     - ReadWriteOnce
