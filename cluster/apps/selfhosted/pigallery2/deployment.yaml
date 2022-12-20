@@ -61,7 +61,7 @@ spec:
           volumeMounts:
             - name: photos
               mountPath: /app/data/images
-              subPath: /Fenykepek
+              subPath: Fenykepek
               readOnly: true
 
       volumes:
