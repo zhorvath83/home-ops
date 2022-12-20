@@ -10,7 +10,7 @@ spec:
       namespace: longhorn-system
   maxHistory: 5
   interval: 10m0s
-  suspend: false
+  suspend: true
   chart:
     spec:
       # renovate: registryUrl=https://k8s-at-home.com/charts/
