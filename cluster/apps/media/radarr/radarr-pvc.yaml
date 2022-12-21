@@ -6,7 +6,7 @@ metadata:
   labels: 
     recurring-job-group.longhorn.io/daily-weekly-backup=enabled
 spec:
-  storageClassName: longhorn-durable
+  storageClassName: manual
   accessModes:
     - ReadWriteOnce
   capacity:
@@ -24,4 +24,4 @@ spec:
   # resources:
   #   requests:
   #     storage: 500Mi
-  storageClassName: longhorn-durable
+  storageClassName: manual
