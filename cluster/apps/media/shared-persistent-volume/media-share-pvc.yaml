@@ -12,7 +12,6 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   hostPath:
     path: /mnt/media
-
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

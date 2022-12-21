@@ -1,5 +1,19 @@
 ---
 apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: radarr-data
+  labels: 
+    recurring-job-group.longhorn.io/daily-weekly-backup=enabled
+spec:
+  storageClassName: longhorn-durable
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 500Mi
+  persistentVolumeReclaimPolicy: Retain
+---
+apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: radarr-data
@@ -7,7 +21,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  resources:
-    requests:
-      storage: 500Mi
+  # resources:
+  #   requests:
+  #     storage: 500Mi
   storageClassName: longhorn-durable
