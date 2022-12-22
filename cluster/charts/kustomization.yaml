@@ -21,3 +21,4 @@ resources:
   - kubevious.yaml
   - wikijs.yaml
   - pihole-charts.yaml
+  - weave-gitops.yaml
