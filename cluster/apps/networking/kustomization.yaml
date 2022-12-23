@@ -5,6 +5,5 @@ resources:
   - wildcard-certificate
   - cloudflared
   - ingress-nginx
-  - pihole
   - external-dns
   - whoami

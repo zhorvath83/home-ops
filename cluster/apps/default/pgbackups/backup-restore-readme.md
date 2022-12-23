@@ -17,4 +17,4 @@ END $$;
 
 Replace $BACKUPFILE, $PORT, $USERNAME and $DBNAME from the following command:
 
-zcat /backups/daily/$BACKUPFILE.sql.gz | psql --host=postgresql.selfhosted.svc.cluster.local --port=$PORT --username=$USERNAME --dbname=$DBNAME -W
+zcat /backups/daily/$BACKUPFILE.sql.gz | psql --host=postgresql-15.default.svc.cluster.local --port=$PORT --username=$USERNAME --dbname=$DBNAME -W

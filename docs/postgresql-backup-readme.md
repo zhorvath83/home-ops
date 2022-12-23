@@ -22,4 +22,4 @@ END$$;
 
 📍  Restore to a remote server
 
-zcat recipes-20210819-000003.sql.gz | psql --host=postgresql.selfhosted.svc.cluster.local --port=5432 --username=postgres --dbname=recipes -W
+zcat recipes-20210819-000003.sql.gz | psql --host=postgresql-15.default.svc.cluster.local --port=5432 --username=postgres --dbname=recipes -W

@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: pgbackups
-  namespace: selfhosted
+  namespace: default
   labels:
     app.kubernetes.io/name: pgbackups
 spec:
@@ -39,7 +39,7 @@ spec:
             - name: TZ
               value: ${CLUSTER_TIMEZONE}
             - name: POSTGRES_HOST
-              value: postgresql.selfhosted.svc.cluster.local
+              value: postgresql-15.default.svc.cluster.local
             - name: POSTGRES_DB
               value: postgres,recipes
             - name: POSTGRES_USER

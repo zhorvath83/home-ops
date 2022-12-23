@@ -109,7 +109,7 @@ spec:
             - name: POSTGRES_DB_USER
               value: freshrss
             - name: POSTGRES_HOST
-              value: postgresql.selfhosted.svc.cluster.local
+              value: postgresql-15.default.svc.cluster.local
             - name: POSTGRES_PORT
               value: "5432"
             - name: POSTGRES_DB_NAME

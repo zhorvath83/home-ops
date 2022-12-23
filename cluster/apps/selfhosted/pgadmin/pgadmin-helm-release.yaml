@@ -61,7 +61,7 @@ spec:
           "Group": "Servers",
           "Port": 5432,
           "Username": "postgres",
-          "Host": "postgresql.selfhosted.svc.cluster.local",
+          "Host": "postgresql-15.default.svc.cluster.local",
           "SSLMode": "prefer",
           "MaintenanceDB": "postgres"
         }
