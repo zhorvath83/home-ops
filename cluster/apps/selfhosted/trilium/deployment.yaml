@@ -35,7 +35,7 @@ spec:
             runAsNonRoot: false
             readOnlyRootFilesystem: false
             allowPrivilegeEscalation: true
-          image: zadam/trilium:0.57.3
+          image: zadam/trilium:0.57.5
           imagePullPolicy: IfNotPresent
           env:
             - name: TRILIUM_DATA_DIR
