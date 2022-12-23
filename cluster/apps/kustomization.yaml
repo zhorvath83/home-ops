@@ -5,7 +5,7 @@ resources:
   - flux-system
   - kube-system
   - system-upgrade
-  # - default
+  - default
   - monitoring
   - networking
   - media
