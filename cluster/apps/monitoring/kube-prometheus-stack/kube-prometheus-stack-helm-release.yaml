@@ -10,7 +10,7 @@ spec:
     spec:
       # renovate: registryUrl=https://prometheus-community.github.io/helm-charts
       chart: kube-prometheus-stack
-      version: 43.0.0
+      version: 43.1.4
       # https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack
       sourceRef:
         kind: HelmRepository
