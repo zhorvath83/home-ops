@@ -57,5 +57,3 @@ data "http" "github_ip_ranges" {
     Accept = "application/json"
   }
 }
-
-data "cloudflare_ip_ranges" "cloudflare" {}
