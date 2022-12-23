@@ -28,7 +28,7 @@ spec:
   values:
     image:
       repository: jellyfin/jellyfin
-      tag: 10.8.7
+      tag: 10.8.8
       pullPolicy: IfNotPresent
 
     env:
