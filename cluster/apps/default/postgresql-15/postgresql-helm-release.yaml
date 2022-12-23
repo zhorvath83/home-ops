@@ -47,8 +47,8 @@ spec:
         enabled: true
         existingClaim: postgresql-data-v1
 
-    diagnosticMode:
-      enabled: true
+    # diagnosticMode:
+    #   enabled: true
     # containerSecurityContext:
     #   enabled: true
     #   runAsUser: 0
