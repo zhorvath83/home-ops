@@ -2,7 +2,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
-  name: postgresql15
+  name: postgresql-15
   namespace: default
 spec:
   dependsOn:
