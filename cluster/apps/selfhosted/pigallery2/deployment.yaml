@@ -69,4 +69,3 @@ spec:
           persistentVolumeClaim:
             readOnly: true
             claimName: backup-share
- 

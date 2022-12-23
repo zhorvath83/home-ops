@@ -4,8 +4,6 @@ kind: PersistentVolumeClaim
 metadata:
   name: pihole-data
   namespace: default
-  labels: 
-    recurring-job-group.longhorn.io/daily-weekly-backup=enabled
 spec:
   accessModes:
     - ReadWriteOnce
