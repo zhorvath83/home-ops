@@ -49,6 +49,6 @@ spec:
 
     diagnosticMode:
       enabled: true
-    containerSecurityContext:
-      enabled: true
-      runAsUser: 0
+    # containerSecurityContext:
+    #   enabled: true
+    #   runAsUser: 0
