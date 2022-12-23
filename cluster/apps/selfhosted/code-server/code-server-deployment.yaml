@@ -29,7 +29,7 @@ spec:
         fsGroupChangePolicy: "OnRootMismatch"
       containers:
         - name: code-server
-          image: ghcr.io/zhorvath83/code-server:4.9.0.175
+          image: ghcr.io/zhorvath83/code-server:4.9.0.179
           imagePullPolicy: IfNotPresent
           env:
             - name: TZ
