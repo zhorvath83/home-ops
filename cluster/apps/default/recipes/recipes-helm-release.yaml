@@ -8,7 +8,7 @@ spec:
   dependsOn:
     - name: longhorn
       namespace: longhorn-system
-    - name: postgresql
+    - name: postgresql-15
       namespace: default
   interval: 5m
   chart:
