@@ -7,7 +7,6 @@ resources:
   - postgresql
   - pgbackups
   - pgadmin
-  #- recipes
   - homer
   - duplicacy
   - changedetection
