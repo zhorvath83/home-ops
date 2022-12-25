@@ -7,7 +7,7 @@ metadata:
   annotations: {}
 spec:
   rules:
-    - host: &host "duplicacy.${SECRET_DOMAIN}"
+    - host: &host "backup.${SECRET_DOMAIN}"
       http:
         paths:
           - path: /

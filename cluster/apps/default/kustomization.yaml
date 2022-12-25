@@ -2,6 +2,7 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
+  - shared-persistent-volume
   - postgresql-15
   - pgbackups
   - pgadmin
@@ -14,6 +15,5 @@ resources:
   - homer
   - pihole
   - searxng
-  - shared-persistent-volume
   - duplicacy
   - pigallery2
