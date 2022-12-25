@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: pigallery2
-  namespace: selfhosted
+  namespace: default
   labels:
     app.kubernetes.io/name: pigallery2
 spec:
