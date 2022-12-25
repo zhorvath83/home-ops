@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - postgresql-15
   - pgbackups
+  - pgadmin
   - recipes
   - code-server
   - changedetection
