@@ -14,3 +14,5 @@ resources:
   - homer
   - pihole
   - searxng
+  - shared-persistent-volume
+  - duplicacy
