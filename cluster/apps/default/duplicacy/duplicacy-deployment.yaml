@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: duplicacy
-  namespace: selfhosted
+  namespace: default
   labels:
     app.kubernetes.io/name: duplicacy
 spec:
