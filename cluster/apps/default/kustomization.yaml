@@ -16,3 +16,4 @@ resources:
   - searxng
   - shared-persistent-volume
   - duplicacy
+  - pigallery2
