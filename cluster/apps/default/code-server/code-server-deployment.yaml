@@ -29,8 +29,15 @@ spec:
         fsGroupChangePolicy: "OnRootMismatch"
       containers:
         - name: code-server
-          image: ghcr.io/zhorvath83/code-server:4.9.0.179
+          image: ghcr.io/zhorvath83/code-server:4.9.0.182
           imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 50m
+            limits:
+              cpu: 2000m
+              memory: 1024Mi
           env:
             - name: TZ
               value: ${CLUSTER_TIMEZONE}
