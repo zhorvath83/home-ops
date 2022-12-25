@@ -17,3 +17,4 @@ resources:
   - searxng
   - duplicacy
   - pigallery2
+  - trilium
