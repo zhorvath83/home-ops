@@ -33,7 +33,7 @@ spec:
                 topologyKey: kubernetes.io/hostname
       containers:
         - name: pgbackups
-          image: prodrigestivill/postgres-backup-local:14-alpine-2aa03d1
+          image: prodrigestivill/postgres-backup-local:15@sha256:56697e9b1c9cac2b00ef3224009786c2fc39bcd9a9424c22cbfce655d3fc6c56
           imagePullPolicy: IfNotPresent
           env:
             - name: TZ
