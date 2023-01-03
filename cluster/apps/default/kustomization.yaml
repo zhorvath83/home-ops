@@ -13,7 +13,8 @@ resources:
   - mosquitto
   - home-assistant
   - homer
-  - pihole
+  - adguard-home
+  # - pihole
   - searxng
   - duplicacy
   - pigallery2
