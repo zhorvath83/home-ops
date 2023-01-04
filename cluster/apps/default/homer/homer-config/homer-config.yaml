@@ -163,7 +163,7 @@ services:
       - name: Duplicacy
         subtitle: Backup solution
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/duplicacy.png
-        url: https://duplicacy.${SECRET_DOMAIN}
+        url: https://backup.${SECRET_DOMAIN}
       - name: Longhorn
         subtitle: Distributed block storage
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/longhorn.png
