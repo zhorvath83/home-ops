@@ -5,13 +5,13 @@ metadata:
   name: jellyfin
   namespace: media
 spec:
-  dependsOn:
-    - name: longhorn
-      namespace: longhorn-system
-    - name: intel-gpu-plugin
-      namespace: kube-system
-    - name: node-feature-discovery
-      namespace: kube-system
+  # dependsOn:
+  #   - name: longhorn
+  #     namespace: longhorn-system
+  #   - name: intel-gpu-plugin
+  #     namespace: kube-system
+  #   - name: node-feature-discovery
+  #     namespace: kube-system
   maxHistory: 5
   interval: 10m0s
   suspend: false
@@ -107,22 +107,22 @@ spec:
     #     medium: "Memory"
     #     sizeLimit: 6Gi
 
-    resources:
-      requests:
-        # Hardware acceleration using an Intel iGPU w/ QuickSync and
-        # using intel-gpu-plugin (https://github.com/intel/intel-device-plugins-for-kubernetes)
-        gpu.intel.com/i915: 1
-        memory: 500m
-      limits:
-        gpu.intel.com/i915: 1
-        memory: 8Gi
+    # resources:
+    #   requests:
+    #     # Hardware acceleration using an Intel iGPU w/ QuickSync and
+    #     # using intel-gpu-plugin (https://github.com/intel/intel-device-plugins-for-kubernetes)
+    #     gpu.intel.com/i915: 1
+    #     memory: 500m
+    #   limits:
+    #     gpu.intel.com/i915: 1
+    #     memory: 8Gi
 
-    affinity:
-      nodeAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-            - matchExpressions:
-                - key: feature.node.kubernetes.io/custom-intel-gpu
-                  operator: In
-                  values:
-                    - "true"
+    # affinity:
+    #   nodeAffinity:
+    #     requiredDuringSchedulingIgnoredDuringExecution:
+    #       nodeSelectorTerms:
+    #         - matchExpressions:
+    #             - key: feature.node.kubernetes.io/custom-intel-gpu
+    #               operator: In
+    #               values:
+    #                 - "true"
