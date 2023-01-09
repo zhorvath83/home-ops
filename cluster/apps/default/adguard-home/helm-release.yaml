@@ -185,7 +185,7 @@ spec:
         parental_cache_size: 1048576
         cache_time: 30
         rewrites:
-        - domain: "media.${CLUSTER_LAN_DOMAIN}"
+        - domain: "mediaserver.${CLUSTER_LAN_DOMAIN}"
           answer: "${CLUSTER_SVC_JELLYFIN_IP}"
         - domain: "home.${CLUSTER_LAN_DOMAIN}"
           answer: "${CLUSTER_SVC_HOMEASSISTANT_IP}"
