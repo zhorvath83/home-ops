@@ -9,7 +9,7 @@ metadata:
     nginx.ingress.kubernetes.io/use-forwarded-headers: "true"
 spec:
   rules:
-    - host: &host "hass.${SECRET_DOMAIN}"
+    - host: &host "home.${SECRET_DOMAIN}"
       http:
         paths:
           - path: /
