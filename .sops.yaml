@@ -5,7 +5,7 @@ creation_rules:
     key_groups:
       - age:
           - age1el7uu5gzqsdp8wz7y9mcpqsy08l894twxg0jm5cm0jps3hkp2veqdpn5az
-  - path_regex: provision/.*\.sops\.conf
+  - path_regex: provisioning/.*\.sops\.conf
     key_groups:
       - age:
           - age1el7uu5gzqsdp8wz7y9mcpqsy08l894twxg0jm5cm0jps3hkp2veqdpn5az

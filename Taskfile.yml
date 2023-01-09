@@ -5,11 +5,11 @@ vars:
   PROJECT_DIR:
     sh: "git rev-parse --show-toplevel"
   CLUSTER_DIR: "{{.PROJECT_DIR}}/cluster"
-  ANSIBLE_DIR: "{{.PROJECT_DIR}}/provision/ansible"
-  TERRAFORM_DIR: "{{.PROJECT_DIR}}/provision/terraform"
+  ANSIBLE_DIR: "{{.PROJECT_DIR}}/provisioning/ansible"
+  TERRAFORM_DIR: "{{.PROJECT_DIR}}/provisioning/terraform"
 
 env:
-  KUBECONFIG: "{{.PROJECT_DIR}}/provision/kubeconfig"
+  KUBECONFIG: "{{.PROJECT_DIR}}/provisioning/kubeconfig"
 
 includes:
   # ansible: .taskfiles/ansible.yml
