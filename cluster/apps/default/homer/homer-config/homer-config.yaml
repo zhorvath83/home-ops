@@ -121,7 +121,7 @@ services:
       - name: Home Assistant
         subtitle: Home automation
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/home-assistant.svg
-        url: https://hass.${SECRET_DOMAIN}
+        url: https://home.${SECRET_DOMAIN}
       - name: Tandoor recipes
         subtitle: Private recipe collection
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/tandoorrecipes.png
@@ -129,7 +129,7 @@ services:
       - name: Jellyfin
         subtitle: Jellyfin media server
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/jellyfin.png
-        url: http://${CLUSTER_SVC_JELLYFIN_IP}:8096
+        url: http://mediaserver.${CLUSTER_LAN_DOMAIN}
       - name: Private website
         subtitle: Private website
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/hugo.png
