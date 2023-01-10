@@ -11,6 +11,7 @@ rpi_boot_config_file: /boot/config.txt
 
 boot_config:
   dtparam=audio: "off"
+  hdmi_enable_4kp60: "1"
 
 boot_config_lines:
   - "dtoverlay=disable-wifi"

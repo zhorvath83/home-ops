@@ -138,7 +138,11 @@
           become: true
           ignore_errors: true
 
-    - name: Packages
+    - name: Setup unattended-upgrades
+      ansible.builtin.include_role:
+        name: hifis.unattended_upgrades
+
+    - name: Standalone packages
       block:
         - name: Packages | Install required packages
           ansible.builtin.apt:
@@ -148,6 +152,26 @@
         - name: Packages | Remove leaf packages
           ansible.builtin.apt:
             autoremove: true
+
+    - name: Install and configure Docker
+      ansible.builtin.include_role:
+        name: geerlingguy.docker
+
+  # - name: Deploy docker compose
+
+    - name: Install and configure Kodi
+      ansible.builtin.include_role:
+        name: jose1711.kodi_ansible_role
+      vars:
+        packages:
+          - kodi
+          - sqlite3
+          - kodi-eventclients-kodi-send
+          - libxml2-utils
+          - unzip
+          - python3-lxml
+          - acl
+
 
     # RECOMMENDED: This role will lock down ssh access to disallow password login
     # and make other security improvements to the default ssh setup.

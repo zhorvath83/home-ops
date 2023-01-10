@@ -1,0 +1,8 @@
+---
+#Unattended-Upgrade::Automatic-Reboot-Time
+# If automatic reboot is enabled and needed, reboot at the specific
+# time instead of immediately
+unattended_automatic_reboot_time: "03:00"
+
+unattended_origins_patterns:
+  - 'origin=Raspbian,codename=${distro_codename},label=Raspbian'

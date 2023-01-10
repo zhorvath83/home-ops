@@ -1,0 +1,21 @@
+kodi_user: kodi
+kodi_groups: [audio, video, input]
+kodi_shell: /bin/bash
+
+kodi_webserver_enabled: 'false'
+
+kodi_addons: []
+
+kodi_repositories:
+  - official_cached=https://ftp.fau.de/xbmc/addons/${codename}/addons.xml.gz
+
+kodi_enabled_repositories:
+  - official_cached
+
+kodi_language: en
+kodi_locale_country: Hungary
+kodi_locale_timezone_country: Hungary
+# kodi_subtitles_languages:
+
+
+kodi_config: []
