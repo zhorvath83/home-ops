@@ -1,3 +1,32 @@
 ---
 # (string) Timezone
 timezone: "Europe/Budapest"
+
+inventory_hostname: "raspimedia.lan"
+
+disable_ipv6: true
+
+# Path to the Raspberry Pi boot configuration file
+rpi_boot_config_file: /boot/config.txt
+
+boot_config:
+  dtparam=audio: "off"
+
+boot_config_lines:
+  - "dtoverlay=disable-wifi"
+  - "dtoverlay=disable-bt"
+
+cmdline_settings:
+  - name: "cgroup_enable"
+    value: "cpuset"
+  - name: "cgroup_memory"
+    value: "1"
+  - name: "cgroup_enable"
+    value: "memory"
+
+packages:
+  - htop
+  - mc
+  - nano
+  - nfs-common
+  - samba

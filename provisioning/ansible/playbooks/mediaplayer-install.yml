@@ -1,6 +1,6 @@
 ---
 - hosts:
-    - mediaplayer
+    - raspimedia.lan
   become: true
   gather_facts: true
   any_errors_fatal: true
@@ -14,3 +14,143 @@
         - name: Locale | Set timezone
           community.general.timezone:
             name: "{{ timezone | default('Etc/UTC') }}"
+
+    - name: Networking
+      block:
+        - name: Networking | Set hostname to inventory hostname
+          ansible.builtin.hostname:
+            name: "{{ inventory_hostname }}"
+        - name: Networking | Update /etc/hosts to include inventory hostname
+          ansible.builtin.blockinfile:
+            path: /etc/hosts
+            block: |
+              127.0.1.1   {{ inventory_hostname }}
+
+    - name: SWAP
+      block:
+        - name: Disable SWAP (1/2)
+          shell: |
+            sudo dphys-swapfile swapoff
+            sudo dphys-swapfile uninstall
+            sudo systemctl disable dphys-swapfile
+
+        - name: Disable SWAP in fstab too (2/2)
+          replace:
+            path: /etc/fstab
+            regexp: '^([^#].*?\sswap\s+sw\s+.*)$'
+            replace: '# \1'
+
+    - name: config.txt
+      block:
+        - name: "Adjust {{ rpi_boot_config_file }}"
+          ansible.builtin.lineinfile:
+            line: '{{ item.key }}={{ item.value }}'
+            dest: "{{ rpi_boot_config_file }}"
+            regexp: "^{{ item.key }}="
+          with_dict: '{{ boot_config }}'
+          register: _boot_config
+
+        - name: "Adjust {{ rpi_boot_config_file }}"
+          ansible.builtin.lineinfile:
+            line: '{{ item }}'
+            dest: "{{ rpi_boot_config_file }}"
+            regexp: "^{{ item }}"
+          with_items: '{{ boot_config_lines }}'
+          register: _boot_config_lines
+
+        # - name: "Restart machine"  # noqa 503
+        #   ansible.builtin.reboot:
+        #     msg: "Reboot by Ansible, because {{ rpi_boot_config_file }} config changed."
+        #     reboot_timeout: 300   # (= 5 minutes)
+        #   when: _boot_config.changed or _boot_config_lines.changed
+
+
+    - name: cmdline.txt
+      block:
+        - name: Read cmdline.txt
+          slurp:
+            src: /boot/cmdline.txt
+          register: cmdline_current
+          when: cmdline_settings is defined
+
+        - name: Parse cmdline.txt
+          set_fact:
+            cmdline: "{{ (cmdline_current['content'] | b64decode).split() }}"
+          when: cmdline_settings is defined
+
+        - name: Prepare filter for cmdline.txt options to remove
+          set_fact:
+            cmdline_remove: []
+          when: cmdline_settings is defined
+
+        - name: Assemble filter for cmdline.txt options to remove
+          set_fact:
+            cmdline_remove: "{{ cmdline_remove + [option.value] }}"
+          loop: "{{ cmdline_settings }}"
+          loop_control:
+            loop_var: option
+          when: cmdline_settings is defined and option.state is defined and option.state == 'absent'
+
+        - name: Prepare list for cmdline.txt options to add
+          set_fact:
+            cmdline_add: []
+          when: cmdline_settings is defined
+
+        - name: Assemble cmdline.txt options to add
+          set_fact:
+            cmdline_add: "{{ cmdline_add + [option.name + '=' + option.value] }}"
+          when: cmdline_settings is defined and (option.state is not defined or option.state == 'present')
+          loop: "{{ cmdline_settings }}"
+          loop_control:
+            loop_var: option
+
+        - name: Assemble new kernel command line
+          set_fact:
+            cmdline_new: "{{ cmdline + cmdline_add }}"
+          when: cmdline_settings is defined
+
+        - name: Write new kernel command line
+          copy:
+            content: "{{ cmdline_new | difference(cmdline_remove) | join(' ') }}"
+            dest: /boot/cmdline.txt
+          when: cmdline_settings is defined
+          become: true
+
+    - name: Networking
+      block:
+        - name: Disable IPv6
+          ansible.posix.sysctl:
+            name: "{{ line.name }}"
+            value: "{{ line.value }}"
+            reload: true
+          loop:
+            - name: net.ipv6.conf.all.disable_ipv6
+              value: 1
+            - name: net.ipv6.conf.default.disable_ipv6
+              value: 1
+            - name: net.ipv6.conf.lo.disable_ipv6
+              value: 1
+            - name: net.ipv6.conf.{{ network_interface | default(ansible_default_ipv4.interface) }}.disable_ipv6
+              value: 1
+          loop_control:
+            loop_var: line
+          when: disable_ipv6
+          become: true
+          ignore_errors: true
+
+    - name: Packages
+      block:
+        - name: Packages | Install required packages
+          ansible.builtin.apt:
+            name: "{{ packages | default([]) }}"
+            state: present
+            update_cache: true
+        - name: Packages | Remove leaf packages
+          ansible.builtin.apt:
+            autoremove: true
+
+    # RECOMMENDED: This role will lock down ssh access to disallow password login
+    # and make other security improvements to the default ssh setup.
+    # https://github.com/dev-sec/ansible-ssh-hardening
+    #- role: dev-sec.ssh-hardening
+    #  become: yes

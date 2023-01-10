@@ -25,25 +25,11 @@ tasks:
     cmds:
       - ansible all -i {{.ANSIBLE_INVENTORY_DIR}}/hosts.yml --list-hosts
 
-  prepare:
-    desc: Prepare all the k8s nodes for running k3s
+  mediaplayer-install:
+    desc: mediaplayer-install
     dir: "{{.ANSIBLE_DIR}}"
     cmds:
-      - ansible-playbook -i {{.ANSIBLE_INVENTORY_DIR}}/hosts.yml {{.ANSIBLE_PLAYBOOK_DIR}}/cluster-prepare.yml
-
-  install:
-    desc: Install Kubernetes on the nodes
-    dir: "{{.ANSIBLE_DIR}}"
-    cmds:
-      - ansible-playbook -i {{.ANSIBLE_INVENTORY_DIR}}/hosts.yml {{.ANSIBLE_PLAYBOOK_DIR}}/cluster-installation.yml
-
-  nuke:
-    desc: Uninstall Kubernetes on the nodes
-    dir: "{{.ANSIBLE_DIR}}"
-    interactive: true
-    cmds:
-      - ansible-playbook -i {{.ANSIBLE_INVENTORY_DIR}}/hosts.yml {{.ANSIBLE_PLAYBOOK_DIR}}/cluster-nuke.yml
-      - task: force-reboot
+      - ansible-playbook -i {{.ANSIBLE_INVENTORY_DIR}}/hosts.yml {{.ANSIBLE_PLAYBOOK_DIR}}/mediaplayer-install.yml
 
   ping:
     desc: Ping all the hosts
@@ -56,12 +42,6 @@ tasks:
     dir: "{{.ANSIBLE_DIR}}"
     cmds:
       - ansible all -i {{.ANSIBLE_INVENTORY_DIR}}/hosts.yml --one-line -a 'uptime'
-
-  rollout-reboot:
-    desc: Rollout a reboot across all the k8s nodes
-    dir: "{{.ANSIBLE_DIR}}"
-    cmds:
-      - ansible-playbook -i {{.ANSIBLE_INVENTORY_DIR}}/hosts.yml {{.ANSIBLE_PLAYBOOK_DIR}}/cluster-rollout-reboot.yml
 
   force-reboot:
     desc: Reboot all the k8s nodes
