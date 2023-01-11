@@ -1,0 +1,12 @@
+---
+- name: "Stop Kodi"
+  systemd:
+    name: "kodi"
+    state: "stopped"
+    scope: "user"
+
+- name: "Restart Kodi"
+  systemd:
+    name: "kodi"
+    state: "restarted"
+    scope: "user"

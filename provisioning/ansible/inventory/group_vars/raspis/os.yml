@@ -12,10 +12,15 @@ rpi_boot_config_file: /boot/config.txt
 boot_config:
   dtparam=audio: "off"
   hdmi_enable_4kp60: "1"
+  cec_osd_name: "KODI"
 
-boot_config_lines:
+boot_config_remove_lines:
+  - "dtoverlay=vc4-kms-v3d"
+
+boot_config_insert_lines:
   - "dtoverlay=disable-wifi"
   - "dtoverlay=disable-bt"
+  - "dtoverlay=vc4-kms-v3d,cma-512"
 
 cmdline_settings:
   - name: "cgroup_enable"

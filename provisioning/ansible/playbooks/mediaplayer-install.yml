@@ -17,16 +17,35 @@
 
     - name: Networking
       block:
-        - name: Networking | Set hostname to inventory hostname
+        - name: Set hostname to inventory hostname
           ansible.builtin.hostname:
             name: "{{ inventory_hostname }}"
-        - name: Networking | Update /etc/hosts to include inventory hostname
+        - name: Update /etc/hosts to include inventory hostname
           ansible.builtin.blockinfile:
             path: /etc/hosts
             block: |
               127.0.1.1   {{ inventory_hostname }}
+        - name: Disable IPv6
+          ansible.posix.sysctl:
+            name: "{{ line.name }}"
+            value: "{{ line.value }}"
+            reload: true
+          loop:
+            - name: net.ipv6.conf.all.disable_ipv6
+              value: 1
+            - name: net.ipv6.conf.default.disable_ipv6
+              value: 1
+            - name: net.ipv6.conf.lo.disable_ipv6
+              value: 1
+            - name: net.ipv6.conf.{{ network_interface | default(ansible_default_ipv4.interface) }}.disable_ipv6
+              value: 1
+          loop_control:
+            loop_var: line
+          when: disable_ipv6
+          become: true
+          ignore_errors: true
 
-    - name: SWAP
+    - name: Prevent SD card wear
       block:
         - name: Disable SWAP (1/2)
           shell: |
@@ -40,8 +59,30 @@
             regexp: '^([^#].*?\sswap\s+sw\s+.*)$'
             replace: '# \1'
 
+        - name: Disable core files
+          ansible.builtin.lineinfile:
+            path: /etc/systemd/system.conf
+            regexp: '^DumpCore='
+            insertafter: '^#DumpCore='
+            line: DumpCore=no
+
+        - name: Limit journal file to 50MB
+          ansible.builtin.lineinfile:
+            path: /etc/systemd/journald.conf
+            regexp: '^SystemMaxUse='
+            insertafter: '^#SystemMaxUse='
+            line: SystemMaxUse=50M
+
     - name: config.txt
       block:
+        - name: "Adjust {{ rpi_boot_config_file }}"
+          ansible.builtin.lineinfile:
+            line: '{{ item }}'
+            dest: "{{ rpi_boot_config_file }}"
+            regexp: "^{{ item }}"
+            state: "absent"
+          with_items: '{{ boot_config_remove_lines }}'
+          register: _boot_config_remove_lines
         - name: "Adjust {{ rpi_boot_config_file }}"
           ansible.builtin.lineinfile:
             line: '{{ item.key }}={{ item.value }}'
@@ -49,20 +90,19 @@
             regexp: "^{{ item.key }}="
           with_dict: '{{ boot_config }}'
           register: _boot_config
-
         - name: "Adjust {{ rpi_boot_config_file }}"
           ansible.builtin.lineinfile:
             line: '{{ item }}'
             dest: "{{ rpi_boot_config_file }}"
             regexp: "^{{ item }}"
-          with_items: '{{ boot_config_lines }}'
-          register: _boot_config_lines
+          with_items: '{{ boot_config_insert_lines }}'
+          register: _boot_config_insert_lines
 
         # - name: "Restart machine"  # noqa 503
         #   ansible.builtin.reboot:
         #     msg: "Reboot by Ansible, because {{ rpi_boot_config_file }} config changed."
         #     reboot_timeout: 300   # (= 5 minutes)
-        #   when: _boot_config.changed or _boot_config_lines.changed
+        #   when: _boot_config.changed or _boot_config_insert_lines.changed
 
 
     - name: cmdline.txt
@@ -116,27 +156,6 @@
           when: cmdline_settings is defined
           become: true
 
-    - name: Networking
-      block:
-        - name: Disable IPv6
-          ansible.posix.sysctl:
-            name: "{{ line.name }}"
-            value: "{{ line.value }}"
-            reload: true
-          loop:
-            - name: net.ipv6.conf.all.disable_ipv6
-              value: 1
-            - name: net.ipv6.conf.default.disable_ipv6
-              value: 1
-            - name: net.ipv6.conf.lo.disable_ipv6
-              value: 1
-            - name: net.ipv6.conf.{{ network_interface | default(ansible_default_ipv4.interface) }}.disable_ipv6
-              value: 1
-          loop_control:
-            loop_var: line
-          when: disable_ipv6
-          become: true
-          ignore_errors: true
 
     - name: Setup unattended-upgrades
       ansible.builtin.include_role:
@@ -172,6 +191,12 @@
           - python3-lxml
           - acl
 
+    - name: Kodi service
+      include_role:
+        name: roles/mediaplayers
+
+  # roles:
+  #   - { role: roles/mediaplayers}
 
     # RECOMMENDED: This role will lock down ssh access to disallow password login
     # and make other security improvements to the default ssh setup.
