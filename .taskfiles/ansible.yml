@@ -6,8 +6,7 @@ env:
   K8S_AUTH_KUBECONFIG: "{{.PROJECT_DIR}}/kubeconfig"
 
 vars:
-  ANSIBLE_PLAYBOOK_DIR: "{{.ANSIBLE_DIR}}/playbooks"
-  ANSIBLE_INVENTORY_DIR: "{{.ANSIBLE_DIR}}/inventory"
+
 
 tasks:
 
@@ -25,11 +24,16 @@ tasks:
     cmds:
       - ansible all -i {{.ANSIBLE_INVENTORY_DIR}}/hosts.yml --list-hosts
 
-  mediaplayer-install:
-    desc: mediaplayer-install
-    dir: "{{.ANSIBLE_DIR}}"
+  htpc-install:
+    vars:
+      ANSIBLE_TARGET: "htpc"
+      ANSIBLE_TARGET_DIR: "{{.ANSIBLE_DIR}}/{{.ANSIBLE_TARGET}}"
+      ANSIBLE_PLAYBOOK_DIR: "{{.ANSIBLE_TARGET_DIR}}/playbooks"
+      ANSIBLE_INVENTORY_DIR: "{{.ANSIBLE_TARGET_DIR}}/inventory"
+    desc: htpc-install
+    dir: "{{.ANSIBLE_TARGET_DIR}}"
     cmds:
-      - ansible-playbook -i {{.ANSIBLE_INVENTORY_DIR}}/hosts.yml {{.ANSIBLE_PLAYBOOK_DIR}}/mediaplayer-install.yml
+      - ansible-playbook -i {{.ANSIBLE_INVENTORY_DIR}}/hosts.yml {{.ANSIBLE_PLAYBOOK_DIR}}/htpc-install.yml
 
   ping:
     desc: Ping all the hosts

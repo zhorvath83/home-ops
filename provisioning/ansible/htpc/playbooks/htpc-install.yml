@@ -88,8 +88,8 @@
             line: '{{ item.key }}={{ item.value }}'
             dest: "{{ rpi_boot_config_file }}"
             regexp: "^{{ item.key }}="
-          with_dict: '{{ boot_config }}'
-          register: _boot_config
+          with_dict: '{{ boot_config_entries }}'
+          register: _boot_config_entries
         - name: "Adjust {{ rpi_boot_config_file }}"
           ansible.builtin.lineinfile:
             line: '{{ item }}'
@@ -156,7 +156,6 @@
           when: cmdline_settings is defined
           become: true
 
-
     - name: Setup unattended-upgrades
       ansible.builtin.include_role:
         name: hifis.unattended_upgrades
@@ -191,9 +190,16 @@
           - python3-lxml
           - acl
 
+    # Dumping actual EDID file
+    # sudo cp /sys/devices/platform/gpu/drm/card?/card?-HDMI-A-1/edid /lib/firmware/edid.dat
+    - name: Copy EDID file
+      ansible.builtin.copy:
+        src: files/edid.dat
+        dest: /lib/firmware/edid.dat
+
     - name: Kodi service
       include_role:
-        name: roles/mediaplayers
+        name: mediaplayers
 
   # roles:
   #   - { role: roles/mediaplayers}

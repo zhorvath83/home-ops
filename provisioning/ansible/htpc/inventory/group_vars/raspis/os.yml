@@ -1,0 +1,47 @@
+---
+# (string) Timezone
+timezone: "Europe/Budapest"
+
+inventory_hostname: "raspimedia.lan"
+
+disable_ipv6: true
+
+# Path to the Raspberry Pi boot configuration file
+rpi_boot_config_file: /boot/config.txt
+
+boot_config_entries:
+  dtparam=audio: "off"
+  hdmi_enable_4kp60: "1"
+  cec_osd_name: "KODI"
+
+boot_config_remove_lines:
+  - "dtoverlay=vc4-kms-v3d"
+
+boot_config_insert_lines:
+  - "disable_splash=1" # Disable rainbow image at boot
+  - "dtoverlay=disable-wifi"
+  - "dtoverlay=disable-bt"
+  - "dtoverlay=vc4-kms-v3d,cma-512"
+  #- "hdmi_drive=2" # forces HDMI mode: Normal HDMI mode (sound will be sent if supported and enabled)
+  #- "hdmi_force_hotplug=1" # Setting hdmi_force_hotplug to 1 pretends that the HDMI hotplug signal is asserted, so it appears that a HDMI display is attached. In other words, HDMI output mode will be used, even if no HDMI monitor is detected.
+
+cmdline_settings:
+  - name: "cgroup_enable"
+    value: "cpuset"
+  - name: "cgroup_memory"
+    value: "1"
+  - name: "cgroup_enable"
+    value: "memory"
+  - name: "vt.global_cursor_default"
+    value: "0" # disable the blinking cursor at the console
+  - name: "drm.edid_firmware" # sudo cp /sys/devices/platform/gpu/drm/card?/card?-HDMI-A-1/edid /lib/firmware/edid.dat
+    value: "HDMI-A-1:edid.dat"
+  - name: "video"
+    value: "HDMI-A-1:D"
+
+packages:
+  - htop
+  - mc
+  - nano
+  - nfs-common
+  - samba
