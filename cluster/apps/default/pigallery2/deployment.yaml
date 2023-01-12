@@ -27,7 +27,7 @@ spec:
       #       - ALL
       containers:
         - name: pigallery2
-          image: bpatrik/pigallery2:1.9.3-debian-bullseye
+          image: bpatrik/pigallery2:1.9.5-debian-bullseye
           ports:
             - containerPort: 80
               name: pigallery2
