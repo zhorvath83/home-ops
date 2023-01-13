@@ -1,0 +1,63 @@
+---
+- name: Logrotate
+  vars:
+    logrotate_conf_dir: "/etc/logrotate.d/"
+    logrotate_scripts:
+      - name: rotate_var_log
+        path:
+          - /var/log/*.log
+          - /var/log/syslog
+          - /var/log/btmp
+          - /var/log/debug
+          - /var/log/faillog
+          - /var/log/messages
+          - /var/log/wtmp
+        options:
+          - monthly
+          - maxsize 16M
+          - minsize 1M
+          - copytruncate
+          - missingok
+          - rotate 2
+          - notifempty
+          - compress
+  block:
+    - name: Cleanup
+      file:
+        path: "{{ item }}"
+        state: absent
+      with_items:
+        - /etc/logrotate.d/alternatives
+        - /etc/logrotate.d/btmp
+        - /etc/logrotate.d/dpkg
+        - /etc/logrotate.d/log2ram
+        - /etc/logrotate.d/ppp
+        - /etc/logrotate.d/rsyslog
+        - /etc/logrotate.d/wtmp
+
+    - name: Install logrotate
+      package:
+        name: logrotate
+        state: present
+      when: logrotate_scripts is defined and logrotate_scripts|length > 0
+    - name: Setup logrotate.d scripts
+      template:
+        src: logrotate.d.j2
+        dest: "{{ logrotate_conf_dir }}{{ item.name }}"
+      loop: "{{ logrotate_scripts|flatten(levels=1) }}"
+      when: logrotate_scripts is defined
+
+    - name: Is logrotate scheduled daily?
+      stat: path=/etc/cron.daily/logrotate
+      register: file
+    - name: Copy to hourly
+      ansible.builtin.copy:
+        src: /etc/cron.daily/logrotate
+        dest: /etc/cron.hourly/logrotate
+        remote_src: yes
+        mode: preserve
+      when: file.stat.exists
+    - name: Remove daily schedule
+      ansible.builtin.file:
+        path: /etc/cron.daily/logrotate
+        state: absent

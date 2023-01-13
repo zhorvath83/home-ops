@@ -1,0 +1,5 @@
+---
+- import_tasks: "journald.yml"
+- import_tasks: "logrotate.yml"
+- import_tasks: "common.yml"
+#- import_tasks: "ocpu-governor.yml"

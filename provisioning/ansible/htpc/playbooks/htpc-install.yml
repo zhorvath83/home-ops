@@ -4,178 +4,96 @@
   become: true
   gather_facts: true
   any_errors_fatal: true
-  pre_tasks:
-    - name: Pausing for 5 seconds...
-      ansible.builtin.pause:
-        seconds: 5
+  # pre_tasks:
+  #   - name: Pausing for 5 seconds...
+  #     ansible.builtin.pause:
+  #       seconds: 5
   tasks:
-    - name: Locale
+    - name: OS common tasks
+      include_role:
+        name: os-common
+
+    - name: APT
       block:
-        - name: Locale | Set timezone
-          community.general.timezone:
-            name: "{{ timezone | default('Etc/UTC') }}"
+        - name: Backports repo
+          include_role:
+            name: backports-repo
 
-    - name: Networking
+        - name: Setup unattended-upgrades
+          ansible.builtin.include_role:
+            name: hifis.unattended_upgrades
+
+    - name: Pulseaudio
       block:
-        - name: Set hostname to inventory hostname
-          ansible.builtin.hostname:
-            name: "{{ inventory_hostname }}"
-        - name: Update /etc/hosts to include inventory hostname
-          ansible.builtin.blockinfile:
-            path: /etc/hosts
-            block: |
-              127.0.1.1   {{ inventory_hostname }}
-        - name: Disable IPv6
-          ansible.posix.sysctl:
-            name: "{{ line.name }}"
-            value: "{{ line.value }}"
-            reload: true
-          loop:
-            - name: net.ipv6.conf.all.disable_ipv6
-              value: 1
-            - name: net.ipv6.conf.default.disable_ipv6
-              value: 1
-            - name: net.ipv6.conf.lo.disable_ipv6
-              value: 1
-            - name: net.ipv6.conf.{{ network_interface | default(ansible_default_ipv4.interface) }}.disable_ipv6
-              value: 1
-          loop_control:
-            loop_var: line
-          when: disable_ipv6
-          become: true
-          ignore_errors: true
+        - name: Install Pulseaudio
+          ansible.builtin.include_role:
+            name: mjanser.pulseaudio
+          vars:
+            # Run: pacmd list-cards
+            # name and activeprofile needed
+            pulseaudio_card_profiles:
+              - card: alsa_card.usb-E__Corp._DAC_Audio-01
+                profile: output:analog-stereo
+            pulseaudio_sink_formats:
+              - sink: alsa_output.usb-E__Corp._DAC_Audio-01.analog-stereo
+                formats: "pcm"
+            pulseaudio_network: no
+            pulseaudio_avahi: no
+        - name: Pulseaudio groups
+          user:
+            name: "{{ inventory_username }}"
+            append: yes
+            groups:
+              - pulse-access
+              - audio
 
-    - name: Prevent SD card wear
+    - name: Docker
       block:
-        - name: Disable SWAP (1/2)
-          shell: |
-            sudo dphys-swapfile swapoff
-            sudo dphys-swapfile uninstall
-            sudo systemctl disable dphys-swapfile
+        - name: Install and configure Docker
+          ansible.builtin.include_role:
+            name: geerlingguy.docker
+        # - name: Install Docker Module for Python
+        #   pip:
+        #     name: docker
+        - name: Install pip
+          ansible.builtin.include_role:
+            name: geerlingguy.pip
+          vars:
+            pip_install_packages:
+              - name: docker
+              - name: docker-compose
+        - name: Create directory for docker compose file
+          file:
+            path: /home/{{ inventory_username }}/docker
+            state: directory
+        - name: Downloading docker compose file
+          ansible.builtin.get_url:
+            url: https://raw.githubusercontent.com/zhorvath83/raspotify/654d51f056ff1a7d3612a6793ad94e60f3247b88/docker-compose.yaml
+            dest: /home/{{ inventory_username }}/docker
+        - name: Tear down existing docker services
+          community.docker.docker_compose:
+            project_src: /home/{{ inventory_username }}/docker
+            state: absent
 
-        - name: Disable SWAP in fstab too (2/2)
-          replace:
-            path: /etc/fstab
-            regexp: '^([^#].*?\sswap\s+sw\s+.*)$'
-            replace: '# \1'
+        - name: Create and start services
+          community.docker.docker_compose:
+            project_src: /home/{{ inventory_username }}/docker
+          register: output
 
-        - name: Disable core files
-          ansible.builtin.lineinfile:
-            path: /etc/systemd/system.conf
-            regexp: '^DumpCore='
-            insertafter: '^#DumpCore='
-            line: DumpCore=no
+        - ansible.builtin.debug:
+            var: output
 
-        - name: Limit journal file to 50MB
-          ansible.builtin.lineinfile:
-            path: /etc/systemd/journald.conf
-            regexp: '^SystemMaxUse='
-            insertafter: '^#SystemMaxUse='
-            line: SystemMaxUse=50M
+        - name: Run `docker-compose up` again
+          community.docker.docker_compose:
+            project_src: /home/{{ inventory_username }}/docker
+            build: false
+          register: output
 
-    - name: config.txt
-      block:
-        - name: "Adjust {{ rpi_boot_config_file }}"
-          ansible.builtin.lineinfile:
-            line: '{{ item }}'
-            dest: "{{ rpi_boot_config_file }}"
-            regexp: "^{{ item }}"
-            state: "absent"
-          with_items: '{{ boot_config_remove_lines }}'
-          register: _boot_config_remove_lines
-        - name: "Adjust {{ rpi_boot_config_file }}"
-          ansible.builtin.lineinfile:
-            line: '{{ item.key }}={{ item.value }}'
-            dest: "{{ rpi_boot_config_file }}"
-            regexp: "^{{ item.key }}="
-          with_dict: '{{ boot_config_entries }}'
-          register: _boot_config_entries
-        - name: "Adjust {{ rpi_boot_config_file }}"
-          ansible.builtin.lineinfile:
-            line: '{{ item }}'
-            dest: "{{ rpi_boot_config_file }}"
-            regexp: "^{{ item }}"
-          with_items: '{{ boot_config_insert_lines }}'
-          register: _boot_config_insert_lines
+        - ansible.builtin.debug:
+            var: output
 
-        # - name: "Restart machine"  # noqa 503
-        #   ansible.builtin.reboot:
-        #     msg: "Reboot by Ansible, because {{ rpi_boot_config_file }} config changed."
-        #     reboot_timeout: 300   # (= 5 minutes)
-        #   when: _boot_config.changed or _boot_config_insert_lines.changed
-
-
-    - name: cmdline.txt
-      block:
-        - name: Read cmdline.txt
-          slurp:
-            src: /boot/cmdline.txt
-          register: cmdline_current
-          when: cmdline_settings is defined
-
-        - name: Parse cmdline.txt
-          set_fact:
-            cmdline: "{{ (cmdline_current['content'] | b64decode).split() }}"
-          when: cmdline_settings is defined
-
-        - name: Prepare filter for cmdline.txt options to remove
-          set_fact:
-            cmdline_remove: []
-          when: cmdline_settings is defined
-
-        - name: Assemble filter for cmdline.txt options to remove
-          set_fact:
-            cmdline_remove: "{{ cmdline_remove + [option.value] }}"
-          loop: "{{ cmdline_settings }}"
-          loop_control:
-            loop_var: option
-          when: cmdline_settings is defined and option.state is defined and option.state == 'absent'
-
-        - name: Prepare list for cmdline.txt options to add
-          set_fact:
-            cmdline_add: []
-          when: cmdline_settings is defined
-
-        - name: Assemble cmdline.txt options to add
-          set_fact:
-            cmdline_add: "{{ cmdline_add + [option.name + '=' + option.value] }}"
-          when: cmdline_settings is defined and (option.state is not defined or option.state == 'present')
-          loop: "{{ cmdline_settings }}"
-          loop_control:
-            loop_var: option
-
-        - name: Assemble new kernel command line
-          set_fact:
-            cmdline_new: "{{ cmdline + cmdline_add }}"
-          when: cmdline_settings is defined
-
-        - name: Write new kernel command line
-          copy:
-            content: "{{ cmdline_new | difference(cmdline_remove) | join(' ') }}"
-            dest: /boot/cmdline.txt
-          when: cmdline_settings is defined
-          become: true
-
-    - name: Setup unattended-upgrades
-      ansible.builtin.include_role:
-        name: hifis.unattended_upgrades
-
-    - name: Standalone packages
-      block:
-        - name: Packages | Install required packages
-          ansible.builtin.apt:
-            name: "{{ packages | default([]) }}"
-            state: present
-            update_cache: true
-        - name: Packages | Remove leaf packages
-          ansible.builtin.apt:
-            autoremove: true
-
-    - name: Install and configure Docker
-      ansible.builtin.include_role:
-        name: geerlingguy.docker
-
-  # - name: Deploy docker compose
+        - ansible.builtin.assert:
+            that: not output.changed
 
     - name: Install and configure Kodi
       ansible.builtin.include_role:
@@ -204,8 +122,8 @@
   # roles:
   #   - { role: roles/mediaplayers}
 
-    # RECOMMENDED: This role will lock down ssh access to disallow password login
-    # and make other security improvements to the default ssh setup.
-    # https://github.com/dev-sec/ansible-ssh-hardening
-    #- role: dev-sec.ssh-hardening
-    #  become: yes
+  # RECOMMENDED: This role will lock down ssh access to disallow password login
+  # and make other security improvements to the default ssh setup.
+  # https://github.com/dev-sec/ansible-ssh-hardening
+  #- role: dev-sec.ssh-hardening
+  #  become: yes

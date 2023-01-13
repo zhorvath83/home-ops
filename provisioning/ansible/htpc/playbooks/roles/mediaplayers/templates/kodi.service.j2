@@ -6,8 +6,8 @@ After = remote-fs.target network-online.target
 Wants = network-online.target
 
 [Service]
-User = {{ ansible_user }}
-Group = {{ ansible_user }}
+User = {{ inventory_username }}
+Group = {{ inventory_username }}
 Type = simple
 ExecStart = /usr/bin/kodi-standalone
 Restart = on-abort

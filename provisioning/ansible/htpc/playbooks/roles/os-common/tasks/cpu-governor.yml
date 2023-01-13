@@ -1,0 +1,15 @@
+---
+- name: Create CPU governor systemd service
+  vars:
+    desired_cpu_governor: performance
+  template:
+    src: cpu-governor.service.j2
+    dest: /etc/systemd/system/cpu-governor.service
+    mode: 0644
+  notify: daemon-reload
+
+- name: Set CPU governor
+  systemd:
+    name: cpu-governor
+    enabled: yes
+    state: started

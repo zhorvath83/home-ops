@@ -13,6 +13,11 @@ boot_config_entries:
   dtparam=audio: "off"
   hdmi_enable_4kp60: "1"
   cec_osd_name: "KODI"
+  initial_turbo: "60" # Enables turbo mode from boot for the given value in seconds.
+  # arm_freq: 2000 # Overclocking
+  # gpu_freq: 750 # Overclocking
+  # over_voltage: 6 # Overclocking
+  # force_turbo: 1 # Overclocking
 
 boot_config_remove_lines:
   - "dtoverlay=vc4-kms-v3d"
@@ -22,8 +27,13 @@ boot_config_insert_lines:
   - "dtoverlay=disable-wifi"
   - "dtoverlay=disable-bt"
   - "dtoverlay=vc4-kms-v3d,cma-512"
-  #- "hdmi_drive=2" # forces HDMI mode: Normal HDMI mode (sound will be sent if supported and enabled)
-  #- "hdmi_force_hotplug=1" # Setting hdmi_force_hotplug to 1 pretends that the HDMI hotplug signal is asserted, so it appears that a HDMI display is attached. In other words, HDMI output mode will be used, even if no HDMI monitor is detected.
+  - "dtoverlay=act-led" # disable ACT LED
+  - "dtparam=act_led_trigger=none"
+  - "dtparam=act_led_activelow=off"
+  - "dtparam=pwr_led_trigger=none" # disable PWR LED
+  - "dtparam=pwr_led_activelow=off"
+  - "dtparam=eth_led0=4" # turn off ethernet port LEDs
+  - "dtparam=eth_led1=4"
 
 cmdline_settings:
   - name: "cgroup_enable"
@@ -39,7 +49,7 @@ cmdline_settings:
   - name: "video"
     value: "HDMI-A-1:D"
 
-packages:
+standalone_packages:
   - htop
   - mc
   - nano

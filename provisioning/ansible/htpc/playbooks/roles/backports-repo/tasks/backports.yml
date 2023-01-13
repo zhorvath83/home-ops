@@ -1,0 +1,12 @@
+---
+- name: Add backports preferences
+  template:
+    src: backports.j2
+    dest: /etc/apt/preferences.d/01backports
+    mode: 0644
+
+- name: Add backports repository
+  apt_repository:
+    repo: "deb http://deb.debian.org/debian {{ ansible_distribution_release }}-backports main non-free contrib"
+    filename: backports.list
+    mode: 0644
