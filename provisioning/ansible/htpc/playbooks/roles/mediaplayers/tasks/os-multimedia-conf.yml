@@ -1,0 +1,11 @@
+# Dumping actual EDID file
+# sudo cp /sys/devices/platform/gpu/drm/card?/card?-HDMI-A-1/edid /lib/firmware/edid.dat
+- name: Copy EDID file
+  ansible.builtin.copy:
+    src: files/edid.dat
+    dest: /lib/firmware/edid.dat
+
+- name: Copy asound.conf
+  ansible.builtin.copy:
+    src: files/asound.conf
+    dest: /etc/asound.conf

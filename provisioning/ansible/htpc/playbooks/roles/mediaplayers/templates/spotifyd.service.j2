@@ -1,0 +1,13 @@
+{{ ansible_managed | comment }}
+
+[Unit]
+Description=Spotifyd
+After=network.target
+
+[Service]
+User={{ inventory_username }}
+ExecStart=/usr/bin/dbus-run-session /usr/local/bin/spotifyd --no-daemon --config-path /etc/spotifyd/spotifyd.conf
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

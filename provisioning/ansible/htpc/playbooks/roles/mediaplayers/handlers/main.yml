@@ -3,10 +3,10 @@
   systemd:
     name: "kodi"
     state: "stopped"
-    scope: "user"
+    scope: "system"
 
 - name: "Restart Kodi"
   systemd:
     name: "kodi"
     state: "restarted"
-    scope: "user"
+    scope: "system"

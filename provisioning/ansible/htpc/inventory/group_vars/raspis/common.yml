@@ -27,13 +27,16 @@ boot_config_insert_lines:
   - "dtoverlay=disable-wifi"
   - "dtoverlay=disable-bt"
   - "dtoverlay=vc4-kms-v3d,cma-512"
-  - "dtoverlay=act-led" # disable ACT LED
+  - "dtoverlay=act-led" # Turn off Activity LED
   - "dtparam=act_led_trigger=none"
   - "dtparam=act_led_activelow=off"
-  - "dtparam=pwr_led_trigger=none" # disable PWR LED
+  - "dtparam=pwr_led_trigger=default-on" # Turn off Power LED
   - "dtparam=pwr_led_activelow=off"
-  - "dtparam=eth_led0=4" # turn off ethernet port LEDs
-  - "dtparam=eth_led1=4"
+  - "dtparam=eth_led0=4" # RPI4 - Turn off Ethernet ACT LED
+  - "dtparam=eth_led1=4" # RPI4 - Turn off Ethernet LNK LED
+  # - "dtparam=eth_led0=4" # RPI3 - Turn off Ethernet ACT LED
+  # - "dtparam=eth_led1=4" # RPI3 - Turn off Ethernet LNK LED
+
 
 cmdline_settings:
   - name: "cgroup_enable"

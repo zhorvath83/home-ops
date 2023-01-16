@@ -1,2 +1,4 @@
 ---
+- import_tasks: "os-multimedia-conf.yml"
+# - import_tasks: "spotifyd.yml"
 - import_tasks: "kodi.yml"

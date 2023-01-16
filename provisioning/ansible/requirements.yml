@@ -11,7 +11,7 @@ collections:
   - name: devsec.hardening
     version: 8.4.0
   - name: community.docker
-    version: 3.4.0
+    version: 3.3.2
 
 roles:
   - name: chzerv.log2ram
@@ -25,6 +25,4 @@ roles:
     version: v2.0.1
   #- name: wandansible.docker
   #  src: https://github.com/wandansible/docker
-  - name: mjanser.pulseaudio
-    src: https://github.com/mjanser/ansible-role-pulseaudio
   - name: jose1711.kodi_ansible_role

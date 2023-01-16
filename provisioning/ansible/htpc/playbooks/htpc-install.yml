@@ -23,38 +23,11 @@
           ansible.builtin.include_role:
             name: hifis.unattended_upgrades
 
-    - name: Pulseaudio
-      block:
-        - name: Install Pulseaudio
-          ansible.builtin.include_role:
-            name: mjanser.pulseaudio
-          vars:
-            # Run: pacmd list-cards
-            # name and activeprofile needed
-            pulseaudio_card_profiles:
-              - card: alsa_card.usb-E__Corp._DAC_Audio-01
-                profile: output:analog-stereo
-            pulseaudio_sink_formats:
-              - sink: alsa_output.usb-E__Corp._DAC_Audio-01.analog-stereo
-                formats: "pcm"
-            pulseaudio_network: no
-            pulseaudio_avahi: no
-        - name: Pulseaudio groups
-          user:
-            name: "{{ inventory_username }}"
-            append: yes
-            groups:
-              - pulse-access
-              - audio
-
     - name: Docker
       block:
         - name: Install and configure Docker
           ansible.builtin.include_role:
             name: geerlingguy.docker
-        # - name: Install Docker Module for Python
-        #   pip:
-        #     name: docker
         - name: Install pip
           ansible.builtin.include_role:
             name: geerlingguy.pip
@@ -74,24 +47,19 @@
           community.docker.docker_compose:
             project_src: /home/{{ inventory_username }}/docker
             state: absent
-
         - name: Create and start services
           community.docker.docker_compose:
             project_src: /home/{{ inventory_username }}/docker
           register: output
-
         - ansible.builtin.debug:
             var: output
-
         - name: Run `docker-compose up` again
           community.docker.docker_compose:
             project_src: /home/{{ inventory_username }}/docker
             build: false
           register: output
-
         - ansible.builtin.debug:
             var: output
-
         - ansible.builtin.assert:
             that: not output.changed
 
@@ -107,13 +75,6 @@
           - unzip
           - python3-lxml
           - acl
-
-    # Dumping actual EDID file
-    # sudo cp /sys/devices/platform/gpu/drm/card?/card?-HDMI-A-1/edid /lib/firmware/edid.dat
-    - name: Copy EDID file
-      ansible.builtin.copy:
-        src: files/edid.dat
-        dest: /lib/firmware/edid.dat
 
     - name: Kodi service
       include_role:

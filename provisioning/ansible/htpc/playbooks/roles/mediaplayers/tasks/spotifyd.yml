@@ -1,0 +1,53 @@
+---
+- name: "Get currently installed version"
+  command: "spotifyd --version"
+  failed_when: false
+  changed_when: false
+  register: spotifyd_installed_version
+
+- name: "Download and install spotifyd"
+  block:
+    - tempfile: suffix="spotifyd" state="directory"
+      register: tempdir
+    - get_url: url="{{ spotifyd_url }}.tar.gz" dest="{{ tempdir.path }}" checksum="sha512:{{ spotifyd_url }}.sha512"
+    - unarchive: src="{{ spotifyd_url }}.tar.gz" dest="{{ tempdir.path }}" remote_src=yes
+    - command: "mv {{ tempdir.path }}/spotifyd {{ spotifyd_destination }}/spotifyd"
+    - file: path="{{ spotifyd_destination }}/spotifyd" owner="root" group="root"
+  always:
+    - file: path="{{ tempdir.path }}" state="absent"
+  when: spotifyd_installed_version.stdout is not defined or spotifyd_installed_version.stdout != spotifyd_version_output
+  become: true
+
+- name: "Create folder for spotifyd configuration"
+  file:
+    path: "/etc/spotifyd"
+    state: "directory"
+    #owner: "{{ inventory_username }}"
+    #group: "{{ inventory_username }}"
+    mode: "0755"
+  become: true
+
+- name: "Copy spotifyd configuration"
+  template:
+    src: "spotifyd.conf.j2"
+    dest: "/etc/spotifyd/spotifyd.conf"
+    #owner: "{{ inventory_username }}"
+    #group: "{{ inventory_username }}"
+    mode: "0644"
+  become: true
+
+- name: "Copy spotifyd systemd"
+  template:
+    src: "spotifyd.service.j2"
+    dest: "/lib/systemd/system/spotifyd.service"
+    mode: "0644"
+  notify: "Restart spotifyd"
+  become: true
+
+- name: "Start/Enable spotifyd"
+  systemd:
+    name: "spotifyd"
+    state: "started"
+    enabled: true
+    daemon_reload: true
+  become: true
