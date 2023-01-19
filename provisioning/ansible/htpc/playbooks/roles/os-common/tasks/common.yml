@@ -1,10 +1,4 @@
 ---
-- name: Locale
-  block:
-    - name: Locale | Set timezone
-      community.general.timezone:
-        name: "{{ timezone | default('Etc/UTC') }}"
-
 - name: Networking
   block:
     - name: Set hostname to inventory hostname
@@ -37,11 +31,25 @@
 
 - name: Prevent SD card wear
   block:
-    - name: Disable SWAP
-      ansible.builtin.include_role:
-        name: geerlingguy.swap
-      vars:
-        swap_file_state: absent
+    - name: Check for dphys-swapfile
+      stat:
+        path: /etc/dphys-swapfile
+      register: dphys_swapfile
+
+    - name: Disable swap
+      block:
+        - name: Turn off swap
+          command:
+            dphys-swapfile swapoff
+            dphys-swapfile uninstall
+        - name: Disable service
+          systemd:
+            name: dphys-swapfile
+            state: stopped
+            enabled: no
+            masked: yes
+      when:
+        - dphys_swapfile.stat.exists
 
     - name: Log2RAM
       ansible.builtin.include_role:
@@ -64,7 +72,7 @@
 
     - name: Retrieve rootfs partition UUID
       command: |
-        blkid -s PARTUUID -o value -t LABEL={{ rootfs_label | default("rootfs")  }}
+        blkid -s PARTUUID -o value -t LABEL={{ rootfs_label | default('rootfs')  }}
       changed_when: no
       register: rootfs_uuid
 
@@ -85,6 +93,41 @@
         fstype: tmpfs
         opts: "defaults,noatime,nosuid,nodev,mode=1777,size=256M"
         state: present
+
+- name: Switch keyboard layout to US
+  ini_file:
+    path: /etc/default/keyboard
+    section: null
+    no_extra_spaces: yes
+    option: XKBLAYOUT
+    value: us
+    mode: u=rw,g=r,o=r
+
+- name: Configure locale (/etc/default/locale)
+  ini_file:
+    path: /etc/default/locale
+    no_extra_spaces: yes
+    section: null
+    option: "{{ item.option }}"
+    value: "{{ item.value }}"
+  loop:
+    - option: LANG
+      value: en_US.UTF-8
+    - option: LC_ALL
+      value: en_US.UTF-8
+    - option: LANGUAGE
+      value: en_US.UTF-8
+
+- name: Replace before the expression till the begin of the file (requires Ansible >= 2.4)
+  replace:
+    path: /etc/locale.gen
+    regexp: '^# en_US.UTF-8 UTF-8$'
+    replace: 'en_US.UTF-8 UTF-8'
+
+- name: Generate locale for en_US.UTF-8
+  locale_gen:
+    name: en_US.UTF-8
+
 
 - name: config.txt
   block:
@@ -171,19 +214,31 @@
 
 - name: Installing standalone packages
   block:
-    - name: Packages | Install required packages
-      ansible.builtin.apt:
-        name: "{{ standalone_packages | default([]) }}"
-        state: present
-        update_cache: true
-    - name: Packages | Remove leaf packages
-      ansible.builtin.apt:
-        autoremove: true
     - name: Update Raspberry Pi OS
       apt:
         upgrade: dist
         update_cache: yes
         cache_valid_time: 3600
+    - name: Packages | Install required packages
+      ansible.builtin.apt:
+        name: "{{ standalone_packages_to_install | default([]) }}"
+        state: present
+        update_cache: true
+    - name: Packages | Remove leaf packages
+      ansible.builtin.apt:
+        autoremove: true
+    - name: Install bcmstat.sh script
+      get_url:
+        dest: /usr/local/bin/
+        url: https://raw.githubusercontent.com/MilhouseVH/bcmstat/master/bcmstat.sh
+        mode: 0755
+
+- name: Stop services and disable them
+  systemd:
+    name: "{{ item }}"
+    state: stopped
+    enabled: no
+  loop: "{{ rpi_disable_boot_services }}"
 
 - name: Add {{ inventory_username }} user gpio, video, audio and render groups
   user:

@@ -1,0 +1,24 @@
+- name: Add apt key
+  apt_key:
+    url: https://dtcooper.github.io/raspotify/key.asc
+
+- name: Add apt repository
+  apt_repository:
+    repo: deb [arch=arm64] https://dtcooper.github.io/raspotify raspotify main
+    filename: 'raspotify'
+
+- name: Install
+  apt:
+    name:
+      - raspotify
+      - asound-conf-wizard
+      - libasound2-plugins
+    update_cache: yes
+
+- name: Configure
+  template:
+    src: raspotify.conf
+    dest: "{{ raspotify_config_file }}"
+    mode: "0600"
+  notify:
+    - restart

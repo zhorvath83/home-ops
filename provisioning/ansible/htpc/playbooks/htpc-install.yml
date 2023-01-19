@@ -9,76 +9,82 @@
   #     ansible.builtin.pause:
   #       seconds: 5
   tasks:
+    - name: Setting up NTP
+      ansible.builtin.include_role:
+        name: geerlingguy.ntp
+
     - name: OS common tasks
       include_role:
         name: os-common
 
-    - name: APT
-      block:
-        - name: Backports repo
-          include_role:
-            name: backports-repo
-
-        - name: Setup unattended-upgrades
-          ansible.builtin.include_role:
-            name: hifis.unattended_upgrades
-
-    - name: Docker
-      block:
-        - name: Install and configure Docker
-          ansible.builtin.include_role:
-            name: geerlingguy.docker
-        - name: Install pip
-          ansible.builtin.include_role:
-            name: geerlingguy.pip
-          vars:
-            pip_install_packages:
-              - name: docker
-              - name: docker-compose
-        - name: Create directory for docker compose file
-          file:
-            path: /home/{{ inventory_username }}/docker
-            state: directory
-        - name: Downloading docker compose file
-          ansible.builtin.get_url:
-            url: https://raw.githubusercontent.com/zhorvath83/raspotify/654d51f056ff1a7d3612a6793ad94e60f3247b88/docker-compose.yaml
-            dest: /home/{{ inventory_username }}/docker
-        - name: Tear down existing docker services
-          community.docker.docker_compose:
-            project_src: /home/{{ inventory_username }}/docker
-            state: absent
-        - name: Create and start services
-          community.docker.docker_compose:
-            project_src: /home/{{ inventory_username }}/docker
-          register: output
-        - ansible.builtin.debug:
-            var: output
-        - name: Run `docker-compose up` again
-          community.docker.docker_compose:
-            project_src: /home/{{ inventory_username }}/docker
-            build: false
-          register: output
-        - ansible.builtin.debug:
-            var: output
-        - ansible.builtin.assert:
-            that: not output.changed
-
-    - name: Install and configure Kodi
+    - name: Setup unattended-upgrades
       ansible.builtin.include_role:
-        name: jose1711.kodi_ansible_role
-      vars:
-        packages:
-          - kodi
-          - sqlite3
-          - kodi-eventclients-kodi-send
-          - libxml2-utils
-          - unzip
-          - python3-lxml
-          - acl
+        name: hifis.unattended_upgrades
 
-    - name: Kodi service
+    # - name: Docker
+    #   block:
+    #     - name: Install and configure Docker
+    #       ansible.builtin.include_role:
+    #         name: geerlingguy.docker
+    #     - name: Install pip
+    #       ansible.builtin.include_role:
+    #         name: geerlingguy.pip
+    #       vars:
+    #         pip_install_packages:
+    #           - name: docker
+    #           - name: docker-compose
+    #     - name: Create directory for docker compose file
+    #       file:
+    #         path: /home/{{ inventory_username }}/docker
+    #         state: directory
+    #     - name: Downloading docker compose file
+    #       ansible.builtin.get_url:
+    #         url: https://raw.githubusercontent.com/zhorvath83/raspotify/654d51f056ff1a7d3612a6793ad94e60f3247b88/docker-compose.yaml
+    #         dest: /home/{{ inventory_username }}/docker
+    #     - name: Tear down existing docker services
+    #       community.docker.docker_compose:
+    #         project_src: /home/{{ inventory_username }}/docker
+    #         state: absent
+    #     - name: Create and start services
+    #       community.docker.docker_compose:
+    #         project_src: /home/{{ inventory_username }}/docker
+    #       register: output
+    #     - ansible.builtin.debug:
+    #         var: output
+    #     - name: Run `docker-compose up` again
+    #       community.docker.docker_compose:
+    #         project_src: /home/{{ inventory_username }}/docker
+    #         build: false
+    #       register: output
+    #     - ansible.builtin.debug:
+    #         var: output
+    #     - ansible.builtin.assert:
+    #         that: not output.changed
+
+    # - name: Install and configure Kodi
+    #   ansible.builtin.include_role:
+    #     name: jose1711.kodi_ansible_role
+    #   vars:
+    #     packages:
+    #       - kodi
+    #       - sqlite3
+    #       - kodi-eventclients-kodi-send
+    #       - libxml2-utils
+    #       - unzip
+    #       - python3-lxml
+    #       - acl
+
+    - name: Media services
       include_role:
         name: mediaplayers
+
+    - name: Kodi
+      include_role:
+        name: kodi
+
+    - name: Raspotify
+      include_role:
+        name: raspotify
 
   # roles:
   #   - { role: roles/mediaplayers}

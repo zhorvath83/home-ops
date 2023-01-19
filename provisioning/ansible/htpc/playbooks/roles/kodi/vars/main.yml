@@ -1,0 +1,67 @@
+kodi_user: kodi
+kodi_group: kodi
+
+kodi_userdata_dir: userdata
+
+kodi_cpu_command: sed -e 's/\([0-9]*\)[0-9]\{3\}.*/\1 C/' /sys/class/thermal/thermal_zone0/temp
+
+kodi_bin: /usr/bin/kodi-standalone
+
+# kodi_sources:
+#   - section: pictures
+#     sources:
+#       - name: photos
+#         path: /media/disk1/public/photos
+
+
+kodi_advanced_settins:
+  # https://kodi.wiki/view/Log_file/Advanced
+  log_level: 0
+  extra_logging: false
+  extra_log_level: 16384 # CEC
+
+kodi_gui_settings:
+  - id: addons.unknownsources
+    value: "true"
+  - id: audiooutput.audiodevice
+    value: ALSA:hdmi:CARD=vc4hdmi0,DEV=0
+  - id: audiooutput.passthroughdevice
+    value: ALSA:hdmi:CARD=vc4hdmi0,DEV=0
+  - id: audiooutput.volumesteps
+    value: 50
+  - id: locale.audiolanguage
+    value: Hungarian
+  - id: locale.subtitlelanguage
+    value: Hungarian
+  - id: locale.country
+    value: Central Europe
+  - id: powermanagement.displaysoff
+    value: 0 # 0 minutes
+  - id: screensaver.mode
+    value: screensaver.xbmc.builtin.dim
+  - id: screensaver.time
+    value: 0 # 1 minute
+  - id: slideshow.staytime
+    value: 2
+  - id: subtitles.charset
+    value: CP1250
+  - id: subtitles.height
+    value: 32
+  - id: subtitles.languages
+    value: Hungarian
+  - id: videoplayer.adjustrefreshrate
+    value: 2 # on start/stop
+  # enable hardware decoder
+  - id: videoplayer.useprimedecoder
+    value: "true"
+  - id: videoplayer.useprimerenderer
+    value: 0 # direct to plane
+  # enable remote access
+  - id: services.webserver
+    value: "true"
+  - id: services.webserverauthentication
+    value: "false"
+  - id: services.esallinterfaces
+    value: "true"
+  - id: services.zeroconf
+    value: "true"

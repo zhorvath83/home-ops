@@ -15,14 +15,16 @@ collections:
 
 roles:
   - name: chzerv.log2ram
-  - name: geerlingguy.swap
-    version: 1.0.2
+  - name: geerlingguy.ntp
+    version: 2.3.1
+  # - name: geerlingguy.swap
+  #   version: 1.0.2
   - name: geerlingguy.pip
     version: 2.2.0
   - name: geerlingguy.docker
     version: 6.0.4
   - name: hifis.unattended_upgrades
     version: v2.0.1
-  #- name: wandansible.docker
-  #  src: https://github.com/wandansible/docker
-  - name: jose1711.kodi_ansible_role
+  # - name: wandansible.docker
+  #   src: https://github.com/wandansible/docker
+  # - name: jose1711.kodi_ansible_role

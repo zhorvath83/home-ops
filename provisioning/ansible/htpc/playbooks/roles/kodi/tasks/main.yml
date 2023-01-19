@@ -1,0 +1,115 @@
+---
+- name: Packages | Install required packages
+  ansible.builtin.apt:
+    name:
+      - kodi
+      - python3-lxml
+    state: present
+    update_cache: true
+
+- name: Check for binary
+  stat:
+    path: "{{ kodi_bin }}"
+  register: kodi_bin_file
+
+- name: Fail if Kodi is not installed
+  fail:
+    msg: Missing Kodi binary {{ kodi_bin }}
+  when: not kodi_bin_file.stat.exists
+
+- name: Create group
+  group:
+    name: "{{ kodi_group }}"
+    system: true
+
+# - name: Create user
+#   user:
+#     name: "{{ kodi_user }}"
+#     group: "{{ kodi_group }}"
+#     groups: [ "audio", "input", "video", "render" ]
+#     system: true
+#   register: user
+
+- name: Create user for Kodi
+  user:
+    comment: "Kodi daemon"
+    name: "{{ kodi_user }}"
+    group: "{{ kodi_group }}"
+    groups:
+      - "audio"
+      - "input"
+      - "video"
+      - "render"
+      - "plugdev"
+    append: true
+    # home: "/"
+    shell: "/usr/bin/nologin"
+    password: "!"
+    system: true
+    create_home: true
+  become: true
+  register: user
+
+- name: Install service
+  template:
+    src: kodi.service.j2
+    dest: /etc/systemd/system/kodi.service
+    mode: "0644"
+  notify:
+    - restart
+
+- name: Check for initial configuration
+  stat:
+    path: "{{ user.home }}/.kodi"
+  register: kodi_configuration_directory
+
+- name: Create initial configuration
+  systemd:
+    name: kodi
+    state: started
+  when: not kodi_configuration_directory.stat.exists
+
+
+# Kodi override configuration on stop, grr
+- name: Stop service before configuration
+  systemd:
+    name: kodi
+    state: stopped
+
+- name: Configure sources
+  template:
+    src: sources.xml.j2
+    dest: "{{ user.home }}/.kodi/{{ kodi_userdata_dir }}/sources.xml"
+    mode: "0644"
+  when: kodi_sources is defined
+
+- name: Configure advanced settings
+  template:
+    src: advancedsettings.xml.j2
+    dest: "{{ user.home }}/.kodi/{{ kodi_userdata_dir }}/advancedsettings.xml"
+    mode: "0644"
+
+- name: Configure guisettings.xml
+  xml:
+    file: "{{ user.home }}/.kodi/{{ kodi_userdata_dir }}/guisettings.xml"
+    xpath: "/settings/setting[@id='{{ item.id }}']"
+    value: "{{ item.value }}"
+  with_items: "{{ kodi_gui_settings }}"
+
+- name: Configure guisettings.xml (drop default attributes)
+  xml:
+    path: "{{ user.home }}/.kodi/{{ kodi_userdata_dir }}/guisettings.xml"
+    xpath: "/settings/setting[@id='{{ item.id }}']/@default"
+    state: absent
+  with_items: "{{ kodi_gui_settings }}"
+
+- name: Start service after configuration
+  systemd:
+    name: kodi
+    state: started
+    enabled: yes
+
+- name: Download Kodi Jellyfin repo zip
+  ansible.builtin.get_url:
+    url: "https://kodi.jellyfin.org/repository.jellyfin.kodi.zip"
+    dest: "{{ user.home }}/repository.jellyfin.kodi.zip"

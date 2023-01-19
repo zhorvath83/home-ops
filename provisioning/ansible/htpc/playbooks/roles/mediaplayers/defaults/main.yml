@@ -1,50 +1,41 @@
 ---
-spotify_username: ""
-spotify_password: ""
-spotifyd_device_name: "Livingroom speaker"
-spotifyd_device_type: "speaker"
 
-spotifyd_version: "v0.3.4"
-spotifyd_filename: "spotifyd-linux-armhf-full"
-spotifyd_url: "https://github.com/Spotifyd/spotifyd/releases/download/v{{ spotifyd_version }}/{{ spotifyd_filename }}"
-spotifyd_destination: "/usr/local/bin"
-
-kodi_user: kodi
-kodi_groups: [audio, video, input]
-kodi_shell: /bin/bash
-
-kodi_webserver_enabled: 'false'
-
-kodi_addons: []
-
-kodi_repositories:
-  - official_cached=https://ftp.fau.de/xbmc/addons/${codename}/addons.xml.gz
-
-kodi_enabled_repositories:
-  - official_cached
-
-kodi_language: en
-kodi_locale_country: Hungary
-kodi_locale_timezone_country: Hungary
-kodi_subtitles_languages: Hungarian
-kodi_weather_provider: weather.shmu.pocasie
-
-# whether to copy favourites.xml and rss from a dedicated host
-kodi_copy_favourites: False
-kodi_copy_feeds: False
-kodi_master_installation: master_install
-kodi_master_kodi_user: kodi_user
-
-
-kodi_config:
-  - {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"locale.language\"]", value: "resource.language.{{ kodi_language }}", type: "string"}
-  - {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"locale.country\"]", value: "{{ kodi_locale_country }}", type: "string"}
-  - {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"locale.timezonecountry\"]", value: "{{ kodi_locale_timezone_country }}", type: "string"}
-  - {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"subtitles.languages\"]", value: "{{ kodi_subtitles_languages }}", type: "string"}
-  - {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"weather.addon\"]", value: "{{ kodi_weather_provider }}", type: "string"}
-  - {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"addons.unknownsources\"]", value: "true", type: "bool"}
-  - {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"services.webserver\"]", value: "{{ kodi_webserver_enabled }}", type: "bool"}
-  - {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"services.webserverport\"]", value: "{{ kodi_webserver_port }}", type: "string"}
-  - {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"services.webserverusername\"]", value: "{{ kodi_webserver_user }}", type: "string"}
-  - {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"services.webserverpassword\"]", value: "{{ kodi_webserver_password }}", type: "string"}
-  - {file: 'userdata/guisettings.xml', key: "settings/general/settinglevel", value: "3", type: "string"}
+# kodi_user: kodi
+# kodi_groups: [audio, video, input]
+# kodi_shell: /bin/bash
+#
+# kodi_webserver_enabled: 'false'
+#
+# kodi_addons: []
+#
+# kodi_repositories:
+#   - official_cached=https://ftp.fau.de/xbmc/addons/${codename}/addons.xml.gz
+#
+# kodi_enabled_repositories:
+#   - official_cached
+#
+# kodi_language: en
+# kodi_locale_country: Hungary
+# kodi_locale_timezone_country: Hungary
+# kodi_subtitles_languages: Hungarian
+# kodi_weather_provider: weather.shmu.pocasie
+#
+# # whether to copy favourites.xml and rss from a dedicated host
+# kodi_copy_favourites: False
+# kodi_copy_feeds: False
+# kodi_master_installation: master_install
+# kodi_master_kodi_user: kodi_user
+#
+#
+# kodi_config:
+#   - {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"locale.language\"]", value: "resource.language.{{ kodi_language }}", type: "string"}
+#   - {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"locale.country\"]", value: "{{ kodi_locale_country }}", type: "string"}
+#   - {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"locale.timezonecountry\"]", value: "{{ kodi_locale_timezone_country }}", type: "string"}
+#   - {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"subtitles.languages\"]", value: "{{ kodi_subtitles_languages }}", type: "string"}
+#   - {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"weather.addon\"]", value: "{{ kodi_weather_provider }}", type: "string"}
+#   - {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"addons.unknownsources\"]", value: "true", type: "bool"}
+#   - {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"services.webserver\"]", value: "{{ kodi_webserver_enabled }}", type: "bool"}
+#   - {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"services.webserverport\"]", value: "{{ kodi_webserver_port }}", type: "string"}
+#   - {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"services.webserverusername\"]", value: "{{ kodi_webserver_user }}", type: "string"}
+#   - {file: 'userdata/guisettings.xml', key: "settings/setting[@id=\"services.webserverpassword\"]", value: "{{ kodi_webserver_password }}", type: "string"}
+#   - {file: 'userdata/guisettings.xml', key: "settings/general/settinglevel", value: "3", type: "string"}

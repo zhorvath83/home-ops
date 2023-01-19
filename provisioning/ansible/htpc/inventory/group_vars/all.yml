@@ -1,2 +1,89 @@
 ---
 inventory_username: "zhorvath83"
+
+inventory_hostname: "raspimedia.lan"
+
+disable_ipv6: true
+
+ntp_enabled: true
+ntp_timezone: Europe/Budapest
+ntp_manage_config: true
+ntp_area: 'hu'
+
+# Path to the Raspberry Pi boot configuration file
+rpi_boot_config_file: /boot/config.txt
+
+boot_config_entries:
+  dtparam=audio: "on"
+  hdmi_enable_4kp60: "1"
+  cec_osd_name: "KODI"
+  initial_turbo: "60" # Enables turbo mode from boot for the given value in seconds.
+  arm_boost: "1" # turbo-mode clock to be increased from 1.5GHz to 1.8GHz
+  arm_64bit: "1" # 64-bit kernel (for performance) with 32-bit user space (for compatibility)
+  hdmi_drive: "2" # always enable HDMI audio to preserve alsa device order
+  hdmi_force_hotplug: "1" # enable HDMI even if no monitor is detected
+  hdmi_ignore_cec_init: "1" # disable a CEC-enabled TV from coming out of standby after boot
+  disable_fw_kms_setup: "1" # KMS will parse the EDID instead of firmware
+  disable_overscan: "1" # disable black border if display can output without overscan
+  disable_splash: "1"  # disable rainbow splash screen
+  audio_pwm_mode: "2" # selects high quality analogue audio using an advanced modulation scheme
+
+boot_config_remove_lines:
+  - "dtoverlay=vc4-kms-v3d"
+
+boot_config_insert_lines:
+  - "dtoverlay=disable-wifi"
+  - "dtoverlay=disable-bt"
+  - "dtoverlay=vc4-kms-v3d,cma-512"
+  - "dtoverlay=rpivid-v4l2" # enable hardware video decoding
+  - "dtoverlay=act-led" # Turn off Activity LED
+  - "dtparam=act_led_trigger=none"
+  - "dtparam=act_led_activelow=off"
+  - "dtparam=pwr_led_trigger=default-on" # Turn off Power LED
+  - "dtparam=pwr_led_activelow=off"
+  - "dtparam=eth_led0=4" # RPI4 - Turn off Ethernet ACT LED
+  - "dtparam=eth_led1=4" # RPI4 - Turn off Ethernet LNK LED
+
+
+cmdline_settings:
+  - name: "cgroup_enable"
+    value: "cpuset"
+  - name: "cgroup_memory"
+    value: "1"
+  - name: "cgroup_enable"
+    value: "memory"
+  - name: "vt.global_cursor_default"
+    value: "0" # disable the blinking cursor at the console
+  - name: "drm.edid_firmware" # sudo cp /sys/devices/platform/gpu/drm/card?/card?-HDMI-A-1/edid /lib/firmware/edid.dat
+    value: "HDMI-A-1:edid.dat"
+  - name: "video"
+    value: "HDMI-A-1:D"
+
+standalone_packages_to_install:
+  - htop
+  - mc
+  - nano
+
+# A list of users who will be added to the docker group.
+docker_users:
+  - "{{ inventory_username }}"
+
+# Docker daemon options as a dict
+docker_daemon_options:
+  log-opts:
+    max-size: "100m"
+
+#Unattended-Upgrade::Automatic-Reboot-Time
+# If automatic reboot is enabled and needed, reboot at the specific
+# time instead of immediately
+unattended_automatic_reboot_time: "03:00"
+
+unattended_origins_patterns:
+  - 'origin=Raspbian,codename=${distro_codename},label=Raspbian'
+
+rpi_disable_boot_services:
+  - bluetooth
+  - hciuart
+  - console-setup
+  - triggerhappy
+  - wpa_supplicant
