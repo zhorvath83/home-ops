@@ -23,10 +23,6 @@ kodi_advanced_settins:
 kodi_gui_settings:
   - id: addons.unknownsources
     value: "true"
-  - id: audiooutput.audiodevice
-    value: ALSA:hdmi:CARD=vc4hdmi0,DEV=0
-  - id: audiooutput.passthroughdevice
-    value: ALSA:hdmi:CARD=vc4hdmi0,DEV=0
   - id: audiooutput.volumesteps
     value: 50
   - id: locale.audiolanguage
