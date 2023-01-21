@@ -14,19 +14,18 @@ ntp_area: 'hu'
 rpi_boot_config_file: /boot/config.txt
 
 boot_config_entries:
-  dtparam=audio: "on"
+  dtparam=audio: "off"
   hdmi_enable_4kp60: "1"
   cec_osd_name: "KODI"
   initial_turbo: "60" # Enables turbo mode from boot for the given value in seconds.
   arm_boost: "1" # turbo-mode clock to be increased from 1.5GHz to 1.8GHz
   arm_64bit: "1" # 64-bit kernel (for performance) with 32-bit user space (for compatibility)
-  hdmi_drive: "2" # always enable HDMI audio to preserve alsa device order
+  # hdmi_drive: "2" # always enable HDMI audio to preserve alsa device order
   hdmi_force_hotplug: "1" # enable HDMI even if no monitor is detected
   hdmi_ignore_cec_init: "1" # disable a CEC-enabled TV from coming out of standby after boot
   disable_fw_kms_setup: "1" # KMS will parse the EDID instead of firmware
   disable_overscan: "1" # disable black border if display can output without overscan
   disable_splash: "1"  # disable rainbow splash screen
-  audio_pwm_mode: "2" # selects high quality analogue audio using an advanced modulation scheme
 
 boot_config_remove_lines:
   - "dtoverlay=vc4-kms-v3d"
