@@ -56,7 +56,10 @@ cmdline_settings:
   - name: "drm.edid_firmware" # sudo cp /sys/devices/platform/gpu/drm/card?/card?-HDMI-A-1/edid /lib/firmware/edid.dat
     value: "HDMI-A-1:edid.dat"
   - name: "video"
-    value: "HDMI-A-1:D"
+    value: "HDMI-A-1:D" # edids are only loaded when a connected display is detected, D overrides hotplug detection and forces digital mode
+  - name: "ipv6.disable"
+    value: "1"
+
 
 standalone_packages_to_install:
   - htop

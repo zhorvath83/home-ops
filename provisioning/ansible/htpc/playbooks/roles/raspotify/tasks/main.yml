@@ -1,3 +1,8 @@
+- name: Copy asound.conf
+  ansible.builtin.copy:
+    src: files/asound.conf
+    dest: /etc/asound.conf
+
 - name: Add apt key
   apt_key:
     url: https://dtcooper.github.io/raspotify/key.asc
