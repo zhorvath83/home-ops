@@ -1,4 +1,7 @@
 ---
+- name: Include OS-specific variables.
+  include_vars: "{{ ansible_distribution }}.yml"
+
 - name: Networking
   block:
     - name: Set hostname to inventory hostname
@@ -9,47 +12,24 @@
         path: /etc/hosts
         regexp: "^127.0.1.1"
         line: "127.0.1.1  {{ inventory_hostname }}"
-    - name: Disable IPv6
-      ansible.posix.sysctl:
-        name: "{{ line.name }}"
-        value: "{{ line.value }}"
-        reload: true
-      loop:
-        - name: net.ipv6.conf.all.disable_ipv6
-          value: 1
-        - name: net.ipv6.conf.default.disable_ipv6
-          value: 1
-        - name: net.ipv6.conf.lo.disable_ipv6
-          value: 1
-        - name: net.ipv6.conf.{{ network_interface | default(ansible_default_ipv4.interface) }}.disable_ipv6
-          value: 1
-      loop_control:
-        loop_var: line
-      when: disable_ipv6
-      become: true
-      ignore_errors: true
+
+# IPv6 disabled by kernel parameter in cmdline.txt
 
 - name: Prevent SD card wear
   block:
-    - name: Check for dphys-swapfile
-      stat:
-        path: /etc/dphys-swapfile
-      register: dphys_swapfile
-
     - name: Disable swap
       block:
         - name: Turn off swap
           command:
             dphys-swapfile swapoff
             dphys-swapfile uninstall
-        - name: Disable service
+        - name: Disable dphys-swapfile service
           systemd:
             name: dphys-swapfile
             state: stopped
-            enabled: no
-            masked: yes
-      when:
-        - dphys_swapfile.stat.exists
+            enabled: false
+            masked: true
+      when: ansible_facts.swaptotal_mb is defined and ansible_facts.swaptotal_mb > 0
 
     - name: Log2RAM
       ansible.builtin.include_role:
@@ -73,7 +53,7 @@
     - name: Retrieve rootfs partition UUID
       command: |
         blkid -s PARTUUID -o value -t LABEL={{ rootfs_label | default('rootfs')  }}
-      changed_when: no
+      changed_when: false
       register: rootfs_uuid
 
     - name: Set partition_uuid fact
@@ -98,7 +78,7 @@
   ini_file:
     path: /etc/default/keyboard
     section: null
-    no_extra_spaces: yes
+    no_extra_spaces: true
     option: XKBLAYOUT
     value: us
     mode: u=rw,g=r,o=r
@@ -106,7 +86,7 @@
 - name: Configure locale (/etc/default/locale)
   ini_file:
     path: /etc/default/locale
-    no_extra_spaces: yes
+    no_extra_spaces: true
     section: null
     option: "{{ item.option }}"
     value: "{{ item.value }}"
@@ -154,18 +134,18 @@
       with_items: '{{ boot_config_insert_lines }}'
       register: _boot_config_insert_lines
 
-    # - name: "Restart machine"  # noqa 503
-    #   ansible.builtin.reboot:
-    #     msg: "Reboot by Ansible, because {{ rpi_boot_config_file }} config changed."
-    #     reboot_timeout: 300   # (= 5 minutes)
-    #   when: _boot_config.changed or _boot_config_insert_lines.changed
+# - name: "Restart machine"  # noqa 503
+#   ansible.builtin.reboot:
+#     msg: "Reboot by Ansible, because {{ rpi_boot_config_file }} config changed."
+#     reboot_timeout: 300   # (= 5 minutes)
+#   when: _boot_config.changed or _boot_config_insert_lines.changed
 
 
 - name: cmdline.txt
   block:
     - name: Read cmdline.txt
       slurp:
-        src: /boot/cmdline.txt
+        src: "{{ rpi_cmdline_file }}"
       register: cmdline_current
       when: cmdline_settings is defined
 
@@ -208,22 +188,27 @@
     - name: Write new kernel command line
       copy:
         content: "{{ cmdline_new | difference(cmdline_remove) | join(' ') }}"
-        dest: /boot/cmdline.txt
+        dest: "{{ rpi_cmdline_file }}"
       when: cmdline_settings is defined
       become: true
 
 - name: Installing standalone packages
   block:
+    - name: Packages | Remove unnecessery packages
+      ansible.builtin.apt:
+        name: "{{ standalone_packages_to_remove | default([]) }}"
+        state: absent
+        update_cache: false
     - name: Update Raspberry Pi OS
       apt:
         upgrade: dist
-        update_cache: yes
+        update_cache: true
         cache_valid_time: 3600
     - name: Packages | Install required packages
       ansible.builtin.apt:
         name: "{{ standalone_packages_to_install | default([]) }}"
         state: present
-        update_cache: true
+        update_cache: false
     - name: Packages | Remove leaf packages
       ansible.builtin.apt:
         autoremove: true
@@ -237,13 +222,13 @@
   systemd:
     name: "{{ item }}"
     state: stopped
-    enabled: no
+    enabled: false
   loop: "{{ rpi_disable_boot_services }}"
 
 - name: Add {{ inventory_username }} user gpio, video, audio and render groups
   user:
     name: "{{ inventory_username }}"
-    append: yes
+    append: true
     groups:
       - gpio
       - video

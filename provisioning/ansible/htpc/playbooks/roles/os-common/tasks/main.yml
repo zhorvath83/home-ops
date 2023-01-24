@@ -1,6 +1,6 @@
 ---
-- import_tasks: "backports-repo.yml"
+# - import_tasks: "backports-repo.yml"
 - import_tasks: "journald.yml"
 - import_tasks: "logrotate.yml"
 - import_tasks: "common.yml"
-#- import_tasks: "cpu-governor.yml"
+# - import_tasks: "cpu-governor.yml"

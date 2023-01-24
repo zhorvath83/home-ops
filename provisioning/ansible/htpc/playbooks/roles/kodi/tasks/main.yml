@@ -6,6 +6,11 @@
     src: files/edid.dat
     dest: /lib/firmware/edid.dat
 
+# Setup apt repo (Ubuntu only)"
+- name: Add Kodi ppa
+  apt_repository: repo='ppa:team-xbmc/ppa'
+  when: ansible_distribution == 'Ubuntu'
+
 - name: Packages | Install required packages
   ansible.builtin.apt:
     name:
@@ -82,6 +87,7 @@
   systemd:
     name: kodi
     state: stopped
+  changed_when: false
 
 - name: Configure sources
   template:
@@ -114,7 +120,8 @@
   systemd:
     name: kodi
     state: started
-    enabled: yes
+    enabled: true
+  changed_when: false
 
 - name: Download Kodi Jellyfin repo zip
   ansible.builtin.get_url:

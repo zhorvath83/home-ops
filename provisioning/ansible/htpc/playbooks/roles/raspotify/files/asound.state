@@ -1,0 +1,183 @@
+state.Headphones {
+        control.1 {
+                iface MIXER
+                name 'Headphone Playback Volume'
+                value 0
+                comment {
+                        access 'read write'
+                        type INTEGER
+                        count 1
+                        range '-10239 - 400'
+                        dbmin -9999999
+                        dbmax 400
+                        dbvalue.0 0
+                }
+        }
+        control.2 {
+                iface MIXER
+                name 'Headphone Playback Switch'
+                value true
+                comment {
+                        access 'read write'
+                        type BOOLEAN
+                        count 1
+                }
+        }
+}
+state.vc4hdmi0 {
+        control.1 {
+                iface PCM
+                name 'Playback Channel Map'
+                value.0 0
+                value.1 0
+                value.2 0
+                value.3 0
+                value.4 0
+                value.5 0
+                value.6 0
+                value.7 0
+                comment {
+                        access read
+                        type INTEGER
+                        count 8
+                        range '0 - 36'
+                }
+        }
+        control.2 {
+                iface PCM
+                name 'IEC958 Playback Mask'
+                value ffffffffffffffffffffffffffffffffffffffffffffffff0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+                comment {
+                        access read
+                        type IEC958
+                        count 1
+                }
+        }
+        control.3 {
+                iface PCM
+                name 'IEC958 Playback Default'
+                value '0400000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+                comment {
+                        access 'read write'
+                        type IEC958
+                        count 1
+                }
+        }
+        control.4 {
+                iface PCM
+                name ELD
+                value '100007006522000000000000000000001e6d01004c4720545615075009570700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+                comment {
+                        access 'read volatile'
+                        type BYTES
+                        count 128
+                }
+        }
+        control.5 {
+                iface MIXER
+                name 'PCM Playback Volume'
+                value.0 233
+                value.1 233
+                comment {
+                        access 'read write user'
+                        type INTEGER
+                        count 2
+                        range '0 - 255'
+                        tlv '0000000100000008ffffec1400000014'
+                        dbmin -5100
+                        dbmax 0
+                        dbvalue.0 -440
+                        dbvalue.1 -440
+                }
+        }
+}
+state.vc4hdmi1 {
+        control.1 {
+                iface PCM
+                name 'Playback Channel Map'
+                value.0 0
+                value.1 0
+                value.2 0
+                value.3 0
+                value.4 0
+                value.5 0
+                value.6 0
+                value.7 0
+                comment {
+                        access read
+                        type INTEGER
+                        count 8
+                        range '0 - 36'
+                }
+        }
+        control.2 {
+                iface PCM
+                name 'IEC958 Playback Mask'
+                value ffffffffffffffffffffffffffffffffffffffffffffffff0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+                comment {
+                        access read
+                        type IEC958
+                        count 1
+                }
+        }
+        control.3 {
+                iface PCM
+                name 'IEC958 Playback Default'
+                value '0400000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+                comment {
+                        access 'read write'
+                        type IEC958
+                        count 1
+                }
+        }
+        control.4 {
+                iface PCM
+                name ELD
+                value '0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+                comment {
+                        access 'read volatile'
+                        type BYTES
+                        count 128
+                }
+        }
+}
+state.Audio {
+        control.1 {
+                iface PCM
+                name 'Playback Channel Map'
+                value.0 3
+                value.1 4
+                comment {
+                        access read
+                        type INTEGER
+                        count 2
+                        range '0 - 36'
+                }
+        }
+        control.2 {
+                iface MIXER
+                name 'PCM Playback Switch'
+                value true
+                comment {
+                        access 'read write'
+                        type BOOLEAN
+                        count 1
+                }
+        }
+        control.3 {
+                iface MIXER
+                name 'PCM Playback Volume'
+                value.0 110
+                value.1 110
+                comment {
+                        access 'read write'
+                        type INTEGER
+                        count 2
+                        range '0 - 110'
+                        dbmin -5500
+                        dbmax 0
+                        dbvalue.0 0
+                        dbvalue.1 0
+                }
+        }
+}

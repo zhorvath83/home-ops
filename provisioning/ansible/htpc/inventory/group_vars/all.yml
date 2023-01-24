@@ -3,15 +3,10 @@ inventory_username: "zhorvath83"
 
 inventory_hostname: "raspimedia.lan"
 
-disable_ipv6: true
-
 ntp_enabled: true
 ntp_timezone: Europe/Budapest
 ntp_manage_config: true
 ntp_area: 'hu'
-
-# Path to the Raspberry Pi boot configuration file
-rpi_boot_config_file: /boot/config.txt
 
 boot_config_entries:
   dtparam=audio: "off"
@@ -28,7 +23,7 @@ boot_config_entries:
   disable_splash: "1"  # disable rainbow splash screen
 
 boot_config_remove_lines:
-  - "dtoverlay=vc4-kms-v3d"
+  - "^dtoverlay=vc4-kms-v3d$"
 
 boot_config_insert_lines:
   - "dtoverlay=disable-wifi"
@@ -42,7 +37,6 @@ boot_config_insert_lines:
   - "dtparam=pwr_led_activelow=off"
   - "dtparam=eth_led0=4" # RPI4 - Turn off Ethernet ACT LED
   - "dtparam=eth_led1=4" # RPI4 - Turn off Ethernet LNK LED
-
 
 cmdline_settings:
   - name: "cgroup_enable"
@@ -60,11 +54,18 @@ cmdline_settings:
   - name: "ipv6.disable"
     value: "1"
 
-
 standalone_packages_to_install:
   - htop
   - mc
   - nano
+
+standalone_packages_to_remove:
+  - bluez
+  - bluez-firmware
+
+install_kodi: true
+install_raspotify: true
+install_docker: false
 
 # A list of users who will be added to the docker group.
 docker_users:
@@ -75,17 +76,7 @@ docker_daemon_options:
   log-opts:
     max-size: "100m"
 
-#Unattended-Upgrade::Automatic-Reboot-Time
+# Unattended-Upgrade::Automatic-Reboot-Time
 # If automatic reboot is enabled and needed, reboot at the specific
 # time instead of immediately
 unattended_automatic_reboot_time: "03:00"
-
-unattended_origins_patterns:
-  - 'origin=Raspbian,codename=${distro_codename},label=Raspbian'
-
-rpi_disable_boot_services:
-  - bluetooth
-  - hciuart
-  - console-setup
-  - triggerhappy
-  - wpa_supplicant

@@ -1,0 +1,14 @@
+---
+# Path to the Raspberry Pi boot configuration file
+rpi_boot_config_file: /boot/config.txt
+rpi_cmdline_file: /boot/cmdline.txt
+
+rpi_disable_boot_services:
+  - bluetooth
+  - hciuart
+  - console-setup
+  - triggerhappy
+  - wpa_supplicant
+
+unattended_origins_patterns:
+  - 'origin=Raspbian,codename=${distro_codename},label=Raspbian'

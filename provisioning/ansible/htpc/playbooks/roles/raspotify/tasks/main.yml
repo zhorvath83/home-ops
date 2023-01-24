@@ -1,7 +1,13 @@
+---
 - name: Copy asound.conf
   ansible.builtin.copy:
     src: files/asound.conf
     dest: /etc/asound.conf
+
+- name: Copy asound.state
+  ansible.builtin.copy:
+    src: files/asound.state
+    dest: /var/lib/alsa/asound.state
 
 - name: Add apt key
   apt_key:
@@ -9,7 +15,7 @@
 
 - name: Add apt repository
   apt_repository:
-    repo: deb [arch=arm64] https://dtcooper.github.io/raspotify raspotify main
+    repo: deb [arch=armhf,arm64] https://dtcooper.github.io/raspotify raspotify main
     filename: 'raspotify'
 
 - name: Install
@@ -18,7 +24,7 @@
       - raspotify
       - asound-conf-wizard
       - libasound2-plugins
-    update_cache: yes
+    update_cache: true
 
 - name: Configure
   template:

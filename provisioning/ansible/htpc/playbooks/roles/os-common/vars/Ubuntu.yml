@@ -1,0 +1,18 @@
+---
+rootfs_label: writable
+
+# Path to the Raspberry Pi boot configuration file
+rpi_boot_config_file: /boot/firmware/config.txt
+rpi_cmdline_file: /boot/firmware/cmdline.txt
+
+rpi_disable_boot_services:
+  - bluetooth
+  - hciuart
+  - console-setup
+  - wpa_supplicant
+
+unattended_origins_patterns:
+  - 'origin=Ubuntu,archive=${distro_codename}-security'
+  - 'o=Ubuntu,a=${distro_codename}'
+  - 'o=Ubuntu,a=${distro_codename}-updates'
+  - 'o=Ubuntu,a=${distro_codename}-proposed-updates'

@@ -1,0 +1,108 @@
+---
+
+# get_kodi_addon.sh fails on LibreELEC due to bash-ism
+- name: Stage addon-install script into ~/.kodi
+  copy:
+    src: "get_kodi_addon.sh"
+    dest: "~{{ kodi_user }}/.kodi"
+    owner: "{{ kodi_user }}"
+    mode: "0700"
+  when: ansible_distribution != 'LibreELEC'
+
+- name: Stage addon-enable script into ~/.kodi
+  copy:
+    src: "enable_kodi_addon.sh"
+    dest: "~{{ kodi_user }}/.kodi"
+    owner: "{{ kodi_user }}"
+    mode: "0700"
+
+- name: Stage repositories.sh
+  template:
+    src: repositories.sh.j2
+    dest: "~{{ kodi_user }}/.kodi/repositories.sh"
+    owner: "{{ kodi_user }}"
+    mode: "0700"
+  when: "ansible_distribution != 'LibreELEC'"
+
+- name: Get Kodi addons
+  command:
+    cmd: '~{{ kodi_user }}/.kodi/get_kodi_addon.sh {{ item }} {{ kodi_version }}'
+  with_items: "{{ kodi_addons }}"
+  become_user: "{{ kodi_user }}"
+  become: True
+  when: ansible_distribution != 'LibreELEC'
+
+
+- name: Set permissions on .kodi/
+  file:
+    path: "~{{ kodi_user }}/.kodi"
+    owner: "{{ kodi_user }}"
+
+- name: Copy addon settings
+  copy:
+    src: "addon_data/{{ item }}"
+    dest: "~{{ kodi_user }}/.kodi/userdata/addon_data"
+    owner: "{{ kodi_user }}"
+  with_items: "{{ kodi_addons }}"
+  ignore_errors: True
+  failed_when: False
+
+- name: Create directories for xml files
+  file:
+    path: "~{{ kodi_user }}/.kodi/{{ item }}"
+    state: directory
+  with_items: "{{ kodi_config | map(attribute='file') | map('dirname') | unique }}"
+
+- name: Check if xml config files exist
+  stat:
+    path: "~{{ kodi_user }}/.kodi/{{ item }}"
+  with_items: "{{ kodi_config | map(attribute='file') | unique }}"
+  register: stat_result
+
+- name: Create empty xml setting file if needed
+  copy:
+    content: "<settings></settings>"
+    dest: "~{{ kodi_user }}/.kodi/{{ item }}"
+  with_items: "{{ stat_result.results
+                  | selectattr('stat.exists', 'false')
+                  | map(attribute='item')
+                  | list }}"
+
+- include: configure.yml
+  when: "ansible_distribution != 'LibreELEC'"
+
+
+- name: Apply correct ownership to ~/.kodi
+  file:
+    path: "~{{ kodi_user }}/.kodi"
+    state: directory
+    recurse: True
+    owner: "{{ kodi_user }}"
+
+- name: Slurp favourites from master installation
+  slurp:
+    src: "~{{ kodi_master_kodi_user }}/.kodi/userdata/favourites.xml"
+  register: favourites
+  delegate_to: "{{ kodi_master_installation }}"
+  when: kodi_copy_favourites
+
+- name: Slurp RSS feeds from master installation
+  slurp:
+    src: "~{{ kodi_master_kodi_user }}/.kodi/userdata/RssFeeds.xml"
+  register: rssfeeds
+  delegate_to: "{{ kodi_master_installation }}"
+  when: kodi_copy_feeds
+
+- name: Transfer favourites from master installation
+  copy:
+    content: "{{ favourites['content'] | b64decode }}"
+    dest: "~{{ kodi_user }}/.kodi/userdata/favourites.xml"
+    backup: True
+  when: kodi_copy_favourites
+
+- name: Transfer RSS feeds from master installation
+  copy:
+    content: "{{ favourites['content'] | b64decode }}"
+    dest: "~{{ kodi_user }}/.kodi/userdata/RSSFeeds.xml"
+    backup: True
+  when: kodi_copy_feeds

@@ -26,40 +26,41 @@
         - name: Install and configure Docker
           ansible.builtin.include_role:
             name: geerlingguy.docker
-        # - name: Install pip
-        #   ansible.builtin.include_role:
-        #     name: geerlingguy.pip
-        #   vars:
-        #     pip_install_packages:
-        #       - name: docker
-        #       - name: docker-compose
-        # - name: Create directory for docker compose file
-        #   file:
-        #     path: /home/{{ inventory_username }}/docker
-        #     state: directory
-        # - name: Downloading docker compose file
-        #   ansible.builtin.get_url:
-        #     url: https://raw.githubusercontent.com/zhorvath83/raspotify/654d51f056ff1a7d3612a6793ad94e60f3247b88/docker-compose.yaml
-        #     dest: /home/{{ inventory_username }}/docker
-        # - name: Tear down existing docker services
-        #   community.docker.docker_compose:
-        #     project_src: /home/{{ inventory_username }}/docker
-        #     state: absent
-        # - name: Create and start services
-        #   community.docker.docker_compose:
-        #     project_src: /home/{{ inventory_username }}/docker
-        #   register: output
-        # - ansible.builtin.debug:
-        #     var: output
-        # - name: Run `docker-compose up` again
-        #   community.docker.docker_compose:
-        #     project_src: /home/{{ inventory_username }}/docker
-        #     build: false
-        #   register: output
-        # - ansible.builtin.debug:
-        #     var: output
-        # - ansible.builtin.assert:
-        #     that: not output.changed
+        - name: Install pip
+          ansible.builtin.include_role:
+            name: geerlingguy.pip
+          vars:
+            pip_install_packages:
+              - name: docker
+              - name: docker-compose
+        - name: Create directory for docker compose file
+          file:
+            path: /home/{{ inventory_username }}/docker
+            state: directory
+        - name: Downloading docker compose file
+          ansible.builtin.get_url:
+            url: https://raw.githubusercontent.com/zhorvath83/raspotify/654d51f056ff1a7d3612a6793ad94e60f3247b88/docker-compose.yaml
+            dest: /home/{{ inventory_username }}/docker
+        - name: Tear down existing docker services
+          community.docker.docker_compose:
+            project_src: /home/{{ inventory_username }}/docker
+            state: absent
+        - name: Create and start services
+          community.docker.docker_compose:
+            project_src: /home/{{ inventory_username }}/docker
+          register: output
+        - ansible.builtin.debug:
+            var: output
+        - name: Run `docker-compose up` again
+          community.docker.docker_compose:
+            project_src: /home/{{ inventory_username }}/docker
+            build: false
+          register: output
+        - ansible.builtin.debug:
+            var: output
+        - ansible.builtin.assert:
+            that: not output.changed
+      when: install_docker
 
     # - name: Install and configure Kodi
     #   ansible.builtin.include_role:
@@ -81,16 +82,15 @@
     - name: Kodi
       include_role:
         name: kodi
+      when: install_kodi
 
     - name: Raspotify
       include_role:
         name: raspotify
+      when: install_raspotify
 
-  # roles:
-  #   - { role: roles/mediaplayers}
-
-  # RECOMMENDED: This role will lock down ssh access to disallow password login
-  # and make other security improvements to the default ssh setup.
-  # https://github.com/dev-sec/ansible-ssh-hardening
-  #- role: dev-sec.ssh-hardening
-  #  become: yes
+    #  RECOMMENDED: This role will lock down ssh access to disallow password login
+    #  and make other security improvements to the default ssh setup.
+    #  https://github.com/dev-sec/ansible-ssh-hardening
+    # - role: dev-sec.ssh-hardening
+    #   become: yes

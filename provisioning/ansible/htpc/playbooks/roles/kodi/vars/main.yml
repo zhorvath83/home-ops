@@ -1,3 +1,4 @@
+---
 kodi_user: kodi
 kodi_group: kodi
 
@@ -31,14 +32,6 @@ kodi_gui_settings:
     value: Hungarian
   - id: locale.country
     value: Central Europe
-  - id: powermanagement.displaysoff
-    value: 0 # 0 minutes
-  - id: screensaver.mode
-    value: screensaver.xbmc.builtin.dim
-  - id: screensaver.time
-    value: 0 # 1 minute
-  - id: slideshow.staytime
-    value: 2
   - id: subtitles.charset
     value: CP1250
   - id: subtitles.height
@@ -47,11 +40,6 @@ kodi_gui_settings:
     value: Hungarian
   - id: videoplayer.adjustrefreshrate
     value: 2 # on start/stop
-  # enable hardware decoder
-  - id: videoplayer.useprimedecoder
-    value: "true"
-  - id: videoplayer.useprimerenderer
-    value: 0 # direct to plane
   # enable remote access
   - id: services.webserver
     value: "true"
