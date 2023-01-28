@@ -4,11 +4,6 @@
     src: files/asound.conf
     dest: /etc/asound.conf
 
-- name: Copy asound.state
-  ansible.builtin.copy:
-    src: files/asound.state
-    dest: /var/lib/alsa/asound.state
-
 - name: Add apt key
   apt_key:
     url: https://dtcooper.github.io/raspotify/key.asc
@@ -23,7 +18,7 @@
     name:
       - raspotify
       - asound-conf-wizard
-      - libasound2-plugins
+      # - libasound2-plugins # only need libasound2-plugins if DAC doesn't support sampling rate of 44100
     update_cache: true
 
 - name: Configure

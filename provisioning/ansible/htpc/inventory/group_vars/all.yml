@@ -54,6 +54,11 @@ cmdline_settings:
   - name: "ipv6.disable"
     value: "1"
 
+rc_local_options:
+  # Set sound gain
+  - regexp: "^amixer set"
+    line: "amixer set 'PCM' 92% unmute"
+
 standalone_packages_to_install:
   - htop
   - mc

@@ -192,6 +192,15 @@
       when: cmdline_settings is defined
       become: true
 
+- name: Configure options in /etc/rc.local
+  lineinfile:
+    dest: /etc/rc.local
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    insertbefore: "^exit"
+    state: present
+  with_items: "{{ rc_local_options }}"
+
 - name: Installing standalone packages
   block:
     - name: Packages | Remove unnecessery packages
