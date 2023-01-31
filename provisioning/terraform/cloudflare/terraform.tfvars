@@ -1,3 +1,4 @@
+# DO NOT modify if Cloudflare mail routing is enabled!
 dns_mx_records = {
     mx_record_1 = {
       host    = "route1.mx.cloudflare.net"
@@ -13,6 +14,7 @@ dns_mx_records = {
     }
 }
 
+# Served via Cloudflare Workers
 mail_mta_sts_params = {
   mode = "testing" # Sending MTA policy application, https://tools.ietf.org/html/rfc8461#section-5
   max_age = 604800 # 1 week
@@ -26,7 +28,7 @@ dns_dkim_record_params = {
   value = "k=rsa;p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCLdSPNvh5DlPT4jCbXPQbohbZ9Nc+dzRXh7P7ldBxjL4TEQ9tatnsvFupI36gSrJ/2az4cLvwR72gvQMMbCwt11sVUpjEWeVnpDFquH/yvI6uedDsQpUQdS6BorMdVgNQSczCtQ0goQT2Wu6cZXFzHEG9RR8LTPfcHLcc3ImDUCwIDAQAB"
 }
 
-dns_dmarc_record_value = "v=DMARC1; p=reject; sp=reject; rua=mailto:530aa4aa3c83.a@dmarcinput.com; ruf=mailto:530aa4aa3c83.f@dmarcinput.com"
+dns_dmarc_record_value = "v=DMARC1; p=reject; rua=mailto:530aa4aa3c83.a@dmarcinput.com; ruf=mailto:530aa4aa3c83.f@dmarcinput.com; sp=reject; adkim=s; aspf=s; pct=100"
 
 dns_mail_return_path_target = "pm.mtasv.net"
 

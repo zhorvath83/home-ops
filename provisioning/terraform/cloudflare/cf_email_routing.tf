@@ -1,6 +1,6 @@
 resource "cloudflare_email_routing_settings" "mail_routing" {
   zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
-  enabled = "true"
+  enabled = false
 }
 
 resource "cloudflare_email_routing_address" "mail_rtng_cntct_addr" {
@@ -11,7 +11,7 @@ resource "cloudflare_email_routing_address" "mail_rtng_cntct_addr" {
 resource "cloudflare_email_routing_rule" "mail_rtng_rule" {
   zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
   name    = "${data.sops_file.cluster_secrets.data["stringData.SECRET_EMAIL_2"]} rule"
-  enabled = true
+  enabled = false
 
   matcher {
     type  = "literal"
@@ -28,7 +28,7 @@ resource "cloudflare_email_routing_rule" "mail_rtng_rule" {
 resource "cloudflare_email_routing_catch_all" "mail_rtng_rule_ctch_all" {
   zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
   name    = "${data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]} catch all"
-  enabled = true
+  enabled = false
 
   matcher {
     type = "all"
