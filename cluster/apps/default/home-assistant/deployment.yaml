@@ -61,7 +61,7 @@ spec:
       #     mountPath: /config
       containers:
         - name: home-assistant
-          image: homeassistant/home-assistant:2023.1.7
+          image: homeassistant/home-assistant:2023.2.0
           resources:
             requests:
               cpu: 10m
