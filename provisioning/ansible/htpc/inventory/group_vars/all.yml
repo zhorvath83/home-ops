@@ -56,8 +56,10 @@ cmdline_settings:
 
 rc_local_options:
   # Set sound gain
-  - regexp: "^amixer set"
-    line: "amixer set 'PCM' 92% unmute"
+  - regexp: "^amixer -c Audio set"
+    line: "amixer -c Audio set 'PCM' 80% unmute"
+  - regexp: "^amixer -c vc4hdmi0 set"
+    line: "amixer -c vc4hdmi0 set 'PCM' 100% unmute"
 
 standalone_packages_to_install:
   - htop

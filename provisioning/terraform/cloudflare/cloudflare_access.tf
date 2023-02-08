@@ -138,6 +138,26 @@ resource "cloudflare_access_policy" "mta_sts_policy_bypass_policy" {
   }
 }
 
+## Webmail exclude from UserAuth
+resource "cloudflare_access_application" "webmail" {
+  zone_id          = lookup(data.cloudflare_zones.domain.zones[0], "id")
+  name             = "Webmail"
+  domain           = "mail.${data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]}"
+  type             = "self_hosted"
+}
+
+resource "cloudflare_access_policy" "webmail_bypass_policy" {
+  application_id = cloudflare_access_application.webmail.id
+  zone_id        = lookup(data.cloudflare_zones.domain.zones[0], "id")
+  name           = "Bypass"
+  precedence     = "1"
+  decision       = "bypass"
+
+  include {
+    everyone = true
+  }
+}
+
 output "private_cloud_aud" {
  value       = cloudflare_access_application.private_cloud.aud
  description = "Private Cloud AUD. Needed for JWT validation. (With Argo Tunnel there is no need for it.)"

@@ -1,5 +1,5 @@
 ---
-raspotify_device_name: Raspotify
+raspotify_device_name: Living room speaker
 raspotify_device_type: speaker
 raspotify_bit_rate: 320
 raspotify_alsa_device: default

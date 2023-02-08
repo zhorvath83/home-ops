@@ -8,7 +8,6 @@ variable "dns_mx_records" {
     host = string
     priority = number
   }))
-
   description = "Permitted MX hosts"
 }
 
@@ -17,22 +16,31 @@ variable "dns_spf_record_value" {
   type        = string
 }
 
-variable "dns_dkim_record_params" {
-  type = object({
-    name = string
-    value = string
-  })
 
+variable "dns_dkim_records" {
+  type = map(object({
+    name = string
+    value_prefix = string
+    value_suffix = string
+    type = string
+  }))
   description = "Params of DKIM DNS record."
+}
+
+variable "dns_srv_records" {
+  type = map(object({
+    service   = string
+    proto     = string
+    priority  = number
+    weight    = number
+    port      = number
+    target    = string
+  }))
+  description = "Params of SRV DNS record."
 }
 
 variable "dns_dmarc_record_value" {
   description = "Value of DMARC DNS record."
-  type        = string
-}
-
-variable "dns_mail_return_path_target" {
-  description = "Value of mail return path CNAME DNS record."
   type        = string
 }
 
