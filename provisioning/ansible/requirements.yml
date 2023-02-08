@@ -9,7 +9,7 @@ collections:
   - name: ansible.utils
     version: 2.9.0
   - name: devsec.hardening
-    version: 8.5.0
+    version: 8.6.0
   - name: community.docker
     version: 3.3.2
 
