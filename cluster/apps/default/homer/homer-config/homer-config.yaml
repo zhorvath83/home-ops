@@ -52,12 +52,16 @@ services:
   - name: Mail & organizing
     icon: fas fa-mail-bulk
     items:
-      - name: Gmail
-        subtitle: Google mail
+      - name: Webmail
+        subtitle: Fastmail
         tag: "Mail"
         tagstyle: "is-info"
-        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/google-mail.png
-        url: https://gmail.com/
+        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/fastmail.svg
+        url: https://mail.${SECRET_DOMAIN}
+      - name: Calendar
+        subtitle: Fastmail calendar
+        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/fastmail.svg
+        url: https://calendar.${SECRET_DOMAIN}
       - name: Messenger
         subtitle: Facebook messenger
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/facebook-messenger.png
@@ -66,10 +70,11 @@ services:
         subtitle: ToDo
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/microsoft-todo.png
         url: https://to-do.live.com/tasks/planned
-      - name: Calendar
-        subtitle: Google calendar
-        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/google-calendar.png
-        url: https://calendar.google.com/
+      - name: ToDoist
+        subtitle: ToDo
+        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/microsoft-todo.png
+        url: https://todoist.com/app/today
+
 
   - name: Finance
     icon: fas fa-money-bill-alt

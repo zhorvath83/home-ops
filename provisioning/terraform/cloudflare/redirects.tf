@@ -26,14 +26,33 @@ resource "cloudflare_list" "my_redirect_list" {
         source_url  = "https://mail.${data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]}"
         target_url  = "https://app.fastmail.com"
         status_code = 301
+        include_subdomains    = "enabled"
+        subpath_matching      = "enabled"
+        preserve_query_string = "enabled"
+        preserve_path_suffix  = "enabled"
       }
     }
     comment = "Redirect webmail"
   }
 
+  item {
+    value {
+      redirect {
+        source_url  = "https://calendar.${data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]}"
+        target_url  = "https://app.fastmail.com/calendar"
+        status_code = 301
+        include_subdomains    = "enabled"
+        subpath_matching      = "enabled"
+        preserve_query_string = "enabled"
+        preserve_path_suffix  = "enabled"
+      }
+    }
+    comment = "Redirect calendar"
+  }
+
 }
 
-# Redirects based on a List resource
+# CF Bulk redirects based on a List resource
 resource "cloudflare_ruleset" "my_bulk_redirects" {
   account_id  = data.sops_file.cluster_secrets.data["stringData.SECRET_CF_ACCOUNT_ID"]
   name        = "my_bulk_redirects"
