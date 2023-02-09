@@ -58,10 +58,6 @@ services:
         tagstyle: "is-info"
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/fastmail.svg
         url: https://mail.${SECRET_DOMAIN}
-      - name: Calendar
-        subtitle: Fastmail calendar
-        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/fastmail.svg
-        url: https://calendar.${SECRET_DOMAIN}
       - name: Messenger
         subtitle: Facebook messenger
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/facebook-messenger.png

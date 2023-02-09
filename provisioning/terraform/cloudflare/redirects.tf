@@ -34,22 +34,6 @@ resource "cloudflare_list" "my_redirect_list" {
     }
     comment = "Redirect webmail"
   }
-
-  item {
-    value {
-      redirect {
-        source_url  = "https://calendar.${data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]}"
-        target_url  = "https://app.fastmail.com/calendar"
-        status_code = 301
-        include_subdomains    = "enabled"
-        subpath_matching      = "enabled"
-        preserve_query_string = "enabled"
-        preserve_path_suffix  = "enabled"
-      }
-    }
-    comment = "Redirect calendar"
-  }
-
 }
 
 # CF Bulk redirects based on a List resource
