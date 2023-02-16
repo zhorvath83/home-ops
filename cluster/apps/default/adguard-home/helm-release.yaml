@@ -19,7 +19,7 @@ spec:
   values:
     image:
       repository: adguard/adguardhome
-      tag: v0.107.23
+      tag: v0.107.24
     env:
       TZ: ${CLUSTER_TIMEZONE}
     ingress:
