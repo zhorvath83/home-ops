@@ -39,19 +39,43 @@ variable "dns_srv_records" {
   description = "Params of SRV DNS record."
 }
 
-variable "dns_dmarc_record_value" {
-  description = "Value of DMARC DNS record."
-  type        = string
+variable "mail_rua_report" {
+  type        = list(string)
+  description = "Locations to which aggregate reports about policy violations should be sent, either `mailto:` or `https:` schema."
+
+  validation {
+    condition     = length(var.mail_rua_report) != 0
+    error_message = "At least one `mailto:` or `https:` endpoint provided."
+  }
+
+  validation {
+    condition     = can([for loc in var.mail_rua_report : regex("^(mailto|https):", loc)])
+    error_message = "Locations must start with either the `mailto: or `https` schema."
+  }
 }
 
 variable "mail_mta_sts_params" {
   type = object({
     mode = string
     max_age = number
-    rua_mail = string
   })
 
-  description = "MTA-STS mail params"
+  description = <<EOT
+    mail_mta_sts_params = {
+      mode : "Sending MTA policy application, https://tools.ietf.org/html/rfc8461#section-5"
+      max_age : "Maximum lifetime of the policy in seconds, up to 31557600, defaults to 604800 (1 week)"
+    }
+  EOT
+
+  validation {
+    condition     = contains(["enforce", "testing", "none"], var.mail_mta_sts_params.mode)
+    error_message = "Only `enforce` `testing` or `none` is valid."
+  }
+
+  validation {
+    condition     = var.mail_mta_sts_params.max_age >= 0
+    error_message = "Policy validity time must be positive."
+  }
 }
 
 variable "private_website_target_url" {
