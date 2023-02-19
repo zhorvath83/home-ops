@@ -1,4 +1,6 @@
 locals {
+  # mta_sts_policy.tpl contains !!!CRLF-separated!!! key/value pairs.
+  # MTA-STS validator: https://esmtp.email/tools/mta-sts/
   mta_sts_policy    = templatefile("${path.module}/templates/mta_sts_policy.tpl", { mode = var.mail_mta_sts_params.mode, mx = var.dns_mx_records, max_age = var.mail_mta_sts_params.max_age })
   mta_sts_policy_id = md5(local.mta_sts_policy)
 }
