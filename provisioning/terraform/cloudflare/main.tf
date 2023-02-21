@@ -40,6 +40,8 @@ data "sops_file" "cluster_secrets" {
 }
 
 provider "cloudflare" {
+  # account_id is considered deprecated, but as of now it is still required in the provider
+  # for cloudflare_worker_script
   account_id  = data.sops_file.cluster_secrets.data["stringData.SECRET_CF_ACCOUNT_ID"]
   email       = data.sops_file.cluster_secrets.data["stringData.SECRET_CF_EMAIL"]
   api_key     = data.sops_file.cluster_secrets.data["stringData.SECRET_CF_APIKEY"]
