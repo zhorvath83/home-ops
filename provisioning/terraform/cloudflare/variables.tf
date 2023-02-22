@@ -19,10 +19,9 @@ variable "dns_spf_record_value" {
 
 variable "dns_dkim_records" {
   type = map(object({
-    name = string
-    value_prefix = string
-    value_suffix = string
-    type = string
+    name  = string
+    value = string
+    type  = string
   }))
   description = "Params of DKIM DNS record."
 }
@@ -81,4 +80,18 @@ variable "mail_mta_sts_params" {
 variable "private_website_target_url" {
   description = "CNAME target URL of my private website."
   type        = string
+}
+
+variable "bulk_redirect_list" {
+  type = map(object({
+    name                  = string
+    source_url            = string
+    target_url            = string
+    status_code           = number
+    include_subdomains    = string
+    subpath_matching      = string
+    preserve_query_string = string
+    preserve_path_suffix  = string
+  }))
+  description = "Bulk redirect URL's and params"
 }
