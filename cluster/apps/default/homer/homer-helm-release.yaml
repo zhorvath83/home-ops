@@ -29,7 +29,7 @@ spec:
   values:
     image:
       repository: b4bz/homer
-      tag: v23.02.1
+      tag: v23.02.2
       pullPolicy: IfNotPresent
     env:
       TZ: "${CLUSTER_TIMEZONE}"
