@@ -84,7 +84,7 @@ resource "cloudflare_record" "a_record_webmail" {
   name    = "mail"
   zone_id = local.cf_zone_id
   value   = "192.0.2.1"
-  proxied = false
+  proxied = true
   type    = "A"
   ttl     = 1
 }
