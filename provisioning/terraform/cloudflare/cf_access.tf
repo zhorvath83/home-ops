@@ -160,5 +160,5 @@ resource "cloudflare_access_policy" "webmail_bypass_policy" {
 
 output "private_cloud_aud" {
  value       = cloudflare_access_application.private_cloud.aud
- description = "Private Cloud AUD. Needed for JWT validation. (With Argo Tunnel there is no need for it.)"
+ description = "Private Cloud AUD. Needed for JWT validation. (With Cloudflare Tunnel there is no need for it.)"
 }

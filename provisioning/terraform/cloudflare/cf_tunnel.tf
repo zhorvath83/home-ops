@@ -1,11 +1,11 @@
 resource "cloudflare_tunnel" "cf_tunnel" {
   account_id = data.sops_file.cluster_secrets.data["stringData.SECRET_CF_ACCOUNT_ID"]
   name       = "${data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]}-tunnel"
-  secret     = data.sops_file.cluster_secrets.data["stringData.SECRET_CF_ARGO_TUNNEL_SECRET"]
+  secret     = data.sops_file.cluster_secrets.data["stringData.SECRET_CF_TUNNEL_SECRET"]
 }
 
 resource "cloudflare_record" "cf_tunnel_cname" {
-  name    = "cf-argo-tunnel"
+  name    = "cf-tunnel"
   zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
   value   = "${cloudflare_tunnel.cf_tunnel.id}.cfargotunnel.com"
   type    = "CNAME"
@@ -15,5 +15,5 @@ resource "cloudflare_record" "cf_tunnel_cname" {
 
 output "cf_tunnel_id" {
  value       = cloudflare_tunnel.cf_tunnel.id
- description = "Cloudflare Argo Tunnel ID.  Paste it to cluster-settings."
+ description = "Cloudflare Tunnel ID.  Paste it to cluster-settings."
 }
