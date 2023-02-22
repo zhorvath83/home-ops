@@ -14,5 +14,5 @@ parameters:
   fromBackup: ""
   fsType: "ext4"
   # TODO remove recurringJobSelector
-  recurringJobSelector: '[{"name":"backup-daily", "isGroup":false},
-                          {"name":"backup-weekly", "isGroup":false}]'
+  # recurringJobSelector: '[{"name":"backup-daily", "isGroup":false},
+  #                         {"name":"backup-weekly", "isGroup":false}]'
