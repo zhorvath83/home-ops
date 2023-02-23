@@ -38,17 +38,32 @@ variable "dns_srv_records" {
   description = "Params of SRV DNS record."
 }
 
-variable "mail_rua_report" {
+variable "mail_dmarc_rua_dest" {
   type        = list(string)
   description = "Locations to which aggregate reports about policy violations should be sent, either `mailto:` or `https:` schema."
 
   validation {
-    condition     = length(var.mail_rua_report) != 0
+    condition     = length(var.mail_dmarc_rua_dest) != 0
     error_message = "At least one `mailto:` or `https:` endpoint provided."
   }
 
   validation {
-    condition     = can([for loc in var.mail_rua_report : regex("^(mailto|https):", loc)])
+    condition     = can([for loc in var.mail_dmarc_rua_dest : regex("^(mailto|https):", loc)])
+    error_message = "Locations must start with either the `mailto: or `https` schema."
+  }
+}
+
+variable "mail_tls_rua_dest" {
+  type        = list(string)
+  description = "Locations to which aggregate reports about policy violations should be sent, either `mailto:` or `https:` schema."
+
+  validation {
+    condition     = length(var.mail_tls_rua_dest) != 0
+    error_message = "At least one `mailto:` or `https:` endpoint provided."
+  }
+
+  validation {
+    condition     = can([for loc in var.mail_tls_rua_dest : regex("^(mailto|https):", loc)])
     error_message = "Locations must start with either the `mailto: or `https` schema."
   }
 }

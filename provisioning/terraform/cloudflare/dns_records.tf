@@ -117,7 +117,7 @@ resource "cloudflare_record" "srv_records" {
 resource "cloudflare_record" "txt_record_dmarc" {
   name    = "_dmarc"
   zone_id = local.cf_zone_id
-  value   = "v=DMARC1; p=reject; rua=${join(",", var.mail_rua_report)}; sp=reject; adkim=s; aspf=s; pct=100"
+  value   = "v=DMARC1; p=reject; rua=${join(",", var.mail_dmarc_rua_dest)}; sp=reject; adkim=s; aspf=s; pct=100"
   proxied = false
   type    = "TXT"
   ttl     = 1
@@ -131,7 +131,7 @@ resource "cloudflare_record" "txt_record_smtp_tls" {
   zone_id = local.cf_zone_id
   name    = "_smtp._tls"
   type    = "TXT"
-  value   = "v=TLSRPTv1; rua=${join(",", var.mail_rua_report)}"
+  value   = "v=TLSRPTv1; rua=${join(",", var.mail_tls_rua_dest)}"
 }
 
 resource "cloudflare_record" "txt_record_mta_sts" {

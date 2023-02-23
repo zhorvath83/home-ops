@@ -16,9 +16,11 @@ mail_mta_sts_params = {
   max_age = 604800 # 1 week
 }
 
-mail_rua_report = ["mailto:p5m2086f@ag.eu.dmarcian.com", "mailto:530aa4aa3c83.a@dmarcinput.com"]
+mail_dmarc_rua_dest = ["mailto:p5m2086f@ag.eu.dmarcian.com", "mailto:35be510b@in.mailhardener.com"]
 
-dns_spf_record_value = "v=spf1 include:spf.messagingengine.com -all"
+mail_tls_rua_dest = ["mailto:p5m2086f@tls.eu.dmarcian.com", "mailto:35be510b@in.mailhardener.com"]
+
+dns_spf_record_value = "v=spf1 include:spf.messagingengine.com ~all"
 
 dns_dkim_records = {
     dkim_record_1 = {
