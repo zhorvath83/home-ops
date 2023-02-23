@@ -45,7 +45,7 @@ spec:
     sources:
       - ingress
     txtPrefix: "k8s."
-    txtOwnerId: "homelab"
+    txtOwnerId: "default"
     domainFilters:
       - "${SECRET_DOMAIN}"
     resources:
