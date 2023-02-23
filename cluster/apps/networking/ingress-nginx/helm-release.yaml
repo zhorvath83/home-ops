@@ -68,7 +68,8 @@ spec:
       extraArgs:
         # https://kubernetes.github.io/ingress-nginx/user-guide/cli-arguments/
         default-ssl-certificate: "networking/${SECRET_DOMAIN/./-}-tls"
-        # Used indirectly by Cert-manager
+        # Sets Load-Balancer hostname in the ingress object
+        # Used by External DNS when creating CNAME DNS records
         publish-status-address: "cf-tunnel.${SECRET_DOMAIN}"
         update-status: true
       resources:
