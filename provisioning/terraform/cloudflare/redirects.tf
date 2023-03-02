@@ -9,19 +9,18 @@ resource "cloudflare_list" "my_redirect_list" {
     for_each = var.bulk_redirect_list
 
     content {
-      comment = item.value.name
-
       value {
         redirect {
-          source_url = replace(item.value.source_url, "domain_name_to_replace", "${data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]}")
-          target_url = replace(item.value.target_url, "domain_name_to_replace", "${data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]}")
-          status_code = lookup(item.value, "status_code", 301)
-          include_subdomains    = lookup(item.value, "include_subdomains", "disabled")
-          subpath_matching      = lookup(item.value, "subpath_matching", "disabled")
-          preserve_path_suffix  = lookup(item.value, "preserve_path_suffix", "disabled")
-          preserve_query_string = lookup(item.value, "preserve_query_string", "disabled")
+          source_url            = replace(item.value.source_url, "domain_name_to_replace", data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"])
+          target_url            = replace(item.value.target_url, "domain_name_to_replace", data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"])
+          status_code           = lookup(item.value, "status_code", 301)
+          include_subdomains    = lookup(item.value, "include_subdomains", "enabled")
+          subpath_matching      = lookup(item.value, "subpath_matching", "enabled")
+          preserve_path_suffix  = lookup(item.value, "preserve_path_suffix", "enabled")
+          preserve_query_string = lookup(item.value, "preserve_query_string", "enabled")
         }
       }
+      comment = item.value.name
     }
   }
 }

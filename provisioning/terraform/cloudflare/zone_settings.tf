@@ -17,6 +17,7 @@ resource "cloudflare_zone_settings_override" "cloudflare_settings" {
     security_level = "high"
     # /speed/optimization
     brotli = "on"
+    polish = "off"
     minify {
       css  = "off"
       js   = "off"
@@ -43,7 +44,11 @@ resource "cloudflare_zone_settings_override" "cloudflare_settings" {
     hotlink_protection  = "off"
     # /workers
     security_header {
-      enabled = false
+      enabled            = true
+      preload            = true
+      max_age            = 15552000 # 6 months
+      include_subdomains = true
+      nosniff            = true
     }
   }
 }

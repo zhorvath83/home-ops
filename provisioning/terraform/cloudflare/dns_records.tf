@@ -6,7 +6,7 @@ locals {
 }
 
 locals {
-  domain_name = "${data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]}"
+  domain_name = data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]
   cf_zone_id  = lookup(data.cloudflare_zones.domain.zones[0], "id")
 }
 

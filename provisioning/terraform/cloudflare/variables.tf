@@ -102,11 +102,11 @@ variable "bulk_redirect_list" {
     name                  = string
     source_url            = string
     target_url            = string
-    status_code           = number
-    include_subdomains    = string
-    subpath_matching      = string
-    preserve_query_string = string
-    preserve_path_suffix  = string
+    status_code           = optional(number, 301) # an optional attribute with default value
+    include_subdomains    = optional(string, "enabled") # an optional attribute with default value
+    subpath_matching      = optional(string, "enabled") # an optional attribute with default value
+    preserve_query_string = optional(string, "enabled") # an optional attribute with default value
+    preserve_path_suffix  = optional(string, "enabled") # an optional attribute with default value
   }))
   description = "Bulk redirect URL's and params"
 }

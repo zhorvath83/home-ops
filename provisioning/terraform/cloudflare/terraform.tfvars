@@ -130,20 +130,10 @@ bulk_redirect_list = {
       name                  = "Redirect www"
       source_url            = "https://www.domain_name_to_replace"
       target_url            = "https://domain_name_to_replace"
-      status_code           = 301
-      include_subdomains    = "enabled"
-      subpath_matching      = "enabled"
-      preserve_query_string = "enabled"
-      preserve_path_suffix  = "enabled"
     },
     redirect_mail = {
       name                  = "Redirect webmail"
       source_url            = "https://mail.domain_name_to_replace"
       target_url            = "https://app.fastmail.com"
-      status_code           = 301
-      include_subdomains    = "enabled"
-      subpath_matching      = "enabled"
-      preserve_query_string = "enabled"
-      preserve_path_suffix  = "enabled"
     }
 }
