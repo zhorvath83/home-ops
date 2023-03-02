@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: duplicacy
-          image: saspus/duplicacy-web:v1.6.3
+          image: saspus/duplicacy-web:v1.7.0
           imagePullPolicy: IfNotPresent
           livenessProbe:
             exec:
