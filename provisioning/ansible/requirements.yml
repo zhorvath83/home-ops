@@ -11,7 +11,7 @@ collections:
   - name: devsec.hardening
     version: 8.6.0
   - name: community.docker
-    version: 3.4.1
+    version: 3.4.2
 
 roles:
   - name: chzerv.log2ram
