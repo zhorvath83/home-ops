@@ -64,7 +64,7 @@ spec:
           volumeMounts:
             - name: backup-share
               mountPath: /backups
-              subPath: pgbackups
+              #subPath: pgbackups
       volumes:
         - name: backup-share
           persistentVolumeClaim:
