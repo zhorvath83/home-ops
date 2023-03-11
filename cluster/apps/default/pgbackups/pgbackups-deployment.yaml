@@ -64,8 +64,12 @@ spec:
           volumeMounts:
             - name: backup-share
               mountPath: /backups
-              #subPath: pgbackups
+              subPath: pgbackups
       volumes:
+        # - name: backup-share
+        #   persistentVolumeClaim:
+        #     claimName: backup-share
         - name: backup-share
-          persistentVolumeClaim:
-            claimName: backup-share
+          nfs:
+            server: ${CLUSTER_LAN_NAS_IP}
+            path: /backup
