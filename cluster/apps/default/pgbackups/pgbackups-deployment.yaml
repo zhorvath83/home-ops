@@ -63,7 +63,7 @@ spec:
             - containerPort: 8080
           volumeMounts:
             - name: backup-share
-              mountPath: /backups
+              mountPath: /backups/pgbackups
               subPath: pgbackups
       volumes:
         - name: backup-share
