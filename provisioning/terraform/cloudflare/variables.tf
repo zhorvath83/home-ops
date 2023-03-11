@@ -53,6 +53,21 @@ variable "mail_dmarc_rua_dest" {
   }
 }
 
+variable "mail_dmarc_ruf_dest" {
+  type        = list(string)
+  description = "Locations to which aggregate reports about policy violations should be sent, either `mailto:` or `https:` schema."
+
+  validation {
+    condition     = length(var.mail_dmarc_ruf_dest) != 0
+    error_message = "At least one `mailto:` or `https:` endpoint provided."
+  }
+
+  validation {
+    condition     = can([for loc in var.mail_dmarc_ruf_dest : regex("^(mailto|https):", loc)])
+    error_message = "Locations must start with either the `mailto: or `https` schema."
+  }
+}
+
 variable "mail_tls_rua_dest" {
   type        = list(string)
   description = "Locations to which aggregate reports about policy violations should be sent, either `mailto:` or `https:` schema."

@@ -117,7 +117,7 @@ resource "cloudflare_record" "srv_records" {
 resource "cloudflare_record" "txt_record_dmarc" {
   name    = "_dmarc"
   zone_id = local.cf_zone_id
-  value   = "v=DMARC1; p=reject; rua=${join(",", var.mail_dmarc_rua_dest)}; sp=reject; adkim=s; aspf=s; pct=100"
+  value   = "v=DMARC1; p=reject; rua=${join(",", var.mail_dmarc_rua_dest)}; ruf=${join(",", var.mail_dmarc_ruf_dest)}; sp=reject; adkim=s; aspf=s; pct=100"
   proxied = false
   type    = "TXT"
   ttl     = 1
