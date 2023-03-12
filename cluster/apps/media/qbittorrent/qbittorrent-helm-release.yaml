@@ -91,13 +91,12 @@ spec:
           - hosts:
               - *host
     podSecurityContext:
-      runAsUser: 1000
-      runAsGroup: 1000
-      fsGroup: 1000
+      runAsUser: 65534
+      runAsGroup: 65534
+      fsGroup: 65534
       fsGroupChangePolicy: "OnRootMismatch"
       supplementalGroups:
         - 100
-        - 1000
     persistence:
       qbittorrent-data:
         enabled: true
