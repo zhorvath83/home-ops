@@ -95,8 +95,8 @@ spec:
       runAsGroup: 65534
       fsGroup: 65534
       fsGroupChangePolicy: "OnRootMismatch"
-      supplementalGroups:
-        - 100
+      # supplementalGroups:
+      #   - 100
     persistence:
       qbittorrent-data:
         enabled: true
