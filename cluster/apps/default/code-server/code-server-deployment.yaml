@@ -23,13 +23,13 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 1000
-        fsGroup: 1000
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
         fsGroupChangePolicy: "OnRootMismatch"
       containers:
         - name: code-server
-          image: ghcr.io/zhorvath83/code-server:4.10.0.201
+          image: ghcr.io/zhorvath83/code-server:4.10.1.201
           imagePullPolicy: IfNotPresent
           resources:
             requests:
@@ -69,6 +69,8 @@ spec:
             timeoutSeconds: 5
           ports:
             - containerPort: 8080
+              name: code-server
+            - containerPort: 2222
               name: code-server
           volumeMounts:
             - name: code-server-data
