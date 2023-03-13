@@ -70,7 +70,7 @@ resource "cloudflare_record" "dkim_record" {
   for_each  = var.dns_dkim_records
   name      = each.value.name
   zone_id   = local.cf_zone_id
-  value     = replace(each.value.value, "domain_name_to_replace", "${data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]}")
+  value     = replace(each.value.value, "domain_name_to_replace", data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"])
   proxied   = false
   type      = each.value.type
   ttl       = 1
