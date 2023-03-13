@@ -41,8 +41,8 @@ spec:
           env:
             - name: TZ
               value: ${CLUSTER_TIMEZONE}
-            - name: PASSWORD
-              value: ${SECRET_CODE_SERVER_PWD}
+            # - name: PASSWORD
+            #   value: ${SECRET_CODE_SERVER_PWD}
               # Hide Getting Started sceen of Code-server
             - name: CS_DISABLE_GETTING_STARTED_OVERRIDE
               value: "true"
