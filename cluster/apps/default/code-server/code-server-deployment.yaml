@@ -29,7 +29,7 @@ spec:
         fsGroupChangePolicy: "OnRootMismatch"
       containers:
         - name: code-server
-          image: ghcr.io/zhorvath83/code-server:4.10.0.196
+          image: ghcr.io/zhorvath83/code-server:4.10.0.201
           imagePullPolicy: IfNotPresent
           resources:
             requests:
@@ -80,6 +80,9 @@ spec:
               mountPath: /home/coder/.ssh/id_ed25519_git
               subPath: id_ed25519_git
             - name: code-server-secret-vol3
+              mountPath: /home/coder/.ssh/authorized_keys
+              subPath: authorized_keys
+            - name: code-server-secret-vol4
               mountPath: /home/coder/.terraform.d/credentials.tfrc.json
               subPath: credentials.tfrc.json
       volumes:
@@ -95,6 +98,10 @@ spec:
             secretName: code-server-secret
             defaultMode: 0600
         - name: code-server-secret-vol3
+          secret:
+            secretName: code-server-secret
+            defaultMode: 0600
+        - name: code-server-secret-vol4
           secret:
             secretName: code-server-secret
             defaultMode: 0600
