@@ -32,7 +32,7 @@ spec:
             - ALL
       containers:
         - name: pgbackups
-          image: prodrigestivill/postgres-backup-local:15@sha256:56697e9b1c9cac2b00ef3224009786c2fc39bcd9a9424c22cbfce655d3fc6c56
+          image: prodrigestivill/postgres-backup-local:15@sha256:683a2877fb2010cf9a39b7c5d09ffe67d7b03298d8df356d0a89fce1377e1089
           imagePullPolicy: IfNotPresent
           env:
             - name: TZ
