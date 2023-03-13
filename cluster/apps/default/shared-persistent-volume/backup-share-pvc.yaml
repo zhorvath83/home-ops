@@ -27,7 +27,7 @@ spec:
     server: ${CLUSTER_LAN_NAS_IP}
     path: /backup
   # Note: The first two options are strictly for NFSv4.2
-  mountOptions: ["nfsvers=4.2", "nconnect=8", "hard", "noatime"]
+  mountOptions: ["nfsvers=4.2", "nconnect=8", "hard", "noatime", "nodiratime"]
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

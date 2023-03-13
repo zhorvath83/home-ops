@@ -58,18 +58,14 @@ services:
         tagstyle: "is-info"
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/fastmail.svg
         url: https://mail.${SECRET_DOMAIN}
-      - name: Messenger
-        subtitle: Facebook messenger
-        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/facebook-messenger.png
-        url: https://www.messenger.com/
       - name: ToDoist
         subtitle: ToDo
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/todoist.svg
         url: https://todoist.com/app/today
-      - name: Microsoft ToDo
-        subtitle: ToDo
-        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/microsoft-todo.png
-        url: https://to-do.live.com/tasks/planned
+      - name: Messenger
+        subtitle: Facebook messenger
+        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/facebook-messenger.png
+        url: https://www.messenger.com/
 
   - name: Finance
     icon: fas fa-money-bill-alt
