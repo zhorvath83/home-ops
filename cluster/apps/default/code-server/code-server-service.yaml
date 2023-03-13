@@ -13,5 +13,8 @@ spec:
     - protocol: TCP
       port: 80
       targetPort: 8080
+    - protocol: TCP
+      port: 22
+      targetPort: 2222
   selector:
     app.kubernetes.io/name: code-server
