@@ -71,7 +71,7 @@
     {
       "description": "Process various other dependencies",
       "fileMatch": [
-        "provisioning/ansible/.+\\.ya?ml$",
+        "infrastructure/ansible/.+\\.ya?ml$",
         "cluster/.+\\.ya?ml$"
       ],
       "matchStrings": [
