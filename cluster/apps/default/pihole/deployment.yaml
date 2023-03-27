@@ -37,7 +37,7 @@ spec:
             - "unbound"
       containers:
         - name: pihole
-          image: jacklul/pihole:2023.03.0
+          image: jacklul/pihole:2023.03.1
           ports:
             - containerPort: 80
               name: pihole-web
