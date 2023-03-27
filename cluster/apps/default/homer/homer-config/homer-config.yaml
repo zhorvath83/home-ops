@@ -183,21 +183,21 @@ services:
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/qbittorrent.png
         url: https://qbittorrent.${SECRET_DOMAIN}
       - name: Bazarr
-        subtitle: Search for missing subtitles
+        subtitle: Subtitle manager
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/bazarr.svg
         url: https://bazarr.${SECRET_DOMAIN}
-      - name: Prowlarr
-        subtitle: Indexer manager/proxy
-        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/prowlarr.svg
-        url: https://prowlarr.${SECRET_DOMAIN}
       - name: Radarr
         subtitle: Movie collection manager
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/radarr.png
         url: https://radarr.${SECRET_DOMAIN}
       - name: Sonarr
-        subtitle: PVR for Usenet and BitTorrent
+        subtitle: Series collection manager
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/sonarr.png
         url: https://sonarr.${SECRET_DOMAIN}
+      - name: Prowlarr
+        subtitle: Indexer manager for Arr family
+        logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/prowlarr.svg
+        url: https://prowlarr.${SECRET_DOMAIN}
       - name: Ncore
         subtitle: Ncore
         logo: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/ncore.png
