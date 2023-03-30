@@ -22,3 +22,4 @@ resources:
   - wikijs.yaml
   - pihole-charts.yaml
   - weave-gitops.yaml
+  - backube.yaml

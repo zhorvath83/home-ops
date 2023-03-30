@@ -5,10 +5,10 @@ resources:
   - namespace.yaml
   - local-path-provisioner
   - cert-manager
-  - node-feature-discovery
-  - intel-gpu-plugin
-  - metrics-server
   - kured
-  - kube-vip
   - reloader
-  - reflector
+  # - metrics-server
+  # - node-feature-discovery
+  # - intel-gpu-plugin
+  # - kube-vip
+  # - reflector
