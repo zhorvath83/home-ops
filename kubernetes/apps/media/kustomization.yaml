@@ -2,11 +2,11 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - namespace.yaml
-  - shared-persistent-volume
-  - jellyfin
-  - qbittorrent
-  - prowlarr
-  - bazarr
-  - radarr
-  - sonarr
+  - ./namespace.yaml
+  - ./shared-persistent-volume
+  - ./jellyfin
+  - ./qbittorrent
+  - ./prowlarr
+  - ./bazarr
+  - ./radarr
+  - ./sonarr
