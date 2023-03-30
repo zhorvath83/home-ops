@@ -2,20 +2,20 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - shared-persistent-volume
-  - postgresql-15
-  - pgbackups
-  - pgadmin
-  - recipes
-  - code-server
-  - changedetection
-  - freshrss
-  - mosquitto
-  - home-assistant
-  - homer
-  - adguard-home
-  # - pihole
-  - searxng
-  - duplicacy
-  - pigallery2
-  - trilium
+  - ./shared-persistent-volume
+  - ./postgresql-15
+  - ./pgbackups
+  - ./pgadmin
+  - ./recipes
+  - ./code-server
+  - ./changedetection
+  - ./freshrss
+  - ./mosquitto
+  - ./home-assistant
+  - ./homer
+  - ./adguard-home
+  # - ./pihole
+  - ./searxng
+  - ./duplicacy
+  - ./pigallery2
+  - ./trilium
