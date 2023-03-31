@@ -8,10 +8,10 @@
     ":separatePatchReleases",
     "docker:enableMajor",
     ":enablePreCommit",
-    "github>zhorvath83/kube-cluster//.github/renovate/groupPackages",
-    "github>zhorvath83/kube-cluster//.github/renovate/versioning",
-    "github>zhorvath83/kube-cluster//.github/renovate/prBodyNotes",
-    "github>zhorvath83/kube-cluster//.github/renovate/disabledDatasources"
+    "github>zhorvath83/home-ops//.github/renovate/groupPackages",
+    "github>zhorvath83/home-ops//.github/renovate/versioning",
+    "github>zhorvath83/home-ops//.github/renovate/prBodyNotes",
+    "github>zhorvath83/home-ops//.github/renovate/disabledDatasources"
   ],
   "dependencyDashboardTitle": "Renovate Dashboard 🤖",
   "suppressNotifications": ["prIgnoreNotification"],
