@@ -18,3 +18,4 @@ resources:
   - ./searxng.yaml
   - ./weave-gitops.yaml
   - ./backube.yaml
+  - ./piraeus.yaml
