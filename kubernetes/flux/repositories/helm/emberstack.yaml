@@ -3,7 +3,7 @@ apiVersion: source.toolkit.fluxcd.io/v1beta2
 kind: HelmRepository
 # Helm Chart Repo for kubernetes-reflector (mirror resources in other namespaces)
 metadata:
-  name: emberstack-charts
+  name: emberstack
   namespace: flux-system
 spec:
   interval: 1h
