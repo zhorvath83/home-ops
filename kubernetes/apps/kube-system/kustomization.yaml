@@ -4,8 +4,8 @@ kind: Kustomization
 resources:
   - ./namespace.yaml
   - ./local-path-provisioner
-  - ./cert-manager
-  - ./kured
+  # - ./cert-manager
+  # - ./kured
   # - ./reloader
   # - ./metrics-server
   # - ./snapshot-controller
