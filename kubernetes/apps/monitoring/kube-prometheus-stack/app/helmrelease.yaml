@@ -162,18 +162,6 @@ spec:
         tls:
           - hosts:
               - *host
-      remoteRead:
-        - url: https://prometheus-blocks-prod-us-central1.grafana.net/api/prom
-          basic_auth:
-            username: ${SECRET_GRAFANA_CLOUD_INSTANCE}
-            password: ${SECRET_GRAFANA_CLOUD_APIKEY}
-      remoteWrite:
-        - url: https://prometheus-blocks-prod-us-central1.grafana.net/api/prom/push
-          basic_auth:
-            username: ${SECRET_GRAFANA_CLOUD_INSTANCE}
-            password: ${SECRET_GRAFANA_CLOUD_APIKEY}
-      ## Enable/Disable Grafana dashboards provisioning for prometheus remote write feature
-      remoteWriteDashboards: true
       thanosService:
         enabled: false
       thanosServiceMonitor:
@@ -188,5 +176,12 @@ spec:
         probeSelectorNilUsesHelmValues: false
         enableAdminAPI: true
         retention: 1d
-        walCompression: false
-        storageSpec: {}
+        retentionSize: 5GB
+        walCompression: true
+        storageSpec:
+          volumeClaimTemplate:
+            spec:
+              storageClassName: local-path
+              resources:
+                requests:
+                  storage: 6Gi
