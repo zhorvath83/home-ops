@@ -8,7 +8,7 @@ on: # yamllint disable-line rule:truthy
 
 env:
   UNBOUND_ROOT_HINTS_FILE: >-
-    cluster/apps/networking/unbound/config/root.hints
+    kubernetes/apps/networking/unbound/config/root.hints
 jobs:
   unbound-root-hints-update:
     name: Unbound root hints

@@ -23,7 +23,7 @@ jobs:
 
       - name: Use pluto
         run: |
-          pluto detect-files -d cluster
+          pluto detect-files -d kubernetes
 
       - name: Create Issue on Failed workflow
         if: ${{ failure() }}
