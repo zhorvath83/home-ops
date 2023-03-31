@@ -8,4 +8,5 @@ resources:
   - ./kured
   - ./reloader
   - ./metrics-server
+  - ./snapshot-controller
   # - ./reflector
