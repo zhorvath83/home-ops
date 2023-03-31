@@ -16,6 +16,5 @@ resources:
   - ./emberstack.yaml
   - ./ingress-nginx.yaml
   - ./searxng.yaml
-  - ./kubevious.yaml
   - ./weave-gitops.yaml
   - ./backube.yaml
