@@ -9,4 +9,4 @@ resources:
   - ./reloader/ks.yaml
   - ./metrics-server/ks.yaml
   - ./snapshot-controller/ks.yaml
-  # - ./reflector
+  # - ./reflector/ks.yaml
