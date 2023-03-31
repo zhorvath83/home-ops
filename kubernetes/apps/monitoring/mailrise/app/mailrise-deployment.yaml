@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: mailrise
-          image: yoryan/mailrise:release-1.2.0
+          image: yoryan/mailrise:1.3.0
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8025
