@@ -34,6 +34,7 @@ spec:
     env:
       TZ: "${CLUSTER_TIMEZONE}"
       JELLYFIN_CACHE_DIR: "/config/cache"
+      DOTNET_SYSTEM_IO_DISABLEFILELOCKING: "true"
     service:
       main:
         type: LoadBalancer
@@ -84,14 +85,11 @@ spec:
       # video:x:44:
       # render:x:107:
       # supplementalGroups: [44, 107, 10000]
-    volumeClaimTemplates:
-      - name: config
-        mountPath: /config
-        accessMode: ReadWriteOnce
-        size: 5Gi
-        storageClass: local-path
     persistence:
-      media:
+      config:
+        enabled: true
+        existingClaim: jellyfin-config
+      nfs-nas-media:
         enabled: true
         type: nfs
         server: ${CLUSTER_LAN_NAS_IP}
