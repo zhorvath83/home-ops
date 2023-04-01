@@ -3,11 +3,15 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: default
 resources:
-  - ./config
-  - ./pvc.yaml
   - ./helmrelease.yaml
-labels:
-  - pairs:
-      app.kubernetes.io/name: qbittorrent
-      app.kubernetes.io/instance: qbittorrent
-      app.kubernetes.io/part-of: qbittorrent
+  - ./pvc.yaml
+commonLabels:
+  app.kubernetes.io/name: qbittorrent
+  app.kubernetes.io/instance: qbittorrent
+configMapGenerator:
+  - name: qbittorrent-configmap
+    files:
+      - config/qBittorrent.conf
+      - config/watched_folders.json
+generatorOptions:
+  disableNameSuffixHash: true

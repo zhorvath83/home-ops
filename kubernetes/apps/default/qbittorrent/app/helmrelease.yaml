@@ -14,6 +14,7 @@ spec:
         kind: HelmRepository
         name: bjw-s
         namespace: flux-system
+
   maxHistory: 3
   install:
     createNamespace: true
@@ -25,18 +26,24 @@ spec:
       retries: 3
   uninstall:
     keepHistory: false
+
   values:
     controller:
       type: statefulset
       annotations:
         reloader.stakater.com/auto: "true"
+
     image:
       repository: ghcr.io/onedr0p/qbittorrent
       tag: 4.5.2@sha256:a4a66d66ed11c5e3570078daf4e4adeb8a7f88b000a64aa760d46ef12fa7a4c6
+
+    hostname: qbittorrent
+
     env:
       TZ: "${CLUSTER_TIMEZONE}"
       PUID: 10001
       PGID: 10001
+
     service:
       main:
         ports:
@@ -49,6 +56,7 @@ spec:
           metallb.universe.tf/loadBalancerIPs: |-
             ${CLUSTER_SVC_QBITTORRENT_IP}
         externalTrafficPolicy: Local
+
       bittorrent-tcp:
         enabled: true
         type: LoadBalancer
@@ -62,6 +70,7 @@ spec:
             port: 50413
             protocol: TCP
         externalTrafficPolicy: Local
+
       bittorrent-udp:
         enabled: true
         type: LoadBalancer
@@ -75,6 +84,7 @@ spec:
             port: 50413
             protocol: UDP
         externalTrafficPolicy: Local
+
     ingress:
       main:
         enabled: true
@@ -88,6 +98,7 @@ spec:
         tls:
           - hosts:
               - *host
+
     podSecurityContext:
       runAsUser: 10001
       runAsGroup: 10001
@@ -104,38 +115,41 @@ spec:
     persistence:
       config:
         enabled: true
+        type: emptyDir
+        mountPath: /config/qBittorrent/config
+
+      configfiles:
+        enabled: true
+        type: configMap
+        name: qbittorrent-configmap
+        mountPath: "-"
+
+      data:
+        enabled: true
         existingClaim: qbittorrent-config
-        mountPath: /config
+        mountPath: /config/qBittorrent/data
+
       nfs-nas-media:
         enabled: true
         type: nfs
         server: ${CLUSTER_LAN_NAS_IP}
         path: /media
         mountPath: /media
-      qbittorrent-conf-ro:
-        enabled: true
-        mountPath: /qbittorrent_tmp
-        type: "custom"
-        volumeSpec:
-          configMap:
-            name: qbittorrent-config
+
     initContainers:
-      copy-qbittorrent-config:
-        name: copy-qbittorrent-config
-        image: instrumentisto/rsync-ssh:alpine3.16
-        imagePullPolicy: IfNotPresent
+      copy-config:
+        image: busybox:latest@sha256:b5d6fe0712636ceb7430189de28819e195e8966372edfc2d9409d79402a0dc16
         command:
-          - sh
-          - -exec
-          - |
-            mkdir -p /config/qBittorrent
-            rsync -av /qbittorrent_tmp/qBittorrent.conf /config/qBittorrent/qBittorrent.conf
-            rsync -av /qbittorrent_tmp/watched_folders.json /config/qBittorrent/watched_folders.json
+          - "/bin/sh"
+          - -c
+        args:
+          - cp /data/configfiles/* /data/config/
         volumeMounts:
-          - name: qbittorrent-conf-ro
-            mountPath: /qbittorrent_tmp
           - name: config
-            mountPath: /config
+            mountPath: /data/config
+          - name: configfiles
+            mountPath: /data/configfiles
+
     resources:
       requests:
         cpu: 100m
