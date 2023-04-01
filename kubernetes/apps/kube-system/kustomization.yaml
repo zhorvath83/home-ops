@@ -4,7 +4,6 @@ kind: Kustomization
 resources:
   - ./namespace.yaml
   - ./local-path-provisioner/ks.yaml
-  - ./cert-manager/ks.yaml
   - ./kured/ks.yaml
   - ./reloader/ks.yaml
   - ./metrics-server/ks.yaml
