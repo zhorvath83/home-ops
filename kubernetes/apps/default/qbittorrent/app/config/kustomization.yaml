@@ -6,5 +6,6 @@ configMapGenerator:
     namespace: default
     files:
       - qBittorrent.conf
+      - watched_folders.json
 generatorOptions:
   disableNameSuffixHash: true
