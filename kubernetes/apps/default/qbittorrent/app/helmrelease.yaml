@@ -137,8 +137,7 @@ spec:
             rsync -av /qbittorrent_tmp/watched_folders.json /config/qBittorrent/watched_folders.json
         volumeMounts:
           - name: qbittorrent-conf-ro
-            mountPath: /qbittorrent_tmp/qBittorrent.conf
-            subPath: qBittorrent.conf
+            mountPath: /qbittorrent_tmp
           - name: config
             mountPath: /config
     resources:
