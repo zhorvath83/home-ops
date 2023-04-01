@@ -35,6 +35,7 @@ spec:
       TZ: "${CLUSTER_TIMEZONE}"
       JELLYFIN_CACHE_DIR: "/config/cache"
       DOTNET_SYSTEM_IO_DISABLEFILELOCKING: "true"
+      JELLYFIN_PublishedServerUrl: "http://${CLUSTER_SVC_JELLYFIN_IP}"
     service:
       main:
         type: LoadBalancer
