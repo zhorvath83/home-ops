@@ -35,6 +35,8 @@ spec:
       tag: 4.5.2@sha256:ddf17fd5323c5cad9689d9e686ed7993b4e6f9ec75dcff5d29e2a761787f671d
     env:
       TZ: "${CLUSTER_TIMEZONE}"
+      PUID: 10001
+      PGID: 10001
     service:
       main:
         ports:
