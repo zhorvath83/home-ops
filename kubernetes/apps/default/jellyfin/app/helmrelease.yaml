@@ -1,0 +1,110 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: jellyfin
+  namespace: default
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: app-template
+      version: 1.3.2
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  maxHistory: 3
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+  values:
+    controller:
+      type: statefulset
+    image:
+      repository: jellyfin/jellyfin
+      tag: 10.8.9
+    env:
+      TZ: "${CLUSTER_TIMEZONE}"
+      JELLYFIN_CACHE_DIR: "/config/cache"
+    service:
+      main:
+        type: LoadBalancer
+        annotations:
+          metallb.universe.tf/loadBalancerIPs: |-
+            ${CLUSTER_SVC_JELLYFIN_IP}
+        externalTrafficPolicy: Local
+        ports:
+          http:
+            port: &port 80
+            targetPort: 8096
+    # serviceMonitor:
+    #   main:
+    #     enabled: true
+    probes:
+      liveness: &probes
+        enabled: true
+        custom: true
+        spec:
+          httpGet:
+            path: /health
+            port: *port
+          initialDelaySeconds: 0
+          periodSeconds: 10
+          timeoutSeconds: 1
+          failureThreshold: 3
+      readiness: *probes
+      startup:
+        enabled: false
+    ingress:
+      main:
+        enabled: false
+    podSecurityContext:
+      runAsUser: 10001
+      runAsGroup: 10001
+      fsGroup: 10001
+      fsGroupChangePolicy: OnRootMismatch
+      privileged: false
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities:
+        drop:
+          - ALL
+      # Hardware acceleration using an Intel iGPU w/ QuickSync
+      # These IDs below should be matched to your `video` and `render` group on the host
+      # To obtain those IDs run the following grep statement on the host:
+      # $ cat /etc/group | grep "video\|render"
+      # video:x:44:
+      # render:x:107:
+      # supplementalGroups: [44, 107, 10000]
+    volumeClaimTemplates:
+      - name: config
+        mountPath: /config
+        accessMode: ReadWriteOnce
+        size: 5Gi
+        storageClass: local-path
+    persistence:
+      media:
+        enabled: true
+        type: nfs
+        server: ${CLUSTER_LAN_NAS_IP}
+        path: /media
+        mountPath: /media
+        readOnly: true
+      transcode:
+        enabled: true
+        type: emptyDir
+    resources:
+      requests:
+        cpu: 100m
+        memory: 512Mi
+      limits:
+        cpu: 3500m
+        memory: 4000Mi
