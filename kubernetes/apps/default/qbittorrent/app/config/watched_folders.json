@@ -6,7 +6,7 @@
             "download_path": "",
             "operating_mode": "AutoManaged",
             "ratio_limit": -2,
-            "save_path": "/media/downloads/watchdir",
+            "save_path": "/media/downloads/complete",
             "seeding_time_limit": -2,
             "skip_checking": false,
             "tags": [
