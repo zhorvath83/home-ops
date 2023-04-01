@@ -44,8 +44,8 @@ spec:
         externalTrafficPolicy: Local
         ports:
           http:
-            port: &port 80
-            targetPort: 8096
+            port: 80
+            targetPort: &targetPort 8096
     # serviceMonitor:
     #   main:
     #     enabled: true
@@ -56,7 +56,7 @@ spec:
         spec:
           httpGet:
             path: /health
-            port: *port
+            port: *targetPort
           initialDelaySeconds: 0
           periodSeconds: 10
           timeoutSeconds: 1
