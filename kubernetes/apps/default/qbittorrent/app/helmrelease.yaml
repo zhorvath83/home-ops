@@ -31,16 +31,18 @@ spec:
       annotations:
         reloader.stakater.com/auto: "true"
     image:
-      repository: ghcr.io/onedr0p/qbittorrent
-      tag: 4.5.2@sha256:a4a66d66ed11c5e3570078daf4e4adeb8a7f88b000a64aa760d46ef12fa7a4c6
+      repository: linuxserver/qbittorrent
+      tag: 4.5.2@sha256:ddf17fd5323c5cad9689d9e686ed7993b4e6f9ec75dcff5d29e2a761787f671d
     env:
       TZ: "${CLUSTER_TIMEZONE}"
     service:
       main:
         ports:
           http:
-            port: *port
-      bittorrent:
+            port: 80
+            targetPort: 8080
+        externalTrafficPolicy: Local
+      bittorrent-tcp:
         enabled: true
         type: LoadBalancer
         annotations:
@@ -50,9 +52,21 @@ spec:
         ports:
           bittorrent:
             enabled: true
-            port: *port-bt
+            port: 50413
             protocol: TCP
-            targetPort: *port-bt
+        externalTrafficPolicy: Local
+      bittorrent-udp:
+        enabled: true
+        type: LoadBalancer
+        annotations:
+          metallb.universe.tf/allow-shared-ip: qbittorrent-svc
+          metallb.universe.tf/loadBalancerIPs: |-
+            ${CLUSTER_SVC_QBITTORRENT_IP}
+        ports:
+          bittorrent:
+            enabled: true
+            port: 50413
+            protocol: UDP
         externalTrafficPolicy: Local
     ingress:
       main:
