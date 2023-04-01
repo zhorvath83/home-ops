@@ -55,7 +55,7 @@ spec:
           metallb.universe.tf/loadBalancerIPs: |-
             ${CLUSTER_SVC_QBITTORRENT_IP}
         ports:
-          bittorrent:
+          bittorrent-tcp:
             enabled: true
             port: 50413
             protocol: TCP
@@ -68,7 +68,7 @@ spec:
           metallb.universe.tf/loadBalancerIPs: |-
             ${CLUSTER_SVC_QBITTORRENT_IP}
         ports:
-          bittorrent:
+          bittorrent-udp:
             enabled: true
             port: 50413
             protocol: UDP
