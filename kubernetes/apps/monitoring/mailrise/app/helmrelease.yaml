@@ -36,9 +36,6 @@ spec:
       tag: 1.3.0
     env:
       TZ: "${CLUSTER_TIMEZONE}"
-    envFrom:
-      - secretRef:
-          name: *app
     service:
       main:
         type: LoadBalancer
