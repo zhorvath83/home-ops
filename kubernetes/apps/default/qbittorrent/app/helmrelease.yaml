@@ -136,7 +136,7 @@ spec:
           - name: qbittorrent-conf-ro
             mountPath: /qbittorrent_tmp/qBittorrent.conf
             subPath: qBittorrent.conf
-          - name: qbittorrent-config
+          - name: config
             mountPath: /config
     resources:
       requests:
