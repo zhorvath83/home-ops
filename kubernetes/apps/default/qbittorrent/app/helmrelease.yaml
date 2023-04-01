@@ -31,8 +31,8 @@ spec:
       annotations:
         reloader.stakater.com/auto: "true"
     image:
-      repository: linuxserver/qbittorrent
-      tag: 4.5.2@sha256:ddf17fd5323c5cad9689d9e686ed7993b4e6f9ec75dcff5d29e2a761787f671d
+      repository: ghcr.io/onedr0p/qbittorrent
+      tag: 4.5.2@sha256:a4a66d66ed11c5e3570078daf4e4adeb8a7f88b000a64aa760d46ef12fa7a4c6
     env:
       TZ: "${CLUSTER_TIMEZONE}"
       PUID: 10001
