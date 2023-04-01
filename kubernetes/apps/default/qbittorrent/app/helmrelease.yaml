@@ -114,15 +114,11 @@ spec:
         mountPath: /media
       qbittorrent-conf-ro:
         enabled: true
-        mountPath: /qbittorrent_tmp/qBittorrent.conf
-        subPath: qBittorrent.conf
+        mountPath: /qbittorrent_tmp
         type: "custom"
         volumeSpec:
           configMap:
             name: qbittorrent-config
-            items:
-              - key: qBittorrent.conf
-                path: qBittorrent.conf
     initContainers:
       copy-qbittorrent-config:
         name: copy-qbittorrent-config
@@ -137,11 +133,7 @@ spec:
             rsync -av /qbittorrent_tmp/watched_folders.json /config/qBittorrent/watched_folders.json
         volumeMounts:
           - name: qbittorrent-conf-ro
-            mountPath: /qbittorrent_tmp/qBittorrent.conf
-            subPath: qBittorrent.conf
-          - name: qbittorrent-conf-ro
-            mountPath: /qbittorrent_tmp/watched_folders.json
-            subPath: watched_folders.json
+            mountPath: /qbittorrent_tmp
           - name: config
             mountPath: /config
     resources:
