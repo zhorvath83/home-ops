@@ -1,0 +1,10 @@
+---
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: default-pool
+  namespace: networking
+spec:
+  addresses:
+    - ${CLUSTER_LAN_CIDR}
+  autoAssign: false
