@@ -3,8 +3,8 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - ./namespace.yaml
-  - ./metallb
-  # - ./cloudflared
-  # - ./ingress-nginx
-  # - ./external-dns
-  # - ./whoami
+  - ./metallb/ks.yaml
+  # - ./cloudflared/ks.yaml
+  # - ./ingress-nginx/ks.yaml
+  # - ./external-dns/ks.yaml
+  # - ./whoami/ks.yaml
