@@ -2,17 +2,17 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
-  name: reloader
-  namespace: &namespace kube-system
+  name: external-secrets
+  namespace: kube-system
 spec:
   interval: 30m
   chart:
     spec:
-      chart: reloader
-      version: v1.0.18
+      chart: external-secrets
+      version: 0.8.1
       sourceRef:
         kind: HelmRepository
-        name: stakater
+        name: external-secrets
         namespace: flux-system
   maxHistory: 3
   install:
@@ -26,8 +26,15 @@ spec:
   uninstall:
     keepHistory: false
   values:
-    fullnameOverride: reloader
-    reloader:
-      podMonitor:
-        enabled: false
-        namespace: *namespace
+    installCRDs: true
+    serviceMonitor:
+      enabled: true
+      interval: 1m
+    webhook:
+      serviceMonitor:
+        enabled: true
+        interval: 1m
+    certController:
+      serviceMonitor:
+        enabled: true
+        interval: 1m
