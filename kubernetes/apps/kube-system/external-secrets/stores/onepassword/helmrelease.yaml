@@ -78,8 +78,8 @@ spec:
         enabled: false
 
     podSecurityContext:
-      runAsUser: 10001
-      runAsGroup: 10001
+      runAsUser: 999
+      runAsGroup: 999
 
     persistence:
       shared:
