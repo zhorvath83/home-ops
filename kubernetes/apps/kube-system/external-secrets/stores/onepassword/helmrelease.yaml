@@ -103,7 +103,7 @@ spec:
             valueFrom:
               secretKeyRef:
                 name: onepassword-connect-secret
-                key: onepassword-credentials.json
+                key: 1password-credentials.json
           - name: OP_HTTP_PORT
             value: &port 8081
           - name: OP_BUS_PORT
