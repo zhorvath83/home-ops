@@ -96,7 +96,6 @@ spec:
         server: ${CLUSTER_LAN_NAS_IP}
         path: /media
         mountPath: /media
-        readOnly: true
       transcode:
         enabled: true
         type: emptyDir

@@ -16,6 +16,10 @@ _These cannot be applied with `kubectl` in the regular fashion due to be encrypt
 sops --decrypt kubernetes/bootstrap/flux/age-key.sops.yaml | kubectl apply -f -
 sops --decrypt kubernetes/flux/vars/cluster-secrets.sops.yaml | kubectl apply -f -
 kubectl apply -f kubernetes/flux/vars/cluster-settings.yaml
+kubectl create secret generic onepassword-connect-secret -n kube-system \
+ --from-literal=1password-credentials.json=$(op read op://2mq4lqi5lyw6c4yghls5nilcti/1p-kubernetes-credentials-file/1password-credentials-base64.json) \
+ --from-literal=token=$(op read op://2mq4lqi5lyw6c4yghls5nilcti/1p-kubernetes-access-token/credential)
+
 ```
 
 ### Kick off Flux applying this repository
