@@ -14,7 +14,7 @@ terraform {
     }
     cloudflare = {
       source  = "cloudflare/cloudflare"
-      version = "4.2.0"
+      version = "4.3.0"
     }
     http = {
       source  = "hashicorp/http"
@@ -36,7 +36,7 @@ data "external" "git_root_path" {
 }
 
 data "sops_file" "cluster_secrets" {
-  source_file = "${data.external.git_root_path.result.result}/cluster/config/cluster-secrets.sops.yaml"
+  source_file = "${data.external.git_root_path.result.result}/kubernetes/flux/vars/cluster-secrets.sops.yaml"
 }
 
 provider "cloudflare" {
