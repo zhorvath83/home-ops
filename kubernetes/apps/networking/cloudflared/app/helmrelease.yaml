@@ -1,0 +1,62 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: &app cloudflared
+  namespace: networking
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: app-template
+      version: 1.3.2
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+      interval: 15m
+  install:
+    createNamespace: true
+    remediation:
+      retries: 5
+  upgrade:
+    remediation:
+      retries: 5
+  values:
+    global:
+      nameOverride: *app
+    controller:
+      replicas: 4
+    image:
+      repository: cloudflare/cloudflared
+      tag: 2023.3.1
+    args:
+      - tunnel
+      - --metrics
+      - 0.0.0.0:9090
+      - run
+    service:
+      main:
+        nameOverride: metrics
+        ports:
+          http:
+            port: 9090
+    persistence:
+      credentials:
+        enabled: true
+        type: custom
+        volumeSpec:
+          secret:
+            secretName: &secret cloudflare-tunnel
+        subPath:
+          - path: cred.json
+            mountPath: /etc/cloudflared/cred.json
+            readOnly: true
+    resources:
+      requests:
+        memory: 64Mi
+        cpu: 10m
+      limits:
+        memory: 128Mi
+    podAnnotations:
+      secret.reloader.stakater.com/reload: *secret
