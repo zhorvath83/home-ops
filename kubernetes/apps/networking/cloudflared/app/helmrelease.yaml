@@ -47,7 +47,7 @@ spec:
         type: custom
         volumeSpec:
           configMap:
-            name: &config cloudflare-tunnel
+            name: &config cloudflared-config
         subPath:
           - path: config.yaml
             mountPath: /etc/cloudflared/config.yaml
