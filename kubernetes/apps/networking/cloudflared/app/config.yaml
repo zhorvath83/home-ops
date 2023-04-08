@@ -1,0 +1,3 @@
+---
+tunnel: home-ops-tunnel
+credentials-file: /etc/cloudflared/cred.json

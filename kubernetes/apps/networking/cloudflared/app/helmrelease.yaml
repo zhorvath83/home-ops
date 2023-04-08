@@ -35,7 +35,6 @@ spec:
       - --metrics
       - 0.0.0.0:9090
       - run
-      - home-ops-tunnel
     service:
       main:
         nameOverride: metrics
@@ -43,6 +42,16 @@ spec:
           http:
             port: 9090
     persistence:
+      config:
+        enabled: true
+        type: custom
+        volumeSpec:
+          configMap:
+            name: &config cloudflare-tunnel
+        subPath:
+          - path: config.yaml
+            mountPath: /etc/cloudflared/config.yaml
+            readOnly: true
       credentials:
         enabled: true
         type: custom
@@ -61,3 +70,4 @@ spec:
         memory: 128Mi
     podAnnotations:
       secret.reloader.stakater.com/reload: *secret
+      configmap.reloader.stakater.com/reload: *config
