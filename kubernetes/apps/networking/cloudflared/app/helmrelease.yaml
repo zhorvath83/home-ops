@@ -47,7 +47,7 @@ spec:
         type: custom
         volumeSpec:
           secret:
-            secretName: &secret cloudflare-tunnel
+            secretName: &secret cloudflared-secret
         subPath:
           - path: cred.json
             mountPath: /etc/cloudflared/cred.json
