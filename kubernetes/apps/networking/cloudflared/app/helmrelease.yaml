@@ -35,6 +35,7 @@ spec:
       - --metrics
       - 0.0.0.0:9090
       - run
+      - home-ops-tunnel
     service:
       main:
         nameOverride: metrics

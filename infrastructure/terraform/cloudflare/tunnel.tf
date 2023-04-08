@@ -1,13 +1,13 @@
 resource "random_id" "cf-tunnel-rnd-secret" {
-  byte_length = 51
+  byte_length = 50
 }
 
 resource "random_id" "cf-tunnel-rnd-name" {
   byte_length = 2
 }
 
-resource "cloudflare_tunnel" "home-ops-tun" {
-  name       = "home-ops-tun-${random_id.cf-tunnel-rnd-name.dec}"
+resource "cloudflare_tunnel" "home-ops-tunnel" {
+  name       = "home-ops-tunnel"
   account_id = var.CF_ACCOUNT_ID
   secret     = random_id.cf-tunnel-rnd-secret.b64_std
 
@@ -22,7 +22,7 @@ resource "cloudflare_tunnel" "home-ops-tun" {
 resource "cloudflare_record" "cf_tunnel_cname" {
   name    = "cf-tunnel"
   zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
-  value   = cloudflare_tunnel.home-ops-tun.cname
+  value   = cloudflare_tunnel.home-ops-tunnel.cname
   type    = "CNAME"
   proxied = true
   ttl     = 1
@@ -30,7 +30,7 @@ resource "cloudflare_record" "cf_tunnel_cname" {
 
 resource "cloudflare_tunnel_config" "home-ops-tun-conf" {
   account_id = var.CF_ACCOUNT_ID
-  tunnel_id  = cloudflare_tunnel.home-ops-tun.id
+  tunnel_id  = cloudflare_tunnel.home-ops-tunnel.id
 
   config {
     warp_routing {
