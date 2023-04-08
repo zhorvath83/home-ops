@@ -26,7 +26,7 @@ spec:
     global:
       nameOverride: *app
     controller:
-      replicas: 4
+      replicas: 1
     image:
       repository: cloudflare/cloudflared
       tag: 2023.3.1
