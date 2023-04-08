@@ -12,19 +12,14 @@ Host *
     ForwardAgent yes
 EOF
 
-op read -o /home/zhorvath83/.config/sops/age/keys.txt op://g5kjo4p7of2ecxtfgtly4hckji/homelab-age-key/keys.txt
-
-kubectl create secret generic onepassword-connect-secret -n kube-system \
- --from-literal=1password-credentials.json=$(op read op://2mq4lqi5lyw6c4yghls5nilcti/1p-kubernetes-credentials-file/1password-credentials-base64.json) \
- --from-literal=token=$(op read op://2mq4lqi5lyw6c4yghls5nilcti/1p-kubernetes-access-token/credential)
+op read -o /home/zhorvath83/.config/sops/age/keys.txt op://HomeOps/homelab-age-key/keys.txt
 
 # Git config
-export GIT_USERNAME=$(op read op://g5kjo4p7of2ecxtfgtly4hckji/github.com/username)
-export GIT_EMAIL=$(op read op://g5kjo4p7of2ecxtfgtly4hckji/github.com/email)
+export GIT_USERNAME=$(op read op://Personal/github.com/username)
+export GIT_EMAIL=$(op read op://Personal/github.com/email)
 
 git config --global --add pull.rebase false
 git config --global --add user.name $GIT_USERNAME
 git config --global --add user.email $GIT_EMAIL
 git config --global init.defaultBranch main
 git config --global alias.pullall '!git pull && git submodule update --init --recursive'
-

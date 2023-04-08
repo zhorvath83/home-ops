@@ -1,5 +1,5 @@
 resource "cloudflare_list" "github_hooks_cidr_list" {
-  account_id  = data.sops_file.cluster_secrets.data["stringData.SECRET_CF_ACCOUNT_ID"]
+  account_id  = var.CF_ACCOUNT_ID
   name        = "github_hooks_cidr_list"
   kind        = "ip"
   description = "List of Github hooks IP Addresses"
@@ -16,7 +16,7 @@ resource "cloudflare_list" "github_hooks_cidr_list" {
 resource "cloudflare_filter" "github_hooks_cidr_list" {
   zone_id     = lookup(data.cloudflare_zones.domain.zones[0], "id")
   description = "Expression to allow Github hooks IP addresses"
-  expression  = "(http.host eq \"flux-webhook.${data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]}\" and not ip.src in $github_hooks_cidr_list)"
+  expression  = "(http.host eq \"flux-webhook.${var.CF_DOMAIN_NAME}\" and not ip.src in $github_hooks_cidr_list)"
   depends_on = [
     cloudflare_list.github_hooks_cidr_list,
   ]

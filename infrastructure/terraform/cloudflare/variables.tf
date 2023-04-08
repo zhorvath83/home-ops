@@ -125,3 +125,38 @@ variable "bulk_redirect_list" {
   }))
   description = "Bulk redirect URL's and params"
 }
+
+variable "CF_ACCOUNT_ID" {
+  description = "Cloudflare account ID."
+  type        = string
+}
+
+variable "CF_ACCESS_ALLOWED_EMAILS" {
+  description = "List of allowed email addresses at Cloudflare Access."
+  type        = string
+}
+
+variable "CF_ACCESS_GOOGLE_CL_ID" {
+  description = "Google CL ID for Cloudflare Access."
+  type        = string
+}
+
+variable "CF_ACCESS_GOOGLE_CL_SECRET" {
+  description = "Google CL secret for Cloudflare Access."
+  type        = string
+}
+
+variable "CF_DOMAIN_NAME" {
+  description = "Domain name @ Cloudflare."
+  type        = string
+}
+
+variable "CF_USERNAME" {
+  description = "Username (mail) @ Cloudflare."
+  type        = string
+}
+
+variable "CF_APIKEY" {
+  description = "Cloudflare API key."
+  type        = string
+}

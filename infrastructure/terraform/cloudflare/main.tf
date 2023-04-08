@@ -20,33 +20,24 @@ terraform {
       source  = "hashicorp/http"
       version = "3.2.1"
     }
-    sops = {
-      source  = "carlpett/sops"
-      version = "0.7.2"
-    }
     external = {
       source  = "hashicorp/external"
       version = "2.3.1"
     }
+    random     = {
+      version = "~> 3.4.0"
+    }
   }
 }
 
-data "external" "git_root_path" {
-  program = ["bash", "-c", "echo {\\\"result\\\":\\\"$(git rev-parse --show-toplevel)\\\"}"]
-}
-
-data "sops_file" "cluster_secrets" {
-  source_file = "${data.external.git_root_path.result.result}/kubernetes/flux/vars/cluster-secrets.sops.yaml"
-}
-
 provider "cloudflare" {
-  email       = data.sops_file.cluster_secrets.data["stringData.SECRET_CF_EMAIL"]
-  api_key     = data.sops_file.cluster_secrets.data["stringData.SECRET_CF_APIKEY"]
+  email       = var.CF_USERNAME
+  api_key     = var.CF_APIKEY
 }
 
 data "cloudflare_zones" "domain" {
   filter {
-    name = data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]
+    name = var.CF_DOMAIN_NAME
   }
 }
 

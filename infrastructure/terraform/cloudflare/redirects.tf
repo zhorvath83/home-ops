@@ -1,6 +1,6 @@
 # Redirect list
 resource "cloudflare_list" "my_redirect_list" {
-  account_id  = data.sops_file.cluster_secrets.data["stringData.SECRET_CF_ACCOUNT_ID"]
+  account_id  = var.CF_ACCOUNT_ID
   name        = "my_redirect_list"
   description = "My custom redirect list"
   kind        = "redirect"
@@ -11,8 +11,8 @@ resource "cloudflare_list" "my_redirect_list" {
     content {
       value {
         redirect {
-          source_url            = replace(item.value.source_url, "domain_name_to_replace", data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"])
-          target_url            = replace(item.value.target_url, "domain_name_to_replace", data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"])
+          source_url            = replace(item.value.source_url, "domain_name_to_replace", var.CF_DOMAIN_NAME)
+          target_url            = replace(item.value.target_url, "domain_name_to_replace", var.CF_DOMAIN_NAME)
           status_code           = lookup(item.value, "status_code", 301)
           include_subdomains    = lookup(item.value, "include_subdomains", "enabled")
           subpath_matching      = lookup(item.value, "subpath_matching", "enabled")
@@ -27,7 +27,7 @@ resource "cloudflare_list" "my_redirect_list" {
 
 # CF Bulk redirects based on a List resource
 resource "cloudflare_ruleset" "my_bulk_redirects" {
-  account_id  = data.sops_file.cluster_secrets.data["stringData.SECRET_CF_ACCOUNT_ID"]
+  account_id  = var.CF_ACCOUNT_ID
   name        = "my_bulk_redirects"
   description = "My custom redirects"
   kind        = "root"

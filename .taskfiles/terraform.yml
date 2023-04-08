@@ -12,10 +12,10 @@ tasks:
     desc: Prepare all the k8s nodes for running k3s
     dir: infrastructure/terraform/cloudflare
     cmds:
-      - "terraform plan"
+      - "op run --no-masking --env-file=./.env -- terraform plan"
 
   apply:cloudflare:
     desc: Prepare all the k8s nodes for running k3s
     dir: infrastructure/terraform/cloudflare
     cmds:
-      - "terraform apply"
+      - "op run --no-masking --env-file=./.env -- terraform apply"

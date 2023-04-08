@@ -6,7 +6,7 @@ locals {
 }
 
 locals {
-  domain_name = data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"]
+  domain_name = var.CF_DOMAIN_NAME
   cf_zone_id  = lookup(data.cloudflare_zones.domain.zones[0], "id")
 }
 
@@ -70,7 +70,7 @@ resource "cloudflare_record" "dkim_record" {
   for_each  = var.dns_dkim_records
   name      = each.value.name
   zone_id   = local.cf_zone_id
-  value     = replace(each.value.value, "domain_name_to_replace", data.sops_file.cluster_secrets.data["stringData.SECRET_DOMAIN"])
+  value     = replace(each.value.value, "domain_name_to_replace", var.CF_DOMAIN_NAME)
   proxied   = false
   type      = each.value.type
   ttl       = 1
