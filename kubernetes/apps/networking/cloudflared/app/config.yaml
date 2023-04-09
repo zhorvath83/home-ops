@@ -1,4 +1,5 @@
 ---
+tunnel: home-ops-tunnel
 proxy-dns: false
 warp-routing:
     enabled: false
