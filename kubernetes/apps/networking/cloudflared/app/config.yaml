@@ -1,6 +1,7 @@
 ---
 tunnel: home-ops-tunnel
-credentials-file: /etc/cloudflared/cred.json
+credentials-file: /etc/cloudflared/creds/credentials.json
+metrics: 0.0.0.0:9090
 proxy-dns: false
 warp-routing:
     enabled: false

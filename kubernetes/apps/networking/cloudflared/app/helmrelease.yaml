@@ -32,6 +32,11 @@ spec:
       tag: 2023.3.1
     args:
       - tunnel
+      # Points cloudflared to the config file, which configures what
+      # cloudflared will actually do. This file is created by a ConfigMap
+      # below.
+      - --config
+      - /etc/cloudflared/config/config.yaml
       - --metrics
       - 0.0.0.0:9090
       - run
@@ -50,7 +55,7 @@ spec:
             name: &config cloudflared-config
         subPath:
           - path: config.yaml
-            mountPath: /etc/cloudflared/config.yaml
+            mountPath: /etc/cloudflared/config/config.yaml
             readOnly: true
       credentials:
         enabled: true
@@ -59,8 +64,8 @@ spec:
           secret:
             secretName: &secret cloudflared-secret
         subPath:
-          - path: cred.json
-            mountPath: /etc/cloudflared/cred.json
+          - path: credentials.json
+            mountPath: /etc/cloudflared/creds/credentials.json
             readOnly: true
     resources:
       requests:
