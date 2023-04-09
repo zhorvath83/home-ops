@@ -1,5 +1,5 @@
 resource "random_id" "cf-tunnel-rnd-secret" {
-  byte_length = 51
+  byte_length = 50
 }
 
 resource "random_id" "cf-tunnel-rnd-name" {
@@ -10,9 +10,24 @@ resource "cloudflare_tunnel" "home-ops-tunnel" {
   name       = "home-ops-tunnel"
   account_id = var.CF_ACCOUNT_ID
   secret     = random_id.cf-tunnel-rnd-secret.b64_std
+}
+
+locals {
+  tunnel_credentials_json = jsonencode({
+      "AccountTag"   = var.CF_ACCOUNT_ID,
+      "TunnelID"     = cloudflare_tunnel.home-ops-tunnel.id
+      "TunnelName"   = cloudflare_tunnel.home-ops-tunnel.name,
+      "TunnelSecret" = cloudflare_tunnel.home-ops-tunnel.secret
+  })
+}
+
+resource "null_resource" "store-tunnel-secret" {
+  triggers = {
+    tunnel_credentials_file = local.tunnel_credentials_json
+  }
 
   provisioner "local-exec" {
-    command     = "op item edit cloudflare --vault HomeOps 'tunnel_id=${self.id}' 'tunnel_secret=${self.secret}' 'tunnel_token=${base64decode(self.tunnel_token)}'"
+    command     = "op item edit cloudflare --vault HomeOps 'tunnel_id=${cloudflare_tunnel.home-ops-tunnel.id}' 'tunnel_secret=${cloudflare_tunnel.home-ops-tunnel.secret}' 'tunnel_token=${cloudflare_tunnel.home-ops-tunnel.tunnel_token}' 'tunnel_credentials=${self.triggers.tunnel_credentials_file}'"
     interpreter = ["/bin/bash", "-c"]
     working_dir = path.module
     quiet       = true

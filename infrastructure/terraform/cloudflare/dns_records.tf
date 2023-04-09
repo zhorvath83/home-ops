@@ -10,12 +10,6 @@ locals {
   cf_zone_id  = lookup(data.cloudflare_zones.domain.zones[0], "id")
 }
 
-output "mta_sts_policy" {
- value       = local.mta_sts_policy
- description = "MTA-STS policy"
- sensitive   = false
-}
-
 resource "cloudflare_record" "cname_root" {
   name    = local.domain_name
   zone_id = local.cf_zone_id
