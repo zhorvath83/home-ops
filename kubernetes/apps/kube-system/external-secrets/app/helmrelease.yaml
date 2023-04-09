@@ -38,3 +38,12 @@ spec:
       serviceMonitor:
         enabled: true
         interval: 1m
+    podSecurityContext:
+      runAsUser: 10001
+      runAsGroup: 10001
+      privileged: false
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities:
+        drop:
+          - ALL
