@@ -27,17 +27,6 @@ spec:
     keepHistory: false
   values:
     installCRDs: true
-    serviceMonitor:
-      enabled: true
-      interval: 1m
-    webhook:
-      serviceMonitor:
-        enabled: true
-        interval: 1m
-    certController:
-      serviceMonitor:
-        enabled: true
-        interval: 1m
     podSecurityContext:
       runAsUser: 10001
       runAsGroup: 10001
@@ -47,3 +36,33 @@ spec:
       capabilities:
         drop:
           - ALL
+    serviceMonitor:
+      enabled: true
+      interval: 1m
+    webhook:
+      podSecurityContext:
+        runAsUser: 10001
+        runAsGroup: 10001
+        privileged: false
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop:
+            - ALL
+      serviceMonitor:
+        enabled: true
+        interval: 1m
+    certController:
+      podSecurityContext:
+        runAsUser: 10001
+        runAsGroup: 10001
+        privileged: false
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop:
+            - ALL
+      serviceMonitor:
+        enabled: true
+        interval: 1m
+
