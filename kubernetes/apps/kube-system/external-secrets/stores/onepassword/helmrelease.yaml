@@ -80,7 +80,12 @@ spec:
     podSecurityContext:
       runAsUser: 999
       runAsGroup: 999
-
+      privileged: false
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities:
+        drop:
+          - ALL
     persistence:
       shared:
         enabled: true

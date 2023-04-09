@@ -48,6 +48,15 @@ spec:
         ports:
           http:
             port: 9090
+    podSecurityContext:
+      runAsUser: 10001
+      runAsGroup: 10001
+      privileged: false
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities:
+        drop:
+          - ALL
     persistence:
       config:
         enabled: true
