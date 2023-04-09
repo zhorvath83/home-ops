@@ -35,3 +35,12 @@ spec:
       nameservers:
         - "1.1.1.1"
         - "9.9.9.9"
+    securityContext:
+      runAsUser: 10001
+      runAsGroup: 10001
+      privileged: false
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities:
+        drop:
+          - ALL
