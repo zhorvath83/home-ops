@@ -30,13 +30,21 @@ spec:
     image:
       repository: cloudflare/cloudflared
       tag: 2023.3.1
+    env:
+      - name: cf_tunnel_id
+        valueFrom:
+          secretKeyRef:
+            name: *secret
+            key: tunnel_id
     args:
       - tunnel
       # Points cloudflared to the config file, which configures what
       # cloudflared will actually do. This file is created by a ConfigMap
       # below.
-      - --config
-      - /etc/cloudflared/config.yaml
+      - --name
+      - "$(cf_tunnel_id)"
+      # - --config
+      # - /etc/cloudflared/config.yaml
       - --cred-file 
       - /etc/cloudflared/credentials.json
       - --metrics
@@ -59,7 +67,7 @@ spec:
           - ALL
     persistence:
       config:
-        enabled: true
+        enabled: false
         type: custom
         volumeSpec:
           configMap:
