@@ -27,7 +27,7 @@ resource "null_resource" "store-tunnel-secret" {
   }
 
   provisioner "local-exec" {
-    command     = "op item edit cloudflare --vault HomeOps 'tunnel_id=${cloudflare_tunnel.home-ops-tunnel.id}' 'tunnel_secret=${cloudflare_tunnel.home-ops-tunnel.secret}' 'tunnel_token=${cloudflare_tunnel.home-ops-tunnel.tunnel_token}' 'tunnel_credentials=${self.triggers.tunnel_credentials_file}'"
+    command     = "op item edit cloudflare --vault HomeOps 'tunnel_name=${cloudflare_tunnel.home-ops-tunnel.name}' 'tunnel_id=${cloudflare_tunnel.home-ops-tunnel.id}' 'tunnel_secret=${cloudflare_tunnel.home-ops-tunnel.secret}' 'tunnel_token=${cloudflare_tunnel.home-ops-tunnel.tunnel_token}' 'tunnel_credentials=${self.triggers.tunnel_credentials_file}'"
     interpreter = ["/bin/bash", "-c"]
     working_dir = path.module
     quiet       = true

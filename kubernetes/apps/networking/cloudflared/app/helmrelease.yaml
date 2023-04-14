@@ -35,8 +35,6 @@ spec:
       # Points cloudflared to the config file, which configures what
       # cloudflared will actually do. This file is created by a ConfigMap
       # below.
-      - --name
-      - "$(cf_tunnel_id)"
       # - --config
       # - /etc/cloudflared/config.yaml
       - --cred-file 
@@ -44,6 +42,8 @@ spec:
       - --metrics
       - 0.0.0.0:9090
       - run
+      - --name
+      - "$(cf_tunnel_name)"
     service:
       main:
         nameOverride: metrics
@@ -81,11 +81,11 @@ spec:
             mountPath: /etc/cloudflared/credentials.json
             readOnly: true
     env:
-      - name: cf_tunnel_id
+      - name: cf_tunnel_name
         valueFrom:
           secretKeyRef:
             name: *secret
-            key: tunnel_id
+            key: tunnel_name
     resources:
       requests:
         memory: 64Mi
