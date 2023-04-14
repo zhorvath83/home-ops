@@ -32,7 +32,7 @@ terraform {
 
 provider "cloudflare" {
   email       = var.CF_USERNAME
-  api_key     = var.CF_APIKEY
+  api_key     = var.CF_GLOBAL_APIKEY
 }
 
 data "cloudflare_zones" "domain" {

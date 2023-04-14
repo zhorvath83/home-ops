@@ -156,7 +156,7 @@ variable "CF_USERNAME" {
   type        = string
 }
 
-variable "CF_APIKEY" {
+variable "CF_GLOBAL_APIKEY" {
   description = "Cloudflare API key."
   type        = string
 }

@@ -6,16 +6,15 @@ metadata:
 spec:
   acme:
     server: https://acme-v02.api.letsencrypt.org/directory
-    email: "${SECRET_EMAIL_1}"
+    email: noble.book7621@fastmail.com
     privateKeySecretRef:
       name: letsencrypt-production
     solvers:
       - dns01:
           cloudflare:
-            email: "${SECRET_EMAIL_1}"
-            apiKeySecretRef:
-              name: cert-manager-cf-secret
-              key: apikey
+            apiTokenSecretRef:
+              name: cert-manager-issuer-secret
+              key: api-token
         selector:
           dnsZones:
             - "${SECRET_DOMAIN}"
@@ -28,16 +27,15 @@ metadata:
 spec:
   acme:
     server: https://acme-staging-v02.api.letsencrypt.org/directory
-    email: "${SECRET_EMAIL_1}"
+    email: noble.book7621@fastmail.com
     privateKeySecretRef:
       name: letsencrypt-staging
     solvers:
       - dns01:
           cloudflare:
-            email: "${SECRET_EMAIL_1}"
-            apiKeySecretRef:
-              name: cert-manager-cf-secret
-              key: apikey
+            apiTokenSecretRef:
+              name: cert-manager-issuer-secret
+              key: api-token
         selector:
           dnsZones:
             - "${SECRET_DOMAIN}"
