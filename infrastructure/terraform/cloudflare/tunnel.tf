@@ -43,25 +43,25 @@ resource "cloudflare_record" "cf_tunnel_cname" {
   ttl     = 1
 }
 
-# resource "cloudflare_tunnel_config" "home-ops-tun-conf" {
-#   account_id = var.CF_ACCOUNT_ID
-#   tunnel_id  = cloudflare_tunnel.home-ops-tunnel.id
-# 
-#   config {
-#     warp_routing {
-#       enabled = false
-#     }
-#     origin_request {
-#       connect_timeout     = "30s"
-#       no_tls_verify       = false
-#       origin_server_name  = var.CF_DOMAIN_NAME
-#     }
-#     ingress_rule {
-#       hostname  = "*.${var.CF_DOMAIN_NAME}"
-#       service   = "https://ingress-nginx-controller.networking.svc.cluster.local"
-#     }
-#     ingress_rule {
-#       service   = "http_status:404"
-#     }
-#   }
-# }
+resource "cloudflare_tunnel_config" "home-ops-tun-conf" {
+  account_id = var.CF_ACCOUNT_ID
+  tunnel_id  = cloudflare_tunnel.home-ops-tunnel.id
+
+  config {
+    warp_routing {
+      enabled = false
+    }
+    origin_request {
+      connect_timeout     = "30s"
+      no_tls_verify       = false
+      origin_server_name  = var.CF_DOMAIN_NAME
+    }
+    ingress_rule {
+      hostname  = "*.${var.CF_DOMAIN_NAME}"
+      service   = "https://ingress-nginx-controller.networking.svc.cluster.local"
+    }
+    ingress_rule {
+      service   = "http_status:404"
+    }
+  }
+}
