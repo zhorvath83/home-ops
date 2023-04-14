@@ -1,5 +1,5 @@
 resource "random_id" "cf-tunnel-rnd-secret" {
-  byte_length = 50
+  byte_length = 51
 }
 
 resource "random_id" "cf-tunnel-rnd-name" {
@@ -7,7 +7,7 @@ resource "random_id" "cf-tunnel-rnd-name" {
 }
 
 resource "cloudflare_tunnel" "home-ops-tunnel" {
-  name       = "home-ops-tunnel.${random_id.cf-tunnel-rnd-name.dec}"
+  name       = "home-ops-tunnel-${random_id.cf-tunnel-rnd-name.dec}"
   account_id = var.CF_ACCOUNT_ID
   secret     = random_id.cf-tunnel-rnd-secret.b64_std
 }

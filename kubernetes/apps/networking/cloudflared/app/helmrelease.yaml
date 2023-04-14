@@ -32,6 +32,8 @@ spec:
       tag: 2023.3.1
     args:
       - tunnel
+      - --name
+      - "$(cf_tunnel_name)"
       # Points cloudflared to the config file, which configures what
       # cloudflared will actually do. This file is created by a ConfigMap
       # below.
@@ -42,8 +44,6 @@ spec:
       - --metrics
       - 0.0.0.0:9090
       - run
-      - --name
-      - "$(cf_tunnel_name)"
     service:
       main:
         nameOverride: metrics
