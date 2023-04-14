@@ -160,3 +160,8 @@ variable "CF_APIKEY" {
   description = "Cloudflare API key."
   type        = string
 }
+
+variable "CUSTOM_DOMAIN_EMAIL" {
+  description = "Private custom domain email address."
+  type        = string
+}

@@ -59,7 +59,7 @@ spec:
           - ALL
     persistence:
       config:
-        enabled: true
+        enabled: false
         type: custom
         volumeSpec:
           configMap:

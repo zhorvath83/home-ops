@@ -65,3 +65,16 @@ resource "cloudflare_tunnel_config" "home-ops-tun-conf" {
     }
   }
 }
+
+resource "cloudflare_notification_policy" "home-ops-tun-health" {
+  account_id  = "var.CF_ACCOUNT_ID"
+  name        = "CF tunnel health notification events"
+  description = "Notification policy related to CF tunnel health events."
+  enabled     = true
+  alert_type  = "tunnel_health_event"
+
+  email_integration {
+    id = var.CUSTOM_DOMAIN_EMAIL
+  }
+
+}
