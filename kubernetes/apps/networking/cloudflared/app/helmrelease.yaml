@@ -32,17 +32,16 @@ spec:
       tag: 2023.4.0
     args:
       - tunnel
-      # Points cloudflared to the config file, which configures what
-      # cloudflared will actually do. This file is created by a ConfigMap
-      # below.
       - --config
       - /etc/cloudflared/config.yaml
       - --cred-file 
       - /etc/cloudflared/credentials.json
       - --metrics
       - 0.0.0.0:9090
+      - --no-autoupdate
       - run
-      - "$(cf_tunnel_name)"
+      - "$(tunnel_name)"
+      # Tunnel name retreived from ENV var.
     service:
       main:
         nameOverride: metrics
@@ -80,7 +79,7 @@ spec:
             mountPath: /etc/cloudflared/credentials.json
             readOnly: true
     env:
-      - name: cf_tunnel_name
+      - name: tunnel_name
         valueFrom:
           secretKeyRef:
             name: *secret

@@ -77,7 +77,7 @@ spec:
         default-ssl-certificate: "networking/${SECRET_DOMAIN/./-}-tls"
         # Sets Load-Balancer hostname in the ingress object
         # Used by External DNS when creating CNAME DNS records
-        publish-status-address: "cf-tunnel.${SECRET_DOMAIN}"
+        publish-status-address: "tunnel.${SECRET_DOMAIN}"
         update-status: true
       topologySpreadConstraints:
         - maxSkew: 1

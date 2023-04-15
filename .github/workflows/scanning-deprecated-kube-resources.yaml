@@ -1,5 +1,5 @@
 ---
-name: Schedule - Find Kubernetes resources that have been deprecated
+name: Find Kubernetes resources that have been deprecated
 
 on: # yamllint disable-line rule:truthy
   workflow_dispatch:
