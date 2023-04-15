@@ -19,7 +19,7 @@ export GIT_USERNAME=$(op read op://Personal/github.com/username)
 export GIT_EMAIL=$(op read op://Personal/github.com/email)
 
 git config --global --add pull.rebase false
-git config --global --add user.name $GIT_USERNAME
-git config --global --add user.email $GIT_EMAIL
+git config --global --add user.name "$GIT_USERNAME"
+git config --global --add user.email "$GIT_EMAIL"
 git config --global init.defaultBranch main
 git config --global alias.pullall '!git pull && git submodule update --init --recursive'
