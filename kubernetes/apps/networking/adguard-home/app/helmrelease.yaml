@@ -48,9 +48,10 @@ spec:
             subPath: config.yaml
           - name: data
             mountPath: /opt/adguardhome/conf
-        # securityContext:
-        #   runAsUser: 10001
-        #   runAsGroup: 10001
+            subPath: conf
+        securityContext:
+          runAsUser: 10001
+          runAsGroup: 10001
 
     image:
       repository: adguard/adguardhome
