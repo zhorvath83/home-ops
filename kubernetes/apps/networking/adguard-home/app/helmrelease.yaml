@@ -120,6 +120,19 @@ spec:
           - path: data
             mountPath: /opt/adguardhome/work
 
+    ingress:
+      main:
+        enabled: true
+        ingressClassName: nginx
+        hosts:
+          - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
+            paths:
+              - path: /
+                pathType: Prefix
+        tls:
+          - hosts:
+              - *host
+
     resources:
       requests:
         memory: 256Mi
