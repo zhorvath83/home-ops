@@ -33,7 +33,7 @@ spec:
     args:
       - tunnel
       - --config
-      - /etc/cloudflared/cloudflared-config.yaml
+      - /etc/cloudflared/config.yaml
       - --cred-file
       - /etc/cloudflared/credentials.json
       - --metrics
@@ -65,8 +65,8 @@ spec:
           configMap:
             name: &config cloudflared-config
         subPath:
-          - path: cloudflared-config.yaml
-            mountPath: /etc/cloudflared/cloudflared-config.yaml
+          - path: config.yaml
+            mountPath: /etc/cloudflared/config.yaml
             readOnly: true
       credentials:
         enabled: true

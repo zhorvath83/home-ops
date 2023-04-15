@@ -8,7 +8,7 @@ resources:
 configMapGenerator:
   - name: adguard-home-config
     files:
-      - ./adguard-home-config.yaml
+      - ./config.yaml
 generatorOptions:
   disableNameSuffixHash: true
   annotations:
