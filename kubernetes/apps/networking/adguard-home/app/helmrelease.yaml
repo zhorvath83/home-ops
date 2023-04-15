@@ -117,7 +117,7 @@ spec:
         subPath:
           - path: conf
             mountPath: /opt/adguardhome/conf
-          - path: data
+          - path: work
             mountPath: /opt/adguardhome/work
 
     ingress:
