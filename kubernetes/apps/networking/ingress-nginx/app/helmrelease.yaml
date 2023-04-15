@@ -26,7 +26,7 @@ spec:
   uninstall:
     keepHistory: false
   values:
-  # podSecurityContext controlled by Helm Chart.
+# podSecurityContext controlled by Helm Chart.
     controller:
       replicaCount: 1
       extraEnvs:

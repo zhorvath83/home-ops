@@ -34,7 +34,7 @@ spec:
       - tunnel
       - --config
       - /etc/cloudflared/config.yaml
-      - --cred-file 
+      - --cred-file
       - /etc/cloudflared/credentials.json
       - --metrics
       - 0.0.0.0:9090

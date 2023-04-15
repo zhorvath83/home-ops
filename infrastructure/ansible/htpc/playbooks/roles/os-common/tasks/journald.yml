@@ -2,9 +2,9 @@
 - name: Configure journald parameters
   vars:
     journald_config:
-      Compress: yes
-      ForwardToConsole: no
-      ForwardToSyslog: no
+      Compress: true
+      ForwardToConsole: false
+      ForwardToSyslog: false
       MaxRetentionSec: 1month
       RateLimitBurst: 10000
       RateLimitIntervalSec: 30s

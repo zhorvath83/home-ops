@@ -88,9 +88,3 @@
       include_role:
         name: raspotify
       when: install_raspotify
-
-    #  RECOMMENDED: This role will lock down ssh access to disallow password login
-    #  and make other security improvements to the default ssh setup.
-    #  https://github.com/dev-sec/ansible-ssh-hardening
-    # - role: dev-sec.ssh-hardening
-    #   become: yes

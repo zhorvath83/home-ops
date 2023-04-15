@@ -22,7 +22,6 @@ done
 
 # Installing pre-commit hook scripts for every repo
 find ~/projects -maxdepth 1 -type d -print0 | \
-    xargs -0 sh -c "for dir; do pushd "$dir" && pre-commit install && popd; done"
-
+    xargs -0 sh -c "for dir; do pushd ""$dir"" && pre-commit install && popd; done"
 
 exit 0

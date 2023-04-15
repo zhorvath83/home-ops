@@ -54,7 +54,7 @@
       ansible.builtin.copy:
         src: /etc/cron.daily/logrotate
         dest: /etc/cron.hourly/logrotate
-        remote_src: yes
+        remote_src: true
         mode: preserve
       when: file.stat.exists
     - name: Remove daily schedule

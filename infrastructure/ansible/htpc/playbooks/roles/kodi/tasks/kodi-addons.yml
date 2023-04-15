@@ -29,7 +29,7 @@
     cmd: '~{{ kodi_user }}/.kodi/get_kodi_addon.sh {{ item }} {{ kodi_version }}'
   with_items: "{{ kodi_addons }}"
   become_user: "{{ kodi_user }}"
-  become: True
+  become: true
   when: ansible_distribution != 'LibreELEC'
 
 
@@ -44,8 +44,8 @@
     dest: "~{{ kodi_user }}/.kodi/userdata/addon_data"
     owner: "{{ kodi_user }}"
   with_items: "{{ kodi_addons }}"
-  ignore_errors: True
-  failed_when: False
+  ignore_errors: true
+  failed_when: false
 
 - name: Create directories for xml files
   file:
@@ -76,7 +76,7 @@
   file:
     path: "~{{ kodi_user }}/.kodi"
     state: directory
-    recurse: True
+    recurse: true
     owner: "{{ kodi_user }}"
 
 - name: Slurp favourites from master installation
@@ -97,12 +97,12 @@
   copy:
     content: "{{ favourites['content'] | b64decode }}"
     dest: "~{{ kodi_user }}/.kodi/userdata/favourites.xml"
-    backup: True
+    backup: true
   when: kodi_copy_favourites
 
 - name: Transfer RSS feeds from master installation
   copy:
     content: "{{ favourites['content'] | b64decode }}"
     dest: "~{{ kodi_user }}/.kodi/userdata/RSSFeeds.xml"
-    backup: True
+    backup: true
   when: kodi_copy_feeds

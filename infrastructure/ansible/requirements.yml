@@ -25,6 +25,3 @@ roles:
     version: 6.1.0
   - name: hifis.unattended_upgrades
     version: v2.0.1
-  # - name: wandansible.docker
-  #   src: https://github.com/wandansible/docker
-  # - name: jose1711.kodi_ansible_role
