@@ -1,0 +1,202 @@
+---
+bind_host: 0.0.0.0
+bind_port: 3000
+beta_bind_port: 0
+users:
+- name: ${SECRET_OWNER_USERNAME}
+  password: ${SECRET_ADGUARD_PWD}
+auth_attempts: 5
+block_auth_min: 15
+http_proxy: ""
+language: en
+os:
+  rlimit_nofile: 0
+debug_pprof: false
+web_session_ttl: 720
+dns:
+  bind_hosts:
+  - 0.0.0.0
+  port: 53
+  statistics_interval: 90
+  querylog_enabled: true
+  querylog_file_enabled: true
+  querylog_interval: 2160h
+  querylog_size_memory: 1000
+  anonymize_client_ip: false
+  protection_enabled: true
+  blocking_mode: default
+  blocking_ipv4: ""
+  blocking_ipv6: ""
+  blocked_response_ttl: 10
+  parental_block_host: family-block.dns.adguard.com
+  safebrowsing_block_host: standard-block.dns.adguard.com
+  ratelimit: 0
+  ratelimit_whitelist: []
+  refuse_any: true
+  upstream_dns:
+  # Local DNS
+  - "[/lan/]${CLUSTER_LAN_ROUTER_IP}:53"
+  # DIGI
+  - "193.110.57.4"
+  # CloudFlare
+  - "1.1.1.1"
+  # Hurricane
+  - "74.82.42.42"
+  # Cogent
+  - "66.28.0.45"
+  # NTT Communications
+  - "129.250.35.250"
+  # OpenDNS
+  - "208.67.220.222"
+  # SwissCOM
+  - "195.186.4.107"
+  # DNS.sb
+  - "45.11.45.11"
+  upstream_dns_file: ""
+  bootstrap_dns:
+  - 1.1.1.1
+  - 9.9.9.10
+  - 149.112.112.10
+  - 2620:fe::10
+  - 2620:fe::fe:10
+  all_servers: true
+  fastest_addr: false
+  allowed_clients: []
+  disallowed_clients: []
+  blocked_hosts: []
+  cache_size: 4194304
+  cache_ttl_min: 0
+  cache_ttl_max: 0
+  cache_optimistic: true
+  bogus_nxdomain: []
+  aaaa_disabled: true
+  enable_dnssec: false
+  upstream_timeout: 2s
+  edns_client_subnet: false
+  max_goroutines: 300
+  ipset: []
+  filtering_enabled: true
+  filters_update_interval: 12
+  parental_enabled: false
+  safesearch_enabled: false
+  safebrowsing_enabled: false
+  safebrowsing_cache_size: 1048576
+  safesearch_cache_size: 1048576
+  parental_cache_size: 1048576
+  cache_time: 30
+  rewrites:
+  - domain: "mediaserver.${CLUSTER_LAN_DOMAIN}"
+    answer: "${CLUSTER_SVC_JELLYFIN_IP}"
+  - domain: "home.${CLUSTER_LAN_DOMAIN}"
+    answer: "${CLUSTER_SVC_HOMEASSISTANT_IP}"
+  - domain: "mqtt.${CLUSTER_LAN_DOMAIN}"
+    answer: "${CLUSTER_SVC_MQTT_IP}"
+  blocked_services:
+  - tinder
+  local_domain_name: lan
+  resolve_clients: true
+  use_private_ptr_resolvers: true
+  local_ptr_upstreams:
+  - "${CLUSTER_LAN_ROUTER_IP}"
+tls:
+  enabled: false
+filters:
+########## Malware, phising, ransomware, tracking blocklists
+- enabled: true
+  url: https://blocklistproject.github.io/Lists/alt-version/malware-nl.txt
+  name: Blocklistproject malware list
+  id: 1
+- enabled: true
+  url: https://blocklistproject.github.io/Lists/alt-version/ransomware-nl.txt
+  name: Blocklistproject ransomware list
+  id: 2
+- enabled: true
+  url: https://blocklistproject.github.io/Lists/alt-version/abuse-nl.txt
+  name: Blocklistproject abuse list
+  id: 3
+- enabled: true
+  url: https://blocklistproject.github.io/Lists/alt-version/crypto-nl.txt
+  name: Blocklistproject cryptojacking list
+  id: 4
+- enabled: true
+  url: https://blocklistproject.github.io/Lists/alt-version/drugs-nl.txt
+  name: Blocklistproject drugs list
+  id: 5
+- enabled: true
+  url: https://blocklistproject.github.io/Lists/alt-version/fraud-nl.txt
+  name: Blocklistproject fraud list
+  id: 6
+- enabled: true
+  url: https://blocklistproject.github.io/Lists/alt-version/gambling-nl.txt
+  name: Blocklistproject gambling list
+  id: 7
+- enabled: true
+  url: https://blocklistproject.github.io/Lists/alt-version/phishing-nl.txt
+  name: Blocklistproject phising list
+  id: 8
+- enabled: true
+  url: https://blocklistproject.github.io/Lists/alt-version/scam-nl.txt
+  name: Blocklistproject scam list
+  id: 9
+########## Adblock lists
+- enabled: true
+  url: https://raw.githubusercontent.com/notracking/hosts-blocklists/master/adblock/adblock.txt
+  name: Notracking blocklist
+  id: 10
+- enabled: true
+  url: https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt
+  name: AdGuard DNS filter
+  id: 11
+- enabled: true
+  url: https://adaway.org/hosts.txt
+  name: AdAway
+  id: 12
+- enabled: true
+  url: https://raw.githubusercontent.com/kboghdady/youTube_ads_4_pi-hole/master/youtubelist.txt
+  name: Youtube List
+  id: 13
+- enabled: true
+  url: https://raw.githubusercontent.com/hufilter/hufilter/master/hufilter-adguard.txt
+  name: HuFilter List
+  id: 14
+- enabled: true
+  url: https://dbl.oisd.nl
+  name: OISD NL List
+  id: 15
+- enabled: true
+  url: https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling/hosts
+  name: StevenBlack hosts list
+  id: 16
+- enabled: true
+  url: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/domain-filter-lists/main/blacklist.txt
+  name: My own blacklist
+  id: 17
+- enabled: true
+  url: https://ajnasz.hu/adblock/recent
+  name: ajnasz's list
+  id: 18
+whitelist_filters:
+- enabled: true
+  url: https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/whitelist.txt
+  name: anudeepND whitelist
+  id: 1
+- enabled: true
+  url: https://raw.githubusercontent.com/Ultimate-Hosts-Blacklist/whitelist/master/domains.list
+  name: Ultimate-Hosts whitelist
+  id: 2
+- enabled: true
+  url: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/domain-filter-lists/main/whitelist.txt
+  name: My own whitelist
+  id: 3
+user_rules: []
+dhcp:
+  enabled: false
+clients: []
+log_compress: false
+log_localtime: true
+log_max_backups: 0
+log_max_size: 100
+log_max_age: 3
+log_file: ""
+verbose: false
+schema_version: 12

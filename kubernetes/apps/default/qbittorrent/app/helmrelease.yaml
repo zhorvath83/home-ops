@@ -40,7 +40,7 @@ spec:
     hostname: qbittorrent
 
     env:
-      TZ: "${CLUSTER_TIMEZONE}"
+      TZ: "Europe/Budapest"
       QBITTORRENT__USE_PROFILE: "true"
 
     service:
@@ -52,8 +52,7 @@ spec:
         type: LoadBalancer
         annotations:
           metallb.universe.tf/allow-shared-ip: qbittorrent-svc
-          metallb.universe.tf/loadBalancerIPs: |-
-            ${CLUSTER_SVC_QBITTORRENT_IP}
+          metallb.universe.tf/loadBalancerIPs: ${CLUSTER_SVC_QBITTORRENT_IP}
         externalTrafficPolicy: Local
 
       bittorrent-tcp:
@@ -61,8 +60,7 @@ spec:
         type: LoadBalancer
         annotations:
           metallb.universe.tf/allow-shared-ip: qbittorrent-svc
-          metallb.universe.tf/loadBalancerIPs: |-
-            ${CLUSTER_SVC_QBITTORRENT_IP}
+          metallb.universe.tf/loadBalancerIPs: ${CLUSTER_SVC_QBITTORRENT_IP}
         ports:
           bittorrent-tcp:
             enabled: true
@@ -75,8 +73,7 @@ spec:
         type: LoadBalancer
         annotations:
           metallb.universe.tf/allow-shared-ip: qbittorrent-svc
-          metallb.universe.tf/loadBalancerIPs: |-
-            ${CLUSTER_SVC_QBITTORRENT_IP}
+          metallb.universe.tf/loadBalancerIPs: ${CLUSTER_SVC_QBITTORRENT_IP}
         ports:
           bittorrent-udp:
             enabled: true

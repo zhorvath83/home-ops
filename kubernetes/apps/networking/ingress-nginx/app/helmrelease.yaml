@@ -31,11 +31,10 @@ spec:
       replicaCount: 1
       extraEnvs:
         - name: TZ
-          value: "${CLUSTER_TIMEZONE}"
+          value: "Europe/Budapest"
       service:
         annotations:
-          metallb.universe.tf/loadBalancerIPs: |-
-            ${CLUSTER_SVC_INGRESS_CONTROLLER_IP}
+          metallb.universe.tf/loadBalancerIPs: ${CLUSTER_SVC_INGRESS_CONTROLLER_IP}
         externalTrafficPolicy: Local
       publishService:
         # --publish-service and --publish-status-address are mutually exclusive

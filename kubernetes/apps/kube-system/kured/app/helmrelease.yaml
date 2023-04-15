@@ -18,7 +18,7 @@ spec:
       interval: 30m
   values:
     configuration:
-      timeZone: "${CLUSTER_TIMEZONE}"
+      timeZone: "Europe/Budapest"
       startTime: "00:00"
       endTime: "02:00"
       notifyUrl: "${SECRET_KURED_DISCORD_WEBHOOK}"

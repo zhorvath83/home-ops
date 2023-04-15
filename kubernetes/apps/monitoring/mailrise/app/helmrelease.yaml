@@ -35,13 +35,12 @@ spec:
       repository: docker.io/yoryan/mailrise
       tag: 1.3.0
     env:
-      TZ: "${CLUSTER_TIMEZONE}"
+      TZ: "Europe/Budapest"
     service:
       main:
         type: LoadBalancer
         annotations:
-          metallb.universe.tf/loadBalancerIPs: |-
-            ${CLUSTER_SVC_SMTP_GATEWAY_IP}
+          metallb.universe.tf/loadBalancerIPs: ${CLUSTER_SVC_SMTP_GATEWAY_IP}
         externalTrafficPolicy: Local
         ports:
           http:
@@ -65,5 +64,4 @@ spec:
         cpu: 10m
         memory: 10Mi
       limits:
-        cpu: 500m
         memory: 200Mi

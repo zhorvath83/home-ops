@@ -32,7 +32,7 @@ spec:
       repository: jellyfin/jellyfin
       tag: 10.8.9
     env:
-      TZ: "${CLUSTER_TIMEZONE}"
+      TZ: "Europe/Budapest"
       JELLYFIN_CACHE_DIR: "/config/cache"
       DOTNET_SYSTEM_IO_DISABLEFILELOCKING: "true"
       JELLYFIN_PublishedServerUrl: "http://${CLUSTER_SVC_JELLYFIN_IP}"
@@ -40,8 +40,7 @@ spec:
       main:
         type: LoadBalancer
         annotations:
-          metallb.universe.tf/loadBalancerIPs: |-
-            ${CLUSTER_SVC_JELLYFIN_IP}
+          metallb.universe.tf/loadBalancerIPs: ${CLUSTER_SVC_JELLYFIN_IP}
         externalTrafficPolicy: Local
         ports:
           http:
@@ -104,5 +103,4 @@ spec:
         cpu: 100m
         memory: 512Mi
       limits:
-        cpu: 3500m
-        memory: 4000Mi
+        memory: 4096Mi
