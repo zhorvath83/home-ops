@@ -40,12 +40,12 @@ spec:
         - |
           if [ ! -f /opt/adguardhome/conf/AdGuardHome.yaml ]; then
             mkdir -p /opt/adguardhome/conf
-            cp /tmp/config.yaml /opt/adguardhome/conf/AdGuardHome.yaml
+            cp /tmp/adguard-home-config.yaml /opt/adguardhome/conf/AdGuardHome.yaml
           fi
         volumeMounts:
           - name: config
-            mountPath: /tmp/config.yaml
-            subPath: config.yaml
+            mountPath: /tmp/adguard-home-config.yaml
+            subPath: adguard-home-config.yaml
           - name: data
             mountPath: /opt/adguardhome/conf
         # securityContext:
@@ -111,8 +111,8 @@ spec:
           configMap:
             name: &config cloudflared-config
         subPath:
-          - path: config.yaml
-            mountPath: /tmp/config.yaml
+          - path: adguard-home-config.yaml
+            mountPath: /tmp/adguard-home-config.yaml
             readOnly: true
 
       data:
