@@ -25,7 +25,7 @@ jobs:
           wget https://www.internic.net/domain/named.root -O ${{ env.UNBOUND_ROOT_HINTS_FILE }}
 
       - name: Create pull request
-        uses: peter-evans/create-pull-request@v4
+        uses: peter-evans/create-pull-request@v5
         id: cpr
         with:
           token: "${{ secrets.GITHUB_TOKEN }}"
