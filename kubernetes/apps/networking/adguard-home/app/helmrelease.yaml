@@ -94,17 +94,17 @@ spec:
             protocol: UDP
             targetPort: 53
 
-    podSecurityContext:
-      runAsUser: 10001
-      runAsGroup: 10001
-      privileged: false
-      allowPrivilegeEscalation: false
-      readOnlyRootFilesystem: true
-      capabilities:
-        drop:
-          - ALL
-        add:
-          - NET_BIND_SERVICE
+    # podSecurityContext:
+    #   runAsUser: 10001
+    #   runAsGroup: 10001
+    #   privileged: false
+    #   allowPrivilegeEscalation: false
+    #   readOnlyRootFilesystem: true
+    #   capabilities:
+    #     drop:
+    #       - ALL
+    #     add:
+    #       - NET_BIND_SERVICE
 
     persistence:
       config:
