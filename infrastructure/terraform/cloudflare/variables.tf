@@ -131,7 +131,7 @@ variable "CF_ACCOUNT_ID" {
   type        = string
 }
 
-variable "CF_ACCESS_ALLOWED_EMAILS" {
+variable "CF_ACCESS_AUTHORIZED_EMAILS" {
   description = "List of allowed email addresses at Cloudflare Access."
   type        = string
 }

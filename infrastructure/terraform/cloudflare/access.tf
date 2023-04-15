@@ -8,7 +8,7 @@ resource "cloudflare_access_group" "my_users" {
   name           = "MyUsers"
 
   include {
-    email = tolist([var.CF_ACCESS_ALLOWED_EMAILS])
+    email = split(", ", var.CF_ACCESS_AUTHORIZED_EMAILS)
   }
 }
 
