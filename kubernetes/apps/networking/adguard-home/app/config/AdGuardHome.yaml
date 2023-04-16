@@ -29,14 +29,11 @@ dns:
   refuse_any: true
   upstream_dns:
     - "[/lan/]${CLUSTER_LAN_ROUTER_IP}:53"
-    - 193.110.57.4
-    - 1.1.1.1
-    - 74.82.42.42
-    - 66.28.0.45
-    - 129.250.35.250
-    - 208.67.220.222
-    - 195.186.4.107
-    - 45.11.45.11
+    - quic://unfiltered.adguard-dns.com
+    - quic://4f333b.dns.nextdns.io
+    - https://doh.opendns.com/dns-query
+    - https://chewbacca.meganerd.nl/dns-query
+    - https://1.1.1.1/dns-query
   upstream_dns_file: ""
   bootstrap_dns:
     - 1.1.1.1
