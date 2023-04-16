@@ -38,10 +38,8 @@ spec:
         - "sh"
         - "-c"
         - |
-          if [ ! -f /opt/adguardhome/conf/AdGuardHome.yaml ]; then
-            mkdir -p /opt/adguardhome/conf
-            cp /tmp/config.yaml /opt/adguardhome/conf/AdGuardHome.yaml
-          fi
+          mkdir -p /opt/adguardhome/conf
+          cp /tmp/config.yaml /opt/adguardhome/conf/AdGuardHome.yaml
         volumeMounts:
           - name: config
             mountPath: /tmp/config.yaml
@@ -52,8 +50,6 @@ spec:
         securityContext:
           runAsUser: 10001
           runAsGroup: 10001
-          # fsGroup: 10001
-          # fsGroupChangePolicy: OnRootMismatch
 
     image:
       repository: adguard/adguardhome
