@@ -13,7 +13,3 @@ generatorOptions:
   disableNameSuffixHash: true
   annotations:
     kustomize.toolkit.fluxcd.io/substitute: enabled
-labels:
-  - pairs:
-      app.kubernetes.io/name: cloudflared
-      app.kubernetes.io/instance: cloudflared

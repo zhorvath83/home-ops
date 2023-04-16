@@ -5,7 +5,3 @@ namespace: default
 resources:
   - ./pvc.yaml
   - ./helmrelease.yaml
-labels:
-  - pairs:
-      app.kubernetes.io/name: jellyfin
-      app.kubernetes.io/instance: jellyfin
