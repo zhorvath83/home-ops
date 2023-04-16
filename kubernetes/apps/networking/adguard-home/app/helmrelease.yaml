@@ -56,7 +56,8 @@ spec:
       tag: v0.107.28@sha256:6728de41ae5245e5d3433923234081fcb7cfcae413c4a2e8f8379a40cee3f402
 
     env:
-      TZ: "Europe/Budapest"
+      - name: TZ
+        value: "Europe/Budapest"
 
     service:
       main:

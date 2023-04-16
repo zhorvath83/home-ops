@@ -88,6 +88,8 @@ spec:
             readOnly: true
 
     env:
+      - name: TZ
+        value: "Europe/Budapest"
       - name: tunnel_name
         valueFrom:
           secretKeyRef:
