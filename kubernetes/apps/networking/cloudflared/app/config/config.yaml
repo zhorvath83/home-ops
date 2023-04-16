@@ -1,0 +1,17 @@
+---
+proxy-dns: true
+proxy-dns-port: 5053
+proxy-dns-address: 0.0.0.0
+proxy-dns-upstream:
+  - https://dns.nextdns.io/4f333b
+  - https://unfiltered.adguard-dns.com/dns-query
+  - https://anycast.uncensoreddns.org/dns-query
+  - https://chewbacca.meganerd.nl/dns-query
+  - https://dns11.quad9.net/dns-query
+  - https://1.1.1.1/dns-query
+ingress:
+  - hostname: "*.${SECRET_DOMAIN}"
+    service: "https://ingress-nginx-controller.networking.svc.cluster.local"
+    originRequest:
+      originServerName: "${SECRET_DOMAIN}"
+  - service: http_status:404

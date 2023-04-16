@@ -39,11 +39,11 @@ spec:
         - "-c"
         - |
           mkdir -p /opt/adguardhome/conf
-          cp /tmp/config.yaml /opt/adguardhome/conf/AdGuardHome.yaml
+          cp /tmp/AdGuardHome.yaml /opt/adguardhome/conf/AdGuardHome.yaml
         volumeMounts:
           - name: config
-            mountPath: /tmp/config.yaml
-            subPath: config.yaml
+            mountPath: /tmp/AdGuardHome.yaml
+            subPath: AdGuardHome.yaml
           - name: data
             mountPath: /opt/adguardhome/conf
             subPath: conf
@@ -103,8 +103,8 @@ spec:
           configMap:
             name: &config adguard-home-config
         subPath:
-          - path: config.yaml
-            mountPath: /tmp/config.yaml
+          - path: AdGuardHome.yaml
+            mountPath: /tmp/AdGuardHome.yaml
             readOnly: true
 
       data:

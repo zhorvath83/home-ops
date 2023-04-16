@@ -48,6 +48,20 @@ spec:
         ports:
           http:
             port: 9090
+
+      dnsproxy:
+        enabled: true
+        # type: LoadBalancer
+        # annotations:
+        #   metallb.universe.tf/allow-shared-ip: -svc
+        #   metallb.universe.tf/loadBalancerIPs: ${CLUSTER_SVC__IP}
+        ports:
+          dnsproxy:
+            enabled: true
+            port: 5053
+            protocol: UDP
+        # externalTrafficPolicy: Local
+
     podSecurityContext:
       runAsUser: 10001
       runAsGroup: 10001
