@@ -7,4 +7,5 @@ resources:
   # Flux-Kustomizations
   - ./jellyfin/ks.yaml
   - ./qbittorrent/ks.yaml
-  - ./cloudnative-pg/ks.yaml
+  - ./postgresql/ks.yaml
+  - ./mealie/ks.yaml
