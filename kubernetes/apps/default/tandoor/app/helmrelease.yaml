@@ -1,0 +1,195 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: &app tandoor
+  namespace: default
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: app-template
+      version: 1.4.0
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  maxHistory: 3
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+  values:
+    controller:
+      annotations:
+        reloader.stakater.com/auto: "true"
+    image:
+      repository: vabene1111/recipes
+      tag: 1.4.8
+    env:
+      DEBUG: "0"
+      ALLOWED_HOSTS: "*"
+      DB_ENGINE: django.db.backends.postgresql_psycopg2
+      POSTGRES_HOST: postgres.default.svc.cluster.local
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: tandoor
+      GUNICORN_MEDIA: "0"
+      TIMEZONE: "Europe/Budapest"
+      TANDOOR_PORT: 8888
+      FRACTION_PREF_DEFAULT: "0"
+      COMMENT_PREF_DEFAULT: "0"
+      SHOPPING_MIN_AUTOSYNC_INTERVAL: "5"
+    envFrom:
+      - secretRef:
+          name: tandoor-secret
+    command:
+      - /opt/recipes/venv/bin/gunicorn
+      - -b
+      - :8888
+      - --access-logfile
+      - "-"
+      - --error-logfile
+      - "-"
+      - --log-level
+      - INFO
+      - recipes.wsgi
+    service:
+      main:
+        ports:
+          http:
+            port: &port 8888
+          nginx:
+            port: &port2 8080
+    ingress:
+      main:
+        enabled: true
+        ingressClassName: nginx
+        hosts:
+          - host: &host "recipes.${SECRET_DOMAIN}"
+            paths: &paths
+              - path: /
+              - path: /media
+                service:
+                  port: *port2
+              - path: /static
+                service:
+                  port: *port2
+        tls:
+          - hosts:
+              - *host
+    persistence:
+      files:
+        enabled: true
+        existingClaim: tandoor-data
+        mountPath: /opt/recipes/mediafiles
+      nginx-config:
+        enabled: "true"
+        mountPath: /etc/nginx/nginx.conf
+        subPath: nginx-config
+        type: "custom"
+        volumeSpec:
+          configMap:
+            name: *app
+      django-js-reverse:
+        enabled: true
+        type: emptyDir
+        mountPath: /opt/recipes/cookbook/static/django_js_reverse
+      static:
+        enabled: true
+        mountPath: /opt/recipes/staticfiles
+        type: emptyDir
+      cache:
+        enabled: true
+        mountPath: /mnt/cache
+        type: emptyDir
+    podSecurityContext:
+      runAsUser: 10001
+      runAsGroup: 10001
+      fsGroup: 10001
+      fsGroupChangePolicy: "OnRootMismatch"
+    podAnnotations:
+      configMap.reloader.stakater.com/reload: *app
+      secret.reloader.stakater.com/reload: *app
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        memory: 512Mi
+    initContainers:
+      init-db:
+        image: ghcr.io/onedr0p/postgres-initdb:14.7
+        env:
+          - name: POSTGRES_HOST
+            value: postgres.default.svc.cluster.local
+          - name: POSTGRES_DB
+            value: tandoor
+          - name: POSTGRES_SUPER_PASS
+            valueFrom:
+              secretKeyRef:
+                name: postgresql-secret
+                key: postgres-password
+          - name: POSTGRES_USER
+            valueFrom:
+              secretKeyRef:
+                name: tandoor-secret
+                key: POSTGRES_USER
+          - name: POSTGRES_PASS
+            valueFrom:
+              secretKeyRef:
+                name: tandoor-secret
+                key: POSTGRES_PASSWORD
+      init-migrate:
+        image: vabene1111/recipes:1.4.8
+        env:
+          - name: DB_ENGINE
+            value: django.db.backends.postgresql_psycopg2
+          - name: POSTGRES_HOST
+            value: postgres.default.svc.cluster.local
+          - name: POSTGRES_PORT
+            value: 5432
+          - name: POSTGRES_DB
+            value: tandoor
+        envFrom:
+          - secretRef:
+              name: tandoor-secret
+        command:
+        - sh
+        - -c
+        - |
+          set -e
+          source /opt/recipes/venv/bin/activate
+          echo "Updating database"
+          python3 /opt/recipes/manage.py migrate
+          python3 /opt/recipes/manage.py collectstatic_js_reverse
+          python3 /opt/recipes/manage.py collectstatic --noinput
+        volumeMounts:
+          - name: django-js-reverse
+            mountPath: /opt/recipes/cookbook/static/django_js_reverse
+          - name: static
+            mountPath: /opt/recipes/staticfiles
+    additionalContainers:
+      nginx:
+        name: nginx
+        image: nginxinc/nginx-unprivileged:1.24.0-alpine
+        imagePullPolicy: IfNotPresent
+        ports:
+          - name: nginx
+            containerPort: *port2
+        volumeMounts:
+          - name: nginx-config
+            readOnly: true
+            mountPath: /etc/nginx/nginx.conf
+            subPath: nginx-config
+          - name: files
+            mountPath: /media
+          - name: static
+            mountPath: /static
+          - name: cache
+            mountPath: /var/cache/nginx

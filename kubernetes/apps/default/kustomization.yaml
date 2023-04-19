@@ -9,3 +9,4 @@ resources:
   - ./qbittorrent/ks.yaml
   - ./postgresql/ks.yaml
   - ./mealie/ks.yaml
+  - ./tandoor/ks.yaml
