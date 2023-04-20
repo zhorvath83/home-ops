@@ -45,15 +45,12 @@ spec:
       - name: POSTGRES_HOST
         value: postgres.default.svc.cluster.local
       - name: POSTGRES_USER
-        valueFrom:
-          secretKeyRef:
-            name: postgresql
-            key: username
+        value: postgres
       - name: POSTGRES_PASSWORD
         valueFrom:
           secretKeyRef:
-            name: postgresql
-            key: credential
+            name: postgresql-secret
+            key: postgres-password
       - name: POSTGRES_DB
         value: "tandoor"
       - name: BACKUP_KEEP_DAYS
