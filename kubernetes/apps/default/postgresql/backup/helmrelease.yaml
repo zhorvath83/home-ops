@@ -1,0 +1,92 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: postgresql-backup
+  namespace: default
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: app-template
+      version: 1.4.0
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+
+  maxHistory: 3
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+
+  values:
+    controller:
+      type: cronjob
+      cronjob:
+        schedule: "@daily"
+        ttlSecondsAfterFinished: 43200
+    restartPolicy: OnFailure
+    image:
+      repository: docker.io/prodrigestivill/postgres-backup-local
+      tag: 15@sha256:b3905c58ab8c1fb7596e2f90f059c65d61c2a813232e6eca4a3f5ce019bfbd61
+      pullPolicy: IfNotPresent
+    command: ["/backup.sh"]
+    env:
+      - name: TZ
+        value: "Europe/Budapest"
+      - name: POSTGRES_HOST
+        value: postgres.default.svc.cluster.local
+      - name: POSTGRES_USER
+        valueFrom:
+          secretKeyRef:
+            name: postgresql
+            key: username
+      - name: POSTGRES_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: postgresql
+            key: credential
+      - name: POSTGRES_DB
+        value: "tandoor"
+      - name: BACKUP_KEEP_DAYS
+        value: "7"
+      - name: BACKUP_KEEP_WEEKS
+        value: "4"
+      - name: BACKUP_KEEP_MONTHS
+        value: "3"
+      - name: BACKUP_KEEP_MINS
+        value: "7200"
+      - name: POSTGRES_EXTRA_OPTS
+        value: "-b -C -Z6"
+
+    service:
+      main:
+        enabled: false
+
+    persistence:
+      nfs-nas-backup:
+        enabled: true
+        type: nfs
+        server: ${CLUSTER_LAN_NAS_IP}
+        path: /backup/pgbackups
+        mountPath: /backups
+
+    podSecurityContext:
+      runAsUser: 10001
+      runAsGroup: 10001
+      fsGroup: 10001
+      fsGroupChangePolicy: "OnRootMismatch"
+      privileged: false
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities:
+        drop:
+          - ALL
