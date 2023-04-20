@@ -57,6 +57,17 @@ spec:
         enabled: true
         existingClaim: postgresql-data
 
+      extraVolumes:
+        - name: backups
+          nfs:
+            server: ${CLUSTER_LAN_NAS_IP}
+            path: /backup/pgbackups
+            readOnly: false
+      extraVolumeMounts:
+        - name: backups
+          mountPath: /backups
+
+
       startupProbe:
         enabled: true
 
