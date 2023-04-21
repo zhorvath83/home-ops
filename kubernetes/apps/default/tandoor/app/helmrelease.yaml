@@ -27,6 +27,12 @@ spec:
     keepHistory: false
 
   values:
+    SecurityContext:
+      runAsUser: 10001
+      runAsGroup: 10001
+      fsGroup: 10001
+      fsGroupChangePolicy: "OnRootMismatch"
+
     fullnameOverride: *app
 
     controller:
@@ -93,12 +99,10 @@ spec:
         enabled: true
         mountPath: /opt/recipes/staticfiles
         type: emptyDir
-
-    podSecurityContext:
-      runAsUser: 10001
-      runAsGroup: 10001
-      fsGroup: 10001
-      fsGroupChangePolicy: "OnRootMismatch"
+      django-js-reverse:
+        enabled: true
+        type: emptyDir
+        mountPath: /opt/recipes/cookbook/static/django_js_reverse
 
     resources:
       requests:
