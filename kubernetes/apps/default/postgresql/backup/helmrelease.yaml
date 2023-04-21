@@ -64,7 +64,7 @@ spec:
       - name: BACKUP_KEEP_MINS
         value: "7200"
       - name: POSTGRES_EXTRA_OPTS
-        value: "--blobs --clean --compress=9"
+        value: "--blobs --clean --create --compress=9"
 
     service:
       main:
