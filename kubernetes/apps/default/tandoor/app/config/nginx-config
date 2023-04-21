@@ -8,11 +8,11 @@ http {
     listen 8080;
     server_name _;
     client_max_body_size 128M;
-    # serve media files
+
     location /media/ {
       alias /media/;
     }
-    # serve static files
+
     location /static/ {
       alias /static/;
     }
