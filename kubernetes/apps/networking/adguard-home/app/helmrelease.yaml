@@ -24,8 +24,8 @@ spec:
       retries: 5
 
   values:
-    # global:
-    #   nameOverride: *app
+    global:
+      nameOverride: *app
 
     controller:
       replicas: 1

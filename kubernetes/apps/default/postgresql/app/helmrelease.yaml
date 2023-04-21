@@ -2,7 +2,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
-  name: postgresql
+  name: &app postgresql
   namespace: default
 spec:
   interval: 15m
@@ -27,7 +27,7 @@ spec:
     keepHistory: false
 
   values:
-    fullnameOverride: postgres
+    fullnameOverride: *app
 
     commonAnnotations:
       reloader.stakater.com/auto: "true"
