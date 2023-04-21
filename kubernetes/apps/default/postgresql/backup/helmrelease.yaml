@@ -43,7 +43,7 @@ spec:
       - name: TZ
         value: "Europe/Budapest"
       - name: POSTGRES_HOST
-        value: postgres.default.svc.cluster.local
+        value: postgresql.default.svc.cluster.local
       - name: POSTGRES_PORT
         value: 5432
       - name: POSTGRES_USER
