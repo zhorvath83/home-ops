@@ -46,7 +46,7 @@ spec:
       POSTGRES_DB: tandoor
       GUNICORN_MEDIA: "1"
       TIMEZONE: "Europe/Budapest"
-      TANDOOR_PORT: 8888
+      TANDOOR_PORT: 8080
       FRACTION_PREF_DEFAULT: "0"
       COMMENT_PREF_DEFAULT: "0"
       SHOPPING_MIN_AUTOSYNC_INTERVAL: "5"
@@ -152,11 +152,18 @@ spec:
         - -c
         - |
           set -e
-          source /opt/recipes/venv/bin/activate
+          source venv/bin/activate
           echo "Updating database"
-          python3 /opt/recipes/manage.py migrate
-          python3 /opt/recipes/manage.py collectstatic_js_reverse
-          python3 /opt/recipes/manage.py collectstatic --noinput
+          python manage.py migrate
+          python manage.py collectstatic_js_reverse
+          python manage.py collectstatic --noinput
+          echo "Setting media file attributes"
+          chown -R 65534:65534 /opt/recipes/mediafiles
+          find /opt/recipes/mediafiles -type d | xargs -r chmod 755
+          find /opt/recipes/mediafiles -type f | xargs -r chmod 644
+          echo "Done"
         volumeMounts:
           - name: staticfiles
             mountPath: /opt/recipes/staticfiles
+          - name: mediafiles
+            mountPath: /opt/recipes/mediafiles
