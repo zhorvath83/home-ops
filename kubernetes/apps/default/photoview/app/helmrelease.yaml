@@ -135,9 +135,9 @@ spec:
             valueFrom:
               secretKeyRef:
                 name: photoview-secret
-                key: POSTGRES_USER
+                key: postgres_user
           - name: POSTGRES_PASS
             valueFrom:
               secretKeyRef:
                 name: photoview-secret
-                key: POSTGRES_PASSWORD
+                key: postgres_password
