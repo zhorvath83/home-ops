@@ -79,7 +79,7 @@ spec:
         type: nfs
       cache:
         enabled: true
-        mountPath: /app/cache
+        mountPath: /app
         existingClaim: photoview-data
 
     podSecurityContext:
