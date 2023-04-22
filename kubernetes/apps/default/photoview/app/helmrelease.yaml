@@ -1,0 +1,128 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: &app photoview
+  namespace: default
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: app-template
+      version: 1.4.0
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  maxHistory: 3
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+
+  values:
+    fullnameOverride: *app
+
+    controller:
+      annotations:
+        reloader.stakater.com/auto: "true"
+
+    image:
+      repository: viktorstrate/photoview
+      tag: 2.3.13
+
+    env:
+      # PHOTOVIEW_DATABASE_DRIVER: postgres
+      PHOTOVIEW_DATABASE_DRIVER: sqlite
+      PHOTOVIEW_LISTEN_IP: 0.0.0.0
+      PHOTOVIEW_LISTEN_PORT: &port 8080
+      PHOTOVIEW_DEVELOPMENT_MODE: false
+      PHOTOVIEW_DISABLE_FACE_RECOGNITION: true
+      PHOTOVIEW_MEDIA_CACHE: /app/cache
+      PHOTOVIEW_SQLITE_PATH: /app/database/photoview.db
+
+    # envFrom:
+    #   - secretRef:
+    #       name: photoview-secret
+
+    service:
+      main:
+        ports:
+          http:
+            port: *port
+
+    ingress:
+      main:
+        enabled: true
+        ingressClassName: nginx
+        hosts:
+          - host: &host "photos.${SECRET_DOMAIN}"
+            paths:
+              - path: /
+        tls:
+          - hosts:
+              - *host
+
+    persistence:
+      photos:
+        enabled: true
+        mountPath: /photos
+        readOnly: true
+        path: ${NFS_PATH}/nextcloud/data
+        server: /backup/Fenykepek
+        type: nfs
+      cache:
+        enabled: true
+        mountPath: /app/cache
+        existingClaim: photoview-data
+
+    podSecurityContext:
+      runAsUser: 10001
+      runAsGroup: 10001
+      fsGroup: 10001
+      fsGroupChangePolicy: "OnRootMismatch"
+      privileged: false
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities:
+        drop:
+          - ALL
+
+    resources:
+      requests:
+        cpu: 50m
+        memory: 250Mi
+      limits:
+        memory: 2000Mi
+
+    #initContainers:
+    #  init-db:
+    #    image: ghcr.io/onedr0p/postgres-initdb:14.7
+    #    env:
+    #      - name: POSTGRES_HOST
+    #        value: postgresql.default.svc.cluster.local
+    #      - name: POSTGRES_PORT
+    #        value: 5432
+    #      - name: POSTGRES_DB
+    #        value: photoview
+    #      - name: POSTGRES_SUPER_PASS
+    #        valueFrom:
+    #          secretKeyRef:
+    #            name: postgresql-secret
+    #            key: postgres-password
+    #      - name: POSTGRES_USER
+    #        valueFrom:
+    #          secretKeyRef:
+    #            name: photoview-secret
+    #            key: POSTGRES_USER
+    #      - name: POSTGRES_PASS
+    #        valueFrom:
+    #          secretKeyRef:
+    #            name: photoview-secret
+    #            key: POSTGRES_PASSWORD

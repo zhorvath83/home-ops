@@ -10,3 +10,4 @@ resources:
   - ./postgresql/ks.yaml
   - ./mealie/ks.yaml
   - ./tandoor/ks.yaml
+  - ./photoview/ks.yaml
