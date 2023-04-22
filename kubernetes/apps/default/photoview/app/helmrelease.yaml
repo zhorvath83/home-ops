@@ -140,4 +140,4 @@ spec:
             valueFrom:
               secretKeyRef:
                 name: photoview-secret
-                key: POSTGRES_PASSWORD
+                key: POSTGRES_PASS
