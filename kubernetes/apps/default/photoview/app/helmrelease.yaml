@@ -74,8 +74,8 @@ spec:
         enabled: true
         mountPath: /photos
         readOnly: true
-        path: ${NFS_PATH}/nextcloud/data
-        server: /backup/Fenykepek
+        path: /backup/Fenykepek
+        server: ${CLUSTER_LAN_NAS_IP}
         type: nfs
       cache:
         enabled: true
