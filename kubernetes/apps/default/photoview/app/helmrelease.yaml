@@ -32,7 +32,7 @@ spec:
 
     controller:
       annotations:
-        reloader.stakater.com/auto: "true"
+        reloader.stakater.com/auto: true
 
     image:
       repository: viktorstrate/photoview
@@ -46,19 +46,19 @@ spec:
       - name: PHOTOVIEW_DEVELOPMENT_MODE
         value: false
       - name: PHOTOVIEW_DISABLE_FACE_RECOGNITION
-        value: false
+        value: true
       - name: PHOTOVIEW_DISABLE_VIDEO_ENCODING
         value: false
       - name: PHOTOVIEW_DISABLE_RAW_PROCESSING
         value: false
       - name: PHOTOVIEW_MEDIA_CACHE
-        value: /photoview/cache
+        value: /app/cache
       - name: MAPBOX_TOKEN
         value: ""
       - name: PHOTOVIEW_DATABASE_DRIVER
         value: sqlite
       - name: PHOTOVIEW_SQLITE_PATH
-        value: /photoview/database/photoview.db
+        value: /app/database/photoview.db
       # - name: PHOTOVIEW_DATABASE_DRIVER
       #   value: postgres
       # - name: PHOTOVIEW_POSTGRES_URL
