@@ -52,13 +52,13 @@ spec:
       - name: PHOTOVIEW_DISABLE_RAW_PROCESSING
         value: false
       - name: PHOTOVIEW_MEDIA_CACHE
-        value: /app/cache
+        value: /photoview/cache
       - name: MAPBOX_TOKEN
         value: ""
       - name: PHOTOVIEW_DATABASE_DRIVER
         value: sqlite
       - name: PHOTOVIEW_SQLITE_PATH
-        value: /app/database/photoview.db
+        value: /photoview/database/photoview.db
       # - name: PHOTOVIEW_DATABASE_DRIVER
       #   value: postgres
       # - name: PHOTOVIEW_POSTGRES_URL
@@ -100,7 +100,7 @@ spec:
         type: nfs
       cache:
         enabled: true
-        mountPath: /app
+        mountPath: /photoview
         existingClaim: photoview-data
 
     podSecurityContext:
