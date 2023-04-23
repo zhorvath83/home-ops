@@ -11,3 +11,4 @@ resources:
   - ./mealie/ks.yaml
   - ./tandoor/ks.yaml
   - ./photoview/ks.yaml
+  - ./homepage/ks.yaml
