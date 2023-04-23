@@ -64,6 +64,18 @@ spec:
             port: 3000
             targetPort: 3000
 
+    podSecurityContext:
+      runAsUser: 10001
+      runAsGroup: 10001
+      fsGroup: 10001
+      fsGroupChangePolicy: "OnRootMismatch"
+      privileged: false
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities:
+        drop:
+          - ALL
+
     resources:
       requests:
         cpu: 25m

@@ -98,10 +98,15 @@ spec:
         path: /backup/Fenykepek
         server: ${CLUSTER_LAN_NAS_IP}
         type: nfs
-      cache:
+
+      data:
         enabled: true
-        mountPath: /photoview
-        existingClaim: photoview-data
+        existingClaim: *app
+        subPath:
+          - path: database
+            mountPath: /app/database
+          - path: cache
+            mountPath: /app/cache
 
     podSecurityContext:
       runAsUser: 10001
