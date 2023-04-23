@@ -32,7 +32,7 @@ spec:
 
     controller:
       annotations:
-        reloader.stakater.com/auto: true
+        reloader.stakater.com/auto: "true"
 
     image:
       repository: viktorstrate/photoview
