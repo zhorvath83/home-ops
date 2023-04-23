@@ -76,6 +76,11 @@ spec:
       main:
         enabled: true
         ingressClassName: nginx
+        annotations:
+          gethomepage.dev/enabled: "true"
+          gethomepage.dev/name: "Photoview"
+          gethomepage.dev/group: Multimedia
+          gethomepage.dev/icon: photoview.svg
         hosts:
           - host: &host "photos.${SECRET_DOMAIN}"
             paths:
