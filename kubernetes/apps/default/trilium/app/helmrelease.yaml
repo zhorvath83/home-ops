@@ -78,6 +78,10 @@ spec:
       capabilities:
         drop:
           - ALL
+        add:
+          - SETUID
+          - SETGID
+          - CHOWN
 
     resources:
       requests:
