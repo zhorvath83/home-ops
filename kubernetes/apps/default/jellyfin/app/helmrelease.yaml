@@ -31,7 +31,7 @@ spec:
       type: statefulset
     image:
       repository: jellyfin/jellyfin
-      tag: 10.8.9
+      tag: 10.8.10
     env:
       TZ: "Europe/Budapest"
       JELLYFIN_CACHE_DIR: "/config/cache"
