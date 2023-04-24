@@ -12,3 +12,4 @@ resources:
   - ./tandoor/ks.yaml
   - ./photoview/ks.yaml
   - ./homepage/ks.yaml
+  - ./trilium/ks.yaml
