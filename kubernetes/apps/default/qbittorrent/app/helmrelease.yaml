@@ -48,7 +48,7 @@ spec:
         ports:
           http:
             port: 80
-            targetPort: 8080
+            targetPort: &targetPort 8080
         type: LoadBalancer
         annotations:
           metallb.universe.tf/allow-shared-ip: qbittorrent-svc
@@ -150,6 +150,22 @@ spec:
             mountPath: /data/config
           - name: configfiles
             mountPath: /data/configfiles
+
+    probes:
+      liveness: &probes
+        enabled: true
+        custom: true
+        spec:
+          httpGet:
+            path: /api/v2/app/version
+            port: *targetPort
+          initialDelaySeconds: 0
+          periodSeconds: 10
+          timeoutSeconds: 1
+          failureThreshold: 3
+      readiness: *probes
+      startup:
+        enabled: false
 
     resources:
       requests:

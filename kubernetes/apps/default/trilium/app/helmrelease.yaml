@@ -38,7 +38,7 @@ spec:
       - name: TRILIUM_DATA_DIR
         value: "/home/node/trilium-data"
       - name: TRILIUM_PORT
-        value: &port 8080
+        value: &targetPort 8080
       - name: USER_UID
         value: "10001"
       - name: USER_GID
@@ -56,7 +56,7 @@ spec:
       main:
         ports:
           http:
-            port: *port
+            port: *targetPort
 
     probes:
       liveness: &probes
