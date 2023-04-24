@@ -39,6 +39,10 @@ spec:
         value: "/home/node/trilium-data"
       - name: TRILIUM_PORT
         value: &port 8080
+      - name: USER_UID
+        value: "10001"
+      - name: USER_GID
+        value: "10001"
 
     persistence:
       data:
@@ -68,12 +72,6 @@ spec:
               - *host
 
     podSecurityContext:
-      runAsUser: 10001
-      runAsGroup: 10001
-      fsGroup: 10001
-      fsGroupChangePolicy: "OnRootMismatch"
-      privileged: false
-      allowPrivilegeEscalation: false
       readOnlyRootFilesystem: true
       capabilities:
         drop:
