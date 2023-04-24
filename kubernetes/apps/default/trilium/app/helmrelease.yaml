@@ -36,7 +36,7 @@ spec:
       - name: TZ
         value: "Europe/Budapest"
       - name: TRILIUM_DATA_DIR
-        value: "/home/node/trilium-data"
+        value: &datapath "/home/node/trilium-data"
       - name: TRILIUM_PORT
         value: &targetPort 8080
       - name: USER_UID
@@ -48,9 +48,7 @@ spec:
       data:
         enabled: true
         existingClaim: *app
-        subPath:
-          - path: node
-            mountPath: /home/node/
+        mountPath: *datapath
 
     service:
       main:
