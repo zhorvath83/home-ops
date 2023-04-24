@@ -9,6 +9,8 @@ data:
     ---
     title: Dashboard
     #favicon: 
+    target: _self
+    headerStyle: boxed
     theme: dark
     color: slate
     layout: # key by group name in services.yaml
