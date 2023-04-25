@@ -55,17 +55,17 @@ spec:
         value: /app/cache
       - name: MAPBOX_TOKEN
         value: ""
-      - name: PHOTOVIEW_DATABASE_DRIVER
-        value: sqlite
-      - name: PHOTOVIEW_SQLITE_PATH
-        value: /app/database/photoview.db
       # - name: PHOTOVIEW_DATABASE_DRIVER
-      #   value: postgres
-      # - name: PHOTOVIEW_POSTGRES_URL
-      #   valueFrom:
-      #     secretKeyRef:
-      #       name: photoview-secret
-      #       key: PHOTOVIEW_POSTGRES_URL
+      #   value: sqlite
+      # - name: PHOTOVIEW_SQLITE_PATH
+      #   value: /app/database/photoview.db
+      - name: PHOTOVIEW_DATABASE_DRIVER
+        value: postgres
+      - name: PHOTOVIEW_POSTGRES_URL
+        valueFrom:
+          secretKeyRef:
+            name: photoview-secret
+            key: PHOTOVIEW_POSTGRES_URL
 
     service:
       main:
@@ -81,7 +81,7 @@ spec:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: "Photoview"
           gethomepage.dev/group: Multimedia
-          gethomepage.dev/icon: photoview.svg
+          gethomepage.dev/icon: photoview.png
         hosts:
           - host: &host "photos.${SECRET_DOMAIN}"
             paths:
@@ -127,28 +127,28 @@ spec:
       limits:
         memory: 2000Mi
 
-    # initContainers:
-    #   init-db:
-    #     image: ghcr.io/onedr0p/postgres-initdb:14.7
-    #     env:
-    #       - name: POSTGRES_HOST
-    #         value: postgresql.default.svc.cluster.local
-    #       - name: POSTGRES_PORT
-    #         value: 5432
-    #       - name: POSTGRES_DB
-    #         value: photoview
-    #       - name: POSTGRES_SUPER_PASS
-    #         valueFrom:
-    #           secretKeyRef:
-    #             name: postgresql-secret
-    #             key: postgres-password
-    #       - name: POSTGRES_USER
-    #         valueFrom:
-    #           secretKeyRef:
-    #             name: photoview-secret
-    #             key: POSTGRES_USER
-    #       - name: POSTGRES_PASS
-    #         valueFrom:
-    #           secretKeyRef:
-    #             name: photoview-secret
-    #             key: POSTGRES_PASS
+    initContainers:
+      init-db:
+        image: ghcr.io/onedr0p/postgres-initdb:14.7
+        env:
+          - name: POSTGRES_HOST
+            value: postgresql.default.svc.cluster.local
+          - name: POSTGRES_PORT
+            value: 5432
+          - name: POSTGRES_DB
+            value: photoview
+          - name: POSTGRES_SUPER_PASS
+            valueFrom:
+              secretKeyRef:
+                name: postgresql-secret
+                key: postgres-password
+          - name: POSTGRES_USER
+            valueFrom:
+              secretKeyRef:
+                name: photoview-secret
+                key: POSTGRES_USER
+          - name: POSTGRES_PASS
+            valueFrom:
+              secretKeyRef:
+                name: photoview-secret
+                key: POSTGRES_PASS
