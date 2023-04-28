@@ -119,6 +119,7 @@ mkdir -p "${GOPATH}"
 #go version
 echo "export GOPATH=$GOPATH" | tee -a ~/.profile
 echo "export PATH=$PATH:$HOME/bin:$HOME/.local/bin:$GOPATH/bin:/usr/local/go/bin" | tee -a ~/.profile
+# shellcheck source=/dev/null
 source ~/.profile
 
 # Installing go-task

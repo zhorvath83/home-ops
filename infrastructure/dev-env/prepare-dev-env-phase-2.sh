@@ -15,8 +15,11 @@ EOF
 op read -o /home/zhorvath83/.config/sops/age/keys.txt op://HomeOps/homelab-age-key/keys.txt
 
 # Git config
-export GIT_USERNAME=$(op read op://Personal/github.com/username)
-export GIT_EMAIL=$(op read op://Personal/github.com/email)
+GIT_USERNAME=$(op read op://Personal/github.com/username)
+export GIT_USERNAME
+
+GIT_EMAIL=$(op read op://Personal/github.com/email)
+export GIT_EMAIL
 
 git config --global --add pull.rebase false
 git config --global --add user.name "$GIT_USERNAME"
