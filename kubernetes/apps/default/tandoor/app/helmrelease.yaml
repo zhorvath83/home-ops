@@ -152,16 +152,16 @@ spec:
           - secretRef:
               name: tandoor-secret
         command:
-        - sh
-        - -c
-        - |
-          set -e
-          source venv/bin/activate
-          echo "Updating database"
-          python manage.py migrate
-          python manage.py collectstatic_js_reverse
-          python manage.py collectstatic --noinput
-          echo "Done"
+          - sh
+          - -c
+          - |
+            set -e
+            source venv/bin/activate
+            echo "Updating database"
+            python manage.py migrate
+            python manage.py collectstatic_js_reverse
+            python manage.py collectstatic --noinput
+            echo "Done"
         volumeMounts:
           - name: staticfiles
             mountPath: /opt/recipes/staticfiles

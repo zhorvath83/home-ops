@@ -8,7 +8,6 @@ resources:
   - ./jellyfin/ks.yaml
   - ./qbittorrent/ks.yaml
   - ./postgresql/ks.yaml
-  - ./mealie/ks.yaml
   - ./tandoor/ks.yaml
   - ./photoview/ks.yaml
   - ./homepage/ks.yaml

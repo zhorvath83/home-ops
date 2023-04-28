@@ -35,11 +35,11 @@ spec:
         image: busybox
         imagePullPolicy: IfNotPresent
         command:
-        - "sh"
-        - "-c"
-        - |
-          mkdir -p /opt/adguardhome/conf
-          cp /tmp/AdGuardHome.yaml /opt/adguardhome/conf/AdGuardHome.yaml
+          - "sh"
+          - "-c"
+          - |
+            mkdir -p /opt/adguardhome/conf
+            cp /tmp/AdGuardHome.yaml /opt/adguardhome/conf/AdGuardHome.yaml
         volumeMounts:
           - name: config
             mountPath: /tmp/AdGuardHome.yaml

@@ -8,7 +8,7 @@ data:
   settings.yaml: |
     ---
     title: Dashboard
-    #favicon: 
+    #favicon:
     target: _self
     headerStyle: boxed
     theme: dark
