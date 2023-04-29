@@ -101,7 +101,7 @@ spec:
 
       data:
         enabled: true
-        existingClaim: *app
+        existingClaim: "{{ .Release.Name }}2"
         subPath:
           - path: cache
             mountPath: /app/cache

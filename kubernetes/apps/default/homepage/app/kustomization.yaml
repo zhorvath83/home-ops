@@ -5,4 +5,3 @@ namespace: default
 resources:
   - ./configmap.yaml
   - ./helmrelease.yaml
-  - ./pvc.yaml
