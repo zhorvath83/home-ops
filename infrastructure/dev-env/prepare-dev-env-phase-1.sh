@@ -133,6 +133,9 @@ sudo chmod +x /usr/local/bin/kubectl
 # Installing Flux CLI
 curl -s https://fluxcd.io/install.sh | sudo bash
 
+# Installing Helm
+curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+
 # Adding github.com SSH keys to known_hosts
 curl --silent https://api.github.com/meta \
   | jq --raw-output '"github.com "+.ssh_keys[]' >> ~/.ssh/known_hosts
