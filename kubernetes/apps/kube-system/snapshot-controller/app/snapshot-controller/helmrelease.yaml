@@ -29,14 +29,14 @@ spec:
     keepHistory: false
   values:
     volumeSnapshotClasses:
-      - name: csi-ceph-blockpool
-        driver: rook-ceph.rbd.csi.ceph.com
+      - name: local-hostpath
+        driver: org.democratic-csi.local-hostpath
         annotations:
           snapshot.storage.kubernetes.io/is-default-class: "true"
-        parameters:
-          clusterID: rook-ceph
-          csi.storage.k8s.io/snapshotter-secret-name: rook-csi-rbd-provisioner
-          csi.storage.k8s.io/snapshotter-secret-namespace: rook-ceph
+        # parameters:
+        #   clusterID: 
+        #   csi.storage.k8s.io/snapshotter-secret-name: rook-csi-rbd-provisioner
+        #   csi.storage.k8s.io/snapshotter-secret-namespace: kube-system
         deletionPolicy: Delete
     serviceMonitor:
       create: true

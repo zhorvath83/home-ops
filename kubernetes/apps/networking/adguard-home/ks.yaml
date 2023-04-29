@@ -5,6 +5,8 @@ metadata:
   name: cluster-apps-adguard-home
   namespace: flux-system
 spec:
+  dependsOn:
+    - name: cluster-apps-local-path-provisioner
   path: ./kubernetes/apps/networking/adguard-home/app
   prune: true
   sourceRef:

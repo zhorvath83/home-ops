@@ -79,9 +79,9 @@ spec:
         ingressClassName: nginx
         annotations:
           gethomepage.dev/enabled: "true"
-          gethomepage.dev/name: "Photoview"
-          gethomepage.dev/group: Multimedia
-          gethomepage.dev/icon: photoview.png
+          gethomepage.dev/name: "{{ .Release.Name }}"
+          gethomepage.dev/group: Cloud
+          gethomepage.dev/icon: "{{ .Release.Name }}.png"
         hosts:
           - host: &host "photos.${SECRET_DOMAIN}"
             paths:
@@ -95,7 +95,7 @@ spec:
         enabled: true
         mountPath: /photos
         readOnly: true
-        path: /backup/Fenykepek
+        # path: # Comes from secret
         server: ${CLUSTER_LAN_NAS_IP}
         type: nfs
 
@@ -103,8 +103,6 @@ spec:
         enabled: true
         existingClaim: *app
         subPath:
-          - path: database
-            mountPath: /app/database
           - path: cache
             mountPath: /app/cache
 
@@ -145,10 +143,16 @@ spec:
           - name: POSTGRES_USER
             valueFrom:
               secretKeyRef:
-                name: photoview-secret
+                name: photoview
                 key: POSTGRES_USER
           - name: POSTGRES_PASS
             valueFrom:
               secretKeyRef:
-                name: photoview-secret
+                name: photoview
                 key: POSTGRES_PASS
+
+  valuesFrom:
+    - kind: Secret
+      name: *app
+      valuesKey: PHOTOS_PATH
+      targetPath: persistence.photos.path

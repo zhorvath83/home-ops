@@ -121,6 +121,11 @@ spec:
       main:
         enabled: true
         ingressClassName: nginx
+        annotations:
+          gethomepage.dev/enabled: "true"
+          gethomepage.dev/name: "{{ .Release.Name }}"
+          gethomepage.dev/group: Infrastructure
+          gethomepage.dev/icon: "{{ .Release.Name }}.png"
         hosts:
           - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
             paths:

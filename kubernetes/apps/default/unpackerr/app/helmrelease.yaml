@@ -1,0 +1,79 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: unpackerr
+  namespace: default
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: app-template
+      version: 1.3.2
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+
+  maxHistory: 3
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+
+  values:
+    controller:
+      type: statefulset
+      annotations:
+        reloader.stakater.com/auto: "true"
+
+    image:
+      repository: ghcr.io/onedr0p/unpackerr
+      tag: 0.11.1@sha256:abd5d66d1404eb6814937fb2d2051b7d6dbb83e8ae46040ef330f99231cd487e
+
+    env:
+      TZ: Europe/Budapest
+      UN_SONARR_0_URL: http://sonarr.default.svc.cluster.local
+      UN_SONARR_0_PATHS_0: /complete/sonarr
+      UN_RADARR_0_URL: http://radarr.default.svc.cluster.local
+      UN_RADARR_0_PATHS_0: /complete/radarr
+    envFrom:
+      - secretRef:
+          name: unpackerr-secret
+
+    service:
+      main:
+        enabled: false
+
+    podSecurityContext:
+      runAsUser: 10001
+      runAsGroup: 10001
+      fsGroup: 10001
+      fsGroupChangePolicy: OnRootMismatch
+      privileged: false
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities:
+        drop:
+          - ALL
+
+    persistence:
+      complete:
+        enabled: true
+        type: nfs
+        server: ${CLUSTER_LAN_NAS_IP}
+        path: /Media/Downloads/qbittorrent/complete
+        mountPath: /complete
+
+    resources:
+      requests:
+        cpu: 10m
+        memory: 250Mi
+      limits:
+        memory: 2000Mi

@@ -85,7 +85,11 @@ spec:
       main:
         enabled: true
         ingressClassName: nginx
-        annotations: {}
+        annotations:
+          gethomepage.dev/enabled: "true"
+          gethomepage.dev/name: "{{ .Release.Name }}"
+          gethomepage.dev/group: Multimedia
+          gethomepage.dev/icon: "{{ .Release.Name }}.png"
         hosts:
           - host: &host qbittorrent.${SECRET_DOMAIN}
             paths:
@@ -98,16 +102,15 @@ spec:
     podSecurityContext:
       runAsUser: 10001
       runAsGroup: 10001
-      # fsGroup: 10001
-      # fsGroupChangePolicy: "OnRootMismatch"
-      # supplementalGroups:
-      #   - 100
+      fsGroup: 10001
+      fsGroupChangePolicy: "OnRootMismatch"
       privileged: false
       allowPrivilegeEscalation: false
       readOnlyRootFilesystem: true
       capabilities:
         drop:
           - ALL
+          
     persistence:
       config:
         enabled: true
