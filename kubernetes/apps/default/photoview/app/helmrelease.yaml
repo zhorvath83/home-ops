@@ -101,7 +101,7 @@ spec:
 
       data:
         enabled: true
-        existingClaim: "{{ .Release.Name }}2"
+        existingClaim: photoview2
         subPath:
           - path: cache
             mountPath: /app/cache
