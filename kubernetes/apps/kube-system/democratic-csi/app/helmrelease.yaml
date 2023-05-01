@@ -85,7 +85,7 @@ spec:
       extraVolumes:
         - name: local-storage
           hostPath:
-            path: /var/lib/rancher/k3s/storage/csi-local-hostpath
+            path: /var/lib/csi-local-hostpath
             type: DirectoryOrCreate
 
       driverRegistrar:
