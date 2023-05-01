@@ -101,7 +101,7 @@ spec:
 
     sidecars:
       sync:
-        image: docker.io/1password/connect-sync:1.6.1
+        image: docker.io/1password/connect-sync:1.7.0
         imagePullPolicy: IfNotPresent
         env:
           - name: OP_SESSION
