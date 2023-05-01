@@ -28,32 +28,68 @@ spec:
     keepHistory: false
 
   values:
-    csiDriver:
-      name: "org.democratic-csi.local-hostpath"
-      fsGroupPolicy: File
-
-    storageClasses:
-      - name: democratic-csi-local-hostpath
-        defaultClass: false
-        reclaimPolicy: Retain
-        volumeBindingMode: WaitForFirstConsumer
-        allowVolumeExpansion: false
-
-    volumeSnapshotClasses:
-      - name: democratic-csi-local-hostpath
-        annotations:
-          snapshot.storage.kubernetes.io/is-default-class: "true"
-        deletionPolicy: Delete
 
     controller:
+    # democratic-csi controller
       enabled: true
+      replicaCount: 1
       strategy: node
+
+      driver:
+        enabled: true
+        image: docker.io/democraticcsi/democratic-csi:v1.8.3
+
+      externalProvisioner:
+        enabled: true
+        extraArgs:
+        - --leader-election=false
+        - --node-deployment=true
+        - --node-deployment-immediate-binding=false
+        - --feature-gates=Topology=true
+        - --strict-topology=true
+        - --enable-capacity=true
+        - --capacity-ownerref-level=1
+
+      externalAttacher:
+        enabled: false
 
       externalResizer:
         enabled: false
 
       externalSnapshotter:
         enabled: true
+        extraArgs:
+        - --leader-election=false
+        - --node-deployment=true
+
+      externalHealthMonitorController:
+        enabled: false
+
+    node:
+    # democratic-csi node
+      enabled: true
+
+      driver:
+        image: democraticcsi/democratic-csi:v1.8.3
+
+        extraVolumeMounts:
+        - name: local-storage
+          mountPath: /var/lib/csi-local-hostpath
+          mountPropagation: Bidirectional
+
+      extraVolumes:
+      - name: local-storage
+        hostPath:
+          path: /var/lib/rancher/k3s/storage/csi-local-hostpath
+          type: DirectoryOrCreate
+
+    csiProxy:
+      enabled: false
+
+    csiDriver:
+      name: "org.democratic-csi.local-hostpath"
+      storageCapacity: true
+      fsGroupPolicy: File
 
     driver:
       config:
@@ -65,3 +101,16 @@ spec:
           dirPermissionsMode: "0777"
           dirPermissionsUser: 0
           dirPermissionsGroup: 0
+
+    storageClasses:
+      - name: democratic-csi-local-hostpath-snapclass
+        defaultClass: false
+        reclaimPolicy: Retain
+        volumeBindingMode: WaitForFirstConsumer
+        allowVolumeExpansion: false
+
+    volumeSnapshotClasses:
+      - name: democratic-csi-local-hostpath
+        annotations:
+          snapshot.storage.kubernetes.io/is-default-class: "true"
+        deletionPolicy: Delete
