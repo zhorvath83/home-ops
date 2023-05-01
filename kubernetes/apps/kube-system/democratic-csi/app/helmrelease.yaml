@@ -71,7 +71,7 @@ spec:
       # democratic-csi node
       enabled: true
 
-      cleanup:
+      # cleanup:
         # image: docker.io/busybox:1.36.0
 
       driver:
