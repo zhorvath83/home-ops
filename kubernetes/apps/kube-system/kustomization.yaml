@@ -9,5 +9,5 @@ resources:
   - ./reloader/ks.yaml
   - ./metrics-server/ks.yaml
   - ./democratic-csi/ks.yaml
-  # - ./snapshot-controller/ks.yaml
+  - ./snapshot-controller/ks.yaml
   # - ./reflector/ks.yaml
