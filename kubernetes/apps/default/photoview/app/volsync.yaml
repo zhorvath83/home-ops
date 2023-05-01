@@ -36,7 +36,7 @@ spec:
     pruneIntervalDays: 5
     repository: photoview-restic
     cacheCapacity: 2Gi
-    volumeSnapshotClassName: democratic-csi-local-hostpath-snapclass
+    volumeSnapshotClassName: democratic-csi-local-hostpath
     storageClassName: democratic-csi-local-hostpath
     moverSecurityContext:
       runAsUser: 10001
