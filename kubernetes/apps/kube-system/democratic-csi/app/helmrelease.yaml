@@ -47,6 +47,7 @@ spec:
 
     controller:
       enabled: true
+      strategy: node
 
       externalResizer:
         enabled: false

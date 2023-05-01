@@ -23,4 +23,4 @@ spec:
   resources:
     requests:
       storage: 5Gi
-  storageClassName: local-hostpath
+  storageClassName: democratic-csi-local-hostpath
