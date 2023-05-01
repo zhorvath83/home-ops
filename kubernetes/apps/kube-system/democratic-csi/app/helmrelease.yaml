@@ -30,7 +30,7 @@ spec:
   values:
 
     controller:
-    # democratic-csi controller
+      # democratic-csi controller
       enabled: true
       replicaCount: 1
       strategy: node
@@ -43,13 +43,13 @@ spec:
         enabled: true
         image: registry.k8s.io/sig-storage/csi-provisioner:v3.5.0
         extraArgs:
-        - --leader-election=false
-        - --node-deployment=true
-        - --node-deployment-immediate-binding=false
-        - --feature-gates=Topology=true
-        - --strict-topology=true
-        - --enable-capacity=true
-        - --capacity-ownerref-level=1
+          - --leader-election=false
+          - --node-deployment=true
+          - --node-deployment-immediate-binding=false
+          - --feature-gates=Topology=true
+          - --strict-topology=true
+          - --enable-capacity=true
+          - --capacity-ownerref-level=1
 
       externalAttacher:
         enabled: false
@@ -61,14 +61,14 @@ spec:
         enabled: true
         image: registry.k8s.io/sig-storage/csi-snapshotter:v6.2.1
         extraArgs:
-        - --leader-election=false
-        - --node-deployment=true
+          - --leader-election=false
+          - --node-deployment=true
 
       externalHealthMonitorController:
         enabled: false
 
     node:
-    # democratic-csi node
+      # democratic-csi node
       enabled: true
 
       cleanup:
@@ -78,15 +78,15 @@ spec:
         image: democraticcsi/democratic-csi:v1.8.3
 
         extraVolumeMounts:
-        - name: local-storage
-          mountPath: /var/lib/csi-local-hostpath
-          mountPropagation: Bidirectional
+          - name: local-storage
+            mountPath: /var/lib/csi-local-hostpath
+            mountPropagation: Bidirectional
 
       extraVolumes:
-      - name: local-storage
-        hostPath:
-          path: /var/lib/rancher/k3s/storage/csi-local-hostpath
-          type: DirectoryOrCreate
+        - name: local-storage
+          hostPath:
+            path: /var/lib/rancher/k3s/storage/csi-local-hostpath
+            type: DirectoryOrCreate
 
       driverRegistrar:
         enabled: true
