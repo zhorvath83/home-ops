@@ -77,9 +77,9 @@ spec:
         ingressClassName: nginx
         annotations:
           gethomepage.dev/enabled: "true"
-          gethomepage.dev/name: "{{ .Release.Name }}"
+          gethomepage.dev/name: Recipes
           gethomepage.dev/group: Web tools
-          gethomepage.dev/icon: "{{ .Release.Name }}.png"
+          gethomepage.dev/icon: tandoor.png
         hosts:
           - host: &host "recipes.${SECRET_DOMAIN}"
             paths:

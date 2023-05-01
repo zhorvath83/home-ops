@@ -78,9 +78,9 @@ spec:
         ingressClassName: nginx
         annotations:
           gethomepage.dev/enabled: "true"
-          gethomepage.dev/name: "{{ .Release.Name }}"
+          gethomepage.dev/name: Notes
           gethomepage.dev/group: Web tools
-          gethomepage.dev/icon: "{{ .Release.Name }}.png"
+          gethomepage.dev/icon: trilium.png
         hosts:
           - host: &host "notes.${SECRET_DOMAIN}"
             paths:

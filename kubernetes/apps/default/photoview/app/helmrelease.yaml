@@ -2,7 +2,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
-  name: &app photoview
+  name: photoview
   namespace: default
 spec:
   interval: 15m
@@ -78,9 +78,9 @@ spec:
         ingressClassName: nginx
         annotations:
           gethomepage.dev/enabled: "true"
-          gethomepage.dev/name: "{{ .Release.Name }}"
+          gethomepage.dev/name: Photos
           gethomepage.dev/group: Cloud
-          gethomepage.dev/icon: "{{ .Release.Name }}.png"
+          gethomepage.dev/icon: photoview.png
         hosts:
           - host: &host "photos.${SECRET_DOMAIN}"
             paths:

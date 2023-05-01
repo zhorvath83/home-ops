@@ -79,9 +79,9 @@ spec:
         ingressClassName: nginx
         annotations:
           gethomepage.dev/enabled: "true"
-          gethomepage.dev/name: "{{ .Release.Name }}"
+          gethomepage.dev/name: Radarr
           gethomepage.dev/group: Multimedia
-          gethomepage.dev/icon: "{{ .Release.Name }}.png"
+          gethomepage.dev/icon: radarr.png
         hosts:
           - host: *host
             paths:

@@ -57,9 +57,9 @@ spec:
         ingressClassName: nginx
         annotations:
           gethomepage.dev/enabled: "true"
-          gethomepage.dev/name: "{{ .Release.Name }}"
+          gethomepage.dev/name: Echo server
           gethomepage.dev/group: Infrastructure
-          gethomepage.dev/icon: "{{ .Release.Name }}.png"
+          gethomepage.dev/icon: echo-server.png
         hosts:
           - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
             paths:
