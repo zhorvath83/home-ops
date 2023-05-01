@@ -28,15 +28,5 @@ spec:
   uninstall:
     keepHistory: false
   values:
-    volumeSnapshotClasses:
-      - name: local-hostpath
-        driver: org.democratic-csi.local-hostpath
-        annotations:
-          snapshot.storage.kubernetes.io/is-default-class: "true"
-        # parameters:
-        #   clusterID: 
-        #   csi.storage.k8s.io/snapshotter-secret-name: rook-csi-rbd-provisioner
-        #   csi.storage.k8s.io/snapshotter-secret-namespace: kube-system
-        deletionPolicy: Delete
     serviceMonitor:
       create: true
