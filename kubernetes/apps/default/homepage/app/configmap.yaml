@@ -13,32 +13,6 @@ data:
     headerStyle: boxed
     theme: dark
     color: slate
-    layout: # key by group name in services.yaml
-      Infrastructure:
-        # style: row
-        # columns: 3
-        # icon: home-assistant.png
-        # headerStyle: boxed
-      Monitoring:
-        # style: row
-        # columns: 3
-        # icon: home-assistant.png
-        # headerStyle: boxed
-      Home:
-        # style: row
-        # columns: 4
-        # icon: home-assistant.png
-        # headerStyle: boxed
-      Cloud:
-        # style: row
-        # columns: 3
-        # icon: home-assistant.png
-        # headerStyle: boxed
-      Services:
-        # style: row
-        # columns: 3
-        # icon: home-assistant.png
-        # headerStyle: boxed
 
   widgets.yaml: |
     ---
