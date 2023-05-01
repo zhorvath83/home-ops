@@ -14,6 +14,7 @@ spec:
         kind: HelmRepository
         name: ingress-nginx
         namespace: flux-system
+
   maxHistory: 3
   install:
     createNamespace: true
@@ -25,22 +26,28 @@ spec:
       retries: 3
   uninstall:
     keepHistory: false
+
   values:
-  # podSecurityContext controlled by Helm Chart.
+    # podSecurityContext controlled by Helm Chart.
     controller:
       replicaCount: 1
+
       extraEnvs:
         - name: TZ
           value: "Europe/Budapest"
+
       service:
         annotations:
           metallb.universe.tf/loadBalancerIPs: ${CLUSTER_SVC_INGRESS_CONTROLLER_IP}
         externalTrafficPolicy: Local
+
       publishService:
         # --publish-service and --publish-status-address are mutually exclusive
         enabled: false
+
       ingressClassResource:
         default: true
+
       config:
         client-body-buffer-size: "100M"
         client-body-timeout: 120
@@ -64,6 +71,7 @@ spec:
         proxy-buffer-size: "16k"
         ssl-protocols: "TLSv1.3 TLSv1.2"
         use-forwarded-headers: "true"
+
       metrics:
         enabled: true
         serviceMonitor:
@@ -71,6 +79,7 @@ spec:
           namespace: networking
           namespaceSelector:
             any: true
+
       extraArgs:
         # https://kubernetes.github.io/ingress-nginx/user-guide/cli-arguments/
         default-ssl-certificate: "networking/${SECRET_DOMAIN/./-}-tls"
@@ -78,6 +87,7 @@ spec:
         # Used by External DNS when creating CNAME DNS records
         publish-status-address: "tunnel.${SECRET_DOMAIN}"
         update-status: true
+
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: kubernetes.io/hostname
@@ -86,16 +96,20 @@ spec:
             matchLabels:
               app.kubernetes.io/name: ingress-nginx
               app.kubernetes.io/component: controller
+
       podAnnotations:
         configmap.reloader.stakater.com/reload: "true"
+
       resources:
         requests:
           cpu: 100m
           memory: 250Mi
         limits:
           memory: 500Mi
+
     defaultBackend:
       enabled: false
+
   valuesFrom:
     # Cloudflare Networks
     # https://www.cloudflare.com/ips/

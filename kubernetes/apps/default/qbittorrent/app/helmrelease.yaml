@@ -110,7 +110,7 @@ spec:
       capabilities:
         drop:
           - ALL
-          
+
     persistence:
       config:
         enabled: true
