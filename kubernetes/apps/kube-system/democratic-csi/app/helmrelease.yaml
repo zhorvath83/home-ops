@@ -93,7 +93,8 @@ spec:
         image: registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.8.0
 
     csiProxy:
-      enabled: false
+      enabled: true
+      image: docker.io/democraticcsi/csi-grpc-proxy:v0.5.3
 
     csiDriver:
       name: "org.democratic-csi.local-hostpath"
