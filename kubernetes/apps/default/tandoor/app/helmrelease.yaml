@@ -27,7 +27,6 @@ spec:
     keepHistory: false
 
   values:
-    fullnameOverride: *app
 
     controller:
       annotations:

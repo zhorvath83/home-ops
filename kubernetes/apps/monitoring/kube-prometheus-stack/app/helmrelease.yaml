@@ -28,7 +28,6 @@ spec:
   uninstall:
     keepHistory: false
   values:
-    fullnameOverride: prometheus
     cleanPrometheusOperatorObjectNames: true
     alertmanager:
       config:

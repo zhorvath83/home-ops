@@ -27,7 +27,6 @@ spec:
     keepHistory: false
 
   values:
-    fullnameOverride: *app
 
     commonAnnotations:
       reloader.stakater.com/auto: "true"

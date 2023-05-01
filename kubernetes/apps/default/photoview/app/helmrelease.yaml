@@ -28,7 +28,6 @@ spec:
     keepHistory: false
 
   values:
-    fullnameOverride: *app
 
     controller:
       annotations:
@@ -143,16 +142,16 @@ spec:
           - name: POSTGRES_USER
             valueFrom:
               secretKeyRef:
-                name: photoview
+                name: photoview-secret
                 key: POSTGRES_USER
           - name: POSTGRES_PASS
             valueFrom:
               secretKeyRef:
-                name: photoview
+                name: photoview-secret
                 key: POSTGRES_PASS
 
   valuesFrom:
     - kind: Secret
-      name: *app
+      name: photoview-secret
       valuesKey: PHOTOS_PATH
       targetPath: persistence.photos.path
