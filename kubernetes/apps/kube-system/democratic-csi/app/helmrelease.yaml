@@ -112,14 +112,14 @@ spec:
           dirPermissionsGroup: 0
 
     storageClasses:
-      - name: democratic-csi-local-hostpath-snapclass
+      - name: democratic-csi-local-hostpath
         defaultClass: false
         reclaimPolicy: Retain
         volumeBindingMode: WaitForFirstConsumer
         allowVolumeExpansion: false
 
     volumeSnapshotClasses:
-      - name: democratic-csi-local-hostpath
+      - name: democratic-csi-local-hostpath-snapclass
         annotations:
           snapshot.storage.kubernetes.io/is-default-class: "true"
         deletionPolicy: Delete
