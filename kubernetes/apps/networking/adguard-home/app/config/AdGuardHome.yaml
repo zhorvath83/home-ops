@@ -2,7 +2,7 @@
 bind_host: 0.0.0.0
 bind_port: 3000
 users:
-  - name: ${SECRET_OWNER_USERNAME}
+  - name: zhorvath83
     password: ${SECRET_ADGUARD_PWD}
 auth_attempts: 5
 block_auth_min: 15
