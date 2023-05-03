@@ -70,7 +70,7 @@ data:
             icon: truenas-scale.png
             description: NAS
         - Proxmox:
-            href: https://192.168.1.6:8006/
+            href: https://192.168.1.6:8006
             icon: proxmox.png
             description: Proxmox Hypervisor
 
@@ -79,12 +79,13 @@ data:
     - Organizing:
         - Mail & Calendar:
             - icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/fastmail.svg
-              href: https://app.fastmail.com/mail
+              href: https://fastmail.com
         - FB Messenger:
             - icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/facebook-messenger.svg
-              href: https://www.messenger.com
+              href: https://messenger.com
         - ToDoist:
             - icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/todoist.svg
+              href: https://todoist.com
     - Finance:
         - Buxfer:
             - icon: https://raw.githubusercontent.com/zhorvath83/dashboard-icons/master/png/buxfer.png
@@ -92,19 +93,19 @@ data:
     - Cloud-Access:
         - Cloudflare:
             - icon: cloudflare.png
-              href: https://www.cloudflare.com/
+              href: https://www.cloudflare.com
     - Developer:
         - Github:
             - abbr: GH
-              href: https://github.com/
+              href: https://github.com
     - Social:
         - Reddit:
             - icon: reddit.png
-              href: https://reddit.com/
+              href: https://reddit.com
     - Entertainment:
         - YouTube:
             - abbr: YT
-              href: https://youtube.com/
+              href: https://youtube.com
 
   docker.yaml: |
     ---
