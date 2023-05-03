@@ -76,8 +76,8 @@ data:
 
   bookmarks.yaml: |
     ---
-    - Organizing
-        - Mail and Calendar:
+    - Organizing:
+        - Mail & Calendar:
             - icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/fastmail.svg
               href: https://app.fastmail.com/mail
         - FB Messenger:
@@ -85,7 +85,7 @@ data:
               href: https://www.messenger.com
         - ToDoist:
             - icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/todoist.svg
-    - Finance
+    - Finance:
         - Buxfer:
             - icon: https://raw.githubusercontent.com/zhorvath83/dashboard-icons/master/png/buxfer.png
               href: https://www.buxfer.com
