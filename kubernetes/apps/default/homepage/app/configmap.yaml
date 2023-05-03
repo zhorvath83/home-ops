@@ -76,35 +76,35 @@ data:
 
   bookmarks.yaml: |
     ---
-        - Organizing
-            - Mail & Calendar:
-                - icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/fastmail.svg
-                  href: https://app.fastmail.com/mail
-            - FB Messenger:
-                - icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/facebook-messenger.svg
-                  href: https://www.messenger.com
-            - ToDoist:
-                - icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/todoist.svg
-        - Finance
-            - Buxfer:
-                - icon: https://raw.githubusercontent.com/zhorvath83/dashboard-icons/master/png/buxfer.png
-                  href: https://www.buxfer.com
-        - Cloud-Access:
-            - Cloudflare:
-                - icon: cloudflare.png
-                  href: https://www.cloudflare.com/
-        - Developer:
-            - Github:
-                - abbr: GH
-                  href: https://github.com/
-        - Social:
-            - Reddit:
-                - icon: reddit.png
-                  href: https://reddit.com/
-        - Entertainment:
-            - YouTube:
-                - abbr: YT
-                  href: https://youtube.com/
+    - Organizing
+        - Mail & Calendar:
+            - icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/fastmail.svg
+              href: https://app.fastmail.com/mail
+        - FB Messenger:
+            - icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/facebook-messenger.svg
+              href: https://www.messenger.com
+        - ToDoist:
+            - icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/todoist.svg
+    - Finance
+        - Buxfer:
+            - icon: https://raw.githubusercontent.com/zhorvath83/dashboard-icons/master/png/buxfer.png
+              href: https://www.buxfer.com
+    - Cloud-Access:
+        - Cloudflare:
+            - icon: cloudflare.png
+              href: https://www.cloudflare.com/
+    - Developer:
+        - Github:
+            - abbr: GH
+              href: https://github.com/
+    - Social:
+        - Reddit:
+            - icon: reddit.png
+              href: https://reddit.com/
+    - Entertainment:
+        - YouTube:
+            - abbr: YT
+              href: https://youtube.com/
 
   docker.yaml: |
     ---
