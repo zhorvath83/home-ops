@@ -9,7 +9,7 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 1.3.2
+      version: 1.4.0
       sourceRef:
         kind: HelmRepository
         name: bjw-s
@@ -35,7 +35,7 @@ spec:
 
     image:
       repository: ghcr.io/onedr0p/radarr-develop
-      tag: 4.4.2.6956@sha256:900277ef469bcb21cf24963c39b17e0f1a5e64a445b8a9d6ee80750807911339
+      tag: 4.5.0.7106@sha256:74b2e992e90314250e6882d5aa7491ea7647230478f304e4d0eb13f8ab16fc7d
 
     env:
       TZ: Europe/Budapest
