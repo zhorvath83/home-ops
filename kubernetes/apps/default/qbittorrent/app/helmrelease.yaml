@@ -48,7 +48,7 @@ spec:
         ports:
           http:
             port: 80
-            targetPort: &targetPort 8080
+            targetPort: 8080
         type: LoadBalancer
         annotations:
           metallb.universe.tf/allow-shared-ip: qbittorrent-svc

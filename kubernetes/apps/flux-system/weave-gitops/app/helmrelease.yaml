@@ -40,6 +40,11 @@ spec:
     ingress:
       enabled: true
       className: nginx
+      annotations:
+        gethomepage.dev/enabled: "true"
+        gethomepage.dev/name: Weave GitOps
+        gethomepage.dev/group: Infrastructure
+        gethomepage.dev/icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/flux-cd.svg
       hosts:
         - host: &host "gitops.${SECRET_DOMAIN}"
           paths:

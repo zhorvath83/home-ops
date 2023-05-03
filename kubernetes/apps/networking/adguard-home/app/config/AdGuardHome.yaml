@@ -86,8 +86,10 @@ dns:
     yandex: true
     youtube: true
   rewrites:
-    - domain: "mediaserver.${CLUSTER_LAN_DOMAIN}"
+    - domain: "jellyfin.${SECRET_DOMAIN}"
       answer: "${CLUSTER_SVC_JELLYFIN_IP}"
+    - domain: "*.${SECRET_DOMAIN}"
+      answer: "${CLUSTER_SVC_INGRESS_CONTROLLER_IP}"
   blocked_services:
     - tinder
   upstream_timeout: 2s

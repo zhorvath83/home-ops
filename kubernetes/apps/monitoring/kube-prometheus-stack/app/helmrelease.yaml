@@ -75,7 +75,11 @@ spec:
       ingress:
         enabled: true
         pathType: Prefix
-        annotations: {}
+        annotations:
+          gethomepage.dev/enabled: "true"
+          gethomepage.dev/name: Alertmanager
+          gethomepage.dev/group: Infrastructure
+          gethomepage.dev/icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/alertmanager.svg
         hosts:
           - &host "alertmanager.${SECRET_DOMAIN}"
         tls:
@@ -155,7 +159,11 @@ spec:
       ingress:
         enabled: true
         pathType: Prefix
-        annotations: {}
+        annotations:
+          gethomepage.dev/enabled: "true"
+          gethomepage.dev/name: Prometheus
+          gethomepage.dev/group: Infrastructure
+          gethomepage.dev/icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/prometheus.svg
         hosts:
           - &host "prometheus.${SECRET_DOMAIN}"
         tls:
