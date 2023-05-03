@@ -77,7 +77,7 @@ data:
   bookmarks.yaml: |
     ---
     - Organizing
-        - Mail & Calendar:
+        - Mail and Calendar:
             - icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/fastmail.svg
               href: https://app.fastmail.com/mail
         - FB Messenger:
