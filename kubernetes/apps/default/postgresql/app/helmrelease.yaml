@@ -78,13 +78,13 @@ spec:
         existingClaim: postgresql-data
 
       extraVolumes:
-        - name: backups
+        - name: nfs-nas-backups
           nfs:
             server: ${CLUSTER_LAN_NAS_IP}
-            path: /backup/pgbackups
+            path: /backups/pgbackups
             readOnly: false
       extraVolumeMounts:
-        - name: backups
+        - name: nfs-nas-backups
           mountPath: /backups
 
 

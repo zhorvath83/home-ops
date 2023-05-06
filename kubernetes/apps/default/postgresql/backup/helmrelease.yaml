@@ -71,11 +71,11 @@ spec:
         enabled: false
 
     persistence:
-      nfs-nas-backup:
+      nfs-nas-backups:
         enabled: true
         type: nfs
         server: ${CLUSTER_LAN_NAS_IP}
-        path: /backup/pgbackups
+        path: /backups/pgbackups
         mountPath: /backups
 
     podSecurityContext:
