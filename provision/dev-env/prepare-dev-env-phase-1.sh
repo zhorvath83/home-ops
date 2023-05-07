@@ -83,6 +83,7 @@ sudo apt-get install --assume-yes --no-install-recommends \
     ca-certificates \
     unzip \
     bzr \
+    sshpass \
     git-extras \
     apache2-utils \
 

@@ -2,11 +2,12 @@
 version: "3"
 
 env:
-  ANSIBLE_CONFIG: "{{.PROJECT_DIR}}/ansible.cfg"
-  K8S_AUTH_KUBECONFIG: "{{.PROJECT_DIR}}/kubeconfig"
+  ANSIBLE_CONFIG: "{{.ANSIBLE_DIR}}/ansible.cfg"
+  K8S_AUTH_KUBECONFIG: "{{.KUBECONFIG}}"
 
 vars:
-
+  ANSIBLE_PLAYBOOK_DIR: "{{.ANSIBLE_DIR}}/playbooks"
+  ANSIBLE_INVENTORY_DIR: "{{.ANSIBLE_DIR}}/inventory"
 
 tasks:
 
@@ -24,16 +25,25 @@ tasks:
     cmds:
       - ansible all -i {{.ANSIBLE_INVENTORY_DIR}}/hosts.yml --list-hosts
 
-  htpc-install:
-    vars:
-      ANSIBLE_TARGET: "htpc"
-      ANSIBLE_TARGET_DIR: "{{.ANSIBLE_DIR}}/{{.ANSIBLE_TARGET}}"
-      ANSIBLE_PLAYBOOK_DIR: "{{.ANSIBLE_TARGET_DIR}}/playbooks"
-      ANSIBLE_INVENTORY_DIR: "{{.ANSIBLE_TARGET_DIR}}/inventory"
-    desc: htpc-install
-    dir: "{{.ANSIBLE_TARGET_DIR}}"
+  prepare:
+    desc: Prepare all the k8s nodes for running k3s
+    dir: "{{.ANSIBLE_DIR}}"
     cmds:
-      - ansible-playbook -i {{.ANSIBLE_INVENTORY_DIR}}/hosts.yml {{.ANSIBLE_PLAYBOOK_DIR}}/htpc-install.yml
+      - ansible-playbook -i {{.ANSIBLE_INVENTORY_DIR}}/hosts.yml {{.ANSIBLE_PLAYBOOK_DIR}}/cluster-prepare.yml
+
+  install:
+    desc: Install Kubernetes on the nodes
+    dir: "{{.ANSIBLE_DIR}}"
+    cmds:
+      - ansible-playbook -i {{.ANSIBLE_INVENTORY_DIR}}/hosts.yml {{.ANSIBLE_PLAYBOOK_DIR}}/cluster-installation.yml
+
+  nuke:
+    desc: Uninstall Kubernetes on the nodes
+    dir: "{{.ANSIBLE_DIR}}"
+    interactive: true
+    cmds:
+      - ansible-playbook -i {{.ANSIBLE_INVENTORY_DIR}}/hosts.yml {{.ANSIBLE_PLAYBOOK_DIR}}/cluster-nuke.yml
+      - task: force-reboot
 
   ping:
     desc: Ping all the hosts
@@ -46,6 +56,12 @@ tasks:
     dir: "{{.ANSIBLE_DIR}}"
     cmds:
       - ansible all -i {{.ANSIBLE_INVENTORY_DIR}}/hosts.yml --one-line -a 'uptime'
+
+  rollout-reboot:
+    desc: Rollout a reboot across all the k8s nodes
+    dir: "{{.ANSIBLE_DIR}}"
+    cmds:
+      - ansible-playbook -i {{.ANSIBLE_INVENTORY_DIR}}/hosts.yml {{.ANSIBLE_PLAYBOOK_DIR}}/cluster-rollout-reboot.yml
 
   force-reboot:
     desc: Reboot all the k8s nodes

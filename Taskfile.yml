@@ -2,20 +2,17 @@
 version: "3"
 
 vars:
-  PROJECT_DIR:
+  ROOT_DIR:
     sh: "git rev-parse --show-toplevel"
-  CLUSTER_DIR: "{{.PROJECT_DIR}}/kubernetes"
-  ANSIBLE_DIR: "{{.PROJECT_DIR}}/infrastructure/ansible"
-  TERRAFORM_DIR: "{{.PROJECT_DIR}}/infrastructure/terraform"
+  KUBERNETES_DIR: "{{.ROOT_DIR}}/kubernetes"
+  ANSIBLE_DIR: "{{.ROOT_DIR}}/provision/kubernetes"
+  TERRAFORM_DIR: "{{.ROOT_DIR}}/provision/cloudflare"
 
 env:
-  KUBECONFIG: "{{.PROJECT_DIR}}/infrastructure/kubeconfig"
+  KUBECONFIG: /home/zhorvath83/.kube/config
+  SOPS_AGE_KEY_FILE: /home/zhorvath83/.config/sops/age/keys.txt
 
 includes:
-  # ansible: .taskfiles/ansible.yml
-  flux: .taskfiles/flux.yml
-  format: .taskfiles/format.yml
-  lint: .taskfiles/lint.yml
-  pre-commit: .taskfiles/pre-commit.yml
-  terraform: .taskfiles/terraform.yml
-  ansible: .taskfiles/ansible.yml
+  ansible: .taskfiles/AnsibleTasks.yml
+  cluster: .taskfiles/ClusterTasks.yml
+  precommit: .taskfiles/PrecommitTasks.yml
