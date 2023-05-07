@@ -6,7 +6,7 @@ metadata:
   namespace: flux-system
 spec:
   dependsOn:
-    - name: cluster-apps-local-path-provisioner
+    - name: cluster-apps-democratic-csi
     - name: cluster-apps-external-secrets-stores
   path: ./kubernetes/apps/default/postgresql/app
   prune: true
@@ -29,7 +29,7 @@ metadata:
   namespace: flux-system
 spec:
   dependsOn:
-    - name: cluster-apps-local-path-provisioner
+    - name: cluster-apps-democratic-csi
     - name: cluster-apps-external-secrets-stores
     - name: cluster-apps-postgresql
   path: ./kubernetes/apps/default/postgresql/backup

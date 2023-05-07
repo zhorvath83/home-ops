@@ -88,7 +88,7 @@ spec:
         mountPath: /config
         accessMode: ReadWriteOnce
         size: 2Gi
-        storageClass: local-path
+        storageClass: democratic-csi-local-hostpath
 
     resources:
       requests:

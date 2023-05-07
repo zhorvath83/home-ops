@@ -188,7 +188,7 @@ spec:
         storageSpec:
           volumeClaimTemplate:
             spec:
-              storageClassName: local-path
+              storageClassName: democratic-csi-local-hostpath
               resources:
                 requests:
                   storage: 6Gi

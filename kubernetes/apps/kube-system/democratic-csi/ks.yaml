@@ -5,10 +5,6 @@ metadata:
   name: cluster-apps-democratic-csi
   namespace: flux-system
 spec:
-  dependsOn:
-    - name: cluster-apps-local-path-provisioner
-    - name: cluster-apps-external-secrets-stores
-    - name: cluster-apps-postgresql
   path: ./kubernetes/apps/kube-system/democratic-csi/app
   prune: true
   sourceRef:

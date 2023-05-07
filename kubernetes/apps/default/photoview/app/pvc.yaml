@@ -10,7 +10,7 @@ spec:
   resources:
     requests:
       storage: 5Gi
-  storageClassName: local-path
+  storageClassName: democratic-csi-local-hostpath
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
