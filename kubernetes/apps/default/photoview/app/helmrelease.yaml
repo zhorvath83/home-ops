@@ -94,8 +94,8 @@ spec:
         enabled: true
         mountPath: /photos
         readOnly: true
-        path: /backups/Fenykepek
         server: ${CLUSTER_LAN_NAS_IP}
+        path: /backups/Fenykepek
         type: nfs
 
       data:
@@ -150,8 +150,8 @@ spec:
                 name: photoview-secret
                 key: POSTGRES_PASS
 
-  valuesFrom:
-    - kind: Secret
-      name: photoview-secret
-      valuesKey: PHOTOS_PATH
-      targetPath: persistence.photos.path
+  # valuesFrom:
+  #   - kind: Secret
+  #     name: photoview-secret
+  #     valuesKey: PHOTOS_PATH
+  #     targetPath: persistence.photos.path
