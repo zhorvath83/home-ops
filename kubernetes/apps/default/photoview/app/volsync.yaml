@@ -28,7 +28,7 @@ metadata:
   name: photoview
   namespace: default
 spec:
-  sourcePVC: photoview2
+  sourcePVC: photoview
   trigger:
     schedule: "0 0 * * *"
   restic:
