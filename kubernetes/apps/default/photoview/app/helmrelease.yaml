@@ -2,7 +2,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
-  name: photoview
+  name: &app photoview
   namespace: default
 spec:
   interval: 15m
@@ -98,12 +98,14 @@ spec:
         server: ${CLUSTER_LAN_NAS_IP}
         type: nfs
 
-      data:
-        enabled: true
-        existingClaim: photoview2
+    volumeClaimTemplates:
+      - name: *app
         subPath:
           - path: cache
             mountPath: /app/cache
+        accessMode: ReadWriteOnce
+        size: 5Gi
+        storageClass: democratic-csi-local-hostpath
 
     podSecurityContext:
       runAsUser: 10001
