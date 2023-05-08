@@ -94,7 +94,7 @@ spec:
         enabled: true
         mountPath: /photos
         readOnly: true
-        # path: # Comes from secret
+        path: /backups/Fenykepek
         server: ${CLUSTER_LAN_NAS_IP}
         type: nfs
 
