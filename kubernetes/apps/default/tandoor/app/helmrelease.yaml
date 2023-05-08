@@ -91,7 +91,7 @@ spec:
     persistence:
       mediafiles:
         enabled: true
-        existingClaim: tandoor-data
+        existingClaim: *app
         mountPath: /opt/recipes/mediafiles
       staticfiles:
         enabled: true

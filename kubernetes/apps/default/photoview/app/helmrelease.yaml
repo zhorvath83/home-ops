@@ -98,14 +98,12 @@ spec:
         server: ${CLUSTER_LAN_NAS_IP}
         type: nfs
 
-    volumeClaimTemplates:
-      - name: *app
+      data:
+        enabled: true
+        existingClaim: *app
         subPath:
           - path: cache
             mountPath: /app/cache
-        accessMode: ReadWriteOnce
-        size: 5Gi
-        storageClass: democratic-csi-local-hostpath
 
     podSecurityContext:
       runAsUser: 10001
