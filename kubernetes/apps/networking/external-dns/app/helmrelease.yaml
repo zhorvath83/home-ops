@@ -27,7 +27,7 @@ spec:
     keepHistory: false
   values:
     interval: 2m
-    # logLevel: debug
+    logLevel: debug
     provider: cloudflare
     env:
       - name: TZ
