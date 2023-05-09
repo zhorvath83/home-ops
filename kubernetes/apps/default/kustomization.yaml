@@ -5,6 +5,7 @@ resources:
   # Pre Flux-Kustomizations
   - ./namespace.yaml
   # Flux-Kustomizations
+  - ./nfs-pv
   - ./jellyfin/ks.yaml
   - ./qbittorrent/ks.yaml
   - ./postgresql/ks.yaml

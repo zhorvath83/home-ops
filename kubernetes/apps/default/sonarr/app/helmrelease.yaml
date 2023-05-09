@@ -39,7 +39,6 @@ spec:
 
     env:
       TZ: Europe/Budapest
-      PUSHOVER_DEBUG: "false"
       SONARR__INSTANCE_NAME: Sonarr
       SONARR__PORT: &port 80
       SONARR__LOG_LEVEL: info
@@ -115,15 +114,6 @@ spec:
         server: ${CLUSTER_LAN_NAS_IP}
         path: /Media
         mountPath: /media
-
-      scripts:
-        enabled: true
-        type: configMap
-        name: sonarr-configmap
-        subPath: pushover-notify.sh
-        mountPath: /scripts/pushover-notify.sh
-        defaultMode: 0775
-        readOnly: true
 
     resources:
       requests:

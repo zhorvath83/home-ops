@@ -39,8 +39,6 @@ spec:
 
     env:
       TZ: Europe/Budapest
-      PUSHOVER_DEBUG: "false"
-      PUSHOVER_APP_URL: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
       RADARR__INSTANCE_NAME: Radarr
       RADARR__PORT: &port 80
       RADARR__APPLICATION_URL: "https://{{ .Release.Name }}.${SECRET_DOMAIN}"
@@ -117,15 +115,6 @@ spec:
         server: ${CLUSTER_LAN_NAS_IP}
         path: /Media
         mountPath: /media
-
-      scripts:
-        enabled: true
-        type: configMap
-        name: radarr-configmap
-        subPath: pushover-notify.sh
-        mountPath: /scripts/pushover-notify.sh
-        defaultMode: 0775
-        readOnly: true
 
     resources:
       requests:

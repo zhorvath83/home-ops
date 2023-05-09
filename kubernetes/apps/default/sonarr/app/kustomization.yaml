@@ -5,11 +5,3 @@ namespace: default
 resources:
   - ./externalsecret.yaml
   - ./helmrelease.yaml
-configMapGenerator:
-  - name: sonarr-configmap
-    files:
-      - ./scripts/pushover-notify.sh
-generatorOptions:
-  disableNameSuffixHash: true
-  annotations:
-    kustomize.toolkit.fluxcd.io/substitute: disabled
