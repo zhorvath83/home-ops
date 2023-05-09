@@ -90,11 +90,9 @@ spec:
       config:
         enabled: true
         existingClaim: *app
-      nfs-nas-media:
+      nfs-media:
         enabled: true
-        type: nfs
-        server: ${CLUSTER_LAN_NAS_IP}
-        path: /media
+        existingClaim: nfs-media-pvc
         mountPath: /media
       transcode:
         enabled: true
