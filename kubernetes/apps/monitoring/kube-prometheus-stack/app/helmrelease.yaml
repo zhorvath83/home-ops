@@ -50,7 +50,7 @@ spec:
       prometheus:
         monitor:
           enabled: true
-          relabelings:
+          metricRelabelings:
             - action: replace
               regex: (.*)
               replacement: $1
@@ -64,7 +64,7 @@ spec:
     alertmanager:
       config:
         global:
-          # slack_api_url: from kube-prometheus-secret
+          # slack_api_url: added from kube-prometheus-stack-secret
           resolve_timeout: 5m
         receivers:
           - name: "null"
@@ -229,5 +229,5 @@ spec:
 
   valuesFrom:
     - kind: Secret
-      name: kube-prometheus-secret
+      name: kube-prometheus-stack-secret
       optional: false
