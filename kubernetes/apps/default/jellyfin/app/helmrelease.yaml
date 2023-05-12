@@ -28,9 +28,6 @@ spec:
     keepHistory: false
 
   values:
-    controller:
-      type: statefulset
-
     image:
       repository: jellyfin/jellyfin
       tag: 10.8.10
