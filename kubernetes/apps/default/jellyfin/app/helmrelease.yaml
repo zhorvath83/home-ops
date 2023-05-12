@@ -51,6 +51,14 @@ spec:
           http:
             port: 80
             targetPort: &targetPort 8096
+          discovery:
+            enabled: true
+            port: 7359
+            protocol: UDP
+          dnla:
+            enabled: true
+            port: 1900
+            protocol: UDP
     # serviceMonitor:
     #   main:
     #     enabled: true
