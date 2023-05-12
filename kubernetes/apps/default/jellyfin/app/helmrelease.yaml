@@ -87,9 +87,9 @@ spec:
       privileged: false
       allowPrivilegeEscalation: false
       # readOnlyRootFilesystem: true
-      capabilities:
-        drop:
-          - ALL
+      # capabilities:
+      #   drop:
+      #     - ALL
     # Hardware acceleration using an Intel iGPU w/ QuickSync
     # These IDs below should be matched to your `video` and `render` group on the host
     # To obtain those IDs run the following grep statement on the host:
