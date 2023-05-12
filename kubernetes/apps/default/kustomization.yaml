@@ -13,6 +13,7 @@ resources:
   - ./photoview/ks.yaml
   - ./homepage/ks.yaml
   - ./trilium/ks.yaml
+  - ./actual/ks.yaml
   # - ./prowlarr/ks.yaml
   # - ./radarr/ks.yaml
   # - ./recyclarr/ks.yaml
