@@ -14,6 +14,7 @@ spec:
         kind: HelmRepository
         name: bjw-s
         namespace: flux-system
+
   maxHistory: 3
   install:
     createNamespace: true
@@ -29,14 +30,17 @@ spec:
   values:
     controller:
       type: statefulset
+
     image:
       repository: jellyfin/jellyfin
       tag: 10.8.10
+
     env:
       TZ: "Europe/Budapest"
       JELLYFIN_CACHE_DIR: "/config/cache"
       DOTNET_SYSTEM_IO_DISABLEFILELOCKING: "true"
       JELLYFIN_PublishedServerUrl: "http://${CLUSTER_SVC_JELLYFIN_IP}"
+
     service:
       main:
         type: LoadBalancer
@@ -50,6 +54,7 @@ spec:
     # serviceMonitor:
     #   main:
     #     enabled: true
+
     probes:
       liveness: &probes
         enabled: true
@@ -62,17 +67,23 @@ spec:
           periodSeconds: 10
           timeoutSeconds: 1
           failureThreshold: 3
+
       readiness: *probes
+
       startup:
         enabled: false
+
     ingress:
       main:
         enabled: false
+
     podSecurityContext:
       runAsUser: 10001
       runAsGroup: 10001
       fsGroup: 10001
       fsGroupChangePolicy: OnRootMismatch
+
+    securityContext:
       privileged: false
       allowPrivilegeEscalation: false
       readOnlyRootFilesystem: true
@@ -90,18 +101,22 @@ spec:
       config:
         enabled: true
         existingClaim: *app
+
       nfs-media:
         enabled: true
         type: nfs
         server: ${CLUSTER_LAN_NAS_IP}
         path: /media
         mountPath: /media
+
       transcode:
         enabled: true
         type: emptyDir
+
     resources:
       requests:
         cpu: 100m
         memory: 512Mi
+
       limits:
         memory: 4096Mi
