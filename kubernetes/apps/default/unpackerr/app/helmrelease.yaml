@@ -68,7 +68,7 @@ spec:
         enabled: true
         type: nfs
         server: ${CLUSTER_LAN_NAS_IP}
-        path: /Media/Downloads/qbittorrent/complete
+        path: /media/downloads/complete
         mountPath: /complete
 
     resources:
