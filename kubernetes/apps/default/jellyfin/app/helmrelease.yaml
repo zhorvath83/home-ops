@@ -87,6 +87,8 @@ spec:
       privileged: false
       allowPrivilegeEscalation: false
       # readOnlyRootFilesystem: true
+      seccompProfile:
+        type: RuntimeDefault
       capabilities:
         drop:
           - ALL
