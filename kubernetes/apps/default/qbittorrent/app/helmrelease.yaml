@@ -91,7 +91,7 @@ spec:
           gethomepage.dev/group: Multimedia
           gethomepage.dev/icon: qbittorrent.png
         hosts:
-          - host: &host qbittorrent.${SECRET_DOMAIN}
+          - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix

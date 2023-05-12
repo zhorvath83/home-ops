@@ -108,7 +108,7 @@ spec:
         storageClass: democratic-csi-local-hostpath
 
     persistence:
-      media:
+      nfs-media:
         enabled: true
         type: nfs
         server: ${CLUSTER_LAN_NAS_IP}

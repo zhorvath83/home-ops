@@ -81,7 +81,7 @@ spec:
           gethomepage.dev/group: Multimedia
           gethomepage.dev/icon: radarr.png
         hosts:
-          - host: *host
+          - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix
