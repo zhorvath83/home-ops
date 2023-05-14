@@ -58,7 +58,7 @@ spec:
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Echo server
-          gethomepage.dev/group: Infrastructure
+          gethomepage.dev/group: Monitoring
           gethomepage.dev/icon: shellhub.png
         hosts:
           - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"

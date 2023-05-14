@@ -76,6 +76,12 @@ spec:
         drop:
           - ALL
 
+    persistence:
+      logs:
+        enabled: true
+        type: emptyDir
+        mountPath: /app/config/logs
+
     resources:
       requests:
         cpu: 25m

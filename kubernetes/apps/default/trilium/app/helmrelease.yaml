@@ -79,7 +79,7 @@ spec:
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Notes
-          gethomepage.dev/group: Web tools
+          gethomepage.dev/group: Cloud
           gethomepage.dev/icon: trilium.png
         hosts:
           - host: &host "notes.${SECRET_DOMAIN}"

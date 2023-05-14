@@ -111,7 +111,7 @@ spec:
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Alertmanager
-          gethomepage.dev/group: Infrastructure
+          gethomepage.dev/group: Monitoring
           gethomepage.dev/icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/alertmanager.svg
         hosts:
           - &host "alertmanager.${SECRET_DOMAIN}"
@@ -196,7 +196,7 @@ spec:
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Prometheus
-          gethomepage.dev/group: Infrastructure
+          gethomepage.dev/group: Monitoring
           gethomepage.dev/icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/prometheus.svg
         hosts:
           - &host "prometheus.${SECRET_DOMAIN}"

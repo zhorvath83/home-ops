@@ -48,7 +48,7 @@ data:
         cpu: true
         memory: true
     - search:
-        provider: duckduckgo
+        provider: google
         target: _blank
         focus: true
     - openmeteo:
@@ -57,43 +57,108 @@ data:
         longitude: 19.040236
         units: metric
         cache: 10
+    - kubernetes:
+        cluster:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+          label: "k8s"
+        nodes:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
 
   services.yaml: |
     ---
-    - Infrastructure:
-        - Router:
-            href: http://192.168.1.1
-            icon: router.png
-            description: WAN Connection
-        - OMV:
-            href: http://192.168.1.10
-            icon: truenas-scale.png
-            description: NAS
-        - Proxmox:
-            href: https://192.168.1.6:8006
-            icon: proxmox.png
-            description: Proxmox Hypervisor
-
-  bookmarks.yaml: |
-    ---
     - Organizing:
-        - Mail & Calendar:
+        - Fastmail:
             - icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/fastmail.svg
               href: https://fastmail.com
+              description: Mail & Calendar
         - FB Messenger:
             - icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/facebook-messenger.svg
               href: https://messenger.com
+              description: Facebook
         - ToDoist:
             - icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/todoist.svg
               href: https://todoist.com
+              description: ToDo
+
     - Finance:
         - Buxfer:
             - icon: https://raw.githubusercontent.com/zhorvath83/dashboard-icons/master/png/buxfer.png
-              href: https://www.buxfer.com
-    - Cloud-Access:
+              href: https://buxfer.com
+              description: Personal finance management
+        - Erste NetBank:
+            - icon: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/erste-george.png
+              href: https://george.erstebank.hu
+              description: Erste NetBank
+        - MBH NetBank:
+            - icon: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/mkb_bank.svg
+              href: https://online.mbhbank.hu
+              description: MBH NetBank
+        - Erste NetBroker:
+            - icon: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/erste.png
+              href: https://netbroker.erstebroker.hu
+              description: Erste NetBroker
+        - MÁK WebKincstár:
+            - icon: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/mak.png
+              href: https://webkincstar.allamkincstar.gov.hu
+              description: Magyar Államkincstár
+
+    - Multimedia:
+        - Jellyfin:
+            - icon: jellyfin.png
+              href: http://192.168.1.21
+              description: Mediaserver
+
+    - Infrastructure:
+        # - Cloudflared:
+        #     icon: cloudflare
+        #     href: https://dash.cloudflare.com/
+        #     description: Cloudflare DNS and kubernetes tunnel configuration
+        #     widget:
+        #         type: cloudflared
+        #         accountid: ${cloudflare_account_id} 
+        #         tunnelid: ${cloudflare_tunnel_id}
+        #         key: ${cloudflare_token}
+        - Router:
+            href: http://192.168.1.1
+            icon: router.png
+            description: Manage and configure router
+        - OMV:
+            href: http://192.168.1.10
+            icon: omv.png
+            description: NAS
+        - Proxmox hypervisor:
+            href: https://192.168.1.5:8006
+            icon: proxmox.png
+            description: Infrastructure virtualization
+
+    - Downloading:
+        - Ncore:
+            - icon: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/ncore.png
+              href: https://ncore.pro
+              description: Ncore
+        - Bithumen:
+            - icon: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/bithumen.png
+              href: https://bithumen.be
+              description: Bithumen
+
+    - Monitoring:
+        - Discord:
+            - icon: discord.png
+              href: https://discord.com/channels/@me
+              description: Messaging service
+
+  bookmarks.yaml: |
+    ---
+    - Cloud services:
         - Cloudflare:
             - icon: cloudflare.png
-              href: https://www.cloudflare.com
+              href: https://dash.cloudflare.com
     - Developer:
         - Github:
             - abbr: GH
