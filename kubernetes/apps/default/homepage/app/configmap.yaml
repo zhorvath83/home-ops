@@ -92,19 +92,19 @@ data:
               href: https://buxfer.com
               description: Personal finance management
         - Erste NetBank:
-            - icon: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/erste-george.png
+            - icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/erste-george.png
               href: https://george.erstebank.hu
               description: Erste NetBank
         - MBH NetBank:
-            - icon: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/svg/mkb_bank.svg
+            - icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/svg/mkb_bank.svg
               href: https://online.mbhbank.hu
               description: MBH NetBank
         - Erste NetBroker:
-            - icon: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/erste.png
+            - icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/erste.png
               href: https://netbroker.erstebroker.hu
               description: Erste NetBroker
         - MÁK WebKincstár:
-            - icon: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/mak.png
+            - icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/mak.png
               href: https://webkincstar.allamkincstar.gov.hu
               description: Magyar Államkincstár
 
@@ -127,23 +127,23 @@ data:
         - Router:
             href: http://192.168.1.1
             icon: router.png
-            description: Manage and configure router
+            # description: Manage and configure router
         - OMV:
             href: http://192.168.1.10
             icon: omv.png
-            description: NAS
+            # description: NAS
         - Proxmox hypervisor:
             href: https://192.168.1.5:8006
             icon: proxmox.png
-            description: Infrastructure virtualization
+            # description: Infrastructure virtualization
 
     - Downloading:
         - Ncore:
-            - icon: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/ncore.png
+            - icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/ncore.png
               href: https://ncore.pro
               description: Ncore
         - Bithumen:
-            - icon: https://raw.githubusercontent.com/${SECRET_OWNER_USERNAME}/homer-icons/master/png/bithumen.png
+            - icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/bithumen.png
               href: https://bithumen.be
               description: Bithumen
 
