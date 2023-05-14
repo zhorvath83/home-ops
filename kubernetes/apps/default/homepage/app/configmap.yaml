@@ -74,45 +74,36 @@ data:
     ---
     - Organizing:
         - Fastmail:
-            - icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/fastmail.svg
-              href: https://fastmail.com
-              description: Mail & Calendar
+            href: https://fastmail.com
+            icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/fastmail.svg
         - FB Messenger:
-            - icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/facebook-messenger.svg
-              href: https://messenger.com
-              description: Facebook
+            href: https://messenger.com
+            icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/facebook-messenger.svg
         - ToDoist:
-            - icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/todoist.svg
-              href: https://todoist.com
-              description: ToDo
+            href: https://todoist.com
+            icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/todoist.svg
 
     - Finance:
         - Buxfer:
-            - icon: https://raw.githubusercontent.com/zhorvath83/dashboard-icons/master/png/buxfer.png
-              href: https://buxfer.com
-              description: Personal finance management
+            href: https://buxfer.com
+            icon: https://raw.githubusercontent.com/zhorvath83/dashboard-icons/master/png/buxfer.png
         - Erste NetBank:
-            - icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/erste-george.png
-              href: https://george.erstebank.hu
-              description: Erste NetBank
+            href: https://george.erstebank.hu
+            icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/erste-george.png
         - MBH NetBank:
-            - icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/svg/mkb_bank.svg
-              href: https://online.mbhbank.hu
-              description: MBH NetBank
+            href: https://online.mbhbank.hu
+            icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/svg/mkb_bank.svg
         - Erste NetBroker:
-            - icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/erste.png
-              href: https://netbroker.erstebroker.hu
-              description: Erste NetBroker
+            href: https://netbroker.erstebroker.hu
+            icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/erste.png
         - MÁK WebKincstár:
-            - icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/mak.png
-              href: https://webkincstar.allamkincstar.gov.hu
-              description: Magyar Államkincstár
+            href: https://webkincstar.allamkincstar.gov.hu
+            icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/mak.png
 
     - Multimedia:
         - Jellyfin:
-            - icon: jellyfin.png
-              href: http://192.168.1.21
-              description: Mediaserver
+            href: http://192.168.1.21
+            icon: jellyfin.png
 
     - Infrastructure:
         # - Cloudflared:
@@ -127,31 +118,25 @@ data:
         - Router:
             href: http://192.168.1.1
             icon: router.png
-            # description: Manage and configure router
         - OMV:
             href: http://192.168.1.10
             icon: omv.png
-            # description: NAS
         - Proxmox hypervisor:
             href: https://192.168.1.5:8006
             icon: proxmox.png
-            # description: Infrastructure virtualization
 
     - Downloading:
         - Ncore:
-            - icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/ncore.png
-              href: https://ncore.pro
-              description: Ncore
+            icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/ncore.png
+            href: https://ncore.pro
         - Bithumen:
-            - icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/bithumen.png
-              href: https://bithumen.be
-              description: Bithumen
+            icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/bithumen.png
+            href: https://bithumen.be
 
     - Monitoring:
         - Discord:
-            - icon: discord.png
-              href: https://discord.com/channels/@me
-              description: Messaging service
+            icon: discord.png
+            href: https://discord.com/channels/@me
 
   bookmarks.yaml: |
     ---
