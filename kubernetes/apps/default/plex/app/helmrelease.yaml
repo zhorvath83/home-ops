@@ -35,6 +35,10 @@ spec:
     env:
       TZ: Europe/Budapest
 
+    envFrom:
+      - secretRef:
+          name: plex-secret
+
     service:
       main:
         ports:
