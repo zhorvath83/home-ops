@@ -57,18 +57,6 @@ data:
         longitude: 19.040236
         units: metric
         cache: 10
-    - kubernetes:
-        cluster:
-          show: true
-          cpu: true
-          memory: true
-          showLabel: true
-          label: "k8s"
-        nodes:
-          show: true
-          cpu: true
-          memory: true
-          showLabel: true
 
   services.yaml: |
     ---
@@ -118,9 +106,9 @@ data:
         - Router:
             href: http://192.168.1.1
             icon: router.png
-        - OMV:
+        - OpenMediaVault:
             href: http://192.168.1.10
-            icon: omv.png
+            icon: openmediavault.svg
         - Proxmox hypervisor:
             href: https://192.168.1.5:8006
             icon: proxmox.png
