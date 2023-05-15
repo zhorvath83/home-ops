@@ -1,4 +1,6 @@
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
+metadata:
+  name: cloudflared-kubeletconfig
 allowedUnsafeSysctls:
   - "net.core.rmem_max"
