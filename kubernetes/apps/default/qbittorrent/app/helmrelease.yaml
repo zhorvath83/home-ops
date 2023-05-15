@@ -50,9 +50,9 @@ spec:
           metallb.universe.tf/loadBalancerIPs: ${CLUSTER_SVC_QBITTORRENT_IP}
         externalTrafficPolicy: Local
         ports:
-          # http:
-          #   port: 80
-          #   targetPort: 8080
+          http:
+            port: 80
+            targetPort: 8080
           bittorrent-tcp:
             enabled: true
             port: 50413
