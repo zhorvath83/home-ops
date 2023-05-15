@@ -12,9 +12,9 @@ _managed by Flux CD (GitOps) and Renovate_
 
 <div align="center">
 
-[![k3s](https://img.shields.io/badge/k3s-v1.23.6-brightgreen?style=for-the-badge&logo=kubernetes&logoColor=white)](https://k3s.io/)
+[![Kubernetes](https://img.shields.io/badge/v1.27-blue?style=for-the-badge&logo=kubernetes&logoColor=white)](https://k3s.io/)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white&style=for-the-badge)](https://github.com/pre-commit/pre-commit)
-[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/zhorvath83/home-ops/Schedule%20-%20Renovate?label=renovate&logo=renovatebot&style=for-the-badge)](https://github.com/zhorvath83/home-ops/actions/workflows/schedule-renovate.yaml)
+[![Renovate status](https://img.shields.io/badge/renovate-enabled-brightgreen.svg)](https://github.com/zhorvath83/home-ops/issues/631)
 [![Lines of code](https://img.shields.io/tokei/lines/github/zhorvath83/home-ops?style=for-the-badge&color=brightgreen&label=lines&logo=codefactor&logoColor=white)](https://github.com/zhorvath83/home-ops/graphs/contributors)
 
 </div>
