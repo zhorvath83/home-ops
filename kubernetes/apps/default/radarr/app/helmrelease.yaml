@@ -105,7 +105,7 @@ spec:
       - name: config
         mountPath: /config
         accessMode: ReadWriteOnce
-        size: 15Gi
+        size: 5Gi
         storageClass: democratic-csi-local-hostpath
 
     persistence:

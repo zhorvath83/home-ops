@@ -1,17 +1,18 @@
 cache:
   path: $PTS_CACHE_DIR/trakt_cache
 
-excluded-libraries:
-  - Other Videos
-  - Series
-  - Films
+excluded-libraries: []
 
 config:
   dotenv_override: true
 
+plex:
+  timeout: 30
+
 logging:
   append: false
   debug: false
+  console_time: true
   filename: plextraktsync.log
 
 sync:

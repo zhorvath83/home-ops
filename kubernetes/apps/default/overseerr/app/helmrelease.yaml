@@ -2,7 +2,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
-  name: sonarr
+  name: overseerr
   namespace: default
 spec:
   interval: 15m
@@ -30,21 +30,15 @@ spec:
   values:
     controller:
       type: statefulset
-      annotations:
-        reloader.stakater.com/auto: "true"
 
     image:
-      repository: ghcr.io/onedr0p/sonarr-develop
-      tag: 4.0.0.493@sha256:4b4be97c39c4a3cfc5d2b47ac008f53e5aadd20432cc85fdac0dc34eb615abbe
+      repository: ghcr.io/sct/overseerr
+      tag: 1.32.5
 
     env:
       TZ: Europe/Budapest
-      SONARR__INSTANCE_NAME: Sonarr
-      SONARR__PORT: &port 80
-      SONARR__LOG_LEVEL: info
-    envFrom:
-      - secretRef:
-          name: sonarr-secret
+      LOG_LEVEL: "info"
+      PORT: &port 80
 
     service:
       main:
@@ -52,35 +46,17 @@ spec:
           http:
             port: *port
 
-    probes:
-      liveness: &probes
-        enabled: true
-        custom: true
-        spec:
-          httpGet:
-            path: /ping
-            port: *port
-          initialDelaySeconds: 0
-          periodSeconds: 10
-          timeoutSeconds: 1
-          failureThreshold: 3
-
-      readiness: *probes
-
-      startup:
-        enabled: false
-
     ingress:
       main:
         enabled: true
         ingressClassName: nginx
         annotations:
           gethomepage.dev/enabled: "true"
-          gethomepage.dev/name: Sonarr
+          gethomepage.dev/name: Overseerr
           gethomepage.dev/group: Multimedia
-          gethomepage.dev/icon: sonarr.png
+          gethomepage.dev/icon: overseerr.png
         hosts:
-          - host: &host "{{ .Release.Name }}.${PUBLIC_DOMAIN}"
+          - host: &host "requests.${PUBLIC_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix
@@ -93,31 +69,27 @@ spec:
       runAsGroup: 10001
       fsGroup: 10001
       fsGroupChangePolicy: OnRootMismatch
+
+    securityContext:
       privileged: false
       allowPrivilegeEscalation: false
       readOnlyRootFilesystem: true
+      seccompProfile:
+        type: RuntimeDefault
       capabilities:
         drop:
           - ALL
 
     volumeClaimTemplates:
       - name: config
-        mountPath: /config
+        mountPath: /app/config
         accessMode: ReadWriteOnce
-        size: 5Gi
+        size: 1Gi
         storageClass: democratic-csi-local-hostpath
-
-    persistence:
-      nfs-media:
-        enabled: true
-        type: nfs
-        server: ${CLUSTER_LAN_NAS_IP}
-        path: /media
-        mountPath: /media
 
     resources:
       requests:
         cpu: 10m
         memory: 250Mi
       limits:
-        memory: 2000Mi
+        memory: 1500Mi
