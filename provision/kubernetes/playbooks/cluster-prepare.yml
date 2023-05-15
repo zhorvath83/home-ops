@@ -78,6 +78,7 @@
               net.bridge.bridge-nf-call-ip6tables: 1
               fs.inotify.max_user_watches: 524288
               fs.inotify.max_user_instances: 512
+              net.core.rmem_max: 2500000
         - name: System Configuration (2) | Disable swap at runtime | Debian
           ansible.builtin.command: swapoff -a
           when:

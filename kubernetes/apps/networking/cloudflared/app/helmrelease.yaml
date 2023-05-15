@@ -52,9 +52,6 @@ spec:
             port: 9090
 
     podSecurityContext:
-      # sysctls:
-      #   - name: net.core.rmem_max
-      #     value: "2500000"
       runAsUser: 10001
       runAsGroup: 10001
       fsGroup: 10001
