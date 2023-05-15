@@ -28,6 +28,9 @@ spec:
     keepHistory: false
 
   values:
+    controller:
+      type: statefulset
+
     image:
       repository: docker.io/zadam/trilium
       tag: 0.59.4

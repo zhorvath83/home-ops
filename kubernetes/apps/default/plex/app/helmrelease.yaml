@@ -28,6 +28,9 @@ spec:
     keepHistory: false
 
   values:
+    controller:
+      type: statefulset
+
     image:
       repository: ghcr.io/onedr0p/plex
       tag: 1.32.1.6999-91e1e2e2c@sha256:fa9bbdbd8a73d110c703839619b9e1cc13524187b00662955235c02e07cef50c
