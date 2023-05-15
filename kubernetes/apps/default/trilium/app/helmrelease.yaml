@@ -82,7 +82,7 @@ spec:
           gethomepage.dev/group: Cloud
           gethomepage.dev/icon: trilium.png
         hosts:
-          - host: &host "notes.${SECRET_DOMAIN}"
+          - host: &host "notes.${PUBLIC_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix

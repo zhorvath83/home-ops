@@ -82,7 +82,7 @@ spec:
           gethomepage.dev/group: Cloud
           gethomepage.dev/icon: photoview.png
         hosts:
-          - host: &host "photos.${SECRET_DOMAIN}"
+          - host: &host "photos.${PUBLIC_DOMAIN}"
             paths:
               - path: /
         tls:

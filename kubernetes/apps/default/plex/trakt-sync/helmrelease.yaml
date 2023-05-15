@@ -1,0 +1,97 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: plex-trakt-sync
+  namespace: default
+spec:
+  chart:
+    spec:
+      chart: app-template
+      version: 1.5.0
+      interval: 30m
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  interval: 30m
+  values:
+    controller:
+      type: statefulset
+      annotations:
+        reloader.stakater.com/auto: "true"
+
+    image:
+      repository: ghcr.io/taxel/plextraktsync
+      tag: 0.26.4
+
+    args:
+      - watch
+
+    enableServiceLinks: false
+
+    env:
+      PLEX_BASEURL: http://plex.default.svc.cluster.local:32400
+      PLEX_LOCALURL: http://plex.default.svc.cluster.local:32400
+      PLEX_TOKEN:
+        valueFrom:
+          secretKeyRef:
+            name: plex-trakt-sync-secret
+            key: PLEX_TOKEN
+      PLEX_USERNAME: zhorvath83
+      TRAKT_USERNAME: zhorvath83
+
+    service:
+      main:
+        enabled: false
+
+    ingress:
+      main:
+        enabled: false
+
+    persistence:
+      config-yaml:
+        enabled: true
+        mountPath: /app/config/config.yml
+        name: plex-tract-sync-configmap
+        readOnly: true
+        subPath: config.yml
+        type: configMap
+
+    podSecurityContext:
+      runAsUser: 10001
+      runAsGroup: 10001
+      fsGroup: 10001
+      fsGroupChangePolicy: OnRootMismatch
+
+    securityContext:
+      privileged: false
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      seccompProfile:
+        type: RuntimeDefault
+      capabilities:
+        drop:
+          - ALL
+
+    probes:
+      liveness:
+        enabled: false
+      readiness:
+        enabled: false
+      startup:
+        enabled: false
+
+    resources:
+      requests:
+        cpu: 25m
+        memory: 50M
+      limits:
+        memory: 101M
+
+    volumeClaimTemplates:
+      - name: config
+        mountPath: /app/config
+        accessMode: ReadWriteOnce
+        size: 1Gi
+        storageClass: democratic-csi-local-hostpath

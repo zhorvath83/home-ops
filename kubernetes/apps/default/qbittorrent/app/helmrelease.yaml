@@ -44,41 +44,22 @@ spec:
 
     service:
       main:
-        ports:
-          http:
-            port: 80
-            targetPort: 8080
         type: LoadBalancer
         annotations:
-          metallb.universe.tf/allow-shared-ip: qbittorrent-svc
           metallb.universe.tf/loadBalancerIPs: ${CLUSTER_SVC_QBITTORRENT_IP}
         externalTrafficPolicy: Local
-
-      bittorrent-tcp:
-        enabled: true
-        type: LoadBalancer
-        annotations:
-          metallb.universe.tf/allow-shared-ip: qbittorrent-svc
-          metallb.universe.tf/loadBalancerIPs: ${CLUSTER_SVC_QBITTORRENT_IP}
         ports:
+          # http:
+          #   port: 80
+          #   targetPort: 8080
           bittorrent-tcp:
             enabled: true
             port: 50413
             protocol: TCP
-        externalTrafficPolicy: Local
-
-      bittorrent-udp:
-        enabled: true
-        type: LoadBalancer
-        annotations:
-          metallb.universe.tf/allow-shared-ip: qbittorrent-svc
-          metallb.universe.tf/loadBalancerIPs: ${CLUSTER_SVC_QBITTORRENT_IP}
-        ports:
           bittorrent-udp:
             enabled: true
             port: 50413
             protocol: UDP
-        externalTrafficPolicy: Local
 
     ingress:
       main:
@@ -90,7 +71,7 @@ spec:
           gethomepage.dev/group: Downloading
           gethomepage.dev/icon: qbittorrent.png
         hosts:
-          - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
+          - host: &host "{{ .Release.Name }}.${PUBLIC_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix

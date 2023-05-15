@@ -82,10 +82,10 @@ spec:
 
       extraArgs:
         # https://kubernetes.github.io/ingress-nginx/user-guide/cli-arguments/
-        default-ssl-certificate: "networking/${SECRET_DOMAIN/./-}-tls"
+        default-ssl-certificate: "networking/${PUBLIC_DOMAIN/./-}-tls"
         # Sets Load-Balancer hostname in the ingress object
         # Used by External DNS when creating CNAME DNS records
-        publish-status-address: "tunnel.${SECRET_DOMAIN}"
+        publish-status-address: "tunnel.${PUBLIC_DOMAIN}"
         update-status: true
 
       topologySpreadConstraints:

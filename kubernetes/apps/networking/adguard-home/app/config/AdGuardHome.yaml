@@ -86,9 +86,9 @@ dns:
     yandex: true
     youtube: true
   rewrites:
-    - domain: "jellyfin.${SECRET_DOMAIN}"
+    - domain: "jellyfin.${PUBLIC_DOMAIN}"
       answer: "${CLUSTER_SVC_JELLYFIN_IP}"
-    - domain: "*.${SECRET_DOMAIN}"
+    - domain: "*.${PUBLIC_DOMAIN}"
       answer: "${CLUSTER_SVC_INGRESS_CONTROLLER_IP}"
   blocked_services:
     - tinder

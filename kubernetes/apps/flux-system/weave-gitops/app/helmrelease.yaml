@@ -46,7 +46,7 @@ spec:
         gethomepage.dev/group: Infrastructure
         gethomepage.dev/icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/flux-cd.svg
       hosts:
-        - host: &host "gitops.${SECRET_DOMAIN}"
+        - host: &host "gitops.${PUBLIC_DOMAIN}"
           paths:
             - path: /
               pathType: Prefix

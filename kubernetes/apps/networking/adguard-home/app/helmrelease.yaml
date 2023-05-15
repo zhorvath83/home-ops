@@ -124,7 +124,7 @@ spec:
           gethomepage.dev/group: Infrastructure
           gethomepage.dev/icon: adguard-home.png
         hosts:
-          - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
+          - host: &host "{{ .Release.Name }}.${PUBLIC_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix

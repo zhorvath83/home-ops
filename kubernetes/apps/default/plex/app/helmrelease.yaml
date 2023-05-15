@@ -34,6 +34,9 @@ spec:
 
     env:
       TZ: Europe/Budapest
+      HOSTNAME: PlexServer
+      ADVERTISE_IP: "https://plex.${PUBLIC_DOMAIN},http://${CLUSTER_SVC_MEDIASERVER_IP}:32400"
+      ALLOWED_NETWORKS: "10.42.0.0/16,10.43.0.0/16"
 
     envFrom:
       - secretRef:
@@ -41,9 +44,53 @@ spec:
 
     service:
       main:
+        type: LoadBalancer
+        externalTrafficPolicy: Local
+        annotations:
+          metallb.universe.tf/loadBalancerIPs: "${CLUSTER_SVC_MEDIASERVER_IP}"
         ports:
           http:
-            port: 32400
+            port: &port 32400
+          # Plex DLNA Server
+          # https://support.plex.tv/articles/200350536-dlna/
+          # dnla-tcp:
+          #   enabled: true
+          #   port: 32469
+          #   protocol: TCP
+          # dnla-udp:
+          #   enabled: true
+          #   port: 1900
+          #   protocol: UDP
+          # GDM Network discovery
+          # https://support.plex.tv/articles/200430283-network/
+          gdm-1-udp:
+            enabled: true
+            port: 32410
+            protocol: UDP
+          gdm-2-udp:
+            enabled: true
+            port: 32412
+            protocol: UDP
+          gdm-3-udp:
+            enabled: true
+            port: 32413
+            protocol: UDP
+          gdm-4-udp:
+            enabled: true
+            port: 32414
+            protocol: UDP
+    probes:
+      liveness:
+        enabled: true
+        custom: true
+        spec:
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 1
+          failureThreshold: 3
+          httpGet:
+            path: /identity
+            port: *port
 
     ingress:
       main:
@@ -55,7 +102,7 @@ spec:
           gethomepage.dev/group: Multimedia
           gethomepage.dev/icon: plex.png
         hosts:
-          - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
+          - host: &host "plex.${PUBLIC_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix

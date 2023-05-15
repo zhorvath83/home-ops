@@ -1,7 +1,7 @@
 ---
 ingress:
-  - hostname: "*.${SECRET_DOMAIN}"
+  - hostname: "*.${PUBLIC_DOMAIN}"
     service: "https://ingress-nginx-controller.networking.svc.cluster.local"
     originRequest:
-      originServerName: "${SECRET_DOMAIN}"
+      originServerName: "${PUBLIC_DOMAIN}"
   - service: http_status:404
