@@ -12,10 +12,10 @@ _managed by Flux CD (GitOps) and Renovate_
 
 <div align="center">
 
-[![Kubernetes](https://img.shields.io/badge/v1.27-blue?style=for-the-badge&logo=kubernetes&logoColor=white)](https://k3s.io/)
-[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white&style=for-the-badge)](https://github.com/pre-commit/pre-commit)
+[![Kubernetes](https://img.shields.io/badge/v1.27-blue?logo=kubernetes&logoColor=white)](https://k3s.io/)
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
 [![Renovate status](https://img.shields.io/badge/renovate-enabled-brightgreen.svg)](https://github.com/zhorvath83/home-ops/issues/631)
-[![Lines of code](https://img.shields.io/tokei/lines/github/zhorvath83/home-ops?style=for-the-badge&color=brightgreen&label=lines&logo=codefactor&logoColor=white)](https://github.com/zhorvath83/home-ops/graphs/contributors)
+[![Lines of code](https://img.shields.io/tokei/lines/github/zhorvath83/home-ops?color=brightgreen&label=lines&logo=codefactor&logoColor=white)](https://github.com/zhorvath83/home-ops/graphs/contributors)
 
 </div>
 
