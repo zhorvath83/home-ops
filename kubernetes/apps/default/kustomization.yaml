@@ -14,10 +14,10 @@ resources:
   - ./photoview/ks.yaml
   - ./homepage/ks.yaml
   - ./trilium/ks.yaml
-  # - ./prowlarr/ks.yaml
-  # - ./radarr/ks.yaml
-  # - ./recyclarr/ks.yaml
-  # - ./sonarr/ks.yaml
-  # - ./unpackerr/ks.yaml
-  # - ./overseerr/ks.yaml
-  # - ./tautulli/ks.yaml
+  - ./prowlarr/ks.yaml
+  - ./radarr/ks.yaml
+  - ./recyclarr/ks.yaml
+  - ./sonarr/ks.yaml
+  - ./unpackerr/ks.yaml
+  - ./overseerr/ks.yaml
+  - ./tautulli/ks.yaml
