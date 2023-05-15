@@ -78,14 +78,21 @@ spec:
         enabled: false
 
     podSecurityContext:
-      runAsUser: 999
-      runAsGroup: 999
+      runAsUser: 10001
+      runAsGroup: 10001
+      fsGroup: 10001
+      fsGroupChangePolicy: OnRootMismatch
+
+    securityContext:
       privileged: false
       allowPrivilegeEscalation: false
-      readOnlyRootFilesystem: true
+      # readOnlyRootFilesystem: true
+      seccompProfile:
+        type: RuntimeDefault
       capabilities:
         drop:
           - ALL
+
     persistence:
       shared:
         enabled: true

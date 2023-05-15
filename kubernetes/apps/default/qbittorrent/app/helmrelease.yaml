@@ -51,8 +51,7 @@ spec:
         externalTrafficPolicy: Local
         ports:
           http:
-            port: 80
-            targetPort: 8080
+            port: 8080
           bittorrent-tcp:
             enabled: true
             port: 50413
@@ -84,10 +83,14 @@ spec:
       runAsUser: 10001
       runAsGroup: 10001
       fsGroup: 10001
-      fsGroupChangePolicy: "OnRootMismatch"
+      fsGroupChangePolicy: OnRootMismatch
+
+    securityContext:
       privileged: false
       allowPrivilegeEscalation: false
-      readOnlyRootFilesystem: true
+      # readOnlyRootFilesystem: true
+      seccompProfile:
+        type: RuntimeDefault
       capabilities:
         drop:
           - ALL

@@ -25,43 +25,68 @@ spec:
       retries: 3
   uninstall:
     keepHistory: false
+
   values:
     installCRDs: true
+
     podSecurityContext:
       runAsUser: 10001
       runAsGroup: 10001
+      fsGroup: 10001
+      fsGroupChangePolicy: OnRootMismatch
+
+    securityContext:
       privileged: false
       allowPrivilegeEscalation: false
       readOnlyRootFilesystem: true
+      seccompProfile:
+        type: RuntimeDefault
       capabilities:
         drop:
           - ALL
+
     serviceMonitor:
       enabled: true
       interval: 1m
+
     webhook:
       podSecurityContext:
         runAsUser: 10001
         runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+
+      securityContext:
         privileged: false
         allowPrivilegeEscalation: false
         readOnlyRootFilesystem: true
+        seccompProfile:
+          type: RuntimeDefault
         capabilities:
           drop:
             - ALL
+
       serviceMonitor:
         enabled: true
         interval: 1m
+
     certController:
       podSecurityContext:
         runAsUser: 10001
         runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+
+      securityContext:
         privileged: false
         allowPrivilegeEscalation: false
         readOnlyRootFilesystem: true
+        seccompProfile:
+          type: RuntimeDefault
         capabilities:
           drop:
             - ALL
+
       serviceMonitor:
         enabled: true
         interval: 1m
