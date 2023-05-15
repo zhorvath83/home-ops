@@ -100,7 +100,7 @@ data:
         #     description: Cloudflare DNS and kubernetes tunnel configuration
         #     widget:
         #         type: cloudflared
-        #         accountid: ${cloudflare_account_id} 
+        #         accountid: ${cloudflare_account_id}
         #         tunnelid: ${cloudflare_tunnel_id}
         #         key: ${cloudflare_token}
         - Router:
