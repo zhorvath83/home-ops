@@ -73,7 +73,7 @@ spec:
     securityContext:
       privileged: false
       allowPrivilegeEscalation: false
-      readOnlyRootFilesystem: true
+      # readOnlyRootFilesystem: true
       seccompProfile:
         type: RuntimeDefault
       capabilities:

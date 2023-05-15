@@ -61,9 +61,13 @@ spec:
       runAsGroup: 10001
       fsGroup: 10001
       fsGroupChangePolicy: OnRootMismatch
+
+    securityContext:
       privileged: false
       allowPrivilegeEscalation: false
-      readOnlyRootFilesystem: true
+      # readOnlyRootFilesystem: true
+      seccompProfile:
+        type: RuntimeDefault
       capabilities:
         drop:
           - ALL
