@@ -93,7 +93,7 @@ spec:
     securityContext:
       privileged: false
       allowPrivilegeEscalation: false
-      readOnlyRootFilesystem: true
+      # Could not handle readOnlyRootFilesystem
       seccompProfile:
         type: RuntimeDefault
       capabilities:
