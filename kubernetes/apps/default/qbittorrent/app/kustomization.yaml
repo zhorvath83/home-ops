@@ -13,5 +13,6 @@ configMapGenerator:
     files:
       - config/qBittorrent.conf
       - config/watched_folders.json
+      - config/categories.json
 generatorOptions:
   disableNameSuffixHash: true
