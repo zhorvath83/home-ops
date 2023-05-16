@@ -2,7 +2,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
-  name: prowlarr
+  name: bazarr
   namespace: default
 spec:
   interval: 15m
@@ -28,30 +28,24 @@ spec:
     keepHistory: false
 
   values:
+
     controller:
       type: statefulset
       annotations:
         reloader.stakater.com/auto: "true"
 
     image:
-      repository: ghcr.io/onedr0p/prowlarr-develop
-      tag: 1.4.1.3258@sha256:ffb9ec9bf6561a43f0219209782c111d5519f825cc00936075eb5bf558f11caa
+      repository: ghcr.io/onedr0p/bazarr
+      tag: 1.2.0@sha256:5e2fb884452dbfafba155a6aea6c0d0274905d159456cf6d733637b5ed9e1c13
 
     env:
       TZ: Europe/Budapest
-      PROWLARR__INSTANCE_NAME: Prowlarr
-      PROWLARR__PORT: &port 80
-      PROWLARR__LOG_LEVEL: info
-      PROWLARR__AUTHENTICATION_METHOD: External
-    envFrom:
-      - secretRef:
-          name: prowlarr-secret
 
     service:
       main:
         ports:
           http:
-            port: *port
+            port: 6767
 
     ingress:
       main:
@@ -59,9 +53,9 @@ spec:
         ingressClassName: nginx
         annotations:
           gethomepage.dev/enabled: "true"
-          gethomepage.dev/name: Prowlarr
+          gethomepage.dev/name: Bazarr
           gethomepage.dev/group: Downloading
-          gethomepage.dev/icon: prowlarr.png
+          gethomepage.dev/icon: bazarr.png
         hosts:
           - host: &host "{{ .Release.Name }}.${PUBLIC_DOMAIN}"
             paths:
@@ -80,7 +74,7 @@ spec:
     securityContext:
       privileged: false
       allowPrivilegeEscalation: false
-      # readOnlyRootFilesystem: true
+      readOnlyRootFilesystem: true
       seccompProfile:
         type: RuntimeDefault
       capabilities:
@@ -94,9 +88,34 @@ spec:
         size: 1Gi
         storageClass: democratic-csi-local-hostpath
 
+    persistence:
+      nfs-nas-media:
+        enabled: true
+        type: nfs
+        server: ${CLUSTER_LAN_NAS_IP}
+        path: /media
+        mountPath: /media
+      add-ons:
+        enabled: true
+        type: emptyDir
+        mountPath: /add-ons
+
     resources:
       requests:
         cpu: 10m
-        memory: 100Mi
+        memory: 128Mi
       limits:
-        memory: 500Mi
+        memory: 768Mi
+
+    sidecars:
+      subcleaner:
+        image: registry.k8s.io/git-sync/git-sync:v3.6.5
+        imagePullPolicy: IfNotPresent
+        args:
+          - --repo=https://github.com/KBlixt/subcleaner.git
+          - --branch=master
+          - --depth=1
+          - --wait=21600 # 6 hours
+          - --root=/add-ons/subcleaner
+        volumeMounts:
+          - { name: add-ons, mountPath: /add-ons }
