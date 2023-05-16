@@ -80,6 +80,12 @@ spec:
         drop:
           - ALL
 
+    persistence:
+      cache:
+        enabled: true
+        type: emptyDir
+        mountPath: /tmp/.yarn-cache
+
     volumeClaimTemplates:
       - name: config
         mountPath: /app/config
