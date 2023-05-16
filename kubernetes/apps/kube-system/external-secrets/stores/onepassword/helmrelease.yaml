@@ -29,7 +29,7 @@ spec:
   values:
 
     initContainers:
-      sqlite-permissions:
+      permissions:
         image: public.ecr.aws/docker/library/busybox:1.36.0
         securityContext:
           runAsUser: 0
@@ -39,7 +39,7 @@ spec:
           - "/bin/sh"
           - "-c"
         args:
-          - "mkdir -p /home/opuser/.op/data && mkdir -p /home/opuser/.op/config && chown -R 10001 /home/opuser && chmod -R 700 /home/opuser && chmod -f -R 600 /home/opuser/.op/config || :"
+          - "mkdir -p /home/opuser/.op/data && chown -R 999 /home/opuser && chmod -R 700 /home/opuser && chmod -f -R 600 /home/opuser/.op/config || :"
         volumeMounts:
           - mountPath: /home/opuser/.op/data
             name: shared-data
@@ -95,9 +95,9 @@ spec:
         enabled: false
 
     podSecurityContext:
-      runAsUser: 10001
-      runAsGroup: 10001
-      fsGroup: 10001
+      runAsUser: 999
+      runAsGroup: 999
+      fsGroup: 999
       fsGroupChangePolicy: OnRootMismatch
 
     securityContext:
