@@ -38,6 +38,8 @@ spec:
       tag: 0.11.2
 
     env:
+      PUID: "10001"
+      PGID: "10001"
       TZ: Europe/Budapest
       UN_SONARR_0_URL: http://sonarr.default.svc.cluster.local:8989
       UN_SONARR_0_PATHS_0: /complete/series
@@ -51,21 +53,20 @@ spec:
       main:
         enabled: false
 
-    podSecurityContext:
-      runAsUser: 10001
-      runAsGroup: 10001
-      fsGroup: 10001
-      fsGroupChangePolicy: OnRootMismatch
-
-    securityContext:
-      privileged: false
-      allowPrivilegeEscalation: false
-      readOnlyRootFilesystem: true
-      seccompProfile:
-        type: RuntimeDefault
-      capabilities:
-        drop:
-          - ALL
+    # podSecurityContext:
+    #   runAsUser: 10001
+    #   runAsGroup: 10001
+    #   fsGroup: 10001
+    #   fsGroupChangePolicy: OnRootMismatch
+    # securityContext:
+    #   privileged: false
+    #   allowPrivilegeEscalation: false
+    #   readOnlyRootFilesystem: true
+    #   seccompProfile:
+    #     type: RuntimeDefault
+    #   capabilities:
+    #     drop:
+    #       - ALL
 
     persistence:
       complete:

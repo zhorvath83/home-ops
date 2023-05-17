@@ -36,6 +36,8 @@ spec:
 
     env:
       TZ: "Europe/Budapest"
+      PUID: "10001"
+      PGID: "10001"
       JELLYFIN_CACHE_DIR: "/config/cache"
       DOTNET_SYSTEM_IO_DISABLEFILELOCKING: "true"
       JELLYFIN_PublishedServerUrl: "http://${CLUSTER_SVC_JELLYFIN_IP}"
@@ -84,21 +86,20 @@ spec:
       main:
         enabled: false
 
-    podSecurityContext:
-      runAsUser: 10001
-      runAsGroup: 10001
-      fsGroup: 10001
-      fsGroupChangePolicy: OnRootMismatch
-
-    securityContext:
-      privileged: false
-      allowPrivilegeEscalation: false
-      # Could not handle readOnlyRootFilesystem
-      seccompProfile:
-        type: RuntimeDefault
-      capabilities:
-        drop:
-          - ALL
+    # podSecurityContext:
+    #   runAsUser: 10001
+    #   runAsGroup: 10001
+    #   fsGroup: 10001
+    #   fsGroupChangePolicy: OnRootMismatch
+    # securityContext:
+    #   privileged: false
+    #   allowPrivilegeEscalation: false
+    #   # Could not handle readOnlyRootFilesystem
+    #   seccompProfile:
+    #     type: RuntimeDefault
+    #   capabilities:
+    #     drop:
+    #       - ALL
 
     persistence:
       config:

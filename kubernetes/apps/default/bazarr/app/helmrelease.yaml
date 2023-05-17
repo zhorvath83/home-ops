@@ -39,6 +39,8 @@ spec:
       tag: 1.2.1@sha256:d483c4b41619459ff28c5feca950166b47fbd7b978136f05ec2a67fcf0220fc3
 
     env:
+      PUID: "10001"
+      PGID: "10001"
       TZ: Europe/Budapest
 
     service:
@@ -65,21 +67,20 @@ spec:
           - hosts:
               - *host
 
-    podSecurityContext:
-      runAsUser: 10001
-      runAsGroup: 10001
-      fsGroup: 10001
-      fsGroupChangePolicy: OnRootMismatch
-
-    securityContext:
-      privileged: false
-      allowPrivilegeEscalation: false
-      readOnlyRootFilesystem: true
-      seccompProfile:
-        type: RuntimeDefault
-      capabilities:
-        drop:
-          - ALL
+    # podSecurityContext:
+    #   runAsUser: 10001
+    #   runAsGroup: 10001
+    #   fsGroup: 10001
+    #   fsGroupChangePolicy: OnRootMismatch
+    # securityContext:
+    #   privileged: false
+    #   allowPrivilegeEscalation: false
+    #   readOnlyRootFilesystem: true
+    #   seccompProfile:
+    #     type: RuntimeDefault
+    #   capabilities:
+    #     drop:
+    #       - ALL
 
     persistence:
       config:
