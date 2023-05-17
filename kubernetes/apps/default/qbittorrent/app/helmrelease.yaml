@@ -98,7 +98,7 @@ spec:
     persistence:
       config:
         enabled: true
-        existingClaim: appdata
+        existingClaim: *app
         mountPath: /config
         subPath: qbittorrent
 
