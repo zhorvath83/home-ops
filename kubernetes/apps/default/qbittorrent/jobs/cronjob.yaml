@@ -34,7 +34,7 @@ spec:
                     kubectl cp /tmp/ipfilter.dat default/$QBITTORRENT_POD:/config/ipfilter.dat
                     kubectl rollout restart statefulset qbittorrent --namespace default
                   else
-                    echo "qbittorrent deployment not found"
+                    echo "qbittorrent statefulset not found"
                     exit 1
                   fi
           restartPolicy: Never
