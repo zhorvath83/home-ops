@@ -15,7 +15,7 @@ spec:
         name: bjw-s
         namespace: flux-system
 
-  maxHistory: 3
+  # maxHistory: 3
   install:
     createNamespace: true
     remediation:
@@ -35,8 +35,8 @@ spec:
         reloader.stakater.com/auto: "true"
 
     image:
-      repository: ghcr.io/onedr0p/bazarr
-      tag: 1.2.0@sha256:5e2fb884452dbfafba155a6aea6c0d0274905d159456cf6d733637b5ed9e1c13
+      repository: lscr.io/linuxserver/bazarr
+      tag: 1.2.1@sha256:d483c4b41619459ff28c5feca950166b47fbd7b978136f05ec2a67fcf0220fc3
 
     env:
       TZ: Europe/Budapest
@@ -81,14 +81,10 @@ spec:
         drop:
           - ALL
 
-    volumeClaimTemplates:
-      - name: config
-        mountPath: /config
-        accessMode: ReadWriteOnce
-        size: 1Gi
-        storageClass: democratic-csi-local-hostpath
-
     persistence:
+      config:
+        enabled: true
+        existingClaim: *app
       nfs-nas-media:
         enabled: true
         type: nfs

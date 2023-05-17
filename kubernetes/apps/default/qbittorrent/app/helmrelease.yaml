@@ -15,7 +15,7 @@ spec:
         name: bjw-s
         namespace: flux-system
 
-  maxHistory: 3
+  # maxHistory: 3
   install:
     createNamespace: true
     remediation:
@@ -34,14 +34,13 @@ spec:
         reloader.stakater.com/auto: "true"
 
     image:
-      repository: ghcr.io/onedr0p/qbittorrent
-      tag: 4.5.2@sha256:0efdd8d3ef3964d658d78ea7789efa285e9c01d1d436da2903cfde462a7fe67a
+      repository: lscr.io/linuxserver/qbittorrent
+      tag: 4.5.2@sha256:5e2a701ff0eed1f644eb9eaf44f9462e549173fa2994ed039347cd7c518f3b21
 
     hostname: qbittorrent
 
     env:
       TZ: "Europe/Budapest"
-      QBITTORRENT__USE_PROFILE: "true"
 
     service:
       main:

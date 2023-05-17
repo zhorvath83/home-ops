@@ -15,7 +15,7 @@ spec:
         name: bjw-s
         namespace: flux-system
 
-  maxHistory: 3
+  # maxHistory: 3
   install:
     createNamespace: true
     remediation:
@@ -31,8 +31,8 @@ spec:
     controller:
       type: statefulset
     image:
-      repository: jellyfin/jellyfin
-      tag: 10.8.10
+      repository: lscr.io/linuxserver/jellyfin
+      tag: 10.8.10@sha256:0ff77ba387cea5c6071b4b2bd388720a428d44e7d9232df10bd9e70811589d45
 
     env:
       TZ: "Europe/Budapest"

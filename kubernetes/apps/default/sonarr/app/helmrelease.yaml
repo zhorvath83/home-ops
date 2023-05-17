@@ -15,7 +15,7 @@ spec:
         name: bjw-s
         namespace: flux-system
 
-  maxHistory: 3
+  # maxHistory: 3
   install:
     createNamespace: true
     remediation:
@@ -34,23 +34,17 @@ spec:
         reloader.stakater.com/auto: "true"
 
     image:
-      repository: ghcr.io/onedr0p/sonarr-develop
-      tag: 4.0.0.493@sha256:4b4be97c39c4a3cfc5d2b47ac008f53e5aadd20432cc85fdac0dc34eb615abbe
+      repository: lscr.io/linuxserver/sonarr
+      tag: 3.0.10@sha256:7de58a98fe1abdde6980f09f3285c5efb466031d49e5376ae93bcc8e3da4acb6
 
     env:
       TZ: Europe/Budapest
-      SONARR__INSTANCE_NAME: Sonarr
-      SONARR__PORT: &port 80
-      SONARR__LOG_LEVEL: info
-    envFrom:
-      - secretRef:
-          name: sonarr-secret
 
     service:
       main:
         ports:
           http:
-            port: *port
+            port: &port 8989
 
     probes:
       liveness: &probes
@@ -104,14 +98,10 @@ spec:
         drop:
           - ALL
 
-    volumeClaimTemplates:
-      - name: config
-        mountPath: /config
-        accessMode: ReadWriteOnce
-        size: 5Gi
-        storageClass: democratic-csi-local-hostpath
-
     persistence:
+      config:
+        enabled: true
+        existingClaim: *app
       nfs-media:
         enabled: true
         type: nfs

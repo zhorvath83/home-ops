@@ -15,7 +15,7 @@ spec:
         name: bjw-s
         namespace: flux-system
 
-  maxHistory: 3
+  # maxHistory: 3
   install:
     createNamespace: true
     remediation:
@@ -34,15 +34,15 @@ spec:
         reloader.stakater.com/auto: "true"
 
     image:
-      repository: ghcr.io/onedr0p/unpackerr
-      tag: 0.11.2@sha256:05db8faac039716d8dc209023a30d30c9e73c2faf4e7fc092dfb1a70fa6f4c94
+      repository: cr.hotio.dev/hotio/unpackerr
+      tag: 0.11.2
 
     env:
       TZ: Europe/Budapest
-      UN_SONARR_0_URL: http://sonarr.default.svc.cluster.local
-      UN_SONARR_0_PATHS_0: /complete/sonarr
-      UN_RADARR_0_URL: http://radarr.default.svc.cluster.local
-      UN_RADARR_0_PATHS_0: /complete/radarr
+      UN_SONARR_0_URL: http://sonarr.default.svc.cluster.local:8989
+      UN_SONARR_0_PATHS_0: /complete/series
+      UN_RADARR_0_URL: http://radarr.default.svc.cluster.local:7878
+      UN_RADARR_0_PATHS_0: /complete/movies
     envFrom:
       - secretRef:
           name: unpackerr-secret

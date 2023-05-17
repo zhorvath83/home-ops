@@ -15,7 +15,7 @@ spec:
         name: bjw-s
         namespace: flux-system
 
-  maxHistory: 3
+  # maxHistory: 3
   install:
     createNamespace: true
     remediation:
@@ -73,14 +73,10 @@ spec:
         drop:
           - ALL
 
-    volumeClaimTemplates:
-      - name: config
-        mountPath: /config
-        accessMode: ReadWriteOnce
-        size: 1Gi
-        storageClass: democratic-csi-local-hostpath
-
     persistence:
+      config:
+        enabled: true
+        existingClaim: *app
       config-file:
         enabled: true
         type: configMap

@@ -15,7 +15,7 @@ spec:
         name: bjw-s
         namespace: flux-system
 
-  maxHistory: 3
+  # maxHistory: 3
   install:
     createNamespace: true
     remediation:
@@ -34,24 +34,17 @@ spec:
         reloader.stakater.com/auto: "true"
 
     image:
-      repository: ghcr.io/onedr0p/radarr-develop
-      tag: 4.5.0.7106@sha256:4e53a92bf36435d32a1c186903e3c542db2e06fde6a4e79d6663682958e33b63
+      repository: lscr.io/linuxserver/radarr
+      tag: 4.4.4@sha256:84c438ce4e644dad8ede46e45cb2792ab68ed201a03dc7892b90cac383d98839
 
     env:
       TZ: Europe/Budapest
-      RADARR__INSTANCE_NAME: Radarr
-      RADARR__PORT: &port 80
-      RADARR__APPLICATION_URL: "https://{{ .Release.Name }}.${PUBLIC_DOMAIN}"
-      RADARR__LOG_LEVEL: info
-    envFrom:
-      - secretRef:
-          name: radarr-secret
 
     service:
       main:
         ports:
           http:
-            port: *port
+            port: &port 7878
 
     probes:
       liveness: &probes
@@ -105,14 +98,10 @@ spec:
         drop:
           - ALL
 
-    volumeClaimTemplates:
-      - name: config
-        mountPath: /config
-        accessMode: ReadWriteOnce
-        size: 5Gi
-        storageClass: democratic-csi-local-hostpath
-
     persistence:
+      config:
+        enabled: true
+        existingClaim: *app
       media:
         enabled: true
         type: nfs

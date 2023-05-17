@@ -15,7 +15,7 @@ spec:
         name: bjw-s
         namespace: flux-system
 
-  maxHistory: 3
+  # maxHistory: 3
   install:
     createNamespace: true
     remediation:
@@ -32,10 +32,11 @@ spec:
       type: statefulset
 
     image:
-      repository: ghcr.io/onedr0p/plex
-      tag: 1.32.1.6999-91e1e2e2c@sha256:fa9bbdbd8a73d110c703839619b9e1cc13524187b00662955235c02e07cef50c
+      repository: lscr.io/linuxserver/plex:latest
+      tag: 1.32.1@sha256:555a9ccf60c7a9180a881ff929d18fb9c944456aa53909a580c16ebacce9007f
 
     env:
+      VERSION: docker
       TZ: Europe/Budapest
       HOSTNAME: PlexServer
       ADVERTISE_IP: "https://plex.${PUBLIC_DOMAIN},http://${CLUSTER_SVC_MEDIASERVER_IP}:32400"
