@@ -155,8 +155,6 @@ spec:
       limits:
         memory: 2000Mi
 
-
-
 # valuesFrom:
 #   - kind: Secret
 #     name: photoview-secret
