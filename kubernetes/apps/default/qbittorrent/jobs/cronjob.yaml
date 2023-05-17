@@ -15,7 +15,7 @@ spec:
           serviceAccountName: jobs
           containers:
             - name: *app
-              image: docker.io/rancher/kubectl:v1.27.1@sha256:76c787bc3df836d2520100e8bdb5851b736b21687b513aa3b732a7dfe32f61da
+              image: ghcr.io/onedr0p/kubernetes-kubectl:1.27.1@sha256:657387a5fedaa4d12b55a4e85d572e21e82d08b7e87e2c084847731ed57a1671
               imagePullPolicy: IfNotPresent
               command:
                 - "/bin/bash"
