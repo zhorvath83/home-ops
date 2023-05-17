@@ -32,7 +32,7 @@ spec:
                   QBITTORRENT_POD=$(echo $result | awk '{ print $NF }')
                   if [[ $QBITTORRENT_POD == *"qbittorrent"* ]]; then
                     kubectl cp /tmp/ipfilter.dat default/$QBITTORRENT_POD:/config/ipfilter.dat
-                    kubectl rollout restart deployment qbittorrent --namespace default
+                    kubectl rollout restart statefulset qbittorrent --namespace default
                   else
                     echo "qbittorrent deployment not found"
                     exit 1
