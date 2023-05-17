@@ -98,24 +98,15 @@ spec:
     persistence:
       config:
         enabled: true
-        type: emptyDir
-        mountPath: /config/qBittorrent/config
-
-      cache:
-        enabled: true
-        type: emptyDir
-        mountPath: /config/qBittorrent/cache
+        existingClaim: appdata
+        mountPath: /config
+        subPath: qbittorrent
 
       configfiles:
         enabled: true
         type: configMap
         name: qbittorrent-configmap
         mountPath: "-"
-
-      data:
-        enabled: true
-        existingClaim: *app
-        mountPath: /config/qBittorrent/data
 
       nfs-nas-media:
         enabled: true
@@ -133,10 +124,11 @@ spec:
         args:
           - cp /data/configfiles/* /data/config/
         volumeMounts:
-          - name: config
-            mountPath: /data/config
           - name: configfiles
             mountPath: /data/configfiles
+          - name: config
+            mountPath: /data/config
+            subPath: qbittorrent
 
     probes:
       liveness:
