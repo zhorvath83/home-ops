@@ -100,7 +100,7 @@ spec:
         enabled: true
         existingClaim: *app
         mountPath: /config
-        subPath: qbittorrent
+        # subPath: qbittorrent
 
       configfiles:
         enabled: true
@@ -128,7 +128,7 @@ spec:
             mountPath: /data/configfiles
           - name: config
             mountPath: /data/config
-            subPath: qbittorrent
+            # subPath: qbittorrent
 
     probes:
       liveness:
