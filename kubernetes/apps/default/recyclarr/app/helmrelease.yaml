@@ -45,7 +45,7 @@ spec:
 
     image:
       repository: ghcr.io/recyclarr/recyclarr
-      tag: edge
+      tag: 4.4.1@sha256:6014c9cc6334012bd601b26d11356ae3522f12ae2909add15ce3ec82db74a508
 
     env:
       TZ: Europe/Budapest
