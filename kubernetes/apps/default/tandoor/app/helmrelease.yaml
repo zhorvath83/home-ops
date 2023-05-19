@@ -41,7 +41,7 @@ spec:
       DEBUG: "0"
       ALLOWED_HOSTS: "*"
       DB_ENGINE: django.db.backends.postgresql
-      POSTGRES_HOST: postgresql.default.svc.cluster.local
+      POSTGRES_HOST: &dbhost postgresql.default.svc.cluster.local
       POSTGRES_PORT: 5432
       POSTGRES_DB: tandoor
       GUNICORN_MEDIA: "1"
@@ -118,25 +118,23 @@ spec:
 
     initContainers:
       init-db:
-        image: ghcr.io/onedr0p/postgres-initdb:14.7
+        image: ghcr.io/onedr0p/postgres-init:14.8
         env:
-          - name: POSTGRES_HOST
-            value: postgresql.default.svc.cluster.local
-          - name: POSTGRES_PORT
-            value: 5432
-          - name: POSTGRES_DB
-            value: tandoor
-          - name: POSTGRES_SUPER_PASS
+          - name: INIT_POSTGRES_HOST
+            value: *dbhost
+          - name: INIT_POSTGRES_DBNAME
+            value: *app
+          - name: INIT_POSTGRES_SUPER_PASS
             valueFrom:
               secretKeyRef:
                 name: postgresql-secret
                 key: postgres-password
-          - name: POSTGRES_USER
+          - name: INIT_POSTGRES_USER
             valueFrom:
               secretKeyRef:
                 name: tandoor-secret
                 key: POSTGRES_USER
-          - name: POSTGRES_PASS
+          - name: INIT_POSTGRES_PASS
             valueFrom:
               secretKeyRef:
                 name: tandoor-secret
@@ -148,7 +146,7 @@ spec:
           - name: DB_ENGINE
             value: django.db.backends.postgresql
           - name: POSTGRES_HOST
-            value: postgresql.default.svc.cluster.local
+            value: *dbhost
           - name: POSTGRES_PORT
             value: 5432
           - name: POSTGRES_DB
