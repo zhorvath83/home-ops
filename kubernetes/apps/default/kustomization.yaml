@@ -15,7 +15,6 @@ resources:
   - ./trilium/ks.yaml
   - ./prowlarr/ks.yaml
   - ./radarr/ks.yaml
-  - ./recyclarr/ks.yaml
   - ./sonarr/ks.yaml
   - ./bazarr/ks.yaml
   # - ./unpackerr/ks.yaml

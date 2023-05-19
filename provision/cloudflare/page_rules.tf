@@ -5,5 +5,6 @@ resource "cloudflare_page_rule" "subdomain_bypass_cache" {
 
   actions {
     cache_level = "bypass"
+    disable_performance = true
   }
 }
