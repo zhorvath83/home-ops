@@ -127,11 +127,11 @@ spec:
         ingressClassName: nginx
         annotations:
           gethomepage.dev/enabled: "true"
-          gethomepage.dev/name: Adguard Home
+          gethomepage.dev/name: Adguard Home DNS
           gethomepage.dev/group: Infrastructure
           gethomepage.dev/icon: adguard-home.png
         hosts:
-          - host: &host "{{ .Release.Name }}.${PUBLIC_DOMAIN}"
+          - host: &host "dns.${PUBLIC_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix
