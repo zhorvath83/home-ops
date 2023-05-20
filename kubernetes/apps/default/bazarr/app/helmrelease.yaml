@@ -55,7 +55,7 @@ spec:
         ingressClassName: nginx
         annotations:
           gethomepage.dev/enabled: "true"
-          gethomepage.dev/name: Bazarr
+          gethomepage.dev/name: Bazarr - subtitles
           gethomepage.dev/group: Downloading
           gethomepage.dev/icon: bazarr.png
         hosts:

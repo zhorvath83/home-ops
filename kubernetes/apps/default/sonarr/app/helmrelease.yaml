@@ -72,7 +72,7 @@ spec:
         ingressClassName: nginx
         annotations:
           gethomepage.dev/enabled: "true"
-          gethomepage.dev/name: Sonarr
+          gethomepage.dev/name: Sonarr - shows
           gethomepage.dev/group: Downloading
           gethomepage.dev/icon: sonarr.png
         hosts:

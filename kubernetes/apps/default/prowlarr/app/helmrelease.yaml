@@ -54,7 +54,7 @@ spec:
         ingressClassName: nginx
         annotations:
           gethomepage.dev/enabled: "true"
-          gethomepage.dev/name: Prowlarr
+          gethomepage.dev/name: Prowlarr - indexers
           gethomepage.dev/group: Downloading
           gethomepage.dev/icon: prowlarr.png
         hosts:

@@ -52,7 +52,7 @@ spec:
         ingressClassName: nginx
         annotations:
           gethomepage.dev/enabled: "true"
-          gethomepage.dev/name: Overseerr
+          gethomepage.dev/name: Overseerr - requests
           gethomepage.dev/group: Multimedia
           gethomepage.dev/icon: overseerr.png
         hosts:
