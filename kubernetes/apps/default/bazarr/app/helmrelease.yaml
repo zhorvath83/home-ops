@@ -59,7 +59,7 @@ spec:
           gethomepage.dev/group: Downloading
           gethomepage.dev/icon: bazarr.png
         hosts:
-          - host: &host "{{ .Release.Name }}.${PUBLIC_DOMAIN}"
+          - host: &host "subtitles.${PUBLIC_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix

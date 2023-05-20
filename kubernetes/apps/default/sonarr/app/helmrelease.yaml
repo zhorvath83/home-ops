@@ -76,7 +76,7 @@ spec:
           gethomepage.dev/group: Downloading
           gethomepage.dev/icon: sonarr.png
         hosts:
-          - host: &host "{{ .Release.Name }}.${PUBLIC_DOMAIN}"
+          - host: &host "shows.${PUBLIC_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix

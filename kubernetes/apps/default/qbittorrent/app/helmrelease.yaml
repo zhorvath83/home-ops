@@ -72,7 +72,7 @@ spec:
           gethomepage.dev/group: Downloading
           gethomepage.dev/icon: qbittorrent.png
         hosts:
-          - host: &host "{{ .Release.Name }}.${PUBLIC_DOMAIN}"
+          - host: &host "bt.${PUBLIC_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix
