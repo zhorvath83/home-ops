@@ -53,7 +53,7 @@ spec:
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Overseerr - requests
-          gethomepage.dev/group: Multimedia
+          gethomepage.dev/group: Selfhosted
           gethomepage.dev/icon: overseerr.svg
         hosts:
           - host: &host "requests.${PUBLIC_DOMAIN}"

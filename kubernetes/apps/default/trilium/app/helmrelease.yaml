@@ -82,7 +82,7 @@ spec:
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Trilium - notes
-          gethomepage.dev/group: Cloud
+          gethomepage.dev/group: Selfhosted
           gethomepage.dev/icon: trilium.svg
         hosts:
           - host: &host "notes.${PUBLIC_DOMAIN}"

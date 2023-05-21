@@ -45,7 +45,9 @@ data:
       Cloud-services:
         style: row
         columns: 5
-
+      Monitoring:
+        style: row
+        columns: 5
 
     quicklaunch:
         searchDescriptions: true

@@ -104,7 +104,7 @@ spec:
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Photoview - photos
-          gethomepage.dev/group: Cloud
+          gethomepage.dev/group: Selfhosted
           gethomepage.dev/icon: photoview.svg
         hosts:
           - host: &host "photos.${PUBLIC_DOMAIN}"
