@@ -33,7 +33,7 @@ spec:
 
     image:
       repository: lscr.io/linuxserver/overseerr
-      tag: 1.32.5@sha256:376c23e5dd1304c3b4f54710eb5bb8e33ef9555fe17636098b9a0c7ec9731b26
+      tag: 2021.12.12@sha256:6c3f4115d2ec1fe661de971ac6bc8405a606ac56c5f834d9de290e6df52fe79d
 
     env:
       PUID: "10001"
