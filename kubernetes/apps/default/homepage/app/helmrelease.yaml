@@ -41,10 +41,6 @@ spec:
     config:
       useExistingConfigMap: homepage-config
 
-    envFrom:
-      - secretRef:
-          name: homepage-secret
-
     podAnnotations:
       configmap.reloader.stakater.com/reload: *app
 
