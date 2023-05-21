@@ -35,7 +35,7 @@ spec:
 
     image:
       repository: vabene1111/recipes
-      tag: 1.4.9
+      tag: 1.4.10
 
     env:
       DEBUG: "0"
@@ -141,7 +141,7 @@ spec:
                 key: POSTGRES_PASSWORD
 
       init-migrate:
-        image: vabene1111/recipes:1.4.9
+        image: vabene1111/recipes:1.4.10
         env:
           - name: DB_ENGINE
             value: django.db.backends.postgresql
