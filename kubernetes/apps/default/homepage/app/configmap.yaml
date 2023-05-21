@@ -94,14 +94,9 @@ data:
             icon: jellyfin.png
 
     - Infrastructure:
-        - Cloudflared:
+        - Cloudflare:
             icon: cloudflare
             href: https://dash.cloudflare.com
-            widget:
-                type: cloudflared
-                accountid: {{HOMEPAGE_VAR_CF_ACCOUNTID}}
-                tunnelid: {{HOMEPAGE_VAR_CF_TUNNELID}}
-                key: {{HOMEPAGE_VAR_CF_TOKEN}}
         - Backblaze:
             icon: backblaze.png
             href: https://backblaze.com

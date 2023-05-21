@@ -72,7 +72,7 @@ spec:
         ingressClassName: nginx
         annotations:
           gethomepage.dev/enabled: "true"
-          gethomepage.dev/name: Radarr - movies
+          gethomepage.dev/name: Radarr - movies management
           gethomepage.dev/group: Downloading
           gethomepage.dev/icon: radarr.png
         hosts:
