@@ -3,9 +3,9 @@ collections:
   - name: community.general
     version: 7.0.0
   - name: ansible.posix
-    version: 1.5.2
+    version: 1.5.4
   - name: ansible.utils
-    version: 2.10.1
+    version: 2.10.3
   - name: devsec.hardening
     version: 8.7.0
   - name: community.docker
