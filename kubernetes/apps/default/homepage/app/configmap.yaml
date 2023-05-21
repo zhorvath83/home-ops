@@ -63,7 +63,7 @@ data:
     - Organizing:
         - Fastmail:
             href: https://fastmail.com
-            icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/fastmail.svg
+            icon: fastmail.svg
         - FB Messenger:
             href: https://messenger.com
             icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/facebook-messenger.svg
