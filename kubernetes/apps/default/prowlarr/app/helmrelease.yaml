@@ -56,7 +56,7 @@ spec:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Prowlarr - indexer management
           gethomepage.dev/group: Downloading
-          gethomepage.dev/icon: prowlarr.png
+          gethomepage.dev/icon: prowlarr.svg
         hosts:
           - host: &host "indexers.${PUBLIC_DOMAIN}"
             paths:

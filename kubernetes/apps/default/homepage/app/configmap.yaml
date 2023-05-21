@@ -11,10 +11,10 @@ data:
 
     background:
       image: https://images.unsplash.com/photo-1502790671504-542ad42d5189?auto=format&fit=crop&w=2560&q=80
-      blur: sm
+      blur: none
       saturate: 100
-      brightness: 100
-      opacity: 100
+      brightness: 80
+      opacity: 30
 
     target: _self
     headerStyle: underlined
@@ -30,9 +30,22 @@ data:
       Finance:
         style: row
         columns: 5
+      Cloud-services:
+        style: row
+        columns: 5
+      Multimedia:
+        style: row
+        columns: 5
+      Cloud:
+        style: row
+        columns: 5
+      Downloading:
+        style: row
+        columns: 5
       Infrastructure:
         style: row
         columns: 5
+
 
     quicklaunch:
         searchDescriptions: true
@@ -66,10 +79,10 @@ data:
             icon: fastmail.svg
         - FB Messenger:
             href: https://messenger.com
-            icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/facebook-messenger.svg
+            icon: facebook-messenger.svg
         - ToDoist:
             href: https://todoist.com
-            icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/todoist.svg
+            icon: todoist.svg
 
     - Finance:
         - Buxfer:
@@ -77,38 +90,47 @@ data:
             icon: https://raw.githubusercontent.com/zhorvath83/dashboard-icons/master/png/buxfer.png
         - Erste NetBank:
             href: https://george.erstebank.hu
-            icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/erste-george.png
+            icon: erste-george.svg
         - MBH NetBank:
             href: https://online.mbhbank.hu
             icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/svg/mkb_bank.svg
         - Erste NetBroker:
             href: https://netbroker.erstebroker.hu
-            icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/erste.png
+            icon: erste.svg
         - MÁK WebKincstár:
             href: https://webkincstar.allamkincstar.gov.hu
             icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/mak.png
 
-    - Multimedia:
-        - Jellyfin:
-            href: http://192.168.1.21
-            icon: jellyfin.png
-
-    - Infrastructure:
+    - Cloud-services:
+        - GitHub:
+            icon: github.svg
+            href: https://github.com
         - Cloudflare:
-            icon: cloudflare
+            icon: cloudflare.svg
             href: https://dash.cloudflare.com
         - Backblaze:
-            icon: backblaze.png
+            icon: backblaze.svg
             href: https://backblaze.com
+        - Terraform cloud:
+            href: https://app.terraform.io
+            icon: terraform.svg
+        - iCloud:
+            href: https://icloud.com
+            icon: apple.svg
+        - OneDrive:
+            href: https://onedrive.com
+            icon: apple.svg
+
+    - Infrastructure:
         - Router:
             href: http://192.168.1.1
-            icon: router.png
+            icon: asus-router.svg
         - OpenMediaVault:
             href: http://192.168.1.10
-            icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/openmediavault.svg
+            icon: openmediavault.svg
         - Proxmox hypervisor:
             href: https://192.168.1.5:8006
-            icon: proxmox.png
+            icon: proxmox.svg
 
     - Downloading:
         - Ncore:
@@ -120,23 +142,11 @@ data:
 
     - Monitoring:
         - Discord:
-            icon: discord.png
+            icon: discord.svg
             href: https://discord.com/channels/@me
 
   bookmarks.yaml: |
     ---
-    - Developer:
-        - Github:
-            - abbr: GH
-              href: https://github.com
-    - Social:
-        - Reddit:
-            - icon: reddit.png
-              href: https://reddit.com
-    - Entertainment:
-        - YouTube:
-            - abbr: YT
-              href: https://youtube.com
 
   docker.yaml: |
     ---

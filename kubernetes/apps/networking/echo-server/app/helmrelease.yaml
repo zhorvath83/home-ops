@@ -59,7 +59,7 @@ spec:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Echo server
           gethomepage.dev/group: Monitoring
-          gethomepage.dev/icon: shellhub.png
+          gethomepage.dev/icon: terminal.svg
         hosts:
           - host: &host "{{ .Release.Name }}.${PUBLIC_DOMAIN}"
             paths:

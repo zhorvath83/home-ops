@@ -70,7 +70,7 @@ spec:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: qBittorrent
           gethomepage.dev/group: Downloading
-          gethomepage.dev/icon: qbittorrent.png
+          gethomepage.dev/icon: qbittorrent.svg
         hosts:
           - host: &host "bt.${PUBLIC_DOMAIN}"
             paths:

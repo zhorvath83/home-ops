@@ -129,7 +129,7 @@ spec:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Adguard Home DNS
           gethomepage.dev/group: Infrastructure
-          gethomepage.dev/icon: adguard-home.png
+          gethomepage.dev/icon: adguard-home.svg
         hosts:
           - host: &host "dns.${PUBLIC_DOMAIN}"
             paths:
