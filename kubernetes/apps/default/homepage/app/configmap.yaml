@@ -94,15 +94,17 @@ data:
             icon: jellyfin.png
 
     - Infrastructure:
-        # - Cloudflared:
-        #     icon: cloudflare
-        #     href: https://dash.cloudflare.com/
-        #     description: Cloudflare DNS and kubernetes tunnel configuration
-        #     widget:
-        #         type: cloudflared
-        #         accountid: ${cloudflare_account_id}
-        #         tunnelid: ${cloudflare_tunnel_id}
-        #         key: ${cloudflare_token}
+        - Cloudflared:
+            icon: cloudflare
+            href: https://dash.cloudflare.com
+            widget:
+                type: cloudflared
+                accountid: {{HOMEPAGE_VAR_CF_ACCOUNTID}}
+                tunnelid: {{HOMEPAGE_VAR_CF_TUNNELID}}
+                key: {{HOMEPAGE_VAR_CF_TOKEN}}
+        - Backblaze:
+            icon: backblaze.png
+            href: https://backblaze.com
         - Router:
             href: http://192.168.1.1
             icon: router.png
@@ -128,10 +130,6 @@ data:
 
   bookmarks.yaml: |
     ---
-    - Cloud services:
-        - Cloudflare:
-            - icon: cloudflare.png
-              href: https://dash.cloudflare.com
     - Developer:
         - Github:
             - abbr: GH
