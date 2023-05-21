@@ -104,7 +104,7 @@ spec:
         ingressClassName: nginx
         annotations:
           gethomepage.dev/enabled: "true"
-          gethomepage.dev/name: Plex mediaserver
+          gethomepage.dev/name: Plex - mediaserver
           gethomepage.dev/group: Multimedia
           gethomepage.dev/icon: plex.svg
         hosts:

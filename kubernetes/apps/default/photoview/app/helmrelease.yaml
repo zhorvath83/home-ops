@@ -103,7 +103,7 @@ spec:
         ingressClassName: nginx
         annotations:
           gethomepage.dev/enabled: "true"
-          gethomepage.dev/name: Photos
+          gethomepage.dev/name: Photoview - photos
           gethomepage.dev/group: Cloud
           gethomepage.dev/icon: photoview.svg
         hosts:

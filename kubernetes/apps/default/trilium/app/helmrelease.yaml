@@ -81,7 +81,7 @@ spec:
         ingressClassName: nginx
         annotations:
           gethomepage.dev/enabled: "true"
-          gethomepage.dev/name: Notes
+          gethomepage.dev/name: Trilium - notes
           gethomepage.dev/group: Cloud
           gethomepage.dev/icon: trilium.svg
         hosts:

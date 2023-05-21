@@ -68,7 +68,7 @@ spec:
         ingressClassName: nginx
         annotations:
           gethomepage.dev/enabled: "true"
-          gethomepage.dev/name: qBittorrent
+          gethomepage.dev/name: qBt - Torrent client
           gethomepage.dev/group: Downloading
           gethomepage.dev/icon: qbittorrent.svg
         hosts:

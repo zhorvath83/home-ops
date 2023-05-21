@@ -78,7 +78,7 @@ spec:
         ingressClassName: nginx
         annotations:
           gethomepage.dev/enabled: "true"
-          gethomepage.dev/name: Recipes
+          gethomepage.dev/name: Tandoor - recipes
           gethomepage.dev/group: Cloud
           gethomepage.dev/icon: tandoor.svg
         hosts:
