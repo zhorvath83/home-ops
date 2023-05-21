@@ -149,7 +149,7 @@ data:
     - Monitoring:
         - Discord:
             icon: discord.svg
-            href: https://discord.com/channels/@me
+            href: https://discord.com/channels/901576305139654767
 
   bookmarks.yaml: |
     ---
