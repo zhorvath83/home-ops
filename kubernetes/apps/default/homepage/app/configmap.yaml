@@ -19,7 +19,7 @@ data:
     target: _self
     headerStyle: underlined
     theme: dark
-    # color: slate
+    color: slate
 
     fiveColumns: true
 
@@ -65,20 +65,20 @@ data:
     - search:
         provider: google
         target: _blank
-        focus: true
+        focus: false
+    - datetime:
+        text_size: xl
+        locale: hu
+        format:
+          # dateStyle: short
+          timeStyle: short
+          hourCycle: h23
     - openmeteo:
         # label: Home
         latitude: 47.497913
         longitude: 19.040236
         units: metric
         cache: 10
-    - datetime:
-        text_size: xl
-        locale: hu
-        format:
-          dateStyle: short
-          timeStyle: short
-          hourCycle: h23
 
   services.yaml: |
     ---
