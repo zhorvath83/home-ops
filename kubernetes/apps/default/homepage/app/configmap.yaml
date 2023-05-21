@@ -33,7 +33,7 @@ data:
       Infrastructure:
         # style: row
         # columns: 5
-      Multimedia:
+      Selfhosted:
         # style: row
         # columns: 5
       Cloud:
