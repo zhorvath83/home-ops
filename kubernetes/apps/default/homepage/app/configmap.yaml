@@ -26,7 +26,7 @@ data:
     layout:
       Organizing:
         style: row
-        columns: 2
+        columns: 3
       Multimedia:
         style: row
         columns: 2
