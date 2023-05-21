@@ -72,6 +72,13 @@ data:
         longitude: 19.040236
         units: metric
         cache: 10
+    - datetime:
+        text_size: xl
+        locale: hu
+        format:
+          dateStyle: short
+          timeStyle: short
+          hourCycle: h23
 
   services.yaml: |
     ---
