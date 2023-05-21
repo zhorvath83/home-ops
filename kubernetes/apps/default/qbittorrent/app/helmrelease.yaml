@@ -35,7 +35,7 @@ spec:
 
     image:
       repository: lscr.io/linuxserver/qbittorrent
-      tag: 4.5.2@sha256:5e2a701ff0eed1f644eb9eaf44f9462e549173fa2994ed039347cd7c518f3b21
+      tag: 4.5.2@sha256:cd75ae74f83232b23a27ffef5d98f4bee41f247a2b626dcaf0b429b699c6b6a5
 
     hostname: qbittorrent
 

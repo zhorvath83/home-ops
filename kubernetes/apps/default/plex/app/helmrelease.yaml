@@ -33,7 +33,7 @@ spec:
 
     image:
       repository: lscr.io/linuxserver/plex
-      tag: 1.32.1@sha256:555a9ccf60c7a9180a881ff929d18fb9c944456aa53909a580c16ebacce9007f
+      tag: 1.32.1@sha256:7bfa27312c43f47651c97afc0d777de057c56c9dfa7af53b8e1dc1e46d7f19fb
 
     env:
       PUID: "10001"
