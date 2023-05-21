@@ -19,30 +19,30 @@ data:
     target: _self
     headerStyle: underlined
     theme: dark
-    color: slate
+    # color: slate
 
     fiveColumns: true
 
     layout:
       Organizing:
-        style: row
-        columns: 3
-      Multimedia:
-        style: row
-        columns: 2
+        # style: row
+        # columns: 5
       Finance:
-        style: row
-        columns: 5
-      Cloud-services:
-        style: row
-        columns: 5
+        # style: row
+        # columns: 5
+      Infrastructure:
+        # style: row
+        # columns: 5
+      Multimedia:
+        # style: row
+        # columns: 5
       Cloud:
-        style: row
-        columns: 5
+        # style: row
+        # columns: 5
       Downloading:
         style: row
         columns: 5
-      Infrastructure:
+      Cloud-services:
         style: row
         columns: 5
 
