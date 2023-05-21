@@ -26,14 +26,14 @@ data:
     layout:
       Organizing:
         style: row
-        columns: 5
+        columns: 2
+      Multimedia:
+        style: row
+        columns: 2
       Finance:
         style: row
         columns: 5
       Cloud-services:
-        style: row
-        columns: 5
-      Multimedia:
         style: row
         columns: 5
       Cloud:
@@ -116,9 +116,6 @@ data:
             icon: terraform.svg
         - iCloud:
             href: https://icloud.com
-            icon: apple.svg
-        - OneDrive:
-            href: https://onedrive.com
             icon: apple.svg
 
     - Infrastructure:
