@@ -32,7 +32,7 @@ spec:
       type: statefulset
     image:
       repository: lscr.io/linuxserver/jellyfin
-      tag: 10.8.10@sha256:29026d997e4cbb5721c4762aaf2057e489ccaf3a6f7d8917411d56c853acaf01
+      tag: 2021.12.16@sha256:983e3cf314deaa76b0aa58c82d59c285b2ac2a3ef2f316b0361cb4c8bb58b79d
 
     env:
       TZ: "Europe/Budapest"
