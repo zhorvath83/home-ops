@@ -108,17 +108,23 @@ spec:
       clone-subcleaner:
         image: alpine/git:2.36.3@sha256:689012e9addf9428c718da3e4716f25498a01b7d458f2a3f15d766b9702f1847
         imagePullPolicy: IfNotPresent
+        command:
+          - "/bin/sh"
+          - -c
         args:
-        - git
-        - clone
-        - https://github.com/KBlixt/subcleaner
-        - /add-ons
+          - git
+          - clone
+          - https://github.com/KBlixt/subcleaner
+          - /add-ons
         volumeMounts:
           - { name: add-ons, mountPath: /add-ons }
 
       permissions:
         image: public.ecr.aws/docker/library/busybox:1.36.0
         imagePullPolicy: IfNotPresent
+        command:
+          - "/bin/sh"
+          - -c
         args:
           - chown -R 10001 /add-ons/subcleaner
           - chmod -R 700 /add-ons/subcleaner
