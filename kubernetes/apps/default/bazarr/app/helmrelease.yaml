@@ -106,7 +106,7 @@ spec:
 
     initcontainers:
       clone-subcleaner:
-        image: alpine/git:2.36.3@sha256:689012e9addf9428c718da3e4716f25498a01b7d458f2a3f15d766b9702f1847
+        image: alpine/git:2.36.3
         imagePullPolicy: IfNotPresent
         command:
           - "/bin/sh"
