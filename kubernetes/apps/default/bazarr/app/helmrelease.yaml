@@ -104,18 +104,21 @@ spec:
       limits:
         memory: 768Mi
 
-    initContainers:
-      clone-subcleaner:
+    sidecars:
+      subcleaner:
         image: registry.k8s.io/git-sync/git-sync:v3.6.6
         imagePullPolicy: IfNotPresent
         args:
-          - --repo=https://github.com/KBlixt/subcleaner
+          - --repo=https://github.com/KBlixt/subcleaner.git
           - --branch=master
           - --depth=1
-          - --root=/add-ons
+          - --wait=21600 # 6 hours
+          - --group-write
+          - --root=/add-ons/subcleaner
         volumeMounts:
           - { name: add-ons, mountPath: /add-ons }
 
+    initcontainers:
       permissions:
         image: public.ecr.aws/docker/library/busybox:1.36.0
         imagePullPolicy: IfNotPresent
