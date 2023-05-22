@@ -118,7 +118,7 @@ spec:
           - { name: add-ons, mountPath: /add-ons }
 
       permissions:
-        image: registry.k8s.io/git-sync/git-sync:v3.6.6
+        image: public.ecr.aws/docker/library/busybox:1.36.0
         imagePullPolicy: IfNotPresent
         args:
           - "chown -R 10001 /add-ons && chmod -R 700 /add-ons"
