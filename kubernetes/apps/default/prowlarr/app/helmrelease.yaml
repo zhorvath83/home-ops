@@ -35,7 +35,7 @@ spec:
 
     image:
       repository: lscr.io/linuxserver/prowlarr
-      tag: 1.4.1@sha256:df0badca5410ac80adacdfba0c764b09bb7de10659e834fc7f290d6c97afc76e
+      tag: 1.4.1@sha256:ffff6fc540e5ea3dd36247af2c2053df02b267869693703755d251d44b00b9a3
 
     env:
       PUID: "10001"
