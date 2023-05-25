@@ -59,6 +59,8 @@ spec:
       runAsGroup: 10001
       fsGroup: 10001
       fsGroupChangePolicy: OnRootMismatch
+      supplementalGroups:
+        - 1000
     securityContext:
       privileged: false
       allowPrivilegeEscalation: false
