@@ -29,33 +29,6 @@ spec:
 
   values:
 
-    initcontainers:
-      clone-subcleaner:
-        image: alpine/git:2.36.3
-        imagePullPolicy: IfNotPresent
-        command:
-          - "/bin/sh"
-          - -c
-        args:
-          - git
-          - clone
-          - https://github.com/KBlixt/subcleaner
-          - /add-ons
-        volumeMounts:
-          - { name: add-ons, mountPath: /add-ons }
-
-      permissions:
-        image: public.ecr.aws/docker/library/busybox:1.36.0
-        imagePullPolicy: IfNotPresent
-        command:
-          - "/bin/sh"
-          - -c
-        args:
-          - chown -R 10001 /add-ons/subcleaner
-          - chmod -R 700 /add-ons/subcleaner
-        volumeMounts:
-          - { name: add-ons, mountPath: /add-ons }
-
     controller:
       type: statefulset
       annotations:
@@ -123,6 +96,37 @@ spec:
         enabled: true
         type: emptyDir
         mountPath: /add-ons
+
+    initcontainers:
+      subcleaner:
+        image: alpine/git:2.36.3
+        imagePullPolicy: IfNotPresent
+        command:
+          - "/bin/sh"
+          - -c
+        args:
+          - git
+          - clone
+          - https://github.com/KBlixt/subcleaner
+          - /add-ons
+        volumeMounts:
+          - { name: add-ons, mountPath: /add-ons }
+        securityContext:
+          runAsUser: 0
+
+      permissions:
+        image: public.ecr.aws/docker/library/busybox:1.36.0
+        imagePullPolicy: IfNotPresent
+        command:
+          - "/bin/sh"
+          - -c
+        args:
+          - chown -R 10001 /add-ons/subcleaner
+          - chmod -R 700 /add-ons/subcleaner
+        volumeMounts:
+          - { name: add-ons, mountPath: /add-ons }
+        securityContext:
+          runAsUser: 0
 
     resources:
       requests:
