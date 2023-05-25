@@ -40,10 +40,11 @@ spec:
     env:
       TZ: Europe/Budapest
       UN_SONARR_0_URL: http://sonarr.default.svc.cluster.local:8989
-      UN_SONARR_0_PATHS_0: /complete/shows
+      UN_SONARR_0_PATHS_0: /downloads/complete/shows
       UN_RADARR_0_URL: http://radarr.default.svc.cluster.local:7878
-      UN_RADARR_0_PATHS_0: /complete/movies
-      UN_FOLDER_0_PATH: /complete/unpack
+      UN_RADARR_0_PATHS_0: /downloads/complete/movies
+      UN_FOLDER_0_PATH: /downloads/packed
+      UN_FOLDER_0_EXTRACT_PATH: /downloads/complete
       UN_FOLDER_0_DELETE_ORIGINAL: true
     envFrom:
       - secretRef:
@@ -73,8 +74,8 @@ spec:
         enabled: true
         type: nfs
         server: ${CLUSTER_LAN_NAS_IP}
-        path: /media/downloads/complete
-        mountPath: /complete
+        path: /media/downloads
+        mountPath: /downloads
 
     resources:
       requests:
