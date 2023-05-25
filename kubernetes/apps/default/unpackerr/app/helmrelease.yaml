@@ -44,9 +44,7 @@ spec:
       UN_RADARR_0_URL: http://radarr.default.svc.cluster.local:7878
       UN_RADARR_0_PATHS_0: /complete/movies
       UN_FOLDER_0_PATH: /complete/unpack
-      UN_FOLDER_0_EXTRACT_PATH: /complete/tmp
       UN_FOLDER_0_DELETE_ORIGINAL: true
-      UN_FOLDER_0_MOVE_BACK: true
     envFrom:
       - secretRef:
           name: unpackerr-secret
