@@ -22,4 +22,4 @@ roles:
   - name: geerlingguy.docker
     version: 6.1.0
   - name: hifis.unattended_upgrades
-    version: v2.0.1
+    version: v3.0.0
