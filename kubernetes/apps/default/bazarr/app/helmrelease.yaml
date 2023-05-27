@@ -35,12 +35,10 @@ spec:
         reloader.stakater.com/auto: "true"
 
     image:
-      repository: lscr.io/linuxserver/bazarr
-      tag: 1.2.1@sha256:4d33528acbaec25e69dc3e24cfb68272af91db78e12955d85241ae5779e9b2b9
+      repository: ghcr.io/onedr0p/bazarr
+      tag: 1.2.1@sha256:dc9fb4ae4e1d3724bff06224dc640429ff56c0326057b4a14000d2fbd84a7703
 
     env:
-      PUID: "10001"
-      PGID: "10001"
       TZ: Europe/Budapest
 
     service:
@@ -67,20 +65,20 @@ spec:
           - hosts:
               - *host
 
-    # podSecurityContext:
-    #   runAsUser: 10001
-    #   runAsGroup: 10001
-    #   fsGroup: 10001
-    #   fsGroupChangePolicy: OnRootMismatch
-    # securityContext:
-    #   privileged: false
-    #   allowPrivilegeEscalation: false
-    #   readOnlyRootFilesystem: true
-    #   seccompProfile:
-    #     type: RuntimeDefault
-    #   capabilities:
-    #     drop:
-    #       - ALL
+    podSecurityContext:
+      runAsUser: 10001
+      runAsGroup: 10001
+      fsGroup: 10001
+      fsGroupChangePolicy: OnRootMismatch
+    securityContext:
+      privileged: false
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      seccompProfile:
+        type: RuntimeDefault
+      capabilities:
+        drop:
+          - ALL
 
     persistence:
       config:
