@@ -34,32 +34,30 @@ spec:
         reloader.stakater.com/auto: "true"
 
     image:
-      repository: lscr.io/linuxserver/qbittorrent
-      tag: 4.5.2@sha256:8fcc17767a1cd1ef633d577fbff8ecee1c162ef0fcde61ee5c4f011fde0ac981
+      repository: ghcr.io/onedr0p/qbittorrent
+      tag: 4.5.2@sha256:495c6226b5c893b10a58d87e3187acb797fb981021e8f513a727f2b6db5d2cba
 
     hostname: qbittorrent
 
     env:
-      PUID: "10001"
-      PGID: "10001"
       TZ: "Europe/Budapest"
 
     service:
       main:
-        # type: LoadBalancer
-        # annotations:
-        #   metallb.universe.tf/loadBalancerIPs:
-        # externalTrafficPolicy: Local
+        type: LoadBalancer
+        annotations:
+          metallb.universe.tf/loadBalancerIPs: ${CLUSTER_SVC_QBITTORRENT_IP}
+        externalTrafficPolicy: Local
         ports:
           http:
             port: 8080
           bittorrent-tcp:
             enabled: true
-            port: 50413
+            port: 62418
             protocol: TCP
           bittorrent-udp:
             enabled: true
-            port: 50413
+            port: 62418
             protocol: UDP
 
     ingress:
@@ -80,20 +78,20 @@ spec:
           - hosts:
               - *host
 
-    # podSecurityContext:
-    #   runAsUser: 10001
-    #   runAsGroup: 10001
-    #   fsGroup: 10001
-    #   fsGroupChangePolicy: OnRootMismatch
-    # securityContext:
-    #   privileged: false
-    #   allowPrivilegeEscalation: false
-    #   readOnlyRootFilesystem: true
-    #   seccompProfile:
-    #     type: RuntimeDefault
-    #   capabilities:
-    #     drop:
-    #       - ALL
+    podSecurityContext:
+      runAsUser: 10001
+      runAsGroup: 10001
+      fsGroup: 10001
+      fsGroupChangePolicy: OnRootMismatch
+    securityContext:
+      privileged: false
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      seccompProfile:
+        type: RuntimeDefault
+      capabilities:
+        drop:
+          - ALL
 
     persistence:
       config:
