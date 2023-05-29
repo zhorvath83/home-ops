@@ -59,7 +59,7 @@ spec:
 
       externalSnapshotter:
         enabled: true
-        image: registry.k8s.io/sig-storage/csi-snapshotter:v6.2.1
+        image: registry.k8s.io/sig-storage/csi-snapshotter:v6.2.2
         extraArgs:
           - --leader-election=false
           # - --node-deployment=true
