@@ -115,7 +115,7 @@ spec:
 
     initContainers:
       copy-config:
-        image: public.ecr.aws/docker/library/busybox:1.36.0
+        image: public.ecr.aws/docker/library/busybox:1.36.1
         command:
           - "/bin/sh"
           - -c
