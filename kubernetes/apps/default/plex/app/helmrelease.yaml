@@ -32,13 +32,10 @@ spec:
       type: statefulset
 
     image:
-      repository: lscr.io/linuxserver/plex
-      tag: 1.32.1@sha256:7bfa27312c43f47651c97afc0d777de057c56c9dfa7af53b8e1dc1e46d7f19fb
+      repository: ghcr.io/onedr0p/plex
+      tag: 1.32.2.7100-248a2daf0@sha256:e169d7ba4c37de7fa416a63cb86fe8642b8552ecaf135271c670fa97abd0fee5
 
     env:
-      PUID: "10001"
-      PGID: "10001"
-      VERSION: docker
       TZ: Europe/Budapest
       HOSTNAME: PlexServer
       ADVERTISE_IP: "https://plex.${PUBLIC_DOMAIN},http://${CLUSTER_SVC_MEDIASERVER_IP}:32400"
@@ -116,20 +113,20 @@ spec:
           - hosts:
               - *host
 
-    # podSecurityContext:
-    #   runAsUser: 10001
-    #   runAsGroup: 10001
-    #   fsGroup: 10001
-    #   fsGroupChangePolicy: OnRootMismatch
-    # securityContext:
-    #   privileged: false
-    #   allowPrivilegeEscalation: false
-    #   readOnlyRootFilesystem: true
-    #   seccompProfile:
-    #     type: RuntimeDefault
-    #   capabilities:
-    #     drop:
-    #       - ALL
+    podSecurityContext:
+      runAsUser: 10001
+      runAsGroup: 10001
+      fsGroup: 10001
+      fsGroupChangePolicy: OnRootMismatch
+    securityContext:
+      privileged: false
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      seccompProfile:
+        type: RuntimeDefault
+      capabilities:
+        drop:
+          - ALL
 
     persistence:
       config:

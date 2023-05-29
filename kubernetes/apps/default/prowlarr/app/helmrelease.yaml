@@ -34,12 +34,10 @@ spec:
         reloader.stakater.com/auto: "true"
 
     image:
-      repository: lscr.io/linuxserver/prowlarr
-      tag: 1.4.1@sha256:df0badca5410ac80adacdfba0c764b09bb7de10659e834fc7f290d6c97afc76e
+      repository: ghcr.io/onedr0p/prowlarr
+      tag: 1.4.1.3258@sha256:98e9387f0a399a5d180e71b66287bb24149361b7b15d9d91303d2f9b261dca09
 
     env:
-      PUID: "10001"
-      PGID: "10001"
       TZ: Europe/Budapest
 
     service:
@@ -66,20 +64,20 @@ spec:
           - hosts:
               - *host
 
-    # podSecurityContext:
-    #   runAsUser: 10001
-    #   runAsGroup: 10001
-    #   fsGroup: 10001
-    #   fsGroupChangePolicy: OnRootMismatch
-    # securityContext:
-    #   privileged: false
-    #   allowPrivilegeEscalation: false
-    #   # Could not handle readOnlyRootFilesystem
-    #   seccompProfile:
-    #     type: RuntimeDefault
-    #   capabilities:
-    #     drop:
-    #       - ALL
+    podSecurityContext:
+      runAsUser: 10001
+      runAsGroup: 10001
+      fsGroup: 10001
+      fsGroupChangePolicy: OnRootMismatch
+    securityContext:
+      privileged: false
+      allowPrivilegeEscalation: false
+      # Could not handle readOnlyRootFilesystem
+      seccompProfile:
+        type: RuntimeDefault
+      capabilities:
+        drop:
+          - ALL
 
     persistence:
       config:

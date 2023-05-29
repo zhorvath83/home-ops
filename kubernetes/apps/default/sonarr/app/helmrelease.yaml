@@ -34,12 +34,10 @@ spec:
         reloader.stakater.com/auto: "true"
 
     image:
-      repository: lscr.io/linuxserver/sonarr
-      tag: 3.0.10@sha256:ff523d3cbce42fe638d9879efcd526fde3104b59d2602028e70b6a9a5e8fc55c
+      repository: ghcr.io/onedr0p/sonarr
+      tag: 3.0.10.1567@sha256:70d81e2bba8f7ae0aaf43f6592a333f252b6a26fa2f34c9fb7271ebfae296acf
 
     env:
-      PUID: "10001"
-      PGID: "10001"
       TZ: Europe/Budapest
 
     service:
@@ -84,20 +82,20 @@ spec:
           - hosts:
               - *host
 
-    # podSecurityContext:
-    #   runAsUser: 10001
-    #   runAsGroup: 10001
-    #   fsGroup: 10001
-    #   fsGroupChangePolicy: OnRootMismatch
-    # securityContext:
-    #   privileged: false
-    #   allowPrivilegeEscalation: false
-    #   # Could not handle readOnlyRootFilesystem
-    #   seccompProfile:
-    #     type: RuntimeDefault
-    #   capabilities:
-    #     drop:
-    #       - ALL
+    podSecurityContext:
+      runAsUser: 10001
+      runAsGroup: 10001
+      fsGroup: 10001
+      fsGroupChangePolicy: OnRootMismatch
+    securityContext:
+      privileged: false
+      allowPrivilegeEscalation: false
+      # Could not handle readOnlyRootFilesystem
+      seccompProfile:
+        type: RuntimeDefault
+      capabilities:
+        drop:
+          - ALL
 
     persistence:
       config:

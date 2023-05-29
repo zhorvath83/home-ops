@@ -34,12 +34,10 @@ spec:
         reloader.stakater.com/auto: "true"
 
     image:
-      repository: lscr.io/linuxserver/radarr
-      tag: 4.4.4@sha256:4d7f994cbf5f27ccae86c86bb600c2db7c7a0f2b106b58419241b1a1c4c3ea39
+      repository: ghcr.io/onedr0p/radarr
+      tag: 4.4.4.7068@sha256:44048e41cffcb1ddcf2808bd8c9cfd46aaaadac238699c947ae7a2d6a44296f2
 
     env:
-      PUID: "10001"
-      PGID: "10001"
       TZ: Europe/Budapest
 
     service:
@@ -84,20 +82,20 @@ spec:
           - hosts:
               - *host
 
-    # podSecurityContext:
-    #   runAsUser: 10001
-    #   runAsGroup: 10001
-    #   fsGroup: 10001
-    #   fsGroupChangePolicy: OnRootMismatch
-    # securityContext:
-    #   privileged: false
-    #   allowPrivilegeEscalation: false
-    #   # Could not handle readOnlyRootFilesystem
-    #   seccompProfile:
-    #     type: RuntimeDefault
-    #   capabilities:
-    #     drop:
-    #       - ALL
+    podSecurityContext:
+      runAsUser: 10001
+      runAsGroup: 10001
+      fsGroup: 10001
+      fsGroupChangePolicy: OnRootMismatch
+    securityContext:
+      privileged: false
+      allowPrivilegeEscalation: false
+      # Could not handle readOnlyRootFilesystem
+      seccompProfile:
+        type: RuntimeDefault
+      capabilities:
+        drop:
+          - ALL
 
     persistence:
       config:

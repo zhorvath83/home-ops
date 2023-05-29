@@ -32,12 +32,10 @@ spec:
       type: statefulset
 
     image:
-      repository: lscr.io/linuxserver/overseerr
-      tag: 1.32.5@sha256:376c23e5dd1304c3b4f54710eb5bb8e33ef9555fe17636098b9a0c7ec9731b26
+      repository: ghcr.io/sct/overseerr
+      tag: 1.32.5@sha256:7f82b15910de1da8b28b7225a2c825bd632e7ff33a0869ae65956b7dbc35b499
 
     env:
-      PUID: "10001"
-      PGID: "10001"
       TZ: Europe/Budapest
 
     service:
@@ -64,20 +62,20 @@ spec:
           - hosts:
               - *host
 
-    # podSecurityContext:
-    #   runAsUser: 10001
-    #   runAsGroup: 10001
-    #   fsGroup: 10001
-    #   fsGroupChangePolicy: OnRootMismatch
-    # securityContext:
-    #   privileged: false
-    #   allowPrivilegeEscalation: false
-    #   # Could not handle readOnlyRootFilesystem
-    #   seccompProfile:
-    #     type: RuntimeDefault
-    #   capabilities:
-    #     drop:
-    #       - ALL
+    podSecurityContext:
+      runAsUser: 10001
+      runAsGroup: 10001
+      fsGroup: 10001
+      fsGroupChangePolicy: OnRootMismatch
+    securityContext:
+      privileged: false
+      allowPrivilegeEscalation: false
+      # Could not handle readOnlyRootFilesystem
+      seccompProfile:
+        type: RuntimeDefault
+      capabilities:
+        drop:
+          - ALL
 
     persistence:
       config:
