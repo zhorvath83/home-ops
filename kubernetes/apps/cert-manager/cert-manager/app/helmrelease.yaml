@@ -23,7 +23,7 @@ spec:
     remediation:
       retries: 5
   values:
-    # Pod Security Context controlled by Helm Chart.
+    # Pod Security Context controlled via Helm Chart.
     installCRDs: true
     webhook:
       enabled: true

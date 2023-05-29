@@ -61,6 +61,7 @@ spec:
       fsGroupChangePolicy: OnRootMismatch
       supplementalGroups:
         - 1000
+
     securityContext:
       privileged: false
       allowPrivilegeEscalation: false
