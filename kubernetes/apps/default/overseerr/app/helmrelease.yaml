@@ -62,20 +62,20 @@ spec:
           - hosts:
               - *host
 
-    podSecurityContext:
-      runAsUser: 10001
-      runAsGroup: 10001
-      fsGroup: 10001
-      fsGroupChangePolicy: OnRootMismatch
-    securityContext:
-      privileged: false
-      allowPrivilegeEscalation: false
-      # Could not handle readOnlyRootFilesystem
-      seccompProfile:
-        type: RuntimeDefault
-      capabilities:
-        drop:
-          - ALL
+    # podSecurityContext:
+    #   runAsUser: 10001
+    #   runAsGroup: 10001
+    #   fsGroup: 10001
+    #   fsGroupChangePolicy: OnRootMismatch
+    # securityContext:
+    #   privileged: false
+    #   allowPrivilegeEscalation: false
+    #   # Could not handle readOnlyRootFilesystem
+    #   seccompProfile:
+    #     type: RuntimeDefault
+    #   capabilities:
+    #     drop:
+    #       - ALL
 
     persistence:
       config:
