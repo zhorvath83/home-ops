@@ -41,7 +41,7 @@ spec:
 
     env:
       TZ: "Europe/Budapest"
-      QBT_Preferences__WebUI__AlternativeUIEnabled: "true"
+      QBT_Preferences__WebUI__AlternativeUIEnabled: "false"
       QBT_Preferences__WebUI__RootFolder: /add-ons/VueTorrent
 
     service:
