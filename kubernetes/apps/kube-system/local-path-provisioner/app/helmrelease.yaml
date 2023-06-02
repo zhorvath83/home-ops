@@ -27,7 +27,7 @@ spec:
   values:
     helperImage:
       repository: public.ecr.aws/docker/library/busybox
-      tag: 1.36.0
+      tag: 1.36.1
     storageClass:
       defaultClass: true
     nodePathMap:
