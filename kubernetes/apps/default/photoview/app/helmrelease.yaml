@@ -71,10 +71,6 @@ spec:
         value: false
       - name: PHOTOVIEW_DISABLE_FACE_RECOGNITION
         value: true
-      - name: PHOTOVIEW_DISABLE_VIDEO_ENCODING
-        value: true
-      - name: PHOTOVIEW_DISABLE_RAW_PROCESSING
-        value: false
       - name: PHOTOVIEW_MEDIA_CACHE
         value: /app/cache
       - name: MAPBOX_TOKEN
@@ -130,21 +126,21 @@ spec:
           - path: cache
             mountPath: /app/cache
 
-    podSecurityContext:
-      runAsUser: 10001
-      runAsGroup: 10001
-      fsGroup: 10001
-      fsGroupChangePolicy: OnRootMismatch
+    # podSecurityContext:
+    #   runAsUser: 10001
+    #   runAsGroup: 10001
+    #   fsGroup: 10001
+    #   fsGroupChangePolicy: OnRootMismatch
 
-    securityContext:
-      privileged: false
-      allowPrivilegeEscalation: false
-      readOnlyRootFilesystem: true
-      seccompProfile:
-        type: RuntimeDefault
-      capabilities:
-        drop:
-          - ALL
+    # securityContext:
+    #   privileged: false
+    #   allowPrivilegeEscalation: false
+    #   readOnlyRootFilesystem: true
+    #   seccompProfile:
+    #     type: RuntimeDefault
+    #   capabilities:
+    #     drop:
+    #       - ALL
 
     resources:
       requests:
