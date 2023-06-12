@@ -35,7 +35,7 @@ spec:
 
     image:
       repository: ghcr.io/onedr0p/prowlarr
-      tag: 1.4.1.3258@sha256:98e9387f0a399a5d180e71b66287bb24149361b7b15d9d91303d2f9b261dca09
+      tag: 1.5.2.3484@sha256:486de188cfcdb858ba958b9d1418b6213614d72d523367d6cd6b5bc91fdf4472
 
     env:
       TZ: Europe/Budapest
