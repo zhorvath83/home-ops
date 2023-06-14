@@ -116,7 +116,7 @@ spec:
         mountPath: /photos
         readOnly: true
         server: ${CLUSTER_LAN_NAS_IP}
-        path: /backups/Fenykepek
+        path: /backups/photos
         type: nfs
 
       data:
