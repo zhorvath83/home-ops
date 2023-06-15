@@ -2,13 +2,23 @@ data "github_ip_ranges" "cidrs" {}
 
 # Access groups
 
-## My custom user group
-resource "cloudflare_access_group" "my_users" {
+## My unrestricted user group
+resource "cloudflare_access_group" "unrestricted_users" {
   account_id     = var.CF_ACCOUNT_ID
-  name           = "MyUsers"
+  name           = "UnrestrictedUsers"
 
   include {
-    email = split(", ", var.CF_ACCESS_AUTHORIZED_EMAILS)
+    email = split(", ", var.CF_ACCESS_UNRESTRICTED_USERS)
+  }
+}
+
+## My restricted user group
+resource "cloudflare_access_group" "restricted_users" {
+  account_id     = var.CF_ACCOUNT_ID
+  name           = "RestrictedUsers"
+
+  include {
+    email = split(", ", var.CF_ACCESS_RESTRICTED_USERS)
   }
 }
 
@@ -42,15 +52,36 @@ resource "cloudflare_access_application" "private_cloud" {
   session_duration = "720h"
 }
 
-resource "cloudflare_access_policy" "private_cloud_user_auth_policy" {
+resource "cloudflare_access_policy" "private_cloud_unrestricted_user_policy" {
   application_id = cloudflare_access_application.private_cloud.id
   zone_id        = lookup(data.cloudflare_zones.domain.zones[0], "id")
-  name           = "UserAuth"
+  name           = "UnrestrictedUserAuth"
   precedence     = "1"
   decision       = "allow"
 
   include {
-    group = [cloudflare_access_group.my_users.id]
+    group = [cloudflare_access_group.unrestricted_users.id]
+  }
+}
+
+## Photos
+resource "cloudflare_access_application" "private_cloud_photos" {
+  zone_id          = lookup(data.cloudflare_zones.domain.zones[0], "id")
+  name             = "Private Cloud Photos"
+  domain           = "fenykepek.${var.CF_DOMAIN_NAME}"
+  type             = "self_hosted"
+  session_duration = "720h"
+}
+
+resource "cloudflare_access_policy" "private_cloud_restricted_user_policy" {
+  application_id = cloudflare_access_application.private_cloud_photos.id
+  zone_id        = lookup(data.cloudflare_zones.domain.zones[0], "id")
+  name           = "RestrictedUserAuth"
+  precedence     = "1"
+  decision       = "allow"
+
+  include {
+    group = [cloudflare_access_group.restricted_users.id]
   }
 }
 
