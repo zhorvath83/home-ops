@@ -103,12 +103,16 @@ spec:
           gethomepage.dev/group: Selfhosted
           gethomepage.dev/icon: photoview.svg
         hosts:
-          - host: &host "photos.${PUBLIC_DOMAIN}"
+          - host: &host1 "photos.${PUBLIC_DOMAIN}"
+            paths:
+              - path: /
+          - host: &host2 "fenykepek.${PUBLIC_DOMAIN}"
             paths:
               - path: /
         tls:
           - hosts:
-              - *host
+              - *host1
+              - *host2
 
     persistence:
       photos:
