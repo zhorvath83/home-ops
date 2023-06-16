@@ -97,7 +97,7 @@ spec:
 
     initcontainers:
       subcleaner:
-        image: alpine/git:2.36.3
+        image: alpine/git:v2.40.1
         imagePullPolicy: IfNotPresent
         command:
           - "/bin/sh"
