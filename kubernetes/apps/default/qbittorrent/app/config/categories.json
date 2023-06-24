@@ -4,5 +4,8 @@
     },
     "shows": {
         "save_path": "shows"
+    },
+    "documentaries": {
+        "save_path": "documentaries"
     }
 }
