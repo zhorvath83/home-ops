@@ -35,7 +35,7 @@ spec:
 
     image:
       repository: ghcr.io/onedr0p/qbittorrent
-      tag: 4.5.3@sha256:860536468f93e89e33149e28894b34178261e6e827f47da66b2eda3756bec4ab
+      tag: 4.5.4@sha256:19e2a93d61b07f699f3bc8b9db5e23cf57a838bd6fd92fe6e272149836dc6506
 
     hostname: qbittorrent
 
@@ -137,7 +137,7 @@ spec:
 
     sidecars:
       vuetorrent:
-        image: registry.k8s.io/git-sync/git-sync:v3.6.6
+        image: registry.k8s.io/git-sync/git-sync:v3.6.7
         imagePullPolicy: IfNotPresent
         args:
           - --repo=https://github.com/WDaan/VueTorrent

@@ -1,7 +1,7 @@
 ---
 collections:
   - name: community.general
-    version: 7.0.1
+    version: 7.1.0
   - name: ansible.posix
     version: 1.5.4
   - name: ansible.utils
@@ -9,7 +9,7 @@ collections:
   - name: devsec.hardening
     version: 8.7.0
   - name: community.docker
-    version: 3.4.7
+    version: 3.4.8
 
 roles:
   - name: chzerv.log2ram

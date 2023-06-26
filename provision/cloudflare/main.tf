@@ -10,7 +10,7 @@ terraform {
   required_providers {
     github = {
       source  = "integrations/github"
-      version = "5.28.0"
+      version = "5.28.1"
     }
     cloudflare = {
       source  = "cloudflare/cloudflare"
@@ -18,7 +18,7 @@ terraform {
     }
     http = {
       source  = "hashicorp/http"
-      version = "3.3.0"
+      version = "3.4.0"
     }
     external = {
       source  = "hashicorp/external"
