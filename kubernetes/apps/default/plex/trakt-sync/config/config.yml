@@ -23,9 +23,10 @@ sync:
     watched_status: true
   trakt_to_plex:
     liked_lists: false
-    ratings: false
+    ratings: true
     watched_status: true
     watchlist: false
+  rating_priority: trakt
 
 watch:
   add_collection: false
