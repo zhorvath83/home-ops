@@ -14,7 +14,7 @@ collections:
 roles:
   - name: chzerv.log2ram
   - name: geerlingguy.ntp
-    version: 2.3.1
+    version: 2.3.2
   # - name: geerlingguy.swap
   #   version: 1.0.2
   - name: geerlingguy.pip
