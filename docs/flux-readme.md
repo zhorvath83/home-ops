@@ -40,13 +40,13 @@ VSCode SOPS is a neat little plugin for those using VSCode. It will automaticall
 **👉  Debugging**
 
 📍 Manually sync Flux with your Git repository
-`flux reconcile source git flux-system`
+`flux reconcile source git home-ops-kubernetes`
 
 📍 Show the health of you kustomizations
 `kubectl get kustomization -A`
 
 📍 Manually reconcile kustomization
-`flux reconcile kustomization apps`
+`flux reconcile kustomization cluster-apps`
 
 📍 Show the health of your main Flux GitRepository
 `flux get sources git`
