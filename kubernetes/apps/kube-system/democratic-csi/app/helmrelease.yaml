@@ -119,9 +119,9 @@ spec:
         volumeBindingMode: WaitForFirstConsumer
         allowVolumeExpansion: false
 
-    volumeSnapshotClasses:
-      - name: democratic-csi-local-hostpath
-        annotations:
-          snapshot.storage.kubernetes.io/is-default-class: "true"
-        deletionPolicy: Delete
-        parameters: {}
+    # volumeSnapshotClasses:
+    #   - name: democratic-csi-local-hostpath
+    #     annotations:
+    #       snapshot.storage.kubernetes.io/is-default-class: "true"
+    #     deletionPolicy: Delete
+    #     parameters: {}
