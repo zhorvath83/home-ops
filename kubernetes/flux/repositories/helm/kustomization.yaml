@@ -15,7 +15,7 @@ resources:
   - ./kubereboot.yaml
   - ./ingress-nginx.yaml
   - ./searxng.yaml
-  - ./weave-gitops.yaml
+  - ./weaveworks.yaml
   - ./backube.yaml
   - ./piraeus.yaml
   - ./external-secrets.yaml
