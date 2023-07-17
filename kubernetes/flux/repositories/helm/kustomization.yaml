@@ -21,4 +21,3 @@ resources:
   - ./external-secrets.yaml
   - ./jameswynn.yaml
   - ./democratic-csi.yaml
-  - ./podinfo.yaml
