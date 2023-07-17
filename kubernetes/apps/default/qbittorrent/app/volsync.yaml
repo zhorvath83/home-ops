@@ -2,19 +2,19 @@
 apiVersion: external-secrets.io/v1beta1
 kind: ExternalSecret
 metadata:
-  name: photoview-restic
+  name: qbittorrent-restic
   namespace: default
 spec:
   secretStoreRef:
     kind: ClusterSecretStore
     name: onepassword-connect
   target:
-    name: photoview-restic-secret
+    name: qbittorrent-restic-secret
     creationPolicy: Owner
     template:
       engineVersion: v2
       data:
-        RESTIC_REPOSITORY: '{{ .REPOSITORY_TEMPLATE }}/photoview'
+        RESTIC_REPOSITORY: '{{ .REPOSITORY_TEMPLATE }}/qbittorrent'
         RESTIC_PASSWORD: '{{ .RESTIC_PASSWORD }}'
         AWS_ACCESS_KEY_ID: '{{ .AWS_ACCESS_KEY_ID }}'
         AWS_SECRET_ACCESS_KEY: '{{ .AWS_SECRET_ACCESS_KEY }}'
@@ -25,16 +25,16 @@ spec:
 apiVersion: volsync.backube/v1alpha1
 kind: ReplicationSource
 metadata:
-  name: photoview
+  name: qbittorrent
   namespace: default
 spec:
-  sourcePVC: photoview
+  sourcePVC: qbittorrent
   trigger:
     schedule: "0 0 * * *"
   restic:
     copyMethod: Snapshot
     pruneIntervalDays: 5
-    repository: photoview-restic-secret
+    repository: qbittorrent-restic-secret
     cacheCapacity: 1Gi
     volumeSnapshotClassName: democratic-csi-local-hostpath
     storageClassName: democratic-csi-local-hostpath
