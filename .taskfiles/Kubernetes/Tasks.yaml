@@ -1,0 +1,58 @@
+---
+version: "3"
+
+tasks:
+
+  kubeconfig:
+    desc: Download kubeconfig from a remote k3s master node
+    vars:
+      MASTER_USERNAME: '{{.MASTER_USERNAME | default "root"}}'
+      K8S_MASTER_HOST: '{{.K8S_MASTER_HOST | default "192.168.1.6"}}'
+      KUBERNETES_API: '{{.KUBERNETES_API | default "192.168.1.6"}}'
+    cmds:
+      - rsync --verbose --progress --partial --rsync-path="sudo rsync" {{.MASTER_USERNAME}}@{{.K8S_MASTER_HOST}}:/etc/rancher/k3s/k3s.yaml "${KUBECONFIG}"
+      - sed -i '' 's/127.0.0.1/{{.KUBERNETES_API}}/g' "${KUBECONFIG}"
+      - chmod go-r "${KUBECONFIG}"
+
+  mount:
+    desc: Mount a PersistentVolumeClaim to a pod temporarily
+    interactive: true
+    vars:
+      claim: '{{ or .claim (fail "PersistentVolumeClaim `claim` is required") }}'
+      namespace: '{{.namespace | default "default"}}'
+    cmd: |
+      kubectl run -n {{.namespace}} debug-{{.claim}} -i --tty --rm --image=null --privileged --overrides='
+        {
+          "apiVersion": "v1",
+          "spec": {
+            "containers": [
+              {
+                "name": "debug",
+                "image": "ghcr.io/onedr0p/alpine:rolling",
+                "command": [
+                  "/bin/bash"
+                ],
+                "stdin": true,
+                "stdinOnce": true,
+                "tty": true,
+                "volumeMounts": [
+                  {
+                    "name": "config",
+                    "mountPath": "/data/config"
+                  }
+                ]
+              }
+            ],
+            "volumes": [
+              {
+                "name": "config",
+                "persistentVolumeClaim": {
+                  "claimName": "{{.claim}}"
+                }
+              }
+            ],
+            "restartPolicy": "Never"
+          }
+        }'
+    preconditions:
+      - kubectl -n {{.namespace}} get pvc {{.claim}}

@@ -9,11 +9,23 @@ vars:
   TERRAFORM_DIR: "{{.ROOT_DIR}}/provision/cloudflare"
 
 env:
+  MASTER_USERNAME: zhorvath83
+  K8S_MASTER_HOST: 192.168.1.6
+  KUBERNETES_API: 192.168.1.6
   KUBECONFIG: /home/zhorvath83/.kube/config
   SOPS_AGE_KEY_FILE: /home/zhorvath83/.config/sops/age/keys.txt
 
 includes:
-  ansible: .taskfiles/AnsibleTasks.yml
-  cluster: .taskfiles/ClusterTasks.yml
-  precommit: .taskfiles/PrecommitTasks.yml
-  terraform: .taskfiles/TerraformTask.yml
+  an: .taskfiles/Ansible/Tasks.yaml
+  es: .taskfiles/ExternalSecrets/Tasks.yaml
+  fx: .taskfiles/Flux/Tasks.yaml
+  ku: .taskfiles/Kubernetes/Tasks.yaml
+  pc: .taskfiles/PreCommit/Tasks.yaml
+  tf: .taskfiles/Terraform/Tasks.yaml
+  vs: .taskfiles/VolSync/Tasks.yaml
+
+tasks:
+
+  default:
+    silent: true
+    cmds: ["task -l"]
