@@ -9,3 +9,4 @@ resources:
   - ./echo-server/ks.yaml
   - ./external-dns/ks.yaml
   - ./adguard-home/ks.yaml
+  - ./podinfo/ks.yaml
