@@ -7,6 +7,7 @@ resources:
   - ./helmrelease.yaml
   - ./externalsecret.yaml
   - ./volsync.yaml
-commonLabels:
-  app.kubernetes.io/name: photoview
-  app.kubernetes.io/instance: photoview
+labels:
+  - pairs:
+      app.kubernetes.io/name: photoview
+      app.kubernetes.io/instance: photoview
