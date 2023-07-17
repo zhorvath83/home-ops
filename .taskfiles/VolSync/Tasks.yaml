@@ -110,7 +110,7 @@ tasks:
           else
             echo "statefulset.apps/$app"
           fi
-      previous: "{{.previous | default 2}}"
+      previous: "{{.previous | default 1}}"
     env: *task-vars
     preconditions:
       - sh: test -f {{.wipeJobTemplate}}
