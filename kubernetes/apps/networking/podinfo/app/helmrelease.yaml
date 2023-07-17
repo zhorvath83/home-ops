@@ -25,11 +25,19 @@ spec:
   uninstall:
     keepHistory: false
   values:
-    controller:
-      strategy: RollingUpdate
     image:
       repository: ghcr.io/stefanprodan/podinfo
       tag: 6.4.0
+
+    securityContext:
+      privileged: false
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      seccompProfile:
+        type: RuntimeDefault
+      capabilities:
+        drop:
+          - ALL
 
     ingress:
       enabled: true
@@ -40,7 +48,7 @@ spec:
         gethomepage.dev/group: Monitoring
         gethomepage.dev/icon: terminal.svg
       hosts:
-        - host: &host "{{ .Release.Name }}.${PUBLIC_DOMAIN}"
+        - host: &host "podinfo.${PUBLIC_DOMAIN}"
           paths:
             - path: /
               pathType: Prefix
