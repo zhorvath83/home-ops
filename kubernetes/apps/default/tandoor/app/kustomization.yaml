@@ -6,3 +6,7 @@ resources:
   - ./helmrelease.yaml
   - ./externalsecret.yaml
   - ./pvc.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: tandoor

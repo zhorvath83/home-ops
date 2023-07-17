@@ -5,6 +5,11 @@ namespace: networking
 resources:
   - ./dashboard
   - ./helmrelease.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: ingress-nginx
+
 configMapGenerator:
   - name: cloudflare-networks
     files:

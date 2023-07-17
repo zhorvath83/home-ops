@@ -10,4 +10,3 @@ resources:
 labels:
   - pairs:
       app.kubernetes.io/name: photoview
-      app.kubernetes.io/instance: photoview

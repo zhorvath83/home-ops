@@ -5,3 +5,7 @@ namespace: default
 resources:
   - ./pvc.yaml
   - ./helmrelease.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: trilium

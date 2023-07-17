@@ -5,14 +5,17 @@ namespace: default
 resources:
   - ./helmrelease.yaml
   - ./pvc.yaml
-commonLabels:
-  app.kubernetes.io/name: qbittorrent
-  app.kubernetes.io/instance: qbittorrent
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: qbittorrent
+
 configMapGenerator:
   - name: qbittorrent-configmap
     files:
       - config/qBittorrent.conf
       - config/watched_folders.json
       - config/categories.json
+
 generatorOptions:
   disableNameSuffixHash: true

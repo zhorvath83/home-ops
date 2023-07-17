@@ -4,3 +4,7 @@ kind: Kustomization
 resources:
   - externalsecret.yaml
   - helmrelease.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: weave-gitops

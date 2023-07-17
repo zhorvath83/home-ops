@@ -5,3 +5,7 @@ namespace: default
 resources:
   - ./configmap.yaml
   - ./helmrelease.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: homepage

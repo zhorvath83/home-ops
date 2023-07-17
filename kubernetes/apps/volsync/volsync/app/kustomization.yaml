@@ -4,3 +4,7 @@ kind: Kustomization
 namespace: volsync
 resources:
   - ./helmrelease.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: volsync

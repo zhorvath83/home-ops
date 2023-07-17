@@ -5,3 +5,7 @@ namespace: monitoring
 resources:
   - ./externalsecret.yaml
   - ./helmrelease.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: kube-prometheus-stack

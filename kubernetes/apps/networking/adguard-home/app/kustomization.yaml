@@ -5,6 +5,11 @@ namespace: networking
 resources:
   - pvc.yaml
   - helmrelease.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: adguard-home
+
 configMapGenerator:
   - name: adguard-home-config
     files:
