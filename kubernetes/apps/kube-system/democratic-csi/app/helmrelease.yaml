@@ -98,6 +98,7 @@ spec:
 
     csiDriver:
       name: "org.democratic-csi.local-hostpath"
+      attachRequired: false
       storageCapacity: true
       fsGroupPolicy: File
 
