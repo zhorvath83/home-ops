@@ -91,8 +91,6 @@ sudo apt-get install --assume-yes --no-install-recommends \
 sudo pip3 install --upgrade pip
 # Installing pre-commit, pre-commit-hooks, yamllint, ansible-core
 sudo pip install \
-    supervisor \
-    supervisord-dependent-startup \
     pre-commit \
     pre-commit-hooks \
     python-Levenshtein \
