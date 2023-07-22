@@ -6,11 +6,11 @@ echo "vivaldi-bin" | sudo tee /etc/1password/custom_allowed_browsers
 sudo chown root:root /etc/1password/custom_allowed_browsers
 sudo chmod 755 /etc/1password/custom_allowed_browsers
 
-cat <<EOF > /home/zhorvath83/.ssh/config
-Host *
-    IdentityAgent ~/.1password/agent.sock
-    ForwardAgent yes
-EOF
+echo "export SSH_AUTH_SOCK=~/.1password/agent.sock" | sudo tee /etc/profile.d/1password-ssh-auth-sock.sh
+
+mkdir -p ~/.config/autostart \
+  && cp /etc/xdg/autostart/gnome-keyring-ssh.desktop ~/.config/autostart/gnome-keyring-ssh.desktop \
+  && echo "Hidden=true" >> ~/.config/autostart/gnome-keyring-ssh.desktop
 
 op read -o /home/zhorvath83/.config/sops/age/keys.txt op://HomeOps/homelab-age-key/keys.txt
 
