@@ -33,7 +33,7 @@ spec:
 
     image:
       repository: ghcr.io/sct/overseerr
-      tag: 1.33.0@sha256:95f71372d74a813a0213b88672bb84fbbb1eb73bc77fba2057fdf44995d09104
+      tag: 1.33.1@sha256:b1e06e9c0cd30dec03316b2d86f7d81b615e48ce5ab2bcd27d18f13688028d9f
 
     env:
       TZ: Europe/Budapest
