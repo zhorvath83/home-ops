@@ -1,5 +1,7 @@
 terraform {
 
+  required_version = "~> 1.0"
+
   cloud {
     organization = "zhorvath83"
     workspaces {
@@ -10,7 +12,7 @@ terraform {
   required_providers {
     github = {
       source  = "integrations/github"
-      version = "5.32.0"
+      version = "5.31.0"
     }
     cloudflare = {
       source  = "cloudflare/cloudflare"
