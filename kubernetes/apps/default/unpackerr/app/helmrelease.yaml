@@ -35,7 +35,7 @@ spec:
 
     image:
       repository: docker.io/golift/unpackerr
-      tag: 0.11.2
+      tag: 0.12.0
 
     env:
       TZ: Europe/Budapest
