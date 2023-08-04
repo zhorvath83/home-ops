@@ -30,9 +30,13 @@ kind: Service
 metadata:
   name: iperf3-server
   namespace: networking
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: "${CLUSTER_SVC_IPERF_IP}"
 spec:
   selector:
     app: iperf3-server
+  type: LoadBalancer
+  externalTrafficPolicy: Local
   ports:
     - protocol: TCP
       port: 5201
