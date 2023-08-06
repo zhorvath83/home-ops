@@ -18,3 +18,4 @@ resources:
   - ./bazarr/ks.yaml
   # - ./unpackerr/ks.yaml
   - ./overseerr/ks.yaml
+  - ./kopia/ks.yaml
