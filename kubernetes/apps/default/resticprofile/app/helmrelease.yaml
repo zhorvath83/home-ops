@@ -51,8 +51,8 @@ spec:
       TZ: Europe/Budapest
 
     podSecurityContext:
-      runAsUser: 10001
-      runAsGroup: 10001
+      runAsUser: 0
+      runAsGroup: 0
 
     securityContext:
       privileged: true
