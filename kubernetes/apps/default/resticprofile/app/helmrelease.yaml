@@ -1,0 +1,99 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: &app resticprofile
+  namespace: default
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: app-template
+      version: 1.5.1
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+
+  # maxHistory: 3
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+
+  values:
+    controller:
+      type: statefulset
+      annotations:
+        reloader.stakater.com/auto: "true"
+
+    image:
+      repository: creativeprojects/resticprofile
+      tag: 0.22.0@sha256:d1cbd9e954f6016e94cc2ef0f5e24f7c38063ea24ca9e82b353d229c91f83e41
+
+      command:
+        - "/bin/sh"
+        - -c
+      args:
+        - resticprofile schedule --all && crond -f
+
+    env:
+      TZ: Europe/Budapest
+
+    podSecurityContext:
+      runAsUser: 10001
+      runAsGroup: 10001
+      fsGroup: 10001
+      fsGroupChangePolicy: OnRootMismatch
+
+    securityContext:
+      privileged: false
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      seccompProfile:
+        type: RuntimeDefault
+      capabilities:
+        drop:
+          - ALL
+
+    persistence:
+      profiles-yaml:
+        enabled: true
+        mountPath: /etc/resticprofile/profiles.yaml
+        name: resticprofile-configmap
+        readOnly: true
+        subPath: profiles.yaml
+        type: configMap
+      restic-pwd:
+        enabled: true
+        mountPath: /etc/resticprofile/restic.pwd
+        name: resticprofile-secret
+        readOnly: true
+        subPath: restic.pwd
+        type: secret
+      logs:
+        enabled: true
+        existingClaim: *app
+      cache:
+        enabled: true
+        type: emptyDir
+        mountPath: /cache
+      nfs-backups:
+        enabled: true
+        type: nfs
+        server: ${CLUSTER_LAN_NAS_IP}
+        path: /backups
+        mountPath: /backups
+
+    resources:
+      requests:
+        cpu: 10m
+        memory: 250Mi
+      limits:
+        memory: 2000Mi

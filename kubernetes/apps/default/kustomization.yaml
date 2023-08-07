@@ -19,3 +19,4 @@ resources:
   # - ./unpackerr/ks.yaml
   - ./overseerr/ks.yaml
   - ./kopia/ks.yaml
+  - ./resticprofile/ks.yaml
