@@ -82,10 +82,10 @@ spec:
       logs:
         enabled: true
         existingClaim: *app
-      # cache:
-      #   enabled: true
-      #   type: emptyDir
-      #   mountPath: /cache
+      cache:
+        enabled: true
+        type: emptyDir
+        mountPath: /cache
       # tmp:
       #   enabled: true
       #   type: emptyDir
