@@ -88,6 +88,10 @@ spec:
         enabled: true
         type: emptyDir
         mountPath: /cache
+      tmp:
+        enabled: true
+        type: emptyDir
+        mountPath: /tmp
       nfs-backups:
         enabled: true
         type: nfs
