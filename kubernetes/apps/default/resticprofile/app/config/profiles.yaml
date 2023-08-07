@@ -6,7 +6,7 @@ global:
     scheduler: crond
 
 default:
-  repository: "local:/backup"
+  repository: "local:/bckup"
   password-file: "/etc/resticprofile/restic.pwd"
   compression: max
   initialize: true

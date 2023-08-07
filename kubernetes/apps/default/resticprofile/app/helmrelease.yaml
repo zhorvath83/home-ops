@@ -86,10 +86,10 @@ spec:
         enabled: true
         type: emptyDir
         mountPath: /cache
-      # tmp:
-      #   enabled: true
-      #   type: emptyDir
-      #   mountPath: /tmp
+      bckup:
+        enabled: true
+        type: emptyDir
+        mountPath: /bckup
       nfs-backups:
         enabled: true
         type: nfs
