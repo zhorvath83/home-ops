@@ -57,7 +57,7 @@ spec:
     securityContext:
       privileged: true
       allowPrivilegeEscalation: true
-      readOnlyRootFilesystem: true
+      readOnlyRootFilesystem: false
       seccompProfile:
         type: RuntimeDefault
       capabilities:
@@ -82,14 +82,14 @@ spec:
       logs:
         enabled: true
         existingClaim: *app
-      cache:
-        enabled: true
-        type: emptyDir
-        mountPath: /cache
-      tmp:
-        enabled: true
-        type: emptyDir
-        mountPath: /tmp
+      # cache:
+      #   enabled: true
+      #   type: emptyDir
+      #   mountPath: /cache
+      # tmp:
+      #   enabled: true
+      #   type: emptyDir
+      #   mountPath: /tmp
       nfs-backups:
         enabled: true
         type: nfs
