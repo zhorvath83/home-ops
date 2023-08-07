@@ -44,6 +44,7 @@ default:
       Stderr: $ERROR_STDERR
       "
   forget:
+    schedule-permission: user
     schedule-log: /logs/resticprofile.log
     keep-hourly: 24
     keep-daily: 14
@@ -52,5 +53,6 @@ default:
     prune: true
 
   check:
+    schedule-permission: user
     schedule-log: /logs/resticprofile.log
     read-data-subset: "50M"
