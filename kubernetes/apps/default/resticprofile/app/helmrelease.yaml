@@ -37,6 +37,10 @@ spec:
       repository: creativeprojects/resticprofile
       tag: 0.22.0@sha256:d1cbd9e954f6016e94cc2ef0f5e24f7c38063ea24ca9e82b353d229c91f83e41
 
+    service:
+      main:
+        enabled: false
+
       command:
         - "/bin/sh"
         - -c
