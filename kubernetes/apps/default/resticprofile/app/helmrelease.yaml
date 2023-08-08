@@ -70,6 +70,16 @@ spec:
           secretKeyRef:
             name: resticprofile-secret
             key: AWS_SECRET_ACCESS_KEY
+      - name: HEALTHCHECK_BACKUP_WEBHOOK
+        valueFrom:
+          secretKeyRef:
+            name: resticprofile-secret
+            key: HEALTHCHECK_BACKUP_WEBHOOK
+      - name: HEALTHCHECK_CHECK_WEBHOOK
+        valueFrom:
+          secretKeyRef:
+            name: resticprofile-secret
+            key: HEALTHCHECK_CHECK_WEBHOOK
 
     podSecurityContext:
       runAsUser: 0
@@ -93,9 +103,6 @@ spec:
         readOnly: true
         subPath: profiles.yaml
         type: configMap
-      logs:
-        enabled: true
-        existingClaim: *app
       nfs-tmp:
         enabled: true
         type: nfs

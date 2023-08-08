@@ -11,54 +11,71 @@ global:
 default:
   lock: "/tmp/resticprofile-profile-default.lock"
   force-inactive-lock: true
-  compression: max
+  compression: auto
   initialize: true
   verbose: true
   priority: low
-  min-memory: 100
 
   env:
     RESTIC_CACHE_DIR: "/mnt/nfs-tmp/resticprofile-cache"
 
   backup:
     schedule: daily
-    schedule-log: /logs/resticprofile.log
+    schedule-log: /backups/resticprofile.log
     schedule-permission: user
-    schedule-lock-wait: 2h
+    schedule-lock-wait: 1h
     source:
       - /backups/pgbackups
+      - /backups/photos
+      - /backups/documents
     exclude: []
     no-error-on-warning: true
-    # run-before: |
-    #   wget "https://hc-ping.com/FW89_Ui4S7Xe4QLa96f98A/kube-restic-${PROFILE_NAME}-${PROFILE_COMMAND}/start?rid=$(cat /tmp/uuid)" -O - -S --post-data "Profile: $PROFILE_NAME
-    #   Command: $PROFILE_COMMAND
-    #   "
-    # run-finally: |
-    #   # Extract lines that don't start with "unchanged " from the log and write them to "backup.log" in the current directory
-    #   grep --invert-match -E "^unchanged\\s" {{ tempFile "backup.log" }} > backup.log
-    #   rc="${ERROR_EXIT_CODE:-0}";
-    #   wget "https://hc-ping.com/FW89_Ui4S7Xe4QLa96f98A/kube-restic-${PROFILE_NAME}-${PROFILE_COMMAND}/${rc}?rid=$(cat /tmp/uuid)" -O - -S --post-data "Profile: $PROFILE_NAME
-    #   Command: $PROFILE_COMMAND
-    #   Message: $ERROR_MESSAGE
-    #   Command-line: $ERROR_COMANDLINE
-    #   Stderr: $ERROR_STDERR
-    #   "
+    send-before:
+      - method: HEAD
+        url: {{ .Env.HEALTHCHECK_BACKUP_WEBHOOK }}/start
+    send-after:
+      - method: HEAD
+        url: {{ .Env.HEALTHCHECK_BACKUP_WEBHOOK }}
+    send-after-fail:
+        method: POST
+        url: {{ .Env.HEALTHCHECK_BACKUP_WEBHOOK }}/fail
+        body: "${ERROR}\n\n${ERROR_STDERR}"
+        headers:
+          - name: Content-Type
+            value: "text/plain; charset=UTF-8"
 
   forget:
-    # check the repository the first day of each month at 3am
-    schedule: "*-*-01 03:00"
+    schedule: "Sun 23:00"
     schedule-permission: user
-    schedule-log: /logs/resticprofile.log
-    keep-hourly: 24
-    keep-daily: 14
+    schedule-log: /backups/resticprofile.log
+    schedule-lock-mode: default
+    schedule-lock-wait: 1h
+    keep-hourly: 5
+    keep-daily: 5
+    keep-weekly: 4
     keep-monthly: 24
-    keep-weekly: 12
     prune: true
 
   check:
+    schedule: "Sat 23:00"
     schedule-permission: user
-    schedule-log: /logs/resticprofile.log
-    read-data-subset: "100M"
+    schedule-log: /backups/resticprofile.log
+    schedule-lock-mode: default
+    schedule-lock-wait: 1h
+    read-data-subset: "50M"
+    send-before:
+      - method: HEAD
+        url: {{ .Env.HEALTHCHECK_CHECK_WEBHOOK }}/start
+    send-after:
+      - method: HEAD
+        url: {{ .Env.HEALTHCHECK_CHECK_WEBHOOK }}
+    send-after-fail:
+        method: POST
+        url: {{ .Env.HEALTHCHECK_CHECK_WEBHOOK }}/fail
+        body: "${ERROR}\n\n${ERROR_STDERR}"
+        headers:
+          - name: Content-Type
+            value: "text/plain; charset=UTF-8"
 
   restore:
     target: "/mnt/nfs-tmp/resticprofile-restore"
