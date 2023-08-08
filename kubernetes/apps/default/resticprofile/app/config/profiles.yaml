@@ -6,7 +6,7 @@ global:
     scheduler: crond
 
 default:
-  repository: "local:/bckup"
+  # repository: "local:/bckup"
   password-file: "/etc/resticprofile/restic.pwd"
   compression: max
   initialize: true
@@ -14,13 +14,13 @@ default:
   pack-size: 64
 
   env:
-    RESTIC_PROGRESS_FPS: "0.1"
+    # RESTIC_PROGRESS_FPS: "0.1"
     RESTIC_CACHE_DIR: "/cache"
 
   backup:
     schedule-log: /logs/resticprofile.log
     schedule: "*:00,05,10,15,30,45"
-    schedule-permission: user
+    schedule-permission: system
     check-before: true
     source:
       - /backups/pgbackups
@@ -44,7 +44,7 @@ default:
     #   Stderr: $ERROR_STDERR
     #   "
   forget:
-    schedule-permission: user
+    schedule-permission: system
     schedule-log: /logs/resticprofile.log
     keep-hourly: 24
     keep-daily: 14
@@ -53,6 +53,6 @@ default:
     prune: true
 
   check:
-    schedule-permission: user
+    schedule-permission: system
     schedule-log: /logs/resticprofile.log
     read-data-subset: "50M"

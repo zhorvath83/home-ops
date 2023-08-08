@@ -48,7 +48,23 @@ spec:
         enabled: false
 
     env:
-      TZ: Europe/Budapest
+      - name: TZ
+        value: Europe/Budapest
+      - name: RESTIC_REPOSITORY
+        valueFrom:
+          secretKeyRef:
+            name: resticprofile-secret
+            key: RESTIC_REPOSITORY
+      - name: AWS_ACCESS_KEY_ID
+        valueFrom:
+          secretKeyRef:
+            name: resticprofile-secret
+            key: AWS_ACCESS_KEY_ID
+      - name: AWS_SECRET_ACCESS_KEY
+        valueFrom:
+          secretKeyRef:
+            name: resticprofile-secret
+            key: AWS_SECRET_ACCESS_KEY
 
     podSecurityContext:
       runAsUser: 0
