@@ -96,10 +96,12 @@ spec:
       logs:
         enabled: true
         existingClaim: *app
-      cache:
+      nfs-tmp:
         enabled: true
-        type: emptyDir
-        mountPath: /cache
+        type: nfs
+        server: ${CLUSTER_LAN_NAS_IP}
+        path: /tmp
+        mountPath: /mnt/nfs-tmp
       nfs-backups:
         enabled: true
         type: nfs
