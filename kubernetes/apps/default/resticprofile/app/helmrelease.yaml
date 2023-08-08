@@ -50,6 +50,11 @@ spec:
     env:
       - name: TZ
         value: Europe/Budapest
+      - name: RESTIC_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: resticprofile-secret
+            key: RESTIC_PASSWORD
       - name: RESTIC_REPOSITORY
         valueFrom:
           secretKeyRef:
@@ -88,13 +93,6 @@ spec:
         readOnly: true
         subPath: profiles.yaml
         type: configMap
-      restic-pwd:
-        enabled: true
-        mountPath: /etc/resticprofile/restic.pwd
-        name: resticprofile-secret
-        readOnly: true
-        subPath: restic.pwd
-        type: secret
       logs:
         enabled: true
         existingClaim: *app
@@ -102,10 +100,6 @@ spec:
         enabled: true
         type: emptyDir
         mountPath: /cache
-      bckup:
-        enabled: true
-        type: emptyDir
-        mountPath: /bckup
       nfs-backups:
         enabled: true
         type: nfs
