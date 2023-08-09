@@ -37,6 +37,10 @@ data:
         style: row
         columns: 5
 
+      IoT:
+        style: row
+        columns: 5
+
       Cloud-services:
         style: row
         columns: 5
@@ -110,6 +114,9 @@ data:
             icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/mak.png
 
     - Cloud-services:
+        - GitHub:
+            icon: github.svg
+            href: https://github.com
         - Office 365:
             icon: office-365.svg
             href: https://office.com
@@ -119,9 +126,6 @@ data:
         - iCloud:
             href: https://icloud.com
             icon: apple.svg
-        - GitHub:
-            icon: github.svg
-            href: https://github.com
         - Cloudflare:
             icon: cloudflare.svg
             href: https://dash.cloudflare.com
@@ -142,7 +146,9 @@ data:
         - Proxmox hypervisor:
             href: https://192.168.1.5:8006
             icon: proxmox.svg
-        - Brother HL-1223WE printer:
+
+    - IoT:
+        - Brother printer:
             href: http://192.168.2.2
             icon: printer.svg
         - Zigbee2Tasmota:
