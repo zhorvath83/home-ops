@@ -71,7 +71,7 @@ spec:
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Radarr - moviess
-          gethomepage.dev/group: Downloading
+          gethomepage.dev/group: Multimedia
           gethomepage.dev/icon: radarr.svg
         hosts:
           - host: &host "movies.${PUBLIC_DOMAIN}"

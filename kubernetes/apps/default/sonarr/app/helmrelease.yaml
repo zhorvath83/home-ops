@@ -71,7 +71,7 @@ spec:
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Sonarr - shows
-          gethomepage.dev/group: Downloading
+          gethomepage.dev/group: Multimedia
           gethomepage.dev/icon: sonarr.svg
         hosts:
           - host: &host "shows.${PUBLIC_DOMAIN}"
