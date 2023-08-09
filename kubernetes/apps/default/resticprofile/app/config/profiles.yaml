@@ -41,7 +41,7 @@ documents:
             value: "text/plain; charset=UTF-8"
 
   forget:
-    schedule: "Sun 23:00"
+    schedule: "Sun 20:00"
     schedule-permission: user
     schedule-log: /backups/resticprofile-documents.log
     schedule-lock-mode: default
@@ -53,7 +53,7 @@ documents:
     prune: true
 
   check:
-    schedule: "Sat 23:00"
+    schedule: "Sat 20:00"
     schedule-permission: user
     schedule-log: /backups/resticprofile-documents.log
     schedule-lock-mode: default
@@ -75,6 +75,77 @@ documents:
 
   restore:
     target: "/mnt/nfs-tmp/resticprofile-restore/documents"
+
+
+misc:
+  repository: {{ .Env.RESTIC_REPOSITORY_TEMPLATE }}misc-backups
+  lock: "/tmp/resticprofile-profile-misc.lock"
+  force-inactive-lock: true
+  compression: auto
+  initialize: true
+  verbose: true
+  priority: low
+
+  backup:
+    schedule: 00:30
+    schedule-log: /backups/resticprofile-misc.log
+    schedule-permission: user
+    schedule-lock-wait: 1h
+    source:
+      - /backups/ANYU
+      - /backups/Utils
+      - /backups/pgbackups
+    exclude: []
+    no-error-on-warning: true
+    send-before:
+      - method: HEAD
+        url: {{ .Env.HEALTHCHECK_MISC_BACKUP_WEBHOOK }}/start
+    send-after:
+      - method: HEAD
+        url: {{ .Env.HEALTHCHECK_MISC_BACKUP_WEBHOOK }}
+    send-after-fail:
+        method: POST
+        url: {{ .Env.HEALTHCHECK_MISC_BACKUP_WEBHOOK }}/fail
+        body: "${ERROR}\n\n${ERROR_STDERR}"
+        headers:
+          - name: Content-Type
+            value: "text/plain; charset=UTF-8"
+
+  forget:
+    schedule: "Sun 20:30"
+    schedule-permission: user
+    schedule-log: /backups/resticprofile-misc.log
+    schedule-lock-mode: default
+    schedule-lock-wait: 1h
+    keep-hourly: 1
+    keep-daily: 7
+    keep-weekly: 4
+    keep-monthly: 24
+    prune: true
+
+  check:
+    schedule: "Sat 20:30"
+    schedule-permission: user
+    schedule-log: /backups/resticprofile-misc.log
+    schedule-lock-mode: default
+    schedule-lock-wait: 1h
+    read-data-subset: "100M"
+    send-before:
+      - method: HEAD
+        url: {{ .Env.HEALTHCHECK_MISC_CHECK_WEBHOOK }}/start
+    send-after:
+      - method: HEAD
+        url: {{ .Env.HEALTHCHECK_MISC_CHECK_WEBHOOK }}
+    send-after-fail:
+        method: POST
+        url: {{ .Env.HEALTHCHECK_MISC_CHECK_WEBHOOK }}/fail
+        body: "${ERROR}\n\n${ERROR_STDERR}"
+        headers:
+          - name: Content-Type
+            value: "text/plain; charset=UTF-8"
+
+  restore:
+    target: "/mnt/nfs-tmp/resticprofile-restore/misc"
 
 
 pictures:
@@ -110,7 +181,7 @@ pictures:
             value: "text/plain; charset=UTF-8"
 
   forget:
-    schedule: "Sun 23:15"
+    schedule: "Sun 21:00"
     schedule-permission: user
     schedule-log: /backups/resticprofile-pictures.log
     schedule-lock-mode: default
@@ -122,12 +193,12 @@ pictures:
     prune: true
 
   check:
-    schedule: "Sat 23:15"
+    schedule: "Sat 21:00"
     schedule-permission: user
     schedule-log: /backups/resticprofile-pictures.log
     schedule-lock-mode: default
     schedule-lock-wait: 1h
-    read-data-subset: "50M"
+    read-data-subset: "100M"
     send-before:
       - method: HEAD
         url: {{ .Env.HEALTHCHECK_PICTURES_CHECK_WEBHOOK }}/start
@@ -180,7 +251,7 @@ videos:
             value: "text/plain; charset=UTF-8"
 
   forget:
-    schedule: "Sun 23:30"
+    schedule: "Sun 22:00"
     schedule-permission: user
     schedule-log: /backups/resticprofile-videos.log
     schedule-lock-mode: default
@@ -192,12 +263,12 @@ videos:
     prune: true
 
   check:
-    schedule: "Sat 23:30"
+    schedule: "Sat 22:00"
     schedule-permission: user
     schedule-log: /backups/resticprofile-videos.log
     schedule-lock-mode: default
     schedule-lock-wait: 1h
-    read-data-subset: "50M"
+    read-data-subset: "100M"
     send-before:
       - method: HEAD
         url: {{ .Env.HEALTHCHECK_VIDEOS_CHECK_WEBHOOK }}/start

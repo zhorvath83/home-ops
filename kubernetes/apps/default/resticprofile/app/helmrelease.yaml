@@ -102,6 +102,16 @@ spec:
           secretKeyRef:
             name: resticprofile-secret
             key: HEALTHCHECK_VIDEOS_CHECK_WEBHOOK
+      - name: HEALTHCHECK_MISC_BACKUP_WEBHOOK
+        valueFrom:
+          secretKeyRef:
+            name: resticprofile-secret
+            key: HEALTHCHECK_MISC_BACKUP_WEBHOOK
+      - name: HEALTHCHECK_MISC_CHECK_WEBHOOK
+        valueFrom:
+          secretKeyRef:
+            name: resticprofile-secret
+            key: HEALTHCHECK_MISC_CHECK_WEBHOOK
 
     podSecurityContext:
       runAsUser: 0
