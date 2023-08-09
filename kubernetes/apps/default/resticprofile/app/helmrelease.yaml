@@ -50,16 +50,18 @@ spec:
     env:
       - name: TZ
         value: Europe/Budapest
+      - name: RESTIC_CACHE_DIR
+        value: "/mnt/nfs-tmp/resticprofile-cache"
       - name: RESTIC_PASSWORD
         valueFrom:
           secretKeyRef:
             name: resticprofile-secret
             key: RESTIC_PASSWORD
-      - name: RESTIC_REPOSITORY
+      - name: RESTIC_REPOSITORY_TEMPLATE
         valueFrom:
           secretKeyRef:
             name: resticprofile-secret
-            key: RESTIC_REPOSITORY
+            key: RESTIC_REPOSITORY_TEMPLATE
       - name: AWS_ACCESS_KEY_ID
         valueFrom:
           secretKeyRef:
@@ -70,16 +72,36 @@ spec:
           secretKeyRef:
             name: resticprofile-secret
             key: AWS_SECRET_ACCESS_KEY
-      - name: HEALTHCHECK_BACKUP_WEBHOOK
+      - name: HEALTHCHECK_DOCUMENTS_BACKUP_WEBHOOK
         valueFrom:
           secretKeyRef:
             name: resticprofile-secret
-            key: HEALTHCHECK_BACKUP_WEBHOOK
-      - name: HEALTHCHECK_CHECK_WEBHOOK
+            key: HEALTHCHECK_DOCUMENTS_BACKUP_WEBHOOK
+      - name: HEALTHCHECK_DOCUMENTS_CHECK_WEBHOOK
         valueFrom:
           secretKeyRef:
             name: resticprofile-secret
-            key: HEALTHCHECK_CHECK_WEBHOOK
+            key: HEALTHCHECK_DOCUMENTS_CHECK_WEBHOOK
+      - name: HEALTHCHECK_PICTURES_BACKUP_WEBHOOK
+        valueFrom:
+          secretKeyRef:
+            name: resticprofile-secret
+            key: HEALTHCHECK_PICTURES_BACKUP_WEBHOOK
+      - name: HEALTHCHECK_PICTURES_CHECK_WEBHOOK
+        valueFrom:
+          secretKeyRef:
+            name: resticprofile-secret
+            key: HEALTHCHECK_PICTURES_CHECK_WEBHOOK
+      - name: HEALTHCHECK_VIDEOS_BACKUP_WEBHOOK
+        valueFrom:
+          secretKeyRef:
+            name: resticprofile-secret
+            key: HEALTHCHECK_VIDEOS_BACKUP_WEBHOOK
+      - name: HEALTHCHECK_VIDEOS_CHECK_WEBHOOK
+        valueFrom:
+          secretKeyRef:
+            name: resticprofile-secret
+            key: HEALTHCHECK_VIDEOS_CHECK_WEBHOOK
 
     podSecurityContext:
       runAsUser: 0

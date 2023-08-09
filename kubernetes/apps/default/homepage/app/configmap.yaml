@@ -1,4 +1,5 @@
 ---
+# Dashboard Icons: https://github.com/walkxcode/dashboard-icons
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -25,26 +26,21 @@ data:
 
     layout:
       Organizing:
-        # style: row
-        # columns: 5
+
       Finance:
-        # style: row
-        # columns: 5
-      Infrastructure:
-        # style: row
-        # columns: 5
-      Selfhosted:
-        # style: row
-        # columns: 5
-      Cloud:
-        # style: row
-        # columns: 5
+
+      Multimedia:
+
       Downloading:
+
+      Infrastructure:
         style: row
         columns: 5
+
       Cloud-services:
         style: row
         columns: 5
+
       Monitoring:
         style: row
         columns: 5
@@ -103,6 +99,9 @@ data:
         - MBH NetBank:
             href: https://online.mbhbank.hu
             icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/svg/mkb_bank.svg
+        - Wise:
+            href: https://wise.com
+            icon: https://wise.design/api/images/Logo-LogoFastFlagAvatar.webp
         - Erste NetBroker:
             href: https://netbroker.erstebroker.hu
             icon: erste.svg
@@ -111,6 +110,15 @@ data:
             icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/mak.png
 
     - Cloud-services:
+        - Office 365:
+            icon: office-365.svg
+            href: https://office.com
+        - OneDrive:
+            href: https://onedrive.com
+            icon: microsoft.svg
+        - iCloud:
+            href: https://icloud.com
+            icon: apple.svg
         - GitHub:
             icon: github.svg
             href: https://github.com
@@ -123,9 +131,6 @@ data:
         - Terraform cloud:
             href: https://app.terraform.io
             icon: terraform.svg
-        - iCloud:
-            href: https://icloud.com
-            icon: apple.svg
 
     - Infrastructure:
         - Router:
@@ -137,6 +142,27 @@ data:
         - Proxmox hypervisor:
             href: https://192.168.1.5:8006
             icon: proxmox.svg
+        - Brother HL-1223WE printer:
+            href: http://192.168.2.2
+            icon: printer.svg
+        - Zigbee2Tasmota:
+            href: http://192.168.2.3
+            icon: tasmota.svg
+        - MiLight Hub:
+            href: http://192.168.2.4
+            icon: tasmota.svg
+        - Tasmota smart switch 1:
+            href: http://192.168.2.18
+            icon: tasmota.svg
+        - Tasmota smart switch 2:
+            href: http://192.168.2.19
+            icon: tasmota.svg
+        - Tasmota smart switch 3:
+            href: http://192.168.2.20
+            icon: tasmota.svg
+        - Tasmota smart switch 4:
+            href: http://192.168.2.21
+            icon: tasmota.svg
 
     - Downloading:
         - Ncore:
