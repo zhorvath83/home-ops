@@ -92,6 +92,9 @@ data:
         - ToDoist:
             href: https://todoist.com
             icon: todoist.svg
+        - TickTick ToDo's:
+            href: https://ticktick.com/webapp/
+            icon: https://raw.githubusercontent.com/zhorvath83/dashboard-icons/master/svg/ticktick.svg
 
     - Finance:
         - Buxfer:
@@ -105,7 +108,7 @@ data:
             icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/svg/mkb_bank.svg
         - Wise:
             href: https://wise.com
-            icon: https://wise.design/api/images/Logo-LogoFastFlagAvatar.webp
+            icon: https://raw.githubusercontent.com/zhorvath83/dashboard-icons/master/svg/wise.svg
         - Erste NetBroker:
             href: https://netbroker.erstebroker.hu
             icon: erste.svg
@@ -135,6 +138,9 @@ data:
         - Terraform cloud:
             href: https://app.terraform.io
             icon: terraform.svg
+        - Healthchecks.io:
+            href: https://healthchecks.io
+            icon: healthchecks.svg
 
     - Infrastructure:
         - Router:
@@ -146,11 +152,11 @@ data:
         - Proxmox hypervisor:
             href: https://192.168.1.5:8006
             icon: proxmox.svg
-
-    - IoT:
         - Brother printer:
             href: http://192.168.2.2
             icon: printer.svg
+
+    - IoT:
         - Zigbee2Tasmota:
             href: http://192.168.2.3
             icon: tasmota.svg
