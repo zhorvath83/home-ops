@@ -93,13 +93,14 @@ pipx ensurepath
 echo 'eval "$(register-python-argcomplete pipx)"' >> ~/.bashrc
 
 # Installing pypisearch, pre-commit, pre-commit-hooks, yamllint, ansible-core
-pipx install \
-    pypisearch \
-    pre-commit \
-    pre-commit-hooks \
-    python-Levenshtein \
-    yamllint \
-    ansible-core
+pipx install pypisearch
+pipx install pre-commit
+pipx install pre-commit-hooks
+pipx install python-Levenshtein
+pipx install yamllint
+pipx install ansible-core
+
+pipx list
 
 # Installing SOPS, a simple and flexible tool for managing secrets
 sudo wget -q "https://github.com/mozilla/sops/releases/download/${SOPS_VERSION}/sops-${SOPS_VERSION}.linux" -O /usr/local/bin/sops
