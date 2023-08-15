@@ -27,3 +27,5 @@ git config --global --add user.name "$GIT_USERNAME"
 git config --global --add user.email "$GIT_EMAIL"
 git config --global init.defaultBranch main
 git config --global alias.pullall '!git pull && git submodule update --init --recursive'
+
+pipx upgrade-all

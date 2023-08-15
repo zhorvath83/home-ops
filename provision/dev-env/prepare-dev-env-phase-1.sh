@@ -77,6 +77,7 @@ sudo apt-get install --assume-yes --no-install-recommends \
     software-properties-common \
     python3 \
     python3-pip \
+    pipx \
     build-essential \
     python3-dev \
     mc \
@@ -87,10 +88,13 @@ sudo apt-get install --assume-yes --no-install-recommends \
     git-extras \
     apache2-utils \
 
-# pip
-sudo pip3 install --upgrade pip
-# Installing pre-commit, pre-commit-hooks, yamllint, ansible-core
-sudo pip install \
+# pipx Shell Completion
+pipx ensurepath
+echo 'eval "$(register-python-argcomplete pipx)"' >> ~/.bashrc
+
+# Installing pypisearch, pre-commit, pre-commit-hooks, yamllint, ansible-core
+pipx install \
+    pypisearch \
     pre-commit \
     pre-commit-hooks \
     python-Levenshtein \
