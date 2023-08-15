@@ -12,7 +12,8 @@ mkdir -p ~/.config/autostart \
   && cp /etc/xdg/autostart/gnome-keyring-ssh.desktop ~/.config/autostart/gnome-keyring-ssh.desktop \
   && echo "Hidden=true" >> ~/.config/autostart/gnome-keyring-ssh.desktop
 
-op read -o /home/zhorvath83/.config/sops/age/keys.txt op://HomeOps/homelab-age-key/keys.txt
+mkdir -p /home/zhorvath83/.config/sops/age \
+  && op read -o /home/zhorvath83/.config/sops/age/keys.txt op://HomeOps/homelab-age-key/keys.txt
 
 # Git config
 GIT_USERNAME=$(op read op://Personal/github.com/username)
