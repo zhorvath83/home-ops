@@ -9,7 +9,7 @@ global:
   restic-stale-lock-age: 24h
 
 documents:
-  repository: {{ .Env.RESTIC_REPOSITORY_TEMPLATE }}documents-backups
+  repository: "{{ .Env.RESTIC_REPOSITORY_TEMPLATE }}documents-backups"
   lock: "/tmp/resticprofile-profile-documents.lock"
   force-inactive-lock: true
   compression: auto
@@ -28,17 +28,17 @@ documents:
     no-error-on-warning: true
     send-before:
       - method: HEAD
-        url: {{ .Env.HEALTHCHECK_DOCUMENTS_BACKUP_WEBHOOK }}/start
+        url: "{{ .Env.HEALTHCHECK_DOCUMENTS_BACKUP_WEBHOOK }}/start"
     send-after:
       - method: HEAD
-        url: {{ .Env.HEALTHCHECK_DOCUMENTS_BACKUP_WEBHOOK }}
+        url: "{{ .Env.HEALTHCHECK_DOCUMENTS_BACKUP_WEBHOOK }}"
     send-after-fail:
-        method: POST
-        url: {{ .Env.HEALTHCHECK_DOCUMENTS_BACKUP_WEBHOOK }}/fail
-        body: "${ERROR}\n\n${ERROR_STDERR}"
-        headers:
-          - name: Content-Type
-            value: "text/plain; charset=UTF-8"
+      method: POST
+      url: "{{ .Env.HEALTHCHECK_DOCUMENTS_BACKUP_WEBHOOK }}/fail"
+      body: "${ERROR}\n\n${ERROR_STDERR}"
+      headers:
+        - name: Content-Type
+          value: "text/plain; charset=UTF-8"
 
   forget:
     schedule: "Sun 20:00"
@@ -61,24 +61,24 @@ documents:
     read-data-subset: "100M"
     send-before:
       - method: HEAD
-        url: {{ .Env.HEALTHCHECK_DOCUMENTS_CHECK_WEBHOOK }}/start
+        url: "{{ .Env.HEALTHCHECK_DOCUMENTS_CHECK_WEBHOOK }}/start"
     send-after:
       - method: HEAD
-        url: {{ .Env.HEALTHCHECK_DOCUMENTS_CHECK_WEBHOOK }}
+        url: "{{ .Env.HEALTHCHECK_DOCUMENTS_CHECK_WEBHOOK }}"
     send-after-fail:
-        method: POST
-        url: {{ .Env.HEALTHCHECK_DOCUMENTS_CHECK_WEBHOOK }}/fail
-        body: "${ERROR}\n\n${ERROR_STDERR}"
-        headers:
-          - name: Content-Type
-            value: "text/plain; charset=UTF-8"
+      method: POST
+      url: "{{ .Env.HEALTHCHECK_DOCUMENTS_CHECK_WEBHOOK }}/fail"
+      body: "${ERROR}\n\n${ERROR_STDERR}"
+      headers:
+        - name: Content-Type
+          value: "text/plain; charset=UTF-8"
 
   restore:
     target: "/mnt/nfs-tmp/resticprofile-restore/documents"
 
 
 misc:
-  repository: {{ .Env.RESTIC_REPOSITORY_TEMPLATE }}misc-backups
+  repository: "{{ .Env.RESTIC_REPOSITORY_TEMPLATE }}misc-backups"
   lock: "/tmp/resticprofile-profile-misc.lock"
   force-inactive-lock: true
   compression: auto
@@ -99,17 +99,17 @@ misc:
     no-error-on-warning: true
     send-before:
       - method: HEAD
-        url: {{ .Env.HEALTHCHECK_MISC_BACKUP_WEBHOOK }}/start
+        url: "{{ .Env.HEALTHCHECK_MISC_BACKUP_WEBHOOK }}/start"
     send-after:
       - method: HEAD
-        url: {{ .Env.HEALTHCHECK_MISC_BACKUP_WEBHOOK }}
+        url: "{{ .Env.HEALTHCHECK_MISC_BACKUP_WEBHOOK }}"
     send-after-fail:
-        method: POST
-        url: {{ .Env.HEALTHCHECK_MISC_BACKUP_WEBHOOK }}/fail
-        body: "${ERROR}\n\n${ERROR_STDERR}"
-        headers:
-          - name: Content-Type
-            value: "text/plain; charset=UTF-8"
+      method: POST
+      url: "{{ .Env.HEALTHCHECK_MISC_BACKUP_WEBHOOK }}/fail"
+      body: "${ERROR}\n\n${ERROR_STDERR}"
+      headers:
+        - name: Content-Type
+          value: "text/plain; charset=UTF-8"
 
   forget:
     schedule: "Sun 20:30"
@@ -132,24 +132,24 @@ misc:
     read-data-subset: "100M"
     send-before:
       - method: HEAD
-        url: {{ .Env.HEALTHCHECK_MISC_CHECK_WEBHOOK }}/start
+        url: "{{ .Env.HEALTHCHECK_MISC_CHECK_WEBHOOK }}/start"
     send-after:
       - method: HEAD
-        url: {{ .Env.HEALTHCHECK_MISC_CHECK_WEBHOOK }}
+        url: "{{ .Env.HEALTHCHECK_MISC_CHECK_WEBHOOK }}"
     send-after-fail:
-        method: POST
-        url: {{ .Env.HEALTHCHECK_MISC_CHECK_WEBHOOK }}/fail
-        body: "${ERROR}\n\n${ERROR_STDERR}"
-        headers:
-          - name: Content-Type
-            value: "text/plain; charset=UTF-8"
+      method: POST
+      url: "{{ .Env.HEALTHCHECK_MISC_CHECK_WEBHOOK }}/fail"
+      body: "${ERROR}\n\n${ERROR_STDERR}"
+      headers:
+        - name: Content-Type
+          value: "text/plain; charset=UTF-8"
 
   restore:
     target: "/mnt/nfs-tmp/resticprofile-restore/misc"
 
 
 pictures:
-  repository: {{ .Env.RESTIC_REPOSITORY_TEMPLATE }}pictures-backups
+  repository: "{{ .Env.RESTIC_REPOSITORY_TEMPLATE }}pictures-backups"
   lock: "/tmp/resticprofile-profile-pictures.lock"
   force-inactive-lock: true
   compression: auto
@@ -168,17 +168,17 @@ pictures:
     no-error-on-warning: true
     send-before:
       - method: HEAD
-        url: {{ .Env.HEALTHCHECK_PICTURES_BACKUP_WEBHOOK }}/start
+        url: "{{ .Env.HEALTHCHECK_PICTURES_BACKUP_WEBHOOK }}/start"
     send-after:
       - method: HEAD
-        url: {{ .Env.HEALTHCHECK_PICTURES_BACKUP_WEBHOOK }}
+        url: "{{ .Env.HEALTHCHECK_PICTURES_BACKUP_WEBHOOK }}"
     send-after-fail:
-        method: POST
-        url: {{ .Env.HEALTHCHECK_PICTURES_BACKUP_WEBHOOK }}/fail
-        body: "${ERROR}\n\n${ERROR_STDERR}"
-        headers:
-          - name: Content-Type
-            value: "text/plain; charset=UTF-8"
+      method: POST
+      url: "{{ .Env.HEALTHCHECK_PICTURES_BACKUP_WEBHOOK }}/fail"
+      body: "${ERROR}\n\n${ERROR_STDERR}"
+      headers:
+        - name: Content-Type
+          value: "text/plain; charset=UTF-8"
 
   forget:
     schedule: "Sun 21:00"
@@ -201,25 +201,24 @@ pictures:
     read-data-subset: "100M"
     send-before:
       - method: HEAD
-        url: {{ .Env.HEALTHCHECK_PICTURES_CHECK_WEBHOOK }}/start
+        url: "{{ .Env.HEALTHCHECK_PICTURES_CHECK_WEBHOOK }}/start"
     send-after:
       - method: HEAD
-        url: {{ .Env.HEALTHCHECK_PICTURES_CHECK_WEBHOOK }}
+        url: "{{ .Env.HEALTHCHECK_PICTURES_CHECK_WEBHOOK }}"
     send-after-fail:
-        method: POST
-        url: {{ .Env.HEALTHCHECK_PICTURES_CHECK_WEBHOOK }}/fail
-        body: "${ERROR}\n\n${ERROR_STDERR}"
-        headers:
-          - name: Content-Type
-            value: "text/plain; charset=UTF-8"
+      method: POST
+      url: "{{ .Env.HEALTHCHECK_PICTURES_CHECK_WEBHOOK }}/fail"
+      body: "${ERROR}\n\n${ERROR_STDERR}"
+      headers:
+        - name: Content-Type
+          value: "text/plain; charset=UTF-8"
 
   restore:
     target: "/mnt/nfs-tmp/resticprofile-restore/pictures"
 
 
-
 videos:
-  repository: {{ .Env.RESTIC_REPOSITORY_TEMPLATE }}videos-backups
+  repository: "{{ .Env.RESTIC_REPOSITORY_TEMPLATE }}videos-backups"
   lock: "/tmp/resticprofile-profile-videos.lock"
   force-inactive-lock: true
   compression: auto
@@ -238,17 +237,17 @@ videos:
     no-error-on-warning: true
     send-before:
       - method: HEAD
-        url: {{ .Env.HEALTHCHECK_VIDEOS_BACKUP_WEBHOOK }}/start
+        url: "{{ .Env.HEALTHCHECK_VIDEOS_BACKUP_WEBHOOK }}/start"
     send-after:
       - method: HEAD
-        url: {{ .Env.HEALTHCHECK_VIDEOS_BACKUP_WEBHOOK }}
+        url: "{{ .Env.HEALTHCHECK_VIDEOS_BACKUP_WEBHOOK }}"
     send-after-fail:
-        method: POST
-        url: {{ .Env.HEALTHCHECK_VIDEOS_BACKUP_WEBHOOK }}/fail
-        body: "${ERROR}\n\n${ERROR_STDERR}"
-        headers:
-          - name: Content-Type
-            value: "text/plain; charset=UTF-8"
+      method: POST
+      url: "{{ .Env.HEALTHCHECK_VIDEOS_BACKUP_WEBHOOK }}/fail"
+      body: "${ERROR}\n\n${ERROR_STDERR}"
+      headers:
+        - name: Content-Type
+          value: "text/plain; charset=UTF-8"
 
   forget:
     schedule: "Sun 22:00"
@@ -271,17 +270,17 @@ videos:
     read-data-subset: "100M"
     send-before:
       - method: HEAD
-        url: {{ .Env.HEALTHCHECK_VIDEOS_CHECK_WEBHOOK }}/start
+        url: "{{ .Env.HEALTHCHECK_VIDEOS_CHECK_WEBHOOK }}/start"
     send-after:
       - method: HEAD
-        url: {{ .Env.HEALTHCHECK_VIDEOS_CHECK_WEBHOOK }}
+        url: "{{ .Env.HEALTHCHECK_VIDEOS_CHECK_WEBHOOK }}"
     send-after-fail:
-        method: POST
-        url: {{ .Env.HEALTHCHECK_VIDEOS_CHECK_WEBHOOK }}/fail
-        body: "${ERROR}\n\n${ERROR_STDERR}"
-        headers:
-          - name: Content-Type
-            value: "text/plain; charset=UTF-8"
+      method: POST
+      url: "{{ .Env.HEALTHCHECK_VIDEOS_CHECK_WEBHOOK }}/fail"
+      body: "${ERROR}\n\n${ERROR_STDERR}"
+      headers:
+        - name: Content-Type
+          value: "text/plain; charset=UTF-8"
 
   restore:
     target: "/mnt/nfs-tmp/resticprofile-restore/videos"
