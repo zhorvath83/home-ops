@@ -65,6 +65,8 @@ wget -qO- https://deb.nodesource.com/setup_19.x | sudo -E bash -
 sudo apt-get update -y
 # Installing npm for Prettier, apache2-utils for generating htpasswd, sshpass for ansible,
 sudo apt-get install --assume-yes --no-install-recommends \
+    nfs-common \
+    autofs \
     1password \
     1password-cli \
     lens \
@@ -88,9 +90,14 @@ sudo apt-get install --assume-yes --no-install-recommends \
     git-extras \
     apache2-utils \
 
+# NAS automount
+echo '/net    -hosts -fstype=nfs,rw' | sudo tee --append /etc/auto.master
+sudo systemctl restart autofs
+ln --symbolic /net/nas/export ~/nas
+
 # pipx Shell Completion
 pipx ensurepath
-echo 'eval "$(register-python-argcomplete pipx)"' >> ~/.bashrc
+# echo 'eval "$(register-python-argcomplete pipx)"' | tee --append ~/.bashrc
 
 # Installing pypisearch, pre-commit, pre-commit-hooks, yamllint, ansible-core
 pipx install pypisearch
@@ -121,8 +128,8 @@ GOPKG="go${GO_VERSION}.linux-${ARCH}.tar.gz"; wget -q "https://golang.org/dl/${G
 sudo tar -C /usr/local -xzf "/tmp/${GOPKG}"
 mkdir -p "${GOPATH}"
 #go version
-echo "export GOPATH=$GOPATH" | tee -a ~/.profile
-echo "export PATH=$PATH:$HOME/bin:$HOME/.local/bin:$GOPATH/bin:/usr/local/go/bin" | tee -a ~/.profile
+echo "export GOPATH=$GOPATH" | tee --append ~/.profile
+echo "export PATH=$PATH:$HOME/bin:$HOME/.local/bin:$GOPATH/bin:/usr/local/go/bin" | tee --append ~/.profile
 # shellcheck source=/dev/null
 source ~/.profile
 

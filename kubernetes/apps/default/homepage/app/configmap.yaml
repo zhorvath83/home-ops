@@ -89,9 +89,6 @@ data:
         - FB Messenger:
             href: https://messenger.com
             icon: facebook-messenger.svg
-        - ToDoist:
-            href: https://todoist.com
-            icon: todoist.svg
         - TickTick ToDo's:
             href: https://ticktick.com/webapp/
             icon: https://raw.githubusercontent.com/zhorvath83/dashboard-icons/master/svg/ticktick.svg
@@ -120,12 +117,9 @@ data:
         - GitHub:
             icon: github.svg
             href: https://github.com
-        - Office 365:
-            icon: office-365.svg
-            href: https://office.com
-        - OneDrive:
-            href: https://onedrive.com
-            icon: microsoft.svg
+        - Dropbox:
+            href: https://dropbox.com
+            icon: https://raw.githubusercontent.com/zhorvath83/dashboard-icons/master/svg/dropbox.svg
         - iCloud:
             href: https://icloud.com
             icon: apple.svg
