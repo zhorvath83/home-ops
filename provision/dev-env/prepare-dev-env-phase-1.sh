@@ -95,9 +95,8 @@ echo '/net    -hosts -fstype=nfs,rw' | sudo tee --append /etc/auto.master
 sudo systemctl restart autofs
 ln --symbolic /net/nas/export ~/nas
 
-# pipx Shell Completion
+# pipx path
 pipx ensurepath
-# echo 'eval "$(register-python-argcomplete pipx)"' | tee --append ~/.bashrc
 
 # Installing pypisearch, pre-commit, pre-commit-hooks, yamllint, ansible-core
 pipx install pypisearch
