@@ -26,11 +26,13 @@ GOPATH=~/go
 
 mkdir -p ~/projects
 mkdir -p ~/.ssh
-sudo apt update -y
-sudo apt install --assume-yes --no-install-recommends wget curl gnupg
 
 # Ensure the contrib and non-free repositories are enabled
 sudo apt-add-repository contrib non-free -y
+
+# Installing common dependecies
+sudo apt update -y
+sudo apt install --assume-yes --no-install-recommends wget curl gnupg
 
 # Adding 1password repo and debsig-verify policy
 curl -sS https://downloads.1password.com/linux/keys/1password.asc | \
@@ -48,6 +50,10 @@ curl -sS https://downloads.1password.com/linux/keys/1password.asc | \
 curl -fsSL https://downloads.k8slens.dev/keys/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/lens-archive-keyring.gpg > /dev/null
 echo "deb [arch=amd64 signed-by=/usr/share/keyrings/lens-archive-keyring.gpg] https://downloads.k8slens.dev/apt/debian stable main" | sudo tee /etc/apt/sources.list.d/lens.list > /dev/null
 
+# Adding Vivaldi browser's repo
+wget -qO- https://repo.vivaldi.com/archive/linux_signing_key.pub | sudo gpg --dearmor -o /etc/apt/keyrings/vivaldi.gpg
+sudo sh -c 'echo "deb [arch=amd64,armhf signed-by=/etc/apt/keyrings/vivaldi.gpg] https://repo.vivaldi.com/archive/deb stable main" > /etc/apt/sources.list.d/vivaldi.list' 
+
 # VSC repo
 wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
 sudo install -D -o root -g root -m 644 packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg
@@ -55,13 +61,8 @@ sudo sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packag
 rm -f packages.microsoft.gpg
 
 # Adding Hashicorp repo
-KEYRING=/usr/share/keyrings/hashicorp-archive-keyring.gpg
-wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee "$KEYRING" >/dev/null
-# Listing signing key
-gpg --no-default-keyring --keyring "$KEYRING" --list-keys
-OS_BASE=jammy
-echo "deb [signed-by=$KEYRING] https://apt.releases.hashicorp.com $OS_BASE main" | \
-    sudo tee /etc/apt/sources.list.d/hashicorp.list
+wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
 
 # Adding Node.js repo
 wget -qO- https://deb.nodesource.com/setup_19.x | sudo -E bash -
@@ -69,6 +70,10 @@ wget -qO- https://deb.nodesource.com/setup_19.x | sudo -E bash -
 # Installing apps
 sudo apt update -y
 sudo apt install --assume-yes --no-install-recommends \
+    nano \
+    iftop \
+    iotop \
+    traceroute \
     nfs-common \
     autofs \
     1password \
@@ -87,6 +92,7 @@ sudo apt install --assume-yes --no-install-recommends \
     build-essential \
     python3-dev \
     mc \
+    nautilus-admin \
     ca-certificates \
     unzip \
     bzr \
@@ -95,7 +101,11 @@ sudo apt install --assume-yes --no-install-recommends \
     apache2-utils \
     ttf-mscorefonts-installer \
     flatpak \
-    gnome-software-plugin-flatpak
+    gnome-software-plugin-flatpak \
+    gnome-tweaks \
+    ffmpeg \
+    build-essential \
+    vivaldi-stable
 
 # Adding Flathub repository
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
@@ -108,7 +118,9 @@ flatpak install flathub \
     org.kde.kdenlive \
     com.github.dail8859.NotepadNext \
     org.flameshot.Flameshot \
-    io.freetubeapp.FreeTube
+    io.freetubeapp.FreeTube \
+    com.dropbox.Client \
+    org.videolan.VLC
 
 # NAS automount
 echo '/net    -hosts -fstype=nfs,rw' | sudo tee --append /etc/auto.master
@@ -125,6 +137,7 @@ pipx install pre-commit-hooks
 pipx install python-Levenshtein
 pipx install yamllint
 pipx install ansible-core
+pipx install gnome-extensions-cli --system-site-packages
 
 pipx list
 
@@ -181,5 +194,27 @@ code \
     --install-extension MichaelCurrin.auto-commit-msg \
     --install-extension hashicorp.terraform \
     --install-extension weaveworks.vscode-gitops-tools
+
+# Install Gnome Extensions
+gext install 779 307 5219 36 1262 2236 4269
+
+gsettings set org.gnome.desktop.wm.preferences button-layout 'appmenu:minimize,maximize,close'
+gsettings set org.gnome.desktop.interface clock-show-weekday true
+# gsettings set org.gnome.desktop.sound allow-volume-above-100-percent true
+gsettings set org.gnome.desktop.interface document-font-name 'Open Sans 11'
+gsettings set org.gnome.desktop.interface font-antialiasing 'rgba'
+gsettings set org.gnome.desktop.interface font-hinting 'slight'
+gsettings set org.gnome.desktop.interface monospace-font-name 'Fira Code weight=453 11'
+gsettings set org.gnome.shell.extensions.dash-to-dock click-action 'minimize-or-previews'
+gsettings set org.gnome.shell.extensions.dash-to-dock dash-max-icon-size 40
+gsettings set org.gnome.shell.extensions.dash-to-dock dock-fixed false
+gsettings set org.gnome.shell.extensions.dash-to-dock multi-monitor true
+
+sh -c 'cat >> ~/.config/mimeapps.list << EOF
+x-scheme-handler/http=vivaldi-stable.desktop
+x-scheme-handler/https=vivaldi-stable.desktop
+text/html=vivaldi-stable.desktop
+application/xhtml+xml=vivaldi-stable.desktop
+EOF'
 
 echo "Please log in and set up 1password developer settings. Then run phase 2 script!"
