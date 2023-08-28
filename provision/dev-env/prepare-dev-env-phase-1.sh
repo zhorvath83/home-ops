@@ -16,7 +16,6 @@ GO_VERSION=1.19.4
 
 GOPATH=~/go
 
-
 ## ~/.config/Code/User
 # COPY --chown=coder:coder config/code-server/settings.json ~/.local/share/code-server/User/settings.json
 # # COPY --chown=coder:coder config/code-server/coder.json ~/.local/share/code-server/coder.json
@@ -27,8 +26,11 @@ GOPATH=~/go
 
 mkdir -p ~/projects
 mkdir -p ~/.ssh
-sudo apt-get update -y
-sudo apt-get install --assume-yes --no-install-recommends wget curl gnupg
+sudo apt update -y
+sudo apt install --assume-yes --no-install-recommends wget curl gnupg
+
+# Ensure the contrib and non-free repositories are enabled
+sudo apt-add-repository contrib non-free -y
 
 # Adding 1password repo and debsig-verify policy
 curl -sS https://downloads.1password.com/linux/keys/1password.asc | \
@@ -60,11 +62,13 @@ gpg --no-default-keyring --keyring "$KEYRING" --list-keys
 OS_BASE=jammy
 echo "deb [signed-by=$KEYRING] https://apt.releases.hashicorp.com $OS_BASE main" | \
     sudo tee /etc/apt/sources.list.d/hashicorp.list
+
 # Adding Node.js repo
 wget -qO- https://deb.nodesource.com/setup_19.x | sudo -E bash -
-sudo apt-get update -y
-# Installing npm for Prettier, apache2-utils for generating htpasswd, sshpass for ansible,
-sudo apt-get install --assume-yes --no-install-recommends \
+
+# Installing apps
+sudo apt update -y
+sudo apt install --assume-yes --no-install-recommends \
     nfs-common \
     autofs \
     1password \
@@ -89,6 +93,22 @@ sudo apt-get install --assume-yes --no-install-recommends \
     sshpass \
     git-extras \
     apache2-utils \
+    ttf-mscorefonts-installer \
+    flatpak \
+    gnome-software-plugin-flatpak
+
+# Adding Flathub repository
+flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+
+flatpak install flathub \
+    org.gimp.GIMP \
+    com.github.PintaProject.Pinta \
+    org.kde.kolourpaint \
+    org.kde.digikam \
+    org.kde.kdenlive \
+    com.github.dail8859.NotepadNext \
+    org.flameshot.Flameshot \
+    io.freetubeapp.FreeTube
 
 # NAS automount
 echo '/net    -hosts -fstype=nfs,rw' | sudo tee --append /etc/auto.master
