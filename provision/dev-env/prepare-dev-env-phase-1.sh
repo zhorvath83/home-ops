@@ -24,7 +24,7 @@ GOPATH=~/go
 # COPY --chown=coder:coder --chmod=600 config/ssh/config ~/.ssh/config
 # COPY --chown=coder:coder --chmod=600 config/supervisord/supervisord.conf /etc/supervisord.conf
 
-mkdir -p ~/projects
+mkdir -p ~/Projects
 mkdir -p ~/.ssh
 
 # Ensure the contrib and non-free repositories are enabled
@@ -104,13 +104,14 @@ sudo apt install --assume-yes --no-install-recommends \
     gnome-software-plugin-flatpak \
     gnome-tweaks \
     ffmpeg \
+    grsync \
     build-essential \
     vivaldi-stable
 
 # Adding Flathub repository
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 
-flatpak install flathub \
+flatpak install --assumeyes flathub \
     org.gimp.GIMP \
     com.github.PintaProject.Pinta \
     org.kde.kolourpaint \
@@ -126,6 +127,11 @@ flatpak install flathub \
 echo '/net    -hosts -fstype=nfs,rw' | sudo tee --append /etc/auto.master
 sudo systemctl restart autofs
 ln --symbolic /net/nas/export ~/nas
+
+# Symlinking Documents
+rmdir ~/Documents
+mkrdir -p ~/Dropbox/Documents
+ln -s ~/Dropbox/Documents ~/Documents
 
 # pipx path
 pipx ensurepath
@@ -196,7 +202,19 @@ code \
     --install-extension weaveworks.vscode-gitops-tools
 
 # Install Gnome Extensions
-gext install 779 307 5219 36 1262 2236 4269
+gnome-extensions-cli --filesystem install \
+    AlphabeticalAppGrid@stuarthayhurst \
+    appindicatorsupport@rgcjonas.gmail.com \
+    BingWallpaper@ineffable-gmail.com \
+    clipboard-indicator@tudmotu.com \
+    dash-to-dock@micxgx.gmail.com \
+    lockkeys@vaina.lt \
+    nightthemeswitcher@romainvigier.fr \
+    noannoyance@daase.net \
+    tophat@fflewddur.github.io \
+    always-indicator@martin.zurowietz.de
+
+gnome-extensions-cli list
 
 gsettings set org.gnome.desktop.wm.preferences button-layout 'appmenu:minimize,maximize,close'
 gsettings set org.gnome.desktop.interface clock-show-weekday true
@@ -204,11 +222,14 @@ gsettings set org.gnome.desktop.interface clock-show-weekday true
 gsettings set org.gnome.desktop.interface document-font-name 'Open Sans 11'
 gsettings set org.gnome.desktop.interface font-antialiasing 'rgba'
 gsettings set org.gnome.desktop.interface font-hinting 'slight'
-gsettings set org.gnome.desktop.interface monospace-font-name 'Fira Code weight=453 11'
 gsettings set org.gnome.shell.extensions.dash-to-dock click-action 'minimize-or-previews'
 gsettings set org.gnome.shell.extensions.dash-to-dock dash-max-icon-size 40
 gsettings set org.gnome.shell.extensions.dash-to-dock dock-fixed false
 gsettings set org.gnome.shell.extensions.dash-to-dock multi-monitor true
+gsettings set org.gnome.desktop.peripherals.mouse accel-profile 'flat'
+
+# Needed for TopHat extension
+sudo apt install gir1.2-gtop-2.0
 
 sh -c 'cat >> ~/.config/mimeapps.list << EOF
 x-scheme-handler/http=vivaldi-stable.desktop
@@ -216,5 +237,19 @@ x-scheme-handler/https=vivaldi-stable.desktop
 text/html=vivaldi-stable.desktop
 application/xhtml+xml=vivaldi-stable.desktop
 EOF'
+
+# Install fonts
+sudo apt install fonts-ubuntu fonts-liberation2 fonts-liberation
+
+gsettings set org.gnome.desktop.interface document-font-name 'Sans 10'
+gsettings set org.gnome.desktop.interface font-name 'Ubuntu 10'
+gsettings set org.gnome.desktop.interface monospace-font-name 'Ubuntu Mono 11'
+gsettings set org.gnome.desktop.interface text-scaling-factor '1.0'
+
+## Change locale
+LOCALE="en_GB.UTF-8"
+sudo sed -i -e "s/^\# ${LOCALE}/${LOCALE}/g" /etc/locale.gen
+sudo locale-gen "${LOCALE}"
+gsettings set org.gnome.system.locale region en_GB.UTF-8
 
 echo "Please log in and set up 1password developer settings. Then run phase 2 script!"
