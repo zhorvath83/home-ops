@@ -147,6 +147,10 @@ pipx install gnome-extensions-cli --system-site-packages
 
 pipx list
 
+# Starship shell prompt
+curl -sS https://starship.rs/install.sh | sh
+echo 'eval "$(starship init bash)"' | sudo tee --append ~/.bashrc
+
 # Installing SOPS, a simple and flexible tool for managing secrets
 sudo wget -q "https://github.com/mozilla/sops/releases/download/${SOPS_VERSION}/sops-${SOPS_VERSION}.linux" -O /usr/local/bin/sops
 sudo chmod +x /usr/local/bin/sops
@@ -221,17 +225,42 @@ gsettings set org.gnome.desktop.wm.preferences button-layout 'appmenu:minimize,m
 gsettings set org.gnome.desktop.interface clock-show-weekday true
 # gsettings set org.gnome.desktop.sound allow-volume-above-100-percent true
 gsettings set org.gnome.desktop.interface document-font-name 'Open Sans 11'
+
+# Better AA for LCDs
 gsettings set org.gnome.desktop.interface font-antialiasing 'rgba'
 gsettings set org.gnome.desktop.interface font-hinting 'slight'
+
+# Configure dash to dock
 gsettings set org.gnome.shell.extensions.dash-to-dock click-action 'minimize-or-previews'
 gsettings set org.gnome.shell.extensions.dash-to-dock dash-max-icon-size 40
 gsettings set org.gnome.shell.extensions.dash-to-dock dock-fixed false
 gsettings set org.gnome.shell.extensions.dash-to-dock multi-monitor true
+
+# Better mouse with no acceleration
 gsettings set org.gnome.desktop.peripherals.mouse accel-profile 'flat'
+gsettings set org.gnome.desktop.peripherals.mouse speed -0.24590163934426235
+
+# Change Alt + Tab to cycle windows instead of applications
+gsettings set org.gnome.desktop.wm.keybindings switch-applications "['<Super>Tab']"
+gsettings set org.gnome.desktop.wm.keybindings switch-windows "['<Alt>Tab']"
+gsettings set org.gnome.desktop.wm.keybindings switch-applications-backward "['<Shift><Super>Tab']"
+gsettings set org.gnome.desktop.wm.keybindings switch-windows-backward "['<Shift><Alt>Tab']"
+
+# Setup Nautilus (file browser)
+gsettings set org.gtk.Settings.FileChooser sort-directories-first true
+gsettings set org.gtk.gtk4.Settings.FileChooser sort-directories-first true
+dconf write /org/gtk/settings/file-chooser/show-hidden false
+dconf write /org/gnome/nautilus/preferences/recursive-search "'always'"
+dconf write /org/gnome/nautilus/preferences/show-image-thumbnails "'always'"
+dconf write /org/gnome/nautilus/preferences/show-directory-item-counts "'always'"
+
+# Make sure Gnome extensions are on
+gsettings set org.gnome.shell disable-user-extensions false
 
 # Needed for TopHat extension
 sudo apt install gir1.2-gtop-2.0
 
+# Vivaldi is the default browser
 sh -c 'cat >> ~/.config/mimeapps.list << EOF
 x-scheme-handler/http=vivaldi-stable.desktop
 x-scheme-handler/https=vivaldi-stable.desktop
@@ -242,9 +271,26 @@ EOF'
 # Install fonts
 sudo apt install fonts-ubuntu fonts-liberation2 fonts-liberation
 
+# Nerd Font
+mkdir ~/.local/share/fonts/NerdFonts
+curl -OL https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.tar.xz
+tar -xf JetBrainsMono.tar.xz -C ~/.local/share/fonts/NerdFonts
+curl -OL https://github.com/ryanoasis/nerd-fonts/releases/latest/download/FiraCode.tar.xz
+tar -xf FiraCode.tar.xz -C ~/.local/share/fonts
+fc-cache -fv
+rm -Rf JetBrainsMono.tar.xz FiraCode.tar.xz
+
+# Nerd Font
+curl -OL https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.tar.xz
+mkdir ~/.local/share/fonts/NerdFonts
+tar -xf JetBrainsMono.tar.xz -C ~/.local/share/fonts/NerdFonts
+rm JetBrainsMono.tar.xz
+fc-cache -f
+
+# Setting fonts
 gsettings set org.gnome.desktop.interface document-font-name 'Sans 10'
 gsettings set org.gnome.desktop.interface font-name 'Ubuntu 10'
-gsettings set org.gnome.desktop.interface monospace-font-name 'Ubuntu Mono 11'
+gsettings set org.gnome.desktop.interface monospace-font-name 'FiraCode Nerd Font Mono 12'
 gsettings set org.gnome.desktop.interface text-scaling-factor '1.0'
 
 ## Change locale
