@@ -212,7 +212,8 @@ gnome-extensions-cli --filesystem install \
     nightthemeswitcher@romainvigier.fr \
     noannoyance@daase.net \
     tophat@fflewddur.github.io \
-    always-indicator@martin.zurowietz.de
+    always-indicator@martin.zurowietz.de \
+    espresso@coadmunkee.github.com
 
 gnome-extensions-cli list
 
@@ -253,3 +254,5 @@ sudo locale-gen "${LOCALE}"
 gsettings set org.gnome.system.locale region en_GB.UTF-8
 
 echo "Please log in and set up 1password developer settings. Then run phase 2 script!"
+
+/usr/bin/1password
