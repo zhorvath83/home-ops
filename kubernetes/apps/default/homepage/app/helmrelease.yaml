@@ -9,7 +9,7 @@ spec:
   chart:
     spec:
       chart: homepage
-      version: 1.2.0
+      version: 1.2.1
       sourceRef:
         kind: HelmRepository
         name: jameswynn
@@ -30,7 +30,7 @@ spec:
   values:
     image:
       repository: ghcr.io/benphelps/homepage
-      tag: v0.6.28
+      tag: v0.6.29
 
     enableRbac: true
     serviceAccount:

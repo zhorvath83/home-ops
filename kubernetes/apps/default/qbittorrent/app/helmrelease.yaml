@@ -35,7 +35,7 @@ spec:
 
     image:
       repository: ghcr.io/onedr0p/qbittorrent
-      tag: 4.5.4@sha256:19e2a93d61b07f699f3bc8b9db5e23cf57a838bd6fd92fe6e272149836dc6506
+      tag: 4.5.5@sha256:30dffe7ad04ea0e39db0b50c0bd5e79362f99f7ff6b250526d2f389b58d96f14
 
     hostname: qbittorrent
 
