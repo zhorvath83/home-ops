@@ -30,7 +30,7 @@ spec:
   values:
     image:
       repository: ghcr.io/benphelps/homepage
-      tag: v0.6.33
+      tag: v0.6.29
 
     enableRbac: true
     serviceAccount:
