@@ -18,4 +18,3 @@ Debian:
     - python3-kubernetes
     - python3-yaml
     - rsync
-
