@@ -81,7 +81,7 @@ spec:
           gethomepage.dev/name: Tandoor - recipes
           gethomepage.dev/group: Digital assets
           gethomepage.dev/icon: tandoor.svg
-          gethomepage.dev/weight: "20"
+          gethomepage.dev/weight: 20
         hosts:
           - host: &host "recipes.${PUBLIC_DOMAIN}"
             paths:

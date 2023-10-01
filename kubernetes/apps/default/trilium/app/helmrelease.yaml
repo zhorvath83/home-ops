@@ -84,7 +84,7 @@ spec:
           gethomepage.dev/name: Trilium - notes
           gethomepage.dev/group: Digital assets
           gethomepage.dev/icon: trilium.svg
-          gethomepage.dev/weight: "10"
+          gethomepage.dev/weight: 10
         hosts:
           - host: &host "notes.${PUBLIC_DOMAIN}"
             paths:
