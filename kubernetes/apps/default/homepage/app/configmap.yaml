@@ -38,13 +38,13 @@ data:
         columns: 5
         tab: Everyday services
 
-      Media:
+      Multimedia:
         style: columns
-        tab: Multimedia
+        tab: Media
 
       Downloading:
         style: columns
-        tab: Multimedia
+        tab: Media
 
       Infrastructure:
         style: columns
