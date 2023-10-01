@@ -27,39 +27,39 @@ data:
     layout:
       Organizing:
         style: columns
-        tab: First
+        tab: Services
 
       Finance:
         style: columns
-        tab: First
+        tab: Services
 
       Multimedia:
         style: columns
-        tab: First
+        tab: Services
 
       Downloading:
         style: columns
-        tab: First
+        tab: Services
 
       Cloud-services:
-        style: row
+        style: columns
         columns: 5
-        tab: First
+        tab: Services
 
       Infrastructure:
-        style: row
+        style: columns
         columns: 5
-        tab: Second
+        tab: Infra
 
       IoT:
-        style: row
+        style: columns
         columns: 5
-        tab: Second
+        tab: Infra
 
       Monitoring:
-        style: row
+        style: columns
         columns: 5
-        tab: Second
+        tab: Infra
 
     quicklaunch:
         searchDescriptions: true
