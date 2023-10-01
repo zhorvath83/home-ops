@@ -81,10 +81,11 @@ spec:
           - ALL
 
     persistence:
-      logs:
+      config:
         enabled: true
         type: emptyDir
-        mountPath: /app/config/logs
+        mountPath: /app/config
+
 
     resources:
       requests:
