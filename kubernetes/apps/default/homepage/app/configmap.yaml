@@ -26,24 +26,29 @@ data:
     disableCollapse: true
 
     layout:
-      Messaging and time management:
+      Messaging and ToDo:
         style: row
+        columns: 5
         tab: Services
 
       Digital assets:
         style: row
+        columns: 5
         tab: Services
 
       Finance:
         style: row
+        columns: 5
         tab: Services
 
       Multimedia:
         style: columns
+        columns: 5
         tab: Media
 
       Downloading:
         style: columns
+        columns: 5
         tab: Media
 
       Infrastructure:
@@ -99,7 +104,7 @@ data:
 
   services.yaml: |
     ---
-    - Messaging and Todo:
+    - Messaging and ToDo:
         - Fastmail:
             href: https://fastmail.com
             icon: fastmail.svg
