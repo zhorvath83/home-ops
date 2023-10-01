@@ -23,19 +23,24 @@ data:
     color: slate
 
     fiveColumns: true
+    disableCollapse: true
 
     layout:
-      Organizing:
+      Messaging and time management:
         style: columns
         tab: Cloud services
 
-      Finance:
+      Digital assets:
         style: columns
         tab: Cloud services
 
       Cloud storage:
         style: columns
         columns: 5
+        tab: Cloud services
+
+      Finance:
+        style: columns
         tab: Cloud services
 
       Multimedia:
@@ -62,7 +67,7 @@ data:
         tab: Home infra
 
       Monitoring:
-        style: rows
+        style: columns
         columns: 5
         tab: Home infra
 
@@ -99,7 +104,7 @@ data:
 
   services.yaml: |
     ---
-    - Organizing:
+    - Messaging and time management:
         - Fastmail:
             href: https://fastmail.com
             icon: fastmail.svg
