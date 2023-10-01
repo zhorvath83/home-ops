@@ -26,15 +26,19 @@ data:
 
     layout:
       Organizing:
+        style: columns
         tab: First
 
       Finance:
+        style: columns
         tab: First
 
       Multimedia:
+        style: columns
         tab: First
 
       Downloading:
+        style: columns
         tab: First
 
       Cloud-services:
