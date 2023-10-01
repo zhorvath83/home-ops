@@ -41,15 +41,15 @@ data:
         columns: 5
         tab: Services
 
-      Multimedia:
+      Media:
         style: columns
         columns: 5
-        tab: Media
+        tab: Multimedia
 
       Downloading:
         style: columns
         columns: 5
-        tab: Media
+        tab: Multimedia
 
       Infrastructure:
         style: columns
