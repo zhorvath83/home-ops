@@ -27,16 +27,16 @@ data:
     layout:
       Organizing:
         style: columns
-        tab: Everyday services
+        tab: Cloud services
 
       Finance:
         style: columns
-        tab: Everyday services
+        tab: Cloud services
 
-      Cloud-services:
+      Cloud storage:
         style: columns
         columns: 5
-        tab: Everyday services
+        tab: Cloud services
 
       Multimedia:
         style: columns
@@ -51,13 +51,18 @@ data:
         columns: 5
         tab: Home infra
 
-      Monitoring:
+      SaaS & PaaS:
         style: columns
         columns: 5
         tab: Home infra
 
       IoT:
         style: columns
+        columns: 5
+        tab: Home infra
+
+      Monitoring:
+        style: rows
         columns: 5
         tab: Home infra
 
@@ -125,28 +130,13 @@ data:
             href: https://webkincstar.allamkincstar.gov.hu
             icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/mak.png
 
-    - Cloud-services:
-        - GitHub:
-            icon: github.svg
-            href: https://github.com
+    - Cloud storage:
         - Dropbox:
             href: https://dropbox.com
             icon: https://raw.githubusercontent.com/zhorvath83/dashboard-icons/master/svg/dropbox.svg
         - iCloud:
             href: https://icloud.com
             icon: apple.svg
-        - Cloudflare:
-            icon: cloudflare.svg
-            href: https://dash.cloudflare.com
-        - Backblaze:
-            icon: backblaze.svg
-            href: https://backblaze.com
-        - Terraform cloud:
-            href: https://app.terraform.io
-            icon: terraform.svg
-        - Healthchecks.io:
-            href: https://healthchecks.io
-            icon: healthchecks.svg
 
     - Infrastructure:
         - Router:
@@ -161,6 +151,23 @@ data:
         - Brother printer:
             href: http://192.168.2.2
             icon: printer.svg
+
+    - SaaS & PaaS:
+        - GitHub:
+            icon: github.svg
+            href: https://github.com
+        - Cloudflare:
+            icon: cloudflare.svg
+            href: https://dash.cloudflare.com
+        - Backblaze:
+            icon: backblaze.svg
+            href: https://backblaze.com
+        - Terraform cloud:
+            href: https://app.terraform.io
+            icon: terraform.svg
+        - Healthchecks.io:
+            href: https://healthchecks.io
+            icon: healthchecks.svg
 
     - IoT:
         - Zigbee2Tasmota:
