@@ -28,20 +28,20 @@ data:
     layout:
       Messaging and time management:
         style: columns
-        tab: Cloud services
+        tab: Services
 
       Digital assets:
         style: columns
-        tab: Cloud services
+        tab: Services
 
       Cloud storage:
         style: columns
         columns: 5
-        tab: Cloud services
+        tab: Services
 
       Finance:
         style: columns
-        tab: Cloud services
+        tab: Services
 
       Multimedia:
         style: columns
