@@ -27,39 +27,39 @@ data:
     layout:
       Organizing:
         style: columns
-        tab: Services
+        tab: Everyday services
 
       Finance:
         style: columns
-        tab: Services
-
-      Multimedia:
-        style: columns
-        tab: Services
-
-      Downloading:
-        style: columns
-        tab: Services
+        tab: Everyday services
 
       Cloud-services:
         style: columns
         columns: 5
-        tab: Services
+        tab: Everyday services
+
+      Media:
+        style: columns
+        tab: Multimedia
+
+      Downloading:
+        style: columns
+        tab: Multimedia
 
       Infrastructure:
         style: columns
         columns: 5
-        tab: Infra
-
-      IoT:
-        style: columns
-        columns: 5
-        tab: Infra
+        tab: Home infra
 
       Monitoring:
         style: columns
         columns: 5
-        tab: Infra
+        tab: Home infra
+
+      IoT:
+        style: columns
+        columns: 5
+        tab: Home infra
 
     quicklaunch:
         searchDescriptions: true
@@ -165,10 +165,10 @@ data:
     - IoT:
         - Zigbee2Tasmota:
             href: http://192.168.2.3
-            icon: tasmota.svg
+            icon: https://raw.githubusercontent.com/zhorvath83/dashboard-icons/master/svg/zigbee.svg
         - MiLight Hub:
             href: http://192.168.2.4
-            icon: tasmota.svg
+            icon: https://raw.githubusercontent.com/zhorvath83/dashboard-icons/master/svg/led-bulb.svg
         - Tasmota smart switch 1:
             href: http://192.168.2.18
             icon: tasmota.svg
