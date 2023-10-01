@@ -27,20 +27,15 @@ data:
 
     layout:
       Messaging and time management:
-        style: columns
+        style: row
         tab: Services
 
       Digital assets:
-        style: columns
-        tab: Services
-
-      Cloud storage:
-        style: columns
-        columns: 5
+        style: row
         tab: Services
 
       Finance:
-        style: columns
+        style: row
         tab: Services
 
       Multimedia:
@@ -104,7 +99,7 @@ data:
 
   services.yaml: |
     ---
-    - Messaging and time management:
+    - Messaging and Todo:
         - Fastmail:
             href: https://fastmail.com
             icon: fastmail.svg
@@ -135,7 +130,7 @@ data:
             href: https://webkincstar.allamkincstar.gov.hu
             icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/mak.png
 
-    - Cloud storage:
+    - Digital assets:
         - Dropbox:
             href: https://dropbox.com
             icon: https://raw.githubusercontent.com/zhorvath83/dashboard-icons/master/svg/dropbox.svg
