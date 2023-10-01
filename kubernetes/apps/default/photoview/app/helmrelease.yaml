@@ -102,6 +102,7 @@ spec:
           gethomepage.dev/name: Photoview - photos
           gethomepage.dev/group: Digital assets
           gethomepage.dev/icon: photoview.svg
+          gethomepage.dev/weight: 30
         hosts:
           - host: &host1 "photos.${PUBLIC_DOMAIN}"
             paths:
