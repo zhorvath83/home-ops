@@ -146,4 +146,4 @@ spec:
       limits:
         memory: 1024Mi
     podAnnotations:
-      configmap.reloader.stakater.com/reload: *config
+        configmap.reloader.stakater.com/reload: "true"
