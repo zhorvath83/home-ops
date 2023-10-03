@@ -42,7 +42,7 @@ spec:
       useExistingConfigMap: homepage-config
 
     podAnnotations:
-        configmap.reloader.stakater.com/reload: "true"
+      configmap.reloader.stakater.com/reload: "true"
 
     ingress:
       main:
