@@ -9,7 +9,7 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 1.5.1
+      version: 2.0.2
       sourceRef:
         kind: HelmRepository
         name: bjw-s
@@ -25,36 +25,55 @@ spec:
       retries: 3
   uninstall:
     keepHistory: false
+
   values:
-    controller:
-      strategy: RollingUpdate
-    image:
-      repository: docker.io/jmalloc/echo-server
-      tag: 0.3.5
+    defaultPodOptions:
+      securityContext:
+        runAsUser: 10001
+        runAsGroup: 10001
+
+    controllers:
+      main:
+        containers:
+          main:
+            image:
+              repository: docker.io/jmalloc/echo-server
+              tag: 0.3.5
+              pullPolicy: IfNotPresent
+
+            probes:
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: *port
+                  initialDelaySeconds: 0
+                  periodSeconds: 10
+                  timeoutSeconds: 1
+                  failureThreshold: 3
+              readiness: *probes
+              startup:
+                enabled: false
+
+            resources:
+              requests:
+                cpu: 5m
+                memory: 10Mi
+              limits:
+                memory: 50Mi
+
     service:
       main:
         ports:
           http:
-            port: &port 8080
-    probes:
-      liveness: &probes
-        enabled: true
-        custom: true
-        spec:
-          httpGet:
-            path: /health
-            port: *port
-          initialDelaySeconds: 0
-          periodSeconds: 10
-          timeoutSeconds: 1
-          failureThreshold: 3
-      readiness: *probes
-      startup:
-        enabled: false
+            port: 8080
+
     ingress:
       main:
         enabled: true
-        ingressClassName: nginx
+        className: "nginx"
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Echo server
@@ -64,13 +83,9 @@ spec:
           - host: &host "{{ .Release.Name }}.${PUBLIC_DOMAIN}"
             paths:
               - path: /
-                pathType: Prefix
+                service:
+                  name: main
+                  port: http
         tls:
           - hosts:
               - *host
-    resources:
-      requests:
-        cpu: 5m
-        memory: 10Mi
-      limits:
-        memory: 50Mi
