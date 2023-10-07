@@ -51,7 +51,7 @@ spec:
               - --repo=https://github.com/KBlixt/subcleaner
               - --branch=master
               - --depth=1
-              - --period=86400
+              - --period=86400s
               - --root=/add-ons
               - --verbose=6
             volumeMounts:
