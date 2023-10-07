@@ -43,13 +43,18 @@ spec:
 
         initContainers:
           init-subcleaner:
-            image: registry.k8s.io/git-sync/git-sync:v3.6.9
-            imagePullPolicy: IfNotPresent
+
+            image:
+              repository: registry.k8s.io/git-sync/git-sync
+              tag: v4.0.0
+              pullPolicy: IfNotPresent
             args:
               - --repo=https://github.com/KBlixt/subcleaner
               - --branch=master
-              - --wait=86400
+              - --depth=1
+              - --period=86400
               - --root=/add-ons
+              - --verbose=6
             volumeMounts:
               - { name: add-ons, mountPath: /add-ons }
 
