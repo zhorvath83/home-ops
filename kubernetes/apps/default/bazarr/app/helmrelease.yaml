@@ -80,8 +80,10 @@ spec:
           initcontainers:
             subcleaner:
               order: 1
-              image: alpine/git:v2.40.1
-              imagePullPolicy: IfNotPresent
+              image:
+                repository: alpine/git
+                tag: v2.40.1@sha256:00ce1e23a12ff01903b836e58e57d9a8df1f4fc80466be6ed9d738e7a6a9b55e
+                pullPolicy: IfNotPresent
               command:
                 - "/bin/sh"
                 - -c
@@ -97,8 +99,10 @@ spec:
 
             permissions:
               order: 2
-              image: public.ecr.aws/docker/library/busybox:1.36.1
-              imagePullPolicy: IfNotPresent
+              image:
+                repository: busybox
+                tag: 1.36.1@sha256:023917ec6a886d0e8e15f28fb543515a5fcd8d938edb091e8147db4efed388ee
+                pullPolicy: IfNotPresent
               command:
                 - "/bin/sh"
                 - -c
