@@ -62,7 +62,7 @@ spec:
             securityContext:
               runAsUser: 0
 
-          permissions:
+          fixing-permissions:
             order: 2
             image:
               repository: busybox
