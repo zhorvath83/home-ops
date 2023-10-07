@@ -43,7 +43,7 @@ spec:
             fsGroupChangePolicy: OnRootMismatch
 
         initcontainers:
-          subcleaner:
+          init-subcleaner:
             order: 1
             image:
               repository: alpine/git
@@ -62,7 +62,7 @@ spec:
             securityContext:
               runAsUser: 0
 
-          fixing-permissions:
+          init-permissions:
             order: 2
             image:
               repository: busybox
@@ -143,6 +143,7 @@ spec:
 
     persistence:
       config:
+        enabled: true
         type: persistentVolumeClaim
         existingClaim: *app
         globalMounts:
