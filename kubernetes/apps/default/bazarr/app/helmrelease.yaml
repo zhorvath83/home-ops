@@ -27,7 +27,6 @@ spec:
     keepHistory: false
 
   values:
-
     controllers:
       main:
         type: statefulset
@@ -42,7 +41,7 @@ spec:
             fsGroup: 10001
             fsGroupChangePolicy: OnRootMismatch
 
-        initcontainers:
+        initContainers:
           init-subcleaner:
             order: 1
             image:
