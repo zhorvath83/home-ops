@@ -43,7 +43,6 @@ spec:
 
         initContainers:
           init-subcleaner:
-
             image:
               repository: registry.k8s.io/git-sync/git-sync
               tag: v4.0.0
