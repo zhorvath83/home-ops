@@ -110,10 +110,10 @@ spec:
 
             resources:
               requests:
-                cpu: 5m
-                memory: 10Mi
+                cpu: 10m
+                memory: 128Mi
               limits:
-                memory: 50Mi
+                memory: 768Mi
 
     service:
       main:
