@@ -43,40 +43,15 @@ spec:
 
         initContainers:
           init-subcleaner:
-            order: 1
-            image:
-              repository: alpine/git
-              tag: v2.40.1@sha256:00ce1e23a12ff01903b836e58e57d9a8df1f4fc80466be6ed9d738e7a6a9b55e
-              pullPolicy: IfNotPresent
-            command:
-              - "/bin/sh"
-              - -c
+            image: registry.k8s.io/git-sync/git-sync:v3.6.9
+            imagePullPolicy: IfNotPresent
             args:
-              - git
-              - clone
-              - https://github.com/KBlixt/subcleaner
-              - /add-ons
+              - --repo=https://github.com/KBlixt/subcleaner
+              - --branch=master
+              - --wait=86400
+              - --root=/add-ons
             volumeMounts:
               - { name: add-ons, mountPath: /add-ons }
-            securityContext:
-              runAsUser: 0
-
-          init-permissions:
-            order: 2
-            image:
-              repository: busybox
-              tag: 1.36.1@sha256:023917ec6a886d0e8e15f28fb543515a5fcd8d938edb091e8147db4efed388ee
-              pullPolicy: IfNotPresent
-            command:
-              - "/bin/sh"
-              - -c
-            args:
-              - chown -R 10001 /add-ons/subcleaner
-              - chmod -R 700 /add-ons/subcleaner
-            volumeMounts:
-              - { name: add-ons, mountPath: /add-ons }
-            securityContext:
-              runAsUser: 0
 
         containers:
           main:

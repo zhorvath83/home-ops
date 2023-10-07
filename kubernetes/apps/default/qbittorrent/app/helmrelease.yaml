@@ -41,8 +41,6 @@ spec:
 
     env:
       TZ: "Europe/Budapest"
-      # QBT_Preferences__WebUI__AlternativeUIEnabled: "true"
-      # QBT_Preferences__WebUI__RootFolder: /add-ons/VueTorrent
 
     service:
       main:
@@ -103,10 +101,6 @@ spec:
         mountPath: /config
         # subPath: qbittorrent
 
-      add-ons:
-        enabled: true
-        type: emptyDir
-
       configfiles:
         enabled: true
         type: configMap
@@ -134,18 +128,6 @@ spec:
           - name: config
             mountPath: /data/config
             subPath: qBittorrent
-
-    sidecars:
-      vuetorrent:
-        image: registry.k8s.io/git-sync/git-sync:v4.0.0
-        imagePullPolicy: IfNotPresent
-        args:
-          - --repo=https://github.com/WDaan/VueTorrent
-          - --branch=latest-release
-          - --wait=86400 # 1 day
-          - --root=/add-ons
-        volumeMounts:
-          - { name: add-ons, mountPath: /add-ons }
 
     probes:
       liveness:
