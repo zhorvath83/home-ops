@@ -9,7 +9,7 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 1.5.1
+      version: 2.0.2
       sourceRef:
         kind: HelmRepository
         name: bjw-s
@@ -28,64 +28,103 @@ spec:
     keepHistory: false
 
   values:
+    controllers:
+      main:
+        type: statefulset
 
-    initContainers:
-      init-db:
-        image: ghcr.io/onedr0p/postgres-init:14.9
-        env:
-          - name: INIT_POSTGRES_HOST
-            value: postgresql.default.svc.cluster.local
-          - name: INIT_POSTGRES_DBNAME
-            value: *app
-          - name: INIT_POSTGRES_SUPER_PASS
-            valueFrom:
-              secretKeyRef:
-                name: postgresql-secret
-                key: postgres-password
-          - name: INIT_POSTGRES_USER
-            valueFrom:
-              secretKeyRef:
-                name: photoview-secret
-                key: POSTGRES_USER
-          - name: INIT_POSTGRES_PASS
-            valueFrom:
-              secretKeyRef:
-                name: photoview-secret
-                key: POSTGRES_PASS
+        annotations:
+          reloader.stakater.com/auto: "true"
 
-    controller:
-      type: statefulset
-      annotations:
-        reloader.stakater.com/auto: "true"
+        pod:
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10001
+            fsGroup: 10001
+            fsGroupChangePolicy: OnRootMismatch
 
-    image:
-      repository: viktorstrate/photoview
-      tag: 2.3.13
+        initContainers:
+          init-db:
+            image: ghcr.io/onedr0p/postgres-init:14.9
+            env:
+              - name: INIT_POSTGRES_HOST
+                value: postgresql.default.svc.cluster.local
+              - name: INIT_POSTGRES_DBNAME
+                value: *app
+              - name: INIT_POSTGRES_SUPER_PASS
+                valueFrom:
+                  secretKeyRef:
+                    name: postgresql-secret
+                    key: postgres-password
+              - name: INIT_POSTGRES_USER
+                valueFrom:
+                  secretKeyRef:
+                    name: photoview-secret
+                    key: POSTGRES_USER
+              - name: INIT_POSTGRES_PASS
+                valueFrom:
+                  secretKeyRef:
+                    name: photoview-secret
+                    key: POSTGRES_PASS
 
-    env:
-      - name: PHOTOVIEW_LISTEN_IP
-        value: 0.0.0.0
-      - name: PHOTOVIEW_LISTEN_PORT
-        value: &port 8080
-      - name: PHOTOVIEW_DEVELOPMENT_MODE
-        value: false
-      - name: PHOTOVIEW_DISABLE_FACE_RECOGNITION
-        value: true
-      - name: PHOTOVIEW_MEDIA_CACHE
-        value: /app/cache
-      - name: MAPBOX_TOKEN
-        value: ""
-      # - name: PHOTOVIEW_DATABASE_DRIVER
-      #   value: sqlite
-      # - name: PHOTOVIEW_SQLITE_PATH
-      #   value: /app/database/photoview.db
-      - name: PHOTOVIEW_DATABASE_DRIVER
-        value: postgres
-      - name: PHOTOVIEW_POSTGRES_URL
-        valueFrom:
-          secretKeyRef:
-            name: photoview-secret
-            key: PHOTOVIEW_POSTGRES_URL
+        containers:
+          main:
+            order: 1
+            image:
+              repository: viktorstrate/photoview
+              tag: 2.3.13
+              pullPolicy: IfNotPresent
+
+            env:
+              - name: TZ 
+                value: Europe/Budapest
+              - name: PHOTOVIEW_LISTEN_IP
+                value: 0.0.0.0
+              - name: PHOTOVIEW_LISTEN_PORT
+                value: &port 8080
+              - name: PHOTOVIEW_DEVELOPMENT_MODE
+                value: false
+              - name: PHOTOVIEW_DISABLE_FACE_RECOGNITION
+                value: true
+              - name: PHOTOVIEW_MEDIA_CACHE
+                value: /app/cache
+              - name: MAPBOX_TOKEN
+                value: ""
+              # - name: PHOTOVIEW_DATABASE_DRIVER
+              #   value: sqlite
+              # - name: PHOTOVIEW_SQLITE_PATH
+              #   value: /app/database/photoview.db
+              - name: PHOTOVIEW_DATABASE_DRIVER
+                value: postgres
+              - name: PHOTOVIEW_POSTGRES_URL
+                valueFrom:
+                  secretKeyRef:
+                    name: photoview-secret
+                    key: PHOTOVIEW_POSTGRES_URL
+
+            probes:
+              liveness:
+                enabled: false
+              readiness:
+                enabled: false
+              startup:
+                enabled: false
+
+            securityContext:
+              privileged: false
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              seccompProfile:
+                type: RuntimeDefault
+              capabilities:
+                drop:
+                  - ALL
+
+            resources:
+              requests:
+                cpu: 50m
+                memory: 250Mi
+              limits:
+                memory: 2000Mi
 
     service:
       main:
@@ -96,7 +135,7 @@ spec:
     ingress:
       main:
         enabled: true
-        ingressClassName: nginx
+        className: "nginx"
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Photoview - photos
@@ -106,9 +145,15 @@ spec:
           - host: &host1 "photos.${PUBLIC_DOMAIN}"
             paths:
               - path: /
+                service:
+                  name: main
+                  port: http
           - host: &host2 "fenykepek.${PUBLIC_DOMAIN}"
             paths:
               - path: /
+                service:
+                  name: main
+                  port: http
         tls:
           - hosts:
               - *host1
@@ -117,44 +162,18 @@ spec:
     persistence:
       photos:
         enabled: true
-        mountPath: /photos
+        type: nfs
+        path: /backups/Pictures
         readOnly: true
         server: ${CLUSTER_LAN_NAS_IP}
-        path: /backups/Pictures
-        type: nfs
+        globalMounts:
+          - path: /photos
 
       data:
         enabled: true
+        type: persistentVolumeClaim
         existingClaim: *app
-        subPath:
-          - path: cache
-            mountPath: /app/cache
-
-    podSecurityContext:
-      runAsUser: 10001
-      runAsGroup: 10001
-      fsGroup: 10001
-      fsGroupChangePolicy: OnRootMismatch
-
-    securityContext:
-      privileged: false
-      allowPrivilegeEscalation: false
-      readOnlyRootFilesystem: true
-      seccompProfile:
-        type: RuntimeDefault
-      capabilities:
-        drop:
-          - ALL
-
-    resources:
-      requests:
-        cpu: 50m
-        memory: 250Mi
-      limits:
-        memory: 2000Mi
-
-# valuesFrom:
-#   - kind: Secret
-#     name: photoview-secret
-#     valuesKey: PHOTOS_PATH
-#     targetPath: persistence.photos.path
+        advancedMounts:
+          - path: /app/cache
+            readOnly: true
+            subPath: cache
