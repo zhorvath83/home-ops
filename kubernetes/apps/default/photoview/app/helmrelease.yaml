@@ -48,7 +48,6 @@ spec:
               repository: ghcr.io/onedr0p/postgres-init
               tag: 14.9
               pullPolicy: IfNotPresent
-
             env:
               - name: INIT_POSTGRES_HOST
                 value: postgresql.default.svc.cluster.local
@@ -177,7 +176,7 @@ spec:
         enabled: true
         type: persistentVolumeClaim
         existingClaim: *app
-        advancedMounts:
+        globalMounts:
           - path: /app/cache
             readOnly: true
             subPath: cache
