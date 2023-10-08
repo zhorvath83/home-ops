@@ -35,7 +35,7 @@ spec:
 
     image:
       repository: ghcr.io/onedr0p/radarr
-      tag: 4.7.5.7809@sha256:7b3c6b9625dbba4ee08bd70c6ceb14497217a817447f228abae1af65c635f5ec
+      tag: 4.7.5.7809@sha256:4cbbbcd104a88c3ab86332c99384025b88e232d44334c23ee88f3716fb2fd296
 
     env:
       TZ: Europe/Budapest
