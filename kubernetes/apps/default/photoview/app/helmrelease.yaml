@@ -78,7 +78,7 @@ spec:
               pullPolicy: IfNotPresent
 
             env:
-              - name: TZ 
+              - name: TZ
                 value: Europe/Budapest
               - name: PHOTOVIEW_LISTEN_IP
                 value: 0.0.0.0
