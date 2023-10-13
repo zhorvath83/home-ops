@@ -102,7 +102,9 @@ spec:
       config-yml:
         enabled: true
         type: configMap
-        mountPath: /app/config/config.yml
-        subPath: config.yml
         name: plex-tract-sync-configmap
-        readOnly: true
+        defaultMode: 0775
+        globalMounts:
+          - path: /app/config/config.yml
+            subPath: config.yml
+            readOnly: true
