@@ -38,10 +38,11 @@ spec:
         statefulset:
           volumeClaimTemplates:
             - name: config
-              mountPath: /app/config
               accessMode: ReadWriteOnce
               size: 1Gi
               storageClass: democratic-csi-local-hostpath
+              globalMounts:
+                - path: /app/config
 
         containers:
           main:
