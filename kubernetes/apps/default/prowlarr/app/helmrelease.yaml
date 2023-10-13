@@ -9,7 +9,7 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 1.5.1
+      version: 2.0.3
       sourceRef:
         kind: HelmRepository
         name: bjw-s
@@ -28,17 +28,55 @@ spec:
     keepHistory: false
 
   values:
-    controller:
-      type: statefulset
-      annotations:
-        reloader.stakater.com/auto: "true"
+    controllers:
+      main:
+        type: statefulset
 
-    image:
-      repository: ghcr.io/onedr0p/prowlarr
-      tag: 1.8.6.3946@sha256:f9aab8de928872d8f3c313e8b25c4a7c6bbb1054e3ad495239eb323003309812
+        annotations:
+          reloader.stakater.com/auto: "true"
 
-    env:
-      TZ: Europe/Budapest
+        pod:
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10001
+            fsGroup: 10001
+            fsGroupChangePolicy: OnRootMismatch
+
+        containers:
+          main:
+            order: 1
+            image:
+              repository: ghcr.io/onedr0p/prowlarr
+              tag: 1.8.6.3946@sha256:f9aab8de928872d8f3c313e8b25c4a7c6bbb1054e3ad495239eb323003309812
+              pullPolicy: IfNotPresent
+
+            env:
+              TZ: Europe/Budapest
+
+            probes:
+              liveness:
+                enabled: false
+              readiness:
+                enabled: false
+              startup:
+                enabled: false
+
+            securityContext:
+              privileged: false
+              allowPrivilegeEscalation: false
+              # Could not handle readOnlyRootFilesystem
+              seccompProfile:
+                type: RuntimeDefault
+              capabilities:
+                drop:
+                  - ALL
+
+            resources:
+              requests:
+                cpu: 10m
+                memory: 128Mi
+              limits:
+                memory: 512Mi
 
     service:
       main:
@@ -49,7 +87,7 @@ spec:
     ingress:
       main:
         enabled: true
-        ingressClassName: nginx
+        className: "nginx"
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Prowlarr - indexers
@@ -59,35 +97,17 @@ spec:
           - host: &host "indexers.${PUBLIC_DOMAIN}"
             paths:
               - path: /
-                pathType: Prefix
+                service:
+                  name: main
+                  port: http
         tls:
           - hosts:
               - *host
 
-    podSecurityContext:
-      runAsUser: 10001
-      runAsGroup: 10001
-      fsGroup: 10001
-      fsGroupChangePolicy: OnRootMismatch
-
-    securityContext:
-      privileged: false
-      allowPrivilegeEscalation: false
-      # Could not handle readOnlyRootFilesystem
-      seccompProfile:
-        type: RuntimeDefault
-      capabilities:
-        drop:
-          - ALL
-
     persistence:
       config:
         enabled: true
+        type: persistentVolumeClaim
         existingClaim: *app
-
-    resources:
-      requests:
-        cpu: 10m
-        memory: 100Mi
-      limits:
-        memory: 500Mi
+        globalMounts:
+          - path: /config
