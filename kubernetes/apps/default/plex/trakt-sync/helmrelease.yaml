@@ -99,11 +99,10 @@ spec:
         enabled: false
 
     persistence:
-      config-yaml:
+      config-yml:
         enabled: true
         type: configMap
-        name: plex-tract-sync-configmap
+        mountPath: /app/config/config.yml
         subPath: config.yml
+        name: plex-tract-sync-configmap
         readOnly: true
-        globalMounts:
-          - path: /app/config/config.yml
