@@ -17,30 +17,78 @@ spec:
   interval: 30m
 
   values:
-    controller:
-      type: statefulset
-      annotations:
-        reloader.stakater.com/auto: "true"
 
-    image:
-      repository: ghcr.io/taxel/plextraktsync
-      tag: 0.27.10@sha256:fac1e4a8695f23d6d6fa142bc0b1860c447dd1746573fd382a54694904cf086d
+    defaultPodOptions:
+      enableServiceLinks: false
 
-    args:
-      - watch
+    controllers:
+      main:
+        type: statefulset
 
-    enableServiceLinks: false
+        annotations:
+          reloader.stakater.com/auto: "true"
 
-    env:
-      PLEX_BASEURL: http://plex.default.svc.cluster.local:32400
-      PLEX_LOCALURL: http://plex.default.svc.cluster.local:32400
-      PLEX_TOKEN:
-        valueFrom:
-          secretKeyRef:
-            name: plex-trakt-sync-secret
-            key: PLEX_TOKEN
-      PLEX_USERNAME: zhorvath83
-      TRAKT_USERNAME: zhorvath83
+        pod:
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10001
+            fsGroup: 10001
+            fsGroupChangePolicy: OnRootMismatch
+
+        statefulset:
+          volumeClaimTemplates:
+            - name: config
+              mountPath: /app/config
+              accessMode: ReadWriteOnce
+              size: 1Gi
+              storageClass: democratic-csi-local-hostpath
+
+        containers:
+          main:
+            order: 1
+            image:
+              repository: ghcr.io/taxel/plextraktsync
+              tag: 0.27.10@sha256:fac1e4a8695f23d6d6fa142bc0b1860c447dd1746573fd382a54694904cf086d
+              pullPolicy: IfNotPresent
+
+            args:
+              - watch
+
+            env:
+              PLEX_BASEURL: http://plex.default.svc.cluster.local:32400
+              PLEX_LOCALURL: http://plex.default.svc.cluster.local:32400
+              PLEX_TOKEN:
+                valueFrom:
+                  secretKeyRef:
+                    name: plex-trakt-sync-secret
+                    key: PLEX_TOKEN
+              PLEX_USERNAME: zhorvath83
+              TRAKT_USERNAME: zhorvath83
+
+            securityContext:
+              privileged: false
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              seccompProfile:
+                type: RuntimeDefault
+              capabilities:
+                drop:
+                  - ALL
+
+            probes:
+              liveness:
+                enabled: false
+              readiness:
+                enabled: false
+              startup:
+                enabled: false
+
+            resources:
+              requests:
+                cpu: 25m
+                memory: 50Mi
+              limits:
+                memory: 100Mi
 
     service:
       main:
@@ -53,46 +101,9 @@ spec:
     persistence:
       config-yaml:
         enabled: true
-        mountPath: /app/config/config.yml
-        name: plex-tract-sync-configmap
-        readOnly: true
-        subPath: config.yml
         type: configMap
-
-    podSecurityContext:
-      runAsUser: 10001
-      runAsGroup: 10001
-      fsGroup: 10001
-      fsGroupChangePolicy: OnRootMismatch
-
-    securityContext:
-      privileged: false
-      allowPrivilegeEscalation: false
-      readOnlyRootFilesystem: true
-      seccompProfile:
-        type: RuntimeDefault
-      capabilities:
-        drop:
-          - ALL
-
-    probes:
-      liveness:
-        enabled: false
-      readiness:
-        enabled: false
-      startup:
-        enabled: false
-
-    resources:
-      requests:
-        cpu: 25m
-        memory: 50M
-      limits:
-        memory: 101M
-
-    volumeClaimTemplates:
-      - name: config
-        mountPath: /app/config
-        accessMode: ReadWriteOnce
-        size: 1Gi
-        storageClass: democratic-csi-local-hostpath
+        name: plex-tract-sync-configmap
+        subPath: config.yml
+        readOnly: true
+        globalMounts:
+          - path: /app/config/config.yml
