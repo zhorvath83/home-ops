@@ -9,13 +9,12 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 1.5.1
+      version: 2.0.3
       sourceRef:
         kind: HelmRepository
         name: bjw-s
         namespace: flux-system
 
-  # maxHistory: 3
   install:
     createNamespace: true
     remediation:
@@ -28,22 +27,68 @@ spec:
     keepHistory: false
 
   values:
-    controller:
-      type: statefulset
+    controllers:
+      main:
+        type: statefulset
 
-    image:
-      repository: ghcr.io/onedr0p/plex
-      tag: 1.32.6.7557-1cf77d501@sha256:6f87b0811df009af1defc9afad6afa383b9d821a7fcaddc968df41ba445d321e
+        pod:
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10001
+            fsGroup: 10001
+            fsGroupChangePolicy: OnRootMismatch
 
-    env:
-      TZ: Europe/Budapest
-      HOSTNAME: PlexServer
-      ADVERTISE_IP: "https://plex.${PUBLIC_DOMAIN},http://${CLUSTER_SVC_MEDIASERVER_IP}:32400"
-      ALLOWED_NETWORKS: "10.42.0.0/16,10.43.0.0/16"
+        containers:
+          main:
+            order: 1
+            image:
+              repository: ghcr.io/onedr0p/plex
+              tag: 1.32.6.7557-1cf77d501@sha256:6f87b0811df009af1defc9afad6afa383b9d821a7fcaddc968df41ba445d321e
+              pullPolicy: IfNotPresent
 
-    envFrom:
-      - secretRef:
-          name: plex-secret
+            env:
+              TZ: Europe/Budapest
+              HOSTNAME: PlexServer
+              ADVERTISE_IP: "https://plex.${PUBLIC_DOMAIN},http://${CLUSTER_SVC_MEDIASERVER_IP}:32400"
+              ALLOWED_NETWORKS: "10.42.0.0/16,10.43.0.0/16"
+
+            envFrom:
+              - secretRef:
+                  name: plex-secret
+
+            securityContext:
+              privileged: false
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              seccompProfile:
+                type: RuntimeDefault
+              capabilities:
+                drop:
+                  - ALL
+
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  initialDelaySeconds: 30
+                  periodSeconds: 10
+                  timeoutSeconds: 1
+                  failureThreshold: 3
+                  httpGet:
+                    path: /identity
+                    port: 32400
+              readiness:
+                enabled: false
+              startup:
+                enabled: false
+
+            resources:
+              requests:
+                cpu: 50m
+                memory: 512Mi
+              limits:
+                memory: 4096Mi
 
     service:
       main:
@@ -53,7 +98,7 @@ spec:
           metallb.universe.tf/loadBalancerIPs: "${CLUSTER_SVC_MEDIASERVER_IP}"
         ports:
           http:
-            port: &port 32400
+            port: 32400
           # Plex DLNA Server
           # https://support.plex.tv/articles/200350536-dlna/
           # dnla-tcp:
@@ -82,23 +127,11 @@ spec:
             enabled: true
             port: 32414
             protocol: UDP
-    probes:
-      liveness:
-        enabled: true
-        custom: true
-        spec:
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 1
-          failureThreshold: 3
-          httpGet:
-            path: /identity
-            port: *port
 
     ingress:
       main:
         enabled: true
-        ingressClassName: nginx
+        className: "nginx"
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Plex - mediaserver
@@ -108,47 +141,31 @@ spec:
           - host: &host "plex.${PUBLIC_DOMAIN}"
             paths:
               - path: /
-                pathType: Prefix
+                service:
+                  name: main
+                  port: http
         tls:
           - hosts:
               - *host
 
-    podSecurityContext:
-      runAsUser: 10001
-      runAsGroup: 10001
-      fsGroup: 10001
-      fsGroupChangePolicy: OnRootMismatch
-
-    securityContext:
-      privileged: false
-      allowPrivilegeEscalation: false
-      readOnlyRootFilesystem: true
-      seccompProfile:
-        type: RuntimeDefault
-      capabilities:
-        drop:
-          - ALL
-
     persistence:
       config:
         enabled: true
+        type: persistentVolumeClaim
         existingClaim: *app
+        globalMounts:
+          - path: /config
 
       nfs-media:
         enabled: true
         type: nfs
         server: ${CLUSTER_LAN_NAS_IP}
         path: /media
-        mountPath: /media
+        globalMounts:
+          - path: /media
 
       transcode:
         enabled: true
         type: emptyDir
-
-    resources:
-      requests:
-        cpu: 50m
-        memory: 512Mi
-
-      limits:
-        memory: 4096Mi
+        globalMounts:
+          - path: /transcode
