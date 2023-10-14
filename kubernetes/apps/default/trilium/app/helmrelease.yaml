@@ -9,12 +9,11 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 1.5.1
+      version: 2.0.3
       sourceRef:
         kind: HelmRepository
         name: bjw-s
         namespace: flux-system
-
 
   install:
     createNamespace: true
@@ -28,30 +27,78 @@ spec:
     keepHistory: false
 
   values:
-    controller:
-      type: statefulset
+    controllers:
+      main:
+        type: statefulset
 
-    image:
-      repository: docker.io/zadam/trilium
-      tag: 0.60.4
+        annotations:
+          reloader.stakater.com/auto: "true"
 
-    env:
-      - name: TZ
-        value: "Europe/Budapest"
-      - name: TRILIUM_DATA_DIR
-        value: &datapath "/home/node/trilium-data"
-      - name: TRILIUM_PORT
-        value: &targetPort 8080
-      - name: USER_UID
-        value: "10001"
-      - name: USER_GID
-        value: "10001"
+        # Configured through env vars.
+        # pod:
+        #   securityContext:
+        #     runAsUser: 10001
+        #     runAsGroup: 10001
+        #     fsGroup: 10001
+        #     fsGroupChangePolicy: OnRootMismatch
 
-    persistence:
-      data:
-        enabled: true
-        existingClaim: *app
-        mountPath: *datapath
+        containers:
+          main:
+            order: 1
+            image:
+              repository: docker.io/zadam/trilium
+              tag: 0.60.4              
+              pullPolicy: IfNotPresent
+
+            env:
+              - name: TZ
+                value: "Europe/Budapest"
+              - name: TRILIUM_DATA_DIR
+                value: &datapath "/home/node/trilium-data"
+              - name: TRILIUM_PORT
+                value: &targetPort 8080
+              - name: USER_UID
+                value: "10001"
+              - name: USER_GID
+                value: "10001"
+
+            probes:
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /api/health-check
+                    port: *targetPort
+                  initialDelaySeconds: 0
+                  periodSeconds: 10
+                  timeoutSeconds: 1
+                  failureThreshold: 3
+              readiness: *probes
+              startup:
+                enabled: false
+
+            securityContext:
+              # Configured through env vars.
+              # privileged: false
+              # allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              seccompProfile:
+                type: RuntimeDefault
+              capabilities:
+                drop:
+                  - ALL
+                add:
+                  - SETUID
+                  - SETGID
+                  - CHOWN
+
+            resources:
+              requests:
+                cpu: 10m
+                memory: 80Mi
+              limits:
+                memory: 300Mi
 
     service:
       main:
@@ -59,26 +106,10 @@ spec:
           http:
             port: *targetPort
 
-    probes:
-      liveness: &probes
-        enabled: true
-        custom: true
-        spec:
-          httpGet:
-            path: /api/health-check
-            port: *targetPort
-          initialDelaySeconds: 0
-          periodSeconds: 10
-          timeoutSeconds: 1
-          failureThreshold: 3
-      readiness: *probes
-      startup:
-        enabled: false
-
     ingress:
       main:
         enabled: true
-        ingressClassName: nginx
+        className: "nginx"
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Trilium - notes
@@ -88,24 +119,17 @@ spec:
           - host: &host "notes.${PUBLIC_DOMAIN}"
             paths:
               - path: /
-                pathType: Prefix
+                service:
+                  name: main
+                  port: http
         tls:
           - hosts:
               - *host
 
-    podSecurityContext:
-      readOnlyRootFilesystem: true
-      capabilities:
-        drop:
-          - ALL
-        add:
-          - SETUID
-          - SETGID
-          - CHOWN
-
-    resources:
-      requests:
-        cpu: 25m
-        memory: 25M
-      limits:
-        memory: 250M
+    persistence:
+      data:
+        enabled: true
+        type: persistentVolumeClaim
+        existingClaim: *app
+        globalMounts:
+          - path: *datapath
