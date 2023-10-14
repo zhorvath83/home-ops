@@ -9,12 +9,11 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 1.5.1
+      version: 2.0.3
       sourceRef:
         kind: HelmRepository
         name: bjw-s
         namespace: flux-system
-
 
   install:
     createNamespace: true
@@ -28,46 +27,74 @@ spec:
     keepHistory: false
 
   values:
-    controller:
-      type: statefulset
-      annotations:
-        reloader.stakater.com/auto: "true"
+    controllers:
+      main:
+        type: statefulset
 
-    image:
-      repository: ghcr.io/onedr0p/radarr
-      tag: 5.0.3.8127@sha256:6f52d9c09dce3b3aacb89a4a2a2810a195f879973aa3f8412613e8b2eb0c385e
+        annotations:
+          reloader.stakater.com/auto: "true"
 
-    env:
-      TZ: Europe/Budapest
+        pod:
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10001
+            fsGroup: 10001
+            fsGroupChangePolicy: OnRootMismatch
+
+        containers:
+          main:
+            order: 1
+            image:
+              repository: ghcr.io/onedr0p/radarr
+              tag: 5.0.3.8127@sha256:6f52d9c09dce3b3aacb89a4a2a2810a195f879973aa3f8412613e8b2eb0c385e
+              pullPolicy: IfNotPresent
+
+            env:
+              TZ: Europe/Budapest
+
+            probes:
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /ping
+                    port: 7878
+                  initialDelaySeconds: 0
+                  periodSeconds: 10
+                  timeoutSeconds: 1
+                  failureThreshold: 3
+              readiness: *probes
+              startup:
+                enabled: false
+
+            securityContext:
+              privileged: false
+              allowPrivilegeEscalation: false
+              # Could not handle readOnlyRootFilesystem
+              seccompProfile:
+                type: RuntimeDefault
+              capabilities:
+                drop:
+                  - ALL
+
+            resources:
+              requests:
+                cpu: 10m
+                memory: 250Mi
+              limits:
+                memory: 2000Mi
 
     service:
       main:
         ports:
           http:
-            port: &port 7878
-
-    probes:
-      liveness: &probes
-        enabled: true
-        custom: true
-        spec:
-          httpGet:
-            path: /ping
-            port: *port
-          initialDelaySeconds: 0
-          periodSeconds: 10
-          timeoutSeconds: 1
-          failureThreshold: 3
-
-      readiness: *probes
-
-      startup:
-        enabled: false
+            port: 7878
 
     ingress:
       main:
         enabled: true
-        ingressClassName: nginx
+        className: "nginx"
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Radarr - moviess
@@ -77,41 +104,23 @@ spec:
           - host: &host "movies.${PUBLIC_DOMAIN}"
             paths:
               - path: /
-                pathType: Prefix
+                service:
+                  name: main
+                  port: http
         tls:
           - hosts:
               - *host
 
-    podSecurityContext:
-      runAsUser: 10001
-      runAsGroup: 10001
-      fsGroup: 10001
-      fsGroupChangePolicy: OnRootMismatch
-
-    securityContext:
-      privileged: false
-      allowPrivilegeEscalation: false
-      # Could not handle readOnlyRootFilesystem
-      seccompProfile:
-        type: RuntimeDefault
-      capabilities:
-        drop:
-          - ALL
-
     persistence:
       config:
         enabled: true
+        type: persistentVolumeClaim
         existingClaim: *app
-      media:
-        enabled: true
+        globalMounts:
+          - path: /config
+      nfs-nas-media:
         type: nfs
         server: ${CLUSTER_LAN_NAS_IP}
         path: /media
-        mountPath: /media
-
-    resources:
-      requests:
-        cpu: 10m
-        memory: 250Mi
-      limits:
-        memory: 2000Mi
+        globalMounts:
+          - path: /media
