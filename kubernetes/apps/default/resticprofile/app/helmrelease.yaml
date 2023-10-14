@@ -2,19 +2,18 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
-  name: &app resticprofile
+  name: resticprofile
   namespace: default
 spec:
   interval: 15m
   chart:
     spec:
       chart: app-template
-      version: 1.5.1
+      version: 2.0.3
       sourceRef:
         kind: HelmRepository
         name: bjw-s
         namespace: flux-system
-
 
   install:
     createNamespace: true
@@ -28,129 +27,158 @@ spec:
     keepHistory: false
 
   values:
-    controller:
-      type: statefulset
-      annotations:
-        reloader.stakater.com/auto: "true"
 
-    image:
-      repository: creativeprojects/resticprofile
-      tag: 0.23.0@sha256:096b4dca9148fe8d340bae504773f7363677347057961801540649880e8d7800
+    defaultPodOptions:
+      enableServiceLinks: false
 
-    command:
-      - "/bin/sh"
-      - -c
-    args:
-      - resticprofile schedule --all && crond -f
+    controllers:
+      main:
+        type: statefulset
+
+        annotations:
+          reloader.stakater.com/auto: "true"
+
+        pod:
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+
+        containers:
+          main:
+            order: 1
+            image:
+              repository: creativeprojects/resticprofile
+              tag: 0.23.0@sha256:096b4dca9148fe8d340bae504773f7363677347057961801540649880e8d7800
+              pullPolicy: IfNotPresent
+
+            command:
+              - "/bin/sh"
+              - -c
+            args:
+              - resticprofile schedule --all && crond -f
+
+            env:
+              - name: TZ
+                value: Europe/Budapest
+              - name: RESTIC_CACHE_DIR
+                value: "/mnt/nfs-tmp/resticprofile-cache"
+              - name: RESTIC_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: resticprofile-secret
+                    key: RESTIC_PASSWORD
+              - name: RESTIC_REPOSITORY_TEMPLATE
+                valueFrom:
+                  secretKeyRef:
+                    name: resticprofile-secret
+                    key: RESTIC_REPOSITORY_TEMPLATE
+              - name: AWS_ACCESS_KEY_ID
+                valueFrom:
+                  secretKeyRef:
+                    name: resticprofile-secret
+                    key: AWS_ACCESS_KEY_ID
+              - name: AWS_SECRET_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: resticprofile-secret
+                    key: AWS_SECRET_ACCESS_KEY
+              - name: HEALTHCHECK_DOCUMENTS_BACKUP_WEBHOOK
+                valueFrom:
+                  secretKeyRef:
+                    name: resticprofile-secret
+                    key: HEALTHCHECK_DOCUMENTS_BACKUP_WEBHOOK
+              - name: HEALTHCHECK_DOCUMENTS_CHECK_WEBHOOK
+                valueFrom:
+                  secretKeyRef:
+                    name: resticprofile-secret
+                    key: HEALTHCHECK_DOCUMENTS_CHECK_WEBHOOK
+              - name: HEALTHCHECK_PICTURES_BACKUP_WEBHOOK
+                valueFrom:
+                  secretKeyRef:
+                    name: resticprofile-secret
+                    key: HEALTHCHECK_PICTURES_BACKUP_WEBHOOK
+              - name: HEALTHCHECK_PICTURES_CHECK_WEBHOOK
+                valueFrom:
+                  secretKeyRef:
+                    name: resticprofile-secret
+                    key: HEALTHCHECK_PICTURES_CHECK_WEBHOOK
+              - name: HEALTHCHECK_VIDEOS_BACKUP_WEBHOOK
+                valueFrom:
+                  secretKeyRef:
+                    name: resticprofile-secret
+                    key: HEALTHCHECK_VIDEOS_BACKUP_WEBHOOK
+              - name: HEALTHCHECK_VIDEOS_CHECK_WEBHOOK
+                valueFrom:
+                  secretKeyRef:
+                    name: resticprofile-secret
+                    key: HEALTHCHECK_VIDEOS_CHECK_WEBHOOK
+              - name: HEALTHCHECK_MISC_BACKUP_WEBHOOK
+                valueFrom:
+                  secretKeyRef:
+                    name: resticprofile-secret
+                    key: HEALTHCHECK_MISC_BACKUP_WEBHOOK
+              - name: HEALTHCHECK_MISC_CHECK_WEBHOOK
+                valueFrom:
+                  secretKeyRef:
+                    name: resticprofile-secret
+                    key: HEALTHCHECK_MISC_CHECK_WEBHOOK
+
+            probes:
+              liveness:
+                enabled: false
+              readiness:
+                enabled: false
+              startup:
+                enabled: false
+
+            securityContext:
+              privileged: true
+              allowPrivilegeEscalation: true
+              readOnlyRootFilesystem: false
+              seccompProfile:
+                type: RuntimeDefault
+              capabilities:
+                drop:
+                  - ALL
+
+            resources:
+              requests:
+                cpu: 10m
+                memory: 250Mi
+              limits:
+                memory: 2000Mi
 
     service:
       main:
         enabled: false
 
-    env:
-      - name: TZ
-        value: Europe/Budapest
-      - name: RESTIC_CACHE_DIR
-        value: "/mnt/nfs-tmp/resticprofile-cache"
-      - name: RESTIC_PASSWORD
-        valueFrom:
-          secretKeyRef:
-            name: resticprofile-secret
-            key: RESTIC_PASSWORD
-      - name: RESTIC_REPOSITORY_TEMPLATE
-        valueFrom:
-          secretKeyRef:
-            name: resticprofile-secret
-            key: RESTIC_REPOSITORY_TEMPLATE
-      - name: AWS_ACCESS_KEY_ID
-        valueFrom:
-          secretKeyRef:
-            name: resticprofile-secret
-            key: AWS_ACCESS_KEY_ID
-      - name: AWS_SECRET_ACCESS_KEY
-        valueFrom:
-          secretKeyRef:
-            name: resticprofile-secret
-            key: AWS_SECRET_ACCESS_KEY
-      - name: HEALTHCHECK_DOCUMENTS_BACKUP_WEBHOOK
-        valueFrom:
-          secretKeyRef:
-            name: resticprofile-secret
-            key: HEALTHCHECK_DOCUMENTS_BACKUP_WEBHOOK
-      - name: HEALTHCHECK_DOCUMENTS_CHECK_WEBHOOK
-        valueFrom:
-          secretKeyRef:
-            name: resticprofile-secret
-            key: HEALTHCHECK_DOCUMENTS_CHECK_WEBHOOK
-      - name: HEALTHCHECK_PICTURES_BACKUP_WEBHOOK
-        valueFrom:
-          secretKeyRef:
-            name: resticprofile-secret
-            key: HEALTHCHECK_PICTURES_BACKUP_WEBHOOK
-      - name: HEALTHCHECK_PICTURES_CHECK_WEBHOOK
-        valueFrom:
-          secretKeyRef:
-            name: resticprofile-secret
-            key: HEALTHCHECK_PICTURES_CHECK_WEBHOOK
-      - name: HEALTHCHECK_VIDEOS_BACKUP_WEBHOOK
-        valueFrom:
-          secretKeyRef:
-            name: resticprofile-secret
-            key: HEALTHCHECK_VIDEOS_BACKUP_WEBHOOK
-      - name: HEALTHCHECK_VIDEOS_CHECK_WEBHOOK
-        valueFrom:
-          secretKeyRef:
-            name: resticprofile-secret
-            key: HEALTHCHECK_VIDEOS_CHECK_WEBHOOK
-      - name: HEALTHCHECK_MISC_BACKUP_WEBHOOK
-        valueFrom:
-          secretKeyRef:
-            name: resticprofile-secret
-            key: HEALTHCHECK_MISC_BACKUP_WEBHOOK
-      - name: HEALTHCHECK_MISC_CHECK_WEBHOOK
-        valueFrom:
-          secretKeyRef:
-            name: resticprofile-secret
-            key: HEALTHCHECK_MISC_CHECK_WEBHOOK
-
-    podSecurityContext:
-      runAsUser: 0
-      runAsGroup: 0
-
-    securityContext:
-      privileged: true
-      allowPrivilegeEscalation: true
-      readOnlyRootFilesystem: false
-      seccompProfile:
-        type: RuntimeDefault
-      capabilities:
-        drop:
-          - ALL
+    ingress:
+      main:
+        enabled: false
 
     persistence:
       profiles-yaml:
         enabled: true
-        mountPath: /etc/resticprofile/profiles.yaml
-        name: resticprofile-configmap
-        readOnly: true
-        subPath: profiles.yaml
         type: configMap
+        name: resticprofile-configmap
+        defaultMode: 0775
+        globalMounts:
+          - path: /etc/resticprofile/profiles.yaml
+            subPath: profiles.yaml
+            readOnly: true
+
       nfs-tmp:
         enabled: true
         type: nfs
         server: ${CLUSTER_LAN_NAS_IP}
         path: /tmp
-        mountPath: /mnt/nfs-tmp
+        globalMounts:
+          - path: /mnt/nfs-tmp
+
       nfs-backups:
         enabled: true
         type: nfs
         server: ${CLUSTER_LAN_NAS_IP}
         path: /backups
-        mountPath: /backups
-
-    resources:
-      requests:
-        cpu: 10m
-        memory: 250Mi
-      limits:
-        memory: 2000Mi
+        globalMounts:
+          - path: /backups
