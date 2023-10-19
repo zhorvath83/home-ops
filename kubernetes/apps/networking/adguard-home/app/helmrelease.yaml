@@ -51,7 +51,7 @@ spec:
 
     image:
       repository: adguard/adguardhome
-      tag: v0.107.39@sha256:3ae4302a6c01ffbb0dce47c23f88785c3170b22c3c1beb2ed3b77fda7db6751d
+      tag: v0.107.40@sha256:efe08a321f2328e72e2d173818fb08ce25a2af5fbb94ad80cf4ddb04f79a95cc
 
     env:
       - name: TZ
