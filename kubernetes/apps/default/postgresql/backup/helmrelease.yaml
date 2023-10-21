@@ -9,12 +9,11 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 1.5.1
+      version: 2.0.3
       sourceRef:
         kind: HelmRepository
         name: bjw-s
         namespace: flux-system
-
 
   install:
     createNamespace: true
@@ -28,45 +27,96 @@ spec:
     keepHistory: false
 
   values:
-    controller:
-      type: cronjob
+    defaultPodOptions:
+      enableServiceLinks: false
+
+    controllers:
+      main:
+        type: cronjob
       cronjob:
+        concurrencyPolicy: Forbid
         schedule: "@daily"
-        ttlSecondsAfterFinished: 43200
-    restartPolicy: OnFailure
-    image:
-      repository: docker.io/prodrigestivill/postgres-backup-local
-      tag: 16@sha256:085926531fbabe298792a83384d07d6146683732e53e51891ac75eaa71e09d08
-      pullPolicy: IfNotPresent
-    command: ["/backup.sh"]
-    env:
-      - name: TZ
-        value: "Europe/Budapest"
-      - name: POSTGRES_HOST
-        value: postgresql.default.svc.cluster.local
-      - name: POSTGRES_PORT
-        value: 5432
-      - name: POSTGRES_USER
-        value: postgres
-      - name: POSTGRES_PASSWORD
-        valueFrom:
-          secretKeyRef:
-            name: postgresql-secret
-            key: postgres-password
-      - name: POSTGRES_DB
-        value: "tandoor"
-      - name: BACKUP_KEEP_DAYS
-        value: "7"
-      - name: BACKUP_KEEP_WEEKS
-        value: "4"
-      - name: BACKUP_KEEP_MONTHS
-        value: "3"
-      - name: BACKUP_KEEP_MINS
-        value: "7200"
-      - name: POSTGRES_EXTRA_OPTS
-        value: "--blobs --clean --create --compress=9"
+        ttlSecondsAfterFinished: 172800
+        backoffLimit: 6
+
+        annotations:
+          reloader.stakater.com/auto: "true"
+
+        pod:
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10001
+            fsGroup: 10001
+            fsGroupChangePolicy: OnRootMismatch
+
+        containers:
+          main:
+            order: 1
+            image:
+              repository: docker.io/prodrigestivill/postgres-backup-local
+              tag: 16@sha256:085926531fbabe298792a83384d07d6146683732e53e51891ac75eaa71e09d08
+              pullPolicy: IfNotPresent
+
+            command:
+              - "/backup.sh"
+
+            env:
+              - name: TZ
+                value: "Europe/Budapest"
+              - name: POSTGRES_HOST
+                value: postgresql.default.svc.cluster.local
+              - name: POSTGRES_PORT
+                value: 5432
+              - name: POSTGRES_USER
+                value: postgres
+              - name: POSTGRES_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: postgresql-secret
+                    key: postgres-password
+              - name: POSTGRES_DB
+                value: "tandoor"
+              - name: BACKUP_KEEP_DAYS
+                value: "7"
+              - name: BACKUP_KEEP_WEEKS
+                value: "4"
+              - name: BACKUP_KEEP_MONTHS
+                value: "3"
+              - name: BACKUP_KEEP_MINS
+                value: "7200"
+              - name: POSTGRES_EXTRA_OPTS
+                value: "--blobs --clean --create --compress=9"
+
+            probes:
+              liveness:
+                enabled: false
+              readiness:
+                enabled: false
+              startup:
+                enabled: false
+
+            securityContext:
+              privileged: false
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              seccompProfile:
+                type: RuntimeDefault
+              capabilities:
+                drop:
+                  - ALL
+
+            resources:
+              requests:
+                cpu: 10m
+                memory: 250Mi
+              limits:
+                memory: 2000Mi
 
     service:
+      main:
+        enabled: false
+
+    ingress:
       main:
         enabled: false
 
@@ -76,20 +126,5 @@ spec:
         type: nfs
         server: ${CLUSTER_LAN_NAS_IP}
         path: /backups/pgbackups
-        mountPath: /backups
-
-    podSecurityContext:
-      runAsUser: 10001
-      runAsGroup: 10001
-      fsGroup: 10001
-      fsGroupChangePolicy: OnRootMismatch
-
-    securityContext:
-      privileged: false
-      allowPrivilegeEscalation: false
-      readOnlyRootFilesystem: true
-      seccompProfile:
-        type: RuntimeDefault
-      capabilities:
-        drop:
-          - ALL
+        globalMounts:
+          - path: /backups
