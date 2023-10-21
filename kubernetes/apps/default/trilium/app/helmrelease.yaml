@@ -47,7 +47,7 @@ spec:
             order: 1
             image:
               repository: docker.io/zadam/trilium
-              tag: 0.60.4              
+              tag: 0.60.4
               pullPolicy: IfNotPresent
 
             env:
@@ -82,7 +82,7 @@ spec:
               # Configured through env vars.
               # privileged: false
               # allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: true
+              # readOnlyRootFilesystem: true
               seccompProfile:
                 type: RuntimeDefault
               capabilities:

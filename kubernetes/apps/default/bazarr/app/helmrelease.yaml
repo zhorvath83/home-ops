@@ -54,7 +54,7 @@ spec:
               - --one-time
               - --root=/add-ons
               - --verbose=6
-              #- --period=86400s
+            # - --period=86400s
             volumeMounts:
               - { name: add-ons, mountPath: /add-ons }
 
