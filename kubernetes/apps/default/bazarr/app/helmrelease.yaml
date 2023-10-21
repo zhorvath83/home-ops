@@ -45,7 +45,7 @@ spec:
           init-subcleaner:
             image:
               repository: registry.k8s.io/git-sync/git-sync
-              tag: v4.0.0
+              tag: v4.1.0
               pullPolicy: IfNotPresent
             args:
               - --repo=https://github.com/KBlixt/subcleaner
