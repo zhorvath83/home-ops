@@ -33,11 +33,11 @@ spec:
     controllers:
       main:
         type: cronjob
-      cronjob:
-        concurrencyPolicy: Forbid
-        schedule: "@daily"
-        ttlSecondsAfterFinished: 172800
-        backoffLimit: 6
+        cronjob:
+          concurrencyPolicy: Forbid
+          schedule: "@daily"
+          ttlSecondsAfterFinished: 172800
+          backoffLimit: 6
 
         annotations:
           reloader.stakater.com/auto: "true"
