@@ -2,14 +2,14 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
-  name: &app cloudflared
+  name: cloudflared
   namespace: networking
 spec:
   interval: 15m
   chart:
     spec:
       chart: app-template
-      version: 1.5.1
+      version: 2.0.3
       sourceRef:
         kind: HelmRepository
         name: bjw-s
@@ -27,37 +27,84 @@ spec:
     keepHistory: false
 
   values:
-    controller:
-      replicas: 1
-      strategy: RollingUpdate
-      annotations:
-        reloader.stakater.com/auto: "true"
+    controllers:
+      main:
+        type: deployment
+        replicas: 1
+        strategy: RollingUpdate
 
-    image:
-      repository: docker.io/cloudflare/cloudflared
-      tag: 2023.8.2
+        annotations:
+          reloader.stakater.com/auto: "true"
 
-    env:
-      - name: TZ
-        value: "Europe/Budapest"
-      - name: tunnel_name
-        valueFrom:
-          secretKeyRef:
-            name: cloudflared-secret
-            key: tunnel_name
+        pod:
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10001
+            fsGroup: 10001
+            fsGroupChangePolicy: OnRootMismatch
 
-    args:
-      - tunnel
-      - --config
-      - /etc/cloudflared/config.yaml
-      - --cred-file
-      - /etc/cloudflared/credentials.json
-      - --metrics
-      - 0.0.0.0:8080
-      - --no-autoupdate
-      - run
-      - "$(tunnel_name)"
-      # Tunnel name retreived from ENV var.
+        containers:
+          main:
+            order: 1
+            image:
+              repository: docker.io/cloudflare/cloudflared
+              tag: 2023.8.2              
+              pullPolicy: IfNotPresent
+
+            env:
+              - name: TZ
+                value: "Europe/Budapest"
+              - name: tunnel_name
+                valueFrom:
+                  secretKeyRef:
+                    name: cloudflared-secret
+                    key: tunnel_name
+
+            args:
+              - tunnel
+              - --config
+              - /etc/cloudflared/config.yaml
+              - --cred-file
+              - /etc/cloudflared/credentials.json
+              - --metrics
+              - 0.0.0.0:8080
+              - --no-autoupdate
+              - run
+              - "$(tunnel_name)"
+              # Tunnel name retreived from ENV var.
+
+            probes:
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /ready
+                    port: http
+                  initialDelaySeconds: 0
+                  periodSeconds: 10
+                  timeoutSeconds: 1
+                  failureThreshold: 3
+              readiness: *probes
+              startup:
+                enabled: false
+
+            securityContext:
+              privileged: false
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              seccompProfile:
+                type: RuntimeDefault
+              capabilities:
+                drop:
+                  - ALL
+
+            resources:
+              requests:
+                memory: 32Mi
+                cpu: 10m
+              limits:
+                memory: 256Mi
 
     service:
       main:
@@ -66,74 +113,37 @@ spec:
           http:
             port: 8080
 
-    serviceMonitor:
+    # serviceMonitor:
+    #   main:
+    #     enabled: true
+    #     endpoints:
+    #       - port: http
+    #         scheme: http
+    #         path: /metrics
+    #         interval: 1m
+    #         scrapeTimeout: 30s
+
+    ingress:
       main:
-        enabled: true
-        endpoints:
-          - port: http
-            scheme: http
-            path: /metrics
-            interval: 1m
-            scrapeTimeout: 30s
-
-    probes:
-      liveness: &probes
-        enabled: true
-        custom: true
-        spec:
-          httpGet:
-            path: /ready
-            port: http
-          initialDelaySeconds: 0
-          periodSeconds: 10
-          timeoutSeconds: 1
-          failureThreshold: 3
-      readiness: *probes
-      startup:
         enabled: false
-
-    podSecurityContext:
-      runAsUser: 10001
-      runAsGroup: 10001
-      fsGroup: 10001
-      fsGroupChangePolicy: OnRootMismatch
-
-    securityContext:
-      privileged: false
-      allowPrivilegeEscalation: false
-      readOnlyRootFilesystem: true
-      seccompProfile:
-        type: RuntimeDefault
-      capabilities:
-        drop:
-          - ALL
 
     persistence:
       config:
         enabled: true
-        type: custom
-        volumeSpec:
-          configMap:
-            name: cloudflared-config
-        subPath:
-          - path: config.yaml
-            mountPath: /etc/cloudflared/config.yaml
+        type: configMap
+        name: cloudflared-config
+        defaultMode: 0775
+        globalMounts:
+          - path: /etc/cloudflared/config.yaml
+            subPath: config.yaml
             readOnly: true
 
       credentials:
         enabled: true
-        type: custom
-        volumeSpec:
-          secret:
-            secretName: cloudflared-secret
-        subPath:
-          - path: credentials.json
-            mountPath: /etc/cloudflared/credentials.json
+        type: secret
+        name: cloudflared-secret
+        defaultMode: 0775
+        globalMounts:
+          - path: /etc/cloudflared/credentials.json
+            subPath: credentials.json
             readOnly: true
-
-    resources:
-      requests:
-        memory: 32Mi
-        cpu: 10m
-      limits:
-        memory: 256Mi
