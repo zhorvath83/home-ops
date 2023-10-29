@@ -2,14 +2,14 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
-  name: &app mailrise
+  name: mailrise
   namespace: monitoring
 spec:
   interval: 30m
   chart:
     spec:
       chart: app-template
-      version: 1.5.1
+      version: 2.0.3
       sourceRef:
         kind: HelmRepository
         name: bjw-s
@@ -25,17 +25,58 @@ spec:
       retries: 3
   uninstall:
     keepHistory: false
+
   values:
-    controller:
-      replicas: 1
-      strategy: RollingUpdate
-      annotations:
-        reloader.stakater.com/auto: "true"
-    image:
-      repository: docker.io/yoryan/mailrise
-      tag: 1.4.0
-    env:
-      TZ: "Europe/Budapest"
+    controllers:
+      main:
+        type: deployment
+        replicas: 1
+
+        annotations:
+          reloader.stakater.com/auto: "true"
+
+        pod:
+          securityContext:
+            runAsUser: 999
+            runAsGroup: 999
+            fsGroup: 999
+            fsGroupChangePolicy: OnRootMismatch
+
+        containers:
+          main:
+            image:
+              repository: docker.io/yoryan/mailrise
+              tag: 1.4.0
+              pullPolicy: IfNotPresent
+
+            env:
+              TZ: Europe/Budapest
+
+            probes:
+              liveness:
+                enabled: false
+              readiness:
+                enabled: false
+              startup:
+                enabled: false
+
+            securityContext:
+              privileged: false
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              seccompProfile:
+                type: RuntimeDefault
+              capabilities:
+                drop:
+                  - ALL
+
+            resources:
+              requests:
+                cpu: 10m
+                memory: 10Mi
+              limits:
+                memory: 200Mi
+
     service:
       main:
         type: LoadBalancer
@@ -46,22 +87,18 @@ spec:
           http:
             port: 25
             targetPort: 8025
+
     ingress:
       main:
         enabled: false
+
     persistence:
-      config:
+      config-yml:
         enabled: true
         type: configMap
         name: mailrise-config
-        subPath: mailrise.conf
-        mountPath: /etc/mailrise.conf
-        readOnly: true
-    podAnnotations:
-      secret.reloader.stakater.com/reload: *app
-    resources:
-      requests:
-        cpu: 10m
-        memory: 10Mi
-      limits:
-        memory: 200Mi
+        defaultMode: 0775
+        globalMounts:
+          - path: /etc/mailrise.conf
+            subPath: mailrise.conf
+            readOnly: true
