@@ -37,3 +37,8 @@ spec:
       - --delete-pending-pods-after=5m
       - --delete-orphaned-pods-after=5m
       - --legacy-mode=false
+    nodeSelector:
+      node-role.kubernetes.io/control-plane: "true"
+    tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
