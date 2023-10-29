@@ -42,7 +42,7 @@ spec:
             fsGroupChangePolicy: OnRootMismatch
 
         initContainers:
-          init-db:
+          01-init-db:
             image:
               repository: ghcr.io/onedr0p/postgres-init
               tag: 14.9
@@ -70,7 +70,6 @@ spec:
 
         containers:
           main:
-            order: 1
             image:
               repository: viktorstrate/photoview
               tag: 2.3.13

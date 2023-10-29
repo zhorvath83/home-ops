@@ -42,8 +42,7 @@ spec:
             fsGroupChangePolicy: OnRootMismatch
 
         initContainers:
-          init-db:
-            order: 1
+          01-init-db:
             image:
               repository: ghcr.io/onedr0p/postgres-init
               tag: 14.9
@@ -69,8 +68,7 @@ spec:
                     name: tandoor-secret
                     key: POSTGRES_PASSWORD
 
-          init-migrate:
-            order: 2
+          02-init-migrate:
             image:
               repository: vabene1111/recipes
               tag: 1.5.6
@@ -101,7 +99,6 @@ spec:
 
         containers:
           main:
-            order: 1
             image:
               repository: vabene1111/recipes
               tag: 1.5.6

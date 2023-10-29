@@ -44,7 +44,6 @@ spec:
 
         containers:
           main:
-            order: 1
             image:
               repository: docker.io/zadam/trilium
               tag: 0.60.4

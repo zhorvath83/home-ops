@@ -51,7 +51,6 @@ spec:
 
         containers:
           main:
-            order: 1
             image:
               repository: docker.io/prodrigestivill/postgres-backup-local
               tag: 16@sha256:085926531fbabe298792a83384d07d6146683732e53e51891ac75eaa71e09d08

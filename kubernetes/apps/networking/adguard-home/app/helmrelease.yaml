@@ -40,7 +40,7 @@ spec:
             fsGroupChangePolicy: OnRootMismatch
 
         initContainers:
-          copy-config:
+          01-copy-config:
             image:
               repository: public.ecr.aws/docker/library/busybox
               tag: 1.36.1
@@ -54,7 +54,6 @@ spec:
 
         containers:
           main:
-            order: 1
             image:
               repository: adguard/adguardhome
               tag: v0.107.40@sha256:efe08a321f2328e72e2d173818fb08ce25a2af5fbb94ad80cf4ddb04f79a95cc

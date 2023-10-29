@@ -41,7 +41,6 @@ spec:
 
         containers:
           main:
-            order: 1
             image:
               repository: ghcr.io/sct/overseerr
               tag: 1.33.2@sha256:17b45f73fbfd15048aa9bbdb8af037f4b45139ffc49f56150834cbfe4cc2ac2f

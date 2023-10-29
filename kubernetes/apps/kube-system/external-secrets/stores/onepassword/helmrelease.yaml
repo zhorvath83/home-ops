@@ -29,7 +29,7 @@ spec:
   values:
 
     initContainers:
-      permissions:
+      01-permissions:
         image: public.ecr.aws/docker/library/busybox:1.36.1
         securityContext:
           runAsUser: 0
