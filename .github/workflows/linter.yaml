@@ -7,14 +7,22 @@ on: # yamllint disable-line rule:truthy
     branches:
       - main
 
+env: 
+  APPLY_FIXES: all # When active, APPLY_FIXES must also be defined as environment variable (in github/workflows/mega-linter.yml or other CI tool)
+  APPLY_FIXES_EVENT: pull_request # Decide which event triggers application of fixes in a commit or a PR (pull_request, push, all)
+  APPLY_FIXES_MODE: pull_request # If APPLY_FIXES is used, defines if the fixes are directly committed (commit) or posted in a PR (pull_request)
+
+
 concurrency:
   group: ${{ github.ref }}-${{ github.workflow }}
   cancel-in-progress: true
 
 jobs:
-  build:
+  megalinter:
     name: MegaLinter
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,24 +31,46 @@ jobs:
           fetch-depth: 0
 
       - name: MegaLinter
-        uses: oxsecurity/megalinter@v7
+        id: ml
+        uses: oxsecurity/megalinter/flavors/terraform@v7
         env:
           # VALIDATE_ALL_CODEBASE: ${{ github.event_name == 'workflow_dispatch' }}
-          VALIDATE_ALL_CODEBASE: true
+          # VALIDATE_ALL_CODEBASE: true
+          VALIDATE_ALL_CODEBASE: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-          ENABLE_LINTERS: ACTION_ACTIONLINT,ANSIBLE_ANSIBLE_LINT,BASH_SHELLCHECK,DOCKERFILE_HADOLINT,ENV_DOTENV_LINTER,GIT_GIT_DIFF,JSON_JSONLINT,KUBERNETES_KUBEVAL,MARKDOWN_MARKDOWNLINT,MARKDOWN_MARKDOWN_LINK_CHECK,TERRAFORM_TFLINT,YAML_YAMLLINT
-          ANSIBLE_DIRECTORY: ansible
+          # ENABLE_LINTERS: ACTION_ACTIONLINT,ANSIBLE_ANSIBLE_LINT,BASH_SHELLCHECK,DOCKERFILE_HADOLINT,ENV_DOTENV_LINTER,GIT_GIT_DIFF,JSON_JSONLINT,KUBERNETES_KUBEVAL,MARKDOWN_MARKDOWNLINT,MARKDOWN_MARKDOWN_LINK_CHECK,TERRAFORM_TFLINT,YAML_YAMLLINT
+          ANSIBLE_DIRECTORY: provision
           ANSIBLE_ANSIBLE_LINT_CONFIG_FILE: .ansible-lint
           KUBERNETES_DIRECTORY: kubernetes
           KUBERNETES_KUBEVAL_ARGUMENTS: --ignore-missing-schemas --skip-kinds Secret
           MARKDOWN_MARKDOWNLINT_CONFIG_FILE: .markdownlint.yaml
           TERRAFORM_TFLINT_CONFIG_FILE: .tflint.hcl
           YAML_YAMLLINT_CONFIG_FILE: .yamllint.yaml
+
       - name: Archive production artifacts
-        if: ${{ success() }} || ${{ failure() }}
+        if: ${{ success() || failure() }}
         uses: actions/upload-artifact@v3
         with:
           name: MegaLinter reports
           path: |
             report
             mega-linter.log
+
+      - name: Create Pull Request with applied fixes
+        id: cpr
+        if: steps.ml.outputs.has_updated_sources == 1 && (env.APPLY_FIXES_EVENT == 'all' || env.APPLY_FIXES_EVENT == github.event_name) && env.APPLY_FIXES_MODE == 'pull_request' && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && !contains(github.event.head_commit.message, 'skip fix')
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
+          commit-message: "[MegaLinter] Apply linters automatic fixes"
+          title: "[MegaLinter] Apply linters automatic fixes"
+          body: "Please merge this pull request to apply automatic fixes by MegaLinter."
+          labels: bot
+          branch: patch-${{ github.workflow }}-${{ github.ref_name }}
+          delete-branch: true
+
+      - name: Create PR output
+        if: steps.ml.outputs.has_updated_sources == 1 && (env.APPLY_FIXES_EVENT == 'all' || env.APPLY_FIXES_EVENT == github.event_name) && env.APPLY_FIXES_MODE == 'pull_request' && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && !contains(github.event.head_commit.message, 'skip fix')
+        run: |
+          echo "::error::Merge pull request ${{ steps.cpr.outputs.pull-request-url }} to apply automatic fixes."
+          exit 1
