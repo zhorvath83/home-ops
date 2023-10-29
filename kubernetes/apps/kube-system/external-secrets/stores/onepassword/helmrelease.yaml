@@ -56,9 +56,6 @@ spec:
               - "mkdir -p /home/opuser/.op/data && chown -R 999 /home/opuser && chmod -R 700 /home/opuser && chmod -f -R 600 /home/opuser/.op/config || :"
 
             securityContext:
-              privileged: false
-              allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: true
               seccompProfile:
                 type: RuntimeDefault
               capabilities:
