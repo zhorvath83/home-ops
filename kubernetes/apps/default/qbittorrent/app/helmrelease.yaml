@@ -142,10 +142,8 @@ spec:
         enabled: true
         type: configMap
         name: qbittorrent-configmap
-        advancedMounts:
-          main:
-            01-copy-config:
-              - path: /tmp/configfiles
+        globalMounts:
+          - path: /tmp/configfiles
 
       nfs-nas-media:
         enabled: true
