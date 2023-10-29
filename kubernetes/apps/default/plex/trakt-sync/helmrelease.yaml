@@ -17,8 +17,8 @@ spec:
   interval: 30m
 
   values:
-
     defaultPodOptions:
+      automountServiceAccountToken: false
       enableServiceLinks: false
 
     controllers:

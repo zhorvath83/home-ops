@@ -28,6 +28,9 @@ spec:
     keepHistory: false
 
   values:
+    defaultPodOptions:
+      automountServiceAccountToken: false
+
     controllers:
       main:
         type: statefulset

@@ -27,9 +27,9 @@ spec:
     keepHistory: false
 
   values:
-
     defaultPodOptions:
       enableServiceLinks: false
+      automountServiceAccountToken: false
 
     controllers:
       main:
