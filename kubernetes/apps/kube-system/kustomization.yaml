@@ -9,3 +9,4 @@ resources:
   - ./metrics-server/ks.yaml
   - ./democratic-csi/ks.yaml
   - ./snapshot-controller/ks.yaml
+  - ./kube-cleanup-operator/ks.yaml

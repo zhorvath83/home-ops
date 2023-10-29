@@ -21,3 +21,5 @@ resources:
   - ./external-secrets.yaml
   - ./jameswynn.yaml
   - ./democratic-csi.yaml
+  - ./lwolf-charts.yaml
+
