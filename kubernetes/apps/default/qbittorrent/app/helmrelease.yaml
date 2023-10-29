@@ -30,6 +30,7 @@ spec:
     defaultPodOptions:
       hostname: qbittorrent
       automountServiceAccountToken: false
+      enableServiceLinks: false
 
     controllers:
       main:
