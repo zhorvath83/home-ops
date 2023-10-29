@@ -9,7 +9,7 @@ spec:
   chart:
     spec:
       chart: snapshot-controller
-      version: 1.9.2
+      version: 2.0.0
       sourceRef:
         kind: HelmRepository
         name: piraeus
@@ -30,13 +30,14 @@ spec:
     keepHistory: false
 
   values:
-    serviceMonitor:
-      create: true
+    controller:
+      serviceMonitor:
+        create: true
 
-    volumeSnapshotClasses:
-      - name: democratic-csi-local-hostpath
-        driver: org.democratic-csi.local-hostpath
-        annotations:
-          snapshot.storage.kubernetes.io/is-default-class: "true"
-        deletionPolicy: Delete
-        parameters: {}
+      volumeSnapshotClasses:
+        - name: democratic-csi-local-hostpath
+          driver: org.democratic-csi.local-hostpath
+          annotations:
+            snapshot.storage.kubernetes.io/is-default-class: "true"
+          deletionPolicy: Delete
+          parameters: {}
