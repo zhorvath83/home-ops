@@ -43,6 +43,8 @@ spec:
       # Mitigate CVE-2023-5043
       enableAnnotationValidations: true
 
+      allowSnippetAnnotations: true
+
       extraEnvs:
         - name: TZ
           value: "Europe/Budapest"
