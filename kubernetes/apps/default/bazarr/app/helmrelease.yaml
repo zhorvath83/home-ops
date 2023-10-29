@@ -51,12 +51,10 @@ spec:
               - --repo=https://github.com/KBlixt/subcleaner
               - --branch=master
               - --depth=1
-              - --one-time
               - --root=/add-ons
               - --verbose=6
+              - --one-time
             # - --period=86400s
-            volumeMounts:
-              - { name: add-ons, mountPath: /add-ons }
 
         containers:
           main:

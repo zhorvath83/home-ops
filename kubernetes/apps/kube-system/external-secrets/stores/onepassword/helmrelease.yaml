@@ -9,7 +9,7 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 1.5.1
+      version: 2.0.3
       sourceRef:
         kind: HelmRepository
         name: bjw-s
@@ -27,20 +27,258 @@ spec:
     keepHistory: false
 
   values:
+    controllers:
+      main:
+        type: deployment
+        replicas: 1
+        strategy: RollingUpdate
+
+        annotations:
+          reloader.stakater.com/auto: "true"
+
+        pod:
+          securityContext:
+            runAsUser: 999
+            runAsGroup: 999
+            fsGroup: 999
+            fsGroupChangePolicy: OnRootMismatch
+
+        # initContainers:
+        #   01-permissions:
+        #     image:
+        #       repository: public.ecr.aws/docker/library/busybox
+        #       tag: 1.36.1
+        #       pullPolicy: IfNotPresent
+        #     command:
+        #       - "/bin/sh"
+        #       - "-c"
+        #     args:
+        #       - "mkdir -p /home/opuser/.op/data && chown -R 999 /home/opuser && chmod -R 700 /home/opuser && chmod -f -R 600 /home/opuser/.op/config || :"
+
+        containers:
+          main:
+            image:
+              repository: docker.io/1password/connect-api
+              tag: 1.7.2
+              pullPolicy: IfNotPresent
+
+            env:
+              TZ: Europe/Budapest
+              OP_BUS_PORT: 11220
+              OP_BUS_PEERS: localhost:11221
+              OP_HTTP_PORT: &api-port 8080
+              OP_SESSION:
+                valueFrom:
+                  secretKeyRef:
+                    name: onepassword-connect-secret
+                    key: 1password-credentials.json
+
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /heartbeat
+                    port: *api-port
+                  initialDelaySeconds: 15
+                  periodSeconds: 30
+                  failureThreshold: 3
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: *api-port
+                  initialDelaySeconds: 15
+              startup:
+                enabled: false
+
+            securityContext:
+              privileged: false
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              seccompProfile:
+                type: RuntimeDefault
+              capabilities:
+                drop:
+                  - ALL
+
+            resources: &resources
+              requests:
+                cpu: 5m
+                memory: 40M
+              limits:
+                memory: 128M
+
+          1password-sync:
+            image:
+              repository: docker.io/1password/connect-sync
+              tag: 1.7.2
+              pullPolicy: IfNotPresent
+
+            env:
+              - name: TZ
+                value: Europe/Budapest
+              - name: OP_HTTP_PORT
+                value: &sync-port 8081
+              - name: OP_BUS_PORT
+                value: 11221
+              - name: OP_BUS_PEERS
+                value: localhost:11220
+              - name: OP_SESSION
+                valueFrom:
+                  secretKeyRef:
+                    name: onepassword-connect-secret
+                    key: 1password-credentials.json
+
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /heartbeat
+                    port: *sync-port
+                  initialDelaySeconds: 15
+                  periodSeconds: 30
+                  failureThreshold: 3
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: *sync-port
+                  initialDelaySeconds: 15
+              startup:
+                enabled: false
+
+              resources: *resources
+
+            securityContext:
+              privileged: false
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              seccompProfile:
+                type: RuntimeDefault
+              capabilities:
+                drop:
+                  - ALL
+
+    service:
+      main:
+        ports:
+          http:
+            port: *api-port
+
+    ingress:
+      main:
+        enabled: false
+
+    persistence:
+      shared-data:
+        enabled: true
+        type: emptyDir
+        globalMounts:
+          - path: /home/opuser/.op/data
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     initContainers:
-      01-permissions:
-        image: public.ecr.aws/docker/library/busybox:1.36.1
-        securityContext:
-          runAsUser: 0
-          runAsGroup: 0
-          fsGroup: 0
-        command:
-          - "/bin/sh"
-          - "-c"
-        args:
-          - "mkdir -p /home/opuser/.op/data && chown -R 999 /home/opuser && chmod -R 700 /home/opuser && chmod -f -R 600 /home/opuser/.op/config || :"
-        volumeMounts:
+       volumeMounts:
           - mountPath: /home/opuser/.op/data
             name: shared-data
 
@@ -49,24 +287,13 @@ spec:
         reloader.stakater.com/auto: "true"
 
     image:
-      repository: docker.io/1password/connect-api
-      tag: 1.7.2
+      repository: 
+      tag: 
 
     env:
-      OP_BUS_PORT: "11220"
-      OP_BUS_PEERS: "localhost:11221"
-      OP_HTTP_PORT: &port 8080
-      OP_SESSION:
-        valueFrom:
-          secretKeyRef:
-            name: onepassword-connect-secret
-            key: 1password-credentials.json
 
-    service:
-      main:
-        ports:
-          http:
-            port: *port
+
+
 
     probes:
       liveness:
@@ -89,68 +316,3 @@ spec:
           initialDelaySeconds: 15
       startup:
         enabled: false
-
-    ingress:
-      main:
-        enabled: false
-
-    podSecurityContext:
-      runAsUser: 999
-      runAsGroup: 999
-      fsGroup: 999
-      fsGroupChangePolicy: OnRootMismatch
-
-    securityContext:
-      privileged: false
-      allowPrivilegeEscalation: false
-      readOnlyRootFilesystem: true
-      seccompProfile:
-        type: RuntimeDefault
-      capabilities:
-        drop:
-          - ALL
-
-    persistence:
-      shared-data:
-        enabled: true
-        type: emptyDir
-        mountPath: /home/opuser/.op/data
-
-    resources:
-      requests:
-        cpu: 5m
-        memory: 10Mi
-      limits:
-        memory: 100Mi
-
-    sidecars:
-      sync:
-        image: docker.io/1password/connect-sync:1.7.2
-        imagePullPolicy: IfNotPresent
-        env:
-          - name: OP_SESSION
-            valueFrom:
-              secretKeyRef:
-                name: onepassword-connect-secret
-                key: 1password-credentials.json
-          - name: OP_HTTP_PORT
-            value: &port 8081
-          - name: OP_BUS_PORT
-            value: "11221"
-          - name: OP_BUS_PEERS
-            value: "localhost:11220"
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: *port
-          initialDelaySeconds: 15
-        livenessProbe:
-          httpGet:
-            path: /heartbeat
-            port: *port
-          failureThreshold: 3
-          periodSeconds: 30
-          initialDelaySeconds: 15
-        volumeMounts:
-          - name: shared-data
-            mountPath: /home/opuser/.op/data
