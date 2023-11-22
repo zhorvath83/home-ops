@@ -24,7 +24,7 @@ terraform {
     }
     external = {
       source  = "hashicorp/external"
-      version = "2.3.1"
+      version = "2.3.2"
     }
     random = {
       source  = "hashicorp/random"
