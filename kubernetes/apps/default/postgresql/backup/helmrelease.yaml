@@ -37,6 +37,8 @@ spec:
         cronjob:
           concurrencyPolicy: Forbid
           schedule: "@daily"
+          timeZone: Europe/Budapest
+
           ttlSecondsAfterFinished: 172800
           backoffLimit: 6
 
