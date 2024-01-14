@@ -48,7 +48,7 @@ spec:
           main:
             image:
               repository: ghcr.io/taxel/plextraktsync
-              tag: 0.28.4@sha256:7db274c62fa904fc905ed281b72f3fdfe46d4f3291499720143088980cd8c65d
+              tag: 0.28.6@sha256:f08206c5fc302c080131323a9ee4744c74b5526ac1ec29a9d1c7ae3dc7220321
               pullPolicy: IfNotPresent
 
             args:
