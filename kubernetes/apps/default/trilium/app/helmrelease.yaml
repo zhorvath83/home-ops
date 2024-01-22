@@ -50,7 +50,7 @@ spec:
           main:
             image:
               repository: docker.io/zadam/trilium
-              tag: 0.62.5
+              tag: 0.62.6
               pullPolicy: IfNotPresent
 
             env:
