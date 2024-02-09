@@ -102,7 +102,7 @@ spec:
         # Sets Load-Balancer hostname in the ingress object
         # Used by External DNS when creating CNAME DNS records
         publish-status-address: "tunnel.${PUBLIC_DOMAIN}"
-        update-status: true
+        update-status: "true"
 
       topologySpreadConstraints:
         - maxSkew: 1
