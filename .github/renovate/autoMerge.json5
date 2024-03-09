@@ -1,0 +1,18 @@
+{
+  "packageRules": [
+    {
+      "description": ["Auto-merge container digests updates"],
+      "matchDatasources": ["docker"],
+      "automerge": true,
+      "automergeType": "branch",
+      "matchUpdateTypes": ["digest"]
+    },
+    {
+      "description": ["Auto-merge patch container updates"],
+      "matchDatasources": ["docker"],
+      "automerge": true,
+      "automergeType": "branch",
+      "matchUpdateTypes": ["patch"]
+    }
+  ]
+}
