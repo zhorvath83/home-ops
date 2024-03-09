@@ -8,10 +8,12 @@
     ":separatePatchReleases",
     "docker:enableMajor",
     ":enablePreCommit",
-    "github>zhorvath83/home-ops//.github/renovate/groupPackages",
-    "github>zhorvath83/home-ops//.github/renovate/versioning",
-    "github>zhorvath83/home-ops//.github/renovate/prBodyNotes",
-    "github>zhorvath83/home-ops//.github/renovate/disabledDatasources"
+    "github>zhorvath83/home-ops//.github/renovate/allowedVersions.json",
+    "github>zhorvath83/home-ops//.github/renovate/autoMerge.json",
+    "github>zhorvath83/home-ops//.github/renovate/disabledDatasources.json",
+    "github>zhorvath83/home-ops//.github/renovate/groupPackages.json",
+    "github>zhorvath83/home-ops//.github/renovate/packageRules.json",
+    "github>zhorvath83/home-ops//.github/renovate/prBodyNotes.json"
   ],
   "dependencyDashboardTitle": "Renovate Dashboard 🤖",
   "suppressNotifications": ["prIgnoreNotification"],
