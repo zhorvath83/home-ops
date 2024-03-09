@@ -1,12 +1,24 @@
 {
   "packageRules": [
     {
-      "description": "Group system-upgrade-controller-suite",
-      "groupName": "system-upgrade-controller",
+      "description": ["System Upgrade Controller Group"],
+      "groupName": "System Upgrade Controller",
+      "matchPackagePatterns": ["system-upgrade-controller"],
+      "matchDatasources": ["docker", "github-releases"],
+      "group": {
+        "commitMessageTopic": "{{{groupName}}} group"
+      },
+      "separateMinorPatch": true
+    },
+    {
+      "description": ["Flux Group"],
+      "groupName": "Flux",
+      "matchPackagePatterns": ["fluxcd"],
       "matchDatasources": ["docker", "github-tags"],
-      "matchPackagePatterns": ["rancher/system-upgrade-controller"],
-      "group": { "commitMessageTopic": "{{{groupName}}} group" },
-      "additionalBranchPrefix": "",
+      "versioning": "semver",
+      "group": {
+        "commitMessageTopic": "{{{groupName}}} group"
+      },
       "separateMinorPatch": true
     },
     {

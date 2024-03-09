@@ -1,0 +1,9 @@
+{
+  "packageRules": [
+    {
+      "matchDatasources": ["docker"],
+      "matchPackagePatterns": ["postgresql"],
+      "allowedVersions": "<=15"
+    }
+  ]
+}
