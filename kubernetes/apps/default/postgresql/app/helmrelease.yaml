@@ -9,7 +9,7 @@ spec:
   chart:
     spec:
       chart: postgresql
-      version: 12.12.10
+      version: 14.3.1
       sourceRef:
         kind: HelmRepository
         name: bitnami
@@ -27,6 +27,11 @@ spec:
     keepHistory: false
 
   values:
+
+    image:
+      registry: docker.io
+      repository: bitnami/postgresql
+      tag: 15.4.0-debian-11-r45
 
     commonAnnotations:
       reloader.stakater.com/auto: "true"
