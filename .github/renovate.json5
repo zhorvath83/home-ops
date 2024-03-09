@@ -20,7 +20,7 @@
   "rebaseWhen": "conflicted",
   "assignees": ["@zhorvath83"],
   "timezone": "Europe/Budapest",
-  "minimumReleaseAge": "7 days"
+  "minimumReleaseAge": "7 days",
   "schedule": [
     "after 1am and before 6am",
   ],
