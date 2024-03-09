@@ -1,11 +1,6 @@
 {
   "packageRules": [
     {
-      "description": ["Time required before a new release is considered stable"],
-      "matchDatasources": ["docker"],
-      "minimumReleaseAge": "7 days"
-    },
-    {
       "description": ["Loose versioning for non-semver packages"],
       "matchDatasources": ["docker"],
       "versioning": "loose",
