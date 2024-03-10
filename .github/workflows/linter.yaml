@@ -21,13 +21,18 @@ jobs:
     name: MegaLinter
     runs-on: ubuntu-latest
     permissions:
+      # Give the default GITHUB_TOKEN write permission to commit and push, comment issues & post new PR
+      # Remove the ones you do not need
+      contents: write
+      issues: write
       pull-requests: write
     steps:
-      - name: Checkout
+      # Git Checkout
+      - name: Checkout Code
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
-          fetch-depth: 0
+          fetch-depth: 0 # If you use VALIDATE_ALL_CODEBASE = true, you can remove this line to improve performances
 
       - name: MegaLinter
         id: ml
@@ -47,15 +52,17 @@ jobs:
           TERRAFORM_TFLINT_CONFIG_FILE: .tflint.hcl
           YAML_YAMLLINT_CONFIG_FILE: .yamllint.yaml
 
+      # Upload MegaLinter artifacts
       - name: Archive production artifacts
-        if: ${{ success() || failure() }}
+        if: success() || failure()
         uses: actions/upload-artifact@v4
         with:
           name: MegaLinter reports
           path: |
-            report
+            megalinter-reports
             mega-linter.log
 
+      # Create pull request if applicable (for now works only on PR from same repository, not from forks)
       - name: Create Pull Request with applied fixes
         id: cpr
         if: steps.ml.outputs.has_updated_sources == 1 && (env.APPLY_FIXES_EVENT == 'all' || env.APPLY_FIXES_EVENT == github.event_name) && env.APPLY_FIXES_MODE == 'pull_request' && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && !contains(github.event.head_commit.message, 'skip fix')
@@ -64,13 +71,9 @@ jobs:
           token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
           commit-message: "[MegaLinter] Apply linters automatic fixes"
           title: "[MegaLinter] Apply linters automatic fixes"
-          body: "Please merge this pull request to apply automatic fixes by MegaLinter."
           labels: bot
-          branch: patch-${{ github.workflow }}-${{ github.ref_name }}
-          delete-branch: true
-
       - name: Create PR output
         if: steps.ml.outputs.has_updated_sources == 1 && (env.APPLY_FIXES_EVENT == 'all' || env.APPLY_FIXES_EVENT == github.event_name) && env.APPLY_FIXES_MODE == 'pull_request' && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && !contains(github.event.head_commit.message, 'skip fix')
         run: |
-          echo "::error::Merge pull request ${{ steps.cpr.outputs.pull-request-url }} to apply automatic fixes."
-          exit 1
+          echo "Pull Request Number - ${{ steps.cpr.outputs.pull-request-number }}"
+          echo "Pull Request URL - ${{ steps.cpr.outputs.pull-request-url }}"
