@@ -11,7 +11,6 @@ env:
   APPLY_FIXES: all # When active, APPLY_FIXES must also be defined as environment variable (in github/workflows/mega-linter.yml or other CI tool)
   APPLY_FIXES_EVENT: pull_request # Decide which event triggers application of fixes in a commit or a PR (pull_request, push, all)
   APPLY_FIXES_MODE: pull_request # If APPLY_FIXES is used, defines if the fixes are directly committed (commit) or posted in a PR (pull_request)
-  DISABLE_LINTERS: ANSIBLE_ANSIBLE_LINT
 
 concurrency:
   group: ${{ github.ref }}-${{ github.workflow }}
@@ -38,7 +37,8 @@ jobs:
           VALIDATE_ALL_CODEBASE: true
           # VALIDATE_ALL_CODEBASE: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-          ENABLE_LINTERS: ACTION_ACTIONLINT,ANSIBLE_ANSIBLE_LINT,BASH_SHELLCHECK,DOCKERFILE_HADOLINT,ENV_DOTENV_LINTER,GIT_GIT_DIFF,JSON_JSONLINT,KUBERNETES_KUBEVAL,MARKDOWN_MARKDOWNLINT,MARKDOWN_MARKDOWN_LINK_CHECK,TERRAFORM_TFLINT,YAML_YAMLLINT
+          ENABLE_LINTERS: ACTION_ACTIONLINT,BASH_SHELLCHECK,DOCKERFILE_HADOLINT,ENV_DOTENV_LINTER,GIT_GIT_DIFF,JSON_JSONLINT,KUBERNETES_KUBEVAL,MARKDOWN_MARKDOWNLINT,MARKDOWN_MARKDOWN_LINK_CHECK,TERRAFORM_TFLINT,YAML_YAMLLINT
+          DISABLE_LINTERS: ANSIBLE_ANSIBLE_LINT
           ANSIBLE_DIRECTORY: provision
           ANSIBLE_ANSIBLE_LINT_CONFIG_FILE: .ansible-lint
           KUBERNETES_DIRECTORY: kubernetes
