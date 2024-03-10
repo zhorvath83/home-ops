@@ -7,7 +7,7 @@ locals {
 
 locals {
   domain_name = var.CF_DOMAIN_NAME
-  cf_zone_id  = lookup(data.cloudflare_zones.domain.zones[0], "id")
+  cf_zone_id  = cloudflare_zone.domain.id
 }
 
 resource "cloudflare_record" "cname_root" {

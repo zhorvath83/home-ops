@@ -36,7 +36,7 @@ resource "null_resource" "store-tunnel-secret" {
 
 resource "cloudflare_record" "tunnel_cname" {
   name    = "tunnel"
-  zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
+  zone_id = cloudflare_zone.domain.id
   value   = cloudflare_tunnel.home-ops-tunnel.cname
   type    = "CNAME"
   proxied = true

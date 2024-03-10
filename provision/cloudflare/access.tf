@@ -45,7 +45,7 @@ resource "cloudflare_access_identity_provider" "google_oauth" {
 
 ## Private cloud
 resource "cloudflare_access_application" "private_cloud" {
-  zone_id          = lookup(data.cloudflare_zones.domain.zones[0], "id")
+  zone_id          = cloudflare_zone.domain.id
   name             = "Private Cloud"
   domain           = "*.${var.CF_DOMAIN_NAME}"
   type             = "self_hosted"
@@ -54,7 +54,7 @@ resource "cloudflare_access_application" "private_cloud" {
 
 resource "cloudflare_access_policy" "private_cloud_unrestricted_user_policy" {
   application_id = cloudflare_access_application.private_cloud.id
-  zone_id        = lookup(data.cloudflare_zones.domain.zones[0], "id")
+  zone_id        = cloudflare_zone.domain.id
   name           = "UnrestrictedUserAuth"
   precedence     = "1"
   decision       = "allow"
@@ -66,7 +66,7 @@ resource "cloudflare_access_policy" "private_cloud_unrestricted_user_policy" {
 
 ## Photos
 resource "cloudflare_access_application" "private_cloud_photos" {
-  zone_id          = lookup(data.cloudflare_zones.domain.zones[0], "id")
+  zone_id          = cloudflare_zone.domain.id
   name             = "Private Cloud Photos"
   domain           = "fenykepek.${var.CF_DOMAIN_NAME}"
   type             = "self_hosted"
@@ -75,7 +75,7 @@ resource "cloudflare_access_application" "private_cloud_photos" {
 
 resource "cloudflare_access_policy" "private_cloud_restricted_user_policy" {
   application_id = cloudflare_access_application.private_cloud_photos.id
-  zone_id        = lookup(data.cloudflare_zones.domain.zones[0], "id")
+  zone_id        = cloudflare_zone.domain.id
   name           = "RestrictedUserAuth"
   precedence     = "1"
   decision       = "allow"
@@ -87,7 +87,7 @@ resource "cloudflare_access_policy" "private_cloud_restricted_user_policy" {
 
 ## Private website www exclude from UserAuth
 resource "cloudflare_access_application" "private_website" {
-  zone_id          = lookup(data.cloudflare_zones.domain.zones[0], "id")
+  zone_id          = cloudflare_zone.domain.id
   name             = "Private website"
   domain           = "www.${var.CF_DOMAIN_NAME}"
   type             = "self_hosted"
@@ -95,7 +95,7 @@ resource "cloudflare_access_application" "private_website" {
 
 resource "cloudflare_access_policy" "private_website_bypass_policy" {
   application_id = cloudflare_access_application.private_website.id
-  zone_id        = lookup(data.cloudflare_zones.domain.zones[0], "id")
+  zone_id        = cloudflare_zone.domain.id
   name           = "Bypass"
   precedence     = "1"
   decision       = "bypass"
@@ -107,7 +107,7 @@ resource "cloudflare_access_policy" "private_website_bypass_policy" {
 
 ## Private R2 downloads exclude from UserAuth
 resource "cloudflare_access_application" "private_r2_downloads" {
-  zone_id          = lookup(data.cloudflare_zones.domain.zones[0], "id")
+  zone_id          = cloudflare_zone.domain.id
   name             = "Private R2 downloads"
   domain           = "downloads.${var.CF_DOMAIN_NAME}"
   type             = "self_hosted"
@@ -115,7 +115,7 @@ resource "cloudflare_access_application" "private_r2_downloads" {
 
 resource "cloudflare_access_policy" "private_r2_downloads_bypass_policy" {
   application_id = cloudflare_access_application.private_r2_downloads.id
-  zone_id        = lookup(data.cloudflare_zones.domain.zones[0], "id")
+  zone_id        = cloudflare_zone.domain.id
   name           = "Bypass"
   precedence     = "1"
   decision       = "bypass"
@@ -128,7 +128,7 @@ resource "cloudflare_access_policy" "private_r2_downloads_bypass_policy" {
 ## Flux webhook
 ## Protected by WAF and ZeroTrust too
 resource "cloudflare_access_application" "flux_webhook" {
-  zone_id          = lookup(data.cloudflare_zones.domain.zones[0], "id")
+  zone_id          = cloudflare_zone.domain.id
   name             = "Flux webhook"
   domain           = "flux-webhook.${var.CF_DOMAIN_NAME}"
   type             = "self_hosted"
@@ -136,7 +136,7 @@ resource "cloudflare_access_application" "flux_webhook" {
 
 resource "cloudflare_access_policy" "flux_webhook_bypass_policy" {
   application_id = cloudflare_access_application.flux_webhook.id
-  zone_id        = lookup(data.cloudflare_zones.domain.zones[0], "id")
+  zone_id        = cloudflare_zone.domain.id
   name           = "CIDRbasedBypass"
   precedence     = "1"
   decision       = "bypass"
@@ -148,7 +148,7 @@ resource "cloudflare_access_policy" "flux_webhook_bypass_policy" {
 
 ## MTA-STS policy file exclude from UserAuth
 resource "cloudflare_access_application" "mta_sts_policy" {
-  zone_id          = lookup(data.cloudflare_zones.domain.zones[0], "id")
+  zone_id          = cloudflare_zone.domain.id
   name             = "MTA-STS policy"
   domain           = "mta-sts.${var.CF_DOMAIN_NAME}"
   type             = "self_hosted"
@@ -156,7 +156,7 @@ resource "cloudflare_access_application" "mta_sts_policy" {
 
 resource "cloudflare_access_policy" "mta_sts_policy_bypass_policy" {
   application_id = cloudflare_access_application.mta_sts_policy.id
-  zone_id        = lookup(data.cloudflare_zones.domain.zones[0], "id")
+  zone_id        = cloudflare_zone.domain.id
   name           = "Bypass"
   precedence     = "1"
   decision       = "bypass"
@@ -168,7 +168,7 @@ resource "cloudflare_access_policy" "mta_sts_policy_bypass_policy" {
 
 ## Webmail exclude from UserAuth
 resource "cloudflare_access_application" "webmail" {
-  zone_id          = lookup(data.cloudflare_zones.domain.zones[0], "id")
+  zone_id          = cloudflare_zone.domain.id
   name             = "Webmail"
   domain           = "mail.${var.CF_DOMAIN_NAME}"
   type             = "self_hosted"
@@ -176,7 +176,7 @@ resource "cloudflare_access_application" "webmail" {
 
 resource "cloudflare_access_policy" "webmail_bypass_policy" {
   application_id = cloudflare_access_application.webmail.id
-  zone_id        = lookup(data.cloudflare_zones.domain.zones[0], "id")
+  zone_id        = cloudflare_zone.domain.id
   name           = "Bypass"
   precedence     = "1"
   decision       = "bypass"

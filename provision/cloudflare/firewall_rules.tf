@@ -14,7 +14,7 @@ resource "cloudflare_list" "github_hooks_cidr_list" {
 }
 
 resource "cloudflare_filter" "github_hooks_cidr_list" {
-  zone_id     = lookup(data.cloudflare_zones.domain.zones[0], "id")
+  zone_id     = cloudflare_zone.domain.id
   description = "Expression to allow Github hooks IP addresses"
   expression  = "(http.host eq \"flux-webhook.${var.CF_DOMAIN_NAME}\" and not ip.src in $github_hooks_cidr_list)"
   depends_on = [
@@ -23,7 +23,7 @@ resource "cloudflare_filter" "github_hooks_cidr_list" {
 }
 
 resource "cloudflare_firewall_rule" "github_hooks_cidr_list" {
-  zone_id     = lookup(data.cloudflare_zones.domain.zones[0], "id")
+  zone_id     = cloudflare_zone.domain.id
   description = "Firewall rule to allow only Github hooks IP addresses"
   filter_id   = cloudflare_filter.github_hooks_cidr_list.id
   action      = "block"

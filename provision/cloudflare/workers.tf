@@ -21,7 +21,7 @@ resource "cloudflare_worker_script" "mta_sts_policy" {
 }
 
 resource "cloudflare_worker_route" "mta_sts" {
-  zone_id     = lookup(data.cloudflare_zones.domain.zones[0], "id")
+  zone_id     = cloudflare_zone.domain.id
   pattern     = "mta-sts.${var.CF_DOMAIN_NAME}/*"
   script_name = cloudflare_worker_script.mta_sts_policy.name
 }

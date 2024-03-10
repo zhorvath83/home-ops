@@ -42,10 +42,12 @@ provider "cloudflare" {
   api_key     = var.CF_GLOBAL_APIKEY
 }
 
-data "cloudflare_zones" "domain" {
-  filter {
-    name = var.CF_DOMAIN_NAME
-  }
+resource "cloudflare_zone" "domain" {
+  account_id = var.CF_ACCOUNT_ID
+  zone   = var.CF_DOMAIN_NAME
+  paused = false
+  plan   = "free"
+  type   = "full"
 }
 
 data "http" "github_ip_ranges" {

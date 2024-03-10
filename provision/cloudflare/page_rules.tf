@@ -1,5 +1,5 @@
 resource "cloudflare_page_rule" "subdomain_bypass_cache" {
-  zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
+  zone_id = cloudflare_zone.domain.id
   target  = "*.${var.CF_DOMAIN_NAME}/*"
   status  = "active"
 
