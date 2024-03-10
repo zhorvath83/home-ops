@@ -114,10 +114,10 @@ spec:
           gethomepage.dev/group: Monitoring
           gethomepage.dev/icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/alertmanager.svg
         hosts:
-          - &host "alertmanager.${PUBLIC_DOMAIN}"
+          - &am-host "alertmanager.${PUBLIC_DOMAIN}"
         tls:
           - hosts:
-              - *host
+              - *am-host
       alertmanagerSpec: {}
     kube-state-metrics:
       metricLabelsAllowlist: ["persistentvolumeclaims=[*]"]
@@ -199,10 +199,10 @@ spec:
           gethomepage.dev/group: Monitoring
           gethomepage.dev/icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/prometheus.svg
         hosts:
-          - &host "prometheus.${PUBLIC_DOMAIN}"
+          - &pm-host "prometheus.${PUBLIC_DOMAIN}"
         tls:
           - hosts:
-              - *host
+              - *pm-host
       thanosService:
         enabled: false
       thanosServiceMonitor:
