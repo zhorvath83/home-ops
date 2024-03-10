@@ -8,8 +8,7 @@
         "matchUpdateTypes": ["digest"]
     },
     {
-        "description": ["Auto-merge patch container updates"],
-        "matchDatasources": ["docker"],
+        "description": ["Auto-merge patch updates"],
         "automerge": true,
         "automergeType": "branch",
         "matchUpdateTypes": ["patch"]
