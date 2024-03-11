@@ -10,7 +10,6 @@ kubectl apply --server-side --kustomize ./kubernetes/bootstrap/flux
 
 ### Apply Cluster Configuration
 
-
 ```sh
 op signin
 

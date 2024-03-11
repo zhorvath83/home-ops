@@ -17,7 +17,7 @@ Copy the base64-encoded string to your clipboard. We’ll use it in the next sec
 
 NGINX Ingress references htpasswd files as Kubernetes secrets. The file’s content must be stored in the auth key of an Opaque secret. Kubernetes also has a built-in basic-auth secret type but this isn’t suitable for NGINX Ingress.
 
-## Create a new secret manifest and apply it to your cluster with Kubectl:
+## Create a new secret manifest and apply it to your cluster with Kubectl
 
 apiVersion: v1
 kind: Secret
