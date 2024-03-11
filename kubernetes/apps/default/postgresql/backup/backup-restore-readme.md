@@ -2,7 +2,6 @@
 
 zcat /backups/last/dbname-latest.sql.gz | psql --username=postgres -W
 
-
 📍 If needed drop all tables:
 
 DO $$ DECLARE
