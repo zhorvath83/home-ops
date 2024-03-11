@@ -1,3 +1,3 @@
 # Updated list of public BitTorrent trackers
 
-https://github.com/ngosang/trackerslist
+<https://github.com/ngosang/trackerslist>
