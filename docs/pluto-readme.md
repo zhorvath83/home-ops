@@ -9,8 +9,8 @@ Finding the places where you have deployed a deprecated apiVersion can be challe
 📍 Live Helm releases: Pluto can check both Helm 2 and Helm 3 releases running in your cluster for deprecated apiVersions
 
 **📣 Installation**
-https://pluto.docs.fairwinds.com/installation/#homebrew-tap
+<https://pluto.docs.fairwinds.com/installation/#homebrew-tap>
 
 **👉  Usage**
 
-https://pluto.docs.fairwinds.com/quickstart/#file-detection-in-a-directory
+<https://pluto.docs.fairwinds.com/quickstart/#file-detection-in-a-directory>

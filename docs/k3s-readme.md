@@ -20,4 +20,4 @@
 📍 To delete any images no currently used by a running container: `sudo k3s crictl rmi --prune`
 
 **📣  Kubernetes image garbage collection DOCs:**
-https://kubernetes.io/docs/concepts/architecture/garbage-collection/#containers-images
+<https://kubernetes.io/docs/concepts/architecture/garbage-collection/#containers-images>
