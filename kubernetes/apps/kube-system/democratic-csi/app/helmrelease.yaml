@@ -37,7 +37,7 @@ spec:
 
       driver:
         enabled: true
-        image: docker.io/democraticcsi/democratic-csi:v1.8.4
+        image: docker.io/democraticcsi/democratic-csi:v1.9.0
 
       externalProvisioner:
         enabled: true
