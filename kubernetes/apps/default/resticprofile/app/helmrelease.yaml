@@ -47,7 +47,7 @@ spec:
           main:
             image:
               repository: creativeprojects/resticprofile
-              tag: 0.26.0@sha256:fb3d1f00d3a5139c3b1a42faba22dd47c8d8a91fe6544ad12ba49a30aa2bff29
+              tag: 0.26.0@sha256:872926481fde2adecce7d1432feb2a3675d8449a9343a5a7a0be2dfcd1bf111f
               pullPolicy: IfNotPresent
 
             command:
