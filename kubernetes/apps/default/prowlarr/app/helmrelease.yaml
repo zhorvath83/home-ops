@@ -50,7 +50,7 @@ spec:
           main:
             image:
               repository: ghcr.io/onedr0p/prowlarr
-              tag: 1.16.2.4435@sha256:084a6e5d1b3cd88267ef519af4fd303b60d775f025c865eae7e88e7ee0a2c0af
+              tag: 1.16.2.4435@sha256:0d4f9831b97cd682a282bd1702412c947c85ab9add309b01f3abd606f60a857a
               pullPolicy: IfNotPresent
 
             env:
