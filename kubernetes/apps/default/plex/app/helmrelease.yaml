@@ -172,3 +172,9 @@ spec:
         type: emptyDir
         globalMounts:
           - path: /transcode
+
+      tmp:
+        enabled: true
+        type: emptyDir
+        globalMounts:
+          - path: /tmp
