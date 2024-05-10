@@ -112,7 +112,7 @@ spec:
           gethomepage.dev/group: Media
           gethomepage.dev/icon: bazarr.svg
         hosts:
-          - host: &host "subtitles.${PUBLIC_DOMAIN}"
+          - host: "subtitles.${PUBLIC_DOMAIN}"
             paths:
               - path: /
                 service:
