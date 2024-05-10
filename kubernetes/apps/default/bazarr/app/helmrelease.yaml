@@ -1,15 +1,16 @@
 ---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2beta2.schema.json
 apiVersion: helm.toolkit.fluxcd.io/v2beta2
 kind: HelmRelease
 metadata:
-  name: &app bazarr
+  name: bazarr
   namespace: default
 spec:
   interval: 15m
   chart:
     spec:
       chart: app-template
-      version: 2.6.0
+      version: 3.1.0
       sourceRef:
         kind: HelmRepository
         name: bjw-s
@@ -22,6 +23,7 @@ spec:
   upgrade:
     cleanupOnFail: true
     remediation:
+      strategy: rollback
       retries: 3
   uninstall:
     keepHistory: false
@@ -29,20 +31,22 @@ spec:
   values:
     defaultPodOptions:
       automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
 
     controllers:
-      main:
+      bazarr:
         type: statefulset
 
         annotations:
           reloader.stakater.com/auto: "true"
-
-        pod:
-          securityContext:
-            runAsUser: 10001
-            runAsGroup: 10001
-            fsGroup: 10001
-            fsGroupChangePolicy: OnRootMismatch
 
         initContainers:
           01-init-subcleaner:
@@ -60,7 +64,7 @@ spec:
             # - --period=86400s
 
         containers:
-          main:
+          app:
             image:
               repository: ghcr.io/onedr0p/bazarr
               tag: 1.4.2@sha256:6db99f09cdc88a878423eba903fb1532dd0fa3f3d9ddb609d98d0badc5f3bb7e
@@ -81,8 +85,6 @@ spec:
               privileged: false
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              seccompProfile:
-                type: RuntimeDefault
               capabilities:
                 drop:
                   - ALL
@@ -95,14 +97,14 @@ spec:
                 memory: 768Mi
 
     service:
-      main:
+      app:
+        controller: bazarr
         ports:
           http:
             port: 6767
 
     ingress:
-      main:
-        enabled: true
+      app:
         className: "nginx"
         annotations:
           gethomepage.dev/enabled: "true"
@@ -114,17 +116,13 @@ spec:
             paths:
               - path: /
                 service:
-                  name: main
+                  identifier: app
                   port: http
-        tls:
-          - hosts:
-              - *host
 
     persistence:
       config:
-        enabled: true
         type: persistentVolumeClaim
-        existingClaim: *app
+        existingClaim: bazarr
         globalMounts:
           - path: /config
       nfs-nas-media:
