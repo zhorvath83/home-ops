@@ -146,18 +146,13 @@ spec:
                   port: http
 
     persistence:
-      # config:
-      #   type: persistentVolumeClaim
-      #   existingClaim: plex
-      #   globalMounts:
-      #     - path: /config
-
       config:
         type: persistentVolumeClaim
         existingClaim: plex
         globalMounts:
           - path: /config/Library/Application Support/Plex Media Server
 
+      # Separate PVC for cache to avoid backing up cache files
       cache:
         existingClaim: plex-cache
         globalMounts:
@@ -174,14 +169,6 @@ spec:
         path: /media
         globalMounts:
           - path: /media
-
-      nfs-photos:
-        type: nfs
-        path: /backups/Pictures
-        server: ${CLUSTER_LAN_NAS_IP}
-        globalMounts:
-          - path: /photos
-            readOnly: true
 
       transcode:
         type: emptyDir
