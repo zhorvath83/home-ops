@@ -1,15 +1,16 @@
 ---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2beta2.schema.json
 apiVersion: helm.toolkit.fluxcd.io/v2beta2
 kind: HelmRelease
 metadata:
-  name: &app photoview
+  name: photoview
   namespace: default
 spec:
   interval: 15m
   chart:
     spec:
       chart: app-template
-      version: 2.6.0
+      version: 3.1.0
       sourceRef:
         kind: HelmRepository
         name: bjw-s
@@ -22,6 +23,7 @@ spec:
   upgrade:
     cleanupOnFail: true
     remediation:
+      strategy: rollback
       retries: 3
   uninstall:
     keepHistory: false
@@ -30,20 +32,21 @@ spec:
     defaultPodOptions:
       automountServiceAccountToken: false
       enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
 
     controllers:
-      main:
+      photoview:
         type: statefulset
 
         annotations:
           reloader.stakater.com/auto: "true"
-
-        pod:
-          securityContext:
-            runAsUser: 10001
-            runAsGroup: 10001
-            fsGroup: 10001
-            fsGroupChangePolicy: OnRootMismatch
 
         initContainers:
           01-init-db:
@@ -55,7 +58,7 @@ spec:
               - name: INIT_POSTGRES_HOST
                 value: postgresql.default.svc.cluster.local
               - name: INIT_POSTGRES_DBNAME
-                value: *app
+                value: photoview
               - name: INIT_POSTGRES_SUPER_PASS
                 valueFrom:
                   secretKeyRef:
@@ -73,7 +76,7 @@ spec:
                     key: POSTGRES_PASS
 
         containers:
-          main:
+          app:
             image:
               repository: viktorstrate/photoview
               tag: master@sha256:39213fc6700e670c290839adbfd7e39fbda38b344656bcef8ecccf5f82c7bf60
@@ -85,7 +88,7 @@ spec:
               - name: PHOTOVIEW_LISTEN_IP
                 value: 0.0.0.0
               - name: PHOTOVIEW_LISTEN_PORT
-                value: &port 8080
+                value: 8080
               - name: PHOTOVIEW_DEVELOPMENT_MODE
                 value: false
               - name: PHOTOVIEW_DISABLE_FACE_RECOGNITION
@@ -118,8 +121,6 @@ spec:
               privileged: false
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              seccompProfile:
-                type: RuntimeDefault
               capabilities:
                 drop:
                   - ALL
@@ -132,14 +133,14 @@ spec:
                 memory: 2000Mi
 
     service:
-      main:
+      app:
+        controller: photoview
         ports:
           http:
-            port: *port
+            port: 8080
 
     ingress:
-      main:
-        enabled: true
+      app:
         className: "nginx"
         annotations:
           gethomepage.dev/enabled: "true"
@@ -147,38 +148,31 @@ spec:
           gethomepage.dev/group: Digital assets
           gethomepage.dev/icon: photoview.svg
         hosts:
-          - host: &host1 "photos.${PUBLIC_DOMAIN}"
+          - host: "photos.${PUBLIC_DOMAIN}"
             paths:
               - path: /
                 service:
-                  name: main
+                  identifier: app
                   port: http
-          - host: &host2 "fenykepek.${PUBLIC_DOMAIN}"
+          - host: "fenykepek.${PUBLIC_DOMAIN}"
             paths:
               - path: /
                 service:
-                  name: main
+                  identifier: app
                   port: http
-        tls:
-          - hosts:
-              - *host1
-              - *host2
 
     persistence:
       photos:
-        enabled: true
         type: nfs
         path: /backups/Pictures
-        readOnly: true
         server: ${CLUSTER_LAN_NAS_IP}
         globalMounts:
           - path: /photos
+            readOnly: true
 
       data:
-        enabled: true
         type: persistentVolumeClaim
-        existingClaim: *app
+        existingClaim: photoview
         globalMounts:
           - path: /app/cache
-            readOnly: true
             subPath: cache

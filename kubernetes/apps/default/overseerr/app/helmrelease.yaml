@@ -59,6 +59,7 @@ spec:
               privileged: false
               allowPrivilegeEscalation: false
               # Could not handle readOnlyRootFilesystem
+              readOnlyRootFilesystem: true
               capabilities:
                 drop:
                   - ALL
