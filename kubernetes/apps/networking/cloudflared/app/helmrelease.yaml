@@ -10,7 +10,7 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 2.6.0
+      version: 3.1.0
       sourceRef:
         kind: HelmRepository
         name: bjw-s
@@ -20,10 +20,12 @@ spec:
   install:
     createNamespace: true
     remediation:
-      retries: 5
+      retries: 3
   upgrade:
+    cleanupOnFail: true
     remediation:
-      retries: 5
+      strategy: rollback
+      retries: 3
   uninstall:
     keepHistory: false
 
@@ -31,9 +33,17 @@ spec:
     defaultPodOptions:
       automountServiceAccountToken: false
       enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
 
     controllers:
-      main:
+      cloudflared:
         type: deployment
         replicas: 1
         strategy: RollingUpdate
@@ -41,15 +51,8 @@ spec:
         annotations:
           reloader.stakater.com/auto: "true"
 
-        pod:
-          securityContext:
-            runAsUser: 10001
-            runAsGroup: 10001
-            fsGroup: 10001
-            fsGroupChangePolicy: OnRootMismatch
-
         containers:
-          main:
+          app:
             image:
               repository: docker.io/cloudflare/cloudflared
               tag: 2024.4.1
@@ -114,8 +117,6 @@ spec:
               privileged: false
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              seccompProfile:
-                type: RuntimeDefault
               capabilities:
                 drop:
                   - ALL
@@ -128,29 +129,14 @@ spec:
                 memory: 256Mi
 
     service:
-      main:
-        # nameOverride: metrics
+      app:
+        controller: cloudflared
         ports:
           http:
             port: 8080
 
-    # serviceMonitor:
-    #   main:
-    #     enabled: true
-    #     endpoints:
-    #       - port: http
-    #         scheme: http
-    #         path: /metrics
-    #         interval: 1m
-    #         scrapeTimeout: 30s
-
-    ingress:
-      main:
-        enabled: false
-
     persistence:
       config:
-        enabled: true
         type: configMap
         name: cloudflared-config
         defaultMode: 0775
@@ -160,7 +146,6 @@ spec:
             readOnly: true
 
       credentials:
-        enabled: true
         type: secret
         name: cloudflared-secret
         defaultMode: 0775
