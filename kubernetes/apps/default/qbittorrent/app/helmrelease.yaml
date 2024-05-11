@@ -59,7 +59,8 @@ spec:
               - "/bin/sh"
               - -c
             args:
-              - cp /tmp/config/* /config/qBittorrent
+              - mkdir -p /config/qBittorrent/
+              - cp /tmp/configfiles/* /config/qBittorrent
 
         containers:
           app:
@@ -138,15 +139,7 @@ spec:
         type: configMap
         name: qbittorrent-configmap
         globalMounts:
-          - path: /tmp/config/qBittorrent.conf
-            subPath: qBittorrent.conf
-            readOnly: true
-          - path: /tmp/config/categories.json
-            subPath: categories.json
-            readOnly: true
-          - path: /tmp/config/watched_folders.json
-            subPath: watched_folders.json
-            readOnly: true
+          - path: /tmp/configfiles
 
       nfs-nas-media:
         type: nfs
