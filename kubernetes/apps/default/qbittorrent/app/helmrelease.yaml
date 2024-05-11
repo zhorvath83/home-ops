@@ -59,8 +59,12 @@ spec:
               - "/bin/sh"
               - -c
             args:
-              - mkdir -p /config/qBittorrent/
-              - cp /tmp/configfiles/* /config/qBittorrent
+              - |
+                echo "Creating directory /config/qBittorrent/" &&
+                mkdir -p /config/qBittorrent/ &&
+                echo "Directory created. Copying files from /tmp/configfiles/ to /config/qBittorrent/" &&
+                cp /tmp/configfiles/* /config/qBittorrent/ &&
+                echo "Files copied successfully."
 
         containers:
           app:
