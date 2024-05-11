@@ -10,7 +10,7 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 2.6.0
+      version: 3.1.0
       sourceRef:
         kind: HelmRepository
         name: bjw-s
@@ -180,7 +180,7 @@ spec:
           gethomepage.dev/group: Digital assets
           gethomepage.dev/icon: tandoor.svg
         hosts:
-          - host: &host "recipes.${PUBLIC_DOMAIN}"
+          - host: "recipes.${PUBLIC_DOMAIN}"
             paths:
               - path: /
                 service:
