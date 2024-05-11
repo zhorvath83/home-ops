@@ -10,7 +10,7 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 2.6.0
+      version: 3.1.0
       sourceRef:
         kind: HelmRepository
         name: bjw-s
@@ -23,6 +23,7 @@ spec:
   upgrade:
     cleanupOnFail: true
     remediation:
+      strategy: rollback
       retries: 3
   uninstall:
     keepHistory: false
@@ -31,22 +32,23 @@ spec:
     defaultPodOptions:
       automountServiceAccountToken: false
       enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
 
     controllers:
-      main:
+      onepassword-connect:
         type: deployment
         replicas: 1
         strategy: RollingUpdate
 
         annotations:
           reloader.stakater.com/auto: "true"
-
-        pod:
-          securityContext:
-            runAsUser: 999
-            runAsGroup: 999
-            fsGroup: 999
-            fsGroupChangePolicy: OnRootMismatch
 
         initContainers:
           01-permissions:
@@ -61,8 +63,6 @@ spec:
               - "mkdir -p /home/opuser/.op/data && chown -R 999 /home/opuser && chmod -R 700 /home/opuser && chmod -f -R 600 /home/opuser/.op/config || :"
 
             securityContext:
-              seccompProfile:
-                type: RuntimeDefault
               capabilities:
                 drop:
                   - ALL
@@ -70,7 +70,7 @@ spec:
                   - CHOWN
 
         containers:
-          main:
+          app:
             image:
               repository: docker.io/1password/connect-api
               tag: 1.7.2
@@ -113,13 +113,11 @@ spec:
               privileged: false
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              seccompProfile:
-                type: RuntimeDefault
               capabilities:
                 drop:
                   - ALL
 
-            resources: &resources
+            resources:
               requests:
                 cpu: 5m
                 memory: 40M
@@ -169,31 +167,30 @@ spec:
               startup:
                 enabled: false
 
-              resources: *resources
+            resources:
+              requests:
+                cpu: 5m
+                memory: 40M
+              limits:
+                memory: 128M
 
             securityContext:
               privileged: false
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              seccompProfile:
-                type: RuntimeDefault
               capabilities:
                 drop:
                   - ALL
 
     service:
-      main:
+      app:
+        controller: onepassword-connect
         ports:
           http:
             port: *api-port
 
-    ingress:
-      main:
-        enabled: false
-
     persistence:
       shared-data:
-        enabled: true
         type: emptyDir
         globalMounts:
           - path: /home/opuser/.op/data
