@@ -3,14 +3,14 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta2
 kind: HelmRelease
 metadata:
-  name: &app tandoor
+  name: tandoor
   namespace: default
 spec:
   interval: 15m
   chart:
     spec:
       chart: app-template
-      version: 2.6.0
+      version: 3.1.0
       sourceRef:
         kind: HelmRepository
         name: bjw-s
@@ -23,6 +23,7 @@ spec:
   upgrade:
     cleanupOnFail: true
     remediation:
+      strategy: rollback
       retries: 3
   uninstall:
     keepHistory: false
@@ -31,20 +32,21 @@ spec:
     defaultPodOptions:
       automountServiceAccountToken: false
       enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
 
     controllers:
-      main:
+      tandoor:
         type: statefulset
 
         annotations:
           reloader.stakater.com/auto: "true"
-
-        pod:
-          securityContext:
-            runAsUser: 10001
-            runAsGroup: 10001
-            fsGroup: 10001
-            fsGroupChangePolicy: OnRootMismatch
 
         initContainers:
           01-init-db:
@@ -56,7 +58,7 @@ spec:
               - name: INIT_POSTGRES_HOST
                 value: postgresql.default.svc.cluster.local
               - name: INIT_POSTGRES_DBNAME
-                value: *app
+                value: tandoor
               - name: INIT_POSTGRES_SUPER_PASS
                 valueFrom:
                   secretKeyRef:
@@ -103,56 +105,70 @@ spec:
                 echo "Done"
 
         containers:
-          main:
+          app:
             image:
               repository: vabene1111/recipes
               tag: 1.5.17
               pullPolicy: IfNotPresent
 
             env:
-              DEBUG: "0"
+              DEBUG: 0
+              ENABLE_SIGNUP: 0
               ALLOWED_HOSTS: "*"
               DB_ENGINE: django.db.backends.postgresql
               POSTGRES_HOST: postgresql.default.svc.cluster.local
               POSTGRES_PORT: 5432
               POSTGRES_DB: tandoor
-              GUNICORN_MEDIA: "1"
+              GUNICORN_MEDIA: 1
               TIMEZONE: "Europe/Budapest"
-              TANDOOR_PORT: 8080
-              FRACTION_PREF_DEFAULT: "0"
-              COMMENT_PREF_DEFAULT: "0"
-              SHOPPING_MIN_AUTOSYNC_INTERVAL: "5"
+              TANDOOR_PORT: &tandoorPort 8000
+              FRACTION_PREF_DEFAULT: 0
+              COMMENT_PREF_DEFAULT: 0
+              SHOPPING_MIN_AUTOSYNC_INTERVAL: 5
 
             envFrom:
               - secretRef:
                   name: tandoor-secret
 
-            command:
-              - /opt/recipes/venv/bin/gunicorn
-              - -b
-              - :8080
-              - --access-logfile
-              - "-"
-              - --error-logfile
-              - "-"
-              - --log-level
-              - INFO
-              - recipes.wsgi
+            # command:
+            #   - /opt/recipes/venv/bin/gunicorn
+            #   - -b
+            #   - :8080
+            #   - --access-logfile
+            #   - "-"
+            #   - --error-logfile
+            #   - "-"
+            #   - --log-level
+            #   - INFO
+            #   - recipes.wsgi
 
             probes:
-              liveness:
-                enabled: false
-              readiness:
-                enabled: false
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /accounts/login/
+                    port: *tandoorPort
+                  initialDelaySeconds: 15
+                  periodSeconds: 10
+                  timeoutSeconds: 1
+                  failureThreshold: 3
+              readiness: *probes
               startup:
-                enabled: false
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /accounts/login/
+                    port: *tandoorPort
+                  failureThreshold: 30
+                  periodSeconds: 10
 
             securityContext:
               privileged: false
               allowPrivilegeEscalation: false
-              # Could not handle readOnlyRootFilesystem
-              seccompProfile:
-                type: RuntimeDefault
+              readOnlyRootFilesystem: true
               capabilities:
                 drop:
                   - ALL
@@ -165,14 +181,14 @@ spec:
                 memory: 512Mi
 
     service:
-      main:
+      app:
+        controller: tandoor
         ports:
           http:
             port: 8080
 
     ingress:
-      main:
-        enabled: true
+      app:
         className: "nginx"
         annotations:
           gethomepage.dev/enabled: "true"
@@ -180,30 +196,36 @@ spec:
           gethomepage.dev/group: Digital assets
           gethomepage.dev/icon: tandoor.svg
         hosts:
-          - host: &host "recipes.${PUBLIC_DOMAIN}"
+          - host: "recipes.${PUBLIC_DOMAIN}"
             paths:
               - path: /
                 service:
-                  name: main
+                  identifier: app
                   port: http
-        tls:
-          - hosts:
-              - *host
 
     persistence:
       mediafiles:
-        enabled: true
         type: persistentVolumeClaim
-        existingClaim: *app
+        existingClaim: tandoor
         globalMounts:
           - path: /opt/recipes/mediafiles
+
       staticfiles:
-        enabled: true
         type: emptyDir
         globalMounts:
           - path: /opt/recipes/staticfiles
+
       django-js-reverse:
-        enabled: true
         type: emptyDir
         globalMounts:
           - path: /opt/recipes/cookbook/static/django_js_reverse
+
+      temp:
+        type: emptyDir
+        advancedMounts:
+          tandoor:
+            app:
+              - path: /tmp
+                subPath: app-tmp
+              - path: /opt/recipes/cookbook/static/django_js_reverse
+                subPath: django_js_reverse

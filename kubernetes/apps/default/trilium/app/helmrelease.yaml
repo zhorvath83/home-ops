@@ -74,7 +74,7 @@ spec:
                   httpGet:
                     path: /api/health-check
                     port: *targetPort
-                  initialDelaySeconds: 0
+                  initialDelaySeconds: 15
                   periodSeconds: 10
                   timeoutSeconds: 1
                   failureThreshold: 3
