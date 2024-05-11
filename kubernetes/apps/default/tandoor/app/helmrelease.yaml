@@ -210,16 +210,6 @@ spec:
         globalMounts:
           - path: /opt/recipes/mediafiles
 
-      staticfiles:
-        type: emptyDir
-        globalMounts:
-          - path: /opt/recipes/staticfiles
-
-      django-js-reverse:
-        type: emptyDir
-        globalMounts:
-          - path: /opt/recipes/cookbook/static/django_js_reverse
-
       temp:
         type: emptyDir
         advancedMounts:
@@ -229,3 +219,5 @@ spec:
                 subPath: app-tmp
               - path: /opt/recipes/cookbook/static/django_js_reverse
                 subPath: django_js_reverse
+              - path: /opt/recipes/staticfiles
+                subPath: staticfiles
