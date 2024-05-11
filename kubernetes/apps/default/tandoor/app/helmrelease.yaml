@@ -75,34 +75,34 @@ spec:
                     name: tandoor-secret
                     key: POSTGRES_PASSWORD
 
-          02-init-migrate:
-            image:
-              repository: vabene1111/recipes
-              tag: 1.5.17
-              pullPolicy: IfNotPresent
-            env:
-              - name: DB_ENGINE
-                value: django.db.backends.postgresql
-              - name: POSTGRES_HOST
-                value: postgresql.default.svc.cluster.local
-              - name: POSTGRES_PORT
-                value: 5432
-              - name: POSTGRES_DB
-                value: tandoor
-            envFrom:
-              - secretRef:
-                  name: tandoor-secret
-            command:
-              - sh
-              - -c
-              - |
-                set -e
-                source venv/bin/activate
-                echo "Updating database"
-                python manage.py migrate
-                python manage.py collectstatic_js_reverse
-                python manage.py collectstatic --noinput
-                echo "Done"
+          # 02-init-migrate:
+          #   image:
+          #     repository: vabene1111/recipes
+          #     tag: 1.5.17
+          #     pullPolicy: IfNotPresent
+          #   env:
+          #     - name: DB_ENGINE
+          #       value: django.db.backends.postgresql
+          #     - name: POSTGRES_HOST
+          #       value: postgresql.default.svc.cluster.local
+          #     - name: POSTGRES_PORT
+          #       value: 5432
+          #     - name: POSTGRES_DB
+          #       value: tandoor
+          #   envFrom:
+          #     - secretRef:
+          #         name: tandoor-secret
+          #   command:
+          #     - sh
+          #     - -c
+          #     - |
+          #       set -e
+          #       source venv/bin/activate
+          #       echo "Updating database"
+          #       python manage.py migrate
+          #       python manage.py collectstatic_js_reverse
+          #       python manage.py collectstatic --noinput
+          #       echo "Done"
 
         containers:
           app:
