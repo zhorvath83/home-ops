@@ -70,6 +70,8 @@ spec:
 
             env:
               TZ: Europe/Budapest
+              QBT_Preferences__WebUI__AuthSubnetWhitelist: |-
+                10.42.0.0/16
 
             probes:
               liveness: &probes
