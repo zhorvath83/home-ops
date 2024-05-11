@@ -10,7 +10,7 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 2.6.0
+      version: 3.1.0
       sourceRef:
         kind: HelmRepository
         name: bjw-s
@@ -23,29 +23,33 @@ spec:
   upgrade:
     cleanupOnFail: true
     remediation:
+      strategy: rollback
       retries: 3
   uninstall:
     keepHistory: false
 
   values:
     defaultPodOptions:
-      enableServiceLinks: false
       automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: false
+        runAsUser: 0
+        runAsGroup: 0
+        fsGroup: 0
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
 
     controllers:
-      main:
+      resticprofile:
         type: statefulset
 
         annotations:
           reloader.stakater.com/auto: "true"
 
-        pod:
-          securityContext:
-            runAsUser: 0
-            runAsGroup: 0
-
         containers:
-          main:
+          app:
             image:
               repository: creativeprojects/resticprofile
               tag: 0.26.0@sha256:79ea13f068171aae9f2382a56dc84847a806d4c703390ea793e1096fb23a6357
@@ -135,8 +139,6 @@ spec:
               privileged: true
               allowPrivilegeEscalation: true
               readOnlyRootFilesystem: false
-              seccompProfile:
-                type: RuntimeDefault
               capabilities:
                 drop:
                   - ALL
@@ -148,17 +150,8 @@ spec:
               limits:
                 memory: 2000Mi
 
-    service:
-      main:
-        enabled: false
-
-    ingress:
-      main:
-        enabled: false
-
     persistence:
       profiles-yaml:
-        enabled: true
         type: configMap
         name: resticprofile-configmap
         defaultMode: 0775
@@ -168,7 +161,6 @@ spec:
             readOnly: true
 
       nfs-tmp:
-        enabled: true
         type: nfs
         server: ${CLUSTER_LAN_NAS_IP}
         path: /tmp
@@ -176,7 +168,6 @@ spec:
           - path: /mnt/nfs-tmp
 
       nfs-backups:
-        enabled: true
         type: nfs
         server: ${CLUSTER_LAN_NAS_IP}
         path: /backups
