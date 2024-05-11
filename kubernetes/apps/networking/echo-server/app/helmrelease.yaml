@@ -10,7 +10,7 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 2.6.0
+      version: 3.1.0
       sourceRef:
         kind: HelmRepository
         name: bjw-s
@@ -23,6 +23,7 @@ spec:
   upgrade:
     cleanupOnFail: true
     remediation:
+      strategy: rollback
       retries: 3
   uninstall:
     keepHistory: false
@@ -31,20 +32,21 @@ spec:
     defaultPodOptions:
       automountServiceAccountToken: false
       enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
 
     controllers:
-      main:
+      echo-server:
         type: deployment
 
-        pod:
-          securityContext:
-            runAsUser: 10001
-            runAsGroup: 10001
-            fsGroup: 10001
-            fsGroupChangePolicy: OnRootMismatch
-
         containers:
-          main:
+          app:
             image:
               repository: docker.io/jmalloc/echo-server
               tag: 0.3.6
@@ -70,8 +72,6 @@ spec:
               privileged: false
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              seccompProfile:
-                type: RuntimeDefault
               capabilities:
                 drop:
                   - ALL
@@ -84,14 +84,14 @@ spec:
                 memory: 50Mi
 
     service:
-      main:
+      app:
+        controller: echo-server
         ports:
           http:
             port: *port
 
     ingress:
-      main:
-        enabled: true
+      app:
         className: "nginx"
         annotations:
           gethomepage.dev/enabled: "true"
@@ -99,12 +99,9 @@ spec:
           gethomepage.dev/group: Monitoring
           gethomepage.dev/icon: terminal.svg
         hosts:
-          - host: &host "{{ .Release.Name }}.${PUBLIC_DOMAIN}"
+          - host: "{{ .Release.Name }}.${PUBLIC_DOMAIN}"
             paths:
               - path: /
                 service:
-                  name: main
+                  identifier: app
                   port: http
-        tls:
-          - hosts:
-              - *host
