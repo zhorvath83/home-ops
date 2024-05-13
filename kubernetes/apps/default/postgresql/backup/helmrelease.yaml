@@ -119,6 +119,6 @@ spec:
       nfs-nas-backups:
         type: nfs
         server: ${CLUSTER_LAN_NAS_IP}
-        path: /backups/pgbackups
+        path: /backups/PostgreSQL-backups
         globalMounts:
           - path: /backups
