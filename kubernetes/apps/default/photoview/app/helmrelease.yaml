@@ -89,10 +89,10 @@ spec:
                 value: 0.0.0.0
               - name: PHOTOVIEW_LISTEN_PORT
                 value: 8080
-              - name: PHOTOVIEW_DEVELOPMENT_MODE
+              - name: PHOTOVIEW_SERVE_UI
                 value: false
               - name: PHOTOVIEW_DISABLE_FACE_RECOGNITION
-                value: true
+                value: false
               - name: PHOTOVIEW_DISABLE_VIDEO_ENCODING	
                 value: true
               - name: PHOTOVIEW_MEDIA_CACHE
@@ -100,10 +100,8 @@ spec:
               - name: MAPBOX_TOKEN
                 valueFrom:
                   secretKeyRef:
-                    name: mapbox_token
+                    name: photoview-secret
                     key: MAPBOX_TOKEN
-              - name: PHOTOVIEW_DATABASE_DRIVER
-                value: sqlite
               - name: PHOTOVIEW_DATABASE_DRIVER
                 value: postgres
               - name: PHOTOVIEW_POSTGRES_URL
