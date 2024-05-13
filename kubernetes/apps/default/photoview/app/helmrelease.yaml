@@ -93,14 +93,17 @@ spec:
                 value: false
               - name: PHOTOVIEW_DISABLE_FACE_RECOGNITION
                 value: true
+              - name: PHOTOVIEW_DISABLE_VIDEO_ENCODING	
+                value: true
               - name: PHOTOVIEW_MEDIA_CACHE
                 value: /app/cache
               - name: MAPBOX_TOKEN
-                value: ""
-              # - name: PHOTOVIEW_DATABASE_DRIVER
-              #   value: sqlite
-              # - name: PHOTOVIEW_SQLITE_PATH
-              #   value: /app/database/photoview.db
+                valueFrom:
+                  secretKeyRef:
+                    name: mapbox_token
+                    key: MAPBOX_TOKEN
+              - name: PHOTOVIEW_DATABASE_DRIVER
+                value: sqlite
               - name: PHOTOVIEW_DATABASE_DRIVER
                 value: postgres
               - name: PHOTOVIEW_POSTGRES_URL
@@ -164,7 +167,7 @@ spec:
     persistence:
       photos:
         type: nfs
-        path: /backups/Pictures
+        path: /backups/Photos-export
         server: ${CLUSTER_LAN_NAS_IP}
         globalMounts:
           - path: /photos
