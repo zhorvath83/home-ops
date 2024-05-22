@@ -4,18 +4,7 @@ kind: Kustomization
 namespace: default
 resources:
   - ./helmrelease.yaml
-  #- ./externalsecret.yaml
 
 labels:
   - pairs:
       app.kubernetes.io/name: backrest
-
-# configMapGenerator:
-#   - name: resticprofile-configmap
-#     files:
-#       - ./config/profiles.yaml
-# 
-# generatorOptions:
-#   disableNameSuffixHash: true
-#   annotations:
-#     kustomize.toolkit.fluxcd.io/substitute: disabled

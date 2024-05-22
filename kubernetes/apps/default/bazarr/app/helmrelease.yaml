@@ -61,7 +61,6 @@ spec:
               - --root=/add-ons
               - --verbose=6
               - --one-time
-            # - --period=86400s
 
         containers:
           app:

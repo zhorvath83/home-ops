@@ -93,7 +93,7 @@ spec:
                 value: true
               - name: PHOTOVIEW_DISABLE_FACE_RECOGNITION
                 value: true
-              - name: PHOTOVIEW_DISABLE_VIDEO_ENCODING	
+              - name: PHOTOVIEW_DISABLE_VIDEO_ENCODING
                 value: true
               - name: PHOTOVIEW_MEDIA_CACHE
                 value: /app/cache
