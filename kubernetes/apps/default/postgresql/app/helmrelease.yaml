@@ -87,7 +87,7 @@ spec:
         - name: nfs-nas-backups
           nfs:
             server: ${CLUSTER_LAN_NAS_IP}
-            path: /backups/PostgreSQL-backups
+            path: /backups/postgresql_backups
             readOnly: false
       extraVolumeMounts:
         - name: nfs-nas-backups
