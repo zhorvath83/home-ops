@@ -165,7 +165,7 @@ spec:
     persistence:
       photos:
         type: nfs
-        path: /backups/Photos-export
+        path: /backups/apple_photos_export
         server: ${CLUSTER_LAN_NAS_IP}
         globalMounts:
           - path: /photos
