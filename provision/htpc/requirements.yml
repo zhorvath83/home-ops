@@ -20,6 +20,6 @@ roles:
   - name: geerlingguy.pip
     version: 3.0.3
   - name: geerlingguy.docker
-    version: 7.1.0
+    version: 7.2.0
   - name: hifis.unattended_upgrades
     version: v3.2.1
