@@ -64,68 +64,57 @@ spec:
             env:
               - name: TZ
                 value: Europe/Budapest
+
               - name: RESTIC_CACHE_DIR
                 value: "/mnt/nfs-tmp/resticprofile-cache"
+
               - name: RESTIC_PASSWORD
                 valueFrom:
                   secretKeyRef:
                     name: resticprofile-secret
                     key: RESTIC_PASSWORD
+
               - name: RESTIC_REPOSITORY_TEMPLATE
                 valueFrom:
                   secretKeyRef:
                     name: resticprofile-secret
                     key: RESTIC_REPOSITORY_TEMPLATE
+
               - name: AWS_ACCESS_KEY_ID
                 valueFrom:
                   secretKeyRef:
                     name: resticprofile-secret
                     key: AWS_ACCESS_KEY_ID
+
               - name: AWS_SECRET_ACCESS_KEY
                 valueFrom:
                   secretKeyRef:
                     name: resticprofile-secret
                     key: AWS_SECRET_ACCESS_KEY
-              - name: HEALTHCHECK_DOCUMENTS_BACKUP_WEBHOOK
+
+              - name: HEALTHCHECK_BACKUPS_WEBHOOK
                 valueFrom:
                   secretKeyRef:
                     name: resticprofile-secret
-                    key: HEALTHCHECK_DOCUMENTS_BACKUP_WEBHOOK
-              - name: HEALTHCHECK_DOCUMENTS_CHECK_WEBHOOK
+                    key: HEALTHCHECK_BACKUPS_WEBHOOK
+
+              - name: HEALTHCHECK_BACKUPS_CHECK_WEBHOOK
                 valueFrom:
                   secretKeyRef:
                     name: resticprofile-secret
-                    key: HEALTHCHECK_DOCUMENTS_CHECK_WEBHOOK
-              - name: HEALTHCHECK_PICTURES_BACKUP_WEBHOOK
+                    key: HEALTHCHECK_BACKUPS_CHECK_WEBHOOK
+
+              - name: HEALTHCHECK_LEGACY_BACKUPS_WEBHOOK
                 valueFrom:
                   secretKeyRef:
                     name: resticprofile-secret
-                    key: HEALTHCHECK_PICTURES_BACKUP_WEBHOOK
-              - name: HEALTHCHECK_PICTURES_CHECK_WEBHOOK
+                    key: HEALTHCHECK_LEGACY_BACKUPS_WEBHOOK
+
+              - name: HEALTHCHECK_LEGACY_BACKUPS_CHECK_WEBHOOK
                 valueFrom:
                   secretKeyRef:
                     name: resticprofile-secret
-                    key: HEALTHCHECK_PICTURES_CHECK_WEBHOOK
-              - name: HEALTHCHECK_VIDEOS_BACKUP_WEBHOOK
-                valueFrom:
-                  secretKeyRef:
-                    name: resticprofile-secret
-                    key: HEALTHCHECK_VIDEOS_BACKUP_WEBHOOK
-              - name: HEALTHCHECK_VIDEOS_CHECK_WEBHOOK
-                valueFrom:
-                  secretKeyRef:
-                    name: resticprofile-secret
-                    key: HEALTHCHECK_VIDEOS_CHECK_WEBHOOK
-              - name: HEALTHCHECK_MISC_BACKUP_WEBHOOK
-                valueFrom:
-                  secretKeyRef:
-                    name: resticprofile-secret
-                    key: HEALTHCHECK_MISC_BACKUP_WEBHOOK
-              - name: HEALTHCHECK_MISC_CHECK_WEBHOOK
-                valueFrom:
-                  secretKeyRef:
-                    name: resticprofile-secret
-                    key: HEALTHCHECK_MISC_CHECK_WEBHOOK
+                    key: HEALTHCHECK_LEGACY_BACKUPS_CHECK_WEBHOOK
 
             probes:
               liveness:
