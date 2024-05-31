@@ -173,3 +173,10 @@ spec:
         path: /backups
         globalMounts:
           - path: /backups
+
+      nfs-legacy-backups:
+        type: nfs
+        server: ${CLUSTER_LAN_NAS_IP}
+        path: /legacy-backups
+        globalMounts:
+          - path: /legacy-backups
