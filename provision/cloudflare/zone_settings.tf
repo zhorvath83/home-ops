@@ -52,3 +52,37 @@ resource "cloudflare_zone_settings_override" "cloudflare_settings" {
     }
   }
 }
+
+# Enable DNSSEC
+resource "cloudflare_zone_dnssec" "enable_dnssec" {
+  zone_id = cloudflare_zone.domain.id
+}
+
+# Bypass the cache
+resource "cloudflare_ruleset" "bypass_cache" {
+  zone_id = cloudflare_zone.domain.id
+  name        = "Cache bypass"
+  description = "Ruleset to bypass cache"
+  kind        = "zone"
+  phase       = "http_request_cache_settings"
+
+  rules {
+    action = "set_cache_settings"
+    action_parameters {
+      cache = false
+      browser_ttl {
+        mode = "bypass"
+      }
+    }
+    expression  = "(http.host eq \"*.${var.CF_DOMAIN_NAME}\")"
+    description = "Bypass cache"
+    enabled     = true
+  }
+}
+
+# Bot management
+resource "cloudflare_bot_management" "fight_bots" {
+  zone_id = cloudflare_zone.domain.id
+  fight_mode = true
+  enable_js  = true
+}

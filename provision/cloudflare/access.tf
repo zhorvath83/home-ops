@@ -2,7 +2,7 @@ data "github_ip_ranges" "cidrs" {}
 
 # Access groups
 
-## My unrestricted user group
+## My unrestricted user group - unlimited access for all Apps
 resource "cloudflare_access_group" "unrestricted_users" {
   account_id     = var.CF_ACCOUNT_ID
   name           = "UnrestrictedUsers"
@@ -22,12 +22,53 @@ resource "cloudflare_access_group" "restricted_users" {
   }
 }
 
-# One time pin auth method
-resource "cloudflare_access_identity_provider" "pin_login" {
-  account_id = var.CF_ACCOUNT_ID
-  name       = "Mail me one time password"
-  type       = "onetimepin"
+resource "cloudflare_access_policy" "unrestricted_users_policy" {
+  account_id     = var.CF_ACCOUNT_ID
+  name           = "UnrestrictedUsersAuth"
+  decision       = "allow"
+
+  include {
+    group = [cloudflare_access_group.unrestricted_users.id]
+  }
 }
+
+resource "cloudflare_access_policy" "restricted_user_policy" {
+  account_id     = var.CF_ACCOUNT_ID
+  name           = "RestrictedUsersAuth"
+  decision       = "allow"
+
+  include {
+    group = [cloudflare_access_group.restricted_users.id]
+  }
+}
+
+resource "cloudflare_access_policy" "bypass_everyone_policy" {
+  account_id     = var.CF_ACCOUNT_ID
+  name           = "Bypass"
+  decision       = "bypass"
+
+  include {
+    everyone = true
+  }
+}
+
+resource "cloudflare_access_policy" "bypass_github_cidr_policy" {
+  account_id     = var.CF_ACCOUNT_ID
+  name           = "CIDRbasedBypass"
+
+  decision       = "bypass"
+
+  include {
+    ip = data.github_ip_ranges.cidrs.hooks
+  }
+}
+
+# # One time pin auth method
+# resource "cloudflare_access_identity_provider" "pin_login" {
+#   account_id = var.CF_ACCOUNT_ID
+#   name       = "Mail me one time password"
+#   type       = "onetimepin"
+# }
 
 # Google Oauth
 resource "cloudflare_access_identity_provider" "google_oauth" {
@@ -50,18 +91,10 @@ resource "cloudflare_access_application" "private_cloud" {
   domain           = "*.${var.CF_DOMAIN_NAME}"
   type             = "self_hosted"
   session_duration = "720h"
-}
 
-resource "cloudflare_access_policy" "private_cloud_unrestricted_user_policy" {
-  application_id = cloudflare_access_application.private_cloud.id
-  zone_id        = cloudflare_zone.domain.id
-  name           = "UnrestrictedUserAuth"
-  precedence     = "1"
-  decision       = "allow"
-
-  include {
-    group = [cloudflare_access_group.unrestricted_users.id]
-  }
+  policies = [
+    cloudflare_access_policy.unrestricted_users_policy.id
+  ]
 }
 
 ## Photos
@@ -71,18 +104,10 @@ resource "cloudflare_access_application" "private_cloud_photos" {
   domain           = "fenykepek.${var.CF_DOMAIN_NAME}"
   type             = "self_hosted"
   session_duration = "720h"
-}
 
-resource "cloudflare_access_policy" "private_cloud_restricted_user_policy" {
-  application_id = cloudflare_access_application.private_cloud_photos.id
-  zone_id        = cloudflare_zone.domain.id
-  name           = "RestrictedUserAuth"
-  precedence     = "1"
-  decision       = "allow"
-
-  include {
-    group = [cloudflare_access_group.restricted_users.id]
-  }
+  policies = [
+    cloudflare_access_policy.restricted_user_policy.id
+  ]
 }
 
 ## Private website www exclude from UserAuth
@@ -91,18 +116,10 @@ resource "cloudflare_access_application" "private_website" {
   name             = "Private website"
   domain           = "www.${var.CF_DOMAIN_NAME}"
   type             = "self_hosted"
-}
 
-resource "cloudflare_access_policy" "private_website_bypass_policy" {
-  application_id = cloudflare_access_application.private_website.id
-  zone_id        = cloudflare_zone.domain.id
-  name           = "Bypass"
-  precedence     = "1"
-  decision       = "bypass"
-
-  include {
-    everyone = true
-  }
+  policies = [
+    cloudflare_access_policy.bypass_everyone_policy.id
+  ]
 }
 
 ## Private R2 downloads exclude from UserAuth
@@ -111,18 +128,10 @@ resource "cloudflare_access_application" "private_r2_downloads" {
   name             = "Private R2 downloads"
   domain           = "downloads.${var.CF_DOMAIN_NAME}"
   type             = "self_hosted"
-}
 
-resource "cloudflare_access_policy" "private_r2_downloads_bypass_policy" {
-  application_id = cloudflare_access_application.private_r2_downloads.id
-  zone_id        = cloudflare_zone.domain.id
-  name           = "Bypass"
-  precedence     = "1"
-  decision       = "bypass"
-
-  include {
-    everyone = true
-  }
+  policies = [
+    cloudflare_access_policy.bypass_everyone_policy.id
+  ]
 }
 
 ## Flux webhook
@@ -132,18 +141,10 @@ resource "cloudflare_access_application" "flux_webhook" {
   name             = "Flux webhook"
   domain           = "flux-webhook.${var.CF_DOMAIN_NAME}"
   type             = "self_hosted"
-}
 
-resource "cloudflare_access_policy" "flux_webhook_bypass_policy" {
-  application_id = cloudflare_access_application.flux_webhook.id
-  zone_id        = cloudflare_zone.domain.id
-  name           = "CIDRbasedBypass"
-  precedence     = "1"
-  decision       = "bypass"
-
-  include {
-    ip = data.github_ip_ranges.cidrs.hooks
-  }
+  policies = [
+    cloudflare_access_policy.bypass_github_cidr_policy.id
+  ]
 }
 
 ## MTA-STS policy file exclude from UserAuth
@@ -152,18 +153,10 @@ resource "cloudflare_access_application" "mta_sts_policy" {
   name             = "MTA-STS policy"
   domain           = "mta-sts.${var.CF_DOMAIN_NAME}"
   type             = "self_hosted"
-}
 
-resource "cloudflare_access_policy" "mta_sts_policy_bypass_policy" {
-  application_id = cloudflare_access_application.mta_sts_policy.id
-  zone_id        = cloudflare_zone.domain.id
-  name           = "Bypass"
-  precedence     = "1"
-  decision       = "bypass"
-
-  include {
-    everyone = true
-  }
+  policies = [
+    cloudflare_access_policy.bypass_everyone_policy.id
+  ]
 }
 
 ## Webmail exclude from UserAuth
@@ -172,16 +165,8 @@ resource "cloudflare_access_application" "webmail" {
   name             = "Webmail"
   domain           = "mail.${var.CF_DOMAIN_NAME}"
   type             = "self_hosted"
-}
 
-resource "cloudflare_access_policy" "webmail_bypass_policy" {
-  application_id = cloudflare_access_application.webmail.id
-  zone_id        = cloudflare_zone.domain.id
-  name           = "Bypass"
-  precedence     = "1"
-  decision       = "bypass"
-
-  include {
-    everyone = true
-  }
+  policies = [
+    cloudflare_access_policy.bypass_everyone_policy.id
+  ]
 }
