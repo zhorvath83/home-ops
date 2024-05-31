@@ -8,9 +8,9 @@ global:
   restic-lock-retry-after: 5m
   restic-stale-lock-age: 24h
 
-documents:
-  repository: "{{ .Env.RESTIC_REPOSITORY_TEMPLATE }}documents-backups"
-  lock: "/tmp/resticprofile-profile-documents.lock"
+backups:
+  repository: "{{ .Env.RESTIC_REPOSITORY_TEMPLATE }}backups"
+  lock: "/tmp/resticprofile-profile-backups.lock"
   force-inactive-lock: true
   compression: auto
   initialize: true
@@ -19,22 +19,22 @@ documents:
 
   backup:
     schedule: 00:00
-    schedule-log: /backups/resticprofile-documents.log
+    schedule-log: /mnt/nfs-tmp/resticprofile-logs/resticprofile-backups-execute.log
     schedule-permission: user
     schedule-lock-wait: 1h
     source:
-      - /backups/Documents
+      - /backups
     exclude: []
     no-error-on-warning: true
     send-before:
       - method: HEAD
-        url: "{{ .Env.HEALTHCHECK_DOCUMENTS_BACKUP_WEBHOOK }}/start"
+        url: "{{ .Env.HEALTHCHECK_BACKUPS_WEBHOOK }}/start"
     send-after:
       - method: HEAD
-        url: "{{ .Env.HEALTHCHECK_DOCUMENTS_BACKUP_WEBHOOK }}"
+        url: "{{ .Env.HEALTHCHECK_BACKUPS_WEBHOOK }}"
     send-after-fail:
       method: POST
-      url: "{{ .Env.HEALTHCHECK_DOCUMENTS_BACKUP_WEBHOOK }}/fail"
+      url: "{{ .Env.HEALTHCHECK_BACKUPS_WEBHOOK }}/fail"
       body: "${ERROR}\n\n${ERROR_STDERR}"
       headers:
         - name: Content-Type
@@ -43,7 +43,7 @@ documents:
   forget:
     schedule: "Sun 20:00"
     schedule-permission: user
-    schedule-log: /backups/resticprofile-documents.log
+    schedule-log: /mnt/nfs-tmp/resticprofile-logs/resticprofile-backups-forget.log
     schedule-lock-mode: default
     schedule-lock-wait: 1h
     keep-hourly: 1
@@ -55,31 +55,30 @@ documents:
   check:
     schedule: "Sat 20:00"
     schedule-permission: user
-    schedule-log: /backups/resticprofile-documents.log
+    schedule-log: /mnt/nfs-tmp/resticprofile-logs/resticprofile-backups-check.log
     schedule-lock-mode: default
     schedule-lock-wait: 1h
     read-data-subset: "100M"
     send-before:
       - method: HEAD
-        url: "{{ .Env.HEALTHCHECK_DOCUMENTS_CHECK_WEBHOOK }}/start"
+        url: "{{ .Env.HEALTHCHECK_BACKUPS_CHECK_WEBHOOK }}/start"
     send-after:
       - method: HEAD
-        url: "{{ .Env.HEALTHCHECK_DOCUMENTS_CHECK_WEBHOOK }}"
+        url: "{{ .Env.HEALTHCHECK_BACKUPS_CHECK_WEBHOOK }}"
     send-after-fail:
       method: POST
-      url: "{{ .Env.HEALTHCHECK_DOCUMENTS_CHECK_WEBHOOK }}/fail"
+      url: "{{ .Env.HEALTHCHECK_BACKUPS_CHECK_WEBHOOK }}/fail"
       body: "${ERROR}\n\n${ERROR_STDERR}"
       headers:
         - name: Content-Type
           value: "text/plain; charset=UTF-8"
 
   restore:
-    target: "/mnt/nfs-tmp/resticprofile-restore/documents"
+    target: "/mnt/nfs-tmp/resticprofile-restore/backups"
 
-
-misc:
-  repository: "{{ .Env.RESTIC_REPOSITORY_TEMPLATE }}misc-backups"
-  lock: "/tmp/resticprofile-profile-misc.lock"
+legacy-backups:
+  repository: "{{ .Env.RESTIC_REPOSITORY_TEMPLATE }}legacy-backups"
+  lock: "/tmp/resticprofile-profile-legacy-backups.lock"
   force-inactive-lock: true
   compression: auto
   initialize: true
@@ -87,34 +86,32 @@ misc:
   priority: low
 
   backup:
-    schedule: 00:30
-    schedule-log: /backups/resticprofile-misc.log
+    schedule: 00:00
+    schedule-log: /mnt/nfs-tmp/resticprofile-logs/resticprofile-legacy-backups-execute.log
     schedule-permission: user
     schedule-lock-wait: 1h
     source:
-      - /backups/ANYU
-      - /backups/Utils
-      - /backups/pgbackups
+      - /legacy-backups
     exclude: []
     no-error-on-warning: true
     send-before:
       - method: HEAD
-        url: "{{ .Env.HEALTHCHECK_MISC_BACKUP_WEBHOOK }}/start"
+        url: "{{ .Env.HEALTHCHECK_LEGACY_BACKUPS_WEBHOOK }}/start"
     send-after:
       - method: HEAD
-        url: "{{ .Env.HEALTHCHECK_MISC_BACKUP_WEBHOOK }}"
+        url: "{{ .Env.HEALTHCHECK_LEGACY_BACKUPS_WEBHOOK }}"
     send-after-fail:
       method: POST
-      url: "{{ .Env.HEALTHCHECK_MISC_BACKUP_WEBHOOK }}/fail"
+      url: "{{ .Env.HEALTHCHECK_LEGACY_BACKUPS_WEBHOOK }}/fail"
       body: "${ERROR}\n\n${ERROR_STDERR}"
       headers:
         - name: Content-Type
           value: "text/plain; charset=UTF-8"
 
   forget:
-    schedule: "Sun 20:30"
+    schedule: "Sun 20:00"
     schedule-permission: user
-    schedule-log: /backups/resticprofile-misc.log
+    schedule-log: /mnt/nfs-tmp/resticprofile-logs/resticprofile-legacy-backups-forget.log
     schedule-lock-mode: default
     schedule-lock-wait: 1h
     keep-hourly: 1
@@ -124,163 +121,25 @@ misc:
     prune: true
 
   check:
-    schedule: "Sat 20:30"
+    schedule: "Sat 20:00"
     schedule-permission: user
-    schedule-log: /backups/resticprofile-misc.log
+    schedule-log: /mnt/nfs-tmp/resticprofile-logs/resticprofile-legacy-backups-check.log
     schedule-lock-mode: default
     schedule-lock-wait: 1h
     read-data-subset: "100M"
     send-before:
       - method: HEAD
-        url: "{{ .Env.HEALTHCHECK_MISC_CHECK_WEBHOOK }}/start"
+        url: "{{ .Env.HEALTHCHECK_LEGACY_BACKUPS_CHECK_WEBHOOK }}/start"
     send-after:
       - method: HEAD
-        url: "{{ .Env.HEALTHCHECK_MISC_CHECK_WEBHOOK }}"
+        url: "{{ .Env.HEALTHCHECK_LEGACY_BACKUPS_CHECK_WEBHOOK }}"
     send-after-fail:
       method: POST
-      url: "{{ .Env.HEALTHCHECK_MISC_CHECK_WEBHOOK }}/fail"
+      url: "{{ .Env.HEALTHCHECK_LEGACY_BACKUPS_CHECK_WEBHOOK }}/fail"
       body: "${ERROR}\n\n${ERROR_STDERR}"
       headers:
         - name: Content-Type
           value: "text/plain; charset=UTF-8"
 
   restore:
-    target: "/mnt/nfs-tmp/resticprofile-restore/misc"
-
-
-pictures:
-  repository: "{{ .Env.RESTIC_REPOSITORY_TEMPLATE }}pictures-backups"
-  lock: "/tmp/resticprofile-profile-pictures.lock"
-  force-inactive-lock: true
-  compression: auto
-  initialize: true
-  verbose: true
-  priority: low
-
-  backup:
-    schedule: 01:00
-    schedule-log: /backups/resticprofile-pictures.log
-    schedule-permission: user
-    schedule-lock-wait: 1h
-    source:
-      - /backups/Pictures
-    exclude: []
-    no-error-on-warning: true
-    send-before:
-      - method: HEAD
-        url: "{{ .Env.HEALTHCHECK_PICTURES_BACKUP_WEBHOOK }}/start"
-    send-after:
-      - method: HEAD
-        url: "{{ .Env.HEALTHCHECK_PICTURES_BACKUP_WEBHOOK }}"
-    send-after-fail:
-      method: POST
-      url: "{{ .Env.HEALTHCHECK_PICTURES_BACKUP_WEBHOOK }}/fail"
-      body: "${ERROR}\n\n${ERROR_STDERR}"
-      headers:
-        - name: Content-Type
-          value: "text/plain; charset=UTF-8"
-
-  forget:
-    schedule: "Sun 21:00"
-    schedule-permission: user
-    schedule-log: /backups/resticprofile-pictures.log
-    schedule-lock-mode: default
-    schedule-lock-wait: 1h
-    keep-hourly: 1
-    keep-daily: 7
-    keep-weekly: 4
-    keep-monthly: 24
-    prune: true
-
-  check:
-    schedule: "Sat 21:00"
-    schedule-permission: user
-    schedule-log: /backups/resticprofile-pictures.log
-    schedule-lock-mode: default
-    schedule-lock-wait: 1h
-    read-data-subset: "100M"
-    send-before:
-      - method: HEAD
-        url: "{{ .Env.HEALTHCHECK_PICTURES_CHECK_WEBHOOK }}/start"
-    send-after:
-      - method: HEAD
-        url: "{{ .Env.HEALTHCHECK_PICTURES_CHECK_WEBHOOK }}"
-    send-after-fail:
-      method: POST
-      url: "{{ .Env.HEALTHCHECK_PICTURES_CHECK_WEBHOOK }}/fail"
-      body: "${ERROR}\n\n${ERROR_STDERR}"
-      headers:
-        - name: Content-Type
-          value: "text/plain; charset=UTF-8"
-
-  restore:
-    target: "/mnt/nfs-tmp/resticprofile-restore/pictures"
-
-
-videos:
-  repository: "{{ .Env.RESTIC_REPOSITORY_TEMPLATE }}videos-backups"
-  lock: "/tmp/resticprofile-profile-videos.lock"
-  force-inactive-lock: true
-  compression: auto
-  initialize: true
-  verbose: true
-  priority: low
-
-  backup:
-    schedule: 02:00
-    schedule-log: /backups/resticprofile-videos.log
-    schedule-permission: user
-    schedule-lock-wait: 1h
-    source:
-      - /backups/Videos
-    exclude: []
-    no-error-on-warning: true
-    send-before:
-      - method: HEAD
-        url: "{{ .Env.HEALTHCHECK_VIDEOS_BACKUP_WEBHOOK }}/start"
-    send-after:
-      - method: HEAD
-        url: "{{ .Env.HEALTHCHECK_VIDEOS_BACKUP_WEBHOOK }}"
-    send-after-fail:
-      method: POST
-      url: "{{ .Env.HEALTHCHECK_VIDEOS_BACKUP_WEBHOOK }}/fail"
-      body: "${ERROR}\n\n${ERROR_STDERR}"
-      headers:
-        - name: Content-Type
-          value: "text/plain; charset=UTF-8"
-
-  forget:
-    schedule: "Sun 22:00"
-    schedule-permission: user
-    schedule-log: /backups/resticprofile-videos.log
-    schedule-lock-mode: default
-    schedule-lock-wait: 1h
-    keep-hourly: 1
-    keep-daily: 7
-    keep-weekly: 4
-    keep-monthly: 24
-    prune: true
-
-  check:
-    schedule: "Sat 22:00"
-    schedule-permission: user
-    schedule-log: /backups/resticprofile-videos.log
-    schedule-lock-mode: default
-    schedule-lock-wait: 1h
-    read-data-subset: "100M"
-    send-before:
-      - method: HEAD
-        url: "{{ .Env.HEALTHCHECK_VIDEOS_CHECK_WEBHOOK }}/start"
-    send-after:
-      - method: HEAD
-        url: "{{ .Env.HEALTHCHECK_VIDEOS_CHECK_WEBHOOK }}"
-    send-after-fail:
-      method: POST
-      url: "{{ .Env.HEALTHCHECK_VIDEOS_CHECK_WEBHOOK }}/fail"
-      body: "${ERROR}\n\n${ERROR_STDERR}"
-      headers:
-        - name: Content-Type
-          value: "text/plain; charset=UTF-8"
-
-  restore:
-    target: "/mnt/nfs-tmp/resticprofile-restore/videos"
+    target: "/mnt/nfs-tmp/resticprofile-restore/legacy-backups"
