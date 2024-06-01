@@ -68,6 +68,30 @@ spec:
               - name: BACKREST_CONFIG
                 value: "/data/config.json"
 
+              - name: RESTIC_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: resticprofile-secret
+                    key: RESTIC_PASSWORD
+
+              - name: RESTIC_REPOSITORY_TEMPLATE
+                valueFrom:
+                  secretKeyRef:
+                    name: resticprofile-secret
+                    key: RESTIC_REPOSITORY_TEMPLATE
+
+              - name: AWS_ACCESS_KEY_ID
+                valueFrom:
+                  secretKeyRef:
+                    name: resticprofile-secret
+                    key: AWS_ACCESS_KEY_ID
+
+              - name: AWS_SECRET_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: resticprofile-secret
+                    key: AWS_SECRET_ACCESS_KEY
+
             probes:
               liveness:
                 enabled: false
