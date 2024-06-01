@@ -55,6 +55,19 @@ spec:
               tag: v1.0.0@sha256:3fea14a103d0e2d0e40b368699dfa3ca267afcff67e457e75898d4677e7d95ec
               pullPolicy: IfNotPresent
 
+            env:
+              - name: TZ
+                value: Europe/Budapest
+
+              - name: XDG_CACHE_HOME
+                value: "/mnt/nfs-tmp/backrest-cache"
+
+              - name: BACKREST_DATA
+                value: "/data"
+
+              - name: BACKREST_CONFIG
+                value: "/data/config.json"
+
             probes:
               liveness:
                 enabled: false
@@ -91,10 +104,10 @@ spec:
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Backrest - restic GUI
-          gethomepage.dev/group: Digital assets
-          gethomepage.dev/icon: backrest.svg
+          gethomepage.dev/group: Infrastructure
+          gethomepage.dev/icon: https://raw.githubusercontent.com/zhorvath83/dashboard-icons/master/png/backup.png
         hosts:
-          - host: "backrest.${PUBLIC_DOMAIN}"
+          - host: "backup.${PUBLIC_DOMAIN}"
             paths:
               - path: /
                 service:
@@ -102,6 +115,12 @@ spec:
                   port: http
 
     persistence:
+      data:
+        type: persistentVolumeClaim
+        existingClaim: backrest
+        globalMounts:
+          - path: /data
+
       nfs-tmp:
         type: nfs
         server: ${CLUSTER_LAN_NAS_IP}

@@ -18,7 +18,7 @@ backups:
   priority: low
 
   backup:
-    schedule: 00:00
+    schedule: 01:00
     schedule-log: /mnt/nfs-tmp/resticprofile-logs/resticprofile-backups-execute.log
     schedule-permission: user
     schedule-lock-wait: 1h
@@ -86,7 +86,7 @@ legacy-backups:
   priority: low
 
   backup:
-    schedule: 00:00
+    schedule: 01:00
     schedule-log: /mnt/nfs-tmp/resticprofile-logs/resticprofile-legacy-backups-execute.log
     schedule-permission: user
     schedule-lock-wait: 1h
