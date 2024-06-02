@@ -104,44 +104,25 @@ data:
 
   services.yaml: |
     ---
-    - Messaging and ToDo:
-        - Fastmail:
-            href: https://fastmail.com
-            icon: fastmail.svg
-        - FB Messenger:
-            href: https://messenger.com
-            icon: facebook-messenger.svg
-        - TickTick ToDo's:
-            href: https://ticktick.com/webapp/
-            icon: https://raw.githubusercontent.com/zhorvath83/dashboard-icons/master/svg/ticktick.svg
-
     - Finance:
         - Buxfer:
             href: https://buxfer.com
             icon: https://raw.githubusercontent.com/zhorvath83/dashboard-icons/master/png/buxfer.png
-        - Erste NetBank:
+        - Erste Bank:
             href: https://george.erstebank.hu
             icon: erste-george.svg
-        - MBH NetBank:
+        - MBH Bank:
             href: https://online.mbhbank.hu
             icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/svg/mkb_bank.svg
         - Wise:
             href: https://wise.com
             icon: https://raw.githubusercontent.com/zhorvath83/dashboard-icons/master/svg/wise.svg
-        - Erste NetBroker:
+        - Erste Broker:
             href: https://netbroker.erstebroker.hu
             icon: erste.svg
-        - MÁK WebKincstár:
+        - MÁK:
             href: https://webkincstar.allamkincstar.gov.hu
             icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/mak.png
-
-    - Digital assets:
-        - Dropbox:
-            href: https://dropbox.com
-            icon: https://raw.githubusercontent.com/zhorvath83/dashboard-icons/master/svg/dropbox.svg
-        - iCloud:
-            href: https://icloud.com
-            icon: apple.svg
 
     - Infrastructure:
         - Router:
@@ -150,10 +131,10 @@ data:
         - OpenMediaVault:
             href: http://192.168.1.10
             icon: openmediavault.svg
-        - Proxmox hypervisor:
+        - Proxmox:
             href: https://192.168.1.5:8006
             icon: proxmox.svg
-        - Brother printer:
+        - Printer:
             href: http://192.168.2.2
             icon: printer.svg
 
@@ -167,7 +148,7 @@ data:
         - Backblaze:
             icon: backblaze.svg
             href: https://backblaze.com
-        - Terraform cloud:
+        - Terraform:
             href: https://app.terraform.io
             icon: terraform.svg
         - Healthchecks.io:
@@ -181,16 +162,16 @@ data:
         - MiLight Hub:
             href: http://192.168.2.4
             icon: https://raw.githubusercontent.com/zhorvath83/dashboard-icons/master/svg/led-bulb.svg
-        - Tasmota smart switch 1:
+        - Tasmota switch 1:
             href: http://192.168.2.18
             icon: tasmota.svg
-        - Tasmota smart switch 2:
+        - Tasmota switch 2:
             href: http://192.168.2.19
             icon: tasmota.svg
-        - Tasmota smart switch 3:
+        - Tasmota switch 3:
             href: http://192.168.2.20
             icon: tasmota.svg
-        - Tasmota smart switch 4:
+        - Tasmota switch 4:
             href: http://192.168.2.21
             icon: tasmota.svg
 

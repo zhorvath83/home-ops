@@ -116,7 +116,7 @@ spec:
         className: "nginx"
         annotations:
           gethomepage.dev/enabled: "true"
-          gethomepage.dev/name: Trilium - notes
+          gethomepage.dev/name: Trilium
           gethomepage.dev/group: Digital assets
           gethomepage.dev/icon: trilium.svg
         hosts:

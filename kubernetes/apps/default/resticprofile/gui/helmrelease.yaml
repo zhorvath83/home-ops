@@ -127,7 +127,7 @@ spec:
         className: "nginx"
         annotations:
           gethomepage.dev/enabled: "true"
-          gethomepage.dev/name: Backrest - restic GUI
+          gethomepage.dev/name: Backrest
           gethomepage.dev/group: Infrastructure
           gethomepage.dev/icon: https://raw.githubusercontent.com/zhorvath83/dashboard-icons/master/png/backup.png
         hosts:

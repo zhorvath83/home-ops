@@ -82,7 +82,7 @@ spec:
         className: "nginx"
         annotations:
           gethomepage.dev/enabled: "true"
-          gethomepage.dev/name: Overseerr - requests
+          gethomepage.dev/name: Overseerr
           gethomepage.dev/group: Media
           gethomepage.dev/icon: overseerr.svg
         hosts:

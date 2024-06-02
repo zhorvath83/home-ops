@@ -121,7 +121,7 @@ spec:
         className: "nginx"
         annotations:
           gethomepage.dev/enabled: "true"
-          gethomepage.dev/name: qBt - Torrent client
+          gethomepage.dev/name: qBt
           gethomepage.dev/group: Downloading
           gethomepage.dev/icon: qbittorrent.svg
         hosts:

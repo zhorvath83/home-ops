@@ -123,7 +123,7 @@ spec:
         className: "nginx"
         annotations:
           gethomepage.dev/enabled: "true"
-          gethomepage.dev/name: Plex - mediaserver
+          gethomepage.dev/name: Plex
           gethomepage.dev/group: Media
           gethomepage.dev/icon: plex.svg
         hosts:
