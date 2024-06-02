@@ -75,7 +75,7 @@ spec:
         image: public.ecr.aws/docker/library/busybox:1.36.1
 
       driver:
-        image: democraticcsi/democratic-csi:v1.9.1
+        image: democraticcsi/democratic-csi:v1.9.2
 
         extraVolumeMounts:
           - name: local-storage
