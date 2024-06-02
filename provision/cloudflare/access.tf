@@ -73,12 +73,13 @@ resource "cloudflare_access_policy" "bypass_github_cidr_policy" {
 # Google Oauth
 resource "cloudflare_access_identity_provider" "google_oauth" {
   account_id = var.CF_ACCOUNT_ID
-  name       = "Sign in with Google account"
+  name       = "Sign in with Google"
   type       = "google"
 
   config {
     client_id     = var.CF_ACCESS_GOOGLE_CL_ID
     client_secret = var.CF_ACCESS_GOOGLE_CL_SECRET
+    pkce_enabled  = true
   }
 }
 
