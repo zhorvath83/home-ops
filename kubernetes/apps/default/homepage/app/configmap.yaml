@@ -120,7 +120,7 @@ data:
         - Erste Broker:
             href: https://netbroker.erstebroker.hu
             icon: erste.svg
-        - MÁK:
+        - WebKincstár:
             href: https://webkincstar.allamkincstar.gov.hu
             icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/mak.png
 
