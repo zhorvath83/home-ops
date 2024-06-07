@@ -127,7 +127,7 @@ spec:
         globalMounts:
           - path: /homebridge
 
-      startup-sh:
+      configmap:
         type: configMap
         name: homebridge-configmap
         globalMounts:
