@@ -33,14 +33,16 @@ spec:
       hostname: homebridge
       automountServiceAccountToken: false
       enableServiceLinks: false
-      securityContext:
-        # runAsNonRoot: true
-        # runAsUser: 10001
-        # runAsGroup: 10001
-        # fsGroup: 10001
-        fsGroupChangePolicy: OnRootMismatch
-        seccompProfile:
-          type: RuntimeDefault
+      # hostNetwork: true
+      # dnsPolicy: ClusterFirstWithHostNet
+      # securityContext:
+      #   runAsNonRoot: true
+      #   runAsUser: 10001
+      #   runAsGroup: 10001
+      #   fsGroup: 10001
+      #   fsGroupChangePolicy: OnRootMismatch
+      #   seccompProfile:
+      #     type: RuntimeDefault
 
     controllers:
       homebridge:
@@ -100,10 +102,8 @@ spec:
           metallb.universe.tf/loadBalancerIPs: ${CLUSTER_SVC_HOMEBRIDGE_IP}
         ports:
           bridge:
-            port: 51318
-            targetPort: 51318
-            # port: 51986
-            # targetPort: 51986
+            port: 51986
+            targetPort: 51986
             protocol: TCP
 
     ingress:
