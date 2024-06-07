@@ -61,7 +61,7 @@ spec:
               PGID: 10001
               PUID: 10001
               HOMEBRIDGE_CONFIG_UI: 1
-              HOMEBRIDGE_CONFIG_UI_PORT: &port 8888
+              HOMEBRIDGE_CONFIG_UI_PORT: &port 8581
 
             probes:
               liveness:
@@ -100,8 +100,10 @@ spec:
           metallb.universe.tf/loadBalancerIPs: ${CLUSTER_SVC_HOMEBRIDGE_IP}
         ports:
           bridge:
-            port: 51986
-            targetPort: 51986
+            port: 51318
+            targetPort: 51318
+            # port: 51986
+            # targetPort: 51986
             protocol: TCP
 
     ingress:
