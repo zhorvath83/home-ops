@@ -129,7 +129,7 @@ spec:
 
       startup-sh:
         type: configMap
-        name: homebridge-startup-sh
+        name: homebridge-configmap
         globalMounts:
           - path: /homebridge/startup.sh
             subPath: startup.sh
