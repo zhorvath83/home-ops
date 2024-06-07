@@ -14,7 +14,7 @@ labels:
 configMapGenerator:
   - name: homebridge-configmap
     files:
-      - startup.sh
+      - config/startup.sh
 
 generatorOptions:
   disableNameSuffixHash: true
