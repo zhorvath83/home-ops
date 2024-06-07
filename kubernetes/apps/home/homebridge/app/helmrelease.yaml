@@ -33,8 +33,8 @@ spec:
       hostname: homebridge
       automountServiceAccountToken: false
       enableServiceLinks: false
-      # hostNetwork: true
-      # dnsPolicy: ClusterFirstWithHostNet
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       # securityContext:
       #   runAsNonRoot: true
       #   runAsUser: 10001
@@ -94,17 +94,17 @@ spec:
         ports:
           http:
             port: *port
-      bridge:
-        enabled: true
-        controller: homebridge
-        type: LoadBalancer
-        annotations:
-          metallb.universe.tf/loadBalancerIPs: ${CLUSTER_SVC_HOMEBRIDGE_IP}
-        ports:
-          bridge:
-            port: 51986
-            targetPort: 51986
-            protocol: TCP
+      # bridge:
+      #   enabled: true
+      #   controller: homebridge
+      #   type: LoadBalancer
+      #   annotations:
+      #     metallb.universe.tf/loadBalancerIPs: ${CLUSTER_SVC_HOMEBRIDGE_IP}
+      #   ports:
+      #     bridge:
+      #       port: 51986
+      #       targetPort: 51986
+      #       protocol: TCP
 
     ingress:
       app:
