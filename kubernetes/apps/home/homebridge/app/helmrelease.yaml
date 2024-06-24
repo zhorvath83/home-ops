@@ -112,7 +112,7 @@ spec:
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: HomeBridge
-          gethomepage.dev/group: Digital assets
+          gethomepage.dev/group: Infrastructure
           gethomepage.dev/icon: homebridge.svg
         hosts:
           - host: "homebridge.${PUBLIC_DOMAIN}"
