@@ -25,7 +25,10 @@ spec:
       retries: 5
   values:
     # Pod Security Context controlled via Helm Chart.
-    installCRDs: true
+    crds:
+      enabled: true
+      # Uninstalling the CRD when the Helm release is uninstalled.
+      keep: false
     webhook:
       enabled: true
     extraArgs:
