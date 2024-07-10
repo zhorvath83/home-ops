@@ -127,7 +127,7 @@ spec:
           1password-sync:
             image:
               repository: docker.io/1password/connect-sync
-              tag: 1.7.2
+              tag: 1.7.3
               pullPolicy: IfNotPresent
 
             env:
