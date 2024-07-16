@@ -52,7 +52,7 @@ spec:
           app:
             image:
               repository: ghcr.io/onedr0p/sonarr
-              tag: 4.0.7.1863@sha256:cfec3ba4d46b10eaa1d44f42ccb08f288c10efe7b24f73baa601bd7bc374f87c
+              tag: 4.0.8.1874@sha256:13059c5ecc444bf2b3c578fc4495f46e02a3db80c8f1482f04f51b9df82e4011
               pullPolicy: IfNotPresent
 
             env:
