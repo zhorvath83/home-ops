@@ -1,0 +1,13 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: patch-lazylibrarian-code
+data:
+  type: oneshot
+  up: bash /etc/s6-overlay/s6-rc.d/patch-lazylibrarian-code/run
+  run: |
+    sed -i \
+      "s|'title:%s' % unaccented(global_name, only_ascii=False)|'title:%s' % unaccented(title, only_ascii=False)|g" \
+      /app/lazylibrarian/lazylibrarian/postprocess.py
+  dep: ""
