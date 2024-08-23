@@ -149,7 +149,7 @@ spec:
         type: configMap
         name: patch-lazylibrarian-code
         advancedMounts:
-          app:
+          lazylibrarian:
             app:
               - path: /etc/s6-overlay/s6-rc.d/patch-lazylibrarian-code
                 readOnly: true
