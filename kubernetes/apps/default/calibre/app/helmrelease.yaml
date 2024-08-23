@@ -72,14 +72,14 @@ spec:
                   failureThreshold: 30
                   periodSeconds: 5
 
-            securityContext:
-              # disabled for linuxserver.io image
-              # privileged: false
-              # allowPrivilegeEscalation: false
-              # readOnlyRootFilesystem: true
-              capabilities:
-                drop:
-                  - ALL
+            # securityContext:
+            #   # disabled for linuxserver.io image
+            #   # privileged: false
+            #   # allowPrivilegeEscalation: false
+            #   # readOnlyRootFilesystem: true
+            #   capabilities:
+            #     drop:
+            #       - ALL
 
             resources:
               requests:
