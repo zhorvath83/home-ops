@@ -8,6 +8,9 @@
     "documentaries": {
         "save_path": "documentaries"
     },
+    "ebooks": {
+        "save_path": "ebooks"
+    },
     "manual-downloads": {
         "save_path": "manual-downloads"
     }
