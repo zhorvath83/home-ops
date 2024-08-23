@@ -133,7 +133,7 @@ spec:
 
       nfs-downloads-lazylibrarian:
         type: nfs
-        server: nova.home.arpa
+        server: ${CLUSTER_LAN_NAS_IP}
         path: /media/downloads/lazylibrarian
         globalMounts:
           - path: /downloads/lazylibrarian
