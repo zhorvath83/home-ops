@@ -53,7 +53,7 @@ spec:
           app:
             image:
               repository: ghcr.io/linuxserver/lazylibrarian
-              tag: latest@sha256:c0eabb435f0f94d2032aa7baf6ab0987d07c4c55c54de9a09d8c697817a1c7ec
+              tag: latest@sha256:c970748c4df9d7d9777d87f5d1af7cb36fc9471a48d25770419b80340f19ea93
               pullPolicy: IfNotPresent
 
             env:
