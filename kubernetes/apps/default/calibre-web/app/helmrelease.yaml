@@ -150,10 +150,10 @@ spec:
         globalMounts:
           - path: /config
 
-      nfs-media-ebooks:
+      ebooks:
         type: nfs
+        path: /backups/documents/personal/ebooks
         server: ${CLUSTER_LAN_NAS_IP}
-        path: /media/ebooks
         globalMounts:
-          - path: /media/ebooks
+          - path: /ebooks
             readOnly: true
