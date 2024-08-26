@@ -1,0 +1,136 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: kavita
+  namespace: default
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: app-template
+      version: 3.3.2
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  uninstall:
+    keepHistory: false
+
+  values:
+    defaultPodOptions:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+
+    controllers:
+      kavita:
+        type: statefulset
+
+        annotations:
+          reloader.stakater.com/auto: "true"
+
+        containers:
+          app:
+            image:
+              repository: ghcr.io/kareadita/kavita
+              tag: 0.8.2@sha256:3fbd326ca5bde61318200751289a289ef0040b4c842874814ffaf05107d91fe8
+              pullPolicy: IfNotPresent
+
+            env:
+              TZ: Europe/Budapest
+
+            probes:
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /api/health
+                    port: 5000
+                  initialDelaySeconds: 0
+                  periodSeconds: 10
+                  timeoutSeconds: 1
+                  failureThreshold: 3
+              readiness: *probes
+
+            securityContext:
+              privileged: false
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                  - ALL
+
+            resources:
+              requests:
+                cpu: 10m
+                memory: 250Mi
+              limits:
+                memory: 2000Mi
+
+    service:
+      app:
+        controller: kavita
+        ports:
+          http:
+            port: 5000
+
+    ingress:
+      app:
+        className: "nginx"
+        annotations:
+          gethomepage.dev/enabled: "true"
+          gethomepage.dev/name: kavita
+          gethomepage.dev/group: Media
+          gethomepage.dev/icon: kavita.svg
+        hosts:
+          - host: "kavita.${PUBLIC_DOMAIN}"
+            paths:
+              - path: /
+                service:
+                  identifier: app
+                  port: http
+
+    persistence:
+      config:
+        type: persistentVolumeClaim
+        existingClaim: kavita
+        globalMounts:
+          - path: /config
+
+      logs:
+        type: emptyDir
+        globalMounts:
+          - path: /kavita/config/logs
+
+      cache:
+        type: emptyDir
+        globalMounts:
+          - path: /kavita/config/cache
+
+      ebooks:
+        type: nfs
+        path: /backups/documents/personal/ebooks
+        server: ${CLUSTER_LAN_NAS_IP}
+        globalMounts:
+          - path: /ebooks
+            readOnly: true
