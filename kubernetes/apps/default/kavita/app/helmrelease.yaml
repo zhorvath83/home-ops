@@ -115,7 +115,7 @@ spec:
         type: persistentVolumeClaim
         existingClaim: kavita
         globalMounts:
-          - path: /config
+          - path: /kavita/config
 
       logs:
         type: emptyDir
