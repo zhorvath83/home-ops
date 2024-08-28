@@ -78,7 +78,7 @@ spec:
           02-init-migrate:
             image:
               repository: vabene1111/recipes
-              tag: 1.5.18
+              tag: 1.5.19
               pullPolicy: IfNotPresent
             env:
               - name: DB_ENGINE
@@ -108,7 +108,7 @@ spec:
           app:
             image:
               repository: vabene1111/recipes
-              tag: 1.5.18
+              tag: 1.5.19
               pullPolicy: IfNotPresent
 
             env:
