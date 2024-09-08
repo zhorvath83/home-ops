@@ -178,10 +178,13 @@ data:
     - Downloading:
         - Ncore:
             icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/ncore.png
-            href: https://ncore.pro
+            href: https://ncore.pro/login.php?2fa
         - Bithumen:
             icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/bithumen.png
             href: https://bithumen.be
+        - LibraNet:
+            icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/bookstack.png
+            href: http://www.libranet.org
 
     - Monitoring:
         - Discord:

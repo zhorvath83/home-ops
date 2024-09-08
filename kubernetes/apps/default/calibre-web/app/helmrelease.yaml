@@ -113,7 +113,7 @@ spec:
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: calibre-web
-          gethomepage.dev/group: Downloading
+          gethomepage.dev/group: Media
           gethomepage.dev/icon: calibre-web.svg
         hosts:
           - host: &host "books.${PUBLIC_DOMAIN}"

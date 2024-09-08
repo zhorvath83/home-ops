@@ -99,7 +99,7 @@ spec:
         className: "nginx"
         annotations:
           gethomepage.dev/enabled: "true"
-          gethomepage.dev/name: kavita
+          gethomepage.dev/name: Kavita
           gethomepage.dev/group: Media
           gethomepage.dev/icon: kavita.svg
         hosts:
