@@ -30,7 +30,7 @@ spec:
   values:
     image:
       repository: ghcr.io/gethomepage/homepage
-      tag: v0.9.6
+      tag: v0.9.9
 
     enableRbac: true
     serviceAccount:
