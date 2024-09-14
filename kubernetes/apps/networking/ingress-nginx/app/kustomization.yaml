@@ -10,10 +10,3 @@ resources:
 labels:
   - pairs:
       app.kubernetes.io/name: ingress-nginx
-
-configMapGenerator:
-  - name: cloudflare-networks
-    files:
-      - ./cloudflare-networks.txt
-generatorOptions:
-  disableNameSuffixHash: true
