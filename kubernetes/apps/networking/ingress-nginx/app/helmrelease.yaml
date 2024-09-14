@@ -31,7 +31,7 @@ spec:
   valuesFrom:
     - targetPath: controller.maxmindLicenseKey
       kind: Secret
-      name: nginx-external-maxmind-secret
+      name: ingress-nginx-maxmind-secret
       valuesKey: MAXMIND_LICENSE_KEY
   values:
     # podSecurityContext controlled by Helm Chart.
