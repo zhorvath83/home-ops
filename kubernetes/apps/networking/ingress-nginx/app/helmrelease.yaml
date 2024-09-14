@@ -75,9 +75,10 @@ spec:
         enable-real-ip: "true"
         # forwarded-for-header: "CF-Connecting-IP"  # Not needed in case of CF tunnel.
         hide-headers: Server,X-Powered-By
-        hsts-max-age: "31449600"
-        keep-alive: 120
+        force-ssl-redirect: "true"
+        hsts-max-age: 31449600
         keep-alive-requests: 10000
+        keep-alive: 120
         log-format-escape-json: "true"
         log-format-upstream: >
           {"time": "$time_iso8601", "remote_addr": "$proxy_protocol_addr", "x_forwarded_for": "$proxy_add_x_forwarded_for",
@@ -89,7 +90,7 @@ spec:
         proxy-buffer-size: "16k"
         ssl-protocols: "TLSv1.3 TLSv1.2"
         use-forwarded-headers: "true"
-        use-geoip2: true
+        use-geoip2: "true"
 
       metrics:
         enabled: true
@@ -105,7 +106,7 @@ spec:
         # Sets Load-Balancer hostname in the ingress object
         # Used by External DNS when creating CNAME DNS records
         publish-status-address: "tunnel.${PUBLIC_DOMAIN}"
-        update-status: "true"
+        update-status: true
 
       topologySpreadConstraints:
         - maxSkew: 1
@@ -117,7 +118,7 @@ spec:
               app.kubernetes.io/component: controller
 
       podAnnotations:
-        configmap.reloader.stakater.com/reload: "true"
+        configmap.reloader.stakater.com/reload: true
 
       resources:
         requests:
