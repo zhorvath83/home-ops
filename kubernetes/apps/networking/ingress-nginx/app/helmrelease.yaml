@@ -51,8 +51,6 @@ spec:
           value: "Europe/Budapest"
 
       service:
-        annotations:
-          metallb.universe.tf/loadBalancerIPs: ${CLUSTER_SVC_INGRESS_CONTROLLER_IP}
         externalTrafficPolicy: Local
 
       publishService:
