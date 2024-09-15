@@ -31,7 +31,12 @@ jobs:
 
       - name: Read changes file
         id: changes
-        run: echo "changes=$(cat cloudflare_network_changes.txt)" >> $GITHUB_OUTPUT
+        run: |
+          CHANGES=$(cat cloudflare_network_changes.txt)
+          CHANGES="${CHANGES//'%'/'%25'}"
+          CHANGES="${CHANGES//$'\n'/'%0A'}"
+          CHANGES="${CHANGES//$'\r'/'%0D'}"
+          echo "changes=$CHANGES" >> $GITHUB_OUTPUT
 
       - name: Create pull request
         uses: peter-evans/create-pull-request@v7
