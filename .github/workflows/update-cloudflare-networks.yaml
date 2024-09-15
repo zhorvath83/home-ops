@@ -16,15 +16,18 @@ jobs:
           token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
           fetch-depth: 0
       
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          node-version: '20'
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests PyYAML
 
       - name: Update Cloudflare Networks
-        run: |
-          npm install zx
-          node .github/scripts/updateCloudflareNetworks.mjs
+        run: python .github/scripts/update_cloudflare_networks.py
 
       - name: Create pull request
         uses: peter-evans/create-pull-request@v7
@@ -37,5 +40,10 @@ jobs:
           commit-message: "chore(github-action): update cloudflare networks"
           body: |
             Update Cloudflare networks in networkpolicy.yaml from https://api.cloudflare.com/client/v4/ips
+
+            Changes:
+            ```
+            ${{ cat cloudflare_network_changes.txt }}
+            ```
           labels: |
             renovate/github-action
