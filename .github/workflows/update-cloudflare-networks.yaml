@@ -29,6 +29,10 @@ jobs:
       - name: Update Cloudflare Networks
         run: python .github/scripts/update_cloudflare_networks.py
 
+      - name: Read changes file
+        id: changes
+        run: echo "changes=$(cat cloudflare_network_changes.txt)" >> $GITHUB_OUTPUT
+
       - name: Create pull request
         uses: peter-evans/create-pull-request@v7
         with:
@@ -43,7 +47,7 @@ jobs:
 
             Changes:
             ```
-            ${{ cat cloudflare_network_changes.txt }}
+            ${{ steps.changes.outputs.changes }}
             ```
           labels: |
             renovate/github-action
