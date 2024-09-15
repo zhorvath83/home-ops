@@ -3,7 +3,7 @@
 import os
 import sys
 import requests
-import yaml
+from ruamel.yaml import YAML
 
 NETWORKPOLICY_FILE = os.getenv('NETWORKPOLICY_FILE', 'kubernetes/apps/networking/cloudflared/app/networkpolicy.yaml')
 
@@ -13,8 +13,12 @@ def fetch_cloudflare_networks():
     return data['result']['ipv4_cidrs'] + data['result']['ipv6_cidrs']
 
 def update_network_policy(networks):
+    yaml = YAML()
+    yaml.preserve_quotes = True
+    yaml.indent(mapping=2, sequence=4, offset=2)
+
     with open(NETWORKPOLICY_FILE, 'r') as file:
-        policy = yaml.safe_load(file)
+        policy = yaml.load(file)
 
     # Find the egress rule with Cloudflare IP blocks
     cloudflare_egress_rule = next(
@@ -38,7 +42,7 @@ def update_network_policy(networks):
 
     # Preserve the original YAML formatting
     with open(NETWORKPOLICY_FILE, 'w') as file:
-        yaml.dump(policy, file, default_flow_style=False, sort_keys=False)
+        yaml.dump(policy, file)
 
     return added_cidrs, removed_cidrs
 
