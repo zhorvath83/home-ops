@@ -66,6 +66,12 @@ spec:
                   secretKeyRef:
                     name: cloudflared-secret
                     key: tunnel_name
+              - name: TUNNEL_ORIGIN_ENABLE_HTTP2
+                value: true
+              - name: TUNNEL_TRANSPORT_PROTOCOL
+                value: "quic"
+              - name: TUNNEL_POST_QUANTUM
+                value: true
 
             args:
               - tunnel

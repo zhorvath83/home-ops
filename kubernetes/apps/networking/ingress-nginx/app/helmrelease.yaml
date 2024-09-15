@@ -56,14 +56,20 @@ spec:
           value: "Europe/Budapest"
 
       service:
-        externalTrafficPolicy: Local
+        type: ClusterIP  # Since using Cloudflare Tunnel, don't need LoadBalancer.
 
       publishService:
         # --publish-service and --publish-status-address are mutually exclusive
-        enabled: false
+        enabled: false  # Disable publishService since I am using publish-status-address
 
       ingressClassResource:
+        # -- If true, Ingresses without `ingressClassName` get assigned to this IngressClass on creation.
+        # Ingress creation gets rejected if there are multiple default IngressClasses.
+        # Ref: https://kubernetes.io/docs/concepts/services-networking/ingress/#default-ingress-class
         default: true
+
+      networkPolicy:
+        enabled: true
 
       config:
         block-user-agents: "GPTBot,~*GPTBot*,ChatGPT-User,~*ChatGPT-User*,Google-Extended,~*Google-Extended*,CCBot,~*CCBot*,Omgilibot,~*Omgilibot*,FacebookBot,~*FacebookBot*" # taken from https://github.com/superseriousbusiness/gotosocial/blob/main/internal/web/robots.go
@@ -89,7 +95,9 @@ spec:
         proxy-body-size: 0
         proxy-buffer-size: "16k"
         ssl-protocols: "TLSv1.3 TLSv1.2"
+        use-proxy-protocol: "false"
         use-forwarded-headers: "true"
+        compute-full-forwarded-for: "true"
         use-geoip2: "true"
 
       metrics:
@@ -106,7 +114,6 @@ spec:
         # Sets Load-Balancer hostname in the ingress object
         # Used by External DNS when creating CNAME DNS records
         publish-status-address: "tunnel.${PUBLIC_DOMAIN}"
-        update-status: true
 
       topologySpreadConstraints:
         - maxSkew: 1
