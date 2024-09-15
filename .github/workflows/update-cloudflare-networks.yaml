@@ -40,12 +40,11 @@ jobs:
           token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
           branch: github-action/update-cloudflare-networks
           delete-branch: true
-          title: "chore(github-action): update cloudflare networks"
+          title: "chore(github-action): update cloudflare networks (IPv4 and IPv6)"
           signoff: true
-          commit-message: "chore(github-action): update cloudflare networks"
+          commit-message: "chore(github-action): update cloudflare networks (IPv4 and IPv6)"
           body: |
-            Update Cloudflare networks in networkpolicy.yaml from https://api.cloudflare.com/client/v4/ips
-            This update includes both IPv4 and IPv6 networks.
+            Update Cloudflare networks (both IPv4 and IPv6) in networkpolicy.yaml from https://api.cloudflare.com/client/v4/ips
 
             Changes:
             ```
@@ -53,3 +52,12 @@ jobs:
             ```
           labels: |
             renovate/github-action
+
+      - name: Debug Git Diff
+        if: failure()
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git add .
+          git diff --cached --name-status
+          git status
