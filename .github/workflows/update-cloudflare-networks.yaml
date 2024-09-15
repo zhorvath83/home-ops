@@ -44,6 +44,7 @@ jobs:
           commit-message: "chore(github-action): update cloudflare networks"
           body: |
             Update Cloudflare networks in networkpolicy.yaml from https://api.cloudflare.com/client/v4/ips
+            This update includes both IPv4 and IPv6 networks.
 
             Changes:
             ```
