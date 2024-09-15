@@ -17,7 +17,7 @@ jobs:
           fetch-depth: 0
       
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.x'
 
@@ -27,16 +27,12 @@ jobs:
           pip install requests ruamel.yaml
 
       - name: Update Cloudflare Networks
-        run: python .github/scripts/update_cloudflare_networks.py
-
-      - name: Read changes file
-        id: changes
+        id: update
         run: |
-          CHANGES=$(cat cloudflare_network_changes.txt)
-          CHANGES="${CHANGES//'%'/'%25'}"
-          CHANGES="${CHANGES//$'\n'/'%0A'}"
-          CHANGES="${CHANGES//$'\r'/'%0D'}"
-          echo "changes=$CHANGES" >> $GITHUB_OUTPUT
+          OUTPUT=$(python .github/scripts/update_cloudflare_networks.py)
+          echo "changes<<EOF" >> $GITHUB_OUTPUT
+          echo "$OUTPUT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create pull request
         uses: peter-evans/create-pull-request@v7
@@ -53,7 +49,7 @@ jobs:
 
             Changes:
             ```
-            ${{ steps.changes.outputs.changes }}
+            ${{ steps.update.outputs.changes }}
             ```
           labels: |
             renovate/github-action
