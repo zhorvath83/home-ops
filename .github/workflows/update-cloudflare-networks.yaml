@@ -1,0 +1,41 @@
+name: "Update Cloudflare Networks"
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * *"
+env:
+  NETWORKPOLICY_FILE: kubernetes/apps/networking/cloudflared/app/networkpolicy.yaml
+jobs:
+  update-cloudflare-networks:
+    name: Update Cloudflare Networks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Update Cloudflare Networks
+        run: |
+          npm install zx
+          node .github/scripts/updateCloudflareNetworks.mjs
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
+          branch: github-action/update-cloudflare-networks
+          delete-branch: true
+          title: "chore(github-action): update cloudflare networks"
+          signoff: true
+          commit-message: "chore(github-action): update cloudflare networks"
+          body: |
+            Update Cloudflare networks in networkpolicy.yaml from https://api.cloudflare.com/client/v4/ips
+          labels: |
+            renovate/github-action
