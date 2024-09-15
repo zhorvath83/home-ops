@@ -16,7 +16,7 @@ jobs:
         with:
           token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
           fetch-depth: 0
-
+      
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -31,9 +31,11 @@ jobs:
         id: update
         run: |
           OUTPUT=$(python .github/scripts/update_cloudflare_networks.py)
-          echo "changes<<EOF" >> $GITHUB_OUTPUT
-          echo "$OUTPUT" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          {
+            echo "changes<<EOF"
+            echo "${OUTPUT}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Create pull request
         uses: peter-evans/create-pull-request@v7
