@@ -70,6 +70,8 @@ spec:
             cidr: 172.64.0.0/13
         - ipBlock:
             cidr: 131.0.72.0/22
+        - ipBlock:
+            cidr: 131.999.72.0/22
       ports:
         - protocol: TCP
           port: 443
