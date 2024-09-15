@@ -156,4 +156,4 @@ spec:
         server: ${CLUSTER_LAN_NAS_IP}
         globalMounts:
           - path: /ebooks
-            #readOnly: true
+            # readOnly: true

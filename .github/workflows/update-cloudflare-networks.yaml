@@ -1,3 +1,4 @@
+---
 name: "Update Cloudflare Networks"
 on:
   workflow_dispatch:
@@ -15,7 +16,7 @@ jobs:
         with:
           token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
           fetch-depth: 0
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
