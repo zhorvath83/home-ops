@@ -13,7 +13,7 @@ locals {
 resource "cloudflare_record" "cname_root" {
   name    = local.domain_name
   zone_id = local.cf_zone_id
-  value   = var.private_website_target_url
+  content = var.private_website_target_url
   proxied = true
   type    = "CNAME"
   ttl     = 1
@@ -23,7 +23,7 @@ resource "cloudflare_record" "cname_root" {
 resource "cloudflare_record" "cname_www" {
   name    = "www"
   zone_id = local.cf_zone_id
-  value   = "192.0.2.1"
+  content = "192.0.2.1"
   proxied = true
   type    = "A"
   ttl     = 1
@@ -37,8 +37,8 @@ resource "cloudflare_record" "mx_record" {
   for_each = var.dns_mx_records
   name    = local.domain_name
   zone_id = local.cf_zone_id
-  # value   = var.dns_mx_records[count.index].server
-  value   = each.value.host
+  # content = var.dns_mx_records[count.index].server
+  content = each.value.host
   proxied = false
   type    = "MX"
   ttl     = 1
@@ -51,7 +51,7 @@ resource "cloudflare_record" "mx_record" {
 resource "cloudflare_record" "txt_record_spf" {
   name    = local.domain_name
   zone_id = local.cf_zone_id
-  value   = var.dns_spf_record_value
+  content = var.dns_spf_record_value
   proxied = false
   type    = "TXT"
   ttl     = 1
@@ -64,7 +64,7 @@ resource "cloudflare_record" "dkim_record" {
   for_each  = var.dns_dkim_records
   name      = each.value.name
   zone_id   = local.cf_zone_id
-  value     = replace(each.value.value, "domain_name_to_replace", var.CF_DOMAIN_NAME)
+  content   = replace(each.value.value, "domain_name_to_replace", var.CF_DOMAIN_NAME)
   proxied   = false
   type      = each.value.type
   ttl       = 1
@@ -77,7 +77,7 @@ resource "cloudflare_record" "dkim_record" {
 resource "cloudflare_record" "a_record_webmail" {
   name    = "mail"
   zone_id = local.cf_zone_id
-  value   = "192.0.2.1"
+  content = "192.0.2.1"
   proxied = true
   type    = "A"
   ttl     = 1
@@ -111,7 +111,7 @@ resource "cloudflare_record" "srv_records" {
 resource "cloudflare_record" "txt_record_dmarc" {
   name    = "_dmarc"
   zone_id = local.cf_zone_id
-  value   = "v=DMARC1; p=reject; rua=${join(",", var.mail_dmarc_rua_dest)}; ruf=${join(",", var.mail_dmarc_ruf_dest)}; sp=reject; adkim=s; aspf=s; pct=100"
+  content = "v=DMARC1; p=reject; rua=${join(",", var.mail_dmarc_rua_dest)}; ruf=${join(",", var.mail_dmarc_ruf_dest)}; sp=reject; adkim=s; aspf=s; pct=100"
   proxied = false
   type    = "TXT"
   ttl     = 1
@@ -125,21 +125,21 @@ resource "cloudflare_record" "txt_record_smtp_tls" {
   zone_id = local.cf_zone_id
   name    = "_smtp._tls"
   type    = "TXT"
-  value   = "v=TLSRPTv1; rua=${join(",", var.mail_tls_rua_dest)}"
+  content = "v=TLSRPTv1; rua=${join(",", var.mail_tls_rua_dest)}"
 }
 
 resource "cloudflare_record" "txt_record_mta_sts" {
   zone_id = local.cf_zone_id
   name    = "_mta-sts"
   type    = "TXT"
-  value   = "v=STSv1; id=${local.mta_sts_policy_id}"
+  content = "v=STSv1; id=${local.mta_sts_policy_id}"
 }
 
 resource "cloudflare_record" "a_record_mta_sts" {
   zone_id = local.cf_zone_id
   name    = "mta-sts"
   type    = "A"
-  value   = "192.0.2.1"
+  content = "192.0.2.1"
   proxied = true
 }
 
@@ -147,6 +147,6 @@ resource "cloudflare_record" "aaaa_record_mta_sts" {
   zone_id = local.cf_zone_id
   name    = "mta-sts"
   type    = "AAAA"
-  value   = "100::"
+  content = "100::"
   proxied = true
 }

@@ -18,11 +18,6 @@ resource "cloudflare_zone_settings_override" "cloudflare_settings" {
     # /speed/optimization
     brotli = "on"
     polish = "off"
-    minify {
-      css  = "off"
-      js   = "off"
-      html = "off"
-    }
     rocket_loader = "off"
     # /caching/configuration
     always_online    = "off"
