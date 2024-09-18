@@ -173,3 +173,15 @@ resource "cloudflare_zero_trust_access_application" "webmail" {
     cloudflare_zero_trust_access_policy.bypass_everyone_policy.id
   ]
 }
+
+## Exchange rates exclude from UserAuth
+resource "cloudflare_zero_trust_access_application" "exchange-rates" {
+  zone_id          = cloudflare_zone.domain.id
+  name             = "Exchange rates"
+  domain           = "arfolyam.${var.CF_DOMAIN_NAME}"
+  type             = "self_hosted"
+
+  policies = [
+    cloudflare_zero_trust_access_policy.bypass_everyone_policy.id
+  ]
+}

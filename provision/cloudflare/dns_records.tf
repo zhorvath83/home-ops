@@ -150,3 +150,22 @@ resource "cloudflare_record" "aaaa_record_mta_sts" {
   content = "100::"
   proxied = true
 }
+
+#
+# Cloudflare Worker for exchange rates
+#
+resource "cloudflare_record" "a_record_arfolyam" {
+  zone_id = local.cf_zone_id
+  name    = "arfolyam"
+  type    = "A"
+  content = "192.0.2.1"
+  proxied = true
+}
+
+resource "cloudflare_record" "aaaa_record_arfolyam" {
+  zone_id = local.cf_zone_id
+  name    = "arfolyam"
+  type    = "AAAA"
+  content = "100::"
+  proxied = true
+}
