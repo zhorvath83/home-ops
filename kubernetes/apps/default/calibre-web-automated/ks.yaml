@@ -3,13 +3,13 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: cluster-apps-calibre-web
+  name: cluster-apps-calibre-web-automated
   namespace: flux-system
 spec:
   dependsOn:
     - name: cluster-apps-external-secrets-stores
     - name: cluster-apps-democratic-csi
-  path: ./kubernetes/apps/default/calibre-web/app
+  path: ./kubernetes/apps/default/calibre-web-automated/app
   prune: true
   sourceRef:
     kind: GitRepository

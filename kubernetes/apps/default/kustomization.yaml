@@ -20,6 +20,6 @@ resources:
   # - ./readarr/ks.yaml
   # - ./calibre/ks.yaml
   - ./kavita/ks.yaml
-  - ./calibre-web/ks.yaml
+  - ./calibre-web-automated/ks.yaml
   # - ./lazylibrarian/ks.yaml
   - ./resticprofile/ks.yaml

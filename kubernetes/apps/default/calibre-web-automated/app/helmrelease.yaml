@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: calibre-web
+  name: calibre-web-automated
   namespace: default
 spec:
   interval: 15m
@@ -43,7 +43,7 @@ spec:
           type: RuntimeDefault
 
     controllers:
-      calibre-web:
+      calibre-web-automated:
         type: statefulset
 
         annotations:
@@ -52,8 +52,8 @@ spec:
         containers:
           app:
             image:
-              repository: ghcr.io/linuxserver/calibre-web
-              tag: 0.6.23-ls281@sha256:f050ee5cb08905375f6e7341f3c838fe592c7ccca3771bdb6859e592d68d86af
+              repository: crocodilestick/calibre-web-automated
+              tag: v2.0.1@sha256:252be12743b4dae4c731a1c01ae2004a848cb8315c88998a97be69de7fd0e416
               pullPolicy: IfNotPresent
 
             env:
@@ -102,7 +102,7 @@ spec:
 
     service:
       app:
-        controller: calibre-web
+        controller: calibre-web-automated
         ports:
           http:
             port: 8083
@@ -146,14 +146,20 @@ spec:
     persistence:
       config:
         type: persistentVolumeClaim
-        existingClaim: calibre-web
+        existingClaim: calibre-web-automated
         globalMounts:
           - path: /config
 
-      ebooks:
+      nfs-media-books-to-process:
         type: nfs
-        path: /backups/documents/personal/ebooks
         server: ${CLUSTER_LAN_NAS_IP}
+        path: /media/books/ebooks/books-to-process
         globalMounts:
-          - path: /ebooks
-            # readOnly: true
+          - path: /cwa-book-ingest
+
+      nfs-media-calibre-library:
+        type: nfs
+        server: ${CLUSTER_LAN_NAS_IP}
+        path: /media/books/ebooks/calibre-library
+        globalMounts:
+          - path: /calibre-library

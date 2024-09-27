@@ -10,4 +10,4 @@ resources:
 
 labels:
   - pairs:
-      app.kubernetes.io/name: calibre-web
+      app.kubernetes.io/name: calibre-web-automated
