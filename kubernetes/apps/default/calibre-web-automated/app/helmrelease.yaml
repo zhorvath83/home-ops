@@ -58,8 +58,8 @@ spec:
 
             env:
               TZ: Europe/Budapest
-              PUID: 10001
-              PGID: 10001
+              PUID: 1000
+              PGID: 100
               DOCKER_MODS: >-
                 {{- $items := list
                   "// renovate: lsio-docker-mod"
@@ -84,16 +84,16 @@ spec:
                   failureThreshold: 45
                   periodSeconds: 5
 
-            securityContext:
-              # because of linuxserver.io image
-              privileged: true
-              allowPrivilegeEscalation: true
-              readOnlyRootFilesystem: false
-              capabilities:
-                add:
-                  - CHOWN
-                # drop:
-                #   - ALL
+            # securityContext:
+            #   # because of linuxserver.io image
+            #   privileged: true
+            #   allowPrivilegeEscalation: true
+            #   readOnlyRootFilesystem: false
+            #   capabilities:
+            #     add:
+            #       - CHOWN
+            #     drop:
+            #       - ALL
 
             resources:
               requests:
