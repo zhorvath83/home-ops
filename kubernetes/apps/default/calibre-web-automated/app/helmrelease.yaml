@@ -84,14 +84,16 @@ spec:
                   failureThreshold: 45
                   periodSeconds: 5
 
-            # securityContext:
-            #   # disabled for linuxserver.io image
-            #   # privileged: false
-            #   # allowPrivilegeEscalation: false
-            #   # readOnlyRootFilesystem: true
-            #   capabilities:
-            #     drop:
-            #       - ALL
+            securityContext:
+              # because of linuxserver.io image
+              privileged: true
+              allowPrivilegeEscalation: true
+              readOnlyRootFilesystem: false
+              capabilities:
+                add:
+                  - CHOWN
+                # drop:
+                #   - ALL
 
             resources:
               requests:
