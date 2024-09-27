@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import os
 import sys
 import requests
@@ -16,12 +15,13 @@ def update_network_policy(networks):
     yaml = YAML()
     yaml.preserve_quotes = True
     yaml.indent(mapping=2, sequence=4, offset=2)
+    yaml.explicit_start = True  # This will preserve the "---" at the start of manifest file
 
     with open(NETWORKPOLICY_FILE, 'r') as file:
         policy = yaml.load(file)
 
     cloudflare_egress_rule = next(
-        (rule for rule in policy['spec']['egress'] 
+        (rule for rule in policy['spec']['egress']
          if rule.get('to') and any(to.get('ipBlock') for to in rule['to'])),
         None
     )
@@ -29,7 +29,6 @@ def update_network_policy(networks):
     if cloudflare_egress_rule:
         current_cidrs = {to['ipBlock']['cidr'] for to in cloudflare_egress_rule['to']}
         new_cidrs = set(networks)
-
         added_cidrs = new_cidrs - current_cidrs
         removed_cidrs = current_cidrs - new_cidrs
 
@@ -47,13 +46,12 @@ def main():
     try:
         networks = fetch_cloudflare_networks()
         added_cidrs, removed_cidrs = update_network_policy(networks)
-        
+
         print(f'Total CIDRs: {len(networks)}')
         if added_cidrs:
             print(f'Added CIDRs: {", ".join(added_cidrs)}')
         if removed_cidrs:
             print(f'Removed CIDRs: {", ".join(removed_cidrs)}')
-    
     except Exception as e:
         print(f'Error updating Cloudflare networks: {e}', file=sys.stderr)
         sys.exit(1)
