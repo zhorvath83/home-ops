@@ -128,6 +128,9 @@ data:
         - Router:
             href: http://192.168.1.1
             icon: asus-router.svg
+        - ControlD DNS:
+            href: https://controld.com
+            icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/svg/controld.svg
         - OpenMediaVault:
             href: http://192.168.1.10
             icon: openmediavault.svg
