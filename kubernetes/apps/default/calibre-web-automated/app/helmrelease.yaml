@@ -152,16 +152,17 @@ spec:
         globalMounts:
           - path: /config
 
-      nfs-media-books-to-process:
-        type: nfs
-        server: ${CLUSTER_LAN_NAS_IP}
-        path: /media/books/ebooks/books-to-process
-        globalMounts:
-          - path: /cwa-book-ingest
+      # nfs-media-books-to-process:
+      #   type: nfs
+      #   server: ${CLUSTER_LAN_NAS_IP}
+      #   path: /media/books/ebooks/books-to-process
+      #   globalMounts:
+      #     - path: /cwa-book-ingest
 
-      nfs-media-calibre-library:
+      nfs-calibre-library:
         type: nfs
         server: ${CLUSTER_LAN_NAS_IP}
-        path: /media/books/ebooks/calibre-library
+        path: /backups/documents/personal/ebooks
         globalMounts:
           - path: /calibre-library
+            # readOnly: true
