@@ -54,7 +54,7 @@ spec:
           01-permissions:
             image:
               repository: public.ecr.aws/docker/library/busybox
-              tag: 1.36.1
+              tag: 1.37.0
               pullPolicy: IfNotPresent
             command:
               - "/bin/sh"
