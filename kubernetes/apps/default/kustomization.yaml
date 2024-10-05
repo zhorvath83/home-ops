@@ -17,7 +17,6 @@ resources:
   - ./sonarr/ks.yaml
   - ./bazarr/ks.yaml
   - ./overseerr/ks.yaml
-  - ./calibre/ks.yaml
   - ./calibre-web-automated/ks.yaml
   - ./resticprofile/ks.yaml
   - ./smtp-relay/ks.yaml
