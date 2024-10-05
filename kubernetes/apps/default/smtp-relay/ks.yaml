@@ -6,7 +6,7 @@ metadata:
   name: cluster-apps-smtp-relay
   namespace: flux-system
 spec:
-  path: ./kubernetes/apps/networking/smtp-relay/app
+  path: ./kubernetes/apps/default/smtp-relay/app
   prune: true
   sourceRef:
     kind: GitRepository
