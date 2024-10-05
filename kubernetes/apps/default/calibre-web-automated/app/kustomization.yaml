@@ -7,7 +7,6 @@ resources:
   - ./helmrelease.yaml
   - ./pvc.yaml
   - ./volsync.yaml
-  - ./externalsecret.yaml
 
 labels:
   - pairs:

@@ -152,15 +152,6 @@ spec:
         globalMounts:
           - path: /config
 
-      credentials:
-        type: secret
-        name: calibre-web-automated-secret
-        defaultMode: 0775
-        globalMounts:
-          - path: /etc/cloudflared/credentials.json
-            subPath: credentials.json
-            readOnly: true
-
       # nfs-media-books-to-process:
       #   type: nfs
       #   server: ${CLUSTER_LAN_NAS_IP}
