@@ -17,9 +17,6 @@ resources:
   - ./sonarr/ks.yaml
   - ./bazarr/ks.yaml
   - ./overseerr/ks.yaml
-  # - ./readarr/ks.yaml
-  # - ./calibre/ks.yaml
-  - ./kavita/ks.yaml
+  - ./calibre/ks.yaml
   - ./calibre-web-automated/ks.yaml
-  # - ./lazylibrarian/ks.yaml
   - ./resticprofile/ks.yaml
