@@ -5,7 +5,6 @@ kind: Kustomization
 resources:
   - ./namespace.yaml
   - ./external-secrets/ks.yaml
-  - ./kured/ks.yaml
   - ./reloader/ks.yaml
   - ./metrics-server/ks.yaml
   - ./democratic-csi/ks.yaml
