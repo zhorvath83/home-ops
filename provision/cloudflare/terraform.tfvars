@@ -1,4 +1,3 @@
-# DO NOT modify if Cloudflare mail routing is enabled!
 dns_mx_records = {
     mx_record_1 = {
       host    = "in1-smtp.messagingengine.com"
@@ -42,100 +41,12 @@ dns_dkim_records = {
     }
 }
 
-dns_srv_records = {
-    srv_record_1 = {
-      service   = "_submission"
-      proto     = "_tcp"
-      priority  = 0
-      weight    = 1
-      port      = 587
-      target    = "smtp.fastmail.com"
-    },
-    srv_record_2 = {
-      service   = "_imap"
-      proto     = "_tcp"
-      priority  = 0
-      weight    = 0
-      port      = 0
-      target    = "."
-    },
-    srv_record_3 = {
-      service   = "_imaps"
-      proto     = "_tcp"
-      priority  = 0
-      weight    = 1
-      port      = 993
-      target    = "imap.fastmail.com"
-    },
-    srv_record_4 = {
-      service   = "_pop3"
-      proto     = "_tcp"
-      priority  = 0
-      weight    = 0
-      port      = 0
-      target    = "."
-    },
-    srv_record_5 = {
-      service   = "_pop3s"
-      proto     = "_tcp"
-      priority  = 10
-      weight    = 1
-      port      = 995
-      target    = "pop.fastmail.com"
-    },
-    srv_record_6 = {
-      service   = "_jmap"
-      proto     = "_tcp"
-      priority  = 0
-      weight    = 1
-      port      = 443
-      target    = "api.fastmail.com"
-    },
-    srv_record_7 = {
-      service   = "_carddav"
-      proto     = "_tcp"
-      priority  = 0
-      weight    = 0
-      port      = 0
-      target    = "."
-    },
-    srv_record_8 = {
-      service   = "_carddavs"
-      proto     = "_tcp"
-      priority  = 0
-      weight    = 1
-      port      = 443
-      target    = "carddav.fastmail.com"
-    },
-    srv_record_9 = {
-      service   = "_caldav"
-      proto     = "_tcp"
-      priority  = 0
-      weight    = 0
-      port      = 0
-      target    = "."
-    },
-    srv_record_10 = {
-      service   = "_caldavs"
-      proto     = "_tcp"
-      priority  = 0
-      weight    = 1
-      port      = 443
-      target    = "caldav.fastmail.com"
-    }
-}
-
-private_website_target_url = "private-website-93q.pages.dev"
+# personal_website_target_url = "personal-website-93q.pages.dev"
 
 bulk_redirect_list = {
     redirect_www = {
       name                  = "Redirect www"
       source_url            = "https://www.domain_name_to_replace"
       target_url            = "https://domain_name_to_replace"
-    },
-    redirect_mail = {
-      name                  = "Redirect webmail"
-      source_url            = "https://mail.domain_name_to_replace"
-      target_url            = "https://app.fastmail.com"
     }
 }

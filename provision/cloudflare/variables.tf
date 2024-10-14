@@ -26,17 +26,6 @@ variable "dns_dkim_records" {
   description = "Params of DKIM DNS record."
 }
 
-variable "dns_srv_records" {
-  type = map(object({
-    service   = string
-    proto     = string
-    priority  = number
-    weight    = number
-    port      = number
-    target    = string
-  }))
-  description = "Params of SRV DNS record."
-}
 
 variable "mail_dmarc_rua_dest" {
   type        = list(string)
@@ -107,10 +96,10 @@ variable "mail_mta_sts_params" {
   }
 }
 
-variable "private_website_target_url" {
-  description = "CNAME target URL of my private website."
-  type        = string
-}
+# variable "personal_website_target_url" {
+#   description = "CNAME target URL of my personal website."
+#   type        = string
+# }
 
 variable "bulk_redirect_list" {
   type = map(object({
@@ -168,5 +157,10 @@ variable "CF_GLOBAL_APIKEY" {
 
 variable "CUSTOM_DOMAIN_EMAIL" {
   description = "Private custom domain email address."
+  type        = string
+}
+
+variable "GITHUB_USER_FOR_PAGES" {
+  description = "Github user name for CF Pages deploy."
   type        = string
 }

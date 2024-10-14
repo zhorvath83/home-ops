@@ -10,14 +10,14 @@ locals {
   cf_zone_id  = cloudflare_zone.domain.id
 }
 
-resource "cloudflare_record" "cname_root" {
-  name    = local.domain_name
-  zone_id = local.cf_zone_id
-  content = var.private_website_target_url
-  proxied = true
-  type    = "CNAME"
-  ttl     = 1
-}
+# resource "cloudflare_record" "cname_root" {
+#   name    = local.domain_name
+#   zone_id = local.cf_zone_id
+#   content = var.personal_website_target_url
+#   proxied = true
+#   type    = "CNAME"
+#   ttl     = 1
+# }
 
 # Redirected to root via CF bulk redirects
 resource "cloudflare_record" "cname_www" {
@@ -81,27 +81,6 @@ resource "cloudflare_record" "a_record_webmail" {
   proxied = true
   type    = "A"
   ttl     = 1
-}
-
-#
-# DNS SRV autodiscovery records
-# https://www.fastmail.help/hc/en-us/articles/360060591153#dnslist
-
-resource "cloudflare_record" "srv_records" {
-  for_each  = var.dns_srv_records
-  zone_id = local.cf_zone_id
-  name    = format("%s.%s.%s", each.value.service, each.value.proto, local.domain_name)
-  type    = "SRV"
-  ttl     = "1"
-  data {
-    name     = local.domain_name
-    service  = each.value.service
-    proto    = each.value.proto
-    priority = each.value.priority
-    weight   = each.value.weight
-    port     = each.value.port
-    target   = each.value.target
-  }
 }
 
 #
