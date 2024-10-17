@@ -106,7 +106,7 @@ data:
     ---
     - Finance:
         - Buxfer:
-            href: https://buxfer.com
+            href: https://www.buxfer.com
             icon: https://raw.githubusercontent.com/zhorvath83/dashboard-icons/master/png/buxfer.png
         - Erste Bank:
             href: https://george.erstebank.hu
@@ -114,6 +114,9 @@ data:
         - MBH Bank:
             href: https://online.mbhbank.hu
             icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/svg/mkb_bank.svg
+        - IBKR:
+            href: https://www.interactivebrokers.co.uk
+            icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/svg/ibkr.svg
         - Wise:
             href: https://wise.com
             icon: https://raw.githubusercontent.com/zhorvath83/dashboard-icons/master/svg/wise.svg
