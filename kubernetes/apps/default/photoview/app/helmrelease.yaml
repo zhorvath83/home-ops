@@ -79,7 +79,7 @@ spec:
           app:
             image:
               repository: viktorstrate/photoview
-              tag: master@sha256:ae8b3eca25fe66db1805070d77d106f5e18773b95c05b65d0b71127347883798
+              tag: master@sha256:e91f715ac97ed298b6f8dfcaabc5d703c564fe3c537689a40d3908ae8bd7f7c2
               pullPolicy: IfNotPresent
 
             env:
