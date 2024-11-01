@@ -55,7 +55,7 @@ spec:
           app:
             image:
               repository: docker.io/cloudflare/cloudflared
-              tag: 2024.10.0
+              tag: 2024.10.1
               pullPolicy: IfNotPresent
 
             env:
