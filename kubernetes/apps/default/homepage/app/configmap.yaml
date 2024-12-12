@@ -126,6 +126,12 @@ data:
         - WebKincstár:
             href: https://webkincstar.allamkincstar.gov.hu
             icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/mak.png
+        - Generali EP:
+            href: https://eportal.generalipenztar.hu
+            icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/generali.png
+        - OTP Pénztárak:
+            href: https://otpportalok.hu
+            icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/svg/OTP_bank.png
 
     - Infrastructure:
         - Router:
