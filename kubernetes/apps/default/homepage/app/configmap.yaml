@@ -122,7 +122,7 @@ data:
             icon: https://raw.githubusercontent.com/zhorvath83/dashboard-icons/master/svg/wise.svg
         - Erste Broker:
             href: https://netbroker.erstebroker.hu
-            icon: erste.svg
+            icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/svg/erste.svg
         - WebKincstár:
             href: https://webkincstar.allamkincstar.gov.hu
             icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/mak.png
