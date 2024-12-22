@@ -131,7 +131,7 @@ data:
             icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/generali.png
         - OTP Pénztárak:
             href: https://otpportalok.hu
-            icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/svg/OTP_bank.png
+            icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/svg/OTP_bank.svg
 
     - Infrastructure:
         - Router:
