@@ -128,10 +128,10 @@ data:
             icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/mak.png
         - Generali EP:
             href: https://eportal.generalipenztar.hu
-            icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/generali.png
+            icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/svg/generali.svg
         - OTP Pénztárak:
             href: https://otpportalok.hu
-            icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/svg/OTP_bank.svg
+            icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/svg/otp.svg
 
     - Infrastructure:
         - Router:
