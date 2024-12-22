@@ -27,6 +27,18 @@ spec:
   uninstall:
     keepHistory: false
 
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: Deployment
+              name: homepage
+            patch: |
+              - op: add
+                path: /metadata/annotations/reloader.stakater.com/auto
+                value: "true"
+
+  # https://github.com/jameswynn/helm-charts/blob/main/charts/homepage/values.yaml
   values:
     image:
       repository: ghcr.io/gethomepage/homepage
@@ -40,9 +52,6 @@ spec:
 
     config:
       useExistingConfigMap: homepage-config
-
-    podAnnotations:
-      configmap.reloader.stakater.com/reload: "true"
 
     ingress:
       main:
