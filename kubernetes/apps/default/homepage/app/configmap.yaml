@@ -123,7 +123,9 @@ data:
         - BinX:
             href: https://online.binx.hu
             icon: https://raw.githubusercontent.com/zhorvath83/dashboard-icons/master/svg/binx-light.svg
-            
+        - Gránit Bank:
+            href: https://netbank.granitbank.hu
+            icon: https://raw.githubusercontent.com/zhorvath83/dashboard-icons/master/svg/granit-bank.svg
         - Erste Broker:
             href: https://netbroker.erstebroker.hu
             icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/svg/erste.svg
