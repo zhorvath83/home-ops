@@ -120,6 +120,10 @@ data:
         - Wise:
             href: https://wise.com
             icon: https://raw.githubusercontent.com/zhorvath83/dashboard-icons/master/svg/wise.svg
+        - BinX:
+            href: https://online.binx.hu
+            icon: https://raw.githubusercontent.com/zhorvath83/dashboard-icons/master/svg/binx.svg
+            
         - Erste Broker:
             href: https://netbroker.erstebroker.hu
             icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/svg/erste.svg
