@@ -30,7 +30,9 @@ spec:
 
   values:
     defaultPodOptions:
-      hostname: print-server.${CLUSTER_LAN_DOMAIN}
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      # hostname: print-server.${CLUSTER_LAN_DOMAIN}
       automountServiceAccountToken: false
       enableServiceLinks: false
       # securityContext:
@@ -60,6 +62,8 @@ spec:
               TZ: "Europe/Budapest"
               CUPS_USER_ADMIN: "admin"
               CUPS_USER_PASSWORD: "secr3t"
+              CUPSADMIN: "admin"
+              CUPSPASSWORD: "secr3t"
               AVAHI_INTERFACE: "eth0"
               AVAHI_ALLOW_INTERFACES: "eth0"
               AVAHI_PUBLISH_ADDRESSES: "${CLUSTER_SVC_PRINT_SERVER_IP}"
