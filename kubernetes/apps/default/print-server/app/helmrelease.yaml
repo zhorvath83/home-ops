@@ -54,8 +54,9 @@ spec:
         containers:
           app:
             image:
-              repository: drpsychick/airprint-bridge
-              tag: latest-20250124@sha256:275d803c7326408075aa8cde140cdade8066b27572e69975d725367201250813
+              # repository: drpsychick/airprint-bridge
+              repository: chuckcharlie/cups-avahi-airprint
+              tag: 1.1.5@sha256:dc785b11c14c8cf5d66cea2fe3512d9898b73d9691c00e256a150cb848f3c6bd
               pullPolicy: IfNotPresent
 
             env:
@@ -64,9 +65,7 @@ spec:
               CUPS_USER_PASSWORD: "secr3t"
               CUPSADMIN: "admin"
               CUPSPASSWORD: "secr3t"
-              AVAHI_INTERFACE: "eth0"
-              AVAHI_ALLOW_INTERFACES: "eth0"
-              AVAHI_PUBLISH_ADDRESSES: "${CLUSTER_SVC_PRINT_SERVER_IP}"
+
 
             probes:
               liveness:
