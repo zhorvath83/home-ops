@@ -60,7 +60,9 @@ spec:
               TZ: "Europe/Budapest"
               CUPS_USER_ADMIN: "admin"
               CUPS_USER_PASSWORD: "secr3t"
-
+              AVAHI_INTERFACE: "eth0"
+              AVAHI_ALLOW_INTERFACES: "eth0"
+              AVAHI_PUBLISH_ADDRESSES: "${CLUSTER_SVC_PRINT_SERVER_IP}"
 
             probes:
               liveness:
