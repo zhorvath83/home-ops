@@ -93,19 +93,19 @@ spec:
           metallb.universe.tf/loadBalancerIPs: ${CLUSTER_SVC_PRINT_SERVER_IP}
         externalTrafficPolicy: Local
         ports:
-          NetBIOSname:
+          netbios-name:
             port: 137
             protocol: UDP
-          NetBIOSsession:
+          netbios-session:
             port: 139
             protocol: TCP       
-          SMB:
+          smb:
             port: 445
             protocol: TCP
-          CUPS:
+          cups:
             port: 631
             protocol: TCP
-          Bonjour:
+          bonjour:
             port: 5353
             protocol: UDP
 
@@ -123,7 +123,7 @@ spec:
               - path: /
                 service:
                   identifier: app
-                  port: CUPS
+                  port: cups
 
     # persistence:
     #   config:
