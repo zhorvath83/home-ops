@@ -61,8 +61,8 @@ spec:
 
             env:
               TZ: "Europe/Budapest"
-              CUPS_USER_ADMIN: "admin"
-              CUPS_USER_PASSWORD: "secr3t"
+              # CUPS_USER_ADMIN: "admin"
+              # CUPS_USER_PASSWORD: "secr3t"
               CUPSADMIN: "admin"
               CUPSPASSWORD: "secr3t"
 
