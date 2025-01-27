@@ -46,9 +46,10 @@ spec:
         containers:
           app:
             image:
-              # repository: drpsychick/airprint-bridge
-              repository: chuckcharlie/cups-avahi-airprint
-              tag: 1.1.5@sha256:dc785b11c14c8cf5d66cea2fe3512d9898b73d9691c00e256a150cb848f3c6bd
+              repository: drpsychick/airprint-bridge
+              tag: latest-20250127@sha256:e1827c377151b7fbe0f7919b79704f4ce6da889728f38a29c0c8cfcb10310d46
+              # repository: chuckcharlie/cups-avahi-airprint
+              # tag: 1.1.5@sha256:dc785b11c14c8cf5d66cea2fe3512d9898b73d9691c00e256a150cb848f3c6bd
               pullPolicy: IfNotPresent
 
             env:
