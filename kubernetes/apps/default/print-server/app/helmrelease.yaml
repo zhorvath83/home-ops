@@ -35,14 +35,6 @@ spec:
       # hostname: print-server.${CLUSTER_LAN_DOMAIN}
       automountServiceAccountToken: false
       enableServiceLinks: false
-      # securityContext:
-      #   runAsNonRoot: true
-      #   runAsUser: 10001
-      #   runAsGroup: 10001
-      #   fsGroup: 10001
-      #   fsGroupChangePolicy: OnRootMismatch
-      #   seccompProfile:
-      #     type: RuntimeDefault
 
     controllers:
       print-server:
@@ -75,13 +67,8 @@ spec:
               startup:
                 enabled: false
 
-            # securityContext:
-            #   privileged: false
-            #   allowPrivilegeEscalation: false
-            #   readOnlyRootFilesystem: true
-            #   capabilities:
-            #     drop:
-            #       - ALL
+            securityContext:
+              privileged: true
 
             resources:
               requests:
@@ -130,9 +117,11 @@ spec:
                   identifier: app
                   port: cups
 
-    # persistence:
-    #   config:
-    #     type: persistentVolumeClaim
-    #     existingClaim: print-server
-    #     globalMounts:
-    #       - path: /config
+    persistence:
+      usb:
+        enabled: true
+        type: hostPath
+        hostPathType: CharDevice
+        hostPath: /dev/bus/usb/009/002
+        globalMounts:
+          - path: /dev/bus/usb/009/002
