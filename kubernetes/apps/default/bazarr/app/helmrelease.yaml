@@ -66,7 +66,7 @@ spec:
           app:
             image:
               repository: ghcr.io/onedr0p/bazarr
-              tag: 1.5.1@sha256:d462dcb987ca67f3fb9a524e2e345b047c1c2ee06268e80adf6ee89e3c6b38a0
+              tag: 1.5.1@sha256:c46af30d90f27708eca29bbbb0ef6bf67493258d64a74aa96a9e5e61b3f4a854
               pullPolicy: IfNotPresent
 
             env:
