@@ -52,7 +52,7 @@ spec:
           app:
             image:
               repository: garethgeorge/backrest
-              tag: v1.6.2@sha256:f19ee6bdd6dcc4521da92c5f6e10e825ad8a2c82801263574a9b41fd640a0dd8
+              tag: v1.7.1@sha256:a50c74e3dfa70ea9057856189cc93fdbc45ec3da2713dd451cf690044667bb38
               pullPolicy: IfNotPresent
 
             env:
