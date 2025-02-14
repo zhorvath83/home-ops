@@ -118,10 +118,6 @@ spec:
               - *host
       opds:
         className: "nginx"
-        # annotations:
-        #   nginx.ingress.kubernetes.io/configuration-snippet: |
-        #     # need to hide header to trigger proxy-based authentication
-        #     proxy_set_header Authorization "";
         hosts:
           - host: *host
             paths:
@@ -140,13 +136,6 @@ spec:
         existingClaim: calibre-web-automated
         globalMounts:
           - path: /config
-
-      # nfs-media-books-to-process:
-      #   type: nfs
-      #   server: ${CLUSTER_LAN_NAS_IP}
-      #   path: /media/books/ebooks/books-to-process
-      #   globalMounts:
-      #     - path: /cwa-book-ingest
 
       nfs-calibre-library:
         type: nfs
