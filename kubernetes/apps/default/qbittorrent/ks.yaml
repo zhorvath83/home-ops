@@ -22,12 +22,12 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: cluster-apps-qbittorrent-jobs
+  name: cluster-apps-qbittorrent-upgrade-p2pblocklist
   namespace: flux-system
 spec:
   dependsOn:
     - name: cluster-apps-democratic-csi
-  path: ./kubernetes/apps/default/qbittorrent/jobs
+  path: ./kubernetes/apps/default/qbittorrent/upgrade-p2pblocklist
   prune: true
   sourceRef:
     kind: GitRepository
