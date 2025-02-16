@@ -38,8 +38,8 @@ spec:
               repository: ghcr.io/auricom/kubectl
               tag: 1.32@sha256:07fdbc9c1e70c1db17d5bbc81531134de64102fb9e270ab377d52f57f24658a7
             command:
-              - /bin/bash
-              - -c
+              - "/bin/bash"
+              - "-c"
               - |
                 #!/bin/bash
 
@@ -52,9 +52,9 @@ spec:
                 QBITTORRENT_POD=$(echo $result | awk '{ print $NF }')
                 if [[ $QBITTORRENT_POD == *"qbittorrent"* ]]; then
                   kubectl cp /tmp/ipfilter.dat default/$QBITTORRENT_POD:/config/ipfilter.dat
-                  kubectl rollout restart deployment qbittorrent --namespace default
+                  kubectl rollout restart statefulset qbittorrent --namespace default
                 else
-                  echo "qbittorrent deployment not found"
+                  echo "qbittorrent statefulset not found"
                   exit 1
                 fi
     service:
