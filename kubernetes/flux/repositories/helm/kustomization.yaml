@@ -15,8 +15,6 @@ resources:
   - ./runix.yaml
   - ./kubereboot.yaml
   - ./ingress-nginx.yaml
-  - ./searxng.yaml
-  - ./weaveworks.yaml
   - ./backube.yaml
   - ./piraeus.yaml
   - ./external-secrets.yaml

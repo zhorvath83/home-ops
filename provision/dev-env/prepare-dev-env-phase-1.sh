@@ -204,7 +204,6 @@ code \
     --install-extension signageos.signageos-vscode-sops \
     --install-extension MichaelCurrin.auto-commit-msg \
     --install-extension hashicorp.terraform \
-    --install-extension weaveworks.vscode-gitops-tools
 
 # Install Gnome Extensions
 gnome-extensions-cli --filesystem install \
