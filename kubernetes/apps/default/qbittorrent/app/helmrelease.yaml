@@ -104,7 +104,7 @@ spec:
         controller: qbittorrent
         type: LoadBalancer
         annotations:
-          metallb.universe.tf/loadBalancerIPs: ${CLUSTER_SVC_QBITTORRENT_IP}
+          metallb.io/loadBalancerIPs: ${CLUSTER_SVC_QBITTORRENT_IP}
         externalTrafficPolicy: Local
         ports:
           http:

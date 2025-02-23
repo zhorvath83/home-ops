@@ -87,7 +87,7 @@ spec:
         controller: mailrise
         type: LoadBalancer
         annotations:
-          metallb.universe.tf/loadBalancerIPs: ${CLUSTER_SVC_SMTP_GATEWAY_IP}
+          metallb.io/loadBalancerIPs: ${CLUSTER_SVC_SMTP_GATEWAY_IP}
         externalTrafficPolicy: Local
         ports:
           http:
