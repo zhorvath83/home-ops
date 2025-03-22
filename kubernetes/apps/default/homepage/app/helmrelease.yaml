@@ -44,6 +44,9 @@ spec:
       repository: ghcr.io/gethomepage/homepage
       tag: v0.10.9
 
+    env:
+      HOMEPAGE_ALLOWED_HOSTS: &host "dash.${PUBLIC_DOMAIN}"
+
     enableRbac: true
     serviceAccount:
       name: homepage
@@ -58,7 +61,7 @@ spec:
         enabled: true
         ingressClassName: "nginx"
         hosts:
-          - host: &host "dash.${PUBLIC_DOMAIN}"
+          - host: *host
             paths:
               - path: /
                 pathType: Prefix
