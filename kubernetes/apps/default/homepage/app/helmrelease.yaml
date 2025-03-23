@@ -42,7 +42,7 @@ spec:
   values:
     image:
       repository: ghcr.io/gethomepage/homepage
-      tag: v0.10.9
+      tag: v1.0.4
 
     env:
       HOMEPAGE_ALLOWED_HOSTS: &host "dash.${PUBLIC_DOMAIN}"
