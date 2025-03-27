@@ -49,7 +49,7 @@ spec:
           app:
             image:
               repository: ghcr.io/sct/overseerr
-              tag: 1.33.2@sha256:17b45f73fbfd15048aa9bbdb8af037f4b45139ffc49f56150834cbfe4cc2ac2f
+              tag: 1.34.0@sha256:a71728427cf46627b34e99b54dde5dd883faea89a5650a8c60964502058e9582
               pullPolicy: IfNotPresent
 
             env:
