@@ -94,6 +94,10 @@ spec:
     service:
       app:
         controller: calibre-web-automated
+        type: LoadBalancer
+        annotations:
+          metallb.io/loadBalancerIPs: ${CLUSTER_SVC_CALIBRE_WEB_IP}
+        externalTrafficPolicy: Local
         ports:
           http:
             port: 8083
