@@ -108,7 +108,7 @@ spec:
 
     csiProxy:
       enabled: true
-      image: 
+      image:
         registry: docker.io/democraticcsi/csi-grpc-proxy
         tag: v0.5.6
 
