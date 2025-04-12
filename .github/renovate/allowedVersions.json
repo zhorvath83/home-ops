@@ -4,12 +4,6 @@
       "matchDatasources": ["docker"],
       "matchPackagePatterns": ["postgresql"],
       "allowedVersions": "<=15"
-    },
-    {
-      "description": "Fix Cloudflare provider to v4.x",
-      "matchDatasources": ["terraform-provider"],
-      "matchPackageNames": ["cloudflare/cloudflare"],
-      "allowedVersions": "~4"
     }
   ]
 }
