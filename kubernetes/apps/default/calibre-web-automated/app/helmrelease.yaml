@@ -100,7 +100,8 @@ spec:
         externalTrafficPolicy: Local
         ports:
           http:
-            port: 8083
+            port: 80
+            targetPort: 8083
 
     ingress:
       app:
