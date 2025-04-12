@@ -148,4 +148,3 @@ spec:
         path: /backups/documents/personal/ebooks
         globalMounts:
           - path: /calibre-library
-            # readOnly: true
