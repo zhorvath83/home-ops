@@ -14,9 +14,10 @@ terraform {
       source  = "integrations/github"
       version = "6.6.0"
     }
+    # renovate: datasource=terraform-provider depName=cloudflare/cloudflare versioning=semver enabled=false
     cloudflare = {
       source  = "cloudflare/cloudflare"
-      version = "5.2.0"
+      version = "4.52.0"
     }
     http = {
       source  = "hashicorp/http"
