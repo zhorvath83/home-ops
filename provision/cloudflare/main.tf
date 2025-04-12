@@ -15,7 +15,7 @@ terraform {
       version = "6.6.0"
     }
   
-    # renovate: datasource=terraform-provider depName=cloudflare/cloudflare enabled=false
+    # Fixed Cloudflare provider to v4.x in Renovate configs.
     cloudflare = {
       source  = "cloudflare/cloudflare"
       version = "4.52.0"
