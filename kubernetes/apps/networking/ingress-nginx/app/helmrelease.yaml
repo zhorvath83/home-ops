@@ -16,7 +16,8 @@ spec:
         name: ingress-nginx
         namespace: flux-system
 
-
+  driftDetection:
+    mode: enabled
   install:
     createNamespace: true
     remediation:

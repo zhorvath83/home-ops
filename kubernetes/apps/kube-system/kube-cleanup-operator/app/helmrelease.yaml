@@ -16,6 +16,8 @@ spec:
         name: lwolf-charts
         namespace: flux-system
 
+  driftDetection:
+    mode: enabled
   install:
     createNamespace: true
     remediation:

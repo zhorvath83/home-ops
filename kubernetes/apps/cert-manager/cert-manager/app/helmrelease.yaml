@@ -16,6 +16,9 @@ spec:
         name: jetstack
         namespace: flux-system
       interval: 30m
+
+  driftDetection:
+    mode: enabled
   install:
     createNamespace: true
     remediation:

@@ -16,6 +16,8 @@ spec:
         name: bitnami
         namespace: flux-system
 
+  driftDetection:
+    mode: enabled
   install:
     createNamespace: true
     remediation:

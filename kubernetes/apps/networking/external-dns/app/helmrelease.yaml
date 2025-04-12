@@ -16,6 +16,8 @@ spec:
         name: external-dns
         namespace: flux-system
 
+  driftDetection:
+    mode: enabled
   install:
     createNamespace: true
     remediation:

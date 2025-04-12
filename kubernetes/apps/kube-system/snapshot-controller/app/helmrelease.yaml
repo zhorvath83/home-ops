@@ -16,7 +16,8 @@ spec:
         name: piraeus
         namespace: flux-system
 
-
+  driftDetection:
+    mode: enabled
   install:
     createNamespace: true
     crds: CreateReplace
