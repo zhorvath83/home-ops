@@ -52,7 +52,7 @@ spec:
           app:
             image:
               repository: ghcr.io/onedr0p/radarr
-              tag: 5.20.1.9773@sha256:347dec0ad1e4d00a0de171675fcf857cea188a814dffeb8e43f032b47e7cc0d4
+              tag: 5.20.1.9773@sha256:4fa8fc7dcf3b38dbed279125330a8b9bd7be6e68e317e685089d3b03774aeeab
               pullPolicy: IfNotPresent
 
             env:
