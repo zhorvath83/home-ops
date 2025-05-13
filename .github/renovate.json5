@@ -40,26 +40,26 @@
     enabled: true,
   },
   flux: {
-    fileMatch: [
-      'kubernetes/.+\\.ya?ml$',
+    managerFilePatterns: [
+      '/kubernetes/.+\\.ya?ml$/',
     ],
   },
   'helm-values': {
-    fileMatch: [
-      'kubernetes/.+\\.ya?ml$',
+    managerFilePatterns: [
+      '/kubernetes/.+\\.ya?ml$/',
     ],
   },
   kubernetes: {
-    fileMatch: [
-      'kubernetes/.+\\.ya?ml$',
+    managerFilePatterns: [
+      '/kubernetes/.+\\.ya?ml$/',
     ],
   },
   customManagers: [
     {
       customType: 'regex',
       description: 'Process CRD dependencies',
-      fileMatch: [
-        'kubernetes/crds/.+\\.ya?ml$',
+      managerFilePatterns: [
+        '/kubernetes/crds/.+\\.ya?ml$/',
       ],
       matchStrings: [
         'registryUrl=(?<registryUrl>\\S+) chart=(?<depName>\\S+)\n.*?(?<currentValue>[^-\\s]*)\n',
@@ -70,8 +70,8 @@
     {
       customType: 'regex',
       description: 'Process MetalLB CRD dependencies',
-      fileMatch: [
-        'crds\\/metallb\\/crds\\.yaml$',
+      managerFilePatterns: [
+        '/crds\\/metallb\\/crds\\.yaml$/',
       ],
       matchStrings: [
         'registryUrl=(?<registryUrl>.*) chart=(?<depName>.*)\\s.*tag: v(?<currentValue>.*)',
@@ -81,9 +81,9 @@
     {
       customType: 'regex',
       description: 'Process various other dependencies',
-      fileMatch: [
-        'provision/ansible/.+\\.ya?ml$',
-        'kubernetes/.+\\.ya?ml$',
+      managerFilePatterns: [
+        '/provision/ansible/.+\\.ya?ml$/',
+        '/kubernetes/.+\\.ya?ml$/',
       ],
       matchStrings: [
         'datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)( versioning=(?<versioning>\\S+))?\n.*?"(?<currentValue>.*)"\n',
