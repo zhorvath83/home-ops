@@ -3,6 +3,8 @@
 # https://github.com/robbyoconnor/terraform-cloudflare-fastmail-mx/blob/main/main.tf
 # https://blog.wimwauters.com/devops/2022-03-01_terraformusecases/
 
+# https://github.com/jpawlowski/mta-sts.template
+
 variable "dns_mx_records" {
   type = map(object({
     host = string
