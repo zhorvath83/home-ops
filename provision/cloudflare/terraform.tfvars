@@ -40,13 +40,3 @@ dns_dkim_records = {
       type          = "CNAME"
     }
 }
-
-# personal_website_target_url = "personal-website-93q.pages.dev"
-
-bulk_redirect_list = {
-    redirect_www = {
-      name                  = "Redirect www"
-      source_url            = "https://www.domain_name_to_replace"
-      target_url            = "https://domain_name_to_replace"
-    }
-}

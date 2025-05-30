@@ -162,18 +162,6 @@ resource "cloudflare_zero_trust_access_application" "mta_sts_policy" {
   ]
 }
 
-## Webmail exclude from UserAuth
-resource "cloudflare_zero_trust_access_application" "webmail" {
-  zone_id          = cloudflare_zone.domain.id
-  name             = "Webmail"
-  domain           = "mail.${var.CF_DOMAIN_NAME}"
-  type             = "self_hosted"
-
-  policies = [
-    cloudflare_zero_trust_access_policy.bypass_everyone_policy.id
-  ]
-}
-
 ## Exchange rates exclude from UserAuth
 resource "cloudflare_zero_trust_access_application" "exchange-rates" {
   zone_id          = cloudflare_zone.domain.id

@@ -10,16 +10,7 @@ locals {
   cf_zone_id  = cloudflare_zone.domain.id
 }
 
-# resource "cloudflare_record" "cname_root" {
-#   name    = local.domain_name
-#   zone_id = local.cf_zone_id
-#   content = var.personal_website_target_url
-#   proxied = true
-#   type    = "CNAME"
-#   ttl     = 1
-# }
-
-# Redirected to root via CF bulk redirects
+# Redirected to root via rule
 resource "cloudflare_record" "cname_www" {
   name    = "www"
   zone_id = local.cf_zone_id
@@ -68,19 +59,6 @@ resource "cloudflare_record" "dkim_record" {
   proxied   = false
   type      = each.value.type
   ttl       = 1
-}
-
-#
-# Webmail A records
-#
-# Redirected via CF bulk redirects
-resource "cloudflare_record" "a_record_webmail" {
-  name    = "mail"
-  zone_id = local.cf_zone_id
-  content = "192.0.2.1"
-  proxied = true
-  type    = "A"
-  ttl     = 1
 }
 
 #

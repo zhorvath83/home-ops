@@ -98,25 +98,6 @@ variable "mail_mta_sts_params" {
   }
 }
 
-# variable "personal_website_target_url" {
-#   description = "CNAME target URL of my personal website."
-#   type        = string
-# }
-
-variable "bulk_redirect_list" {
-  type = map(object({
-    name                  = string
-    source_url            = string
-    target_url            = string
-    status_code           = optional(number, 301) # an optional attribute with default value
-    include_subdomains    = optional(string, "enabled") # an optional attribute with default value
-    subpath_matching      = optional(string, "enabled") # an optional attribute with default value
-    preserve_query_string = optional(string, "enabled") # an optional attribute with default value
-    preserve_path_suffix  = optional(string, "enabled") # an optional attribute with default value
-  }))
-  description = "Bulk redirect URL's and params"
-}
-
 variable "CF_ACCOUNT_ID" {
   description = "Cloudflare account ID."
   type        = string
@@ -154,6 +135,11 @@ variable "CF_USERNAME" {
 
 variable "CF_GLOBAL_APIKEY" {
   description = "Cloudflare API key."
+  type        = string
+}
+
+variable "CF_API_TOKEN" {
+  description = "Cloudflare API Token for tunnel management"
   type        = string
 }
 

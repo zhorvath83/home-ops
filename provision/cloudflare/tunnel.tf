@@ -1,26 +1,26 @@
-resource "random_id" "cf-tunnel-rnd-secret" {
-  byte_length = 50
+# Generate secret for the tunnel
+resource "random_id" "cf-tunnel-secret" {
+  byte_length = 60
 }
 
-resource "random_id" "cf-tunnel-rnd-name" {
-  byte_length = 2
-}
-
+# Create the single tunnel we need
 resource "cloudflare_zero_trust_tunnel_cloudflared" "home-ops-tunnel" {
-  name       = "home-ops-tunnel-${random_id.cf-tunnel-rnd-name.dec}"
+  name       = "home-ops-tunnel"
   account_id = var.CF_ACCOUNT_ID
-  secret     = random_id.cf-tunnel-rnd-secret.b64_std
+  secret     = random_id.cf-tunnel-secret.b64_std
 }
 
+# Generate tunnel credentials JSON
 locals {
   tunnel_credentials_json = jsonencode({
-      "AccountTag"   = var.CF_ACCOUNT_ID,
-      "TunnelID"     = cloudflare_zero_trust_tunnel_cloudflared.home-ops-tunnel.id
-      "TunnelName"   = cloudflare_zero_trust_tunnel_cloudflared.home-ops-tunnel.name,
-      "TunnelSecret" = cloudflare_zero_trust_tunnel_cloudflared.home-ops-tunnel.secret
+    "AccountTag"   = var.CF_ACCOUNT_ID,
+    "TunnelID"     = cloudflare_zero_trust_tunnel_cloudflared.home-ops-tunnel.id
+    "TunnelName"   = cloudflare_zero_trust_tunnel_cloudflared.home-ops-tunnel.name,
+    "TunnelSecret" = cloudflare_zero_trust_tunnel_cloudflared.home-ops-tunnel.secret
   })
 }
 
+# Store tunnel credentials in 1Password
 resource "null_resource" "store-tunnel-secret" {
   triggers = {
     tunnel_credentials_file = local.tunnel_credentials_json
@@ -30,10 +30,11 @@ resource "null_resource" "store-tunnel-secret" {
     command     = "op item edit cloudflare --vault HomeOps 'tunnel_name=${cloudflare_zero_trust_tunnel_cloudflared.home-ops-tunnel.name}' 'tunnel_id=${cloudflare_zero_trust_tunnel_cloudflared.home-ops-tunnel.id}' 'tunnel_secret=${cloudflare_zero_trust_tunnel_cloudflared.home-ops-tunnel.secret}' 'tunnel_token=${cloudflare_zero_trust_tunnel_cloudflared.home-ops-tunnel.tunnel_token}' 'tunnel_credentials=${self.triggers.tunnel_credentials_file}'"
     interpreter = ["/bin/bash", "-c"]
     working_dir = path.module
-    quiet       = true
+    quiet       = false
   }
 }
 
+# Create CNAME record for the tunnel
 resource "cloudflare_record" "tunnel_cname" {
   name    = "tunnel"
   zone_id = cloudflare_zone.domain.id
@@ -43,29 +44,7 @@ resource "cloudflare_record" "tunnel_cname" {
   ttl     = 1
 }
 
-# resource "cloudflare_zero_trust_tunnel_cloudflared_config" "home-ops-tun-conf" {
-#   account_id = var.CF_ACCOUNT_ID
-#   tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.home-ops-tunnel.id
-# 
-#   config {
-#     warp_routing {
-#       enabled = false
-#     }
-#     origin_request {
-#       connect_timeout     = "30s"
-#       no_tls_verify       = false
-#       origin_server_name  = var.CF_DOMAIN_NAME
-#     }
-#     ingress_rule {
-#       hostname  = "*.${var.CF_DOMAIN_NAME}"
-#       service   = "https://ingress-nginx-controller.networking.svc.cluster.local"
-#     }
-#     ingress_rule {
-#       service   = "http_status:404"
-#     }
-#   }
-# }
-
+# Tunnel health notification policy
 resource "cloudflare_notification_policy" "home-ops-tun-health" {
   account_id  = var.CF_ACCOUNT_ID
   name        = "CF tunnel health notification events"
@@ -76,5 +55,25 @@ resource "cloudflare_notification_policy" "home-ops-tun-health" {
   email_integration {
     id = var.CUSTOM_DOMAIN_EMAIL
   }
+}
 
+# Output tunnel information
+output "tunnel_info" {
+  value = {
+    tunnel_id    = cloudflare_zero_trust_tunnel_cloudflared.home-ops-tunnel.id
+    tunnel_name  = cloudflare_zero_trust_tunnel_cloudflared.home-ops-tunnel.name
+    tunnel_token = cloudflare_zero_trust_tunnel_cloudflared.home-ops-tunnel.tunnel_token
+  }
+  sensitive = true
+}
+
+# Separate non-sensitive outputs
+output "tunnel_id" {
+  value = cloudflare_zero_trust_tunnel_cloudflared.home-ops-tunnel.id
+  description = "Cloudflare Tunnel ID"
+}
+
+output "tunnel_name" {
+  value = cloudflare_zero_trust_tunnel_cloudflared.home-ops-tunnel.name
+  description = "Cloudflare Tunnel Name"
 }
