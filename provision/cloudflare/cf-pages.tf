@@ -7,14 +7,14 @@ resource "cloudflare_pages_project" "personal-website" {
   account_id        = var.CF_ACCOUNT_ID
   production_branch = "main"
 
-  build_config {
-    build_command   = "hugo"
+  build_config = {
+  build_command   = "hugo"
     destination_dir = "public"
-  }
+}
 
-  source {
+  source = {
     type = "github"
-    config {
+    config = {
       owner                         = var.GITHUB_USER_FOR_PAGES
       repo_name                     = "personal-website"
       production_branch             = "main"
@@ -25,19 +25,20 @@ resource "cloudflare_pages_project" "personal-website" {
       preview_branch_includes       = ["*"]
       preview_branch_excludes       = ["main"]
     }
-  }  
+  }
 }
 
 resource "cloudflare_pages_domain" "personal-website" {
   account_id    = var.CF_ACCOUNT_ID
-  domain        = var.CF_DOMAIN_NAME
+  name          = var.CF_DOMAIN_NAME
   project_name  = cloudflare_pages_project.personal-website.name
 }
 
-resource "cloudflare_record" "personal-website" {
+resource "cloudflare_dns_record" "personal-website" {
   zone_id = cloudflare_zone.domain.id
   name    = var.CF_DOMAIN_NAME
-  content   = cloudflare_pages_project.personal-website.subdomain
+  content = cloudflare_pages_project.personal-website.subdomain
   type    = "CNAME"
   proxied = true
+  ttl     = 1
 }

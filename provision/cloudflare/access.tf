@@ -6,22 +6,30 @@ locals {
 
 ## My unrestricted user group - unlimited access for all Apps
 resource "cloudflare_zero_trust_access_group" "unrestricted_users" {
-  account_id     = var.CF_ACCOUNT_ID
-  name           = "UnrestrictedUsers"
+  account_id = var.CF_ACCOUNT_ID
+  name       = "UnrestrictedUsers"
 
-  include {
-    email = split(", ", var.CF_ACCESS_UNRESTRICTED_USERS)
-  }
+  include = [
+    for email_addr in split(", ", var.CF_ACCESS_UNRESTRICTED_USERS) : {
+      email = {
+        email = email_addr
+      }
+    }
+  ]
 }
 
 ## My restricted user group
 resource "cloudflare_zero_trust_access_group" "restricted_users" {
-  account_id     = var.CF_ACCOUNT_ID
-  name           = "RestrictedUsers"
+  account_id = var.CF_ACCOUNT_ID
+  name       = "RestrictedUsers"
 
-  include {
-    email = split(", ", var.CF_ACCESS_RESTRICTED_USERS)
-  }
+  include = [
+    for email_addr in split(", ", var.CF_ACCESS_RESTRICTED_USERS) : {
+      email = {
+        email = email_addr
+      }
+    }
+  ]
 }
 
 resource "cloudflare_zero_trust_access_policy" "unrestricted_users_policy" {
@@ -29,8 +37,14 @@ resource "cloudflare_zero_trust_access_policy" "unrestricted_users_policy" {
   name           = "UnrestrictedUsersAuth"
   decision       = "allow"
 
-  include {
-    group = [cloudflare_zero_trust_access_group.unrestricted_users.id]
+  include =[ {
+    group = {
+      id = cloudflare_zero_trust_access_group.unrestricted_users.id
+    }
+  }]
+
+  lifecycle {
+    ignore_changes = [app_count, reusable]
   }
 }
 
@@ -39,8 +53,14 @@ resource "cloudflare_zero_trust_access_policy" "restricted_user_policy" {
   name           = "RestrictedUsersAuth"
   decision       = "allow"
 
-  include {
-    group = [cloudflare_zero_trust_access_group.restricted_users.id]
+  include =[ {
+    group = {
+      id = cloudflare_zero_trust_access_group.restricted_users.id
+    }
+  }]
+
+  lifecycle {
+    ignore_changes = [app_count, reusable]
   }
 }
 
@@ -49,19 +69,30 @@ resource "cloudflare_zero_trust_access_policy" "bypass_everyone_policy" {
   name           = "Bypass"
   decision       = "bypass"
 
-  include {
-    everyone = true
+  include =[ {
+    everyone = {}
+  }]
+
+  lifecycle {
+    ignore_changes = [app_count, reusable]
   }
 }
 
 resource "cloudflare_zero_trust_access_policy" "bypass_github_cidr_policy" {
-  account_id     = var.CF_ACCOUNT_ID
-  name           = "CIDRbasedBypass"
+  account_id = var.CF_ACCOUNT_ID
+  name       = "CIDRbasedBypass"
+  decision   = "bypass"
 
-  decision       = "bypass"
+  include = [
+    for ip_range in local.github_meta.hooks : {
+      ip = {
+        ip = ip_range
+      }
+    }
+  ]
 
-  include {
-    ip = local.github_meta.hooks
+  lifecycle {
+    ignore_changes = [app_count, reusable]
   }
 }
 
@@ -78,7 +109,7 @@ resource "cloudflare_zero_trust_access_identity_provider" "google_oauth" {
   name       = "Sign in with Google"
   type       = "google"
 
-  config {
+  config = {
     client_id     = var.CF_ACCESS_GOOGLE_CL_ID
     client_secret = var.CF_ACCESS_GOOGLE_CL_SECRET
     pkce_enabled  = true
@@ -95,9 +126,9 @@ resource "cloudflare_zero_trust_access_application" "private_cloud" {
   type             = "self_hosted"
   session_duration = "720h"
 
-  policies = [
-    cloudflare_zero_trust_access_policy.unrestricted_users_policy.id
-  ]
+  policies = [{
+    id = cloudflare_zero_trust_access_policy.unrestricted_users_policy.id
+  }]
 }
 
 ## Photos
@@ -108,9 +139,9 @@ resource "cloudflare_zero_trust_access_application" "private_cloud_photos" {
   type             = "self_hosted"
   session_duration = "720h"
 
-  policies = [
-    cloudflare_zero_trust_access_policy.restricted_user_policy.id
-  ]
+  policies = [{
+    id = cloudflare_zero_trust_access_policy.restricted_user_policy.id
+  }]
 }
 
 ## Private website www exclude from UserAuth
@@ -120,9 +151,9 @@ resource "cloudflare_zero_trust_access_application" "private_website" {
   domain           = "www.${var.CF_DOMAIN_NAME}"
   type             = "self_hosted"
 
-  policies = [
-    cloudflare_zero_trust_access_policy.bypass_everyone_policy.id
-  ]
+  policies = [{
+    id = cloudflare_zero_trust_access_policy.bypass_everyone_policy.id
+  }]
 }
 
 ## Private R2 downloads exclude from UserAuth
@@ -132,9 +163,9 @@ resource "cloudflare_zero_trust_access_application" "private_r2_downloads" {
   domain           = "downloads.${var.CF_DOMAIN_NAME}"
   type             = "self_hosted"
 
-  policies = [
-    cloudflare_zero_trust_access_policy.bypass_everyone_policy.id
-  ]
+  policies = [{
+    id = cloudflare_zero_trust_access_policy.bypass_everyone_policy.id
+  }]
 }
 
 ## Flux webhook
@@ -145,9 +176,9 @@ resource "cloudflare_zero_trust_access_application" "flux_webhook" {
   domain           = "flux-webhook.${var.CF_DOMAIN_NAME}"
   type             = "self_hosted"
 
-  policies = [
-    cloudflare_zero_trust_access_policy.bypass_github_cidr_policy.id
-  ]
+  policies = [{
+    id = cloudflare_zero_trust_access_policy.bypass_github_cidr_policy.id
+  }]
 }
 
 ## MTA-STS policy file exclude from UserAuth
@@ -157,9 +188,9 @@ resource "cloudflare_zero_trust_access_application" "mta_sts_policy" {
   domain           = "mta-sts.${var.CF_DOMAIN_NAME}"
   type             = "self_hosted"
 
-  policies = [
-    cloudflare_zero_trust_access_policy.bypass_everyone_policy.id
-  ]
+  policies = [{
+    id = cloudflare_zero_trust_access_policy.bypass_everyone_policy.id
+  }]
 }
 
 ## Exchange rates exclude from UserAuth
@@ -169,7 +200,7 @@ resource "cloudflare_zero_trust_access_application" "exchange-rates" {
   domain           = "arfolyam.${var.CF_DOMAIN_NAME}"
   type             = "self_hosted"
 
-  policies = [
-    cloudflare_zero_trust_access_policy.bypass_everyone_policy.id
-  ]
+  policies = [{
+    id = cloudflare_zero_trust_access_policy.bypass_everyone_policy.id
+  }]
 }

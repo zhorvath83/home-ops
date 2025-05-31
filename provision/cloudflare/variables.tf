@@ -143,6 +143,16 @@ variable "CF_API_TOKEN" {
   type        = string
 }
 
+variable "CF_TUNNEL_SECRET" {
+  description = "Cloudflare Tunnel Secret"
+  type        = string
+}
+
+variable "CF_TUNNEL_NAME" {
+  description = "Cloudflare Tunnel Name"
+  type        = string
+}
+
 variable "CUSTOM_DOMAIN_EMAIL" {
   description = "Private custom domain email address."
   type        = string

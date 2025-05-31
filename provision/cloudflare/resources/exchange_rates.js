@@ -15,6 +15,31 @@ async function handleRequest(request) {
   }
 
   try {
+    // Elérhető útvonalak listája
+    const availableRoutes = [
+      {
+        path: '/otp-onyp/dinamikus.json',
+        description: 'OTP ONYP Dinamikus portfólió árfolyam adatok',
+        method: 'GET'
+      }
+    ]
+
+    // Ha nincs path vagy csak /otp-onyp, akkor listázzuk az elérhető útvonalakat
+    if (url.pathname === '/' || url.pathname === '/otp-onyp' || url.pathname === '/otp-onyp/') {
+      const routesList = {
+        message: 'Elérhető API útvonalak',
+        routes: availableRoutes,
+        usage: 'Használat: ' + url.origin + '/{path}'
+      }
+
+      return new Response(JSON.stringify(routesList, null, 2), {
+        headers: {
+          'Content-Type': 'application/json',
+          ...corsHeaders
+        }
+      })
+    }
+
     if (url.pathname === '/otp-onyp/dinamikus.json') {
       const responseData = await processOtpOnypDinamikus()
       const jsonResponse = JSON.stringify({ data: responseData }, null, 2)
@@ -26,9 +51,19 @@ async function handleRequest(request) {
         }
       })
     } else {
-      return new Response("Not found", {
+      // Ha nem létező útvonal, akkor is mutassuk meg az elérhető útvonalakat
+      const errorResponse = {
+        error: 'Nem található útvonal',
+        requested_path: url.pathname,
+        available_routes: availableRoutes
+      }
+
+      return new Response(JSON.stringify(errorResponse, null, 2), {
         status: 404,
-        headers: corsHeaders
+        headers: {
+          'Content-Type': 'application/json',
+          ...corsHeaders
+        }
       })
     }
   } catch (error) {

@@ -1,13 +1,8 @@
-# Generate secret for the tunnel
-resource "random_id" "cf-tunnel-secret" {
-  byte_length = 60
-}
-
 # Create the single tunnel we need
 resource "cloudflare_zero_trust_tunnel_cloudflared" "home-ops-tunnel" {
-  name       = "home-ops-tunnel"
+  name       = var.CF_TUNNEL_NAME
   account_id = var.CF_ACCOUNT_ID
-  secret     = random_id.cf-tunnel-secret.b64_std
+  tunnel_secret = var.CF_TUNNEL_SECRET
 }
 
 # Generate tunnel credentials JSON
@@ -15,8 +10,8 @@ locals {
   tunnel_credentials_json = jsonencode({
     "AccountTag"   = var.CF_ACCOUNT_ID,
     "TunnelID"     = cloudflare_zero_trust_tunnel_cloudflared.home-ops-tunnel.id
-    "TunnelName"   = cloudflare_zero_trust_tunnel_cloudflared.home-ops-tunnel.name,
-    "TunnelSecret" = cloudflare_zero_trust_tunnel_cloudflared.home-ops-tunnel.secret
+    "TunnelName"   = var.CF_TUNNEL_NAME,
+    "TunnelSecret" = var.CF_TUNNEL_SECRET
   })
 }
 
@@ -27,7 +22,7 @@ resource "null_resource" "store-tunnel-secret" {
   }
 
   provisioner "local-exec" {
-    command     = "op item edit cloudflare --vault HomeOps 'tunnel_name=${cloudflare_zero_trust_tunnel_cloudflared.home-ops-tunnel.name}' 'tunnel_id=${cloudflare_zero_trust_tunnel_cloudflared.home-ops-tunnel.id}' 'tunnel_secret=${cloudflare_zero_trust_tunnel_cloudflared.home-ops-tunnel.secret}' 'tunnel_token=${cloudflare_zero_trust_tunnel_cloudflared.home-ops-tunnel.tunnel_token}' 'tunnel_credentials=${self.triggers.tunnel_credentials_file}'"
+    command     = "op item edit cloudflare --vault HomeOps 'tunnel_name=${var.CF_TUNNEL_NAME}' 'tunnel_id=${cloudflare_zero_trust_tunnel_cloudflared.home-ops-tunnel.id}' 'tunnel_secret=${var.CF_TUNNEL_SECRET}' 'tunnel_credentials=${self.triggers.tunnel_credentials_file}'"
     interpreter = ["/bin/bash", "-c"]
     working_dir = path.module
     quiet       = false
@@ -35,45 +30,19 @@ resource "null_resource" "store-tunnel-secret" {
 }
 
 # Create CNAME record for the tunnel
-resource "cloudflare_record" "tunnel_cname" {
+resource "cloudflare_dns_record" "tunnel_cname" {
   name    = "tunnel"
   zone_id = cloudflare_zone.domain.id
-  content = cloudflare_zero_trust_tunnel_cloudflared.home-ops-tunnel.cname
+  content = "${cloudflare_zero_trust_tunnel_cloudflared.home-ops-tunnel.id}.cfargotunnel.com"
   type    = "CNAME"
   proxied = true
   ttl     = 1
-}
-
-# Tunnel health notification policy
-resource "cloudflare_notification_policy" "home-ops-tun-health" {
-  account_id  = var.CF_ACCOUNT_ID
-  name        = "CF tunnel health notification events"
-  description = "Notification policy related to CF tunnel health events."
-  enabled     = true
-  alert_type  = "tunnel_health_event"
-
-  email_integration {
-    id = var.CUSTOM_DOMAIN_EMAIL
-  }
 }
 
 # Output tunnel information
 output "tunnel_info" {
   value = {
     tunnel_id    = cloudflare_zero_trust_tunnel_cloudflared.home-ops-tunnel.id
-    tunnel_name  = cloudflare_zero_trust_tunnel_cloudflared.home-ops-tunnel.name
-    tunnel_token = cloudflare_zero_trust_tunnel_cloudflared.home-ops-tunnel.tunnel_token
+    tunnel_name  = var.CF_TUNNEL_NAME
   }
-  sensitive = true
-}
-
-# Separate non-sensitive outputs
-output "tunnel_id" {
-  value = cloudflare_zero_trust_tunnel_cloudflared.home-ops-tunnel.id
-  description = "Cloudflare Tunnel ID"
-}
-
-output "tunnel_name" {
-  value = cloudflare_zero_trust_tunnel_cloudflared.home-ops-tunnel.name
-  description = "Cloudflare Tunnel Name"
 }

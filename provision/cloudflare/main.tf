@@ -18,7 +18,7 @@ terraform {
     # renovate:disablePlugin terraform cloudflare/cloudflare
     cloudflare = {
       source  = "cloudflare/cloudflare"
-      version = "4.52.0"
+      version = "5.5.0"
     }
   
     http = {
@@ -49,10 +49,10 @@ provider "cloudflare" {
 }
 
 resource "cloudflare_zone" "domain" {
-  account_id = var.CF_ACCOUNT_ID
-  zone   = var.CF_DOMAIN_NAME
-  paused = false
-  plan   = "free"
+  account = {
+      id = var.CF_ACCOUNT_ID
+    }
+  name = var.CF_DOMAIN_NAME
   type   = "full"
 }
 
