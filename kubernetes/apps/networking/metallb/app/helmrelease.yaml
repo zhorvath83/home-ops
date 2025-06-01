@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2beta2.json
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -18,6 +18,13 @@ spec:
 
   driftDetection:
     mode: enabled
+    ignore:
+      # Exclude bgppeers CRD from drift detection because of Flux issue
+      - paths: [""]
+        target:
+          kind: CustomResourceDefinition
+          name: bgppeers.metallb.io
+
   install:
     createNamespace: true
     remediation:
