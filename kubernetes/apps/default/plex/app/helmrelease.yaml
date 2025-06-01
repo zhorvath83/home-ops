@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -13,7 +13,7 @@ spec:
       version: 3.7.3
       sourceRef:
         kind: HelmRepository
-        name: bjw-s
+        name: bjw-s-labs
         namespace: flux-system
 
   install:
@@ -48,8 +48,8 @@ spec:
         containers:
           app:
             image:
-              repository: ghcr.io/onedr0p/plex
-              tag: 1.41.5.9522@sha256:6d393c4eee152100bd6762a94bdd891b8c80c1c8a914a7f906b4097ab69fd557
+              repository: ghcr.io/home-operations/plex
+              tag: 1.41.7.9823@sha256:86e83ad4b671c4326e4f2b4520aced967c60efdf1aaa77191aad6d2ee4148d59
               pullPolicy: IfNotPresent
 
             env:
@@ -71,12 +71,23 @@ spec:
                   - ALL
 
             probes:
-              liveness:
-                enabled: false
-              readiness:
-                enabled: false
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /identity
+                    port: &port 32400
+                  initialDelaySeconds: 0
+                  periodSeconds: 10
+                  timeoutSeconds: 1
+                  failureThreshold: 3
+              readiness: *probes
               startup:
-                enabled: false
+                enabled: true
+                spec:
+                  failureThreshold: 30
+                  periodSeconds: 10
 
             resources:
               requests:

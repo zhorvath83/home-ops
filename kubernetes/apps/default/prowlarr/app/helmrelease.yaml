@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -13,7 +13,7 @@ spec:
       version: 3.7.3
       sourceRef:
         kind: HelmRepository
-        name: bjw-s
+        name: bjw-s-labs
         namespace: flux-system
 
   install:
@@ -51,8 +51,8 @@ spec:
         containers:
           app:
             image:
-              repository: ghcr.io/onedr0p/prowlarr
-              tag: 1.32.2.4987@sha256:aa248643aa72c407d2f565c2b63831f887152aae47acb076a12b062bbbdeb61d
+              repository: ghcr.io/home-operations/prowlarr
+              tag: 1.36.3.5071@sha256:fc2bf7caecc52e1dded4eee430c3fc77c08e4b812aa2b6b71b9083b673f96093
               pullPolicy: IfNotPresent
 
             env:

@@ -1,14 +1,6 @@
 ---
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
 version: "3"
-
-x-task-vars: &task-vars
-  rsrc: '{{.rsrc}}'
-  controller: '{{.controller}}'
-  namespace: '{{.namespace}}'
-  claim: '{{.claim}}'
-  ts: '{{.ts}}'
-  kustomization: '{{.kustomization}}'
-  previous: '{{.previous}}'
 
 vars:
   destinationTemplate: "{{.ROOT_DIR}}/.taskfiles/VolSync/ReplicationDestination.tmpl.yaml"
@@ -17,6 +9,15 @@ vars:
   listJobTemplate: "{{.ROOT_DIR}}/.taskfiles/VolSync/ListJob.tmpl.yaml"
   unlockJobTemplate: "{{.ROOT_DIR}}/.taskfiles/VolSync/UnlockJob.tmpl.yaml"
   ts: '{{now | date "150405"}}'
+
+env:
+  RSRC: '{{.rsrc}}'
+  CONTROLLER: '{{.controller}}'
+  NAMESPACE: '{{.namespace}}'
+  CLAIM: '{{.claim}}'
+  TS: '{{.ts}}'
+  KUSTOMIZATION: '{{.kustomization}}'
+  PREVIOUS: '{{.previous}}'
 
 tasks:
 
@@ -32,7 +33,6 @@ tasks:
     vars:
       rsrc: '{{ or .rsrc (fail "ReplicationSource `rsrc` is required") }}'
       namespace: '{{.namespace | default "default"}}'
-    env: *task-vars
     preconditions:
       - sh: test -f {{.waitForJobScript}}
       - sh: test -f {{.listJobTemplate}}
@@ -49,7 +49,6 @@ tasks:
     vars:
       rsrc: '{{ or .rsrc (fail "ReplicationSource `rsrc` is required") }}'
       namespace: '{{.namespace | default "default"}}'
-    env: *task-vars
     preconditions:
       - sh: test -f {{.waitForJobScript}}
       - sh: test -f {{.unlockJobTemplate}}
@@ -68,7 +67,6 @@ tasks:
     vars:
       rsrc: '{{ or .rsrc (fail "ReplicationSource `rsrc` is required") }}'
       namespace: '{{.namespace | default "default"}}'
-    env: *task-vars
     preconditions:
       - sh: test -f {{.waitForJobScript}}
       - sh: kubectl -n {{.namespace}} get replicationsources {{.rsrc}}
@@ -81,13 +79,9 @@ tasks:
     desc: Trigger a Restic ReplicationSource restore (ex. task vs:restore rsrc=plex [namespace=default])
     cmds:
       - task: restore-suspend-app
-        vars: *task-vars
       - task: restore-wipe-job
-        vars: *task-vars
       - task: restore-volsync-job
-        vars: *task-vars
       - task: restore-resume-app
-        vars: *task-vars
     vars:
       rsrc: '{{ or .rsrc (fail "Variable `rsrc` is required") }}'
       namespace: '{{.namespace | default "default"}}'
@@ -111,7 +105,6 @@ tasks:
             echo "statefulset.apps/$app"
           fi
       previous: "{{.previous | default 1}}"
-    env: *task-vars
     preconditions:
       - sh: test -f {{.wipeJobTemplate}}
       - sh: test -f {{.destinationTemplate}}
@@ -125,7 +118,6 @@ tasks:
       - flux -n {{.namespace}} suspend helmrelease {{.rsrc}}
       - kubectl -n {{.namespace}} scale {{.controller}} --replicas 0
       - kubectl -n {{.namespace}} wait pod --for delete --selector="app.kubernetes.io/name={{.rsrc}}" --timeout=2m
-    env: *task-vars
 
   # Wipe the PVC of all data
   restore-wipe-job:
@@ -136,7 +128,6 @@ tasks:
       - kubectl -n {{.namespace}} wait job/wipe-{{.rsrc}}-{{.claim}}-{{.ts}} --for condition=complete --timeout=120m
       - kubectl -n {{.namespace}} logs job/wipe-{{.rsrc}}-{{.claim}}-{{.ts}} --container wipe
       - kubectl -n {{.namespace}} delete job wipe-{{.rsrc}}-{{.claim}}-{{.ts}}
-    env: *task-vars
 
   # Create VolSync replicationdestination CR to restore data
   restore-volsync-job:
@@ -146,7 +137,6 @@ tasks:
       - bash {{.waitForJobScript}} volsync-dst-{{.rsrc}}-{{.claim}}-{{.ts}} {{.namespace}}
       - kubectl -n {{.namespace}} wait job/volsync-dst-{{.rsrc}}-{{.claim}}-{{.ts}} --for condition=complete --timeout=120m
       - kubectl -n {{.namespace}} delete replicationdestination {{.rsrc}}-{{.claim}}-{{.ts}}
-    env: *task-vars
 
   # Resume Flux ks and hr
   restore-resume-app:
@@ -154,4 +144,3 @@ tasks:
     cmds:
       - flux -n {{.namespace}} resume helmrelease {{.rsrc}}
       - flux -n flux-system resume kustomization {{.kustomization}}
-    env: *task-vars
