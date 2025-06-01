@@ -49,6 +49,7 @@ spec:
     env:
       HOMEPAGE_ALLOWED_HOSTS: &host "dash.${PUBLIC_DOMAIN}"
 
+    # Enable RBAC. RBAC is necessary to use Kubernetes integration
     enableRbac: true
     serviceAccount:
       name: homepage
@@ -56,6 +57,7 @@ spec:
       create: true
 
     config:
+      # Use a ConfigMap to provide the configuration file
       useExistingConfigMap: homepage-config
 
     ingress:
@@ -95,10 +97,10 @@ spec:
           - ALL
 
     persistence:
-      config:
+      logs:
         enabled: true
         type: emptyDir
-        mountPath: /app/config
+        mountPath: /app/config/logs
 
 
     resources:
