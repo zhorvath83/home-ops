@@ -77,18 +77,20 @@ spec:
                 spec:
                   httpGet:
                     path: /identity
-                    port: 32400
+                    port: &port 32400
                   initialDelaySeconds: 30
                   periodSeconds: 30
                   timeoutSeconds: 10
                   failureThreshold: 3
+
               readiness: *probes
+
               startup:
                 enabled: true
+                custom: true
                 spec:
-                  initialDelaySeconds: 15
-                  periodSeconds: 5
-                  failureThreshold: 15
+                  tcpSocket:
+                    port: *port
 
             resources:
               requests:
