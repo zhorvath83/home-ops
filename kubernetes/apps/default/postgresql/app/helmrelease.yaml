@@ -34,7 +34,7 @@ spec:
     image:
       registry: docker.io
       repository: bitnami/postgresql
-      tag: 15.4.0@sha256:656bacb3b75850889058badb843fab1549a63a027bfd62f194dc3dc932708206
+      tag: 15.10.0@sha256:e989bcc1772cd82ef46bd03d3e6bf7ea35011b39a7826d828886cb9c45aec819
 
     commonAnnotations:
       reloader.stakater.com/auto: "true"
