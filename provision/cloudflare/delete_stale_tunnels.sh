@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Cloudflare Tunnel Cleanup Script - FIXED VERSION
+# Cloudflare Tunnel Cleanup Script
 # Keeps only the newest ACTIVE tunnel if multiple ACTIVE tunnels exist
 # Only works with active (non-soft-deleted) tunnels
 
@@ -40,6 +40,7 @@ make_api_call() {
     local method="$1"
     local url="$2"
     local response
+    local success
     
     response=$(curl -s -X "$method" "$url" \
         -H "Authorization: Bearer $CF_API_TOKEN" \
@@ -51,7 +52,7 @@ make_api_call() {
         exit 1
     fi
     
-    local success=$(echo "$response" | jq -r '.success // false')
+    success=$(echo "$response" | jq -r '.success // false')
     if [ "$success" != "true" ]; then
         echo -e "${RED}❌ API call failed${NC}" >&2
         echo "$response" | jq -r '.errors[]?.message // "Unknown error"' >&2

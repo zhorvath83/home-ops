@@ -138,10 +138,10 @@ variable "CF_GLOBAL_APIKEY" {
   type        = string
 }
 
-variable "CF_API_TOKEN" {
-  description = "Cloudflare API Token for tunnel management"
-  type        = string
-}
+# variable "CF_API_TOKEN" {
+#   description = "Cloudflare API Token for tunnel management"
+#   type        = string
+# }
 
 variable "CF_TUNNEL_SECRET" {
   description = "Cloudflare Tunnel Secret"
