@@ -153,10 +153,10 @@ variable "CF_TUNNEL_NAME" {
   type        = string
 }
 
-variable "CUSTOM_DOMAIN_EMAIL" {
-  description = "Private custom domain email address."
-  type        = string
-}
+# variable "CUSTOM_DOMAIN_EMAIL" {
+#   description = "Private custom domain email address."
+#   type        = string
+# }
 
 variable "GITHUB_USER_FOR_PAGES" {
   description = "Github user name for CF Pages deploy."
