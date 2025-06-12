@@ -57,10 +57,37 @@ spec:
                   echo "qbittorrent statefulset not found!"
                   exit 1
                 fi
+
+    serviceAccount:
+      qbittorrent-upgrade: {}
+
+    rbac:
+      roles:
+        qbittorrent-role:
+          enabled: true
+          type: Role  
+          rules:
+            - apiGroups: [""]
+              resources: ["pods"]
+              verbs: ["get", "list"]
+            - apiGroups: [""]
+              resources: ["pods/exec"]
+              verbs: ["create"]
+            - apiGroups: ["apps"]
+              resources: ["statefulsets"]
+              verbs: ["get", "patch"]
+      bindings:
+        qbittorrent-binding:
+          enabled: true
+          type: RoleBinding
+          roleRef:
+            identifier: qbittorrent-role
+          subjects:
+            - kind: ServiceAccount
+              name: qbittorrent-upgrade
+              namespace: "{{ .Release.Namespace }}"
+
     service:
       app:
         controller: *app
         enabled: false
-    serviceAccount:
-      create: false
-      name: jobs
