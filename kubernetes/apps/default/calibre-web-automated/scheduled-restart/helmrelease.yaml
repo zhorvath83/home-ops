@@ -55,10 +55,34 @@ spec:
                   echo "calibre-web-automated statefulset not found!"
                   exit 1
                 fi
+
+    serviceAccount:
+      calibre-web-scheduled-restart: {}
+
+    rbac:
+      roles:
+        calibre-web-role:
+          enabled: true
+          type: Role  
+          rules:
+            - apiGroups: [""]
+              resources: ["pods"]
+              verbs: ["get", "list"]
+            - apiGroups: ["apps"]
+              resources: ["statefulsets"]
+              verbs: ["get", "patch"]
+      bindings:
+        calibre-web-binding:
+          enabled: true
+          type: RoleBinding
+          roleRef:
+            identifier: calibre-web-role
+          subjects:
+            - kind: ServiceAccount
+              name: calibre-web-scheduled-restart
+              namespace: "{{ .Release.Namespace }}"
+
     service:
       app:
         controller: *app
         enabled: false
-    serviceAccount:
-      create: false
-      name: jobs
