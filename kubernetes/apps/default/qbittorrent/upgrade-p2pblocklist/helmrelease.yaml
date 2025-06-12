@@ -59,7 +59,7 @@ spec:
                 fi
 
     serviceAccount:
-      qbittorrent-upgrade: {}
+      qbittorrent-upgrade-p2pblocklist: {}
 
     rbac:
       roles:
@@ -84,7 +84,7 @@ spec:
             identifier: qbittorrent-role
           subjects:
             - kind: ServiceAccount
-              name: qbittorrent-upgrade
+              name: qbittorrent-upgrade-p2pblocklist
               namespace: "{{ .Release.Namespace }}"
 
     service:
