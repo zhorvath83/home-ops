@@ -65,7 +65,7 @@ spec:
       roles:
         qbittorrent-role:
           enabled: true
-          type: Role  
+          type: Role
           rules:
             - apiGroups: [""]
               resources: ["pods"]
