@@ -18,7 +18,7 @@ terraform {
     # renovate:disablePlugin terraform cloudflare/cloudflare
     cloudflare = {
       source  = "cloudflare/cloudflare"
-      version = "5.6.0"
+      version = "5.7.0"
     }
   
     http = {
