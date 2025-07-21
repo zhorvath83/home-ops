@@ -10,7 +10,7 @@ spec:
   chart:
     spec:
       chart: external-dns
-      version: 1.16.1
+      version: 1.18.0
       sourceRef:
         kind: HelmRepository
         name: external-dns
@@ -20,16 +20,17 @@ spec:
     mode: enabled
   install:
     createNamespace: true
+    crds: CreateReplace
     remediation:
-      retries: 3
+      retries: -1
   upgrade:
+    crds: CreateReplace
     cleanupOnFail: true
     remediation:
       retries: 3
   uninstall:
     keepHistory: false
   values:
-    installCRDs: false
     interval: 2m
     logLevel: debug
     provider: cloudflare

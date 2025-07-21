@@ -21,11 +21,13 @@ spec:
     mode: enabled
   install:
     createNamespace: true
+    crds: CreateReplace
     remediation:
-      retries: 5
+      retries: -1
   upgrade:
+    crds: CreateReplace
     remediation:
-      retries: 5
+      retries: 3
   values:
     # Pod Security Context controlled via Helm Chart.
     crds:
