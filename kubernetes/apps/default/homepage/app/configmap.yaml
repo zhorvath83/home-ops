@@ -180,11 +180,11 @@ data:
         - Tasmota switch 1:
             href: http://192.168.2.18
             icon: tasmota.svg
+        - Tasmota switch 2:
+            href: http://192.168.2.19
+            icon: tasmota.svg
         - Tasmota switch 3:
             href: http://192.168.2.20
-            icon: tasmota.svg
-        - Tasmota switch 4:
-            href: http://192.168.2.21
             icon: tasmota.svg
 
     - Downloading:
