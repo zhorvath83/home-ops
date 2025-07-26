@@ -190,7 +190,7 @@ data:
     - Downloading:
         - Ncore:
             icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/ncore.png
-            href: https://ncore.pro/login.php?2fa
+            href: https://ncore.pro/login.php
         - Bithumen:
             icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/bithumen.png
             href: https://bithumen.be
