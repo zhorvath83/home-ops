@@ -82,19 +82,20 @@ spec:
               tag: master@sha256:89a5a220effa9f0ba28278af9cab4af3c55d78b9eb2fa9990bf13b23ff8b86af
               pullPolicy: IfNotPresent
 
+
             env:
               - name: TZ
                 value: Europe/Budapest
               - name: PHOTOVIEW_LISTEN_IP
                 value: 0.0.0.0
               - name: PHOTOVIEW_LISTEN_PORT
-                value: 8080
+                value: "8080"
               - name: PHOTOVIEW_SERVE_UI
-                value: true
+                value: "1"  # Változtatás: true helyett 1
               - name: PHOTOVIEW_DISABLE_FACE_RECOGNITION
-                value: true
+                value: "1"  # Változtatás: true helyett 1
               - name: PHOTOVIEW_DISABLE_VIDEO_ENCODING
-                value: false
+                value: "0"  # Változtatás: false helyett 0
               - name: PHOTOVIEW_MEDIA_CACHE
                 value: /app/cache
               - name: MAPBOX_TOKEN
@@ -105,7 +106,7 @@ spec:
               - name: PHOTOVIEW_DATABASE_DRIVER
                 value: sqlite
               - name: PHOTOVIEW_SQLITE_PATH
-                value: /app/cache/data/photoview.db
+                value: /app/cache/photoview.db
               # - name: PHOTOVIEW_DATABASE_DRIVER
               #   value: postgres
               # - name: PHOTOVIEW_POSTGRES_URL
