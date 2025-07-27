@@ -79,7 +79,7 @@ spec:
           app:
             image:
               repository: viktorstrate/photoview
-              tag: master@sha256:89a5a220effa9f0ba28278af9cab4af3c55d78b9eb2fa9990bf13b23ff8b86af
+              tag: master@sha256:a1034bf589d7c213375906b374d5bf801bb596dc751e7c628c063f01c0766dba
               pullPolicy: IfNotPresent
 
             env:
@@ -102,13 +102,13 @@ spec:
                   secretKeyRef:
                     name: photoview-secret
                     key: MAPBOX_TOKEN
-              - name: PHOTOVIEW_DATABASE_DRIVER
-                value: postgres
-              - name: PHOTOVIEW_POSTGRES_URL
-                valueFrom:
-                  secretKeyRef:
-                    name: photoview-secret
-                    key: PHOTOVIEW_POSTGRES_URL
+              # - name: PHOTOVIEW_DATABASE_DRIVER
+              #   value: postgres
+              # - name: PHOTOVIEW_POSTGRES_URL
+              #   valueFrom:
+              #     secretKeyRef:
+              #       name: photoview-secret
+              #       key: PHOTOVIEW_POSTGRES_URL
 
             probes:
               liveness:
