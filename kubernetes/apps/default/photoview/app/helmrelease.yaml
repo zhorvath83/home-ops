@@ -103,17 +103,17 @@ spec:
                   secretKeyRef:
                     name: photoview-secret
                     key: MAPBOX_TOKEN
-              - name: PHOTOVIEW_DATABASE_DRIVER
-                value: sqlite
-              - name: PHOTOVIEW_SQLITE_PATH
-                value: /app/cache/photoview.db
               # - name: PHOTOVIEW_DATABASE_DRIVER
-              #   value: postgres
-              # - name: PHOTOVIEW_POSTGRES_URL
-              #   valueFrom:
-              #     secretKeyRef:
-              #       name: photoview-secret
-              #       key: PHOTOVIEW_POSTGRES_URL
+              #   value: sqlite
+              # - name: PHOTOVIEW_SQLITE_PATH
+              #   value: /app/cache/photoview.db
+              - name: PHOTOVIEW_DATABASE_DRIVER
+                value: postgres
+              - name: PHOTOVIEW_POSTGRES_URL
+                valueFrom:
+                  secretKeyRef:
+                    name: photoview-secret
+                    key: PHOTOVIEW_POSTGRES_URL
 
             probes:
               liveness:
