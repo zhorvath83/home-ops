@@ -174,9 +174,6 @@ data:
         - Zigbee2Tasmota:
             href: http://192.168.2.3
             icon: https://raw.githubusercontent.com/zhorvath83/dashboard-icons/master/svg/zigbee.svg
-        - MiLight Hub:
-            href: http://192.168.2.4
-            icon: https://raw.githubusercontent.com/zhorvath83/dashboard-icons/master/svg/led-bulb.svg
         - Tasmota switch 1:
             href: http://192.168.2.18
             icon: tasmota.svg
