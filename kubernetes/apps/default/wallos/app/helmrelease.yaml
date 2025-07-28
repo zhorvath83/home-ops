@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app actual
+  name: &app wallos
   namespace: default
 spec:
   interval: 16m
@@ -33,16 +33,16 @@ spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 10001
-        runAsGroup: 10001
-        fsGroup: 10001
+        runAsNonRoot: false
+        runAsUser: 0
+        runAsGroup: 0
+        fsGroup: 0
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
 
     controllers:
-      actual:
+      wallos:
         type: statefulset
 
         annotations:
@@ -51,62 +51,51 @@ spec:
         containers:
           app:
             image:
-              repository: ghcr.io/actualbudget/actual
-              tag: 25.7.1
+              repository: ghcr.io/ellite/wallos
+              tag: 4.0.0@sha256:11085443d9bc7b9b5f824a0c4b6dcab386fba04ad831624433b8c82e2a026a63
               pullPolicy: IfNotPresent
 
             env:
               TZ: Europe/Budapest
-              ACTUAL_PORT: &httpPort 5006
 
             probes:
               liveness:
-                enabled: true
+                enabled: false
               readiness:
-                enabled: true
-                custom: true
-                spec:
-                  httpGet:
-                    path: /
-                    port: *httpPort
-                  initialDelaySeconds: 0
-                  periodSeconds: 10
-                  timeoutSeconds: 1
-                  failureThreshold: 3
+                enabled: false
 
             securityContext:
-              privileged: false
               allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: true
-              capabilities:
-                drop:
-                  - ALL
+              # /var/www/html/startup.sh: line 3: can't create /var/log/startup.log: Read-only file system
+              readOnlyRootFilesystem: false
+              # ERROR: [pool www] failed to setgid(82): Operation not permitted (1)
+              # capabilities: { drop: ["ALL"] }
 
             resources:
               requests:
-                cpu: 12m
-                memory: 128M
+                cpu: 10m
+                memory: 60M
               limits:
-                memory: 512M
+                memory: 256M
 
     service:
       app:
         controller: *app
         ports:
           http:
-            port: *httpPort
+            port: 80
 
     ingress:
       app:
         className: "nginx"
         annotations:
           gethomepage.dev/enabled: "true"
-          gethomepage.dev/name: Actual
+          gethomepage.dev/name: Wallos
           gethomepage.dev/group: Finance
-          gethomepage.dev/icon: actual-budget
-          gethomepage.dev/siteMonitor: http://actual.default.svc.cluster.local:5006
+          gethomepage.dev/icon: wallos
+          gethomepage.dev/siteMonitor: http://wallos.default.svc.cluster.local:80
         hosts:
-          - host: "actual.${PUBLIC_DOMAIN}"
+          - host: "wallos.${PUBLIC_DOMAIN}"
             paths:
               - path: /
                 service:
@@ -117,6 +106,6 @@ spec:
       data:
         existingClaim: *app
         advancedMounts:
-          actual:
+          wallos:
             app:
               - path: /data
