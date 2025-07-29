@@ -108,4 +108,7 @@ spec:
         advancedMounts:
           wallos:
             app:
-              - path: /data
+              - path: /var/www/html/db
+                subPath: db
+              - path: /var/www/html/images/uploads/logos
+                subPath: logos
