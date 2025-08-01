@@ -25,7 +25,7 @@ repos:
         exclude: mta_sts_policy.tpl
       - id: remove-tabs
   - repo: https://github.com/sirosen/texthooks
-    rev: 0.6.8
+    rev: 0.7.1
     hooks:
       - id: fix-smartquotes
   - repo: https://github.com/k8s-at-home/sops-pre-commit
