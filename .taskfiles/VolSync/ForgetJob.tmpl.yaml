@@ -1,0 +1,22 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "forget-${rsrc}-${ts}"
+  namespace: "${namespace}"
+spec:
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      automountServiceAccountToken: false
+      restartPolicy: OnFailure
+      containers:
+        - name: forget
+          image: docker.io/restic/restic:0.15.2
+          args: 
+            - "forget"
+            - "--keep-last=3"
+            - "--prune"
+          envFrom:
+            - secretRef:
+                name: "${rsrc}-restic-secret"
