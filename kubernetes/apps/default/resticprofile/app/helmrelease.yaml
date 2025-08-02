@@ -10,7 +10,7 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 4.1.2
+      version: 4.2.0
       sourceRef:
         kind: HelmRepository
         name: app-template
@@ -52,7 +52,7 @@ spec:
           app:
             image:
               repository: creativeprojects/resticprofile
-              tag: 0.31.0@sha256:972427f3e42c49e1e87e40b1c0c43f2490f736a47b5d162c85c669f9b283612b
+              tag: 0.31.0@sha256:d24763cbd165aa7f73fbf014ca99eef895bf7f90b59552192ef614a3ae2d0bb3
               pullPolicy: IfNotPresent
 
             command:

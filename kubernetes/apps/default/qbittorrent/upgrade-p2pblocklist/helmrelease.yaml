@@ -9,7 +9,7 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 4.1.2
+      version: 4.2.0
       sourceRef:
         kind: HelmRepository
         name: app-template
@@ -36,7 +36,7 @@ spec:
           app:
             image:
               repository: docker.io/alpine/k8s
-              tag: 1.33.2@sha256:329cf13af9ee678e3afd71b6af44447029f119f713bec278db2fb53571e857f5
+              tag: 1.33.3@sha256:47e4ea4c263fb4e14e51d7c5ca841da756673f18e2340f38c0cf1f7219d05e85
             command:
               - "/bin/bash"
               - "-c"
