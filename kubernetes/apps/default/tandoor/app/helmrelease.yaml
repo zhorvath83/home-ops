@@ -75,35 +75,6 @@ spec:
                     name: tandoor-secret
                     key: POSTGRES_PASSWORD
 
-          02-init-migrate:
-            image:
-              repository: vabene1111/recipes
-              tag: 2.0.1
-              pullPolicy: IfNotPresent
-            env:
-              - name: DB_ENGINE
-                value: django.db.backends.postgresql
-              - name: POSTGRES_HOST
-                value: postgresql.default.svc.cluster.local
-              - name: POSTGRES_PORT
-                value: 5432
-              - name: POSTGRES_DB
-                value: tandoor
-            envFrom:
-              - secretRef:
-                  name: tandoor-secret
-            command:
-              - sh
-              - -c
-              - |
-                set -e
-                source venv/bin/activate
-                echo "Updating database"
-                python manage.py migrate
-                python manage.py collectstatic_js_reverse
-                python manage.py collectstatic --noinput
-                echo "Done"
-
         containers:
           app:
             image:
@@ -112,34 +83,18 @@ spec:
               pullPolicy: IfNotPresent
 
             env:
-              DEBUG: "0"
+              # https://docs.tandoor.dev/system/configuration/
               ALLOWED_HOSTS: "*"
               DB_ENGINE: django.db.backends.postgresql
               POSTGRES_HOST: postgresql.default.svc.cluster.local
               POSTGRES_PORT: 5432
               POSTGRES_DB: tandoor
-              GUNICORN_MEDIA: "1"
               TIMEZONE: "Europe/Budapest"
-              TANDOOR_PORT: 8080
-              FRACTION_PREF_DEFAULT: "0"
               COMMENT_PREF_DEFAULT: "0"
-              SHOPPING_MIN_AUTOSYNC_INTERVAL: "5"
 
             envFrom:
               - secretRef:
                   name: tandoor-secret
-
-            command:
-              - /opt/recipes/venv/bin/gunicorn
-              - -b
-              - :8080
-              - --access-logfile
-              - "-"
-              - --error-logfile
-              - "-"
-              - --log-level
-              - INFO
-              - recipes.wsgi
 
             probes:
               liveness:
@@ -149,13 +104,13 @@ spec:
               startup:
                 enabled: false
 
-            securityContext:
-              privileged: false
-              allowPrivilegeEscalation: false
-              # Could not handle readOnlyRootFilesystem
-              capabilities:
-                drop:
-                  - ALL
+            # securityContext:
+            #   privileged: true
+            #   allowPrivilegeEscalation: false
+            #   # Could not handle readOnlyRootFilesystem
+            #   capabilities:
+            #     drop:
+            #       - ALL
 
             resources:
               requests:
@@ -169,7 +124,7 @@ spec:
         controller: tandoor
         ports:
           http:
-            port: 8080
+            port: 80
 
     ingress:
       app:
@@ -197,7 +152,3 @@ spec:
         type: emptyDir
         globalMounts:
           - path: /opt/recipes/staticfiles
-      django-js-reverse:
-        type: emptyDir
-        globalMounts:
-          - path: /opt/recipes/cookbook/static/django_js_reverse
