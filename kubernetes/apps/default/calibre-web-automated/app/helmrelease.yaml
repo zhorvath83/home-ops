@@ -53,7 +53,7 @@ spec:
           app:
             image:
               repository: ghcr.io/crocodilestick/calibre-web-automated
-              tag: V3.1.4@sha256:a8f87a9945d86de3c4eb091db22d3a978208417f5a5f06dabe83dc24bbd1dde6
+              tag: V3.1.4@sha256:577e846f104fd21453ef306eefb4a95dd95b3b9ddd2463a150944494284da0fd
               pullPolicy: IfNotPresent
 
             env:
