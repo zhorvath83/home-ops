@@ -9,12 +9,12 @@ resources:
   - networkpolicy.yaml
 labels:
   - pairs:
-      app.kubernetes.io/name: cloudflared
+      app.kubernetes.io/name: cloudflare-tunnel
 
 configMapGenerator:
-  - name: cloudflared-config
+  - name: cloudflare-tunnel-config
     files:
-      - config/config.yaml
+      - config.yaml=./resources/config.yaml
 generatorOptions:
   disableNameSuffixHash: true
   annotations:

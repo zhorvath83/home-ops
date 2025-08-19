@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: cloudflared
+  name: cloudflare-tunnel
   namespace: networking
 spec:
   interval: 15m
@@ -43,7 +43,7 @@ spec:
           type: RuntimeDefault
 
     controllers:
-      cloudflared:
+      cloudflare-tunnel:
         type: deployment
         replicas: 1
         strategy: RollingUpdate
@@ -59,32 +59,17 @@ spec:
               pullPolicy: IfNotPresent
 
             env:
-              - name: TZ
-                value: "Europe/Budapest"
-              - name: tunnel_name
-                valueFrom:
-                  secretKeyRef:
-                    name: cloudflared-secret
-                    key: tunnel_name
-              - name: TUNNEL_ORIGIN_ENABLE_HTTP2
-                value: true
-              - name: TUNNEL_TRANSPORT_PROTOCOL
-                value: "quic"
-              - name: TUNNEL_POST_QUANTUM
-                value: true
+              TZ: "Europe/Budapest"
+              NO_AUTOUPDATE: true
+              TUNNEL_METRICS: 0.0.0.0:8080
+              TUNNEL_ORIGIN_ENABLE_HTTP2: true
+              TUNNEL_POST_QUANTUM: true
+              TUNNEL_TRANSPORT_PROTOCOL: quic
+            envFrom:
+              - secretRef:
+                  name: "{{ .Release.Name }}-secret"
 
-            args:
-              - tunnel
-              - --config
-              - /etc/cloudflared/config.yaml
-              - --cred-file
-              - /etc/cloudflared/credentials.json
-              - --metrics
-              - 0.0.0.0:8080
-              - --no-autoupdate
-              - run
-              - "$(tunnel_name)"
-              # Tunnel name retreived from ENV var.
+            args: ["tunnel", "run"]
 
             probes:
               liveness:
@@ -136,7 +121,7 @@ spec:
 
     service:
       app:
-        controller: cloudflared
+        controller: cloudflare-tunnel
         ports:
           http:
             port: 8080
@@ -144,18 +129,9 @@ spec:
     persistence:
       config:
         type: configMap
-        name: cloudflared-config
+        name: cloudflare-tunnel-config
         defaultMode: 0775
         globalMounts:
           - path: /etc/cloudflared/config.yaml
             subPath: config.yaml
-            readOnly: true
-
-      credentials:
-        type: secret
-        name: cloudflared-secret
-        defaultMode: 0775
-        globalMounts:
-          - path: /etc/cloudflared/credentials.json
-            subPath: credentials.json
             readOnly: true

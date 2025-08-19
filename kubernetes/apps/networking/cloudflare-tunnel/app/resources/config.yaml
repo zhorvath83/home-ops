@@ -1,0 +1,10 @@
+---
+originRequest:
+  originServerName: "${PUBLIC_DOMAIN}"
+
+ingress:
+  - hostname: "${PUBLIC_DOMAIN}"
+    service: &svc "https://ingress-nginx-controller.networking.svc.cluster.local"
+  - hostname: "*.${PUBLIC_DOMAIN}"
+    service: *svc
+  - service: http_status:404
