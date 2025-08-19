@@ -4,7 +4,7 @@ import sys
 import requests
 from ruamel.yaml import YAML
 
-NETWORKPOLICY_FILE = os.getenv('NETWORKPOLICY_FILE', 'kubernetes/apps/networking/cloudflared/app/networkpolicy.yaml')
+NETWORKPOLICY_FILE = os.getenv('NETWORKPOLICY_FILE', 'kubernetes/apps/networking/cloudflare-tunnel/app/networkpolicy.yaml')
 
 def fetch_cloudflare_networks():
     response = requests.get('https://api.cloudflare.com/client/v4/ips')

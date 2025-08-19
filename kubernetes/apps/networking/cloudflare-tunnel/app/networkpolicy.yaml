@@ -1,4 +1,6 @@
 ---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.29.0/networkpolicy-networking-v1.json
+# Updated regularly by GitHub workflow
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:

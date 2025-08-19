@@ -5,7 +5,7 @@ on:
   schedule:
     - cron: "0 0 * * *"
 env:
-  NETWORKPOLICY_FILE: kubernetes/apps/networking/cloudflared/app/networkpolicy.yaml
+  NETWORKPOLICY_FILE: kubernetes/apps/networking/cloudflare-tunnel/app/networkpolicy.yaml
 jobs:
   update-cloudflare-networks:
     name: Update Cloudflare Networks
