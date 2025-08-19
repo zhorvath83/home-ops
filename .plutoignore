@@ -1,0 +1,30 @@
+# Ignore markdown files
+
+*.md
+
+# Ignore configuration files that are not YAML
+
+*.conf
+*.config
+*.ini
+*.properties
+*.json
+
+# Ignore specific directories or files that contain non-YAML content
+
+*/readme.md
+*/README.md
+**/config/*.conf
+**/config/*.json
+**/resources/*.conf
+
+# Ignore backup and temporary files
+
+*.bak
+*.tmp
+*.backup
+
+# Ignore documentation directories
+
+docs/
+documentation/
