@@ -1,4 +1,4 @@
-**🔹  Rancher K3s**
+# Rancher K3s
 
 📍 Manual install at first node:
 `sudo curl -sfL https://get.k3s.io | sh -s - server --cluster-init --disable=traefik,servicelb,local-storage --kubelet-arg=image-gc-high-threshold=70 --kubelet-arg=image-gc-low-threshold=50`
@@ -19,5 +19,6 @@
 
 📍 To delete any images no currently used by a running container: `sudo k3s crictl rmi --prune`
 
-**📣  Kubernetes image garbage collection DOCs:**
+## Kubernetes image garbage collection DOCs
+
 <https://kubernetes.io/docs/concepts/architecture/garbage-collection/#containers-images>

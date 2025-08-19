@@ -1,14 +1,16 @@
-**🔹  Postgresql backup with prodrigestivill/docker-postgres-backup-local**
+# Postgresql backup with prodrigestivill/docker-postgres-backup-local
 
-**📣 Manual Backups**
+## Manual Backups
+
 By default this container makes daily backups, but you can start a manual backup by running /backup.sh
 
-**👉  Restore backups**
+## Restore backups
 
-📍  Create the databasa
+📍  Create the database
 
 📍  Drop existing tables and data
 
+```sql
 DO $$
 DECLARE
     r record;
@@ -19,7 +21,10 @@ BEGIN
         EXECUTE format('DROP TABLE IF EXISTS %I.%I CASCADE', r.schemaname, r.tablename);
     END LOOP;
 END$$;
+```
 
 📍  Restore to a remote server
 
+```bash
 zcat recipes-20210819-000003.sql.gz | psql --host=postgresql-15.default.svc.cluster.local --port=5432 --username=postgres --dbname=recipes -W
+```

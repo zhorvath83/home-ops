@@ -1,4 +1,4 @@
-**🔹  GitOps with Flux**
+# GitOps with Flux
 
 📍 Here we will be installing flux after some quick bootstrap steps.
 
@@ -13,10 +13,11 @@
 Create age public / private key:
 `age-keygen -o age.agekey`
 
-```
+```bash
 mkdir -p ~/.config/sops/age
 mv age.agekey ~/.config/sops/age/keys.txt
-echo "export SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt" | tee -a "$HOME/.profile" 
+echo "export SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt" | \
+  tee -a "$HOME/.profile" 
 source ~/.profile
 ```
 
@@ -25,7 +26,7 @@ source ~/.profile
 5.)Install Flux
 `kubectl apply --kustomize=./cluster/base/flux-system`
 
-**📣  Post installation**
+## Post installation
 
 📍  Verify Flux
 `kubectl --kubeconfig=./kubeconfig get pods -n flux-system`
@@ -33,7 +34,7 @@ source ~/.profile
 📍 VSCode SOPS extension
 VSCode SOPS is a neat little plugin for those using VSCode. It will automatically decrypt you SOPS secrets when you click on the file in the editor and encrypt them when you save and exit the file.
 
-**👉  Debugging**
+## Debugging
 
 📍 Manually sync Flux with your Git repository
 `flux reconcile source git home-ops-kubernetes`
@@ -71,7 +72,7 @@ VSCode SOPS is a neat little plugin for those using VSCode. It will automaticall
 📍 Print logs when Flux is installed in a different namespace than flux-system
 `flux logs --flux-namespace=<name-space>`
 
-**👉  Troubleshooting**
+## Troubleshooting
 
 📍 Use the following command to also see charts in all namespaces and also the ones where installation is in progress
 `helm list -Aa`

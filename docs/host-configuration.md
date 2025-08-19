@@ -1,3 +1,5 @@
+# Host Configuration
+
 ## Networking
 
 - Configure static IP address on hosts at `/etc/network/interfaces`

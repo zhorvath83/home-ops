@@ -1,9 +1,12 @@
-**🔹 Restore a backup**
+# Restore a backup
 
+```bash
 zcat /backups/last/dbname-latest.sql.gz | psql --username=postgres -W
+```
 
 📍 If needed drop all tables:
 
+```sql
 DO $$ DECLARE
 r RECORD;
 BEGIN
@@ -14,3 +17,4 @@ FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = current_schema()) L
 EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) || ' CASCADE';
 END LOOP;
 END $$;
+```

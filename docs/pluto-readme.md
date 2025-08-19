@@ -1,4 +1,4 @@
-**🔹  Kubernetes upgrade preparation**
+# Kubernetes upgrade preparation
 
 Pluto is a utility to help find deprecated Kubernetes apiVersions in code repositories and helm releases before upgrading Kubernetes verion.
 
@@ -8,9 +8,10 @@ Finding the places where you have deployed a deprecated apiVersion can be challe
 
 📍 Live Helm releases: Pluto can check both Helm 2 and Helm 3 releases running in your cluster for deprecated apiVersions
 
-**📣 Installation**
+## Installation
+
 <https://pluto.docs.fairwinds.com/installation/#homebrew-tap>
 
-**👉  Usage**
+## Usage
 
 <https://pluto.docs.fairwinds.com/quickstart/#file-detection-in-a-directory>

@@ -13,7 +13,7 @@ spec:
       containers:
         - name: forget
           image: docker.io/restic/restic:0.15.2
-          args: 
+          args:
             - "forget"
             - "--keep-last=3"
             - "--prune"
