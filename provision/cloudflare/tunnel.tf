@@ -5,24 +5,10 @@ resource "cloudflare_zero_trust_tunnel_cloudflared" "home-ops-tunnel" {
   tunnel_secret = var.CF_TUNNEL_SECRET
 }
 
-# Generate tunnel credentials JSON
-locals {
-  tunnel_credentials_json = jsonencode({
-    "AccountTag"   = var.CF_ACCOUNT_ID,
-    "TunnelID"     = cloudflare_zero_trust_tunnel_cloudflared.home-ops-tunnel.id
-    "TunnelName"   = var.CF_TUNNEL_NAME,
-    "TunnelSecret" = var.CF_TUNNEL_SECRET
-  })
-}
-
 # Store tunnel credentials in 1Password
 resource "null_resource" "store-tunnel-secret" {
-  triggers = {
-    tunnel_credentials_file = local.tunnel_credentials_json
-  }
-
   provisioner "local-exec" {
-    command     = "op item edit cloudflare --vault HomeOps 'tunnel_name=${var.CF_TUNNEL_NAME}' 'tunnel_id=${cloudflare_zero_trust_tunnel_cloudflared.home-ops-tunnel.id}' 'tunnel_secret=${var.CF_TUNNEL_SECRET}' 'tunnel_credentials=${self.triggers.tunnel_credentials_file}'"
+    command     = "op item edit cloudflare --vault HomeOps 'tunnel_name=${var.CF_TUNNEL_NAME}' 'tunnel_id=${cloudflare_zero_trust_tunnel_cloudflared.home-ops-tunnel.id}' 'tunnel_secret=${var.CF_TUNNEL_SECRET}'"
     interpreter = ["/bin/bash", "-c"]
     working_dir = path.module
     quiet       = false
