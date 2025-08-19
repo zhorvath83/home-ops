@@ -4,7 +4,7 @@ apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: kube-prometheus-stack
-  namespace: monitoring
+  namespace: observability
 spec:
   interval: 30m
   chart:
@@ -114,7 +114,7 @@ spec:
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Alertmanager
-          gethomepage.dev/group: Monitoring
+          gethomepage.dev/group: observability
           gethomepage.dev/icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/alertmanager.svg
         hosts:
           - &am-host "alertmanager.${PUBLIC_DOMAIN}"
@@ -199,7 +199,7 @@ spec:
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Prometheus
-          gethomepage.dev/group: Monitoring
+          gethomepage.dev/group: observability
           gethomepage.dev/icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/prometheus.svg
         hosts:
           - &pm-host "prometheus.${PUBLIC_DOMAIN}"

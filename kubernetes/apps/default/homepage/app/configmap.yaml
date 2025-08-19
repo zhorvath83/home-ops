@@ -195,7 +195,7 @@ data:
             icon: https://raw.githubusercontent.com/zhorvath83/homer-icons/master/png/bookstack.png
             href: https://www.libranet.org
 
-    - Monitoring:
+    - Observability:
         - Discord:
             icon: discord.svg
             href: https://discord.com/channels/901576305139654767
