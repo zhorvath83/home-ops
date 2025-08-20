@@ -1,5 +1,0 @@
----
-# List of Journald configuration parameters
-journald_config: []
-
-rc_local_options: []
