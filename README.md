@@ -6,9 +6,9 @@ This is a mono repository for my home infrastructure and Kubernetes cluster. I t
 
 The infrastructure is built on a Debian 13 Proxmox server with the following specifications:
 
-| Device                      | Quantity | CPU                                   | RAM  | OS        | Function              |
-|-----------------------------|----------|---------------------------------------|------|-----------|-----------------------|
-| Lenovo M93p tiny USFF       | 1        | 4 x Intel(R) Core(TM) i5-4570T @ 2.90GHz | 16GB | Debian 13 | Proxmox hypervisor    |
+| Device                      | Quantity | CPU                                   | OS Disk Size | RAM  | OS        | Function              |
+|-----------------------------|----------|---------------------------------------|--------------|------|-----------|-----------------------|
+| Lenovo M93p tiny USFF       | 1        | Intel i5-4570T @ 2.90GHz | 512GB SSD   | 16GB | Debian 13 | Proxmox hypervisor    |
 
 **Virtual Machines:**
 
