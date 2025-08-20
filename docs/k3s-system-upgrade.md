@@ -14,7 +14,9 @@ n5     Ready    <none>   117d   v1.19.2+k3s1
 
 ## Making a k3s upgrade plan
 
-We need to decide to which k3s version we need to upgrade, therefore, check out the [GitHub release page of k3s](https://github.com/rancher/k3s/releases). The latest release of this writing was v1.19.4+k3s1 (30 November 2020).
+We need to decide to which k3s version we need to upgrade, therefore, check out the
+[GitHub release page of k3s](https://github.com/rancher/k3s/releases). The latest
+release of this writing was v1.19.4+k3s1 (30 November 2020).
 
 The upgrade plan will upgrade the k3s server node (called k3s-server in the plan) and the k3s worker nodes (called k3s-agent in the plan). For that reason we must first label our master node (in our case *n1*) if that was not yet done:
 
