@@ -1,12 +1,12 @@
 # Github Webhook
 
-Flux is pull-based by design meaning it will periodically check your git repository 
-for changes, using a webhook you can enable Flux to update your cluster on `git push`. 
-In order to configure Github to send `push` events from your repository to the Flux 
+Flux is pull-based by design meaning it will periodically check your git repository
+for changes, using a webhook you can enable Flux to update your cluster on `git push`.
+In order to configure Github to send `push` events from your repository to the Flux
 webhook receiver you will need two things:
 
-1. Webhook URL - Your webhook receiver will be deployed on 
-   `https://flux-webhook.privatedomain.com/hook/:hookId`. In order to find out your 
+1. Webhook URL - Your webhook receiver will be deployed on
+   `https://flux-webhook.privatedomain.com/hook/:hookId`. In order to find out your
    hook id you can run the following command:
 
     ```sh
@@ -23,6 +23,6 @@ webhook receiver you will need two things:
 
 2. Webhook secret - Webhook secret is stored in `github-webhook-token` external secret.
 
-Set everything up on the Github repository side. Navigate to the settings of your 
-repository on Github, under "Settings/Webhooks" press the "Add webhook" button. 
+Set everything up on the Github repository side. Navigate to the settings of your
+repository on Github, under "Settings/Webhooks" press the "Add webhook" button.
 Fill in the webhook url and secret.
