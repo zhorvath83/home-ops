@@ -29,7 +29,7 @@ metadata:
   name: valkey
   namespace: database
 spec:
-  sourcePVC: valkey
+  sourcePVC: valkey-data
   trigger:
     schedule: "0 1 * * *"  # Daily at 1 AM, offset from postgresql
   restic:

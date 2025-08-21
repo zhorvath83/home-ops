@@ -1,19 +1,19 @@
 ---
-# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.schema.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: valkey
+  name: &app valkey
   namespace: database
 spec:
   interval: 15m
   chart:
     spec:
-      chart: valkey
-      version: 3.0.30
+      chart: app-template
+      version: 4.2.0
       sourceRef:
         kind: HelmRepository
-        name: bitnami
+        name: app-template
         namespace: flux-system
 
   install:
@@ -29,84 +29,126 @@ spec:
     keepHistory: false
 
   values:
-    # Use specified valkey image
-    image:
-      registry: ghcr.io
-      repository: valkey-io/valkey
-      tag: "8.1.3"
-
-    # Architecture - single primary for resource efficiency
-    architecture: standalone
-
-    auth:
-      enabled: true
-      # Use external secrets for password management
-      existingSecret: "valkey-secret"
-      existingSecretPasswordKey: "password"
-
-    # Resource configuration following project guidelines
-    primary:
-      configuration: |-
-        # Custom valkey configuration for single-node deployment
-        # Optimize for resource efficiency
-        maxmemory 256mb
-        maxmemory-policy allkeys-lru
-        save 900 1
-        save 300 10
-        save 60 10000
-
-      resources:
-        requests:
-          cpu: 10m
-          memory: 128Mi
-        limits:
-          memory: 512Mi
-
-      # Persistence configuration
-      persistence:
-        enabled: true
-        storageClass: ""  # Use default democratic-csi
-        accessModes:
-          - ReadWriteOnce
-        size: 2Gi
-        path: "/data"
-
-      # Security context - rootless following project standards
-      podSecurityContext:
+    defaultPodOptions:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
         runAsNonRoot: true
         runAsUser: 10001
         runAsGroup: 10001
         fsGroup: 10001
         fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
 
-      containerSecurityContext:
-        privileged: false
-        allowPrivilegeEscalation: false
-        readOnlyRootFilesystem: false  # Valkey needs to write config files
-        capabilities:
-          drop:
-            - ALL
+    controllers:
+      valkey:
+        type: statefulset
 
-      # Service configuration
-      service:
+        annotations:
+          reloader.stakater.com/auto: "true"
+
+        containers:
+          app:
+            image:
+              repository: ghcr.io/valkey-io/valkey
+              tag: "8.1.3"
+              pullPolicy: IfNotPresent
+
+            env:
+              TZ: Europe/Budapest
+
+            args:
+              - --port
+              - "6379"
+              - --requirepass
+              - $(VALKEY_PASSWORD)
+              - --maxmemory
+              - "256mb"
+              - --maxmemory-policy
+              - allkeys-lru
+              - --save
+              - "900 1 300 10 60 10000"
+              - --appendonly
+              - "yes"
+              - --appendfsync
+              - "everysec"
+              - --dir
+              - "/data"
+
+            envFrom:
+              - secretRef:
+                  name: valkey-secret
+
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  exec:
+                    command:
+                      - sh
+                      - -c
+                      - "valkey-cli ping | grep PONG"
+                  initialDelaySeconds: 30
+                  periodSeconds: 10
+                  timeoutSeconds: 5
+                  failureThreshold: 3
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  exec:
+                    command:
+                      - sh
+                      - -c
+                      - "valkey-cli ping | grep PONG"
+                  initialDelaySeconds: 5
+                  periodSeconds: 5
+                  timeoutSeconds: 1
+                  failureThreshold: 3
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  exec:
+                    command:
+                      - sh
+                      - -c
+                      - "valkey-cli ping | grep PONG"
+                  initialDelaySeconds: 10
+                  periodSeconds: 5
+                  timeoutSeconds: 1
+                  failureThreshold: 30
+                  successThreshold: 1
+
+            securityContext:
+              privileged: false
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: false  # valkey needs to write data files
+              capabilities:
+                drop:
+                  - ALL
+
+            resources:
+              requests:
+                cpu: 10m
+                memory: 128Mi
+              limits:
+                memory: 512Mi
+
+    service:
+      app:
+        controller: valkey
         type: ClusterIP
         ports:
-          valkey: 6379
+          valkey:
+            port: 6379
 
-    # Disable replicas for single-node deployment
-    replica:
-      replicaCount: 0
-
-    # Disable sentinel for standalone mode  
-    sentinel:
-      enabled: false
-
-    # Enable metrics for potential future monitoring
-    metrics:
-      enabled: false  # Start disabled, can be enabled later
-      serviceMonitor:
-        enabled: false
-
-    # Network policies - none needed for internal use
-    networkPolicy:
-      enabled: false
+    persistence:
+      data:
+        type: persistentVolumeClaim
+        size: 2Gi
+        accessMode: ReadWriteOnce
+        globalMounts:
+          - path: /data
