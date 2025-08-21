@@ -6,4 +6,3 @@ namespace: database
 resources:
   - ./externalsecret.yaml
   - ./helmrelease.yaml
-  - ./volsync.yaml

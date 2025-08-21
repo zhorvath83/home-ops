@@ -43,8 +43,6 @@ spec:
 
     controllers:
       valkey:
-        type: statefulset
-
         annotations:
           reloader.stakater.com/auto: "true"
 
@@ -64,17 +62,13 @@ spec:
               - --requirepass
               - $(VALKEY_PASSWORD)
               - --maxmemory
-              - "256mb"
+              - "100mb"
               - --maxmemory-policy
               - allkeys-lru
               - --save
-              - "900 1 300 10 60 10000"
+              - ""
               - --appendonly
-              - "yes"
-              - --appendfsync
-              - "everysec"
-              - --dir
-              - "/data"
+              - "no"
 
             envFrom:
               - secretRef:
@@ -87,12 +81,11 @@ spec:
                 spec:
                   exec:
                     command:
-                      - sh
-                      - -c
-                      - "valkey-cli ping | grep PONG"
-                  initialDelaySeconds: 30
+                      - valkey-cli
+                      - ping
+                  initialDelaySeconds: 5
                   periodSeconds: 10
-                  timeoutSeconds: 5
+                  timeoutSeconds: 3
                   failureThreshold: 3
               readiness:
                 enabled: true
@@ -100,42 +93,27 @@ spec:
                 spec:
                   exec:
                     command:
-                      - sh
-                      - -c
-                      - "valkey-cli ping | grep PONG"
-                  initialDelaySeconds: 5
+                      - valkey-cli
+                      - ping
+                  initialDelaySeconds: 2
                   periodSeconds: 5
                   timeoutSeconds: 1
                   failureThreshold: 3
-              startup:
-                enabled: true
-                custom: true
-                spec:
-                  exec:
-                    command:
-                      - sh
-                      - -c
-                      - "valkey-cli ping | grep PONG"
-                  initialDelaySeconds: 10
-                  periodSeconds: 5
-                  timeoutSeconds: 1
-                  failureThreshold: 30
-                  successThreshold: 1
 
             securityContext:
               privileged: false
               allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: false  # valkey needs to write data files
+              readOnlyRootFilesystem: true
               capabilities:
                 drop:
                   - ALL
 
             resources:
               requests:
-                cpu: 10m
-                memory: 128Mi
+                cpu: 5m
+                memory: 32Mi
               limits:
-                memory: 512Mi
+                memory: 128Mi
 
     service:
       app:
@@ -145,10 +123,4 @@ spec:
           valkey:
             port: 6379
 
-    persistence:
-      data:
-        type: persistentVolumeClaim
-        size: 2Gi
-        accessMode: ReadWriteOnce
-        globalMounts:
-          - path: /data
+    # No persistence needed - pure cache mode
