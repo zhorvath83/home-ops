@@ -4,7 +4,6 @@ Thumbs.db
 # Binaries
 bin
 /flux
-basic-memory/
 *.iso
 # Temp folders
 .temp*
