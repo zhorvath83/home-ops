@@ -1,0 +1,3 @@
+[submodule "basic-memory"]
+	path = basic-memory
+	url = git@github.com:zhorvath83/home-ops-ai-template.git
