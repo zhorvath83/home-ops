@@ -17,7 +17,7 @@ kubectl create secret generic sops-age -n flux-system \
 --from-literal=age.agekey="$(op read \
 op://HomeOps/homelab-age-key/keys.txt)"
 
-kubectl create secret generic onepassword-connect-secret -n kube-system \
+kubectl create secret generic onepassword-secret -n external-secrets \
 --from-literal=1password-credentials.json="$(op read \
 op://HomeOps/1p-kubernetes-credentials-file/1password-credentials.json | \
 base64)" --from-literal=token="$(op read \

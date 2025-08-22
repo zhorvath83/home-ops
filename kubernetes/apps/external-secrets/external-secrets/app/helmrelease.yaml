@@ -10,7 +10,7 @@ spec:
   chart:
     spec:
       chart: external-secrets
-      version: 0.18.2
+      version: 0.19.2
       sourceRef:
         kind: HelmRepository
         name: external-secrets
@@ -32,66 +32,23 @@ spec:
     keepHistory: false
 
   values:
+    image:
+      repository: ghcr.io/external-secrets/external-secrets
     installCRDs: true
-
-    podSecurityContext:
-      runAsUser: 10001
-      runAsGroup: 10001
-      fsGroup: 10001
-      fsGroupChangePolicy: OnRootMismatch
-
-    securityContext:
-      privileged: false
-      allowPrivilegeEscalation: false
-      readOnlyRootFilesystem: true
-      seccompProfile:
-        type: RuntimeDefault
-      capabilities:
-        drop:
-          - ALL
-
     serviceMonitor:
       enabled: true
       interval: 1m
-
-    webhook:
-      podSecurityContext:
-        runAsUser: 10001
-        runAsGroup: 10001
-        fsGroup: 10001
-        fsGroupChangePolicy: OnRootMismatch
-
-      securityContext:
-        privileged: false
-        allowPrivilegeEscalation: false
-        readOnlyRootFilesystem: true
-        seccompProfile:
-          type: RuntimeDefault
-        capabilities:
-          drop:
-            - ALL
-
-      serviceMonitor:
-        enabled: true
-        interval: 1m
-
     certController:
-      podSecurityContext:
-        runAsUser: 10001
-        runAsGroup: 10001
-        fsGroup: 10001
-        fsGroupChangePolicy: OnRootMismatch
-
-      securityContext:
-        privileged: false
-        allowPrivilegeEscalation: false
-        readOnlyRootFilesystem: true
-        seccompProfile:
-          type: RuntimeDefault
-        capabilities:
-          drop:
-            - ALL
-
+      image:
+        repository: ghcr.io/external-secrets/external-secrets
       serviceMonitor:
         enabled: true
         interval: 1m
+    webhook:
+      image:
+        repository: ghcr.io/external-secrets/external-secrets
+      serviceMonitor:
+        enabled: true
+        interval: 1m
+    grafanaDashboard:
+      enabled: true
