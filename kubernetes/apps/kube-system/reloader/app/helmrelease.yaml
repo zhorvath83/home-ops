@@ -16,8 +16,6 @@ spec:
         name: stakater
         namespace: flux-system
 
-  driftDetection:
-    mode: enabled
   install:
     createNamespace: true
     remediation:

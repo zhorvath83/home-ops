@@ -16,8 +16,6 @@ spec:
         name: backube
         namespace: flux-system
 
-  driftDetection:
-    mode: enabled
   install:
     createNamespace: true
     crds: CreateReplace

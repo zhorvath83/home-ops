@@ -16,8 +16,6 @@ spec:
         name: democratic-csi
         namespace: flux-system
 
-  driftDetection:
-    mode: enabled
   install:
     createNamespace: true
     remediation:
