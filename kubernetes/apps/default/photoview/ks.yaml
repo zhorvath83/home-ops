@@ -8,7 +8,7 @@ metadata:
 spec:
   dependsOn:
     - name: cluster-apps-democratic-csi
-    - name: cluster-apps-external-secrets-stores
+    - name: cluster-apps-onepassword-store
     - name: cluster-apps-postgresql
   path: ./kubernetes/apps/default/photoview/app
   prune: true

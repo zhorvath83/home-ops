@@ -7,7 +7,7 @@ metadata:
   namespace: flux-system
 spec:
   dependsOn:
-    - name: cluster-apps-external-secrets-stores
+    - name: cluster-apps-onepassword-store
     - name: cluster-apps-democratic-csi
   path: ./kubernetes/apps/default/plex/app
   prune: true
@@ -27,7 +27,7 @@ metadata:
   namespace: flux-system
 spec:
   dependsOn:
-    - name: cluster-apps-external-secrets-stores
+    - name: cluster-apps-onepassword-store
     - name: cluster-apps-democratic-csi
   path: ./kubernetes/apps/default/plex/trakt-sync
   prune: true

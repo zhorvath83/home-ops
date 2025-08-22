@@ -8,7 +8,7 @@ metadata:
 spec:
   dependsOn:
     - name: cluster-apps-democratic-csi
-    - name: cluster-apps-external-secrets-stores
+    - name: cluster-apps-onepassword-store
   path: ./kubernetes/apps/default/postgresql/app
   prune: true
   sourceRef:
@@ -28,7 +28,7 @@ metadata:
 spec:
   dependsOn:
     - name: cluster-apps-democratic-csi
-    - name: cluster-apps-external-secrets-stores
+    - name: cluster-apps-onepassword-store
     - name: cluster-apps-postgresql
   path: ./kubernetes/apps/default/postgresql/backup
   prune: true
