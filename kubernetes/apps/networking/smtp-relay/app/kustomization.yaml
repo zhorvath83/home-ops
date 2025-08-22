@@ -6,7 +6,6 @@ namespace: networking
 resources:
   - externalsecret.yaml
   - helmrelease.yaml
-  # - networkpolicy.yaml
 labels:
   - pairs:
       app.kubernetes.io/name: smtp-relay
