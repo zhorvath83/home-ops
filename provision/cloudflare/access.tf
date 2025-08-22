@@ -42,10 +42,6 @@ resource "cloudflare_zero_trust_access_policy" "unrestricted_users_policy" {
       id = cloudflare_zero_trust_access_group.unrestricted_users.id
     }
   }]
-
-  lifecycle {
-    ignore_changes = [app_count, reusable]
-  }
 }
 
 resource "cloudflare_zero_trust_access_policy" "restricted_user_policy" {
@@ -58,10 +54,6 @@ resource "cloudflare_zero_trust_access_policy" "restricted_user_policy" {
       id = cloudflare_zero_trust_access_group.restricted_users.id
     }
   }]
-
-  lifecycle {
-    ignore_changes = [app_count, reusable]
-  }
 }
 
 resource "cloudflare_zero_trust_access_policy" "bypass_everyone_policy" {
@@ -72,10 +64,6 @@ resource "cloudflare_zero_trust_access_policy" "bypass_everyone_policy" {
   include =[ {
     everyone = {}
   }]
-
-  lifecycle {
-    ignore_changes = [app_count, reusable]
-  }
 }
 
 resource "cloudflare_zero_trust_access_policy" "bypass_github_cidr_policy" {
@@ -90,10 +78,6 @@ resource "cloudflare_zero_trust_access_policy" "bypass_github_cidr_policy" {
       }
     }
   ]
-
-  lifecycle {
-    ignore_changes = [app_count, reusable]
-  }
 }
 
 # # One time pin auth method
