@@ -57,6 +57,8 @@ spec:
 
             env:
               TZ: Europe/Budapest
+              API_DOCS: "false"
+              API_PORT: &port 9000
               PUID: "10001"
               PGID: "10001"
               ALLOW_SIGNUP: "false"
