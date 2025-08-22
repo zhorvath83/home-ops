@@ -188,7 +188,7 @@ resource "cloudflare_ruleset" "bypass_cache" {
         mode = "bypass_by_default"
       }
     }
-    expression  = "(http.host eq \"*.${var.CF_DOMAIN_NAME}\")"
+    expression  = "(http.host contains \".${var.CF_DOMAIN_NAME}\")"
     description = "Bypass cache globally"
     enabled     = true
   }]
