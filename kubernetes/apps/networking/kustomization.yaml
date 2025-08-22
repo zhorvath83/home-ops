@@ -9,3 +9,4 @@ resources:
   - ./cloudflare-tunnel/ks.yaml
   - ./echo-server/ks.yaml
   - ./external-dns/ks.yaml
+  - ./smtp-relay/ks.yaml

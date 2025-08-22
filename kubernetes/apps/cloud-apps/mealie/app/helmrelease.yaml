@@ -1,0 +1,131 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: mealie
+  namespace: cloud-apps
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: app-template
+      version: 4.2.0
+      sourceRef:
+        kind: HelmRepository
+        name: app-template
+        namespace: flux-system
+
+  install:
+    createNamespace: true
+    remediation:
+      retries: -1
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  uninstall:
+    keepHistory: false
+
+  values:
+    defaultPodOptions:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+
+    controllers:
+      mealie:
+        type: statefulset
+
+        annotations:
+          reloader.stakater.com/auto: "true"
+
+        containers:
+          app:
+            image:
+              repository: ghcr.io/mealie-recipes/mealie
+              tag: v3.0.2@sha256:448d56c5b41b668a8e2f0e435ade52ce6bd574d906d3e45eba1e9a1d05f844ff
+              pullPolicy: IfNotPresent
+
+            env:
+              TZ: Europe/Budapest
+              PUID: "10001"
+              PGID: "10001"
+              ALLOW_SIGNUP: "false"
+              BASE_URL: "https://mealie.${PUBLIC_DOMAIN}"
+              # SMTP Configuration
+              SMTP_HOST: smtp-relay.networking.svc.cluster.local
+              SMTP_PORT: "2525"
+              SMTP_FROM_EMAIL: "mealie@${PUBLIC_DOMAIN}"
+              SMTP_AUTH_STRATEGY: "NONE"
+
+            probes:
+              liveness: &probes
+                custom: true
+                enabled: true
+                spec:
+                  failureThreshold: 3
+                  httpGet:
+                    path: /api/app/about
+                    port: *port
+                  initialDelaySeconds: 0
+                  periodSeconds: 10
+                  timeoutSeconds: 1
+              readiness: *probes
+              startup:
+                enabled: false
+
+            securityContext:
+              privileged: false
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                  - ALL
+
+            resources:
+              requests:
+                cpu: 10m
+                memory: 250Mi
+              limits:
+                memory: 1000Mi
+
+    service:
+      app:
+        controller: mealie
+        ports:
+          http:
+            port: &port 9000
+
+    ingress:
+      app:
+        className: "nginx"
+        annotations:
+          gethomepage.dev/enabled: "true"
+          gethomepage.dev/name: Mealie
+          gethomepage.dev/group: Home
+          gethomepage.dev/icon: mealie.svg
+        hosts:
+          - host: "mealie.${PUBLIC_DOMAIN}"
+            paths:
+              - path: /
+                service:
+                  identifier: app
+                  port: http
+
+    persistence:
+      config:
+        existingClaim: mealie
+        globalMounts:
+          - path: /app/data
+
+      tmp:
+        type: emptyDir
