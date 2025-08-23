@@ -66,8 +66,12 @@ spec:
               # SMTP Configuration
               SMTP_HOST: smtp-relay.networking.svc.cluster.local
               SMTP_PORT: "2525"
-              SMTP_FROM_EMAIL: "mealie@${PUBLIC_DOMAIN}"
               SMTP_AUTH_STRATEGY: "NONE"
+              OPENAI_BASE_URL: https://generativelanguage.googleapis.com/v1beta
+
+            envFrom:
+              - secretRef:
+                  name: mealie-secret
 
             probes:
               liveness: &probes
