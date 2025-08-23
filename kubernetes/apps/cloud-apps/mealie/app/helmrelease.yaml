@@ -67,8 +67,6 @@ spec:
               SMTP_HOST: smtp-relay.networking.svc.cluster.local
               SMTP_PORT: "2525"
               SMTP_AUTH_STRATEGY: "NONE"
-              OPENAI_BASE_URL: https://generativelanguage.googleapis.com/v1beta
-
             envFrom:
               - secretRef:
                   name: mealie-secret
