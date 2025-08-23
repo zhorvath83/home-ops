@@ -59,8 +59,6 @@ spec:
             args:
               - --port
               - "6379"
-              - --requirepass
-              - $(VALKEY_PASSWORD)
               - --maxmemory
               - "100mb"
               - --maxmemory-policy
