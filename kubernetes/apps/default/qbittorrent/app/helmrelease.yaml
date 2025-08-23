@@ -94,10 +94,10 @@ spec:
 
             resources:
               requests:
-                cpu: 100m
-                memory: 250Mi
+                cpu: 50m
+                memory: 200Mi
               limits:
-                memory: 6000Mi
+                memory: 3000Mi
 
     service:
       app:
