@@ -9,7 +9,6 @@ spec:
   dependsOn:
     - name: cluster-apps-onepassword-store
     - name: cluster-apps-democratic-csi
-    - name: cluster-apps-default
   path: ./kubernetes/apps/default/mealie/app
   prune: true
   sourceRef:
