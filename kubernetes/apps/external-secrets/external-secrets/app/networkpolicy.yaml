@@ -113,7 +113,7 @@ spec:
     # Allow readiness/liveness probe from kubelet on port 8081
     - ports:
         - protocol: TCP
-          port: 8081
+          port: 8088
     # Metrics from observability namespace only
     - from:
         - namespaceSelector:
