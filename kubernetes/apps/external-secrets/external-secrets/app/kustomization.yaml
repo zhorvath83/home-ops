@@ -5,6 +5,7 @@ kind: Kustomization
 namespace: external-secrets
 resources:
   - ./helmrelease.yaml
+  - ./networkpolicy.yaml
 
 labels:
   - pairs:
