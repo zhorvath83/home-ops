@@ -12,7 +12,7 @@ spec:
     - Ingress
     - Egress
   ingress:
-    # Only allow from External Secrets controller
+    # Only allow from External Secrets controller (same namespace)
     - from:
         - podSelector:
             matchLabels:
@@ -34,9 +34,10 @@ spec:
           port: 53
         - protocol: TCP
           port: 53
-    # 1Password API endpoints (needs external access)
+    # 1Password API endpoints (needs outbound internet)
     - to:
-        - namespaceSelector: {}
+        - ipBlock:
+            cidr: 0.0.0.0/0
       ports:
         - protocol: TCP
           port: 443
