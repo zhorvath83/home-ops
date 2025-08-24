@@ -1,4 +1,5 @@
 ---
+# Main external-secrets controller
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -12,7 +13,7 @@ spec:
     - Ingress
     - Egress
   ingress:
-    # Metrics from observability namespace only
+    # Metrics endpoint - port 8080
     - from:
         - namespaceSelector:
             matchLabels:
@@ -21,22 +22,14 @@ spec:
         - protocol: TCP
           port: 8080
   egress:
-    # Kubernetes API server via service IP
+    # Kubernetes API server
     - to:
         - ipBlock:
             cidr: 10.43.0.1/32
       ports:
         - protocol: TCP
           port: 443
-    # OnePassword Connect in same namespace
-    - to:
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/name: onepassword-connect
-      ports:
-        - protocol: TCP
-          port: 8080
-    # DNS (CoreDNS)
+    # DNS resolution
     - to:
         - namespaceSelector:
             matchLabels:
@@ -49,7 +42,17 @@ spec:
           port: 53
         - protocol: TCP
           port: 53
+    # OnePassword Connect backend
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: onepassword-connect
+      ports:
+        - protocol: TCP
+          port: 8080
+
 ---
+# Webhook controller
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -63,11 +66,15 @@ spec:
     - Ingress
     - Egress
   ingress:
-    # Webhook from kube-apiserver
+    # Webhook endpoint for Kubernetes API server - actual port 10250
     - ports:
         - protocol: TCP
-          port: 443
-    # Metrics from observability namespace only
+          port: 10250
+    # Health checks - port 8081 (readiness probe)
+    - ports:
+        - protocol: TCP
+          port: 8081
+    # Metrics endpoint - port 8080
     - from:
         - namespaceSelector:
             matchLabels:
@@ -76,14 +83,14 @@ spec:
         - protocol: TCP
           port: 8080
   egress:
-    # Kubernetes API server via service IP
+    # Kubernetes API server
     - to:
         - ipBlock:
             cidr: 10.43.0.1/32
       ports:
         - protocol: TCP
           port: 443
-    # DNS (CoreDNS)
+    # DNS resolution
     - to:
         - namespaceSelector:
             matchLabels:
@@ -96,7 +103,9 @@ spec:
           port: 53
         - protocol: TCP
           port: 53
+
 ---
+# Cert controller
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -110,11 +119,11 @@ spec:
     - Ingress
     - Egress
   ingress:
-    # Allow readiness/liveness probe from kubelet on port 8081
+    # Health checks - port 8081 (readiness probe)
     - ports:
         - protocol: TCP
           port: 8081
-    # Metrics from observability namespace only
+    # Metrics endpoint - port 8080
     - from:
         - namespaceSelector:
             matchLabels:
@@ -123,14 +132,14 @@ spec:
         - protocol: TCP
           port: 8080
   egress:
-    # Kubernetes API server via service IP
+    # Kubernetes API server
     - to:
         - ipBlock:
             cidr: 10.43.0.1/32
       ports:
         - protocol: TCP
           port: 443
-    # DNS (CoreDNS)
+    # DNS resolution
     - to:
         - namespaceSelector:
             matchLabels:
