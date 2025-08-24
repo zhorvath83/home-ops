@@ -21,20 +21,10 @@ spec:
         - protocol: TCP
           port: 8080
   egress:
-    # Kubernetes API server
+    # Kubernetes API server via service IP
     - to:
-        - namespaceSelector: {}
-          podSelector:
-            matchLabels:
-              component: kube-apiserver
-      ports:
-        - protocol: TCP
-          port: 443
-    # Alternative: API server via service
-    - to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: default
+        - ipBlock:
+            cidr: 10.43.0.1/32
       ports:
         - protocol: TCP
           port: 443
@@ -60,7 +50,6 @@ spec:
         - protocol: TCP
           port: 53
 ---
-# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/networking.k8s.io/networkpolicy_v1.json
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -75,20 +64,7 @@ spec:
     - Egress
   ingress:
     # Webhook from kube-apiserver
-    - from:
-        - namespaceSelector: {}
-          podSelector:
-            matchLabels:
-              component: kube-apiserver
-      ports:
-        - protocol: TCP
-          port: 443
-    # Alternative: Allow from kube-system for webhook calls
-    - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: kube-system
-      ports:
+    - ports:
         - protocol: TCP
           port: 443
     # Metrics from observability namespace only
@@ -100,20 +76,10 @@ spec:
         - protocol: TCP
           port: 8080
   egress:
-    # Kubernetes API server
+    # Kubernetes API server via service IP
     - to:
-        - namespaceSelector: {}
-          podSelector:
-            matchLabels:
-              component: kube-apiserver
-      ports:
-        - protocol: TCP
-          port: 443
-    # Alternative: API server via service
-    - to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: default
+        - ipBlock:
+            cidr: 10.43.0.1/32
       ports:
         - protocol: TCP
           port: 443
@@ -131,7 +97,6 @@ spec:
         - protocol: TCP
           port: 53
 ---
-# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/networking.k8s.io/networkpolicy_v1.json
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -154,20 +119,10 @@ spec:
         - protocol: TCP
           port: 8080
   egress:
-    # Kubernetes API server
+    # Kubernetes API server via service IP
     - to:
-        - namespaceSelector: {}
-          podSelector:
-            matchLabels:
-              component: kube-apiserver
-      ports:
-        - protocol: TCP
-          port: 443
-    # Alternative: API server via service
-    - to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: default
+        - ipBlock:
+            cidr: 10.43.0.1/32
       ports:
         - protocol: TCP
           port: 443
