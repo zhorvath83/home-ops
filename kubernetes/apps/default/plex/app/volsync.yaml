@@ -13,7 +13,6 @@ spec:
     name: plex-restic-secret
     creationPolicy: Owner
     template:
-      engineVersion: v2
       data:
         RESTIC_REPOSITORY: '{{ .REPOSITORY_TEMPLATE }}/plex'
         RESTIC_PASSWORD: '{{ .RESTIC_PASSWORD }}'
