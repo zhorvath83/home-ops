@@ -76,13 +76,13 @@ spec:
                 custom: true
                 enabled: true
                 spec:
-                  failureThreshold: 3
                   httpGet:
                     path: /api/app/about
                     port: *port
-                  initialDelaySeconds: 0
-                  periodSeconds: 10
-                  timeoutSeconds: 1
+                  initialDelaySeconds: 30
+                  periodSeconds: 15
+                  timeoutSeconds: 3
+                  failureThreshold: 3
               readiness: *probes
               startup:
                 enabled: false
