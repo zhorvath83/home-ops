@@ -110,6 +110,10 @@ spec:
     - Ingress
     - Egress
   ingress:
+    # Allow readiness/liveness probe from kubelet on port 8081
+    - ports:
+        - protocol: TCP
+          port: 8081
     # Metrics from observability namespace only
     - from:
         - namespaceSelector:
@@ -118,8 +122,6 @@ spec:
       ports:
         - protocol: TCP
           port: 8080
-        - protocol: TCP
-          port: 8081
   egress:
     # Kubernetes API server via service IP
     - to:
