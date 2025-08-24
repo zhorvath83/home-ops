@@ -54,6 +54,21 @@ spec:
 
             env:
               TZ: Europe/Budapest
+              PORT: &port 5055
+
+            probes:
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /api/v1/status
+                    port: *port
+                  initialDelaySeconds: 0
+                  periodSeconds: 10
+                  timeoutSeconds: 1
+                  failureThreshold: 3
+              readiness: *probes
 
             securityContext:
               privileged: false
@@ -75,7 +90,7 @@ spec:
         controller: jellyseerr
         ports:
           http:
-            port: 5055
+            port: *port
 
     ingress:
       app:
