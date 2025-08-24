@@ -21,3 +21,4 @@ resources:
   - ./overseerr/ks.yaml
   - ./calibre-web-automated/ks.yaml
   - ./resticprofile/ks.yaml
+  - ./jellyseerr/ks.yaml
