@@ -118,6 +118,8 @@ spec:
       ports:
         - protocol: TCP
           port: 8080
+        - protocol: TCP
+          port: 8081
   egress:
     # Kubernetes API server via service IP
     - to:
