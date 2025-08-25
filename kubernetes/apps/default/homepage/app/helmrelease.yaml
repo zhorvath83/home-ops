@@ -34,9 +34,9 @@ spec:
       enableServiceLinks: false
       securityContext:
         runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 100
-        fsGroup: 100
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
@@ -57,6 +57,8 @@ spec:
               TZ: Europe/Budapest
               HOMEPAGE_ALLOWED_HOSTS: &host "dash.${PUBLIC_DOMAIN}"
               LOG_TARGETS: stdout
+              PUID: "10001"
+              PGID: "10001"
             envFrom:
               - secretRef:
                   name: "{{ .Release.Name }}-secret"
@@ -187,7 +189,11 @@ spec:
       config:
         type: emptyDir
         globalMounts:
-          - path: /app/config
+          - path: /app/.next/server/pages
+      # config:
+      #   type: emptyDir
+      #   globalMounts:
+      #     - path: /app/config
       # logs:
       #   type: emptyDir
       #   globalMounts:
