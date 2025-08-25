@@ -101,7 +101,7 @@ spec:
           gethomepage.dev/group: Media
           gethomepage.dev/icon: jellyseerr.svg
         hosts:
-          - host: "jellyseerr.${PUBLIC_DOMAIN}"
+          - host: "requests.${PUBLIC_DOMAIN}"
             paths:
               - path: /
                 service:

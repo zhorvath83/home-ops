@@ -118,7 +118,7 @@ spec:
           gethomepage.dev/group: Home
           gethomepage.dev/icon: mealie.svg
         hosts:
-          - host: "mealie.${PUBLIC_DOMAIN}"
+          - host: "recipes.${PUBLIC_DOMAIN}"
             paths:
               - path: /
                 service:
