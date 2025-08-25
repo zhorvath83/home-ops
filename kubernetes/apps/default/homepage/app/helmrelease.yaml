@@ -103,10 +103,41 @@ spec:
                 - get
                 - list
             - apiGroups:
+                - networking.k8s.io
+              resources:
+                - ingresses
+              verbs:
+                - get
+                - list
+            - apiGroups:
+                - ""
+              resources:
+                - namespaces
+                - pods
+                - nodes
+              verbs:
+                - get
+                - list
+            - apiGroups:
                 - extensions
                 - networking.k8s.io
               resources:
                 - ingresses
+              verbs:
+                - get
+                - list
+            - apiGroups:
+                - traefik.io
+              resources:
+                - ingressroutes
+              verbs:
+                - get
+                - list
+            - apiGroups:
+                - gateway.networking.k8s.io
+              resources:
+                - httproutes
+                - gateways
               verbs:
                 - get
                 - list
@@ -124,7 +155,6 @@ spec:
                 - customresourcedefinitions/status
               verbs:
                 - get
-                - list
 
       bindings:
         homepage:
