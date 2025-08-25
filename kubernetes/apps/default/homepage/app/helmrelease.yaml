@@ -205,6 +205,9 @@ spec:
           - path: /app/config/settings.yaml
             subPath: settings.yaml
             # readOnly: true
+          - path: /app/config/proxmox.yaml
+            subPath: settings.yaml
+            # readOnly: true
           - path: /app/config/widgets.yaml
             subPath: widgets.yaml
             # readOnly: true
@@ -218,5 +221,8 @@ spec:
             subPath: services.yaml
             # readOnly: true
           - path: /app/config/custom.css
+            subPath: custom.css
+            # readOnly: true
+          - path: /app/config/custom.js
             subPath: custom.css
             # readOnly: true
