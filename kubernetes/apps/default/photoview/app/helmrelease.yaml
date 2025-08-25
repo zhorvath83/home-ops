@@ -180,4 +180,7 @@ spec:
         type: persistentVolumeClaim
         existingClaim: photoview
         globalMounts:
-          - path: /app
+          - path: /app/cache
+            subPath: cache
+          - path: /app/database
+            subPath: database
