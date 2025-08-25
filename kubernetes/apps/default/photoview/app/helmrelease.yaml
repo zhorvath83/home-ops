@@ -48,40 +48,11 @@ spec:
         annotations:
           reloader.stakater.com/auto: "true"
 
-        initContainers:
-          01-init-db:
-            image:
-              repository: ghcr.io/home-operations/postgres-init
-              tag: 17.6.0@sha256:86a1992d46273c58fd4ad95b626081dfaabfe16bd56944675169e406d1a660dd
-              
-            env:
-              - name: INIT_POSTGRES_HOST
-                value: postgresql.default.svc.cluster.local
-              - name: INIT_POSTGRES_DBNAME
-                value: photoview
-              - name: INIT_POSTGRES_SUPER_PASS
-                valueFrom:
-                  secretKeyRef:
-                    name: postgresql-secret
-                    key: postgres-password
-              - name: INIT_POSTGRES_USER
-                valueFrom:
-                  secretKeyRef:
-                    name: photoview-secret
-                    key: POSTGRES_USER
-              - name: INIT_POSTGRES_PASS
-                valueFrom:
-                  secretKeyRef:
-                    name: photoview-secret
-                    key: POSTGRES_PASS
-
         containers:
           app:
             image:
               repository: viktorstrate/photoview
               tag: master@sha256:89a5a220effa9f0ba28278af9cab4af3c55d78b9eb2fa9990bf13b23ff8b86af
-              
-
 
             env:
               - name: TZ
@@ -91,11 +62,11 @@ spec:
               - name: PHOTOVIEW_LISTEN_PORT
                 value: "8080"
               - name: PHOTOVIEW_SERVE_UI
-                value: "1"  # Változtatás: true helyett 1
+                value: "1"
               - name: PHOTOVIEW_DISABLE_FACE_RECOGNITION
-                value: "1"  # Változtatás: true helyett 1
+                value: "1"
               - name: PHOTOVIEW_DISABLE_VIDEO_ENCODING
-                value: "0"  # Változtatás: false helyett 0
+                value: "0"
               - name: PHOTOVIEW_MEDIA_CACHE
                 value: /app/cache
               - name: MAPBOX_TOKEN
@@ -107,13 +78,6 @@ spec:
                 value: sqlite
               - name: PHOTOVIEW_SQLITE_PATH
                 value: /app/database/photoview.db
-              # - name: PHOTOVIEW_DATABASE_DRIVER
-              #   value: postgres
-              # - name: PHOTOVIEW_POSTGRES_URL
-              #   valueFrom:
-              #     secretKeyRef:
-              #       name: photoview-secret
-              #       key: PHOTOVIEW_POSTGRES_URL
 
             probes:
               liveness:
@@ -182,6 +146,7 @@ spec:
             subPath: cache
           - path: /app/database
             subPath: database
+
       tmpfs:
         type: emptyDir
         advancedMounts:
