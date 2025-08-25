@@ -56,6 +56,7 @@ spec:
             env:
               TZ: Europe/Budapest
               HOMEPAGE_ALLOWED_HOSTS: &host "dash.${PUBLIC_DOMAIN}"
+              LOG_TARGETS: stdout
             envFrom:
               - secretRef:
                   name: homepage-secret
