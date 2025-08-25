@@ -42,7 +42,7 @@ spec:
           type: RuntimeDefault
 
     controllers:
-      homepage:
+      *app :
         annotations:
           reloader.stakater.com/auto: "true"
         type: statefulset
@@ -59,7 +59,7 @@ spec:
               LOG_TARGETS: stdout
             envFrom:
               - secretRef:
-                  name: homepage-secret
+                  name: "{{ .Release.Name }}-secret"
 
             probes:
               startup:
@@ -87,7 +87,7 @@ spec:
 
     rbac:
       roles:
-        homepage:
+        *app :
           type: ClusterRole
           rules:
             - apiGroups:
@@ -123,13 +123,13 @@ spec:
               verbs:
                 - get
                 - list
-            - apiGroups:
-                - traefik.io
-              resources:
-                - ingressroutes
-              verbs:
-                - get
-                - list
+            # - apiGroups:
+            #     - traefik.io
+            #   resources:
+            #     - ingressroutes
+            #   verbs:
+            #     - get
+            #     - list
             - apiGroups:
                 - gateway.networking.k8s.io
               resources:
@@ -154,7 +154,7 @@ spec:
                 - get
 
       bindings:
-        homepage:
+        *app :
           type: ClusterRoleBinding
           roleRef:
             identifier: *app
@@ -163,11 +163,11 @@ spec:
 
     serviceAccount:
       # allow scraping of k8s resources for widget
-      homepage: {}
+      *app : {}
 
     service:
       app:
-        controller: homepage
+        controller: *app
         ports:
           http:
             port: 3000
@@ -184,17 +184,17 @@ spec:
                   port: http
 
     persistence:
-      # config:
-      #   type: emptyDir
-      #   globalMounts:
-      #     - path: /app/config
+      config:
+        type: emptyDir
+        globalMounts:
+          - path: /app/config
       # logs:
       #   type: emptyDir
       #   globalMounts:
       #     - path: /app/config/logs 
-      homepage-config:
+      config-files:
         type: secret
-        name: homepage-config-files-secret
+        name: "{{ .Release.Name }}-config-files-secret"
         globalMounts:
           - path: /app/config/bookmarks.yaml
             subPath: bookmarks.yaml
