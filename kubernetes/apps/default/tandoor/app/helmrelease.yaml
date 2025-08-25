@@ -177,7 +177,7 @@ spec:
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Tandoor
-          gethomepage.dev/group: Digital assets
+          gethomepage.dev/group: Selfhosted
           gethomepage.dev/icon: tandoor-recipes.svg
         hosts:
           - host: "recipes.${PUBLIC_DOMAIN}"

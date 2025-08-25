@@ -115,7 +115,7 @@ spec:
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Mealie
-          gethomepage.dev/group: Home
+          gethomepage.dev/group: Selfhosted
           gethomepage.dev/icon: mealie.svg
         hosts:
           - host: "recipes.${PUBLIC_DOMAIN}"

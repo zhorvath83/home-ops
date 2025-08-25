@@ -151,7 +151,7 @@ spec:
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Photoview
-          gethomepage.dev/group: Digital assets
+          gethomepage.dev/group: Selfhosted
           gethomepage.dev/icon: photoview.svg
         hosts:
           - host: "photos.${PUBLIC_DOMAIN}"

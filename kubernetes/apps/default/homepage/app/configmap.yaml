@@ -31,7 +31,7 @@ data:
         columns: 5
         tab: Services
 
-      Digital assets:
+      Selfhosted:
         style: row
         columns: 5
         tab: Services
