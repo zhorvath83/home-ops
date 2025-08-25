@@ -75,7 +75,7 @@ spec:
             securityContext:
               privileged: false
               allowPrivilegeEscalation: false
-              # readOnlyRootFilesystem: true
+              readOnlyRootFilesystem: true
               capabilities: { drop: ["ALL"] }
 
             resources:
@@ -203,7 +203,7 @@ spec:
           - path: /app/config/kubernetes.yaml
             subPath: kubernetes.yaml
           - path: /app/config/proxmox.yaml
-            subPath: settings.yaml
+            subPath: proxmox.yaml
           - path: /app/config/services.yaml
             subPath: services.yaml
           - path: /app/config/settings.yaml
