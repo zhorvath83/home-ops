@@ -75,7 +75,7 @@ spec:
             securityContext:
               privileged: false
               allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: true
+              # readOnlyRootFilesystem: true
               capabilities: { drop: ["ALL"] }
 
             resources:
@@ -157,10 +157,10 @@ spec:
                   port: http
 
     persistence:
-      config:
+      logs:
         type: emptyDir
         globalMounts:
-          - path: /app/config
+          - path: /app/config/logs 
       homepage-config:
         type: secret
         name: homepage-config-files-secret
