@@ -157,6 +157,10 @@ spec:
                   port: http
 
     persistence:
+      config:
+        type: emptyDir
+        globalMounts:
+          - path: /app/config
       logs:
         type: emptyDir
         globalMounts:
