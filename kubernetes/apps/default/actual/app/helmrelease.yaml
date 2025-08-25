@@ -100,7 +100,7 @@ spec:
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Actual
-          gethomepage.dev/group: Personal Finance Manager
+          gethomepage.dev/group: PFM
           gethomepage.dev/icon: actual-budget
           gethomepage.dev/siteMonitor: http://actual.default.svc.cluster.local:5006
         hosts:

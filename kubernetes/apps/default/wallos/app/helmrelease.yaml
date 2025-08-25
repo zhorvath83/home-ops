@@ -91,7 +91,7 @@ spec:
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Wallos
-          gethomepage.dev/group: Personal Finance Manager
+          gethomepage.dev/group: PFM
           gethomepage.dev/icon: wallos
           gethomepage.dev/siteMonitor: http://wallos.default.svc.cluster.local:80
         hosts:
