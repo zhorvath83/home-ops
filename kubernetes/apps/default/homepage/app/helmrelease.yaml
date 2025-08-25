@@ -53,7 +53,7 @@ spec:
 
             env:
               TZ: Europe/Budapest
-              # HOMEPAGE_ALLOWED_HOSTS: "dash.${PUBLIC_DOMAIN}"
+              HOMEPAGE_ALLOWED_HOSTS: &host "dash.${PUBLIC_DOMAIN}"
             envFrom:
               - secretRef:
                   name: homepage-secret
@@ -147,7 +147,7 @@ spec:
       app:
         className: "nginx"
         hosts:
-          - host: "dash.${PUBLIC_DOMAIN}"
+          - host: *host
             paths:
               - path: /
                 service:
