@@ -61,17 +61,11 @@ spec:
               - secretRef:
                   name: homepage-secret
 
-            # probes:
-            #   liveness: &probes
-            #     enabled: true
-            #     custom: true
-            #     spec:
-            #       httpGet:
-            #         port: 3000
-            #         path: /api/healthcheck
-            #       initialDelaySeconds: 0
-            #   readiness: *probes
-            #   startup: *probes
+            probes:
+              liveness:
+                enabled: true
+              readiness:
+                enabled: true
 
             securityContext:
               privileged: false
