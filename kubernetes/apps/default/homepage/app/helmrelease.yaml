@@ -30,7 +30,7 @@ spec:
 
   values:
     defaultPodOptions:
-      automountServiceAccountToken: false
+      # automountServiceAccountToken: false
       enableServiceLinks: false
       securityContext:
         runAsNonRoot: true
@@ -84,9 +84,6 @@ spec:
                 memory: 250Mi
               limits:
                 memory: 1500Mi
-
-        serviceAccount:
-          identifier: *app
 
     rbac:
       roles:
@@ -201,28 +198,19 @@ spec:
         globalMounts:
           - path: /app/config/bookmarks.yaml
             subPath: bookmarks.yaml
-            # readOnly: true
-          - path: /app/config/settings.yaml
-            subPath: settings.yaml
-            # readOnly: true
-          - path: /app/config/proxmox.yaml
-            subPath: settings.yaml
-            # readOnly: true
-          - path: /app/config/widgets.yaml
-            subPath: widgets.yaml
-            # readOnly: true
           - path: /app/config/docker.yaml
             subPath: docker.yaml
-            # readOnly: true
           - path: /app/config/kubernetes.yaml
             subPath: kubernetes.yaml
-            # readOnly: true
+          - path: /app/config/proxmox.yaml
+            subPath: settings.yaml
           - path: /app/config/services.yaml
             subPath: services.yaml
-            # readOnly: true
+          - path: /app/config/settings.yaml
+            subPath: settings.yaml
+          - path: /app/config/widgets.yaml
+            subPath: widgets.yaml
           - path: /app/config/custom.css
             subPath: custom.css
-            # readOnly: true
           - path: /app/config/custom.js
-            subPath: custom.css
-            # readOnly: true
+            subPath: custom.js
