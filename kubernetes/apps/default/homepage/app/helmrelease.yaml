@@ -57,8 +57,8 @@ spec:
               TZ: Europe/Budapest
               HOMEPAGE_ALLOWED_HOSTS: &host "dash.${PUBLIC_DOMAIN}"
               LOG_TARGETS: stdout
-              PUID: "10001"
-              PGID: "10001"
+              # PUID: "10001"
+              # PGID: "10001"
             envFrom:
               - secretRef:
                   name: "{{ .Release.Name }}-secret"
@@ -78,18 +78,14 @@ spec:
               privileged: false
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities:
-                drop:
-                  - ALL
-                # add:
-                #   - CHOWN
+              capabilities: { drop: ["ALL"] }
 
             resources:
               requests:
-                cpu: 10m
-                memory: 250Mi
+                cpu: 5m
+                memory: 100Mi
               limits:
-                memory: 1500Mi
+                memory: 200Mi
 
     rbac:
       roles:
@@ -190,18 +186,6 @@ spec:
                   port: http
 
     persistence:
-      # next:
-      #   type: emptyDir
-      #   globalMounts:
-      #     - path: /app/.next
-      # config:
-      #   type: emptyDir
-      #   globalMounts:
-      #     - path: /app/config
-      # logs:
-      #   type: emptyDir
-      #   globalMounts:
-      #     - path: /app/config/logs 
       config-files:
         type: secret
         name: "{{ .Release.Name }}-config-files-secret"
