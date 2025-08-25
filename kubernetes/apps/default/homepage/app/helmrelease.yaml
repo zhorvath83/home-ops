@@ -186,18 +186,18 @@ spec:
                   port: http
 
     persistence:
+      next:
+        type: emptyDir
+        globalMounts:
+          - path: /app/.next
       config:
         type: emptyDir
         globalMounts:
-          - path: /app/.next/server/pages
-      # config:
-      #   type: emptyDir
-      #   globalMounts:
-      #     - path: /app/config
-      # logs:
-      #   type: emptyDir
-      #   globalMounts:
-      #     - path: /app/config/logs 
+          - path: /app/config
+      logs:
+        type: emptyDir
+        globalMounts:
+          - path: /app/config/logs 
       config-files:
         type: secret
         name: "{{ .Release.Name }}-config-files-secret"
