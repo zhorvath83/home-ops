@@ -13,7 +13,7 @@ resources:
   # - ./postgresql/ks.yaml
   # - ./tandoor/ks.yaml
   - ./photoview/ks.yaml
-  # - ./homepage/ks.yaml
+  - ./homepage/ks.yaml
   - ./prowlarr/ks.yaml
   - ./radarr/ks.yaml
   - ./sonarr/ks.yaml
