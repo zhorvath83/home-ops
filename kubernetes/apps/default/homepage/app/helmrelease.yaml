@@ -29,17 +29,17 @@ spec:
     keepHistory: false
 
   values:
-    defaultPodOptions:
-      # automountServiceAccountToken: false
-      enableServiceLinks: false
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 10001
-        runAsGroup: 10001
-        fsGroup: 10001
-        fsGroupChangePolicy: OnRootMismatch
-        seccompProfile:
-          type: RuntimeDefault
+    # defaultPodOptions:
+    #   automountServiceAccountToken: true
+    #   enableServiceLinks: false
+    #   securityContext:
+    #     runAsNonRoot: true
+    #     runAsUser: 10001
+    #     runAsGroup: 10001
+    #     fsGroup: 10001
+    #     fsGroupChangePolicy: OnRootMismatch
+    #     seccompProfile:
+    #       type: RuntimeDefault
 
     controllers:
       *app :
@@ -74,15 +74,15 @@ spec:
               readiness:
                 enabled: true
 
-            securityContext:
-              privileged: false
-              allowPrivilegeEscalation: false
-              # readOnlyRootFilesystem: true
-              capabilities:
-                drop:
-                  - ALL
-                add:
-                  - CHOWN
+            # securityContext:
+            #   privileged: false
+            #   allowPrivilegeEscalation: false
+            #   readOnlyRootFilesystem: true
+            #   capabilities:
+            #     drop:
+            #       - ALL
+            #     add:
+            #       - CHOWN
 
             resources:
               requests:
