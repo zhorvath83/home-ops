@@ -155,10 +155,10 @@ spec:
                   port: http
 
     persistence:
-      # config:
-      #   type: emptyDir
-      #   globalMounts:
-      #     - path: /app/config
+      config:
+        type: emptyDir
+        globalMounts:
+          - path: /app/config
       homepage-config:
         type: secret
         name: homepage-config-files-secret
