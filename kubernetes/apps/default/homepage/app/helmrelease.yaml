@@ -43,6 +43,8 @@ spec:
 
     controllers:
       homepage:
+        annotations:
+          reloader.stakater.com/auto: "true"
         type: statefulset
 
         containers:
