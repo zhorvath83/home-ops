@@ -106,7 +106,7 @@ spec:
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Bazarr
-          gethomepage.dev/group: Media
+          gethomepage.dev/group: Arr Stack
           gethomepage.dev/icon: bazarr.svg
         hosts:
           - host: "subtitles.${PUBLIC_DOMAIN}"
