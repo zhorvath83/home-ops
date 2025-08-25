@@ -50,7 +50,7 @@ spec:
             image:
               repository: ghcr.io/home-operations/plex
               tag: 1.42.1.10060@sha256:04563be281364ba2462285aacb2ca13d7ef7e1d0b19e1203f4c19b4a56840c5c
-              pullPolicy: IfNotPresent
+              
 
             env:
               TZ: Europe/Budapest
@@ -66,9 +66,7 @@ spec:
               privileged: false
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities:
-                drop:
-                  - ALL
+              capabilities: { drop: ["ALL"] }
 
             probes:
               liveness: &probes

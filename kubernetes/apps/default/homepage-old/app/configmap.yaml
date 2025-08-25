@@ -7,7 +7,6 @@ metadata:
   namespace: default
 data:
   settings.yaml: |
-    ---
     title: Dashboard
 
     background:

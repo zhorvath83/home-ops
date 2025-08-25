@@ -1,11 +1,24 @@
 ---
+keys:
+  - &user_zhorvath83 age1el7uu5gzqsdp8wz7y9mcpqsy08l894twxg0jm5cm0jps3hkp2veqdpn5az
+
 creation_rules:
   - path_regex: kubernetes/.*\.sops\.ya?ml
-    encrypted_regex: "^(data|stringData)$"
+    encrypted_regex: '((?i)(pass|secret($|[^N])|key|token|^data$|^stringData))'
     key_groups:
       - age:
-          - age1el7uu5gzqsdp8wz7y9mcpqsy08l894twxg0jm5cm0jps3hkp2veqdpn5az
-  - path_regex: .*\.sops\.conf
+          - *user_zhorvath83
+
+  - path_regex: .*\.sops\.ya?ml$
     key_groups:
       - age:
-          - age1el7uu5gzqsdp8wz7y9mcpqsy08l894twxg0jm5cm0jps3hkp2veqdpn5az
+          - *user_zhorvath83
+
+  - path_regex: .*\.sops\.conf$
+    key_groups:
+      - age:
+          - *user_zhorvath83
+
+stores:
+  yaml:
+    indent: 2

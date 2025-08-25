@@ -23,6 +23,7 @@ includes:
   pc: .taskfiles/PreCommit/Tasks.yaml
   tf: .taskfiles/Terraform/Tasks.yaml
   vs: .taskfiles/VolSync/Tasks.yaml
+  so: .taskfiles/Sops/Taskfile.yaml
 
 tasks:
 

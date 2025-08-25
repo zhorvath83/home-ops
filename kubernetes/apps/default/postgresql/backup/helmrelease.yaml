@@ -60,7 +60,7 @@ spec:
             image:
               repository: docker.io/prodrigestivill/postgres-backup-local
               tag: 17@sha256:483fa15ecd998302bd312fc380cb1b3683a940881d9099d6dfe65bcc1e2714e8
-              pullPolicy: IfNotPresent
+              
 
             command:
               - "/backup.sh"
@@ -104,9 +104,7 @@ spec:
               privileged: false
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities:
-                drop:
-                  - ALL
+              capabilities: { drop: ["ALL"] }
 
             resources:
               requests:

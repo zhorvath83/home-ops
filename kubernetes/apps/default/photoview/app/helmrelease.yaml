@@ -53,7 +53,7 @@ spec:
             image:
               repository: ghcr.io/home-operations/postgres-init
               tag: 17.6.0@sha256:86a1992d46273c58fd4ad95b626081dfaabfe16bd56944675169e406d1a660dd
-              pullPolicy: IfNotPresent
+              
             env:
               - name: INIT_POSTGRES_HOST
                 value: postgresql.default.svc.cluster.local
@@ -80,7 +80,7 @@ spec:
             image:
               repository: viktorstrate/photoview
               tag: master@sha256:89a5a220effa9f0ba28278af9cab4af3c55d78b9eb2fa9990bf13b23ff8b86af
-              pullPolicy: IfNotPresent
+              
 
 
             env:
@@ -127,9 +127,7 @@ spec:
               privileged: false
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities:
-                drop:
-                  - ALL
+              capabilities: { drop: ["ALL"] }
 
             resources:
               requests:

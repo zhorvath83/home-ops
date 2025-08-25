@@ -54,7 +54,7 @@ spec:
             image:
               repository: docker.io/yoryan/mailrise
               tag: 1.4.0
-              pullPolicy: IfNotPresent
+              
 
             env:
               TZ: Europe/Budapest
@@ -71,9 +71,7 @@ spec:
               privileged: false
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities:
-                drop:
-                  - ALL
+              capabilities: { drop: ["ALL"] }
 
             resources:
               requests:

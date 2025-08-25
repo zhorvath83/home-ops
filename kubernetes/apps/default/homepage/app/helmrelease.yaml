@@ -1,19 +1,19 @@
 ---
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: &app homepage
   namespace: default
 spec:
-  interval: 30m
+  interval: 15m
   chart:
     spec:
-      chart: homepage
-      version: 2.1.0
+      chart: app-template
+      version: 4.2.0
       sourceRef:
         kind: HelmRepository
-        name: jameswynn
+        name: app-template
         namespace: flux-system
 
   install:
@@ -23,87 +23,164 @@ spec:
   upgrade:
     cleanupOnFail: true
     remediation:
+      strategy: rollback
       retries: 3
   uninstall:
     keepHistory: false
 
-  postRenderers:
-    - kustomize:
-        patches:
-          - target:
-              kind: Deployment
-              name: homepage
-            patch: |
-              - op: add
-                path: /metadata/annotations/reloader.stakater.com~1auto
-                value: "true"
-
-  # https://github.com/jameswynn/helm-charts/blob/main/charts/homepage/values.yaml
   values:
-    image:
-      repository: ghcr.io/gethomepage/homepage
-      tag: v1.4.6
+    defaultPodOptions:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
 
-    env:
-      HOMEPAGE_ALLOWED_HOSTS: &host "dash.${PUBLIC_DOMAIN}"
+    controllers:
+      homepage:
+        type: statefulset
 
-    # Enable RBAC. RBAC is necessary to use Kubernetes integration
-    enableRbac: true
+        containers:
+          app:
+            image:
+              repository: ghcr.io/gethomepage/homepage
+              tag: v1.4.6@sha256:a1a578fdcfc72754985c3b3b26e4f398a6a782e354d10cf2b156ecbf06d252e9
+
+            env:
+              TZ: Europe/Budapest
+              # HOMEPAGE_ALLOWED_HOSTS: "dash.${PUBLIC_DOMAIN}"
+            envFrom:
+              - secretRef:
+                  name: homepage-secret
+
+            probes:
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    port: 3000
+                    path: /api/healthcheck
+                  initialDelaySeconds: 0
+              readiness: *probes
+              startup: *probes
+
+            securityContext:
+              privileged: false
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
+
+            resources:
+              requests:
+                cpu: 10m
+                memory: 250Mi
+              limits:
+                memory: 1500Mi
+
+        serviceAccount:
+          identifier: *app
+
+    rbac:
+      roles:
+        homepage:
+          type: ClusterRole
+          rules:
+            - apiGroups:
+                - ""
+              resources:
+                - namespaces
+                - pods
+                - nodes
+              verbs:
+                - get
+                - list
+            - apiGroups:
+                - extensions
+                - networking.k8s.io
+              resources:
+                - ingresses
+              verbs:
+                - get
+                - list
+            - apiGroups:
+                - metrics.k8s.io
+              resources:
+                - nodes
+                - pods
+              verbs:
+                - get
+                - list
+            - apiGroups:
+                - apiextensions.k8s.io
+              resources:
+                - customresourcedefinitions/status
+              verbs:
+                - get
+                - list
+
+      bindings:
+        homepage:
+          type: ClusterRoleBinding
+          roleRef:
+            identifier: *app
+          subjects:
+            - identifier: *app
+
     serviceAccount:
-      name: homepage
-      # Create service account. Needed when RBAC is enabled.
-      create: true
-
-    config:
-      # Use a ConfigMap to provide the configuration file
-      useExistingConfigMap: homepage-config
-
-    ingress:
-      main:
-        enabled: true
-        ingressClassName: "nginx"
-        hosts:
-          - host: *host
-            paths:
-              - path: /
-                pathType: Prefix
-        tls:
-          - hosts:
-              - *host
+      # allow scraping of k8s resources for widget
+      homepage: {}
 
     service:
-      main:
+      app:
+        controller: homepage
         ports:
           http:
             port: 3000
-            targetPort: 3000
 
-    podSecurityContext:
-      runAsUser: 10001
-      runAsGroup: 10001
-      fsGroup: 10001
-      fsGroupChangePolicy: OnRootMismatch
-
-    securityContext:
-      privileged: false
-      allowPrivilegeEscalation: false
-      readOnlyRootFilesystem: true
-      seccompProfile:
-        type: RuntimeDefault
-      capabilities:
-        drop:
-          - ALL
+    ingress:
+      app:
+        className: "nginx"
+        hosts:
+          - host: "dash.${PUBLIC_DOMAIN}"
+            paths:
+              - path: /
+                service:
+                  identifier: app
+                  port: http
 
     persistence:
-      logs:
-        enabled: true
-        type: emptyDir
-        mountPath: /app/config/logs
-
-
-    resources:
-      requests:
-        cpu: 25m
-        memory: 25M
-      limits:
-        memory: 250M
+      # config:
+      #   type: emptyDir
+      #   globalMounts:
+      #     - path: /app/config
+      homepage-config:
+        type: secret
+        name: homepage-config-files-secret
+        globalMounts:
+          - path: /app/config/bookmarks.yaml
+            subPath: bookmarks.yaml
+            readOnly: true
+          - path: /app/config/settings.yaml
+            subPath: settings.yaml
+            readOnly: true
+          - path: /app/config/widgets.yaml
+            subPath: widgets.yaml
+            readOnly: true
+          - path: /app/config/docker.yaml
+            subPath: docker.yaml
+            readOnly: true
+          - path: /app/config/kubernetes.yaml
+            subPath: kubernetes.yaml
+            readOnly: true
+          - path: /app/config/services.yaml
+            subPath: services.yaml
+            readOnly: true
+          - path: /app/config/custom.css
+            subPath: custom.css
+            readOnly: true

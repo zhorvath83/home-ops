@@ -53,7 +53,7 @@ spec:
             image:
               repository: ghcr.io/actualbudget/actual
               tag: 25.8.0
-              pullPolicy: IfNotPresent
+              
 
             env:
               TZ: Europe/Budapest
@@ -78,9 +78,7 @@ spec:
               privileged: false
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities:
-                drop:
-                  - ALL
+              capabilities: { drop: ["ALL"] }
 
             resources:
               requests:

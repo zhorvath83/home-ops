@@ -56,7 +56,7 @@ spec:
             image:
               repository: docker.io/cloudflare/cloudflared
               tag: 2025.8.1
-              pullPolicy: IfNotPresent
+              
 
             env:
               TZ: "Europe/Budapest"
@@ -108,9 +108,7 @@ spec:
               privileged: false
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities:
-                drop:
-                  - ALL
+              capabilities: { drop: ["ALL"] }
 
             resources:
               requests:

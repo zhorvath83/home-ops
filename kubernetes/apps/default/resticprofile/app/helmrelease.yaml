@@ -53,7 +53,7 @@ spec:
             image:
               repository: creativeprojects/resticprofile
               tag: 0.31.0@sha256:86306ddea154c702aa1f82668cd4d33353fea8a5bc10d6e19803b8080f17a48c
-              pullPolicy: IfNotPresent
+              
 
             command:
               - "/bin/sh"
@@ -128,9 +128,7 @@ spec:
               privileged: true
               allowPrivilegeEscalation: true
               readOnlyRootFilesystem: false
-              capabilities:
-                drop:
-                  - ALL
+              capabilities: { drop: ["ALL"] }
 
             resources:
               requests:

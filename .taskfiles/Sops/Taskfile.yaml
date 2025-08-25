@@ -1,0 +1,55 @@
+---
+version: "3"
+
+tasks:
+  re-encrypt:
+    desc: Decrypt and re-encrypt all sops secrets
+    silent: true
+    dir: "{{.USER_WORKING_DIR}}"
+    vars:
+      SECRET_FILES:
+        sh: find . -type f -name '*.sops.yaml' ! -name ".sops.yaml"
+    preconditions:
+      - { msg: "Missing SOPS config file", sh: "test -f .sops.yaml" }
+      - { msg: "Missing SOPS Age key file", sh: "test -f ${SOPS_AGE_KEY_FILE}" }
+    cmds:
+      - for: {var: SECRET_FILES}
+        cmd: |
+          echo "Re-encrypting {{ .ITEM }}"
+          sops --decrypt --in-place "{{ .ITEM }}"
+          sops --encrypt --in-place "{{ .ITEM }}"
+
+  fix-mac:
+    desc: Fix SOPS MAC mismatch
+    preconditions:
+      - { msg: "Missing SOPS config file", sh: "test -f .sops.yaml" }
+      - { msg: "Missing SOPS Age key file", sh: "test -f ${SOPS_AGE_KEY_FILE}" }
+      - which vim
+    cmd: |
+      find ./kubernetes -name '*.sops.yaml' | while read -r file; do
+          sops -d "${file}" >/dev/null 2>&1 && rc=$? || rc=$?
+          if [ $rc -eq 51 ]; then
+              echo "Regenerating SOPS MAC for: ${file}"
+              EDITOR="vim -es +'norm Go' +':wq'" sops --ignore-mac "${file}"
+          fi
+      done
+
+  encrypt-file:
+    desc: "Encrypt a file with SOPS (usage: task so:encrypt-file file=path/to/file.yaml)"
+    requires:
+      vars: [file]
+    preconditions:
+      - { msg: "Missing SOPS config file", sh: "test -f .sops.yaml" }
+      - { msg: "Missing SOPS Age key file", sh: "test -f ${SOPS_AGE_KEY_FILE}" }
+      - { msg: "File does not exist", sh: "test -f {{.file}}" }
+    cmd: sops --encrypt --in-place {{.file}}
+
+  decrypt-file:
+    desc: "Decrypt a SOPS encrypted file (usage: task so:decrypt-file file=path/to/file.sops.yaml)"
+    requires:
+      vars: [file]
+    preconditions:
+      - { msg: "Missing SOPS config file", sh: "test -f .sops.yaml" }
+      - { msg: "Missing SOPS Age key file", sh: "test -f ${SOPS_AGE_KEY_FILE}" }
+      - { msg: "File does not exist", sh: "test -f {{.file}}" }
+    cmd: sops --decrypt --in-place {{.file}}
