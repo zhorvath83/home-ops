@@ -4,7 +4,7 @@ apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: &app valkey
-  namespace: database
+  namespace: default
 spec:
   interval: 15m
   chart:
@@ -52,15 +52,16 @@ spec:
               repository: ghcr.io/valkey-io/valkey
               tag: "8.1.3"
               
-
             env:
               TZ: Europe/Budapest
 
             args:
               - --port
               - "6379"
+              - --requirepass
+              - $(VALKEY_PASSWORD)
               - --maxmemory
-              - "100mb"
+              - "200mb"
               - --maxmemory-policy
               - allkeys-lru
               - --save
@@ -73,30 +74,21 @@ spec:
                   name: valkey-secret
 
             probes:
-              liveness:
+              liveness: &probes
                 enabled: true
                 custom: true
                 spec:
                   exec:
                     command:
                       - valkey-cli
+                      - -a
+                      - $(VALKEY_PASSWORD)
                       - ping
                   initialDelaySeconds: 5
                   periodSeconds: 10
                   timeoutSeconds: 3
                   failureThreshold: 3
-              readiness:
-                enabled: true
-                custom: true
-                spec:
-                  exec:
-                    command:
-                      - valkey-cli
-                      - ping
-                  initialDelaySeconds: 2
-                  periodSeconds: 5
-                  timeoutSeconds: 1
-                  failureThreshold: 3
+              readiness: *probes
 
             securityContext:
               privileged: false
@@ -107,9 +99,9 @@ spec:
             resources:
               requests:
                 cpu: 5m
-                memory: 32Mi
+                memory: 16Mi
               limits:
-                memory: 128Mi
+                memory: 256Mi
 
     service:
       app:

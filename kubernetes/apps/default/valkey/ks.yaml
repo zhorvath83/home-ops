@@ -8,7 +8,7 @@ metadata:
 spec:
   dependsOn:
     - name: cluster-apps-onepassword-store
-  path: ./kubernetes/apps/database/valkey/app
+  path: ./kubernetes/apps/default/valkey/app
   prune: true
   sourceRef:
     kind: GitRepository
