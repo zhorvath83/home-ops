@@ -90,6 +90,10 @@ spec:
     service:
       app:
         controller: jellyfin
+        type: LoadBalancer
+        externalTrafficPolicy: Local
+        annotations:
+          metallb.io/loadBalancerIPs: "${CLUSTER_SVC_MEDIASERVER_IP}"
         ports:
           http:
             port: *port
