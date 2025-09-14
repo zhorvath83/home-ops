@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: jellyfin
+  name: maintainerr
   namespace: default
 spec:
   interval: 15m
@@ -42,37 +42,26 @@ spec:
           type: RuntimeDefault
 
     controllers:
-      jellyfin:
+      maintainerr:
         type: statefulset
 
         containers:
           app:
             image:
-              repository: ghcr.io/jellyfin/jellyfin
-              tag: 10.10.7@sha256:e4d1dc5374344446a3a78e43dd211247f22afba84ea2e5a13cbe1a94e1ff2141
+              repository: ghcr.io/jorenn92/maintainerr
+              tag: 2.18.2@sha256:f0ad693314830eade8df47df348bae50e1639002cf9158f54f6d149772fb0f53
               
-
             env:
               TZ: Europe/Budapest
+              UI_PORT: &port 6246
 
             probes:
-              liveness: &probes
+              liveness:
                 enabled: true
-                custom: true
-                spec:
-                  httpGet:
-                    path: /health
-                    port: &port 8096
-                  initialDelaySeconds: 0
-                  periodSeconds: 10
-                  timeoutSeconds: 1
-                  failureThreshold: 3
-              readiness: *probes
-              startup:
+                type: HTTP
+              readiness:
                 enabled: true
-                spec:
-                  failureThreshold: 30
-                  periodSeconds: 10
+                type: HTTP
 
             securityContext:
               privileged: false
@@ -83,17 +72,13 @@ spec:
             resources:
               requests:
                 cpu: 10m
-                memory: 250Mi
+                memory: 50Mi
               limits:
-                memory: 3000Mi
+                memory: 500Mi
 
     service:
       app:
-        controller: jellyfin
-        type: LoadBalancer
-        externalTrafficPolicy: Local
-        annotations:
-          metallb.io/loadBalancerIPs: "${CLUSTER_SVC_MEDIASERVER_IP}"
+        controller: maintainerr
         ports:
           http:
             port: *port
@@ -103,11 +88,11 @@ spec:
         className: "nginx"
         annotations:
           gethomepage.dev/enabled: "true"
-          gethomepage.dev/name: Jellyfin
+          gethomepage.dev/name: maintainerr
           gethomepage.dev/group: Media
-          gethomepage.dev/icon: jellyfin.svg
+          gethomepage.dev/icon: maintainerr.png
         hosts:
-          - host: "media.${PUBLIC_DOMAIN}"
+          - host: "{{ .Release.Name }}.${PUBLIC_DOMAIN}"
             paths:
               - path: /
                 service:
@@ -116,27 +101,15 @@ spec:
 
     persistence:
       config:
-        type: persistentVolumeClaim
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
-          - path: /config
-
-      nfs-media:
-        type: nfs
-        server: ${CLUSTER_LAN_NAS_IP}
-        path: /media
-        globalMounts:
-          - path: /media
-            readOnly: true
-
+          - path: /opt/data
       tmpfs:
         type: emptyDir
         advancedMounts:
-          jellyfin:
+          maintainerr:
             app:
-              - path: /cache
-                subPath: cache
-              - path: /config/log
-                subPath: log
+              - path: /opt/data/logs
+                subPath: logs
               - path: /tmp
                 subPath: tmp

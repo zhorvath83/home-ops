@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: jellyfin
+  name: emby
   namespace: default
 spec:
   accessModes:

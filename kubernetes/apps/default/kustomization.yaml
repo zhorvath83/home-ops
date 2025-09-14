@@ -10,7 +10,7 @@ resources:
   - ./actual/ks.yaml
   - ./wallos/ks.yaml
   - ./plex/ks.yaml
-  - ./jellyfin/ks.yaml
+  - ./emby/ks.yaml
   - ./qbittorrent/ks.yaml
   - ./photoview/ks.yaml
   - ./homepage/ks.yaml
@@ -21,4 +21,6 @@ resources:
   - ./calibre-web-automated/ks.yaml
   - ./resticprofile/ks.yaml
   - ./jellyseerr/ks.yaml
+  - ./recommendarr/ks.yaml
+  - ./maintainerr/ks.yaml
   - ./mealie/ks.yaml
