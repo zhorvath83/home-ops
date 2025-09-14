@@ -33,6 +33,7 @@ watch:
   remove_collection: false
   scrobble_threshold: 90
   username_filter: true
+  watchlist: false
 
 xbmc-providers:
   movies: imdb
