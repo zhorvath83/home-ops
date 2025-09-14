@@ -93,7 +93,7 @@ spec:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Recommendarr
           gethomepage.dev/group: Media
-          gethomepage.dev/icon: recommendarr.png
+          gethomepage.dev/icon: https://raw.githubusercontent.com/joryirving/home-ops/main/docs/src/assets/icons/maintainerr.png
         hosts:
           - host: "{{ .Release.Name }}.${PUBLIC_DOMAIN}"
             paths:
