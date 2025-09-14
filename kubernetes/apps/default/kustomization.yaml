@@ -10,7 +10,8 @@ resources:
   - ./actual/ks.yaml
   - ./wallos/ks.yaml
   - ./plex/ks.yaml
-  - ./emby/ks.yaml
+  - ./jellyfin/ks.yaml
+  #- ./emby/ks.yaml
   - ./qbittorrent/ks.yaml
   - ./photoview/ks.yaml
   - ./homepage/ks.yaml
