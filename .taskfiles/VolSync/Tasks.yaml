@@ -97,52 +97,138 @@ tasks:
   #   - kubectl get replicationsources --all-namespaces --no-headers | awk '{print $2, $1}' | xargs --max-procs=2 -l bash -c 'task vs:restore rsrc=$0 namespace=$1'
   #
   restore:
-    desc: Trigger a Restic ReplicationSource restore (ex. task vs:restore rsrc=plex [namespace=default])
+    desc: Restore a PVC from restic backup (ex. task vs:restore rsrc=plex [namespace=default] [previous=N] - where N is the snapshot index to restore, default=1 for latest)
     cmds:
       - task: restore-suspend-app
+        vars:
+          rsrc: '{{.rsrc}}'
+          namespace: '{{.namespace}}'
+          kustomization: '{{.kustomization}}'
+          controller: '{{.controller}}'
       - task: restore-wipe-job
+        vars:
+          rsrc: '{{.rsrc}}'
+          namespace: '{{.namespace}}'
+          claim: '{{.claim}}'
+          ts: '{{.ts}}'
       - task: restore-volsync-job
+        vars:
+          rsrc: '{{.rsrc}}'
+          namespace: '{{.namespace}}'
+          claim: '{{.claim}}'
+          ts: '{{.ts}}'
+          previous: '{{.previous}}'
       - task: restore-resume-app
+        vars:
+          rsrc: '{{.rsrc}}'
+          namespace: '{{.namespace}}'
+          kustomization: '{{.kustomization}}'
+          controller: '{{.controller}}'
     vars:
       rsrc: '{{ or .rsrc (fail "Variable `rsrc` is required") }}'
       namespace: '{{.namespace | default "default"}}'
       # 1) Query to find the Flux Kustomization associated with the ReplicationSource (rsrc)
+      # Falls back to common pattern if label is missing
       kustomization:
         sh: |
-          kubectl -n {{.namespace}} get replicationsource {{.rsrc}} \
-            -o jsonpath="{.metadata.labels.kustomize\.toolkit\.fluxcd\.io/name}"
+          kustomization=$(kubectl -n {{.namespace}} get replicationsource {{.rsrc}} \
+            -o jsonpath="{.metadata.labels.kustomize\.toolkit\.fluxcd\.io/name}" 2>/dev/null)
+          if [ -z "$kustomization" ]; then
+            # Try common naming pattern as fallback
+            kustomization="cluster-apps-{{.rsrc}}"
+            echo "Warning: Using fallback kustomization name: $kustomization" >&2
+          fi
+          echo "$kustomization"
       # 2) Query to find the Claim associated with the ReplicationSource (rsrc)
       claim:
         sh: |
-          kubectl -n {{.namespace}} get replicationsource {{.rsrc}} \
-            -o jsonpath="{.spec.sourcePVC}"
+          claim=$(kubectl -n {{.namespace}} get replicationsource {{.rsrc}} \
+            -o jsonpath="{.spec.sourcePVC}" 2>/dev/null)
+          if [ -z "$claim" ]; then
+            echo "Error: Could not find PVC for ReplicationSource {{.rsrc}}" >&2
+            exit 1
+          fi
+          echo "$claim"
       # 3) Query to find the controller associated with the PersistentVolumeClaim (claim)
       controller:
         sh: |
-          app=$(kubectl -n {{.namespace}} get persistentvolumeclaim {{.claim}} -o jsonpath="{.metadata.labels.app\.kubernetes\.io/name}")
-          if kubectl -n {{ .namespace }} get deployment.apps/$app >/dev/null 2>&1 ; then
+          # First get the claim
+          claim=$(kubectl -n {{.namespace}} get replicationsource {{.rsrc}} \
+            -o jsonpath="{.spec.sourcePVC}" 2>/dev/null)
+          if [ -z "$claim" ]; then
+            echo "Error: Could not find PVC for ReplicationSource {{.rsrc}}" >&2
+            exit 1
+          fi
+          # Then get the app name from the claim
+          app=$(kubectl -n {{.namespace}} get persistentvolumeclaim "$claim" \
+            -o jsonpath="{.metadata.labels.app\.kubernetes\.io/name}" 2>/dev/null)
+          if [ -z "$app" ]; then
+            # Try using the claim name as app name
+            app="$claim"
+            echo "Warning: Using PVC name as app name: $app" >&2
+          fi
+          # Check for different controller types
+          if kubectl -n {{.namespace}} get deployment.apps/$app >/dev/null 2>&1; then
             echo "deployment.apps/$app"
-          else
+          elif kubectl -n {{.namespace}} get statefulset.apps/$app >/dev/null 2>&1; then
             echo "statefulset.apps/$app"
+          elif kubectl -n {{.namespace}} get daemonset.apps/$app >/dev/null 2>&1; then
+            echo "daemonset.apps/$app"
+          else
+            echo "Error: Could not find controller for app: $app" >&2
+            exit 1
           fi
       previous: "{{.previous | default 1}}"
     preconditions:
       - sh: test -f {{.wipeJobTemplate}}
+        msg: "Wipe job template not found"
       - sh: test -f {{.destinationTemplate}}
+        msg: "Destination template not found"
       - sh: test -f {{.waitForJobScript}}
+        msg: "Wait for job script not found"
+      - sh: kubectl -n {{.namespace}} get replicationsource {{.rsrc}} >/dev/null 2>&1
+        msg: "ReplicationSource '{{.rsrc}}' not found in namespace '{{.namespace}}'"
+      - sh: |
+          claim=$(kubectl -n {{.namespace}} get replicationsource {{.rsrc}} -o jsonpath="{.spec.sourcePVC}" 2>/dev/null)
+          kubectl -n {{.namespace}} get pvc "$claim" >/dev/null 2>&1
+        msg: "PVC for ReplicationSource '{{.rsrc}}' not found"
 
   # Suspend the Flux ks and hr
   restore-suspend-app:
     internal: true
+    vars:
+      rsrc: '{{.rsrc}}'
+      namespace: '{{.namespace}}'
+      kustomization: '{{.kustomization}}'
+      controller: '{{.controller}}'
     cmds:
       - flux -n flux-system suspend kustomization {{.kustomization}}
       - flux -n {{.namespace}} suspend helmrelease {{.rsrc}}
       - kubectl -n {{.namespace}} scale {{.controller}} --replicas 0
       - kubectl -n {{.namespace}} wait pod --for delete --selector="app.kubernetes.io/name={{.rsrc}}" --timeout=2m
+      # Double-check that pods are really gone
+      - sleep 5
+      - |
+        pod_count=$(kubectl -n {{.namespace}} get pods -l "app.kubernetes.io/name={{.rsrc}}" --no-headers | wc -l)
+        if [ "$pod_count" -gt 0 ]; then
+          echo "Warning: Still found $pod_count pod(s) after scale down" >&2
+          kubectl -n {{.namespace}} delete pods -l "app.kubernetes.io/name={{.rsrc}}" --force --grace-period=0
+          sleep 10
+        fi
 
   # Wipe the PVC of all data
   restore-wipe-job:
     internal: true
+    vars:
+      rsrc: '{{.rsrc}}'
+      namespace: '{{.namespace}}'
+      claim: '{{.claim}}'
+      ts: '{{.ts}}'
+    env:
+      rsrc: '{{.rsrc}}'
+      namespace: '{{.namespace}}'
+      claim: '{{.claim}}'
+      ts: '{{.ts}}'
     cmds:
       - envsubst < <(cat {{.wipeJobTemplate}}) | kubectl apply -f -
       - bash {{.waitForJobScript}} wipe-{{.rsrc}}-{{.claim}}-{{.ts}} {{.namespace}}
@@ -153,6 +239,18 @@ tasks:
   # Create VolSync replicationdestination CR to restore data
   restore-volsync-job:
     internal: true
+    vars:
+      rsrc: '{{.rsrc}}'
+      namespace: '{{.namespace}}'
+      claim: '{{.claim}}'
+      ts: '{{.ts}}'
+      previous: '{{.previous}}'
+    env:
+      rsrc: '{{.rsrc}}'
+      namespace: '{{.namespace}}'
+      claim: '{{.claim}}'
+      ts: '{{.ts}}'
+      previous: '{{.previous}}'
     cmds:
       - envsubst < <(cat {{.destinationTemplate}}) | kubectl apply -f -
       - bash {{.waitForJobScript}} volsync-dst-{{.rsrc}}-{{.claim}}-{{.ts}} {{.namespace}}
@@ -162,6 +260,17 @@ tasks:
   # Resume Flux ks and hr
   restore-resume-app:
     internal: true
+    vars:
+      rsrc: '{{.rsrc}}'
+      namespace: '{{.namespace}}'
+      kustomization: '{{.kustomization}}'
+      controller: '{{.controller}}'
     cmds:
       - flux -n {{.namespace}} resume helmrelease {{.rsrc}}
       - flux -n flux-system resume kustomization {{.kustomization}}
+      # Wait for the controller to be scaled back up
+      - |
+        echo "Waiting for {{.controller}} to be scaled up..."
+        kubectl -n {{.namespace}} wait --for=jsonpath='{.spec.replicas}'=1 {{.controller}} --timeout=2m || true
+      # Wait for pod to be ready
+      - kubectl -n {{.namespace}} wait pod --for=condition=ready --selector="app.kubernetes.io/name={{.rsrc}}" --timeout=5m
