@@ -268,6 +268,8 @@ tasks:
     cmds:
       - flux -n {{.namespace}} resume helmrelease {{.rsrc}}
       - flux -n flux-system resume kustomization {{.kustomization}}
+      # Explicitly scale the controller back up to 1 replica
+      - kubectl -n {{.namespace}} scale {{.controller}} --replicas 1
       # Wait for the controller to be scaled back up
       - |
         echo "Waiting for {{.controller}} to be scaled up..."
