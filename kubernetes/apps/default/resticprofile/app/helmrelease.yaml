@@ -53,7 +53,7 @@ spec:
             image:
               repository: creativeprojects/resticprofile
               tag: 0.31.0@sha256:7aa9467ba73f44e1306b6143fa91af65d3652a964c1b44a83920d2e1336a0944
-              
+
 
             command:
               - "/bin/sh"

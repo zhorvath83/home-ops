@@ -53,7 +53,7 @@ spec:
             image:
               repository: garethgeorge/backrest
               tag: v1.9.2@sha256:f8306faef0a3cbedc7daa55756f1d4c105d8c104aa773656bdad4fa8553dab5a
-              
+
 
             env:
               - name: TZ

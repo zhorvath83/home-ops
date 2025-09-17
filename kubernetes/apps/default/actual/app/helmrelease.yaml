@@ -53,7 +53,7 @@ spec:
             image:
               repository: ghcr.io/actualbudget/actual
               tag: 25.9.0
-              
+
 
             env:
               TZ: Europe/Budapest

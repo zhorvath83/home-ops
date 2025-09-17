@@ -50,7 +50,7 @@ spec:
             image:
               repository: ghcr.io/home-operations/emby
               tag: 4.9.1.32@sha256:26b0fd828e732ad559a35c175c8666d99833f2eabeaf7d221fcc7f4da89167ff
-              
+
 
             env:
               TZ: Europe/Budapest

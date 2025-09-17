@@ -5,7 +5,7 @@ kind: Kustomization
 namespace: default
 resources:
   - ./helmrelease.yaml
-  - ./externalsecret.yaml 
+  - ./externalsecret.yaml
   - ./secret.sops.yaml
 
 labels:

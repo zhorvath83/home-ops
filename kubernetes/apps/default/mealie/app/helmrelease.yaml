@@ -53,7 +53,7 @@ spec:
             image:
               repository: ghcr.io/mealie-recipes/mealie
               tag: v3.2.0@sha256:a00e99afd3dcea3cfa524457813b4f8223dbcea33e439cfcac8fdfcdef9c222c
-              
+
 
             env:
               TZ: Europe/Budapest

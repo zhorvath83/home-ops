@@ -35,7 +35,7 @@ Renovate watches the entire repository for dependency updates. When updates are 
 
 ## 📁 Repository Structure
 
-```
+```text
 📁 kubernetes
 ├── 📁 apps       # applications
 ├── 📁 bootstrap  # initial cluster setup and configuration
