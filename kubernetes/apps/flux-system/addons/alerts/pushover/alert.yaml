@@ -1,15 +1,5 @@
 ---
 apiVersion: notification.toolkit.fluxcd.io/v1beta3
-kind: Provider
-metadata:
-  name: pushover
-  namespace: flux-system
-spec:
-  type: generic
-  secretRef:
-    name: flux-pushover-secret
----
-apiVersion: notification.toolkit.fluxcd.io/v1beta3
 kind: Alert
 metadata:
   name: pushover
@@ -19,6 +9,8 @@ spec:
     name: pushover
   eventSeverity: error
   eventSources:
+    - kind: FluxInstance
+      name: "*" 
     - kind: GitRepository
       name: "*"
     - kind: HelmRelease
