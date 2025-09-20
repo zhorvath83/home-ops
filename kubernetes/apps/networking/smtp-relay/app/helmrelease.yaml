@@ -100,10 +100,8 @@ spec:
           - path: /data/maddy.conf
             subPath: maddy.conf
             readOnly: true
-      data:
-        enabled: true
+
+      cache:
         type: emptyDir
-        medium: Memory
-        sizeLimit: 1Gi
         globalMounts:
-          - path: /dev/shm
+          - path: /cache
