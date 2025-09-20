@@ -49,7 +49,7 @@ spec:
           app:
             image:
               repository: ghcr.io/home-operations/emby
-              tag: 4.9.1.32@sha256:26b0fd828e732ad559a35c175c8666d99833f2eabeaf7d221fcc7f4da89167ff
+              tag: 4.9.1.34@sha256:d205f0e9daf37be831dcf2a84bf33498db6faf49923b76ad696210db94f3bc1a
 
 
             env:
