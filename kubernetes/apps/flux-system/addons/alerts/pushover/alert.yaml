@@ -8,7 +8,9 @@ spec:
   providerRef:
     name: pushover
   eventSeverity: error
-  eventSources: 
+  eventSources:
+    - kind: FluxInstance
+      name: "*" 
     - kind: GitRepository
       name: "*"
     - kind: HelmRelease
