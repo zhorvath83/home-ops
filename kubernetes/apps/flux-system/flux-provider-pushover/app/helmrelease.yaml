@@ -43,7 +43,7 @@ spec:
 
     controllers:
       flux-provider-pushover:
-        type: statefulset
+        type: deployment
 
         annotations:
           reloader.stakater.com/auto: "true"
