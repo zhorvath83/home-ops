@@ -15,7 +15,7 @@ if [ -z "$SMTP_RELAY_PASSWORD" ]; then
 fi
 
 # Hash jelszó bcrypt-tel
-HASHED_PASSWORD=$(maddy hash --alg bcrypt "$SMTP_RELAY_PASSWORD")
+HASHED_PASSWORD=$(maddy hash --hash "bcrypt" --password "$SMTP_RELAY_PASSWORD")
 echo "Hash generated: $HASHED_PASSWORD"
 
 # Jelszófájl létrehozása
