@@ -61,8 +61,7 @@ spec:
                   name: smtp-relay-secret
             command:
               - /bin/sh
-              - -c
-              - 'HASHED_PASSWORD=$(echo -n "$SMTP_RELAY_PASSWORD" | maddy hash --password -) && echo "${SMTP_RELAY_USERNAME}:${HASHED_PASSWORD}" > /auth/smtp_passwd && chmod 600 /auth/smtp_passwd && echo "Password file created for user: ${SMTP_RELAY_USERNAME}" && echo "Hash: ${HASHED_PASSWORD}" | head -c 40'
+              - /scripts/generate-password.sh
             securityContext:
               privileged: false
               allowPrivilegeEscalation: false
@@ -118,6 +117,12 @@ spec:
           - path: /data/maddy.conf
             subPath: maddy.conf
             readOnly: true
+        advancedMounts:
+          smtp-relay:
+            init-auth:
+              - path: /scripts/generate-password.sh
+                subPath: generate-password.sh
+                readOnly: true
 
       auth:
         type: emptyDir
