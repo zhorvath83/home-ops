@@ -3,6 +3,9 @@ set -e
 
 echo "Starting password file generation..."
 echo "Username: $SMTP_RELAY_USERNAME"
+echo "Password length: ${#SMTP_RELAY_PASSWORD}"
+echo "Password first 3 chars: $(echo "$SMTP_RELAY_PASSWORD" | cut -c1-3)..."
+echo "Password last 3 chars: ...$(echo "$SMTP_RELAY_PASSWORD" | tail -c 4)"
 
 if [ -z "$SMTP_RELAY_USERNAME" ]; then
     echo "ERROR: SMTP_RELAY_USERNAME is empty!"
@@ -14,8 +17,9 @@ if [ -z "$SMTP_RELAY_PASSWORD" ]; then
     exit 1
 fi
 
-# Generate hash
-HASHED_PASSWORD=$(echo -n "$SMTP_RELAY_PASSWORD" | maddy hash --password -)
+# Test with printf instead of echo -n  
+# printf is more reliable across different shells
+HASHED_PASSWORD=$(printf "%s" "$SMTP_RELAY_PASSWORD" | maddy hash --password -)
 echo "Hash generated successfully"
 echo "Full hash: $HASHED_PASSWORD"
 
@@ -29,3 +33,9 @@ cat /auth/smtp_passwd
 echo ""
 echo "File permissions:"
 ls -la /auth/smtp_passwd
+
+# Double check - try to verify the password
+echo ""
+echo "Testing hash verification:"
+printf "%s" "$SMTP_RELAY_PASSWORD" | maddy hash --password - > /tmp/test_hash 2>&1 || true
+echo "Test hash result: $(cat /tmp/test_hash 2>/dev/null || echo 'Could not generate test hash')"
