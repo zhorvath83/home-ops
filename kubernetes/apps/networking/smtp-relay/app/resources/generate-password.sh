@@ -17,10 +17,15 @@ fi
 # Generate hash
 HASHED_PASSWORD=$(echo -n "$SMTP_RELAY_PASSWORD" | maddy hash --password -)
 echo "Hash generated successfully"
+echo "Full hash: $HASHED_PASSWORD"
 
 # Create password file
 echo "$SMTP_RELAY_USERNAME:$HASHED_PASSWORD" > /auth/smtp_passwd
 chmod 600 /auth/smtp_passwd
 
 echo "Password file created successfully"
-echo "Content (first 50 chars): $(head -c 50 /auth/smtp_passwd)..."
+echo "File contents:"
+cat /auth/smtp_passwd
+echo ""
+echo "File permissions:"
+ls -la /auth/smtp_passwd
