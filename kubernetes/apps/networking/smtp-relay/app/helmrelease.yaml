@@ -62,16 +62,7 @@ spec:
             command:
               - /bin/sh
               - -c
-              - |
-                # Generate hashed password for authentication
-                # maddy hash expects password from stdin
-                HASHED_PASSWORD=$(echo -n "$SMTP_RELAY_PASSWORD" | maddy hash --password -)
-                # Create password file in table.file format: username:hashed_password
-                echo "${SMTP_RELAY_USERNAME}:${HASHED_PASSWORD}" > /auth/smtp_passwd
-                chmod 600 /auth/smtp_passwd
-                echo "Password file created successfully with user: ${SMTP_RELAY_USERNAME}"
-                # Debug: show first few chars of hash for verification (not the whole thing for security)
-                echo "Hash starts with: $(echo $HASHED_PASSWORD | cut -c1-20)..."
+              - 'HASHED_PASSWORD=$(echo -n "$SMTP_RELAY_PASSWORD" | maddy hash --password -) && echo "${SMTP_RELAY_USERNAME}:${HASHED_PASSWORD}" > /auth/smtp_passwd && chmod 600 /auth/smtp_passwd && echo "Password file created for user: ${SMTP_RELAY_USERNAME}" && echo "Hash: ${HASHED_PASSWORD}" | head -c 40'
             securityContext:
               privileged: false
               allowPrivilegeEscalation: false
