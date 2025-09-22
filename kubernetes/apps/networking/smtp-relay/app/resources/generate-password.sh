@@ -14,16 +14,14 @@ if [ -z "$SMTP_RELAY_PASSWORD" ]; then
     exit 1  
 fi
 
-# Generate hash using printf for consistency
-# The maddy hash command outputs: bcrypt:$2a$10$...
-HASHED_PASSWORD=$(printf "%s" "$SMTP_RELAY_PASSWORD" | maddy hash --password -)
+# Hash jelszó bcrypt-tel
+HASHED_PASSWORD=$(maddy hash --alg bcrypt "$SMTP_RELAY_PASSWORD")
 echo "Hash generated: $HASHED_PASSWORD"
 
-# Create password file in the format: username:hash
-# The hash already includes the algorithm prefix (bcrypt:)
+# Jelszófájl létrehozása
 echo "$SMTP_RELAY_USERNAME:$HASHED_PASSWORD" > /auth/smtp_passwd
-chmod 600 /auth/smtp_passwd
+chown maddy:maddy /auth/smtp_passwd || true
+chmod 640 /auth/smtp_passwd
 
 echo "Password file created successfully"
-echo "File contents:"
 cat /auth/smtp_passwd
