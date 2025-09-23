@@ -134,7 +134,7 @@ spec:
             readOnly: true
       tls:
         type: secret
-        name: "{{ .Release.Name }}-tls"
+        name: "${PUBLIC_DOMAIN/./-}-tls"
         globalMounts:
           - path: /etc/maddy/tls/tls.crt
             subPath: tls.crt
