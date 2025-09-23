@@ -1,0 +1,45 @@
+---
+# Root CA Certificate for internal services
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: home-ops-ca
+  namespace: cert-manager
+spec:
+  # CA certificate configuration
+  isCA: true
+  commonName: "Home-Ops Root CA"
+  secretName: home-ops-ca-secret
+  
+  # Use self-signed issuer for root CA
+  issuerRef:
+    name: selfsigned-issuer
+    kind: ClusterIssuer
+  
+  # 10 years validity for root CA
+  duration: 87600h    # 10 years
+  renewBefore: 8760h  # Renew 1 year before expiry
+  
+  # ECDSA P-256 for modern cryptography
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always  # Rotate private key on renewal
+  
+  # Subject information
+  subject:
+    organizations:
+      - "Home-Ops"
+    organizationalUnits:
+      - "Infrastructure"
+    countries:
+      - "HU"
+    localities:
+      - "Budapest"
+  
+  # Key usages for CA
+  usages:
+    - digital signature
+    - key encipherment
+    - cert sign
+    - crl sign

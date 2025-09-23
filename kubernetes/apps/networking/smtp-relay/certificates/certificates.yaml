@@ -1,0 +1,47 @@
+---
+# TLS Certificate for SMTP Relay service
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: smtp-relay-tls
+  namespace: networking
+spec:
+  secretName: smtp-relay-tls
+  
+  # Reference to our internal CA issuer
+  issuerRef:
+    name: home-ops-ca-issuer
+    kind: ClusterIssuer
+    
+  # Primary CN
+  commonName: smtp-relay.networking.svc.cluster.local
+  
+  # All DNS names this cert should be valid for
+  dnsNames:
+    - smtp-relay.networking.svc.cluster.local
+    - smtp-relay.networking.svc
+    - smtp-relay.networking
+    - smtp-relay
+    - localhost
+    
+  # IP addresses for direct access
+  ipAddresses:
+    - 127.0.0.1
+    - ::1  # IPv6 localhost
+    
+  # Certificate validity
+  duration: 8760h     # 1 year
+  renewBefore: 720h   # Renew 30 days before expiry
+  
+  # ECDSA P-256 matching our CA configuration
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always  # Rotate private key on renewal
+    
+  # Key usages for service certificate
+  usages:
+    - digital signature
+    - key encipherment
+    - server auth
+    - client auth  # For mutual TLS if needed
