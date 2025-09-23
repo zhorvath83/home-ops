@@ -21,6 +21,7 @@ spec:
     - smtp-relay.networking.svc.cluster.local
     - smtp-relay.networking.svc
     - smtp-relay.networking
+    - smtp-relay.lan
     - smtp-relay
     - localhost
     
