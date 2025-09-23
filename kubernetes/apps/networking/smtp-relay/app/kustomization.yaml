@@ -5,8 +5,8 @@ kind: Kustomization
 namespace: networking
 resources:
   - externalsecret.yaml
-  - certificate.yaml
-  - helmrelease.yaml
+  # - certificate.yaml
+  # - helmrelease.yaml
 labels:
   - pairs:
       app.kubernetes.io/name: smtp-relay
