@@ -61,21 +61,11 @@ spec:
                   name: smtp-relay-secret
             command:
               - /bin/sh
-              - -c
-              - |
-                # Initialize Maddy
-                maddy -config /etc/maddy/maddy.conf dbinit
-                
-                # Create a user for Authelia (no-reply user)
-                echo "${SMTP_RELAY_PASSWORD}" | maddy -config /etc/maddy/maddy.conf creds create ${SMTP_RELAY_USERNAME}
-                
-                # Create users from LDAP if needed
-                echo "Maddy setup complete"
-
+              - /scripts/generate-password.sh
             securityContext:
               privileged: false
               allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: true
+              readOnlyRootFilesystem: false  # Need to write to /auth
               capabilities: { drop: ["ALL"] }
 
         containers:
@@ -83,18 +73,13 @@ spec:
             image:
               repository: ghcr.io/foxcpp/maddy
               tag: 0.8.1@sha256:55636d8a29588eea62d81d51acdafe38e0f694fb91801ab12dc1ed8c47b6439d
-
             env:
               TZ: "Europe/Budapest"
               SMTP_RELAY_SMTP_PORT: &port 2525
               SMTP_RELAY_METRICS_PORT: &metricsPort 8080
-              MADDY_CONFIG: /etc/maddy/maddy.conf
             envFrom:
               - secretRef:
                   name: smtp-relay-secret
-
-            command: ["/bin/maddy", "-config", "/etc/maddy/maddy.conf", "run"]
-
             probes:
               liveness:
                 enabled: true
@@ -127,11 +112,23 @@ spec:
     persistence:
       config:
         type: configMap
-        name: "{{ .Release.Name }}-configmap"
+        name: smtp-relay-configmap
         globalMounts:
-          - path: /etc/maddy/maddy.conf
+          - path: /data/maddy.conf
             subPath: maddy.conf
             readOnly: true
+
+        advancedMounts:
+          smtp-relay:
+            init-auth:
+              - path: /scripts/generate-password.sh
+                subPath: generate-password.sh
+                readOnly: true
+
+      auth:
+        type: emptyDir
+        globalMounts:
+          - path: /auth
 
       cache:
         type: emptyDir
