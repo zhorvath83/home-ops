@@ -136,7 +136,11 @@ spec:
         type: secret
         name: "{{ .Release.Name }}-tls"
         globalMounts:
-          - path: /etc/maddy/tls
+          - path: /etc/maddy/tls/tls.crt
+            subPath: tls.crt
+            readOnly: true
+          - path: /etc/maddy/tls/tls.key
+            subPath: tls.key
             readOnly: true
 
       data:
