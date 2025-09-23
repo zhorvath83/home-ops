@@ -61,11 +61,21 @@ spec:
                   name: smtp-relay-secret
             command:
               - /bin/sh
-              - /scripts/generate-password.sh
+              - -c
+              - |
+                # Initialize Maddy
+                maddy -config /etc/maddy/maddy.conf dbinit
+                
+                # Create a user for Authelia (no-reply user)
+                echo "${SMTP_RELAY_PASSWORD}" | maddy -config /etc/maddy/maddy.conf creds create ${SMTP_RELAY_USERNAME}
+                
+                # Create users from LDAP if needed
+                echo "Maddy setup complete"
+
             securityContext:
               privileged: false
               allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: false  # Need to write to /auth
+              readOnlyRootFilesystem: true
               capabilities: { drop: ["ALL"] }
 
         containers:
@@ -73,13 +83,18 @@ spec:
             image:
               repository: ghcr.io/foxcpp/maddy
               tag: 0.8.1@sha256:55636d8a29588eea62d81d51acdafe38e0f694fb91801ab12dc1ed8c47b6439d
+
             env:
               TZ: "Europe/Budapest"
               SMTP_RELAY_SMTP_PORT: &port 2525
               SMTP_RELAY_METRICS_PORT: &metricsPort 8080
+              MADDY_CONFIG: /etc/maddy/maddy.conf
             envFrom:
               - secretRef:
                   name: smtp-relay-secret
+
+            command: ["/bin/maddy", "-config", "/etc/maddy/maddy.conf", "run"]
+
             probes:
               liveness:
                 enabled: true
@@ -112,24 +127,21 @@ spec:
     persistence:
       config:
         type: configMap
-        name: smtp-relay-configmap
+        name: "{{ .Release.Name }}-configmap"
         globalMounts:
-          - path: /data/maddy.conf
+          - path: /etc/maddy/maddy.conf
             subPath: maddy.conf
             readOnly: true
-        advancedMounts:
-          smtp-relay:
-            init-auth:
-              - path: /scripts/generate-password.sh
-                subPath: generate-password.sh
-                readOnly: true
+      tls:
+        type: secret
+        name: "{{ .Release.Name }}-tls"
+        globalMounts:
+          - path: /etc/maddy/tls
+            subPath: tls
+            readOnly: true
 
-      auth:
+      data:
         type: emptyDir
         globalMounts:
-          - path: /auth
-
-      cache:
-        type: emptyDir
-        globalMounts:
-          - path: /cache
+          - path: /var/lib/maddy
+            readOnly: false

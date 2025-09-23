@@ -5,6 +5,7 @@ kind: Kustomization
 namespace: networking
 resources:
   - externalsecret.yaml
+  - certificate.yaml
   - helmrelease.yaml
 labels:
   - pairs:

@@ -4,7 +4,7 @@ apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: mailrise
-  namespace: observability
+  namespace: networking
 spec:
   interval: 30m
   chart:
@@ -85,7 +85,7 @@ spec:
         controller: mailrise
         type: LoadBalancer
         annotations:
-          metallb.io/loadBalancerIPs: ${CLUSTER_SVC_SMTP_GATEWAY_IP}
+          metallb.io/loadBalancerIPs: ${CLUSTER_SVC_MAILRISE_GW_IP}
         externalTrafficPolicy: Local
         ports:
           http:
