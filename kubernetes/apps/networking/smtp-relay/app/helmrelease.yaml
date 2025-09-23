@@ -143,8 +143,7 @@ spec:
             subPath: tls.key
             readOnly: true
 
-      data:
+      cache:
         type: emptyDir
         globalMounts:
-          - path: /var/lib/maddy
-            readOnly: false
+          - path: /cache
