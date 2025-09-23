@@ -132,16 +132,6 @@ spec:
           - path: /etc/maddy/maddy.conf
             subPath: maddy.conf
             readOnly: true
-      tls:
-        type: secret
-        name: "${PUBLIC_DOMAIN/./-}-tls"
-        globalMounts:
-          - path: /etc/maddy/tls/tls.crt
-            subPath: tls.crt
-            readOnly: true
-          - path: /etc/maddy/tls/tls.key
-            subPath: tls.key
-            readOnly: true
 
       cache:
         type: emptyDir
