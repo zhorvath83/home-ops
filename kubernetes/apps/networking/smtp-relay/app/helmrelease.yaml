@@ -137,7 +137,6 @@ spec:
         name: "{{ .Release.Name }}-tls"
         globalMounts:
           - path: /etc/maddy/tls
-            subPath: tls
             readOnly: true
 
       data:
