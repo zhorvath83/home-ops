@@ -1,0 +1,98 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &app speedtest-exporter
+  namespace: observability
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: app-template
+      version: 4.3.0
+      sourceRef:
+        kind: HelmRepository
+        name: app-template
+        namespace: flux-system
+
+  install:
+    createNamespace: true
+    remediation:
+      retries: -1
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  uninstall:
+    keepHistory: false
+
+  values:
+    defaultPodOptions:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+
+    controllers:
+      speedtest-exporter:
+        type: deployment
+        replicas: 1
+
+        annotations:
+          reloader.stakater.com/auto: "true"
+
+        containers:
+          app:
+            image:
+              repository: ghcr.io/miguelndecarvalho/speedtest-exporter
+              tag: v3.5.4
+
+            env:
+              SPEEDTEST_PORT: &port 9798
+              TZ: Europe/Budapest
+
+            probes:
+              liveness:
+                enabled: false
+              readiness:
+                enabled: false
+              startup:
+                enabled: false
+
+            securityContext:
+              privileged: false
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
+
+            resources:
+              requests:
+                cpu: 10m
+                memory: 10Mi
+              limits:
+                memory: 100Mi
+
+    service:
+      app:
+        controller: *app
+        ports:
+          http:
+            port: *port
+
+    # serviceMonitor:
+    #   app:
+    #     serviceName: *app
+    #     endpoints:
+    #       - port: http
+    #         scheme: http
+    #         path: /metrics
+    #         interval: 60m
+    #         scrapeTimeout: 5m
