@@ -10,7 +10,7 @@ spec:
   eventSeverity: error
   eventSources:
     # - kind: FluxInstance
-    #   name: "*" 
+    #   name: "*"
     - kind: GitRepository
       name: "*"
     - kind: HelmRelease
