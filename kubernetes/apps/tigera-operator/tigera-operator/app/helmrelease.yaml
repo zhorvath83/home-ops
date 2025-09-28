@@ -30,6 +30,11 @@ spec:
       enabled: false  # We'll manage the Installation CR separately
     apiServer:
       enabled: false
+    # Disable flow analytics components
+    goldmane:
+      enabled: false
+    whisker:
+      enabled: false
     # Resources for the operator
     resources:
       limits:
