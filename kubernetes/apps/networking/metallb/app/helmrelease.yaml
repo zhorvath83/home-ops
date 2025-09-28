@@ -16,14 +16,14 @@ spec:
         name: metallb
         namespace: flux-system
 
-  driftDetection:
-    mode: enabled
-    ignore:
-      # Exclude bgppeers CRD from drift detection because of Flux issue
-      - paths: [""]
-        target:
-          kind: CustomResourceDefinition
-          name: bgppeers.metallb.io
+  # driftDetection:
+  #   mode: enabled
+  #   ignore:
+  #     # Exclude bgppeers CRD from drift detection because of Flux issue
+  #     - paths: [""]
+  #       target:
+  #         kind: CustomResourceDefinition
+  #         name: bgppeers.metallb.io
 
   install:
     createNamespace: true

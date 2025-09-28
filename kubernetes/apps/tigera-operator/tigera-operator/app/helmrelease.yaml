@@ -6,17 +6,10 @@ metadata:
   name: tigera-operator
   namespace: tigera-operator
 spec:
-  interval: 16m
-  driftDetection:
-    mode: enabled
-    ignore:
-      - paths: ["/spec/replicas"]
-        target:
-          kind: Deployment
+  interval: 30m
   chart:
     spec:
       chart: tigera-operator
-      # renovate: registryUrl=oci://quay.io/tigera/helm-charts
       version: v3.30.3
       sourceRef:
         kind: HelmRepository
@@ -24,15 +17,13 @@ spec:
         namespace: flux-system
   install:
     createNamespace: true
+    crds: CreateReplace
     remediation:
-      retries: -1  # Infinite retries - since it may already exist
+      retries: -1
   upgrade:
-    cleanupOnFail: true
+    crds: CreateReplace
     remediation:
-      strategy: rollback
       retries: 3
-  uninstall:
-    keepHistory: false
   values:
     # Tigera operator configuration
     installation:
@@ -42,7 +33,7 @@ spec:
     # Resources for the operator
     resources:
       limits:
-        memory: 256Mi
+        memory: 300Mi
       requests:
         cpu: 10m
         memory: 128Mi
