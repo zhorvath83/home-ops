@@ -87,6 +87,22 @@ spec:
           http:
             port: *port
 
+    ingress:
+      app:
+        className: "nginx"
+        annotations:
+          gethomepage.dev/enabled: "true"
+          gethomepage.dev/name: Speedtest Exporter
+          gethomepage.dev/group: Observability
+          gethomepage.dev/icon: speedtest.svg
+        hosts:
+          - host: "speedtest.${PUBLIC_DOMAIN}"
+            paths:
+              - path: /
+                service:
+                  identifier: app
+                  port: http
+
     # serviceMonitor:
     #   app:
     #     serviceName: *app
