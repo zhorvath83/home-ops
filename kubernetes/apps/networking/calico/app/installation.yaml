@@ -1,0 +1,45 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/operator.tigera.io/installation_v1.json
+apiVersion: operator.tigera.io/v1
+kind: Installation
+metadata:
+  name: default
+  namespace: tigera-operator
+spec:
+  # Registry configuration
+  registry: quay.io
+  imagePath: calico
+  
+  # Calico Network configuration
+  calicoNetwork:
+    # Enable BGP (existing configuration)
+    bgp: Enabled
+    
+    # https://docs.k3s.io/installation/network-options#custom-cni
+    containerIPForwarding: Enabled
+    hostPorts: Enabled
+    
+    # https://projectcalico.docs.tigera.io/networking/ip-autodetection
+    nodeAddressAutodetectionV4:
+      cidrs:
+        - "192.168.1.0/24"  # Based on the k8s-0.lan node IP
+    
+    # Linux dataplane configuration
+    linuxDataplane: Iptables
+    multiInterfaceMode: None
+    
+    # Note: The ipPools section cannot be modified post-install.
+    # CRITICAL: This must match the existing configuration!
+    ipPools:
+      - name: default-ipv4-ippool
+        blockSize: 26
+        cidr: "10.42.0.0/16"  # Must match cluster-cidr from k3s
+        encapsulation: "VXLANCrossSubnet"
+        natOutgoing: Enabled
+        nodeSelector: all()
+        disableBGPExport: false
+        disableNewAllocations: false
+  
+  # Metrics ports
+  nodeMetricsPort: 9091
+  typhaMetricsPort: 9093
