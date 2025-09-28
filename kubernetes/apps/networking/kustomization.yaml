@@ -11,3 +11,4 @@ resources:
   - ./external-dns/ks.yaml
   - ./smtp-relay/ks.yaml
   - ./mailrise/ks.yaml
+  # - ./calico/ks.yaml
