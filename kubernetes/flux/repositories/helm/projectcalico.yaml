@@ -3,9 +3,9 @@
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
-  name: tigera
+  name: projectcalico
   namespace: flux-system
 spec:
-  type: oci
-  interval: 16m
-  url: oci://quay.io/tigera/helm-charts
+  interval: 1h
+  url: https://docs.tigera.io/calico/charts
+  timeout: 3m

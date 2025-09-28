@@ -21,3 +21,4 @@ resources:
   - ./jameswynn.yaml
   - ./democratic-csi.yaml
   - ./lwolf-charts.yaml
+  - ./projectcalico.yaml
