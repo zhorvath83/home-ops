@@ -134,10 +134,7 @@ spec:
       app:
         className: "nginx"
         annotations:
-          gethomepage.dev/enabled: "true"
-          gethomepage.dev/name: Plex
-          gethomepage.dev/group: Media
-          gethomepage.dev/icon: plex.svg
+          gethomepage.dev/enabled: "false"
         hosts:
           - host: "plex.${PUBLIC_DOMAIN}"
             paths:
