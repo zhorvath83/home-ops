@@ -103,12 +103,12 @@ spec:
                   identifier: app
                   port: http
 
-    # serviceMonitor:
-    #   app:
-    #     serviceName: *app
-    #     endpoints:
-    #       - port: http
-    #         scheme: http
-    #         path: /metrics
-    #         interval: 60m
-    #         scrapeTimeout: 5m
+    serviceMonitor:
+      app:
+        serviceName: *app
+        endpoints:
+          - port: http
+            scheme: http
+            path: /metrics
+            interval: 60m
+            scrapeTimeout: 5m
