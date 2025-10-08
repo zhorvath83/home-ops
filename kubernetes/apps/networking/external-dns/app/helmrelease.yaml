@@ -31,7 +31,8 @@ spec:
   values:
     interval: 2m
     logLevel: debug
-    provider: cloudflare
+    provider:
+      name: cloudflare
     env:
       - name: TZ
         value: "Europe/Budapest"
