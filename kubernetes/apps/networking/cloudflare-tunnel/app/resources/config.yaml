@@ -6,10 +6,13 @@ originRequest:
 # https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/configuration/ingress
 ingress:
   - hostname: "${PUBLIC_DOMAIN}"
-    service: &svc "https://ingress-nginx-controller.networking.svc.cluster.local"
-    originRequest: &oReq
-      originServerName: "${PUBLIC_DOMAIN}"
+    service: &nginx-svc "https://ingress-nginx-controller.networking.svc.cluster.local"
+  - hostname: "dash.${PUBLIC_DOMAIN}"
+    service: &traefik-svc "https://traefik.networking.svc.cluster.local"
+  - hostname: "id.${PUBLIC_DOMAIN}"
+    service: *traefik-svc
+  - hostname: "auth.${PUBLIC_DOMAIN}"
+    service: *traefik-svc
   - hostname: "*.${PUBLIC_DOMAIN}"
-    service: *svc
-    originRequest: *oReq
+    service: *nginx-svc
   - service: http_status:404
