@@ -3,6 +3,7 @@ apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
   name: traefik-middleware-only-local
+  namespace: networking
 spec:
   ipAllowList:
     sourceRange:
@@ -15,6 +16,7 @@ apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
   name: traefik-middleware-cloudflare-ips
+  namespace: networking
 spec:
   ipAllowList:
     sourceRange:
@@ -45,6 +47,7 @@ apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
   name: traefik-middleware-github-hooks-ips
+  namespace: networking
 spec:
   ipAllowList:
     # https://api.github.com/meta
