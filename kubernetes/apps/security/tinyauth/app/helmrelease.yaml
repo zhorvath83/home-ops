@@ -2,7 +2,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app tinyauth
+  name: tinyauth
   namespace: security
 spec:
   interval: 1h
@@ -75,13 +75,9 @@ spec:
           traefik.ingress.kubernetes.io/router.entrypoints: "websecure"
           traefik.ingress.kubernetes.io/router.middlewares: "networking-traefik-middleware-chain-no-auth@kubernetescrd"
         hosts:
-          - host: &host "auth.${PUBLIC_DOMAIN}"
+          - host: "auth.${PUBLIC_DOMAIN}"
             paths:
               - path: /
                 service:
                   identifier: app
                   port: http
-        tls:
-          - hosts:
-              - *host
-            secretName: "${PUBLIC_DOMAIN/./-}-production-tls"

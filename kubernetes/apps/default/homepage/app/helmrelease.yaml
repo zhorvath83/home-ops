@@ -188,10 +188,6 @@ spec:
                 service:
                   identifier: app
                   port: http
-        tls:
-          - hosts:
-              - *host
-            secretName: "${PUBLIC_DOMAIN/./-}-production-tls"
 
     persistence:
       config-files:

@@ -81,16 +81,13 @@ spec:
           traefik.ingress.kubernetes.io/router.entrypoints: "websecure"
           traefik.ingress.kubernetes.io/router.middlewares: "networking-traefik-middleware-chain-no-auth@kubernetescrd"
         hosts:
-          - host: &host "id.${PUBLIC_DOMAIN}"
+          - host: "id.${PUBLIC_DOMAIN}"
             paths:
               - path: /
                 service:
                   identifier: app
                   port: http
-        tls:
-          - hosts:
-              - *host
-            secretName: "${PUBLIC_DOMAIN/./-}-production-tls"
+
     persistence:
       data:
         existingClaim: *app
