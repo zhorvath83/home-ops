@@ -65,7 +65,7 @@ spec:
         # -- If true, Ingresses without `ingressClassName` get assigned to this IngressClass on creation.
         # Ingress creation gets rejected if there are multiple default IngressClasses.
         # Ref: https://kubernetes.io/docs/concepts/services-networking/ingress/#default-ingress-class
-        default: true
+        default: false
 
       networkPolicy:
         enabled: true

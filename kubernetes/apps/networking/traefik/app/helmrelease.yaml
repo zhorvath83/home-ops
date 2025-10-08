@@ -31,7 +31,7 @@ spec:
         enabled: true
     ingressClass:
       enabled: true
-      isDefaultClass: false
+      isDefaultClass: true
       name: traefik
     ingressRoute:
       dashboard:
