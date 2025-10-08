@@ -3,11 +3,13 @@ apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: &app tinyauth
+  namespace: security
 spec:
   interval: 1h
   chartRef:
     kind: OCIRepository
     name: tinyauth
+    namespace: flux-system
   values:
     controllers:
       tinyauth:

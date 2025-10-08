@@ -3,11 +3,13 @@ apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: &app pocket-id
+  namespace: security
 spec:
   interval: 1h
   chartRef:
     kind: OCIRepository
     name: pocket-id
+    namespace: flux-system
   values:
     controllers:
       pocket-id:
