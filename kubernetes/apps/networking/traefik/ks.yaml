@@ -8,7 +8,6 @@ metadata:
 spec:
   dependsOn:
     - name: cluster-apps-cert-manager-certificates
-      namespace: cert-manager
   path: ./kubernetes/apps/networking/traefik/app
   prune: true
   sourceRef:
