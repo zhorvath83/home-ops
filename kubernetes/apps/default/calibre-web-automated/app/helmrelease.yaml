@@ -122,6 +122,8 @@ spec:
         tls:
           - hosts:
               - *host
+            secretName: "${PUBLIC_DOMAIN/./-}-production-tls"
+
       opds:
         className: "nginx"
         hosts:
@@ -134,7 +136,7 @@ spec:
         tls:
           - hosts:
               - *host
-
+            secretName: "${PUBLIC_DOMAIN/./-}-production-tls"
 
     persistence:
       config:

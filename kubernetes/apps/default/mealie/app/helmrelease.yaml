@@ -64,8 +64,6 @@ spec:
               ALLOW_SIGNUP: "false"
               BASE_URL: "https://mealie.${PUBLIC_DOMAIN}"
               # SMTP Configuration
-              SMTP_HOST: smtp-relay.networking.svc.cluster.local
-              SMTP_PORT: "2525"
               SMTP_AUTH_STRATEGY: "NONE"
             envFrom:
               - secretRef:

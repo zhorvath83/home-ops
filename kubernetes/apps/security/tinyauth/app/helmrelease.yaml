@@ -1,0 +1,85 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &app tinyauth
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: tinyauth
+  values:
+    controllers:
+      tinyauth:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/steveiliop56/tinyauth
+              tag: v3.6.2@sha256:6fb523a7bda58f1e6072c3a1c4bc0186ae0c45e79802ca6ac7d21136775807f3
+            env:
+              TZ: Europe/Budapest
+              APP_URL: https://auth.${PUBLIC_DOMAIN}
+              COOKIE_SECURE: true
+              DISABLE_CONTINUE: true
+              GENERIC_NAME: Pocket-ID
+              GENERIC_AUTH_URL: https://id.${PUBLIC_DOMAIN}/authorize
+              GENERIC_TOKEN_URL: https://id.${PUBLIC_DOMAIN}/api/oidc/token
+              GENERIC_USER_URL: https://id.${PUBLIC_DOMAIN}/api/oidc/userinfo
+              GENERIC_SCOPES: openid email profile groups
+              SESSION_EXPIRY: 604800
+            envFrom:
+              - secretRef:
+                  name: tinyauth-secret
+            probes:
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /api/healthcheck
+                    port: &port 3000
+                  initialDelaySeconds: 0
+                  periodSeconds: 10
+                  timeoutSeconds: 1
+                  failureThreshold: 3
+              readiness: *probes
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
+            resources:
+              requests:
+                cpu: 10m
+                memory: 64Mi
+              limits:
+                memory: 128Mi
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+    service:
+      app:
+        ports:
+          http:
+            port: *port
+    ingress:
+      app:
+        className: traefik
+        annotations:
+          external-dns.alpha.kubernetes.io/target: "tunnel.${PUBLIC_DOMAIN}"
+          traefik.ingress.kubernetes.io/router.entrypoints: "websecure"
+          traefik.ingress.kubernetes.io/router.middlewares: "networking-traefik-middleware-chain-no-auth@kubernetescrd"
+        hosts:
+          - host: &host "auth.${PUBLIC_DOMAIN}"
+            paths:
+              - path: /
+                service:
+                  identifier: app
+                  port: http
+        tls:
+          - hosts:
+              - *host
+            secretName: "${PUBLIC_DOMAIN/./-}-production-tls"

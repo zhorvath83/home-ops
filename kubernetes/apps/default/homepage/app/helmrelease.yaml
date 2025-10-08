@@ -176,7 +176,11 @@ spec:
 
     ingress:
       app:
-        className: "nginx"
+        className: "traefik"
+        annotations:
+          external-dns.alpha.kubernetes.io/target: "tunnel.${PUBLIC_DOMAIN}"
+          traefik.ingress.kubernetes.io/router.entrypoints: "websecure"
+          traefik.ingress.kubernetes.io/router.middlewares: "networking-traefik-middleware-chain-tinyauth@kubernetescrd"
         hosts:
           - host: *host
             paths:
@@ -184,6 +188,10 @@ spec:
                 service:
                   identifier: app
                   port: http
+        tls:
+          - hosts:
+              - *host
+            secretName: "${PUBLIC_DOMAIN/./-}-production-tls"
 
     persistence:
       config-files:
