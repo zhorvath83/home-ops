@@ -16,7 +16,7 @@ spec:
       replicas: 3
     service:
       enabled: true
-      type: LoadBalancer
+      type: ClusterIP  # Since using Cloudflare Tunnel, don't need LoadBalancer.
       annotations:
         external-dns.alpha.kubernetes.io/hostname: "tunnel.${PUBLIC_DOMAIN}"
       spec:
