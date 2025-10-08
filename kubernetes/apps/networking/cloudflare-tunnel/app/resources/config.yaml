@@ -6,12 +6,22 @@ originRequest:
 ingress:
   - hostname: "${PUBLIC_DOMAIN}"
     service: &nginx-svc "https://ingress-nginx-controller.networking.svc.cluster.local"
+    originRequest:
+      noTLSVerify: true
   - hostname: "dash.${PUBLIC_DOMAIN}"
     service: &traefik-svc "https://traefik.networking.svc.cluster.local"
+    originRequest:
+      noTLSVerify: true
   - hostname: "id.${PUBLIC_DOMAIN}"
     service: *traefik-svc
+    originRequest:
+      noTLSVerify: true
   - hostname: "auth.${PUBLIC_DOMAIN}"
     service: *traefik-svc
+    originRequest:
+      noTLSVerify: true
   - hostname: "*.${PUBLIC_DOMAIN}"
     service: *nginx-svc
+    originRequest:
+      noTLSVerify: true
   - service: http_status:404
