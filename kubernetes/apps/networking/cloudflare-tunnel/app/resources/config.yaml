@@ -8,7 +8,7 @@ ingress:
   - hostname: "${PUBLIC_DOMAIN}"
     service: &nginx-svc "https://ingress-nginx-controller.networking.svc.cluster.local"
   - hostname: "dash.${PUBLIC_DOMAIN}"
-    service: &traefik-svc "https://traefik.networking.svc.cluster.local"
+    service: &traefik-svc "http://traefik.networking.svc.cluster.local"
   - hostname: "id.${PUBLIC_DOMAIN}"
     service: *traefik-svc
   - hostname: "auth.${PUBLIC_DOMAIN}"
