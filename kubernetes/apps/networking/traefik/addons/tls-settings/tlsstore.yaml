@@ -6,4 +6,4 @@ metadata:
   namespace: networking
 spec:
   defaultCertificate:
-    secretName: "${PUBLIC_DOMAIN/./-}-production-tls"
+    secretName: "${PUBLIC_DOMAIN/./-}-tls"
