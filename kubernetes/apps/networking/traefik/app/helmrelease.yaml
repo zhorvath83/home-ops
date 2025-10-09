@@ -38,3 +38,8 @@ spec:
         enabled: false
         gateway:
           enabled: true
+    logs:
+      general:
+        level: TRACE
+      access:
+        enabled: true
