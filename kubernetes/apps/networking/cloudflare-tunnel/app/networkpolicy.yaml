@@ -28,6 +28,15 @@ spec:
     - to:
         - podSelector:
             matchLabels:
+              app.kubernetes.io/name: traefik
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 80
+    - to:
+        - podSelector:
+            matchLabels:
               app.kubernetes.io/name: ingress-nginx
       ports:
         - protocol: TCP
