@@ -20,3 +20,9 @@ tasks:
     dir: provision/cloudflare
     cmds:
       - "op run --no-masking --env-file=./.env -- terraform apply"
+
+  unlock:cloudflare:
+    desc: Force unlock Terraform state lock
+    dir: provision/cloudflare
+    cmds:
+      - "op run --no-masking --env-file=./.env -- terraform force-unlock -force zhorvath83/cloudflare"
