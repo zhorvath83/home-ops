@@ -11,7 +11,7 @@ fi
 
 if [ -z "$SMTP_RELAY_PASSWORD" ]; then
     echo "ERROR: SMTP_RELAY_PASSWORD is empty!"
-    exit 1  
+    exit 1
 fi
 
 # Hash jelszó bcrypt-tel

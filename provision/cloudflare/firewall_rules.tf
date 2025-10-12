@@ -7,7 +7,7 @@ resource "cloudflare_list" "github_hooks_cidr_list" {
 
 resource "cloudflare_list_item" "github_hooks_items" {
   for_each = toset((jsondecode(data.http.github_ip_ranges.response_body)).hooks)
-  
+
   account_id = var.CF_ACCOUNT_ID
   list_id    = cloudflare_list.github_hooks_cidr_list.id
   ip         = each.value

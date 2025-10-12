@@ -17,7 +17,7 @@ Create age public / private key:
 mkdir -p ~/.config/sops/age
 mv age.agekey ~/.config/sops/age/keys.txt
 echo "export SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt" | \
-  tee -a "$HOME/.profile" 
+  tee -a "$HOME/.profile"
 source ~/.profile
 ```
 

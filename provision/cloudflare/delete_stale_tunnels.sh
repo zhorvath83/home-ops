@@ -41,24 +41,24 @@ make_api_call() {
     local url="$2"
     local response
     local success
-    
+
     response=$(curl -s -X "$method" "$url" \
         -H "Authorization: Bearer $CF_API_TOKEN" \
         -H "Content-Type: application/json")
-    
+
     # Check if response is valid JSON and successful
     if ! echo "$response" | jq . >/dev/null 2>&1; then
         echo -e "${RED}❌ Invalid JSON response from API${NC}" >&2
         exit 1
     fi
-    
+
     success=$(echo "$response" | jq -r '.success // false')
     if [ "$success" != "true" ]; then
         echo -e "${RED}❌ API call failed${NC}" >&2
         echo "$response" | jq -r '.errors[]?.message // "Unknown error"' >&2
         exit 1
     fi
-    
+
     echo "$response"
 }
 
@@ -147,9 +147,9 @@ echo "0" > "$fail_file"
 echo "$tunnels_to_delete" | jq -c '.[]' | while read -r tunnel; do
     tunnel_id=$(echo "$tunnel" | jq -r '.id')
     tunnel_name=$(echo "$tunnel" | jq -r '.name')
-    
+
     echo -e "${YELLOW}🗑️  Deleting: $tunnel_name ($tunnel_id)${NC}"
-    
+
     if delete_response=$(make_api_call "DELETE" "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/cfd_tunnel/$tunnel_id" 2>/dev/null); then
         if echo "$delete_response" | jq -r '.success' | grep -q "true"; then
             echo -e "${GREEN}✅ Successfully deleted: $tunnel_name${NC}"
