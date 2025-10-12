@@ -6,7 +6,7 @@ metadata:
   namespace: flux-system
 spec:
   dependsOn:
-   - name: cluster-apps-onepassword-store
+    - name: cluster-apps-onepassword-store
   path: ./kubernetes/apps/security/pocket-id/app
   prune: true
   sourceRef:

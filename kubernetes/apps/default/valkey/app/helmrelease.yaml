@@ -111,4 +111,4 @@ spec:
           valkey:
             port: 6379
 
-    # No persistence needed - pure cache mode
+        # No persistence needed - pure cache mode

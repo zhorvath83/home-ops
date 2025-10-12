@@ -34,7 +34,7 @@ spec:
               TRUST_PROXY: true
               UPLOAD_PATH: /app/data/uploads
               GEOLITE_DB_PATH: /app/data/GeoLite2-City.mmdb
-      
+
             envFrom:
               - secretRef:
                   name: pocket-id-secret
