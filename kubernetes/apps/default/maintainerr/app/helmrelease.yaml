@@ -69,7 +69,7 @@ spec:
             securityContext:
               privileged: false
               allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: true # causes __PATH_PREFIX___ to be in the url
+              # readOnlyRootFilesystem: true # causes __PATH_PREFIX___ to be in the url
               capabilities: { drop: ["ALL"] }
 
             resources:
