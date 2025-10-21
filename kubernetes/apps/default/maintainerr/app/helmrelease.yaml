@@ -112,5 +112,7 @@ spec:
         advancedMounts:
           maintainerr:
             app:
+              - path: /opt/data/logs
+                subPath: logs
               - path: /tmp
                 subPath: tmp
