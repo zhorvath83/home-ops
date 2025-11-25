@@ -1,0 +1,416 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+# Minimal kube-prometheus-stack configuration optimized for single-node homelab
+# Based on: https://clux.dev/post/2024-09-07-prometheus-minified/
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: kube-prometheus-stack
+  namespace: observability
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: kube-prometheus-stack
+    namespace: flux-system
+
+  install:
+    crds: CreateReplace
+    remediation:
+      retries: -1
+  upgrade:
+    cleanupOnFail: true
+    crds: CreateReplace
+    remediation:
+      strategy: rollback
+      retries: 3
+  uninstall:
+    keepHistory: false
+
+  values:
+    # ============================================================================
+    # Global settings
+    # ============================================================================
+    cleanPrometheusOperatorObjectNames: true
+
+    # ============================================================================
+    # Default rules - minimal set for homelab
+    # ============================================================================
+    defaultRules:
+      create: true
+      rules:
+        alertmanager: false
+        etcd: false
+        general: false
+        k8s: true
+        k8sContainerMemorySwap: false
+        k8sContainerMemoryCache: true
+        k8sPodOwner: true
+        kubeApiserver: false
+        kubeApiserverAvailability: false
+        kubeApiserverError: false
+        kubeApiserverSlos: false
+        kubeControllerManager: false
+        kubelet: false
+        kubePrometheusGeneral: false
+        kubePrometheusNodeRecording: false
+        kubernetesApps: true
+        kubernetesResources: false
+        kubernetesStorage: false
+        kubernetesSystem: false
+        kubeScheduler: false
+        kubeSchedulerAlerting: false
+        kubeStateMetrics: true
+        network: false
+        node: false
+        nodeExporterAlerting: false
+        nodeExporterRecording: false
+        prometheus: true
+        prometheusOperator: true
+        windows: false
+
+    # ============================================================================
+    # AlertManager - DISABLED
+    # ============================================================================
+    alertmanager:
+      enabled: false
+
+    # ============================================================================
+    # Grafana
+    # ============================================================================
+    grafana:
+      enabled: true
+      defaultDashboardsEnabled: true
+      defaultDashboardsTimezone: Europe/Budapest
+
+      admin:
+        existingSecret: grafana-secret
+        userKey: admin-user
+        passwordKey: admin-password
+
+      rbac:
+        pspEnabled: false
+
+      grafana.ini:
+        analytics:
+          check_for_updates: false
+        unified_alerting:
+          enabled: false
+        alerting:
+          enabled: false
+
+      sidecar:
+        dashboards:
+          enabled: true
+          searchNamespace: ALL
+
+      datasources:
+        datasources.yaml:
+          apiVersion: 1
+          datasources:
+            - name: Prometheus
+              uid: Prometheus
+              type: prometheus
+              access: proxy
+              url: http://kube-prometheus-stack-prometheus:9090
+              isDefault: true
+              jsonData:
+                timeInterval: 60s
+
+      serviceMonitor:
+        enabled: true
+        metricRelabelings:
+          - sourceLabels: [__name__]
+            regex: "^go_.*"
+            action: drop
+
+      ingress:
+        enabled: true
+        ingressClassName: traefik
+        annotations:
+          external-dns.alpha.kubernetes.io/target: "tunnel.${PUBLIC_DOMAIN}"
+          traefik.ingress.kubernetes.io/router.entrypoints: "websecure"
+          traefik.ingress.kubernetes.io/router.middlewares: "networking-traefik-middleware-chain-no-auth@kubernetescrd"
+        hosts:
+          - "grafana.${PUBLIC_DOMAIN}"
+
+    # ============================================================================
+    # Kubelet - only cAdvisor metrics
+    # ============================================================================
+    kubelet:
+      enabled: true
+      serviceMonitor:
+        probes: false
+        cAdvisor: true
+        cAdvisorMetricRelabelings:
+          # Drop scheduler/apiserver metrics
+          - sourceLabels: [__name__]
+            action: drop
+            regex: "scheduler_.*"
+          - sourceLabels: [__name__]
+            action: drop
+            regex: "apiserver_.*"
+          # Drop less useful container CPU metrics
+          - sourceLabels: [__name__]
+            action: drop
+            regex: "container_cpu_(cfs_throttled_seconds_total|load_average_10s|system_seconds_total|user_seconds_total)"
+          # Drop less useful container filesystem metrics
+          - sourceLabels: [__name__]
+            action: drop
+            regex: "container_fs_(io_current|io_time_seconds_total|io_time_weighted_seconds_total|reads_merged_total|sector_reads_total|sector_writes_total|writes_merged_total)"
+          # Drop less useful container memory metrics
+          - sourceLabels: [__name__]
+            action: drop
+            regex: "container_memory_(mapped_file|swap)"
+          # Drop less useful container process metrics
+          - sourceLabels: [__name__]
+            action: drop
+            regex: "container_(file_descriptors|tasks_state|threads_max)"
+          # Drop container spec metrics that overlap with kube-state-metrics
+          - sourceLabels: [__name__]
+            action: drop
+            regex: "container_spec.*"
+          # Drop cgroup metrics with no pod
+          - sourceLabels: [id, pod]
+            action: drop
+            regex: ".+;"
+          # Extra drops - less useful container metrics
+          - sourceLabels: [__name__]
+            action: drop
+            regex: "container_(memory_failures|last_seen|memory_kernel|memory_failcnt|blkio_device|oom_events|start_time|threads|ulimits_soft).*"
+        metricRelabelings:
+          # Drop almost all kubelet metrics, only want cpu/memory usage
+          - sourceLabels: [__name__]
+            regex: "(apiserver_|etcd_|workqueue_|kubernetes_feature_|endpoint_slice_|node_authorizer_|storage_|kubeproxy_|aggregator_|authentication_|scheduler_|apiextensions_|rest_client_).*"
+            action: drop
+          - sourceLabels: [__name__]
+            regex: "(job_controller_|cronjob_controller_|authorization_|field_validation_).*"
+            action: drop
+          # Drop kubelet_ metrics except kubelet_volume for PVC usage
+          - sourceLabels: [__name__]
+            action: drop
+            regex: "(kubelet_runtime_|kubelet_http_|kubelet_pod_|kube_router|kubelet_evented_|kubelet_topology_|kubelet_pleg_|kubelet_node_startup_).*"
+          - sourceLabels: [__name__]
+            action: drop
+            regex: "^go_.*"
+          # DROP ALL BUCKETS (histograms)
+          - sourceLabels: [__name__]
+            regex: ".*bucket.*"
+            action: drop
+          - sourceLabels: [__name__]
+            regex: "(watch_cache_capacity|volume_operation_).*"
+            action: drop
+
+    # ============================================================================
+    # Disabled components (not needed for single-node K3s)
+    # ============================================================================
+    kubeApiServer:
+      enabled: false
+    kubeControllerManager:
+      enabled: false
+    kubeScheduler:
+      enabled: false
+    kubeProxy:
+      enabled: false
+    kubeEtcd:
+      enabled: false
+    coreDns:
+      enabled: false
+    kubeDns:
+      enabled: false
+
+    # ============================================================================
+    # kube-state-metrics with Flux CRD support
+    # ============================================================================
+    kubeStateMetrics:
+      enabled: true
+
+    kube-state-metrics:
+      rbac:
+        extraRules:
+          - apiGroups: ["kustomize.toolkit.fluxcd.io"]
+            resources: ["kustomizations"]
+            verbs: ["list", "watch"]
+          - apiGroups: ["source.toolkit.fluxcd.io"]
+            resources: ["gitrepositories", "ocirepositories", "helmrepositories"]
+            verbs: ["list", "watch"]
+          - apiGroups: ["helm.toolkit.fluxcd.io"]
+            resources: ["helmreleases"]
+            verbs: ["list", "watch"]
+      customResourceState:
+        enabled: true
+        config:
+          spec:
+            resources:
+              - groupVersionKind:
+                  group: kustomize.toolkit.fluxcd.io
+                  version: v1
+                  kind: Kustomization
+                metricNamePrefix: gotk
+                metrics:
+                  - name: "resource_info"
+                    help: "The current state of a Flux Kustomization resource."
+                    each:
+                      type: Info
+                      info:
+                        labelsFromPath:
+                          name: [metadata, name]
+                    labelsFromPath:
+                      exported_namespace: [metadata, namespace]
+                      ready: [status, conditions, "[type=Ready]", status]
+                      suspended: [spec, suspend]
+                      revision: [status, lastAppliedRevision]
+                      source_name: [spec, sourceRef, name]
+              - groupVersionKind:
+                  group: source.toolkit.fluxcd.io
+                  version: v1
+                  kind: GitRepository
+                metricNamePrefix: gotk
+                metrics:
+                  - name: "resource_info"
+                    help: "The current state of a Flux GitRepository resource."
+                    each:
+                      type: Info
+                      info:
+                        labelsFromPath:
+                          name: [metadata, name]
+                    labelsFromPath:
+                      exported_namespace: [metadata, namespace]
+                      ready: [status, conditions, "[type=Ready]", status]
+                      suspended: [spec, suspend]
+                      revision: [status, artifact, revision]
+                      url: [spec, url]
+              - groupVersionKind:
+                  group: helm.toolkit.fluxcd.io
+                  version: v2
+                  kind: HelmRelease
+                metricNamePrefix: gotk
+                metrics:
+                  - name: "resource_info"
+                    help: "The current state of a Flux HelmRelease resource."
+                    each:
+                      type: Info
+                      info:
+                        labelsFromPath:
+                          name: [metadata, name]
+                    labelsFromPath:
+                      exported_namespace: [metadata, namespace]
+                      ready: [status, conditions, "[type=Ready]", status]
+                      suspended: [spec, suspend]
+                      revision: [status, lastAppliedRevision]
+      collectors:
+        - cronjobs
+        - daemonsets
+        - deployments
+        - horizontalpodautoscalers
+        - jobs
+        - namespaces
+        - nodes
+        - persistentvolumeclaims
+        - persistentvolumes
+        - pods
+        - replicasets
+        - statefulsets
+        - storageclasses
+      prometheus:
+        monitor:
+          metricRelabelings:
+            - sourceLabels: [__name__]
+              regex: "kube_pod_status_reason"
+              action: drop
+            - sourceLabels: [__name__]
+              regex: "kube_pod_tolerations|kube_pod_status_qos_class|kube_pod_scheduler|kube_pod_service_account|kube_pod_status_scheduled_time"
+              action: drop
+            - sourceLabels: [__name__]
+              regex: "kube_replicaset_(status|spec|metadata|created).*"
+              action: drop
+
+    # ============================================================================
+    # Node Exporter
+    # ============================================================================
+    nodeExporter:
+      enabled: true
+
+    prometheus-node-exporter:
+      prometheus:
+        monitor:
+          metricRelabelings:
+            - sourceLabels: [__name__]
+              regex: "^go_.*"
+              action: drop
+            - sourceLabels: [__name__]
+              regex: "^node_cpu_guest_seconds_total"
+              action: drop
+            - sourceLabels: [__name__]
+              regex: "^node_network_(flags|device_id|dormant|iface_link_mode|transmit_queue_length|carrier.*)"
+              action: drop
+            - sourceLabels: [__name__]
+              regex: "^node_scrape_(collector_duration_seconds)"
+              action: drop
+            - sourceLabels: [__name__]
+              regex: "^node_filesystem_(readonly|device_error|files).*"
+              action: drop
+            - sourceLabels: [__name__]
+              regex: "^node_(cooling|schedstat|cpu_scaling).*"
+              action: drop
+
+    # ============================================================================
+    # Prometheus Operator
+    # ============================================================================
+    prometheusOperator:
+      enabled: true
+      serviceMonitor:
+        selfMonitor: true
+        metricRelabelings:
+          - sourceLabels: [__name__]
+            regex: "prometheus_operator_(kubernetes_client|reconcile_duration).*"
+            action: drop
+          - sourceLabels: [__name__]
+            regex: "go_sched_.*_bucket"
+            action: drop
+
+    # ============================================================================
+    # Prometheus
+    # ============================================================================
+    prometheus:
+      enabled: true
+      serviceMonitor:
+        metricRelabelings:
+          - sourceLabels: [__name__]
+            regex: "prometheus_http_(request|response).*"
+            action: drop
+          - sourceLabels: [__name__]
+            regex: "prometheus_tsdb_(compaction_chunk|compaction_duration).*"
+            action: drop
+          - sourceLabels: [__name__]
+            regex: "(net_conntrack).*"
+            action: drop
+          - sourceLabels: [__name__]
+            regex: "prometheus_sd_(consul|azure|kuma|nomad|linode).*"
+            action: drop
+          - sourceLabels: [__name__]
+            action: drop
+            regex: "^go_.*"
+      prometheusSpec:
+        # Performance settings
+        scrapeInterval: 60s
+        evaluationInterval: 60s
+        retention: 7d
+        retentionSize: 1900MB
+        replicas: 1
+        # Use existing PVC
+        storageSpec:
+          volumeClaimTemplate:
+            spec:
+              storageClassName: democratic-csi-local-hostpath
+              accessModes: ["ReadWriteOnce"]
+              resources:
+                requests:
+                  storage: 2Gi
+        # Discover all ServiceMonitors and PodMonitors
+        serviceMonitorSelectorNilUsesHelmValues: false
+        podMonitorSelectorNilUsesHelmValues: false
+        ruleSelectorNilUsesHelmValues: false
+        # Disable external labels
+        prometheusExternalLabelNameClear: true
+        replicaExternalLabelNameClear: true
