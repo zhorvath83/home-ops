@@ -104,19 +104,6 @@ spec:
           enabled: true
           searchNamespace: ALL
 
-      datasources:
-        datasources.yaml:
-          apiVersion: 1
-          datasources:
-            - name: Prometheus
-              uid: Prometheus
-              type: prometheus
-              access: proxy
-              url: http://kube-prometheus-stack-prometheus:9090
-              isDefault: true
-              jsonData:
-                timeInterval: 60s
-
       serviceMonitor:
         enabled: true
         metricRelabelings:
