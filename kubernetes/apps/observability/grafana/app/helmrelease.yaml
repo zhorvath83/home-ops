@@ -1,0 +1,198 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: grafana
+  namespace: observability
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: grafana
+    namespace: flux-system
+  install:
+    remediation:
+      retries: -1
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  values:
+    admin:
+      existingSecret: grafana-secret
+    rbac:
+      pspEnabled: false
+    deploymentStrategy:
+      type: Recreate
+    env:
+      GF_ANALYTICS_CHECK_FOR_UPDATES: false
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: false
+      GF_ANALYTICS_REPORTING_ENABLED: false
+      GF_AUTH_ANONYMOUS_ENABLED: false
+      GF_DATE_FORMATS_USE_BROWSER_LOCALE: true
+      GF_EXPLORE_ENABLED: true
+      GF_LOG_MODE: console
+      GF_NEWS_NEWS_FEED_ENABLED: false
+      GF_SECURITY_ALLOW_EMBEDDING: true
+      GF_SERVER_ROOT_URL: "https://grafana.${PUBLIC_DOMAIN}"
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      annotations:
+        external-dns.alpha.kubernetes.io/target: "tunnel.${PUBLIC_DOMAIN}"
+      hosts:
+        - "grafana.${PUBLIC_DOMAIN}"
+
+    serviceMonitor:
+      enabled: true
+
+    persistence:
+      enabled: false
+
+    testFramework:
+      enabled: false
+
+    # ============================================================================
+    # Datasources
+    # ============================================================================
+    datasources:
+      datasources.yaml:
+        apiVersion: 1
+        deleteDatasources:
+          - name: Alertmanager
+            orgId: 1
+        datasources:
+          - name: Prometheus
+            type: prometheus
+            access: proxy
+            url: http://kube-prometheus-stack-prometheus.observability.svc.cluster.local:9090
+            isDefault: true
+            jsonData:
+              timeInterval: "60s"
+
+    # ============================================================================
+    # Sidecar for ConfigMap dashboards
+    # ============================================================================
+    sidecar:
+      dashboards:
+        enabled: true
+        searchNamespace: ALL
+        label: grafana_dashboard
+        folderAnnotation: grafana_folder
+        provider:
+          disableDelete: true
+          foldersFromFilesStructure: true
+      datasources:
+        enabled: true
+        searchNamespace: ALL
+        labelValue: ""
+
+    # ============================================================================
+    # Dashboard Providers
+    # ============================================================================
+    dashboardProviders:
+      dashboardproviders.yaml:
+        apiVersion: 1
+        providers:
+          - name: default
+            disableDeletion: false
+            editable: true
+            folder: ""
+            options:
+              path: /var/lib/grafana/dashboards/default
+            orgId: 1
+            type: file
+          - name: kubernetes
+            orgId: 1
+            folder: Kubernetes
+            type: file
+            disableDeletion: false
+            editable: true
+            options:
+              path: /var/lib/grafana/dashboards/kubernetes
+          - name: nginx
+            orgId: 1
+            folder: Nginx
+            type: file
+            disableDeletion: false
+            editable: true
+            options:
+              path: /var/lib/grafana/dashboards/nginx
+          - name: flux
+            orgId: 1
+            folder: Flux
+            type: file
+            disableDeletion: false
+            editable: true
+            options:
+              path: /var/lib/grafana/dashboards/flux
+
+    # ============================================================================
+    # Dashboards
+    # ============================================================================
+    dashboards:
+      default:
+        # Ref: https://grafana.com/grafana/dashboards/1860-node-exporter-full/
+        node-exporter-full:
+          gnetId: 1860
+          revision: 37
+          datasource: Prometheus
+        # Ref: https://grafana.com/grafana/dashboards/22651-prometheus-speedtest-exporter/
+        speedtest-exporter:
+          gnetId: 22651
+          revision: 1
+          datasource: Prometheus
+        volsync:
+          gnetId: 21356
+          revision: 3
+          datasource:
+            - { name: DS_PROMETHEUS, value: Prometheus }
+
+      kubernetes:
+        k8s-views-global:
+          gnetId: 15757
+          revision: 43
+          datasource: Prometheus
+        k8s-views-nodes:
+          gnetId: 15759
+          revision: 35
+          datasource: Prometheus
+        k8s-views-namespaces:
+          gnetId: 15758
+          revision: 42
+          datasource: Prometheus
+        k8s-views-pods:
+          gnetId: 15760
+          revision: 36
+          datasource: Prometheus
+        k8s-volumes:
+          gnetId: 11454
+          revision: 14
+          datasource: Prometheus
+
+      nginx:
+        nginx:
+          url: https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/grafana/dashboards/nginx.json
+          datasource: Prometheus
+        nginx-request-handling-performance:
+          url: https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/grafana/dashboards/request-handling-performance.json
+          datasource: Prometheus
+
+      flux:
+        flux-cluster:
+          url: https://raw.githubusercontent.com/fluxcd/flux2-monitoring-example/main/monitoring/configs/dashboards/cluster.json
+          datasource: Prometheus
+        flux-control-plane:
+          url: https://raw.githubusercontent.com/fluxcd/flux2-monitoring-example/main/monitoring/configs/dashboards/control-plane.json
+          datasource: Prometheus
+
+    grafana.ini:
+      analytics:
+        check_for_updates: false
+      auth.basic:
+        disable_login_form: false
+      unified_alerting:
+        enabled: false
+      alerting:
+        enabled: false

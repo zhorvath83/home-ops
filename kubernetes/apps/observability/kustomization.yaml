@@ -5,5 +5,5 @@ kind: Kustomization
 resources:
   - ./namespace.yaml
   - ./kube-prometheus-stack/ks.yaml
-  - ./flux-monitoring/ks.yaml
+  - ./grafana/ks.yaml
   - ./speedtest-exporter/ks.yaml

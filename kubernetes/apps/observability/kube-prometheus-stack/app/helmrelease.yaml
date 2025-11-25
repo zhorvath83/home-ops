@@ -76,48 +76,10 @@ spec:
       enabled: false
 
     # ============================================================================
-    # Grafana
+    # Grafana - DISABLED (deployed separately)
     # ============================================================================
     grafana:
-      enabled: true
-      defaultDashboardsEnabled: true
-      defaultDashboardsTimezone: Europe/Budapest
-
-      admin:
-        existingSecret: grafana-secret
-        userKey: admin-user
-        passwordKey: admin-password
-
-      rbac:
-        pspEnabled: false
-
-      grafana.ini:
-        analytics:
-          check_for_updates: false
-        unified_alerting:
-          enabled: false
-        alerting:
-          enabled: false
-
-      sidecar:
-        dashboards:
-          enabled: true
-          searchNamespace: ALL
-
-      serviceMonitor:
-        enabled: true
-        metricRelabelings:
-          - sourceLabels: [__name__]
-            regex: "^go_.*"
-            action: drop
-
-      ingress:
-        enabled: true
-        ingressClassName: nginx
-        annotations:
-          external-dns.alpha.kubernetes.io/target: "tunnel.${PUBLIC_DOMAIN}"
-        hosts:
-          - "grafana.${PUBLIC_DOMAIN}"
+      enabled: false
 
     # ============================================================================
     # Kubelet - only cAdvisor metrics
