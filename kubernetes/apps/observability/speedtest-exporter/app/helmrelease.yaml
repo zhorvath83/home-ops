@@ -80,6 +80,12 @@ spec:
               limits:
                 memory: 100Mi
 
+    persistence:
+      config:
+        type: emptyDir
+        globalMounts:
+          - path: /.config
+
     service:
       app:
         controller: *app
