@@ -43,9 +43,11 @@ spec:
             key: api-token
     extraArgs:
       - --cloudflare-proxied
+      - --gateway-name=external
     policy: sync
     sources:
       - ingress
+      - gateway-httproute
     txtPrefix: k8s.
     txtOwnerId: default
     domainFilters:
