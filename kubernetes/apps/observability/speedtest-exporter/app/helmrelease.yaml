@@ -57,7 +57,6 @@ spec:
 
             env:
               SPEEDTEST_PORT: &port 9798
-              SPEEDTEST_HOST: "0.0.0.0"
               TZ: Europe/Budapest
 
             probes:
@@ -119,3 +118,6 @@ spec:
             path: /metrics
             interval: 60m
             scrapeTimeout: 5m
+            metricRelabelings:
+              - action: labeldrop
+                regex: (pod)

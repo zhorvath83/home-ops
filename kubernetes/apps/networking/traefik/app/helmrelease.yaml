@@ -118,6 +118,18 @@ spec:
         entryPoint: metrics
         service:
           enabled: true
+        serviceMonitor:
+          enabled: true
+          namespaceSelector: {}
+          metricRelabelings:
+            # Drop Go runtime metrics
+            - sourceLabels: [__name__]
+              regex: "^go_.*"
+              action: drop
+            # Drop histogram buckets
+            - sourceLabels: [__name__]
+              regex: ".*_bucket$"
+              action: drop
     pilot:
       enabled: false
     providers:

@@ -360,3 +360,12 @@ spec:
         # Disable external labels
         prometheusExternalLabelNameClear: true
         replicaExternalLabelNameClear: true
+        # External scrape targets (outside cluster)
+        additionalScrapeConfigs:
+          - job_name: openwrt
+            static_configs:
+              - targets: ["192.168.1.1:9100"]
+            metric_relabel_configs:
+              - source_labels: [__name__]
+                regex: "^go_.*"
+                action: drop

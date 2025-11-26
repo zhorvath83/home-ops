@@ -105,13 +105,13 @@ spec:
         apiVersion: 1
         providers:
           - name: default
+            orgId: 1
+            folder: ""
+            type: file
             disableDeletion: false
             editable: true
-            folder: ""
             options:
               path: /var/lib/grafana/dashboards/default
-            orgId: 1
-            type: file
           - name: kubernetes
             orgId: 1
             folder: Kubernetes
@@ -120,81 +120,140 @@ spec:
             editable: true
             options:
               path: /var/lib/grafana/dashboards/kubernetes
-          - name: nginx
+          - name: networking
             orgId: 1
-            folder: Nginx
+            folder: Networking
             type: file
             disableDeletion: false
             editable: true
             options:
-              path: /var/lib/grafana/dashboards/nginx
-          - name: flux
+              path: /var/lib/grafana/dashboards/networking
+          - name: storage
             orgId: 1
-            folder: Flux
+            folder: Storage
             type: file
             disableDeletion: false
             editable: true
             options:
-              path: /var/lib/grafana/dashboards/flux
+              path: /var/lib/grafana/dashboards/storage
+          - name: system
+            orgId: 1
+            folder: System
+            type: file
+            disableDeletion: false
+            editable: true
+            options:
+              path: /var/lib/grafana/dashboards/system
 
     # ============================================================================
     # Dashboards
     # ============================================================================
     dashboards:
-      default:
-        # Ref: https://grafana.com/grafana/dashboards/1860-node-exporter-full/
-        node-exporter-full:
-          gnetId: 1860
-          revision: 37
-          datasource: Prometheus
-        # Ref: https://grafana.com/grafana/dashboards/22651-prometheus-speedtest-exporter/
-        speedtest-exporter:
-          gnetId: 22651
-          revision: 1
-          datasource: Prometheus
-        volsync:
-          gnetId: 21356
-          revision: 3
-          datasource:
-            - { name: DS_PROMETHEUS, value: Prometheus }
-
+      # -------------------------------------------------------------------------
+      # Kubernetes - Cluster views and GitOps
+      # -------------------------------------------------------------------------
       kubernetes:
+        # renovate: depName="Kubernetes / Views / Global"
         k8s-views-global:
           gnetId: 15757
           revision: 43
           datasource: Prometheus
+        # renovate: depName="Kubernetes / Views / Nodes"
         k8s-views-nodes:
           gnetId: 15759
-          revision: 35
+          revision: 40
           datasource: Prometheus
+        # renovate: depName="Kubernetes / Views / Namespaces"
         k8s-views-namespaces:
           gnetId: 15758
-          revision: 42
+          revision: 44
           datasource: Prometheus
+        # renovate: depName="Kubernetes / Views / Pods"
         k8s-views-pods:
           gnetId: 15760
-          revision: 36
+          revision: 37
           datasource: Prometheus
+        # renovate: depName="K8s / Storage / Volumes / Cluster"
         k8s-volumes:
           gnetId: 11454
           revision: 14
           datasource: Prometheus
-
-      nginx:
-        nginx:
-          url: https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/grafana/dashboards/nginx.json
-          datasource: Prometheus
-        nginx-request-handling-performance:
-          url: https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/grafana/dashboards/request-handling-performance.json
-          datasource: Prometheus
-
-      flux:
         flux-cluster:
           url: https://raw.githubusercontent.com/fluxcd/flux2-monitoring-example/main/monitoring/configs/dashboards/cluster.json
           datasource: Prometheus
         flux-control-plane:
           url: https://raw.githubusercontent.com/fluxcd/flux2-monitoring-example/main/monitoring/configs/dashboards/control-plane.json
           datasource: Prometheus
+        flux-operator-performance:
+          url: https://raw.githubusercontent.com/controlplaneio-fluxcd/flux-operator/refs/heads/main/config/monitoring/dashboards/flux-performance.json
+          datasource:
+            - {name: DS_PROMETHEUS, value: Prometheus}
+        flux-api-performance:
+          url: https://raw.githubusercontent.com/controlplaneio-fluxcd/flux-operator/refs/heads/main/config/monitoring/dashboards/flux-k8s-api-performance.json
+          datasource:
+            - {name: DS_PROMETHEUS, value: Prometheus}
+
+      # -------------------------------------------------------------------------
+      # Networking - Ingress, DNS, traffic
+      # -------------------------------------------------------------------------
+      networking:
+        nginx:
+          url: https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/grafana/dashboards/nginx.json
+          datasource: Prometheus
+        nginx-request-handling-performance:
+          url: https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/grafana/dashboards/request-handling-performance.json
+          datasource: Prometheus
+        # renovate: depName="Traefik"
+        traefik:
+          gnetId: 17346
+          revision: 9
+          datasource: Prometheus
+        # renovate: depName="cert-manager"
+        cert-manager:
+          gnetId: 20340
+          revision: 1
+          datasource:
+            - {name: DS_PROMETHEUS, value: Prometheus}
+        # renovate: depName="External-DNS"
+        external-dns:
+          gnetId: 15038
+          revision: 3
+          datasource: Prometheus
+        # renovate: depName="Speedtest-Exporter"
+        speedtest-exporter:
+          gnetId: 13665
+          revision: 4
+          datasource:
+            - {name: DS_PROMETHEUS, value: Prometheus}
+        # renovate: depName="OpenWRT"
+        openwrt:
+          gnetId: 18153
+          revision: 2
+          datasource:
+            - {name: DS_PROMETHEUS, value: Prometheus}
+
+      # -------------------------------------------------------------------------
+      # Storage - Backups and persistence
+      # -------------------------------------------------------------------------
+      storage:
+        # renovate: depName="Volsync"
+        volsync:
+          gnetId: 21356
+          revision: 3
+          datasource:
+            - {name: DS_PROMETHEUS, value: Prometheus}
+            - {name: VAR_REPLICATIONDESTNAME, value: ".*-rdst"}
+
+      # -------------------------------------------------------------------------
+      # System - Node-level monitoring
+      # -------------------------------------------------------------------------
+      system:
+        # renovate: depName="Node Exporter Full"
+        node-exporter-full:
+          gnetId: 1860
+          revision: 42
+          datasource:
+            - {name: DS_PROMETHEUS, value: Prometheus}
 
     grafana.ini:
       analytics:
