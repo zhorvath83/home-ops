@@ -178,7 +178,7 @@ spec:
       app:
         annotations:
           traefik.ingress.kubernetes.io/router.middlewares: "networking-traefik-middleware-chain-no-auth@kubernetescrd"
-        hostnames: ["{{ .Release.Name }}.${PUBLIC_DOMAIN}"]
+        hostnames: ["dash.${PUBLIC_DOMAIN}"]
         parentRefs:
           - name: external
             namespace: networking
