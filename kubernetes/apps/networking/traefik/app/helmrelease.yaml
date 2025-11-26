@@ -136,22 +136,16 @@ spec:
     providers:
       kubernetesCRD:
         enabled: true
-        ingressClass: traefik
         allowCrossNamespace: true
-        allowExternalNameServices: true
       kubernetesIngress:
-        enabled: true
-        ingressClass: traefik
-        allowExternalNameServices: true
-        publishedService:
-          enabled: true
+        enabled: false
       kubernetesGateway:
         enabled: true
         experimentalChannel: false
 
     gateway:
       enabled: true
-      name: traefik
+      name: external
       annotations:
         # https://kubernetes-sigs.github.io/external-dns/v0.14.2/sources/gateway/#targets
         external-dns.alpha.kubernetes.io/target: "tunnel.${PUBLIC_DOMAIN}"
@@ -172,7 +166,7 @@ spec:
           mode: Terminate
     gatewayClass:
       enabled: true
-      name: traefik
+      name: external
 
     resources:
       requests:

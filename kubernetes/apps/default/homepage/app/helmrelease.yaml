@@ -172,26 +172,21 @@ spec:
         controller: *app
         ports:
           http:
-            port: 3000
+            port: &port 3000
 
-    ingress:
+    route:
       app:
-        className: "traefik"
         annotations:
-          external-dns.alpha.kubernetes.io/target: "tunnel.${PUBLIC_DOMAIN}"
-          # traefik.ingress.kubernetes.io/router.tls: "true"
-          traefik.ingress.kubernetes.io/router.entrypoints: "websecure"
           traefik.ingress.kubernetes.io/router.middlewares: "networking-traefik-middleware-chain-no-auth@kubernetescrd"
-        hosts:
-          - host: *host
-            paths:
-              - path: /
-                service:
-                  identifier: app
-                  port: http
-        tls:
-          - hosts:
-              - *host
+        hostnames: ["{{ .Release.Name }}.${PUBLIC_DOMAIN}"]
+        parentRefs:
+          - name: external
+            namespace: networking
+            sectionName: websecure
+        rules:
+          - backendRefs:
+              - identifier: app
+                port: *port
 
     persistence:
       config-files:

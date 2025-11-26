@@ -91,22 +91,6 @@ spec:
           http:
             port: *port
 
-    ingress:
-      app:
-        className: "nginx"
-        annotations:
-          gethomepage.dev/enabled: "true"
-          gethomepage.dev/name: Echo server
-          gethomepage.dev/group: Observability
-          gethomepage.dev/icon: terminal.svg
-        hosts:
-          - host: "{{ .Release.Name }}.${PUBLIC_DOMAIN}"
-            paths:
-              - path: /
-                service:
-                  identifier: app
-                  port: http
-
     route:
       app:
         annotations:
@@ -116,9 +100,9 @@ spec:
           gethomepage.dev/icon: terminal.svg
         hostnames: ["{{ .Release.Name }}.${PUBLIC_DOMAIN}"]
         parentRefs:
-          - name: traefik
-            namespace: network
-            sectionName: https
+          - name: external
+            namespace: networking
+            sectionName: websecure
         rules:
           - backendRefs:
               - identifier: app
