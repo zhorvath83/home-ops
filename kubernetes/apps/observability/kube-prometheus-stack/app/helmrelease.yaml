@@ -342,18 +342,12 @@ spec:
         # Performance settings
         scrapeInterval: 60s
         evaluationInterval: 60s
-        retention: 7d
-        retentionSize: 1900MB
+        retention: 14d
+        retentionSize: 4500MB
         replicas: 1
-        # Use existing PVC
+        # Use existing PVC (managed separately for VolSync backup)
         storageSpec:
-          volumeClaimTemplate:
-            spec:
-              storageClassName: democratic-csi-local-hostpath
-              accessModes: ["ReadWriteOnce"]
-              resources:
-                requests:
-                  storage: 2Gi
+          existingClaimName: kube-prometheus-stack-prometheus
         # Discover all ServiceMonitors and PodMonitors
         serviceMonitorSelectorNilUsesHelmValues: false
         podMonitorSelectorNilUsesHelmValues: false

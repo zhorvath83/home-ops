@@ -46,6 +46,15 @@ spec:
 
     serviceMonitor:
       enabled: true
+      metricRelabelings:
+        # Drop high-cardinality histogram buckets (saves ~1200 series)
+        - sourceLabels: [__name__]
+          regex: "grafana_http_(request_duration|response_size)_seconds_bucket"
+          action: drop
+        # Drop Go runtime metrics
+        - sourceLabels: [__name__]
+          regex: "^go_.*"
+          action: drop
 
     persistence:
       enabled: false

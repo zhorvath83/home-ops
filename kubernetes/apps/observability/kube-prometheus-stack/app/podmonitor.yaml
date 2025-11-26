@@ -30,3 +30,20 @@ spec:
       relabelings:
         - sourceLabels: [__meta_kubernetes_pod_name]
           targetLabel: pod
+      metricRelabelings:
+        # Drop high-cardinality histogram buckets (saves ~1700 series)
+        - sourceLabels: [__name__]
+          regex: "gotk_reconcile_duration_seconds_bucket"
+          action: drop
+        # Drop controller-runtime histogram buckets
+        - sourceLabels: [__name__]
+          regex: "controller_runtime_reconcile_time_seconds_bucket"
+          action: drop
+        # Drop workqueue histogram buckets
+        - sourceLabels: [__name__]
+          regex: "workqueue_(queue|work)_duration_seconds_bucket"
+          action: drop
+        # Drop Go runtime metrics
+        - sourceLabels: [__name__]
+          regex: "^go_.*"
+          action: drop
