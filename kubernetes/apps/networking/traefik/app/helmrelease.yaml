@@ -132,6 +132,7 @@ spec:
               action: drop
     pilot:
       enabled: false
+
     providers:
       kubernetesCRD:
         enabled: true
@@ -144,6 +145,35 @@ spec:
         allowExternalNameServices: true
         publishedService:
           enabled: true
+      kubernetesGateway:
+        enabled: true
+        experimentalChannel: false
+
+    gateway:
+      enabled: true
+      name: traefik
+      annotations:
+        # https://kubernetes-sigs.github.io/external-dns/v0.14.2/sources/gateway/#targets
+        external-dns.alpha.kubernetes.io/target: "tunnel.${PUBLIC_DOMAIN}"
+      listeners:
+        web:
+          port: 8000
+          # doesn't support None for now...
+          # https://gateway-api.sigs.k8s.io/reference/spec/#fromnamespaces
+          namespacePolicy:
+            from: All
+        websecure:
+          port: 8443
+          namespacePolicy:
+            from: All
+          protocol: HTTPS
+          certificateRefs:
+            - name: "networking/${PUBLIC_DOMAIN/./-}-tls"
+          mode: Terminate
+    gatewayClass:
+      enabled: true
+      name: traefik
+
     resources:
       requests:
         cpu: 10m
