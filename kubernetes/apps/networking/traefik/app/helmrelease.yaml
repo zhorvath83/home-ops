@@ -162,7 +162,7 @@ spec:
             from: All
           protocol: HTTPS
           certificateRefs:
-            - name: "networking/${PUBLIC_DOMAIN/./-}-tls"
+            - name: "${PUBLIC_DOMAIN/./-}-tls"
           mode: Terminate
     gatewayClass:
       enabled: true
