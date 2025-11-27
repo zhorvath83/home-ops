@@ -5,7 +5,6 @@ kind: Kustomization
 resources:
   - ./namespace.yaml
   - ./metallb/ks.yaml
-  - ./ingress-nginx/ks.yaml
   - ./cloudflare-tunnel/ks.yaml
   - ./echo/ks.yaml
   - ./external-dns/ks.yaml

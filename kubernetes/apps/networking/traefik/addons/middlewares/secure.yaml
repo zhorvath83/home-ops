@@ -6,38 +6,26 @@ metadata:
   namespace: networking
 spec:
   headers:
-    accessControlAllowMethods:
-      - GET
-      - OPTIONS
-      - PUT
-      - POST
-    accessControlMaxAge: 100
-    accessControlAllowOriginListRegex:
-      - "https://(.*?)${PUBLIC_DOMAIN}"
+    # Proxy headers (only actual host-related headers)
     hostsProxyHeaders:
       - "X-Forwarded-Host"
       - "X-Forwarded-For"
       - "X-Forwarded-Proto"
-      - "X-GEO-City"
-      - "Cf-Connecting-Ip"
-      - "Cf-Ipcountry"
+    # HSTS
     stsSeconds: 31536000
-    stsIncludeSubdomains: false
+    stsIncludeSubdomains: true
     stsPreload: true
     forceSTSHeader: true
-    customFrameOptionsValue: "allow-from https:${PUBLIC_DOMAIN}"
+    # Security headers
     contentTypeNosniff: true
-    browserXssFilter: true
     frameDeny: true
-    referrerPolicy: "same-origin"
-    contentSecurityPolicy: "upgrade-insecure-requests;"
+    referrerPolicy: "strict-origin-when-cross-origin"
+    # Custom response headers
     customResponseHeaders:
-      permissionsPolicy: "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
-      X-Frame-Options: "SAMEORIGIN"
+      Permissions-Policy: "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
       X-Robots-Tag: "noindex,nofollow,noarchive,nosnippet,notranslate,noimageindex"
       X-Permitted-Cross-Domain-Policies: "none"
-      X-Forwarded-Proto: "https"
-      City: X-GEO-City
+      X-XSS-Protection: "0"
       Server: ""
       X-Powered-By: ""
       X-Forwarded-Server: ""
