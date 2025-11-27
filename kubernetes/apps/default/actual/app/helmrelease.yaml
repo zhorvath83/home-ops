@@ -57,7 +57,7 @@ spec:
 
             env:
               TZ: Europe/Budapest
-              ACTUAL_PORT: &httpPort 5006
+              ACTUAL_PORT: &port 5006
 
             probes:
               liveness:
@@ -68,7 +68,7 @@ spec:
                 spec:
                   httpGet:
                     path: /
-                    port: *httpPort
+                    port: *port
                   initialDelaySeconds: 0
                   periodSeconds: 10
                   timeoutSeconds: 1
@@ -92,24 +92,25 @@ spec:
         controller: *app
         ports:
           http:
-            port: *httpPort
+            port: *port
 
-    ingress:
+    route:
       app:
-        className: "nginx"
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Actual
           gethomepage.dev/group: PFM
           gethomepage.dev/icon: actual-budget
           gethomepage.dev/siteMonitor: http://actual.default.svc.cluster.local:5006
-        hosts:
-          - host: "actual.${PUBLIC_DOMAIN}"
-            paths:
-              - path: /
-                service:
-                  identifier: app
-                  port: http
+        hostnames: ["{{ .Release.Name }}.${PUBLIC_DOMAIN}"]
+        parentRefs:
+          - name: external
+            namespace: networking
+            sectionName: websecure
+        rules:
+          - backendRefs:
+              - identifier: app
+                port: *port
 
     persistence:
       data:
