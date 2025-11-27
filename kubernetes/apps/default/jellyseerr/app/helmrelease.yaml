@@ -90,21 +90,23 @@ spec:
           http:
             port: *port
 
-    ingress:
+    route:
       app:
-        className: "nginx"
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Jellyseerr
           gethomepage.dev/group: Arr Stack
           gethomepage.dev/icon: jellyseerr.svg
-        hosts:
-          - host: "requests.${PUBLIC_DOMAIN}"
-            paths:
-              - path: /
-                service:
-                  identifier: app
-                  port: http
+        hostnames:
+          - "reqs.${PUBLIC_DOMAIN}"
+        parentRefs:
+          - name: external
+            namespace: networking
+            sectionName: websecure
+        rules:
+          - backendRefs:
+              - identifier: app
+                port: *port
 
     persistence:
       config:

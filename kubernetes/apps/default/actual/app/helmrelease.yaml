@@ -102,7 +102,8 @@ spec:
           gethomepage.dev/group: PFM
           gethomepage.dev/icon: actual-budget
           gethomepage.dev/siteMonitor: http://actual.default.svc.cluster.local:5006
-        hostnames: ["{{ .Release.Name }}.${PUBLIC_DOMAIN}"]
+        hostnames:
+          - "pfm.${PUBLIC_DOMAIN}"
         parentRefs:
           - name: external
             namespace: networking

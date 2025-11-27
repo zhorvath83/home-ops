@@ -7,7 +7,6 @@ resources:
   - ./metallb/ks.yaml
   - ./ingress-nginx/ks.yaml
   - ./cloudflare-tunnel/ks.yaml
-  - ./echo-server/ks.yaml
   - ./echo/ks.yaml
   - ./external-dns/ks.yaml
   - ./smtp-relay/ks.yaml

@@ -65,7 +65,7 @@ spec:
                 spec:
                   httpGet:
                     path: /ping
-                    port: 9696
+                    port: &port 9696
                   initialDelaySeconds: 15
                   periodSeconds: 10
                   timeoutSeconds: 1
@@ -90,23 +90,25 @@ spec:
         controller: prowlarr
         ports:
           http:
-            port: 9696
+            port: *port
 
-    ingress:
+    route:
       app:
-        className: "nginx"
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Prowlarr
           gethomepage.dev/group: Arr Stack
           gethomepage.dev/icon: prowlarr.svg
-        hosts:
-          - host: "indexers.${PUBLIC_DOMAIN}"
-            paths:
-              - path: /
-                service:
-                  identifier: app
-                  port: http
+        hostnames:
+          - "indexers.${PUBLIC_DOMAIN}"
+        parentRefs:
+          - name: external
+            namespace: networking
+            sectionName: websecure
+        rules:
+          - backendRefs:
+              - identifier: app
+                port: *port
 
     persistence:
       config:

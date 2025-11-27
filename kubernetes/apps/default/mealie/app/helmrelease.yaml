@@ -105,21 +105,23 @@ spec:
           http:
             port: &port 9000
 
-    ingress:
+    route:
       app:
-        className: "nginx"
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Mealie
           gethomepage.dev/group: Selfhosted
           gethomepage.dev/icon: mealie.svg
-        hosts:
-          - host: "recipes.${PUBLIC_DOMAIN}"
-            paths:
-              - path: /
-                service:
-                  identifier: app
-                  port: http
+        hostnames:
+          - "recipes.${PUBLIC_DOMAIN}"
+        parentRefs:
+          - name: external
+            namespace: networking
+            sectionName: websecure
+        rules:
+          - backendRefs:
+              - identifier: app
+                port: *port
 
     persistence:
       config:

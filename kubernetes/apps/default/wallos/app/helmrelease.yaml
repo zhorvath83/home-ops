@@ -83,24 +83,25 @@ spec:
         controller: *app
         ports:
           http:
-            port: 80
+            port: &port 80
 
-    ingress:
+    route:
       app:
-        className: "nginx"
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Wallos
           gethomepage.dev/group: PFM
           gethomepage.dev/icon: wallos
-          gethomepage.dev/siteMonitor: http://wallos.default.svc.cluster.local:80
-        hosts:
-          - host: "wallos.${PUBLIC_DOMAIN}"
-            paths:
-              - path: /
-                service:
-                  identifier: app
-                  port: http
+        hostnames:
+          - "subscriptions.${PUBLIC_DOMAIN}"
+        parentRefs:
+          - name: external
+            namespace: networking
+            sectionName: websecure
+        rules:
+          - backendRefs:
+              - identifier: app
+                port: *port
 
     persistence:
       data:

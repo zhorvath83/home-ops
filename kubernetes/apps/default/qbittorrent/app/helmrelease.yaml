@@ -106,7 +106,7 @@ spec:
         externalTrafficPolicy: Local
         ports:
           http:
-            port: 8080
+            port: &port 8080
           bittorrent-tcp:
             port: 62418
             protocol: TCP
@@ -114,21 +114,23 @@ spec:
             port: 62418
             protocol: UDP
 
-    ingress:
+    route:
       app:
-        className: "nginx"
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: qBt
           gethomepage.dev/group: Downloading
           gethomepage.dev/icon: qbittorrent.svg
-        hosts:
-          - host: "bt.${PUBLIC_DOMAIN}"
-            paths:
-              - path: /
-                service:
-                  identifier: app
-                  port: http
+        hostnames:
+          - "bt.${PUBLIC_DOMAIN}"
+        parentRefs:
+          - name: external
+            namespace: networking
+            sectionName: websecure
+        rules:
+          - backendRefs:
+              - identifier: app
+                port: *port
 
     persistence:
       config:

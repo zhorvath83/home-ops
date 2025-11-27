@@ -118,23 +118,25 @@ spec:
         controller: backrest
         ports:
           http:
-            port: 9898
+            port: &port 9898
 
-    ingress:
+    route:
       app:
-        className: "nginx"
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Backrest
           gethomepage.dev/group: Infrastructure
           gethomepage.dev/icon: https://raw.githubusercontent.com/zhorvath83/dashboard-icons/master/png/backup.png
-        hosts:
-          - host: "backup.${PUBLIC_DOMAIN}"
-            paths:
-              - path: /
-                service:
-                  identifier: app
-                  port: http
+        hostnames:
+          - "backup.${PUBLIC_DOMAIN}"
+        parentRefs:
+          - name: external
+            namespace: networking
+            sectionName: websecure
+        rules:
+          - backendRefs:
+              - identifier: app
+                port: *port
 
     persistence:
       data:

@@ -20,6 +20,7 @@ spec:
             image:
               repository: ghcr.io/steveiliop56/tinyauth
               tag: v4.0.1@sha256:815a53c517b4b8f29c02245fc89185186d12162f6bfc2e7566acf888c72ff14b
+
             env:
               TZ: Europe/Budapest
               APP_URL: https://auth.${PUBLIC_DOMAIN}
@@ -34,6 +35,7 @@ spec:
             envFrom:
               - secretRef:
                   name: tinyauth-secret
+
             probes:
               liveness: &probes
                 enabled: true
@@ -47,37 +49,44 @@ spec:
                   timeoutSeconds: 1
                   failureThreshold: 3
               readiness: *probes
+
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
               capabilities: { drop: ["ALL"] }
+
             resources:
               requests:
                 cpu: 10m
                 memory: 64Mi
               limits:
                 memory: 128Mi
+
     defaultPodOptions:
       securityContext:
         runAsNonRoot: true
         runAsUser: 10001
         runAsGroup: 10001
+
     service:
       app:
         ports:
           http:
             port: *port
-    ingress:
+
+    route:
       app:
-        className: traefik
         annotations:
-          external-dns.alpha.kubernetes.io/target: "tunnel.${PUBLIC_DOMAIN}"
+          # external-dns.alpha.kubernetes.io/target: "tunnel.${PUBLIC_DOMAIN}"
           traefik.ingress.kubernetes.io/router.entrypoints: "websecure"
           traefik.ingress.kubernetes.io/router.middlewares: "networking-traefik-middleware-chain-no-auth@kubernetescrd"
-        hosts:
-          - host: "auth.${PUBLIC_DOMAIN}"
-            paths:
-              - path: /
-                service:
-                  identifier: app
-                  port: http
+        hostnames:
+          - "auth.${PUBLIC_DOMAIN}"
+        parentRefs:
+          - name: external
+            namespace: networking
+            sectionName: websecure
+        rules:
+          - backendRefs:
+              - identifier: app
+                port: *port

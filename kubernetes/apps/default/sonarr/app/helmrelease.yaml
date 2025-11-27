@@ -65,7 +65,7 @@ spec:
                 spec:
                   httpGet:
                     path: /ping
-                    port: 8989
+                    port: &port 8989
                   initialDelaySeconds: 15
                   periodSeconds: 10
                   timeoutSeconds: 1
@@ -92,23 +92,25 @@ spec:
         controller: sonarr
         ports:
           http:
-            port: 8989
+            port: *port
 
-    ingress:
+    route:
       app:
-        className: "nginx"
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Sonarr
           gethomepage.dev/group: Arr Stack
           gethomepage.dev/icon: sonarr.svg
-        hosts:
-          - host: "shows.${PUBLIC_DOMAIN}"
-            paths:
-              - path: /
-                service:
-                  identifier: app
-                  port: http
+        hostnames:
+          - "shows.${PUBLIC_DOMAIN}"
+        parentRefs:
+          - name: external
+            namespace: networking
+            sectionName: websecure
+        rules:
+          - backendRefs:
+              - identifier: app
+                port: *port
 
     persistence:
       config:

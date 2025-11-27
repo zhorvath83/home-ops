@@ -98,7 +98,8 @@ spec:
           gethomepage.dev/name: Echo
           gethomepage.dev/group: Observability
           gethomepage.dev/icon: terminal.svg
-        hostnames: ["{{ .Release.Name }}.${PUBLIC_DOMAIN}"]
+        hostnames:
+          - "{{ .Release.Name }}.${PUBLIC_DOMAIN}"
         parentRefs:
           - name: external
             namespace: networking

@@ -100,43 +100,27 @@ spec:
         externalTrafficPolicy: Local
         ports:
           http:
-            port: 80
-            targetPort: 8083
+            port: &port 8083
 
-    ingress:
+    route:
       app:
-        className: "nginx"
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/pod-selector: app.kubernetes.io/name=calibre-web-automated
           gethomepage.dev/name: Calibre
           gethomepage.dev/group: Media
           gethomepage.dev/icon: calibre-web.svg
-        hosts:
-          - host: &host "books.${PUBLIC_DOMAIN}"
-            paths:
-              - path: /
-                service:
-                  identifier: app
-                  port: http
-        tls:
-          - hosts:
-              - *host
-            secretName: "${PUBLIC_DOMAIN/./-}-tls"
+        hostnames:
+          - "books.${PUBLIC_DOMAIN}"
+        parentRefs:
+          - name: external
+            namespace: networking
+            sectionName: websecure
+        rules:
+          - backendRefs:
+              - identifier: app
+                port: *port
 
-      opds:
-        className: "nginx"
-        hosts:
-          - host: *host
-            paths:
-              - path: "/opds"
-                service:
-                  identifier: app
-                  port: http
-        tls:
-          - hosts:
-              - *host
-            secretName: "${PUBLIC_DOMAIN/./-}-tls"
 
     persistence:
       config:

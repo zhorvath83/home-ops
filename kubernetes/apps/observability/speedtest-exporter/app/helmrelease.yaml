@@ -93,21 +93,23 @@ spec:
           http:
             port: *port
 
-    ingress:
+    route:
       app:
-        className: "nginx"
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Speedtest Exporter
           gethomepage.dev/group: Observability
           gethomepage.dev/icon: speedtest.svg
-        hosts:
-          - host: "speedtest.${PUBLIC_DOMAIN}"
-            paths:
-              - path: /
-                service:
-                  identifier: app
-                  port: http
+        hostnames:
+          - "speed.${PUBLIC_DOMAIN}"
+        parentRefs:
+          - name: external
+            namespace: networking
+            sectionName: websecure
+        rules:
+          - backendRefs:
+              - identifier: app
+                port: *port
 
     serviceMonitor:
       app:

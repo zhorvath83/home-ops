@@ -106,7 +106,7 @@ spec:
           metallb.io/loadBalancerIPs: "${CLUSTER_SVC_MEDIASERVER_IP}"
         ports:
           http:
-            port: 32400
+            port: *port
           # Plex DLNA Server
           # https://support.plex.tv/articles/200350536-dlna/
           # dnla-tcp:
@@ -129,19 +129,6 @@ spec:
           gdm-4-udp:
             port: 32414
             protocol: UDP
-
-    ingress:
-      app:
-        className: "nginx"
-        annotations:
-          gethomepage.dev/enabled: "false"
-        hosts:
-          - host: "plex.${PUBLIC_DOMAIN}"
-            paths:
-              - path: /
-                service:
-                  identifier: app
-                  port: http
 
     persistence:
       config:

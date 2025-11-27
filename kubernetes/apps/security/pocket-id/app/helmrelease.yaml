@@ -13,8 +13,6 @@ spec:
   values:
     controllers:
       pocket-id:
-        labels:
-          postgres: "true"
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
@@ -22,6 +20,7 @@ spec:
             image:
               repository: ghcr.io/pocket-id/pocket-id
               tag: v1.15.0@sha256:92a5624ea14dc96e91ef236950d4d858e97119ce811075648ffd8343e364735d
+
             env:
               TZ: Europe/Budapest
               ANALYTICS_DISABLED: true
@@ -38,6 +37,7 @@ spec:
             envFrom:
               - secretRef:
                   name: pocket-id-secret
+
             probes:
               liveness: &probes
                 enabled: true
@@ -51,16 +51,19 @@ spec:
                   timeoutSeconds: 1
                   failureThreshold: 3
               readiness: *probes
+
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
               capabilities: { drop: ["ALL"] }
+
             resources:
               requests:
                 cpu: 10m
                 memory: 32Mi
               limits:
                 memory: 256Mi
+
     defaultPodOptions:
       securityContext:
         runAsNonRoot: true
@@ -68,25 +71,29 @@ spec:
         runAsGroup: 10001
         fsGroup: 10001
         fsGroupChangePolicy: Always
+
     service:
       app:
         ports:
           http:
             port: *port
-    ingress:
+
+    route:
       app:
-        className: traefik
         annotations:
-          external-dns.alpha.kubernetes.io/target: "tunnel.${PUBLIC_DOMAIN}"
+          # external-dns.alpha.kubernetes.io/target: "tunnel.${PUBLIC_DOMAIN}"
           traefik.ingress.kubernetes.io/router.entrypoints: "websecure"
           traefik.ingress.kubernetes.io/router.middlewares: "networking-traefik-middleware-chain-no-auth@kubernetescrd"
-        hosts:
-          - host: "id.${PUBLIC_DOMAIN}"
-            paths:
-              - path: /
-                service:
-                  identifier: app
-                  port: http
+        hostnames:
+          - "id.${PUBLIC_DOMAIN}"
+        parentRefs:
+          - name: external
+            namespace: networking
+            sectionName: websecure
+        rules:
+          - backendRefs:
+              - identifier: app
+                port: *port
 
     persistence:
       data:
