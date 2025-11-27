@@ -109,4 +109,4 @@ Applications are deployed with proper dependency management:
 - `Kustomization` resources can depend on other `Kustomization` resources
 - In rare cases, applications can depend on both `HelmRelease` and `Kustomization` resources
 
-This ensures applications are deployed in the correct order with all dependencies satisfied.
+This ensures applications are deployed in the correct order with all dependencies satisfied..
