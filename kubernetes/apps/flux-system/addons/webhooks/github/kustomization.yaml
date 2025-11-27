@@ -5,5 +5,4 @@ kind: Kustomization
 resources:
   - externalsecret.yaml
   - httproute.yaml
-  # - ingress.yaml
   - receiver.yaml
