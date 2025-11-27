@@ -205,7 +205,7 @@ spec:
           datasource: Prometheus
         # renovate: depName="Traefik"
         traefik:
-          gnetId: 17346
+          gnetId: 17347
           revision: 9
           datasource: Prometheus
         # renovate: depName="cert-manager"

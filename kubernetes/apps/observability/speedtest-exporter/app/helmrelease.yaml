@@ -116,8 +116,12 @@ spec:
           - port: http
             scheme: http
             path: /metrics
-            interval: 60m
+            interval: 20m
             scrapeTimeout: 5m
+            relabelings:
+              - sourceLabels: []
+                targetLabel: instance
+                replacement: speedtest
             metricRelabelings:
               - action: labeldrop
                 regex: (pod)
