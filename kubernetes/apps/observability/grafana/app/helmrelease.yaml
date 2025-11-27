@@ -36,13 +36,21 @@ spec:
       GF_NEWS_NEWS_FEED_ENABLED: false
       GF_SECURITY_ALLOW_EMBEDDING: true
       GF_SERVER_ROOT_URL: "https://grafana.${PUBLIC_DOMAIN}"
-    ingress:
-      enabled: true
-      ingressClassName: nginx
+
+    route:
+      main:
+        enabled: true
       annotations:
-        external-dns.alpha.kubernetes.io/target: "tunnel.${PUBLIC_DOMAIN}"
-      hosts:
-        - "grafana.${PUBLIC_DOMAIN}"
+        gethomepage.dev/enabled: "true"
+        gethomepage.dev/name: Grafana
+        gethomepage.dev/group: Observability
+        gethomepage.dev/icon: grafana.svg
+        hostnames:
+          - "{{ .Release.Name }}.${PUBLIC_DOMAIN}"
+        parentRefs:
+          - name: external
+            namespace: networking
+            sectionName: websecure
 
     serviceMonitor:
       enabled: true
