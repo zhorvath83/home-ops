@@ -21,7 +21,7 @@ webhook receiver you will need two things:
     https://flux-webhook.privatedomain.com/hook/12ebd1e363c641dc3c2e430ecf3cee2b3c7a5ac9e1234506f6f5f3ce1230e123
     ```
 
-2. Webhook secret - Webhook secret is stored in `github-webhook-token` external secret.
+2. Webhook secret - Webhook secret is stored in `github-webhook-token` external-secret.
 
 Set everything up on the Github repository side. Navigate to the settings of your
 repository on Github, under "Settings/Webhooks" press the "Add webhook" button.
