@@ -7,3 +7,5 @@ resources:
   - ./compress.yaml
   - ./ip.yaml
   - ./secure.yaml
+  - ./agents.yaml
+  - ./ratelimit.yaml

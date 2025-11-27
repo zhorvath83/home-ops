@@ -5,11 +5,22 @@ metadata:
   name: traefik
   namespace: networking
 spec:
-  interval: 1h
+  interval: 30m
   chartRef:
     kind: OCIRepository
     name: traefik
     namespace: flux-system
+
+  install:
+    createNamespace: true
+    crds: CreateReplace
+    remediation:
+      retries: -1
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+
   values:
     deployment:
       kind: Deployment
@@ -24,16 +35,13 @@ spec:
         value: "Europe/Budapest"
     logs:
       general:
-        level: TRACE
+        format: json
+        level: WARN
       access:
         enabled: true
+        format: json
     ingressClass:
-      enabled: true
-      isDefaultClass: false
-      name: traefik
-    ingressRoute:
-      dashboard:
-        enabled: false
+      enabled: false
     global:
       sendAnonymousUsage: false
     additionalArguments:
@@ -51,6 +59,10 @@ spec:
             scheme: https
             permanent: true
       websecure:
+        middlewares:
+          - network-blockuseragent@kubernetescrd
+          - network-ratelimit@kubernetescrd
+          - network-secure-headers@kubernetescrd
         tls:
           enabled: true
           options: default
@@ -113,6 +125,7 @@ spec:
       metrics:
         expose:
           default: false
+
     metrics:
       prometheus:
         entryPoint: metrics
@@ -133,6 +146,7 @@ spec:
             - sourceLabels: [__name__]
               regex: ".*_bucket$"
               action: drop
+
     pilot:
       enabled: false
 
@@ -145,6 +159,15 @@ spec:
       kubernetesGateway:
         enabled: true
         experimentalChannel: false
+        # statusAddress:
+        #   ip: "${LB_IP}"
+
+    experimental:
+      abortOnPluginFailure: true
+      plugins:
+        traefik-plugin-blockuseragent:
+          moduleName: "github.com/agence-gaya/traefik-plugin-blockuseragent"
+          version: "v0.1.7"
 
     gateway:
       enabled: true

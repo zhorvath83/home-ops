@@ -26,6 +26,7 @@ spec:
     crds: CreateReplace
     remediation:
       retries: 3
+
   values:
     # Pod Security Context controlled via Helm Chart.
     crds:
