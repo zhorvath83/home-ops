@@ -60,9 +60,9 @@ spec:
             permanent: true
       websecure:
         middlewares:
-          - network-blockuseragent@kubernetescrd
-          - network-ratelimit@kubernetescrd
-          - network-secure-headers@kubernetescrd
+          - networking-blockuseragent@kubernetescrd
+          - networking-ratelimit@kubernetescrd
+          - networking-secure-headers@kubernetescrd
         tls:
           enabled: true
           options: default
