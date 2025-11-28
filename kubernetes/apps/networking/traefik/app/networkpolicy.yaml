@@ -34,11 +34,17 @@ spec:
           port: 9100
   egress:
     # Backend services in labeled namespaces
-    # (includes kubernetes API via kubernetes.default.svc)
     - to:
         - namespaceSelector:
             matchLabels:
               traefik-backend: "true"
+    # Kubernetes API server (K3s runs on node, not as pod)
+    - to:
+        - ipBlock:
+            cidr: ${CLUSTER_HOST1_IP}/32
+      ports:
+        - protocol: TCP
+          port: 6443
     # DNS resolution (CoreDNS)
     - to:
         - namespaceSelector:
