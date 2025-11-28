@@ -40,17 +40,17 @@ spec:
     route:
       main:
         enabled: true
-      annotations:
-        gethomepage.dev/enabled: "true"
-        gethomepage.dev/name: Grafana
-        gethomepage.dev/group: Observability
-        gethomepage.dev/icon: grafana.svg
-      hostnames:
-        - "grafana.${PUBLIC_DOMAIN}"
-      parentRefs:
-        - name: external
-          namespace: networking
-          sectionName: websecure
+        annotations:
+          gethomepage.dev/enabled: "true"
+          gethomepage.dev/name: Grafana
+          gethomepage.dev/group: Observability
+          gethomepage.dev/icon: grafana.svg
+        hostnames:
+          - "grafana.${PUBLIC_DOMAIN}"
+        parentRefs:
+          - name: external
+            namespace: networking
+            sectionName: websecure
 
     serviceMonitor:
       enabled: true
