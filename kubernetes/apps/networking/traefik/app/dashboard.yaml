@@ -15,12 +15,12 @@ spec:
         - name: api@internal
           kind: TraefikService
           port: 8080
-      filters:
-        - type: ExtensionRef
-          extensionRef:
-            group: traefik.io
-            kind: Middleware
-            name: traefik-middleware-tinyauth
+      # filters:
+      #   - type: ExtensionRef
+      #     extensionRef:
+      #       group: traefik.io
+      #       kind: Middleware
+      #       name: traefik-middleware-tinyauth
       matches:
         - path:
             type: PathPrefix
