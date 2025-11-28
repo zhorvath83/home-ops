@@ -6,6 +6,7 @@ on:
     - cron: "0 0 * * *"
 env:
   NETWORKPOLICY_FILE: kubernetes/apps/networking/cloudflare-tunnel/app/networkpolicy.yaml
+  TRAEFIK_HELMRELEASE_FILE: kubernetes/apps/networking/traefik/app/helmrelease.yaml
 jobs:
   update-cloudflare-networks:
     name: Update Cloudflare Networks
@@ -43,16 +44,22 @@ jobs:
           token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
           branch: github-action/update-cloudflare-networks
           delete-branch: true
-          title: "chore(github-action): update cloudflare networks (IPv4 and IPv6)"
+          title: "chore(github-action): update cloudflare networks"
           signoff: true
-          commit-message: "chore(github-action): update cloudflare networks (IPv4 and IPv6)"
+          commit-message: "chore(github-action): update cloudflare networks"
           body: |
-            Update Cloudflare networks (both IPv4 and IPv6) in networkpolicy.yaml from https://api.cloudflare.com/client/v4/ips
+            Update Cloudflare networks in NetworkPolicy and Traefik HelmRelease.
 
-            Changes:
+            **Updated files:**
+            - `${{ env.NETWORKPOLICY_FILE }}` - NetworkPolicy egress rules
+            - `${{ env.TRAEFIK_HELMRELEASE_FILE }}` - Traefik trustedIPs (forwardedHeaders + proxyProtocol)
+
+            **Changes:**
             ```
             ${{ steps.update.outputs.changes }}
             ```
+
+            Source: https://api.cloudflare.com/client/v4/ips
           labels: |
             renovate/github-action
 

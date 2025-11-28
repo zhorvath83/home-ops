@@ -31,3 +31,8 @@ talosconfig*
 # Folder Structure v3
 /root
 megalinter-reports/
+-e
+# Python
+__pycache__/
+*.pyc
+*.pyo

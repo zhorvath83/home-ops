@@ -7,3 +7,6 @@ spec:
   rateLimit:
     average: 100
     burst: 50
+    sourceCriterion:
+      ipStrategy:
+        depth: 1
