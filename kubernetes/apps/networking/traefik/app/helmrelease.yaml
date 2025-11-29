@@ -85,7 +85,7 @@ spec:
             permanent: true
         transport:
           respondingTimeouts:
-            readTimeout: 0
+            readTimeout: 60s
       websecure:
         middlewares:
           - networking-blockuseragent@kubernetescrd
@@ -96,7 +96,7 @@ spec:
           options: default
         transport:
           respondingTimeouts:
-            readTimeout: 0
+            readTimeout: 60s
 
         forwardedHeaders:
           # Cloudflare IP ranges only (no RFC1918 needed with NetworkPolicy)
