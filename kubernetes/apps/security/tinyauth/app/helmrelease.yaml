@@ -2,7 +2,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: tinyauth
+  name: &app tinyauth
   namespace: security
 spec:
   interval: 1h
@@ -86,3 +86,14 @@ spec:
           - backendRefs:
               - identifier: app
                 port: *port
+
+    persistence:
+      tmpfs:
+        type: emptyDir
+        advancedMounts:
+          tinyauth:
+            app:
+              - path: /data
+                subPath: data
+              - path: /tmp
+                subPath: tmp
