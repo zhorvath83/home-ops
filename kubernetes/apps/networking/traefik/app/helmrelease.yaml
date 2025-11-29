@@ -27,14 +27,36 @@ spec:
     deployment:
       kind: Deployment
       replicas: 1
+      terminationGracePeriodSeconds: 15
+      goMemLimitPercentage: 0.9
+
+    updateStrategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxUnavailable: 0
+        maxSurge: 1
+
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: [ALL]
+      readOnlyRootFilesystem: true
+
+    podSecurityContext:
+      runAsGroup: 65532
+      runAsNonRoot: true
+      runAsUser: 65532
+
     service:
       enabled: true
       type: ClusterIP  # Since using Cloudflare Tunnel, don't need LoadBalancer.
       annotations:
         external-dns.alpha.kubernetes.io/hostname: "tunnel.${PUBLIC_DOMAIN}"
+
     env:
       - name: TZ
         value: "Europe/Budapest"
+
     logs:
       general:
         format: json
@@ -42,14 +64,15 @@ spec:
       access:
         enabled: true
         format: json
+
     ingressClass:
       enabled: false
+
     global:
       sendAnonymousUsage: false
-    additionalArguments:
-      - "--serversTransport.insecureSkipVerify=true"
-      - "--entrypoints.web.transport.respondingTimeouts.readTimeout=0"
-      - "--entrypoints.websecure.transport.respondingTimeouts.readTimeout=0"
+    # additionalArguments:
+    #   - "--serversTransport.insecureSkipVerify=true"
+
     ports:
       traefik:
         expose:
@@ -60,6 +83,9 @@ spec:
             to: websecure
             scheme: https
             permanent: true
+        transport:
+          respondingTimeouts:
+            readTimeout: 0
       websecure:
         middlewares:
           - networking-blockuseragent@kubernetescrd
@@ -68,6 +94,10 @@ spec:
         tls:
           enabled: true
           options: default
+        transport:
+          respondingTimeouts:
+            readTimeout: 0
+
         forwardedHeaders:
           # Cloudflare IP ranges only (no RFC1918 needed with NetworkPolicy)
           # Cloudflare IPs are automatically updated by GitHub workflow
@@ -123,20 +153,16 @@ spec:
               regex: ".*_bucket$"
               action: drop
 
-    pilot:
-      enabled: false
-
     providers:
       kubernetesCRD:
         enabled: true
         allowCrossNamespace: true
+        allowEmptyServices: true
       kubernetesIngress:
         enabled: false
       kubernetesGateway:
         enabled: true
         experimentalChannel: false
-        # statusAddress:
-        #   ip: "${LB_IP}"
 
     experimental:
       abortOnPluginFailure: true
@@ -166,6 +192,7 @@ spec:
           certificateRefs:
             - name: "${PUBLIC_DOMAIN/./-}-tls"
           mode: Terminate
+
     gatewayClass:
       enabled: true
       name: external
