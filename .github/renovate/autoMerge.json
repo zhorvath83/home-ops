@@ -4,13 +4,13 @@
         "description": ["Auto-merge container digests updates"],
         "matchDatasources": ["docker"],
         "automerge": true,
-        "automergeType": "branch",
+        "automergeType": "pr",
         "matchUpdateTypes": ["digest"]
     },
     {
         "description": ["Auto-merge patch updates"],
         "automerge": true,
-        "automergeType": "branch",
+        "automergeType": "pr",
         "matchUpdateTypes": ["patch"]
     }
   ]
