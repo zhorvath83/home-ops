@@ -55,9 +55,9 @@ spec:
         hostnames:
           - "grafana.${PUBLIC_DOMAIN}"
         parentRefs:
-          - name: external
+          - name: envoy-external
             namespace: networking
-            sectionName: websecure
+            # sectionName: websecure
 
     serviceMonitor:
       enabled: true
