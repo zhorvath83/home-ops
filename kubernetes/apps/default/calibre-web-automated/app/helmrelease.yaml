@@ -100,7 +100,8 @@ spec:
         externalTrafficPolicy: Local
         ports:
           http:
-            port: &port 8083
+            port: &port 80
+            targetPort: 8083
 
     route:
       app:
