@@ -11,13 +11,20 @@ spec:
     kind: OCIRepository
     name: grafana
     namespace: flux-system
+
   install:
+    crds: CreateReplace
     remediation:
       retries: -1
   upgrade:
     cleanupOnFail: true
+    crds: CreateReplace
     remediation:
+      strategy: rollback
       retries: 3
+  uninstall:
+    keepHistory: false
+
   values:
     admin:
       existingSecret: grafana-secret

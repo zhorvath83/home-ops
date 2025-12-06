@@ -12,3 +12,4 @@ resources:
   - ./smtp-relay/ks.yaml
   - ./mailrise/ks.yaml
   - ./traefik/ks.yaml
+  - ./envoy-gateway/ks.yaml
