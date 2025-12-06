@@ -212,6 +212,14 @@ spec:
       # Networking - Ingress, DNS, traffic
       # -------------------------------------------------------------------------
       networking:
+        envoy-gateway-global:
+          url: https://raw.githubusercontent.com/envoyproxy/gateway/refs/heads/main/charts/gateway-addons-helm/dashboards/envoy-gateway-global.json
+          datasource:
+            - {name: DS_PROMETHEUS, value: Prometheus}
+        envoy-proxy-global:
+          url: https://raw.githubusercontent.com/envoyproxy/gateway/refs/heads/main/charts/gateway-addons-helm/dashboards/envoy-proxy-global.json
+          datasource:
+            - {name: DS_PROMETHEUS, value: Prometheus}
         nginx:
           url: https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/grafana/dashboards/nginx.json
           datasource: Prometheus
