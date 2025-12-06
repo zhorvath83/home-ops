@@ -4,7 +4,10 @@ apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: certificates-import
+  namespace: flux-system
 spec:
+  dependsOn:
+    - name: cluster-apps-onepassword-store
   interval: 1h
   path: ./kubernetes/apps/networking/certificates/import
   prune: true
@@ -20,9 +23,11 @@ apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: certificates-export
+  namespace: flux-system
 spec:
   dependsOn:
     - name: certificates-import
+    - name: cluster-apps-onepassword-store
   interval: 1h
   path: ./kubernetes/apps/networking/certificates/export
   prune: true
