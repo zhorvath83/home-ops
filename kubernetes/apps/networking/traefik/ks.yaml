@@ -8,7 +8,6 @@ metadata:
 spec:
   dependsOn:
     - name: certificates-import
-    - name: certificates-export
   path: ./kubernetes/apps/networking/traefik/app
   prune: true
   sourceRef:
