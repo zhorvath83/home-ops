@@ -33,7 +33,7 @@ spec:
       ports:
         - protocol: TCP
           port: 8443
-    # Envoy Gateway (external gateway)
+    # Envoy Gateway (external gateway) - targetPorts: 10080/10443
     - to:
         - podSelector:
             matchLabels:
@@ -41,9 +41,9 @@ spec:
               gateway.envoyproxy.io/owning-gateway-name: envoy-external
       ports:
         - protocol: TCP
-          port: 80
+          port: 10080
         - protocol: TCP
-          port: 443
+          port: 10443
     - to:
         - namespaceSelector:
             matchLabels:

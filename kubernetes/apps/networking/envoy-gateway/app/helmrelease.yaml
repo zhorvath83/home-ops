@@ -26,6 +26,7 @@ spec:
     keepHistory: false
 
   values:
+    # Strict Security Context is defined in the Helm Chart.
     global:
       imageRegistry: mirror.gcr.io
     config:

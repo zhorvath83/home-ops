@@ -21,9 +21,9 @@ spec:
               app.kubernetes.io/name: cloudflare-tunnel
       ports:
         - protocol: TCP
-          port: 80
+          port: 10080
         - protocol: TCP
-          port: 443
+          port: 10443
     # Prometheus scrape (metrics endpoint)
     - from:
         - namespaceSelector:
