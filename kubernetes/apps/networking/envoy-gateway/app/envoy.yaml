@@ -18,9 +18,9 @@ spec:
           imageRepository: mirror.gcr.io/envoyproxy/envoy
           resources:
             requests:
-              cpu: 100m
+              cpu: 10m
             limits:
-              memory: 1Gi
+              memory: 512Mi
       envoyService:
         type: ClusterIP
   shutdown:
@@ -106,68 +106,6 @@ spec:
       name: network/envoy-external/https-quic
       operation: *operation
 ---
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/gateway.networking.k8s.io/gateway_v1.json
-apiVersion: gateway.networking.k8s.io/v1
-kind: Gateway
-metadata:
-  name: envoy-internal
-  namespace: networking
-  annotations:
-    external-dns.alpha.kubernetes.io/target: &hostname "internal.${PUBLIC_DOMAIN}"
-spec:
-  gatewayClassName: envoy
-  infrastructure:
-    annotations:
-      external-dns.alpha.kubernetes.io/hostname: *hostname
-  listeners:
-    - name: http
-      protocol: HTTP
-      port: 80
-      allowedRoutes:
-        namespaces:
-          from: Same
-    - name: https
-      protocol: HTTPS
-      port: 443
-      allowedRoutes:
-        namespaces:
-          from: All
-      tls:
-        certificateRefs:
-          - kind: Secret
-            name: "${PUBLIC_DOMAIN/./-}-tls"
----
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/gateway.envoyproxy.io/envoypatchpolicy_v1alpha1.json
-apiVersion: gateway.envoyproxy.io/v1alpha1
-kind: EnvoyPatchPolicy
-metadata:
-  name: envoy-internal
-  namespace: networking
-spec:
-  targetRef:
-    group: gateway.networking.k8s.io
-    kind: Gateway
-    name: envoy-internal
-  type: JSONPatch
-  jsonPatches:
-    - type: type.googleapis.com/envoy.config.listener.v3.Listener
-      name: network/envoy-internal/https
-      operation: &operation
-        op: add
-        jsonPath: ..filters[*].typed_config.http_filters[?(@.name=="envoy.filters.http.compressor.zstd")].typed_config
-        value:
-          "@type": type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
-          choose_first: true
-          compressor_library:
-            name: envoy.compression.zstd.compressor
-            typed_config:
-              "@type": type.googleapis.com/envoy.extensions.compression.zstd.compressor.v3.Zstd
-          response_direction_config:
-            remove_accept_encoding_header: true
-    - type: type.googleapis.com/envoy.config.listener.v3.Listener
-      name: network/envoy-internal/https-quic
-      operation: *operation
----
 # yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/gateway.envoyproxy.io/backendtrafficpolicy_v1alpha1.json
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: BackendTrafficPolicy
@@ -197,25 +135,52 @@ metadata:
   namespace: networking
 spec:
   clientIPDetection:
-    xForwardedFor:
-      numTrustedHops: 1
+    customHeader:
+      name: "CF-Connecting-IP"
+      failClosed: true
   connection:
     bufferLimit: 8Mi
     maxAcceptPerSocketEvent: 0
+  headers:
+    lateResponseHeaders:
+      add:
+        - name: "Strict-Transport-Security"
+          value: "max-age=31536000; includeSubDomains; preload"
+        - name: "X-Content-Type-Options"
+          value: "nosniff"
+        - name: "X-Frame-Options"
+          value: "DENY"
+        - name: "Referrer-Policy"
+          value: "strict-origin-when-cross-origin"
+        - name: "Permissions-Policy"
+          value: "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
+        - name: "X-Robots-Tag"
+          value: "noindex,nofollow,noarchive,nosnippet,notranslate,noimageindex"
+        - name: "X-Permitted-Cross-Domain-Policies"
+          value: "none"
+        - name: "X-XSS-Protection"
+          value: "0"
+      remove:
+        - "Server"
+        - "X-Powered-By"
+        - "X-Forwarded-Server"
   http2:
     initialStreamWindowSize: 2Mi
     initialConnectionWindowSize: 32Mi
     onInvalidMessage: TerminateStream
   http3: {}
+  path:
+    escapedSlashesAction: RejectRequest
   targetSelectors:
     - group: gateway.networking.k8s.io
       kind: Gateway
   tcpKeepalive: {}
   timeout:
     http:
-      requestReceivedTimeout: 0s
+      requestReceivedTimeout: 60s
+      idleTimeout: 5m
   tls:
-    minVersion: "1.2"
+    minVersion: "1.3"
     alpnProtocols:
       - h2
       - http/1.1
@@ -231,9 +196,6 @@ metadata:
 spec:
   parentRefs:
     - name: envoy-external
-      namespace: networking
-      sectionName: http
-    - name: envoy-internal
       namespace: networking
       sectionName: http
   rules:

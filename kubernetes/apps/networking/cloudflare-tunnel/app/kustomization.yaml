@@ -6,7 +6,7 @@ namespace: networking
 resources:
   - externalsecret.yaml
   - helmrelease.yaml
-  # - networkpolicy.yaml
+  - networkpolicy.yaml
 labels:
   - pairs:
       app.kubernetes.io/name: cloudflare-tunnel

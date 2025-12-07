@@ -25,6 +25,7 @@ spec:
         - protocol: TCP
           port: 8080
   egress:
+    # Traefik ingress controller
     - to:
         - podSelector:
             matchLabels:
@@ -32,6 +33,17 @@ spec:
       ports:
         - protocol: TCP
           port: 8443
+    # Envoy Gateway (external gateway)
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: envoy
+              gateway.envoyproxy.io/owning-gateway-name: envoy-external
+      ports:
+        - protocol: TCP
+          port: 80
+        - protocol: TCP
+          port: 443
     - to:
         - namespaceSelector:
             matchLabels:
