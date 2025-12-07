@@ -13,3 +13,4 @@ resources:
   - ./mailrise/ks.yaml
   - ./traefik/ks.yaml
   - ./envoy-gateway/ks.yaml
+  - ./crowdsec-bouncer/ks.yaml

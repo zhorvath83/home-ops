@@ -22,3 +22,5 @@ resources:
   - ./democratic-csi.yaml
   - ./lwolf-charts.yaml
   - ./projectcalico.yaml
+  - ./crowdsec.yaml
+  - ./envoy-proxy-bouncer.yaml
