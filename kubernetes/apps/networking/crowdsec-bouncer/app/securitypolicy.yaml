@@ -4,12 +4,12 @@ apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: SecurityPolicy
 metadata:
   name: crowdsec-protection
-  namespace: networking
+  namespace: observability
 spec:
   targetRefs:
     - group: gateway.networking.k8s.io
-      kind: Gateway
-      name: envoy-external
+      kind: HTTPRoute
+      name: grafana
   extAuth:
     grpc:
       backendRefs:
