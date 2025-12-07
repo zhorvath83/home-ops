@@ -26,4 +26,4 @@ spec:
   to:
     - group: ""
       kind: Service
-      name: crowdsec-bouncer
+      name: crowdsec-bouncer-envoy-proxy-bouncer
