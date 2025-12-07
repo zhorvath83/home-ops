@@ -7,6 +7,8 @@ originRequest:
 ingress:
   - hostname: "${PUBLIC_DOMAIN}"
     service: &traefik-svc "https://traefik.networking.svc.cluster.local"
+  - hostname: "${PUBLIC_DOMAIN}"
+    service: "https://envoy-external.networking.svc.cluster.local"
   - hostname: "*.${PUBLIC_DOMAIN}"
     service: *traefik-svc
   - service: http_status:404
