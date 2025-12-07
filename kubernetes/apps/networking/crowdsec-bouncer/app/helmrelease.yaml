@@ -47,7 +47,7 @@ spec:
         metrics: true
         tickerInterval: "10s"
         metricsInterval: "10m"
-        banStatusCode: 403
+        banStatusCode: 418
         lapiURL: "http://crowdsec-service.security.svc.cluster.local:8080"
         apiKeySecretRef:
           name: crowdsec-bouncer-secret
