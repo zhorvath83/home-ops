@@ -43,8 +43,7 @@ spec:
             key: api-token
     extraArgs:
       - --cloudflare-proxied
-      - --gateway-name=envoy-external
-      - --gateway-name=envoy-internal
+      # - --gateway-name=external
     policy: sync
     sources:
       - ingress
