@@ -25,6 +25,7 @@
   ],
   timezone: 'Europe/Budapest',
   minimumReleaseAge: '3 days',
+  minimumReleaseAgeBehaviour: 'timestamp-optional',
   schedule: [
     'after 1am and before 6am',
   ],
