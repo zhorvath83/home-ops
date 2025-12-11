@@ -12,7 +12,7 @@ terraform {
   required_providers {
     github = {
       source  = "integrations/github"
-      version = "6.8.3"
+      version = "6.9.0"
     }
 
     # renovate:disablePlugin terraform cloudflare/cloudflare
