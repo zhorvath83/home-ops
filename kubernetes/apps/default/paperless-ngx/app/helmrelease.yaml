@@ -161,6 +161,10 @@ spec:
         type: emptyDir
         globalMounts:
           - path: /data/export
+      run:
+        type: emptyDir
+        globalMounts:
+          - path: /run
       tmp:
         type: emptyDir
         globalMounts:
