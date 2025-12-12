@@ -1,0 +1,171 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &app paperless-ngx
+  namespace: default
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: app-template
+      version: 4.5.0
+      sourceRef:
+        kind: HelmRepository
+        name: app-template
+        namespace: flux-system
+
+  install:
+    createNamespace: true
+    remediation:
+      retries: -1
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  uninstall:
+    keepHistory: false
+
+  values:
+    defaultPodOptions:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+
+    controllers:
+      *app :
+        annotations:
+          reloader.stakater.com/auto: "true"
+        type: statefulset
+
+        containers:
+          app:
+            image:
+              repository: ghcr.io/paperless-ngx/paperless-ngx
+              tag: 2.14.3@sha256:0f67af7f8c6c8a32499fcbd22eb8a446c8b63c48a1dc47f4b227eb31fba24c1c
+
+            env:
+              # Application settings
+              TZ: Europe/Budapest
+              PAPERLESS_TIME_ZONE: Europe/Budapest
+              PAPERLESS_URL: https://paperless.${PUBLIC_DOMAIN}
+              PAPERLESS_PORT: "8000"
+
+              # Paths
+              PAPERLESS_DATA_DIR: /data/data
+              PAPERLESS_MEDIA_ROOT: /data/media
+              PAPERLESS_CONSUMPTION_DIR: /data/consume
+              PAPERLESS_EXPORT_DIR: /data/export
+
+              # Database (SQLite)
+              PAPERLESS_DBENGINE: sqlite
+
+              # Redis/Valkey connection
+              PAPERLESS_REDIS: redis://valkey.database.svc.cluster.local:6379
+
+              # OCR settings
+              PAPERLESS_OCR_LANGUAGE: hun+eng
+              PAPERLESS_OCR_LANGUAGES: hun eng
+
+              # Performance
+              PAPERLESS_TASK_WORKERS: "2"
+              PAPERLESS_THREADS_PER_WORKER: "2"
+
+              # Features
+              PAPERLESS_CONSUMER_POLLING: "60"
+              PAPERLESS_CONSUMER_RECURSIVE: "true"
+              PAPERLESS_CONSUMER_SUBDIRS_AS_TAGS: "true"
+
+              # Security
+              PAPERLESS_ENABLE_HTTP_REMOTE_USER: "false"
+              USERMAP_UID: "10001"
+              USERMAP_GID: "10001"
+
+            envFrom:
+              - secretRef:
+                  name: "{{ .Release.Name }}-secret"
+
+            probes:
+              startup:
+                enabled: true
+                spec:
+                  failureThreshold: 30
+                  periodSeconds: 5
+              liveness:
+                enabled: true
+              readiness:
+                enabled: true
+
+            securityContext:
+              privileged: false
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
+
+            resources:
+              requests:
+                cpu: 20m
+              limits:
+                memory: 2Gi
+
+    service:
+      app:
+        controller: *app
+        ports:
+          http:
+            port: 8000
+
+    route:
+      app:
+        annotations:
+          gethomepage.dev/enabled: "true"
+          gethomepage.dev/name: Paperless-NGX
+          gethomepage.dev/group: Documents
+          gethomepage.dev/icon: paperless-ngx.svg
+          gethomepage.dev/description: Document Management System
+        hostnames:
+          - "paperless.${PUBLIC_DOMAIN}"
+        parentRefs:
+          - name: external
+            namespace: networking
+            sectionName: websecure
+        rules:
+          - backendRefs:
+              - identifier: app
+                port: http
+
+    persistence:
+      data:
+        existingClaim: paperless-ngx-data
+        globalMounts:
+          - path: /data/data
+            subPath: data
+          - path: /data/media
+            subPath: media
+      consume:
+        type: nfs
+        server: ${CLUSTER_LAN_NAS_IP}
+        path: /tmp/paperless-ngx-consume
+        globalMounts:
+          - path: /data/consume
+      export:
+        type: emptyDir
+        globalMounts:
+          - path: /data/export
+      tmp:
+        type: emptyDir
+        globalMounts:
+          - path: /tmp
+      cache:
+        type: emptyDir
+        globalMounts:
+          - path: /cache
