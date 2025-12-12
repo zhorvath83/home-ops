@@ -58,7 +58,7 @@ spec:
               TZ: Europe/Budapest
               PAPERLESS_TIME_ZONE: Europe/Budapest
               PAPERLESS_URL: https://paperless.${PUBLIC_DOMAIN}
-              PAPERLESS_PORT: &port 8000
+              PAPERLESS_PORT: "8000"
 
               # Paths
               PAPERLESS_DATA_DIR: /data/data
@@ -122,7 +122,7 @@ spec:
         controller: *app
         ports:
           http:
-            port: *port
+            port: &port 8000
 
     route:
       app:
