@@ -2,11 +2,9 @@
 # yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/source.toolkit.fluxcd.io/helmrepository_v1.json
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
-# kube-cleanup-operator
 metadata:
-  name: lwolf-charts
-  namespace: flux-system
+  name: envoy-proxy-crowdsec-bouncer
 spec:
   interval: 1h
-  url: https://charts.lwolf.org
+  url: https://kdwils.github.io/envoy-proxy-crowdsec-bouncer
   timeout: 3m

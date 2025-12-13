@@ -13,8 +13,8 @@ spec:
       version: v3.30.3
       sourceRef:
         kind: HelmRepository
-        name: projectcalico
-        namespace: flux-system
+        name: tigera-operator
+
   install:
     createNamespace: true
     crds: CreateReplace
