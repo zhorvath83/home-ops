@@ -11,9 +11,6 @@
     "ebooks": {
         "save_path": "ebooks"
     },
-    "ebooks-new": {
-        "save_path": "ebooks-new"
-    },
     "manual-downloads": {
         "save_path": "manual-downloads"
     }
