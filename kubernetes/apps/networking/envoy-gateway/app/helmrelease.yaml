@@ -9,7 +9,6 @@ spec:
   chartRef:
     kind: OCIRepository
     name: envoy-gateway
-    namespace: flux-system
   interval: 15m
 
   install:

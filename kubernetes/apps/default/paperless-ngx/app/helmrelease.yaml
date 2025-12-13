@@ -6,15 +6,10 @@ metadata:
   name: &app paperless-ngx
   namespace: default
 spec:
-  interval: 15m
-  chart:
-    spec:
-      chart: app-template
-      version: 4.5.0
-      sourceRef:
-        kind: HelmRepository
-        name: app-template
-        namespace: flux-system
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: paperless-ngx
 
   install:
     createNamespace: true
@@ -32,14 +27,14 @@ spec:
     defaultPodOptions:
       automountServiceAccountToken: false
       enableServiceLinks: false
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 1000
-        fsGroup: 1000
-        fsGroupChangePolicy: OnRootMismatch
-        seccompProfile:
-          type: RuntimeDefault
+      # securityContext:
+      #   runAsNonRoot: true
+      #   runAsUser: 1000
+      #   runAsGroup: 1000
+      #   fsGroup: 1000
+      #   fsGroupChangePolicy: OnRootMismatch
+      #   seccompProfile:
+      #     type: RuntimeDefault
 
     controllers:
       *app :
@@ -105,11 +100,11 @@ spec:
               readiness:
                 enabled: true
 
-            securityContext:
-              # privileged: false
-              # allowPrivilegeEscalation: false
-              # readOnlyRootFilesystem: false
-              capabilities: { drop: ["ALL"] }
+            # securityContext:
+            #   privileged: false
+            #   allowPrivilegeEscalation: false
+            #   readOnlyRootFilesystem: false
+            #   capabilities: { drop: ["ALL"] }
 
             resources:
               requests:

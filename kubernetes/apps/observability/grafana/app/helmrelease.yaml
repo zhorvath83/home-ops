@@ -6,11 +6,10 @@ metadata:
   name: grafana
   namespace: observability
 spec:
-  interval: 1h
+  interval: 30m
   chartRef:
     kind: OCIRepository
     name: grafana
-    namespace: flux-system
 
   install:
     crds: CreateReplace

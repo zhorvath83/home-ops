@@ -7,14 +7,9 @@ metadata:
   namespace: networking
 spec:
   interval: 30m
-  chart:
-    spec:
-      chart: app-template
-      version: 4.5.0
-      sourceRef:
-        kind: HelmRepository
-        name: app-template
-        namespace: flux-system
+  chartRef:
+    kind: OCIRepository
+    name: mailrise
 
   install:
     createNamespace: true

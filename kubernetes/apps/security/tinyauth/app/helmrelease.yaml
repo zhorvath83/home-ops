@@ -5,11 +5,10 @@ metadata:
   name: &app tinyauth
   namespace: security
 spec:
-  interval: 1h
+  interval: 30m
   chartRef:
     kind: OCIRepository
     name: tinyauth
-    namespace: flux-system
   values:
     controllers:
       tinyauth:

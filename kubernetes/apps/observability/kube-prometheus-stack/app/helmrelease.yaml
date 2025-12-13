@@ -8,11 +8,10 @@ metadata:
   name: kube-prometheus-stack
   namespace: observability
 spec:
-  interval: 1h
+  interval: 30m
   chartRef:
     kind: OCIRepository
     name: kube-prometheus-stack
-    namespace: flux-system
 
   install:
     crds: CreateReplace

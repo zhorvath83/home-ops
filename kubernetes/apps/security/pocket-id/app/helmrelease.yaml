@@ -5,11 +5,10 @@ metadata:
   name: &app pocket-id
   namespace: security
 spec:
-  interval: 1h
+  interval: 30m
   chartRef:
     kind: OCIRepository
     name: pocket-id
-    namespace: flux-system
   values:
     controllers:
       pocket-id:

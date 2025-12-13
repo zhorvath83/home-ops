@@ -6,16 +6,10 @@ metadata:
   name: plex-trakt-sync
   namespace: default
 spec:
-  chart:
-    spec:
-      chart: app-template
-      version: 4.5.0
-      interval: 30m
-      sourceRef:
-        kind: HelmRepository
-        name: app-template
-        namespace: flux-system
   interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: plex-trakt-sync
 
   install:
     createNamespace: true

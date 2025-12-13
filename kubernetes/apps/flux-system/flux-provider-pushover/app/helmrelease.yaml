@@ -6,15 +6,10 @@ metadata:
   name: &app flux-provider-pushover
   namespace: flux-system
 spec:
-  interval: 16m
-  chart:
-    spec:
-      chart: app-template
-      version: 4.5.0
-      sourceRef:
-        kind: HelmRepository
-        name: app-template
-        namespace: flux-system
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: flux-provider-pushover
 
   install:
     createNamespace: true
