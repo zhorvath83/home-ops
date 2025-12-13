@@ -7,14 +7,9 @@ metadata:
   namespace: &namespace kube-system
 spec:
   interval: 30m
-  chart:
-    spec:
-      chart: reloader
-      version: 2.2.5
-      sourceRef:
-        kind: HelmRepository
-        name: stakater
-        namespace: flux-system
+  chartRef:
+    kind: OCIRepository
+    name: reloader
 
   install:
     createNamespace: true

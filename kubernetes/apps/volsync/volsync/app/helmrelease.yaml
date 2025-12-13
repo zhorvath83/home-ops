@@ -7,14 +7,9 @@ metadata:
   namespace: volsync
 spec:
   interval: 30m
-  chart:
-    spec:
-      chart: volsync
-      version: 0.14.0
-      sourceRef:
-        kind: HelmRepository
-        name: backube
-        namespace: flux-system
+  chartRef:
+    kind: OCIRepository
+    name: volsync
 
   install:
     createNamespace: true
