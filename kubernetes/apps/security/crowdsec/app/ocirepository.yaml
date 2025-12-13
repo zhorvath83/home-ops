@@ -11,4 +11,4 @@ spec:
     operation: copy
   ref:
     tag: crowdsec-0.21.0
-  url: oci://ghcr.io/crowdsecurity/helm-charts
+  url: oci://ghcr.io/crowdsecurity/helm-charts/crowdsec
