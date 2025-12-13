@@ -2,11 +2,9 @@
 # yaml-language-server: $schema=https://json.schemastore.org/kustomization
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-namespace: kube-system
 resources:
-  - ./ocirepository.yaml
-  - ./helmrelease.yaml
-
-labels:
-  - pairs:
-      app.kubernetes.io/name: metrics-server
+  - ./democratic-csi.yaml
+  - ./lwolf-charts.yaml
+  - ./projectcalico.yaml
+  - ./crowdsec.yaml
+  - ./envoy-proxy-bouncer.yaml
