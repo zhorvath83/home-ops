@@ -5,6 +5,7 @@ kind: Kustomization
 namespace: kube-system
 resources:
   - ./ocirepository.yaml
+  - ./ocirepository2.yaml
   - ./helmrelease.yaml
 
 labels:
