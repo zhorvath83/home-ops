@@ -6,15 +6,18 @@ metadata:
   name: cluster-apps-system-upgrade-controller
   namespace: flux-system
 spec:
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: system-upgrade-controller
   path: ./kubernetes/apps/system-upgrade/system-upgrade-controller/app
   prune: true
   sourceRef:
     kind: GitRepository
     name: home-ops-kubernetes
-  wait: true
-  interval: 30m
-  retryInterval: 1m
-  timeout: 3m
+  interval: 1h
+  targetNamespace: system-upgrade
+  timeout: 5m
+  wait: false
 ---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/kustomization-kustomize-v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -23,6 +26,9 @@ metadata:
   name: cluster-apps-system-upgrade-controller-plans
   namespace: flux-system
 spec:
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: system-upgrade-controller
   dependsOn:
     - name: cluster-apps-system-upgrade-controller
   path: ./kubernetes/apps/system-upgrade/system-upgrade-controller/plans
@@ -30,7 +36,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: home-ops-kubernetes
-  wait: true
-  interval: 30m
-  retryInterval: 1m
+  interval: 1h
+  targetNamespace: system-upgrade
   timeout: 5m
+  wait: false
