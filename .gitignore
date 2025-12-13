@@ -36,3 +36,5 @@ megalinter-reports/
 __pycache__/
 *.pyc
 *.pyo
+.claude/
+.mcp.json
