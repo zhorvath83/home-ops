@@ -7,9 +7,17 @@ metadata:
   namespace: kube-system
 spec:
   interval: 15m
-  chartRef:
-    kind: OCIRepository
-    name: democratic-csi
+  # chartRef:
+  #   kind: OCIRepository
+  #   name: democratic-csi
+
+  chart:
+    spec:
+      chart: democratic-csi
+      version: 0.15.0
+      sourceRef:
+        kind: HelmRepository
+        name: democratic-csi
 
   install:
     createNamespace: true
