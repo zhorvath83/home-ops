@@ -6,6 +6,9 @@ metadata:
   name: envoy-gateway
   namespace: flux-system
 spec:
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: envoy-gateway
   dependsOn:
     - name: certificates-import
   path: ./kubernetes/apps/networking/envoy-gateway/app
@@ -13,7 +16,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: home-ops-kubernetes
-  wait: true
-  interval: 30m
-  retryInterval: 1m
-  timeout: 3m
+  interval: 1h
+  targetNamespace: networking
+  timeout: 5m
+  wait: false

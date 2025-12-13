@@ -6,12 +6,15 @@ metadata:
   name: cluster-apps-smtp-relay
   namespace: flux-system
 spec:
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: smtp-relay
   path: ./kubernetes/apps/networking/smtp-relay/app
   prune: true
   sourceRef:
     kind: GitRepository
     name: home-ops-kubernetes
-  wait: true
-  interval: 30m
-  retryInterval: 1m
-  timeout: 3m
+  interval: 1h
+  targetNamespace: networking
+  timeout: 5m
+  wait: false

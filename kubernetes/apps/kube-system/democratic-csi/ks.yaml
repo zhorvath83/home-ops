@@ -6,12 +6,15 @@ metadata:
   name: cluster-apps-democratic-csi
   namespace: flux-system
 spec:
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: democratic-csi
   path: ./kubernetes/apps/kube-system/democratic-csi/app
   prune: true
   sourceRef:
     kind: GitRepository
     name: home-ops-kubernetes
-  wait: true
-  interval: 30m
-  retryInterval: 1m
-  timeout: 3m
+  interval: 1h
+  targetNamespace: kube-system
+  timeout: 5m
+  wait: false

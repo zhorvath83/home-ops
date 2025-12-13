@@ -6,6 +6,9 @@ metadata:
   name: cluster-apps-traefik
   namespace: flux-system
 spec:
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: traefik
   dependsOn:
     - name: certificates-import
   path: ./kubernetes/apps/networking/traefik/app
@@ -13,10 +16,10 @@ spec:
   sourceRef:
     kind: GitRepository
     name: home-ops-kubernetes
-  wait: false
   interval: 1h
-  retryInterval: 2m
+  targetNamespace: networking
   timeout: 5m
+  wait: false
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -24,6 +27,9 @@ metadata:
   name: traefik-addons
   namespace: flux-system
 spec:
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: traefik
   dependsOn:
     - name: cluster-apps-traefik
   path: ./kubernetes/apps/networking/traefik/addons
@@ -31,7 +37,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: home-ops-kubernetes
-  wait: false
   interval: 1h
-  retryInterval: 2m
+  targetNamespace: networking
   timeout: 5m
+  wait: false

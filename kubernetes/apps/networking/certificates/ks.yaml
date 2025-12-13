@@ -8,15 +8,16 @@ metadata:
 spec:
   dependsOn:
     - name: cluster-apps-onepassword-store
-  interval: 1h
   path: ./kubernetes/apps/networking/certificates/import
   prune: true
   sourceRef:
     kind: GitRepository
     name: home-ops-kubernetes
     namespace: flux-system
+  interval: 1h
   targetNamespace: networking
-  wait: true
+  timeout: 5m
+  wait: false
 ---
 # yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -28,12 +29,13 @@ spec:
   dependsOn:
     - name: certificates-import
     - name: cluster-apps-onepassword-store
-  interval: 1h
   path: ./kubernetes/apps/networking/certificates/export
   prune: true
   sourceRef:
     kind: GitRepository
     name: home-ops-kubernetes
     namespace: flux-system
+  interval: 1h
   targetNamespace: networking
+  timeout: 5m
   wait: false

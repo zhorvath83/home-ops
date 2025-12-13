@@ -6,12 +6,15 @@ metadata:
   name: cluster-apps-mailrise
   namespace: flux-system
 spec:
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: mailrise
   path: ./kubernetes/apps/networking/mailrise/app
   prune: true
   sourceRef:
     kind: GitRepository
     name: home-ops-kubernetes
-  wait: true
-  interval: 30m
-  retryInterval: 1m
+  interval: 1h
+  targetNamespace: networking
   timeout: 5m
+  wait: false
