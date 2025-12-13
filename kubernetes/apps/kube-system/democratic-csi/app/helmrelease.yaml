@@ -23,7 +23,8 @@ spec:
     keepHistory: false
 
   values:
-
+    env:
+      TZ: Europe/Budapest
     controller:
       # democratic-csi controller
       enabled: true
