@@ -6,15 +6,18 @@ metadata:
   name: cluster-apps-external-secrets
   namespace: flux-system
 spec:
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: external-secrets
   path: ./kubernetes/apps/external-secrets/external-secrets/app
   prune: true
   sourceRef:
     kind: GitRepository
     name: home-ops-kubernetes
-  wait: true
-  interval: 30m
-  retryInterval: 1m
-  timeout: 3m
+  interval: 1h
+  targetNamespace: external-secrets
+  timeout: 5m
+  wait: false
 ---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/kustomization-kustomize-v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -23,6 +26,9 @@ metadata:
   name: cluster-apps-onepassword-store
   namespace: flux-system
 spec:
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: external-secrets
   dependsOn:
     - name: cluster-apps-external-secrets
   path: ./kubernetes/apps/external-secrets/external-secrets/stores/onepassword
@@ -30,7 +36,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: home-ops-kubernetes
-  wait: true
-  interval: 30m
-  retryInterval: 1m
-  timeout: 3m
+  interval: 1h
+  targetNamespace: external-secrets
+  timeout: 5m
+  wait: false

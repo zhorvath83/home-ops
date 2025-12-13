@@ -6,6 +6,9 @@ metadata:
   name: cluster-apps-maintainerr
   namespace: flux-system
 spec:
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: maintainerr
   dependsOn:
     - name: cluster-apps-democratic-csi
   path: ./kubernetes/apps/default/maintainerr/app
@@ -13,7 +16,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: home-ops-kubernetes
-  wait: true
-  interval: 30m
-  retryInterval: 1m
-  timeout: 3m
+  interval: 1h
+  targetNamespace: default
+  timeout: 5m
+  wait: false

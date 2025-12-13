@@ -6,6 +6,9 @@ metadata:
   name: cluster-apps-plex
   namespace: flux-system
 spec:
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: plex
   dependsOn:
     - name: cluster-apps-onepassword-store
     - name: cluster-apps-democratic-csi
@@ -14,10 +17,10 @@ spec:
   sourceRef:
     kind: GitRepository
     name: home-ops-kubernetes
-  wait: true
-  interval: 30m
-  retryInterval: 1m
-  timeout: 3m
+  interval: 1h
+  targetNamespace: default
+  timeout: 5m
+  wait: false
 ---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/kustomization-kustomize-v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -26,6 +29,9 @@ metadata:
   name: cluster-apps-plex-trakt-sync
   namespace: flux-system
 spec:
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: plex-trakt-sync
   dependsOn:
     - name: cluster-apps-onepassword-store
     - name: cluster-apps-democratic-csi
@@ -34,7 +40,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: home-ops-kubernetes
-  wait: true
-  interval: 30m
-  retryInterval: 1m
-  timeout: 3m
+  interval: 1h
+  targetNamespace: default
+  timeout: 5m
+  wait: false
