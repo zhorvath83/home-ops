@@ -6,12 +6,15 @@ metadata:
   name: cluster-apps-speedtest-exporter
   namespace: flux-system
 spec:
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: speedtest-exporter
   path: ./kubernetes/apps/observability/speedtest-exporter/app
   prune: true
   sourceRef:
     kind: GitRepository
     name: home-ops-kubernetes
-  wait: true
-  interval: 30m
-  retryInterval: 1m
+  interval: 1h
+  targetNamespace: observability
   timeout: 5m
+  wait: false
