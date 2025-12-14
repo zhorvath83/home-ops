@@ -65,7 +65,13 @@ spec:
               PAPERLESS_DBENGINE: sqlite
 
               # Redis/Valkey connection
-              PAPERLESS_REDIS: redis://valkey.default.svc.cluster.local:6379
+              REDIS_PASSWORD:
+                secretKeyRef:
+                  name: valkey-secret
+                  key: VALKEY_PASSWORD
+              PAPERLESS_REDIS:
+                value: redis://:$(REDIS_PASSWORD)@valkey.default.svc.cluster.local:6379
+                dependsOn: REDIS_PASSWORD
 
               # OCR settings
               PAPERLESS_OCR_LANGUAGE: hun+eng
