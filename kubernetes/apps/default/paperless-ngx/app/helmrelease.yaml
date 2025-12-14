@@ -65,7 +65,7 @@ spec:
               PAPERLESS_DBENGINE: sqlite
 
               # Redis/Valkey connection
-              PAPERLESS_REDIS: redis://valkey.database.svc.cluster.local:6379
+              PAPERLESS_REDIS: redis://valkey.default.svc.cluster.local:6379
 
               # OCR settings
               PAPERLESS_OCR_LANGUAGE: hun+eng
