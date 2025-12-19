@@ -46,7 +46,7 @@ spec:
           app:
             image:
               repository: ghcr.io/paperless-ngx/paperless-ngx
-              tag: 2.20.2@sha256:05982cbae5a57f4520066c51c43e7075f2600ad7b7938cda2c2d4efb783e86a4
+              tag: 2.20.3@sha256:cd7622df6e0463a00d9aa381c756b052a00baec36b87c51085d54a1037fec74a
 
             env:
               # Application settings
