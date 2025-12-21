@@ -101,9 +101,6 @@ webapp:
 
 # Plugin manager
 pluginManager:
-  # Disable video transcoding (videoExtractor) but keep thumbnails (videoFrameExtractor, videoPosterExtractor)
-  disabledExtractors:
-    - videoExtractor
   # Disable AI-related database mappers
   disabledDatabaseMappers:
     - objectMapper
