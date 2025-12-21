@@ -100,14 +100,6 @@ webapp:
     time: "%H:%M:%S"
     hourMinute: "%H:%M"
 
-# Plugin manager
-pluginManager:
-  # Disable AI-related database mappers
-  disabledDatabaseMappers:
-    - objectMapper
-    - facesMapper
-    - similarityMapper
-
 # Logger configuration
 logger:
   - type: console
