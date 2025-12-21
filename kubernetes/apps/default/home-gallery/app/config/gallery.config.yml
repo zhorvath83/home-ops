@@ -91,6 +91,7 @@ webapp:
         - similar
         - annotation
         - edit
+        - tag
   # Hungarian date format
   format:
     date: "%Y.%m.%d"
