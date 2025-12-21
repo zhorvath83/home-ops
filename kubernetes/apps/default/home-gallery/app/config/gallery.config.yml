@@ -80,7 +80,6 @@ webapp:
   title: 'Fénykép galéria'
   # Disable webapp features
   disabled:
-    - pwa
     - edit
     - events
   # Disable pages/features in media view

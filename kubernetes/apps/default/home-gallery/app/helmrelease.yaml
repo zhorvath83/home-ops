@@ -61,12 +61,8 @@ spec:
             args:
               - |
                 mkdir -p /data/config /data/storage &&
-                if [ ! -f /data/config/gallery.config.yml ]; then
-                  cp /tmp/configfiles/gallery.config.yml /data/config/gallery.config.yml &&
-                  echo "Config file copied successfully."
-                else
-                  echo "Config file already exists, skipping copy."
-                fi
+                cp /tmp/configfiles/gallery.config.yml /data/config/gallery.config.yml &&
+                echo "Config file copied/updated."
 
         containers:
           app:
