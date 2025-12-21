@@ -86,6 +86,7 @@ webapp:
   pages:
     disabled:
       - edit
+      - tag
     mediaView:
       disabled:
         - similar
