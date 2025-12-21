@@ -77,7 +77,7 @@ server:
 
 # Webapp configuration
 webapp:
-  title: 'Home Gallery'
+  title: 'Fénykép galéria'
   # Disable webapp features
   disabled:
     - pwa
