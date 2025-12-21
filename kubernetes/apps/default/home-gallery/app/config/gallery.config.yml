@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/xemle/home-gallery/master/gallery.config.schema.json
+#
+# HomeGallery configuration file
+#
+# For docker containers:
+# - /data is the main data volume
+# - Config files are stored in /data/config
+# - Storage (previews, metadata) in /data/storage
+#
+
+# Base directory for docker
+baseDir: '/data'
+configDir: '{baseDir}/config'
+cacheDir: '{baseDir}'
+
+# Media sources - mounted via NFS
+sources:
+  - dir: '/data/Pictures'
+    # Exclude common unwanted files
+    excludes:
+      - .DS_Store
+      - ._*
+      - '*.tmp'
+      - Thumbs.db
+    # Skip directory if this file is present
+    excludeIfPresent: .galleryignore
+    # Allow original files to be downloaded
+    downloadable: true
+
+# Extractor settings
+extractor:
+  # Preview image settings
+  image:
+    previewSizes: [1920, 1280, 800, 320, 128]
+    previewQuality: 80
+  # Video preview settings
+  video:
+    previewSize: 720
+    ext: mp4
+  # Geo reverse lookup for map view (uses OpenStreetMap Nominatim)
+  geoReverse:
+    url: https://nominatim.openstreetmap.org
+    addressLanguage: [hu, en]
+
+# Storage configuration
+storage:
+  dir: '{cacheDir}/storage'
+
+# Database configuration
+database:
+  file: '{configDir}/database.db'
+  # Memory limit for database operations (MB)
+  maxMemory: 1024
+
+# Events database
+events:
+  file: '{configDir}/events.db'
+
+# Server configuration
+server:
+  port: 3000
+  host: '0.0.0.0'
+  # Don't open browser in container
+  openBrowser: false
+  # Import sources on server start
+  importSources: true
+  # Watch sources for changes
+  watchSources: true
+
+# Webapp configuration
+webapp:
+  title: 'Home Gallery'
+  # Disable features we don't need without API server
+  disabled:
+    - pwa
+
+# Logger configuration
+logger:
+  - type: console
+    level: info

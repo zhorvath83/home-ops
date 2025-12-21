@@ -1,0 +1,194 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: home-gallery
+  namespace: default
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: home-gallery
+
+  install:
+    createNamespace: true
+    remediation:
+      retries: -1
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  uninstall:
+    keepHistory: false
+
+  values:
+    defaultPodOptions:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+
+    controllers:
+      home-gallery:
+        type: statefulset
+
+        annotations:
+          reloader.stakater.com/auto: "true"
+
+        initContainers:
+          01-copy-config:
+            image:
+              repository: public.ecr.aws/docker/library/busybox
+              tag: 1.37.0
+            securityContext:
+              privileged: false
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                  - ALL
+            command:
+              - "/bin/sh"
+              - -c
+            args:
+              - |
+                mkdir -p /data/config /data/storage &&
+                if [ ! -f /data/config/gallery.config.yml ]; then
+                  cp /tmp/configfiles/gallery.config.yml /data/config/gallery.config.yml &&
+                  echo "Config file copied successfully."
+                else
+                  echo "Config file already exists, skipping copy."
+                fi
+
+        containers:
+          app:
+            image:
+              repository: xemle/home-gallery
+              tag: 1.20.0@sha256:cefd190b3e3d4c0170b5af3cfb252dec468ea5c4cc343abd6306faaf4abc0f35
+
+            env:
+              - name: TZ
+                value: Europe/Budapest
+              # Disable browser opening (not needed in container)
+              - name: GALLERY_OPEN_BROWSER
+                value: "false"
+              # Use polling for NFS mounts (in seconds, 0 = inotify)
+              - name: GALLERY_WATCH_POLL_INTERVAL
+                value: "300"
+
+            args:
+              - run
+              - server
+
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /
+                    port: &port 3000
+                  initialDelaySeconds: 30
+                  periodSeconds: 30
+                  timeoutSeconds: 10
+                  failureThreshold: 3
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /
+                    port: *port
+                  initialDelaySeconds: 15
+                  periodSeconds: 15
+                  timeoutSeconds: 5
+                  failureThreshold: 3
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /
+                    port: *port
+                  initialDelaySeconds: 10
+                  periodSeconds: 10
+                  timeoutSeconds: 5
+                  failureThreshold: 30
+
+            securityContext:
+              privileged: false
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                  - ALL
+
+            resources:
+              requests:
+                cpu: 50m
+                memory: 256Mi
+              limits:
+                memory: 2000Mi
+
+    service:
+      app:
+        controller: home-gallery
+        ports:
+          http:
+            port: *port
+
+    route:
+      app:
+        annotations:
+          gethomepage.dev/enabled: "true"
+          gethomepage.dev/name: Home Gallery
+          gethomepage.dev/group: Selfhosted
+          gethomepage.dev/icon: mdi-image-multiple
+        hostnames:
+          - "gallery.${PUBLIC_DOMAIN}"
+        parentRefs:
+          - name: external
+            namespace: networking
+            sectionName: websecure
+        rules:
+          - backendRefs:
+              - identifier: app
+                port: *port
+
+    persistence:
+      # Main data volume (config, storage, database)
+      data:
+        type: persistentVolumeClaim
+        existingClaim: home-gallery
+        globalMounts:
+          - path: /data
+
+      # Photo source via NFS (read-only)
+      photos:
+        type: nfs
+        path: /backups/apple_photos_export
+        server: ${CLUSTER_LAN_NAS_IP}
+        globalMounts:
+          - path: /data/Pictures
+            readOnly: true
+
+      # ConfigMap with gallery.config.yml (for init container)
+      configfiles:
+        type: configMap
+        name: home-gallery-configmap
+        globalMounts:
+          - path: /tmp/configfiles
+
+      # Temporary storage for readOnlyRootFilesystem
+      tmp:
+        type: emptyDir
+        globalMounts:
+          - path: /tmp
