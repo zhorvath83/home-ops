@@ -1,3 +1,4 @@
+---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/xemle/home-gallery/master/gallery.config.schema.json
 #
 # HomeGallery configuration file
@@ -31,11 +32,11 @@ sources:
 
 # Extractor settings
 extractor:
-  # Preview image settings - only essential sizes (1920 for full view, 320 for list, 128 for grid)
+  # Preview image settings
   image:
-    previewSizes: [1920, 320, 128]
+    previewSizes: [1920, 1280, 800, 640, 320, 128]
     previewQuality: 80
-  # Video settings (only poster/frame extraction, no transcoding)
+  # Video settings
   video:
     previewSize: 720
     ext: mp4
@@ -57,7 +58,7 @@ storage:
 # Database configuration
 database:
   file: '{configDir}/database.db'
-  # Memory limit for database operations (MB) - higher during import, drops after
+  # Memory limit for database operations (MB)
   maxMemory: 2048
 
 # Events database
