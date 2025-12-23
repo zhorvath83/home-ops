@@ -78,7 +78,7 @@ spec:
                 value: "false"
               # Use polling for NFS mounts (in seconds, 0 = inotify)
               - name: GALLERY_WATCH_POLL_INTERVAL
-                value: "300"
+                value: "3600"
 
             args:
               - run
