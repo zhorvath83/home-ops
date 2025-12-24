@@ -5,8 +5,8 @@ metadata:
   namespace: networking
 spec:
   rateLimit:
-    average: 100
-    burst: 200
+    average: 200
+    burst: 300
     sourceCriterion:
       ipStrategy:
         depth: 1
