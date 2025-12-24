@@ -23,4 +23,4 @@ resources:
   - ./maintainerr/ks.yaml
   - ./mealie/ks.yaml
   - ./paperless-ngx/ks.yaml
-  - ./home-gallery/ks.yaml
+  # - ./home-gallery/ks.yaml
