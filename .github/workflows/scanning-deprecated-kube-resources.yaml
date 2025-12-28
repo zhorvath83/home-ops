@@ -6,7 +6,6 @@ on: # yamllint disable-line rule:truthy
   schedule:
     - cron: "0 0 * * 5"
 
-
 jobs:
   scan-deprecated-kube-resources:
     name: Scanning deprecated Kubernetes resources
@@ -19,11 +18,11 @@ jobs:
           fetch-depth: 0
 
       - name: Download Pluto
-        uses: FairwindsOps/pluto/github-action@master
+        uses: FairwindsOps/pluto/github-action@v5
 
       - name: Use pluto
         run: |
-          pluto detect-files -d kubernetes --v 3
+          pluto detect-files -d kubernetes --output wide
 
       - name: Create Issue on Failed workflow
         if: ${{ failure() }}

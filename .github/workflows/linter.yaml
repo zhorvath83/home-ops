@@ -8,9 +8,9 @@ on: # yamllint disable-line rule:truthy
       - main
 
 env:
-  APPLY_FIXES: all # When active, APPLY_FIXES must also be defined as environment variable (in github/workflows/mega-linter.yml or other CI tool)
-  APPLY_FIXES_EVENT: pull_request # Decide which event triggers application of fixes in a commit or a PR (pull_request, push, all)
-  APPLY_FIXES_MODE: pull_request # If APPLY_FIXES is used, defines if the fixes are directly committed (commit) or posted in a PR (pull_request)
+  APPLY_FIXES: all
+  APPLY_FIXES_EVENT: pull_request
+  APPLY_FIXES_MODE: pull_request
   FLAVOR_SUGGESTIONS: false
 
 concurrency:
@@ -22,38 +22,32 @@ jobs:
     name: MegaLinter
     runs-on: ubuntu-latest
     permissions:
-      # Give the default GITHUB_TOKEN write permission to commit and push, comment issues & post new PR
-      # Remove the ones you do not need
       contents: write
       issues: write
       pull-requests: write
     steps:
-      # Git Checkout
       - name: Checkout Code
         uses: actions/checkout@v6
         with:
           token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
-          fetch-depth: 0 # If you use VALIDATE_ALL_CODEBASE = true, you can remove this line to improve performances
+          fetch-depth: 0
 
       - name: MegaLinter
         id: ml
         uses: oxsecurity/megalinter/flavors/terraform@v9
         env:
-          # VALIDATE_ALL_CODEBASE: ${{ github.event_name == 'workflow_dispatch' }}
           VALIDATE_ALL_CODEBASE: true
-          # VALIDATE_ALL_CODEBASE: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-          ENABLE_LINTERS: ACTION_ACTIONLINT,BASH_SHELLCHECK,DOCKERFILE_HADOLINT,ENV_DOTENV_LINTER,GIT_GIT_DIFF,JSON_JSONLINT,KUBERNETES_KUBEVAL,MARKDOWN_MARKDOWNLINT,MARKDOWN_MARKDOWN_LINK_CHECK,TERRAFORM_TFLINT,YAML_YAMLLINT
+          ENABLE_LINTERS: ACTION_ACTIONLINT,BASH_SHELLCHECK,DOCKERFILE_HADOLINT,ENV_DOTENV_LINTER,GIT_GIT_DIFF,JSON_JSONLINT,KUBERNETES_KUBECONFORM,MARKDOWN_MARKDOWNLINT,MARKDOWN_MARKDOWN_LINK_CHECK,TERRAFORM_TFLINT,YAML_YAMLLINT
           DISABLE_LINTERS: ANSIBLE_ANSIBLE_LINT
           ANSIBLE_DIRECTORY: provision
           ANSIBLE_ANSIBLE_LINT_CONFIG_FILE: .ansible-lint
           KUBERNETES_DIRECTORY: kubernetes
-          KUBERNETES_KUBEVAL_ARGUMENTS: --ignore-missing-schemas --skip-kinds Secret
+          KUBERNETES_KUBECONFORM_ARGUMENTS: --ignore-missing-schemas --skip Secret
           MARKDOWN_MARKDOWNLINT_CONFIG_FILE: .markdownlint.yaml
           TERRAFORM_TFLINT_CONFIG_FILE: .tflint.hcl
           YAML_YAMLLINT_CONFIG_FILE: .yamllint.yaml
 
-      # Upload MegaLinter artifacts
       - name: Archive production artifacts
         if: success() || failure()
         uses: actions/upload-artifact@v6
@@ -63,7 +57,6 @@ jobs:
             megalinter-reports
             mega-linter.log
 
-      # Create pull request if applicable (for now works only on PR from same repository, not from forks)
       - name: Create Pull Request with applied fixes
         id: cpr
         if: steps.ml.outputs.has_updated_sources == 1 && (env.APPLY_FIXES_EVENT == 'all' || env.APPLY_FIXES_EVENT == github.event_name) && env.APPLY_FIXES_MODE == 'pull_request' && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && !contains(github.event.head_commit.message, 'skip fix')
