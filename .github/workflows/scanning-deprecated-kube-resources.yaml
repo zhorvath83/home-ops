@@ -18,7 +18,7 @@ jobs:
           fetch-depth: 0
 
       - name: Download Pluto
-        uses: FairwindsOps/pluto/github-action@v5
+        uses: FairwindsOps/pluto/github-action@master
 
       - name: Use pluto
         run: |
