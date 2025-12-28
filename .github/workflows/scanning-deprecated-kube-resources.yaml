@@ -1,5 +1,5 @@
 ---
-name: Find Kubernetes resources that have been deprecated
+name: Find deprecated Kubernetes resources
 
 on: # yamllint disable-line rule:truthy
   workflow_dispatch:
