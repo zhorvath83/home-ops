@@ -130,9 +130,8 @@ spec:
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Paperless-NGX
-          gethomepage.dev/group: Documents
+          gethomepage.dev/group: Selfhosted
           gethomepage.dev/icon: paperless-ngx.svg
-          gethomepage.dev/description: Document Management System
         hostnames:
           - "paperless.${PUBLIC_DOMAIN}"
         parentRefs:
