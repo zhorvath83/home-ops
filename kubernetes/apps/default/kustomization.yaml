@@ -11,7 +11,7 @@ resources:
   - ./wallos/ks.yaml
   - ./plex/ks.yaml
   - ./qbittorrent/ks.yaml
-  - ./photoview/ks.yaml
+  # - ./photoview/ks.yaml
   - ./homepage/ks.yaml
   - ./prowlarr/ks.yaml
   - ./radarr/ks.yaml
