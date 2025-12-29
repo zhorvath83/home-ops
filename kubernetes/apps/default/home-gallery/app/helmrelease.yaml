@@ -149,7 +149,8 @@ spec:
           gethomepage.dev/group: Selfhosted
           gethomepage.dev/icon: mdi-image-multiple
         hostnames:
-          - "gallery.${PUBLIC_DOMAIN}"
+          - "photos.${PUBLIC_DOMAIN}"
+          - "fenykepek.${PUBLIC_DOMAIN}"
         parentRefs:
           - name: external
             namespace: networking
