@@ -31,12 +31,10 @@
  *   2. Configure in gallery.config.yml:
  *        pluginManager:
  *          dirs:
- *            - plugins
+ *            - /data/config/plugins
  *   3. Rebuild the database: gallery.js database
  *
  * See: https://github.com/xemle/home-gallery/issues/143
- * Version: 1.0.0
- * License: MIT
  */
 
 /**
