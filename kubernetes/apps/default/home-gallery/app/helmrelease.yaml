@@ -62,7 +62,7 @@ spec:
               - |
                 mkdir -p /data/config /data/storage /data/config/plugins &&
                 cp /tmp/configfiles/gallery.config.yml /data/config/gallery.config.yml &&
-                cp /tmp/configfiles/datefix.plugin.mjs /data/config/plugins/datefix.plugin.mjs &&
+                cp /tmp/configfiles/exifDatePriority.plugin.mjs /data/config/plugins/exifDatePriority.plugin.mjs &&
                 echo "Config and plugins copied/updated."
 
         containers:
