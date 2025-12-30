@@ -60,7 +60,8 @@ spec:
               - -c
             args:
               - |
-                mkdir -p /data/config /data/storage /data/config/plugins &&
+                mkdir -p /data/config /data/config/plugins /data/storage &&
+                rm -rf /data/config/plugins &&
                 cp /tmp/configfiles/gallery.config.yml /data/config/gallery.config.yml &&
                 cp /tmp/configfiles/exifDatePriority.plugin.mjs /data/config/plugins/exifDatePriority.plugin.mjs &&
                 echo "Config and plugins copied/updated."
