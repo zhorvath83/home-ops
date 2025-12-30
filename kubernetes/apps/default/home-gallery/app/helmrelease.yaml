@@ -60,9 +60,10 @@ spec:
               - -c
             args:
               - |
-                mkdir -p /data/config /data/storage &&
+                mkdir -p /data/config /data/storage /data/config/plugins &&
                 cp /tmp/configfiles/gallery.config.yml /data/config/gallery.config.yml &&
-                echo "Config file copied/updated."
+                cp /tmp/configfiles/datefix.plugin.mjs /data/config/plugins/datefix.plugin.mjs &&
+                echo "Config and plugins copied/updated."
 
         containers:
           app:

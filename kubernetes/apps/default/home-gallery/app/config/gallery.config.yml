@@ -102,6 +102,11 @@ webapp:
     time: "%H:%M:%S"
     hourMinute: "%H:%M"
 
+# Plugin manager - custom plugins
+pluginManager:
+  dirs:
+    - plugins
+
 # Logger configuration
 logger:
   - type: console
