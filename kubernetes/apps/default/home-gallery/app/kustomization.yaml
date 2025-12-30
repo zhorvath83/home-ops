@@ -12,7 +12,7 @@ configMapGenerator:
   - name: home-gallery-configmap
     files:
       - config/gallery.config.yml
-      - config/plugins/datefix.plugin.mjs
+      - config/plugins/exifDatePriority.plugin.mjs
 
 generatorOptions:
   disableNameSuffixHash: true
