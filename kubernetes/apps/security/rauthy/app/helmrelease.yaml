@@ -32,8 +32,8 @@ spec:
               HQL_NODE_ID: "1"
               HQL_NODES: "1 localhost:8100 localhost:8200"
               # Webauthn / Passkey config
-              RP_ID: "${PUBLIC_DOMAIN}"
-              RP_ORIGIN: "https://idp.${PUBLIC_DOMAIN}"
+              RP_ID: "idp.${PUBLIC_DOMAIN}"
+              RP_ORIGIN: "https://idp.${PUBLIC_DOMAIN}:443"
               # Logging
               LOG_LEVEL: info
               LOG_LEVEL_ACCESS: basic
