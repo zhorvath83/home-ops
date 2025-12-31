@@ -51,7 +51,7 @@ spec:
 
 
             env:
-              TZ: Europe/Budapest
+              TZ: ${TIMEZONE}
 
             probes:
               liveness:

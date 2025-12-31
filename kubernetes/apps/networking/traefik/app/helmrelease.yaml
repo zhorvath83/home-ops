@@ -54,7 +54,7 @@ spec:
 
     env:
       - name: TZ
-        value: "Europe/Budapest"
+        value: ${TIMEZONE}
 
     logs:
       general:

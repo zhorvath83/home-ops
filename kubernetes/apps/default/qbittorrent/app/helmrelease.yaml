@@ -69,7 +69,7 @@ spec:
 
 
             env:
-              TZ: Europe/Budapest
+              TZ: ${TIMEZONE}
 
             probes:
               liveness:
@@ -97,7 +97,7 @@ spec:
         controller: qbittorrent
         type: LoadBalancer
         annotations:
-          metallb.io/loadBalancerIPs: ${CLUSTER_SVC_QBITTORRENT_IP}
+          metallb.io/loadBalancerIPs: ${LB_QBITTORRENT_IP}
         externalTrafficPolicy: Local
         ports:
           http:
@@ -142,7 +142,7 @@ spec:
 
       nfs-nas-media:
         type: nfs
-        server: ${CLUSTER_LAN_NAS_IP}
+        server: ${CONF_NFS_SRV_IP}
         path: /media
         globalMounts:
           - path: /media

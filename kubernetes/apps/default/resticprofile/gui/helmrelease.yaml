@@ -52,7 +52,7 @@ spec:
 
             env:
               - name: TZ
-                value: Europe/Budapest
+                value: ${TIMEZONE}
 
               - name: XDG_CACHE_HOME
                 value: "/mnt/nfs-tmp/backrest-cache"
@@ -142,14 +142,14 @@ spec:
 
       nfs-tmp:
         type: nfs
-        server: ${CLUSTER_LAN_NAS_IP}
+        server: ${CONF_NFS_SRV_IP}
         path: /tmp
         globalMounts:
           - path: /mnt/nfs-tmp
 
       nfs-backups:
         type: nfs
-        server: ${CLUSTER_LAN_NAS_IP}
+        server: ${CONF_NFS_SRV_IP}
         path: /backups
         globalMounts:
           - path: /backups

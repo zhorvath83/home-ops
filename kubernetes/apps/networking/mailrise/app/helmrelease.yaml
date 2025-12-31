@@ -52,7 +52,7 @@ spec:
 
 
             env:
-              TZ: Europe/Budapest
+              TZ: ${TIMEZONE}
 
             probes:
               liveness:
@@ -80,7 +80,7 @@ spec:
         controller: mailrise
         type: LoadBalancer
         annotations:
-          metallb.io/loadBalancerIPs: ${CLUSTER_SVC_MAILRISE_GW_IP}
+          metallb.io/loadBalancerIPs: ${LB_MAILRISE_IP}
         externalTrafficPolicy: Local
         ports:
           http:

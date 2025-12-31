@@ -74,7 +74,7 @@ spec:
 
             env:
               - name: TZ
-                value: Europe/Budapest
+                value: ${TIMEZONE}
               # Disable browser opening (not needed in container)
               - name: GALLERY_OPEN_BROWSER
                 value: "false"
@@ -174,7 +174,7 @@ spec:
       photos:
         type: nfs
         path: /backups/apple_photos_export
-        server: ${CLUSTER_LAN_NAS_IP}
+        server: ${CONF_NFS_SRV_IP}
         globalMounts:
           - path: /data/Pictures
             readOnly: true

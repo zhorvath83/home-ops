@@ -44,7 +44,7 @@ spec:
     # Kubernetes API server (K3s runs on node, not as pod)
     - to:
         - ipBlock:
-            cidr: ${CLUSTER_HOST1_IP}/32
+            cidr: ${CLUSTER_NODE_1_IP}/32
       ports:
         - protocol: TCP
           port: 6443

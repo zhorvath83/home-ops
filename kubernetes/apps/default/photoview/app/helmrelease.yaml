@@ -51,7 +51,7 @@ spec:
 
             env:
               - name: TZ
-                value: Europe/Budapest
+                value: ${TIMEZONE}
               - name: PHOTOVIEW_LISTEN_IP
                 value: 0.0.0.0
               - name: PHOTOVIEW_LISTEN_PORT
@@ -125,7 +125,7 @@ spec:
       photos:
         type: nfs
         path: /backups/apple_photos_export
-        server: ${CLUSTER_LAN_NAS_IP}
+        server: ${CONF_NFS_SRV_IP}
         globalMounts:
           - path: /photos
             readOnly: true

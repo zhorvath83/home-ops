@@ -1,17 +1,20 @@
 ---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/upgrade.cattle.io/plan_v1.json
 apiVersion: upgrade.cattle.io/v1
 kind: Plan
 metadata:
-  name: server
-  namespace: system-upgrade
+  name: server-plan
 spec:
-  # renovate: datasource=github-releases depName=k3s-io/k3s
-  version: "v1.35.0+k3s1"
+  version: ${K3S_VERSION}
   serviceAccountName: system-upgrade
   concurrency: 1
+  jobActiveDeadlineSecs: 1800 # 30 minutes timeout for upgrade jobs
   cordon: true
   nodeSelector:
     matchExpressions:
-      - {key: node-role.kubernetes.io/control-plane, operator: Exists}
+      - { key: node-role.kubernetes.io/control-plane, operator: Exists }
+  tolerations:
+    - { effect: NoSchedule, operator: Exists }
+    - { effect: NoExecute, operator: Exists }
   upgrade:
     image: rancher/k3s-upgrade

@@ -65,7 +65,7 @@ spec:
 
 
             env:
-              TZ: Europe/Budapest
+              TZ: ${TIMEZONE}
 
             probes:
               liveness:
@@ -121,7 +121,7 @@ spec:
           - path: /config
       nfs-nas-media:
         type: nfs
-        server: ${CLUSTER_LAN_NAS_IP}
+        server: ${CONF_NFS_SRV_IP}
         path: /media
         globalMounts:
           - path: /media

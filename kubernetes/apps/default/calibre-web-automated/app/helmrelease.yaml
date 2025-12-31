@@ -52,7 +52,7 @@ spec:
 
 
             env:
-              TZ: Europe/Budapest
+              TZ: ${TIMEZONE}
               PUID: 1000
               PGID: 100
 
@@ -91,7 +91,7 @@ spec:
         controller: calibre-web-automated
         type: LoadBalancer
         annotations:
-          metallb.io/loadBalancerIPs: ${CLUSTER_SVC_CALIBRE_WEB_IP}
+          metallb.io/loadBalancerIPs: ${LB_CALIBRE_WEB_IP}
         externalTrafficPolicy: Local
         ports:
           http:
@@ -127,7 +127,7 @@ spec:
 
       nfs-calibre-library:
         type: nfs
-        server: ${CLUSTER_LAN_NAS_IP}
+        server: ${CONF_NFS_SRV_IP}
         path: /backups/documents/personal/ebooks
         globalMounts:
           - path: /calibre-library

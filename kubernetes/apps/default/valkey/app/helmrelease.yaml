@@ -48,7 +48,7 @@ spec:
               tag: "9.0.1"
 
             env:
-              TZ: Europe/Budapest
+              TZ: ${TIMEZONE}
 
             args:
               - --port

@@ -5,13 +5,22 @@ metadata:
   namespace: flux-system
   name: cluster-settings
 data:
+  # renovate: datasource=github-releases depName=k3s-io/k3s
+  K3S_VERSION: v1.34.1+k3s1
+
+  TIMEZONE: "Europe/Budapest"
+
   CLUSTER_POD_CIDR: "10.42.0.0/16"
   CLUSTER_SVC_CIDR: "10.43.0.0/16"
-  CLUSTER_LAN_CIDR: "192.168.0.0/16"
-  CLUSTER_LAN_DOMAIN: "lan"
-  CLUSTER_HOST1_IP: "192.168.1.6"
-  CLUSTER_LAN_NAS_IP: "192.168.1.10"
-  CLUSTER_SVC_MEDIASERVER_IP: "192.168.1.20"
-  CLUSTER_SVC_QBITTORRENT_IP: "192.168.1.21"
-  CLUSTER_SVC_CALIBRE_WEB_IP: "192.168.1.22"
-  CLUSTER_SVC_MAILRISE_GW_IP: "192.168.1.25"
+  CLUSTER_LB_CIDR: "192.168.0.0/16"
+
+  CLUSTER_NODE_1_IP: "192.168.1.6"
+  CONF_NFS_SRV_IP: "192.168.1.10"
+
+  # `letsencrypt-production` or `letsencrypt-staging`
+  CONF_CERT_ISSUER: 'letsencrypt-production'
+
+  LB_MEDIASERVER_IP: "192.168.1.20"
+  LB_QBITTORRENT_IP: "192.168.1.21"
+  LB_CALIBRE_WEB_IP: "192.168.1.22"
+  LB_MAILRISE_IP: "192.168.1.25"

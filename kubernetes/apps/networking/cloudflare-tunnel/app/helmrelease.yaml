@@ -53,7 +53,7 @@ spec:
 
 
             env:
-              TZ: "Europe/Budapest"
+              TZ: ${TIMEZONE}
               NO_AUTOUPDATE: true
               TUNNEL_METRICS: 0.0.0.0:8080
               TUNNEL_ORIGIN_ENABLE_HTTP2: true

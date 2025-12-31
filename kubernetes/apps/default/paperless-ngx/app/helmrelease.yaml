@@ -50,8 +50,7 @@ spec:
 
             env:
               # Application settings
-              TZ: Europe/Budapest
-              PAPERLESS_TIME_ZONE: Europe/Budapest
+              PAPERLESS_TIME_ZONE: ${TIMEZONE}
               PAPERLESS_URL: https://paperless.${PUBLIC_DOMAIN}
               PAPERLESS_PORT: "8000"
 
@@ -153,7 +152,7 @@ spec:
             subPath: media
       consume:
         type: nfs
-        server: ${CLUSTER_LAN_NAS_IP}
+        server: ${CONF_NFS_SRV_IP}
         path: /tmp/paperless-ngx-consume
         globalMounts:
           - path: /data/consume

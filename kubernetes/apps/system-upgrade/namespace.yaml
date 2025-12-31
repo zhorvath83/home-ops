@@ -4,4 +4,5 @@ kind: Namespace
 metadata:
   name: system-upgrade
   labels:
+    app.kubernetes.io/component: system-upgrade
     kustomize.toolkit.fluxcd.io/prune: disabled

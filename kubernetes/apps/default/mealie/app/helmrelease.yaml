@@ -51,7 +51,7 @@ spec:
 
 
             env:
-              TZ: Europe/Budapest
+              TZ: ${TIMEZONE}
               API_DOCS: "false"
               API_PORT: &port 9000
               PUID: "10001"

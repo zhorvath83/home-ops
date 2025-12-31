@@ -58,7 +58,7 @@ spec:
 
             env:
               - name: TZ
-                value: Europe/Budapest
+                value: ${TIMEZONE}
 
               - name: RESTIC_CACHE_DIR
                 value: "/mnt/nfs-tmp/resticprofile-cache"
@@ -144,21 +144,21 @@ spec:
 
       nfs-tmp:
         type: nfs
-        server: ${CLUSTER_LAN_NAS_IP}
+        server: ${CONF_NFS_SRV_IP}
         path: /tmp
         globalMounts:
           - path: /mnt/nfs-tmp
 
       nfs-backups:
         type: nfs
-        server: ${CLUSTER_LAN_NAS_IP}
+        server: ${CONF_NFS_SRV_IP}
         path: /backups
         globalMounts:
           - path: /backups
 
       nfs-legacy-backups:
         type: nfs
-        server: ${CLUSTER_LAN_NAS_IP}
+        server: ${CONF_NFS_SRV_IP}
         path: /legacy-backups
         globalMounts:
           - path: /legacy-backups
