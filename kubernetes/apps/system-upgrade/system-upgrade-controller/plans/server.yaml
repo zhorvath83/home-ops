@@ -6,7 +6,7 @@ metadata:
   name: server-plan
 spec:
   version: ${K3S_VERSION}
-  serviceAccountName: system-upgrade
+  serviceAccountName: system-upgrade-controller
   concurrency: 1
   jobActiveDeadlineSecs: 1800 # 30 minutes timeout for upgrade jobs
   cordon: true

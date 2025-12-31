@@ -8,7 +8,7 @@ metadata:
 spec:
   # renovate: datasource=github-releases depName=k3s-io/k3s
   version: ${K3S_VERSION}
-  serviceAccountName: system-upgrade
+  serviceAccountName: system-upgrade-controller
   concurrency: 1
   jobActiveDeadlineSecs: 1800 # 30 minutes timeout for upgrade jobs
   nodeSelector:
