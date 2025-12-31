@@ -6,7 +6,7 @@ metadata:
   name: cluster-settings
 data:
   # renovate: datasource=github-releases depName=k3s-io/k3s
-  K3S_VERSION: v1.34.1+k3s1
+  K3S_VERSION: "v1.35.0+k3s1"
 
   TIMEZONE: "Europe/Budapest"
 
