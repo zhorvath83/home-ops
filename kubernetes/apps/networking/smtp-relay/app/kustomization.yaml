@@ -15,7 +15,6 @@ configMapGenerator:
   - name: smtp-relay-configmap
     files:
       - maddy.conf=./resources/maddy.conf
-      - generate-password.sh=./resources/generate-password.sh
 generatorOptions:
   disableNameSuffixHash: true
   annotations:

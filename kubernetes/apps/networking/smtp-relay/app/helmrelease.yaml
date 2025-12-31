@@ -45,35 +45,19 @@ spec:
         annotations:
           reloader.stakater.com/auto: "true"
 
-        initContainers:
-          init-auth:
-            image:
-              repository: ghcr.io/foxcpp/maddy
-              tag: 0.8.1@sha256:55636d8a29588eea62d81d51acdafe38e0f694fb91801ab12dc1ed8c47b6439d
-            envFrom:
-              - secretRef:
-                  name: smtp-relay-secret
-            command:
-              - /bin/sh
-              - /scripts/generate-password.sh
-            securityContext:
-              privileged: false
-              allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: false  # Need to write to /auth
-              capabilities: { drop: ["ALL"] }
-
         containers:
           app:
             image:
               repository: ghcr.io/foxcpp/maddy
               tag: 0.8.1@sha256:55636d8a29588eea62d81d51acdafe38e0f694fb91801ab12dc1ed8c47b6439d
+
             env:
               TZ: "Europe/Budapest"
-              SMTP_RELAY_SMTP_PORT: &port 2525
-              SMTP_RELAY_METRICS_PORT: &metricsPort 8080
+              SMTP_RELAY_METRICS_PORT: 8080
             envFrom:
               - secretRef:
                   name: smtp-relay-secret
+
             probes:
               liveness:
                 enabled: true
@@ -99,9 +83,9 @@ spec:
         ports:
           http:
             primary: true
-            port: *metricsPort
+            port: 8080
           smtp:
-            port: *port
+            port: 2525
 
     persistence:
       config:
@@ -111,19 +95,6 @@ spec:
           - path: /data/maddy.conf
             subPath: maddy.conf
             readOnly: true
-
-        advancedMounts:
-          smtp-relay:
-            init-auth:
-              - path: /scripts/generate-password.sh
-                subPath: generate-password.sh
-                readOnly: true
-
-      auth:
-        type: emptyDir
-        globalMounts:
-          - path: /auth
-
       cache:
         type: emptyDir
         globalMounts:
