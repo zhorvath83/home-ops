@@ -21,7 +21,7 @@ spec:
               tag: 0.33.4@sha256:18ac93fdc345f2e076bf23eadaf04277fb923a453d04922317bf11e968ca18a7
 
             env:
-              TZ: ${TIMEZONE}
+              TZ: "Europe/Budapest"
               # Server config
               LISTEN_SCHEME: http
               LISTEN_PORT_HTTP: &port 8080

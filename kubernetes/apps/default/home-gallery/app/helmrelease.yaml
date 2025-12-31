@@ -74,7 +74,7 @@ spec:
 
             env:
               - name: TZ
-                value: ${TIMEZONE}
+                value: "Europe/Budapest"
               # Disable browser opening (not needed in container)
               - name: GALLERY_OPEN_BROWSER
                 value: "false"

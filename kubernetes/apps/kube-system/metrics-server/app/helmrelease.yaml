@@ -24,7 +24,7 @@ spec:
 
   values:
     env:
-      TZ: ${TIMEZONE}
+      TZ: "Europe/Budapest"
     args:
       - --kubelet-insecure-tls
       - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname

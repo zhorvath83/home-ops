@@ -50,7 +50,7 @@ spec:
 
             env:
               # Application settings
-              PAPERLESS_TIME_ZONE: ${TIMEZONE}
+              PAPERLESS_TIME_ZONE: "Europe/Budapest"
               PAPERLESS_URL: https://paperless.${PUBLIC_DOMAIN}
               PAPERLESS_PORT: "8000"
 

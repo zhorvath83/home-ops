@@ -52,7 +52,7 @@ spec:
 
             env:
               SPEEDTEST_PORT: &port 9798
-              TZ: ${TIMEZONE}
+              TZ: "Europe/Budapest"
 
             probes:
               liveness:

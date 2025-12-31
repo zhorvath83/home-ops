@@ -52,7 +52,7 @@ spec:
 
             env:
               - name: TZ
-                value: ${TIMEZONE}
+                value: "Europe/Budapest"
 
               - name: XDG_CACHE_HOME
                 value: "/mnt/nfs-tmp/backrest-cache"

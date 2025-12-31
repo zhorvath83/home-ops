@@ -58,7 +58,7 @@ spec:
 
             env:
               - name: TZ
-                value: ${TIMEZONE}
+                value: "Europe/Budapest"
 
               - name: RESTIC_CACHE_DIR
                 value: "/mnt/nfs-tmp/resticprofile-cache"

@@ -23,12 +23,10 @@
   assignees: [
     '@zhorvath83',
   ],
-  timezone: 'Europe/Budapest',
+  timezone: '"Europe/Budapest"',
   minimumReleaseAge: '3 days',
   minimumReleaseAgeBehaviour: 'timestamp-optional',
-  schedule: [
-    'after 1am and before 6am',
-  ],
+  schedule: ["* * * * *"]
   ignoreDeps: [
     'ghcr.io/fluxcd/helm-controller',
     'ghcr.io/fluxcd/image-automation-controller',

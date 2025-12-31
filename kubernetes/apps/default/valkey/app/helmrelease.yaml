@@ -48,7 +48,7 @@ spec:
               tag: "9.0.1"
 
             env:
-              TZ: ${TIMEZONE}
+              TZ: "Europe/Budapest"
 
             args:
               - --port
@@ -105,5 +105,3 @@ spec:
         ports:
           valkey:
             port: 6379
-
-        # No persistence needed - pure cache mode

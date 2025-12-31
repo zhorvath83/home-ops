@@ -51,7 +51,7 @@ spec:
 
             env:
               - name: TZ
-                value: ${TIMEZONE}
+                value: "Europe/Budapest"
               - name: PHOTOVIEW_LISTEN_IP
                 value: 0.0.0.0
               - name: PHOTOVIEW_LISTEN_PORT

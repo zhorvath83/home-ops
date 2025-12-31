@@ -47,7 +47,7 @@ spec:
               tag: 2.19.0@sha256:bee84707edaf589cda3d18b6813cbfe3a137b52786210c3a28190e10910c1240
 
             env:
-              TZ: ${TIMEZONE}
+              TZ: "Europe/Budapest"
               UI_PORT: &port 6246
 
             probes:

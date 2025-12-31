@@ -21,7 +21,7 @@ spec:
               tag: v1.16.0@sha256:f8cde808e8e840acda25683fc2168e0206e3f3fb1a48cca89d211aafd87eaeef
 
             env:
-              TZ: ${TIMEZONE}
+              TZ: "Europe/Budapest"
               ANALYTICS_DISABLED: true
               APP_URL: https://id.${PUBLIC_DOMAIN}
               DB_PROVIDER: sqlite

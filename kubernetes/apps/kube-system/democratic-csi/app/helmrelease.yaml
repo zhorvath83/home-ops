@@ -24,7 +24,7 @@ spec:
 
   values:
     env:
-      TZ: ${TIMEZONE}
+      TZ: "Europe/Budapest"
     controller:
       # democratic-csi controller
       enabled: true

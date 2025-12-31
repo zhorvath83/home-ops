@@ -30,7 +30,7 @@ spec:
       name: cloudflare
     env:
       - name: TZ
-        value: ${TIMEZONE}
+        value: "Europe/Budapest"
       - name: CF_API_TOKEN
         valueFrom:
           secretKeyRef:

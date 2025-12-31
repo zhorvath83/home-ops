@@ -48,7 +48,7 @@ spec:
 
 
             env:
-              TZ: ${TIMEZONE}
+              TZ: "Europe/Budapest"
               PORT: &port 5055
 
             probes:
