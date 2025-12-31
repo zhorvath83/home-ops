@@ -6,8 +6,6 @@ metadata:
   name: agent
   namespace: system-upgrade
 spec:
-  # renovate: datasource=github-releases depName=k3s-io/k3s
-  version: ${K3S_VERSION}
   serviceAccountName: system-upgrade-controller
   concurrency: 1
   jobActiveDeadlineSecs: 1800 # 30 minutes timeout for upgrade jobs
@@ -19,3 +17,4 @@ spec:
     args: ["prepare", "server"]
   upgrade:
     image: rancher/k3s-upgrade
+  version: ${K3S_VERSION}

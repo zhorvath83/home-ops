@@ -3,9 +3,8 @@
 apiVersion: upgrade.cattle.io/v1
 kind: Plan
 metadata:
-  name: server-plan
+  name: server
 spec:
-  version: ${K3S_VERSION}
   serviceAccountName: system-upgrade-controller
   concurrency: 1
   jobActiveDeadlineSecs: 1800 # 30 minutes timeout for upgrade jobs
@@ -18,3 +17,4 @@ spec:
     - { effect: NoExecute, operator: Exists }
   upgrade:
     image: rancher/k3s-upgrade
+  version: ${K3S_VERSION}
