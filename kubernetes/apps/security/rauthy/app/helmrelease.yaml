@@ -1,0 +1,124 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &app rauthy
+  namespace: security
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: rauthy
+  values:
+    controllers:
+      rauthy:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/sebadob/rauthy
+              tag: 0.33.4@sha256:18ac93fdc345f2e076bf23eadaf04277fb923a453d04922317bf11e968ca18a7
+
+            env:
+              TZ: Europe/Budapest
+              # Server config
+              LISTEN_SCHEME: http
+              LISTEN_PORT_HTTP: &port 8080
+              PUB_URL: "idp.${PUBLIC_DOMAIN}"
+              PROXY_MODE: "true"
+              TRUSTED_PROXIES: "${CLUSTER_POD_CIDR}"
+              # Cluster config (single node)
+              HQL_NODE_ID: "1"
+              HQL_NODES: "1 localhost:8100 localhost:8200"
+              # Webauthn / Passkey config
+              RP_ID: "${PUBLIC_DOMAIN}"
+              RP_ORIGIN: "https://idp.${PUBLIC_DOMAIN}"
+              # Logging
+              LOG_LEVEL: info
+              LOG_LEVEL_ACCESS: basic
+
+            envFrom:
+              - secretRef:
+                  name: rauthy-secret
+
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /auth/v1/health
+                    port: *port
+                  initialDelaySeconds: 60
+                  periodSeconds: 30
+                  timeoutSeconds: 3
+                  failureThreshold: 2
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /ready
+                    port: 8200
+                  initialDelaySeconds: 5
+                  periodSeconds: 3
+                  timeoutSeconds: 1
+                  failureThreshold: 2
+
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                  - ALL
+
+            resources:
+              requests:
+                cpu: 10m
+                memory: 64Mi
+              limits:
+                memory: 256Mi
+
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: Always
+
+    service:
+      app:
+        controller: rauthy
+        ports:
+          http:
+            port: *port
+
+    route:
+      app:
+        annotations:
+          gethomepage.dev/enabled: "true"
+          gethomepage.dev/name: "Rauthy"
+          gethomepage.dev/group: "Security"
+          gethomepage.dev/icon: "si-authelia"
+        hostnames:
+          - "idp.${PUBLIC_DOMAIN}"
+        parentRefs:
+          - name: external
+            namespace: networking
+            sectionName: websecure
+        rules:
+          - backendRefs:
+              - identifier: app
+                port: http
+
+    persistence:
+      data:
+        existingClaim: *app
+        globalMounts:
+          - path: /app/data
+      tmp:
+        type: emptyDir
+        globalMounts:
+          - path: /tmp

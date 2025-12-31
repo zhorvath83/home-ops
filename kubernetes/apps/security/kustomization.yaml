@@ -5,4 +5,5 @@ resources:
   - ./namespace.yaml
   - ./crowdsec/ks.yaml
   - ./pocket-id/ks.yaml
+  - ./rauthy/ks.yaml
   - ./tinyauth/ks.yaml
