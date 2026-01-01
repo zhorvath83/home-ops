@@ -27,7 +27,7 @@ spec:
               LISTEN_PORT_HTTP: &port 8080
               PUB_URL: "idp.${PUBLIC_DOMAIN}"
               PROXY_MODE: "true"
-              TRUSTED_PROXIES: "${CLUSTER_POD_CIDR}"
+              TRUSTED_PROXIES: "${CLUSTER_POD_CIDR}\n${CLUSTER_NODE_1_CIDR}"
               # Cluster config (single node)
               HQL_NODE_ID: "1"
               HQL_NODES: "1 localhost:8100 localhost:8200"
