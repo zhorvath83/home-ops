@@ -170,6 +170,7 @@ resource "cloudflare_zone_setting" "hotlink_protection" {
 # DNSSEC
 resource "cloudflare_zone_dnssec" "enable_dnssec" {
   zone_id = cloudflare_zone.domain.id
+  status  = "active"
 }
 
 # Cache bypass ruleset

@@ -132,3 +132,33 @@ resource "cloudflare_dns_record" "aaaa_record_arfolyam" {
   proxied = true
   ttl     = 1
 }
+
+#
+# SMTP2GO sender domain verification
+#
+resource "cloudflare_dns_record" "smtp2go_return" {
+  zone_id = local.cf_zone_id
+  name    = "em775735.mail"
+  type    = "CNAME"
+  content = "return.smtp2go.net"
+  proxied = false
+  ttl     = 1
+}
+
+resource "cloudflare_dns_record" "smtp2go_dkim" {
+  zone_id = local.cf_zone_id
+  name    = "s775735._domainkey.mail"
+  type    = "CNAME"
+  content = "dkim.smtp2go.net"
+  proxied = false
+  ttl     = 1
+}
+
+resource "cloudflare_dns_record" "smtp2go_tracking" {
+  zone_id = local.cf_zone_id
+  name    = "link.mail"
+  type    = "CNAME"
+  content = "track.smtp2go.net"
+  proxied = false
+  ttl     = 1
+}

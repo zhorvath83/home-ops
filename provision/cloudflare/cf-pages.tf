@@ -15,15 +15,14 @@ resource "cloudflare_pages_project" "personal-website" {
   source = {
     type = "github"
     config = {
-      owner                         = var.GITHUB_USER_FOR_PAGES
-      repo_name                     = "personal-website"
-      production_branch             = "main"
-      pr_comments_enabled           = true
-      deployments_enabled           = true
-      production_deployment_enabled = true
-      preview_deployment_setting    = "all"
-      preview_branch_includes       = ["*"]
-      preview_branch_excludes       = ["main"]
+      owner                           = var.GITHUB_USER_FOR_PAGES
+      repo_name                       = "personal-website"
+      production_branch               = "main"
+      pr_comments_enabled             = true
+      production_deployments_enabled  = true
+      preview_deployment_setting      = "all"
+      preview_branch_includes         = ["*"]
+      preview_branch_excludes         = ["main"]
     }
   }
 }
