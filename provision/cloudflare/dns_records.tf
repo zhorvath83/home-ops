@@ -136,9 +136,18 @@ resource "cloudflare_dns_record" "aaaa_record_arfolyam" {
 #
 # SMTP2GO sender domain verification
 #
+resource "cloudflare_dns_record" "txt_record_dmarc_msg" {
+  name    = "_dmarc.msg"
+  zone_id = local.cf_zone_id
+  content = "v=DMARC1; p=reject; rua=${join(",", var.mail_dmarc_rua_dest)}; ruf=${join(",", var.mail_dmarc_ruf_dest)}; adkim=s; aspf=r; pct=100"
+  proxied = false
+  type    = "TXT"
+  ttl     = 1
+}
+
 resource "cloudflare_dns_record" "smtp2go_return" {
   zone_id = local.cf_zone_id
-  name    = "em775735.mail"
+  name    = "em775735.msg"
   type    = "CNAME"
   content = "return.smtp2go.net"
   proxied = false
@@ -147,7 +156,7 @@ resource "cloudflare_dns_record" "smtp2go_return" {
 
 resource "cloudflare_dns_record" "smtp2go_dkim" {
   zone_id = local.cf_zone_id
-  name    = "s775735._domainkey.mail"
+  name    = "s775735._domainkey.msg"
   type    = "CNAME"
   content = "dkim.smtp2go.net"
   proxied = false
@@ -156,7 +165,7 @@ resource "cloudflare_dns_record" "smtp2go_dkim" {
 
 resource "cloudflare_dns_record" "smtp2go_tracking" {
   zone_id = local.cf_zone_id
-  name    = "link.mail"
+  name    = "link.msg"
   type    = "CNAME"
   content = "track.smtp2go.net"
   proxied = false
