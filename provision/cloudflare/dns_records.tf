@@ -134,7 +134,7 @@ resource "cloudflare_dns_record" "aaaa_record_arfolyam" {
 }
 
 #
-# SMTP2GO sender domain verification
+# SMTP2GO BEGIN
 #
 resource "cloudflare_dns_record" "txt_record_dmarc_msg" {
   name    = "_dmarc.msg"
@@ -171,3 +171,7 @@ resource "cloudflare_dns_record" "smtp2go_tracking" {
   proxied = false
   ttl     = 1
 }
+
+#
+# SMTP2GO END
+#
