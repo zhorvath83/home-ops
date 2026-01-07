@@ -26,9 +26,6 @@
   timezone: '"Europe/Budapest"',
   minimumReleaseAge: '3 days',
   minimumReleaseAgeBehaviour: 'timestamp-optional',
-  schedule: [
-    'after 0am and before 12pm',
-  ],
   ignoreDeps: [
     'ghcr.io/fluxcd/helm-controller',
     'ghcr.io/fluxcd/image-automation-controller',
