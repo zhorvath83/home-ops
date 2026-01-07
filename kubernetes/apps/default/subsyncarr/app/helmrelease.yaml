@@ -28,7 +28,6 @@ spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
       securityContext:
-        # Image has broken file permissions (600 on index.html owned by node:node uid 1000)
         runAsNonRoot: true
         runAsUser: 1000
         runAsGroup: 1000
@@ -44,6 +43,7 @@ spec:
         containers:
           app:
             image:
+              # https://github.com/tomtomwillis/subsyncarr_plus
               repository: tomtomw123/subsyncarr-plus
               tag: latest@sha256:4538afb98776afdc8e3f1c12f79f67aa571bab781832c835a9c6d3e78be37e4b
 
@@ -87,7 +87,7 @@ spec:
             resources:
               requests:
                 cpu: 5m
-                memory: 24Mi
+                memory: 20Mi
               limits:
                 memory: 1Gi
 
