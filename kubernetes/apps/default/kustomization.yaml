@@ -11,12 +11,12 @@ resources:
   - ./wallos/ks.yaml
   - ./plex/ks.yaml
   - ./qbittorrent/ks.yaml
-  # - ./photoview/ks.yaml
   - ./homepage/ks.yaml
   - ./prowlarr/ks.yaml
   - ./radarr/ks.yaml
   - ./sonarr/ks.yaml
   - ./bazarr/ks.yaml
+  - ./subsyncarr/ks.yaml
   - ./calibre-web-automated/ks.yaml
   - ./resticprofile/ks.yaml
   - ./jellyseerr/ks.yaml

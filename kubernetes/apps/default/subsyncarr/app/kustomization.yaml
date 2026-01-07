@@ -5,9 +5,8 @@ kind: Kustomization
 namespace: default
 resources:
   - ./ocirepository.yaml
-  - ./pvc.yaml
   - ./helmrelease.yaml
-  - ./externalsecret.yaml
+
 labels:
   - pairs:
-      app.kubernetes.io/name: photoview
+      app.kubernetes.io/name: subsyncarr
