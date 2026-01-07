@@ -81,13 +81,13 @@ spec:
             securityContext:
               privileged: false
               allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: false
+              readOnlyRootFilesystem: true
               capabilities: { drop: ["ALL"] }
 
             resources:
               requests:
-                cpu: 10m
-                memory: 128Mi
+                cpu: 5m
+                memory: 24Mi
               limits:
                 memory: 1Gi
 
@@ -124,6 +124,6 @@ spec:
       media:
         type: nfs
         server: ${CONF_NFS_SRV_IP}
-        path: /media/shows/The.Resident.2018
+        path: /media/shows
         globalMounts:
           - path: /media
