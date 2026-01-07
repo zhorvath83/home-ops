@@ -29,8 +29,8 @@ echo "  (Other values are sensitive and not displayed)"
 
 # Prompt for email addresses
 echo ""
-read -p "Enter Bootstrap Admin Email: " BOOTSTRAP_ADMIN_EMAIL
-read -p "Enter Event Notification Email: " EVENT_EMAIL
+read -rp "Enter Bootstrap Admin Email: " BOOTSTRAP_ADMIN_EMAIL
+read -rp "Enter Event Notification Email: " EVENT_EMAIL
 
 echo ""
 echo "🔄 Updating 1Password item '${ITEM}' in vault '${VAULT}'..."

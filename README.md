@@ -6,16 +6,16 @@ This is a mono repository for my home infrastructure and Kubernetes cluster. I t
 
 The infrastructure is built on a Debian 13 Proxmox server with the following specifications:
 
-| Device                      | Quantity | CPU                                   | OS Disk Size | RAM  | OS        | Function              |
-|-----------------------------|----------|---------------------------------------|--------------|------|-----------|-----------------------|
-| Lenovo M93p tiny USFF       | 1        | Intel i5-4570T @ 2.90GHz | 512GB SSD   | 16GB | Debian 13 | Proxmox hypervisor    |
+| Device                | Quantity | CPU                      | OS Disk Size | RAM  | OS        | Function           |
+|-----------------------|----------|--------------------------|--------------|------|-----------|--------------------|
+| Lenovo M93p tiny USFF | 1        | Intel i5-4570T @ 2.90GHz | 512GB SSD    | 16GB | Debian 13 | Proxmox hypervisor |
 
 **Virtual Machines:**
 
-| Device     | Quantity | OS Disk Size | Data Disk Size              | RAM  | OS        | Function                              |
-|------------|----------|--------------|----------------------------|------|-----------|---------------------------------------|
-| NAS VM     | 1        | 16 GB        | USB3 DAS 16TB EXT4 (host) | 2 GB | Debian 12 | SMB + NFS NAS, OpenMediaVault        |
-| K3s VM     | 1        | 200GB        | -                          | 12GB | Debian 13 | K3s master node - single node cluster |
+| Device | Quantity | OS Disk Size | Data Disk Size             | RAM  | OS        | Function                              |
+|--------|----------|--------------|----------------------------|------|-----------|---------------------------------------|
+| NAS VM | 1        | 16 GB        | USB3 DAS 16TB EXT4 (host)  | 2 GB | Debian 12 | SMB + NFS NAS, OpenMediaVault         |
+| K3s VM | 1        | 200GB        | -                          | 12GB | Debian 13 | K3s master node - single node cluster |
 
 ## 🔄 GitOps Workflow
 
