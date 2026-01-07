@@ -28,9 +28,11 @@ spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
       securityContext:
-        # Image has broken file permissions (600 on index.html owned by node:node)
-        # Must run as default image user (node/1000) to access files
-        runAsNonRoot: false
+        # Image has broken file permissions (600 on index.html owned by node:node uid 1000)
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
@@ -48,8 +50,8 @@ spec:
             env:
               TZ: "Europe/Budapest"
               PUID: "1000"
-              PGID: "100"
-              CRON_SCHEDULE: "0 0 * * *"
+              PGID: "1000"
+              CRON_SCHEDULE: "disabled"
               SCAN_PATHS: "/media"
               MAX_CONCURRENT_SYNC_TASKS: "1"
               INCLUDE_ENGINES: "ffsubsync,autosubsync"
