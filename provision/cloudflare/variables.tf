@@ -162,3 +162,12 @@ variable "GITHUB_USER_FOR_PAGES" {
   description = "Github user name for CF Pages deploy."
   type        = string
 }
+
+###########################################################################
+# Notification variables
+
+variable "PUSHOVER_CLOUDFLARE_EMAIL" {
+  description = "Pushover email gateway address for Cloudflare notifications."
+  type        = string
+  sensitive   = true
+}
