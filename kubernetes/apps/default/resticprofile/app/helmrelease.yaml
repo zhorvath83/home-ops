@@ -155,10 +155,3 @@ spec:
         path: /backups
         globalMounts:
           - path: /backups
-
-      nfs-legacy-backups:
-        type: nfs
-        server: ${CONF_NFS_SRV_IP}
-        path: /legacy-backups
-        globalMounts:
-          - path: /legacy-backups
