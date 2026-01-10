@@ -41,7 +41,7 @@ backups:
           value: "text/plain; charset=UTF-8"
 
   forget:
-    schedule: "Sun 20:00"
+    schedule: "Sun 05:00"
     schedule-permission: user
     schedule-log: /mnt/nfs-tmp/resticprofile-logs/resticprofile-backups-forget.log
     schedule-lock-mode: default
@@ -53,12 +53,12 @@ backups:
     prune: true
 
   check:
-    schedule: "Sat 20:00"
+    schedule: "Sat 05:00"
     schedule-permission: user
     schedule-log: /mnt/nfs-tmp/resticprofile-logs/resticprofile-backups-check.log
     schedule-lock-mode: default
     schedule-lock-wait: 1h
-    read-data-subset: "100M"
+    read-data-subset: "50%"
     send-before:
       - method: HEAD
         url: "{{ .Env.HEALTHCHECK_BACKUPS_CHECK_WEBHOOK }}/start"
