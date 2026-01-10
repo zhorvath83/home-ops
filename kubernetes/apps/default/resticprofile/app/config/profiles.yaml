@@ -40,20 +40,8 @@ backups:
         - name: Content-Type
           value: "text/plain; charset=UTF-8"
 
-  forget:
-    schedule: "Sun 05:00"
-    schedule-permission: user
-    schedule-log: /mnt/nfs-tmp/resticprofile-logs/resticprofile-backups-forget.log
-    schedule-lock-mode: default
-    schedule-lock-wait: 1h
-    keep-hourly: 1
-    keep-daily: 7
-    keep-weekly: 4
-    keep-monthly: 24
-    prune: true
-
   check:
-    schedule: "Sat 05:00"
+    schedule: "Mon 05:00"
     schedule-permission: user
     schedule-log: /mnt/nfs-tmp/resticprofile-logs/resticprofile-backups-check.log
     schedule-lock-mode: default
@@ -72,6 +60,18 @@ backups:
       headers:
         - name: Content-Type
           value: "text/plain; charset=UTF-8"
+
+  forget:
+    schedule: "Tue 05:00"
+    schedule-permission: user
+    schedule-log: /mnt/nfs-tmp/resticprofile-logs/resticprofile-backups-forget.log
+    schedule-lock-mode: default
+    schedule-lock-wait: 1h
+    keep-hourly: 1
+    keep-daily: 7
+    keep-weekly: 4
+    keep-monthly: 12
+    prune: true
 
   restore:
     target: "/mnt/nfs-tmp/resticprofile-restore/backups"
