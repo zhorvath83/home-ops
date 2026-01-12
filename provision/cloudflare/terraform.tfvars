@@ -19,9 +19,11 @@ mail_mta_sts_params = {
   max_age = 604800 # 1 week
 }
 
-mail_dmarc_rua_dest = ["mailto:530aa4aa3c83.a@dmarcinput.com", "mailto:35be510b@in.mailhardener.com"]
+# DMARC and MTA-STS reporting destinations
+# Comma separated list of URIs
+mail_dmarc_rua_dest = ["mailto:35be510b@in.mailhardener.com"]
 
-mail_dmarc_ruf_dest = ["mailto:530aa4aa3c83.f@dmarcinput.com", "mailto:35be510b@in.mailhardener.com"]
+mail_dmarc_ruf_dest = ["mailto:35be510b@in.mailhardener.com"]
 
 mail_tls_rua_dest = ["mailto:35be510b@in.mailhardener.com"]
 

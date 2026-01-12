@@ -59,6 +59,13 @@ spec:
               PAPERLESS_MEDIA_ROOT: /data/media
               PAPERLESS_CONSUMPTION_DIR: /data/consume
               PAPERLESS_EXPORT_DIR: /data/export
+              PAPERLESS_FILENAME_FORMAT: "{created_year}/{correspondent}/{title}"
+
+              # Configure folder importer
+              PAPERLESS_CONSUMER_RECURSIVE: "true"
+              PAPERLESS_CONSUMER_SUBDIRS_AS_TAGS: "true"
+              PAPERLESS_CONSUMER_ENABLE_BARCODES: "true"
+              PAPERLESS_CONSUMER_POLLING: "60"
 
               # Database (SQLite)
               PAPERLESS_DBENGINE: sqlite
@@ -75,15 +82,14 @@ spec:
               # OCR settings
               PAPERLESS_OCR_LANGUAGE: hun+eng
               PAPERLESS_OCR_LANGUAGES: hun eng
+              PAPERLESS_OCR_SKIP_ARCHIVE_FILE: "never"
+              PAPERLESS_OCR_USER_ARGS: '{"invalidate_digital_signatures": true}'
+              PAPERLESS_OCR_MODE: "redo"
 
-              # Performance
-              PAPERLESS_TASK_WORKERS: "2"
-              PAPERLESS_THREADS_PER_WORKER: "2"
-
-              # Features
-              PAPERLESS_CONSUMER_POLLING: "60"
-              PAPERLESS_CONSUMER_RECURSIVE: "true"
-              PAPERLESS_CONSUMER_SUBDIRS_AS_TAGS: "true"
+              # Configure Remote User auth
+              PAPERLESS_ACCOUNT_ALLOW_SIGNUPS: "false"
+              PAPERLESS_SOCIALACCOUNT_ALLOW_SIGNUPS: "true"
+              PAPERLESS_SOCIAL_AUTO_SIGNUP: "true"
 
               # Security
               PAPERLESS_ENABLE_HTTP_REMOTE_USER: "false"
@@ -116,6 +122,7 @@ spec:
                 cpu: 20m
               limits:
                 memory: 2Gi
+                cpu: 3000m
 
     service:
       app:
@@ -132,7 +139,7 @@ spec:
           gethomepage.dev/group: Selfhosted
           gethomepage.dev/icon: paperless-ngx.svg
         hostnames:
-          - "paperless.${PUBLIC_DOMAIN}"
+          - "documents.${PUBLIC_DOMAIN}"
         parentRefs:
           - name: external
             namespace: networking
