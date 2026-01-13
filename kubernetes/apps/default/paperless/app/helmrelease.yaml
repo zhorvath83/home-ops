@@ -3,13 +3,13 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app paperless-ngx
+  name: &app paperless
   namespace: default
 spec:
   interval: 30m
   chartRef:
     kind: OCIRepository
-    name: paperless-ngx
+    name: paperless
 
   install:
     createNamespace: true
@@ -27,14 +27,14 @@ spec:
     defaultPodOptions:
       automountServiceAccountToken: false
       enableServiceLinks: false
-      # securityContext:
-      #   runAsNonRoot: true
-      #   runAsUser: 1000
-      #   runAsGroup: 1000
-      #   fsGroup: 1000
-      #   fsGroupChangePolicy: OnRootMismatch
-      #   seccompProfile:
-      #     type: RuntimeDefault
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
 
     controllers:
       *app :
@@ -42,23 +42,50 @@ spec:
           reloader.stakater.com/auto: "true"
         type: statefulset
 
-        containers:
-          app:
-            image:
+        initContainers:
+          01-download-languages:
+            image: &img
               repository: ghcr.io/paperless-ngx/paperless-ngx
               tag: 2.20.3@sha256:cd7622df6e0463a00d9aa381c756b052a00baec36b87c51085d54a1037fec74a
+            command:
+              - "/bin/sh"
+              - "-c"
+              - |
+                cp -r /usr/share/tesseract-ocr/5/tessdata/* /tessdata/
+                curl -o /tessdata/hun.traineddata \
+                https://raw.githubusercontent.com/tesseract-ocr/tessdata/refs/heads/main/hun.traineddata
+            securityContext: &sc
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                  - ALL
+            resources:
+              requests:
+                cpu: 5m
+                memory: 10M
+
+        containers:
+          app:
+            image: *img
 
             env:
               # Application settings
-              PAPERLESS_TIME_ZONE: "Europe/Budapest"
-              PAPERLESS_URL: https://paperless.${PUBLIC_DOMAIN}
+              TZ: &tz "Europe/Budapest"
+              PAPERLESS_TIME_ZONE: *tz
+              PAPERLESS_URL: https://documents.${PUBLIC_DOMAIN}
               PAPERLESS_PORT: "8000"
+
+              # Date parsing (Hungarian format: év.hónap.nap)
+              PAPERLESS_DATE_ORDER: "YMD"
+              PAPERLESS_DATE_PARSER_LANGUAGES: "hu,en"
 
               # Paths
               PAPERLESS_DATA_DIR: /data/data
               PAPERLESS_MEDIA_ROOT: /data/media
               PAPERLESS_CONSUMPTION_DIR: /data/consume
               PAPERLESS_EXPORT_DIR: /data/export
+              PAPERLESS_TRASH_DIR: /data/trash
               PAPERLESS_FILENAME_FORMAT: "{created_year}/{correspondent}/{title}"
 
               # Configure folder importer
@@ -79,12 +106,11 @@ spec:
                 value: redis://:$(REDIS_PASSWORD)@valkey.default.svc.cluster.local:6379
                 dependsOn: REDIS_PASSWORD
 
-              # OCR settings
+              # OCR settings (minimized - paperless-gpt handles OCR via Mistral)
               PAPERLESS_OCR_LANGUAGE: hun+eng
               PAPERLESS_OCR_LANGUAGES: hun eng
-              PAPERLESS_OCR_SKIP_ARCHIVE_FILE: "never"
+              PAPERLESS_OCR_MODE: "skip"
               PAPERLESS_OCR_USER_ARGS: '{"invalidate_digital_signatures": true}'
-              PAPERLESS_OCR_MODE: "redo"
 
               # Configure Remote User auth
               PAPERLESS_ACCOUNT_ALLOW_SIGNUPS: "false"
@@ -111,11 +137,7 @@ spec:
               readiness:
                 enabled: true
 
-            # securityContext:
-            #   privileged: false
-            #   allowPrivilegeEscalation: false
-            #   readOnlyRootFilesystem: false
-            #   capabilities: { drop: ["ALL"] }
+            securityContext: *sc
 
             resources:
               requests:
@@ -151,31 +173,41 @@ spec:
 
     persistence:
       data:
-        existingClaim: paperless-ngx-data
-        globalMounts:
-          - path: /data/data
-            subPath: data
-          - path: /data/media
-            subPath: media
+        existingClaim: paperless-data
+        advancedMounts:
+          *app :
+            app:
+              - path: /data/data
+                subPath: data
+              - path: /data/media
+                subPath: media
+              - path: /data/trash
+                subPath: trash
       consume:
         type: nfs
         server: ${CONF_NFS_SRV_IP}
-        path: /tmp/paperless-ngx-consume
-        globalMounts:
-          - path: /data/consume
-      export:
-        type: emptyDir
-        globalMounts:
-          - path: /data/export
-      run:
-        type: emptyDir
-        globalMounts:
-          - path: /run
+        path: /tmp/paperless-consume
+        advancedMounts:
+          *app :
+            app:
+              - path: /data/consume
       tmp:
         type: emptyDir
-        globalMounts:
-          - path: /tmp
-      cache:
-        type: emptyDir
-        globalMounts:
-          - path: /cache
+        advancedMounts:
+          *app :
+            app:
+              - path: /run
+                subPath: run
+              - path: /var/lib/apt
+                subPath: apt
+              - path: /usr/share/tesseract-ocr/5/tessdata
+                subPath: tessdata
+              - path: /tmp
+                subPath: tmp-app
+              - path: /data/export
+                subPath: export
+              - path: /cache
+                subPath: cache
+            01-download-languages:
+              - path: /tessdata
+                subPath: tessdata

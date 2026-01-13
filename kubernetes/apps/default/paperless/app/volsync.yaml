@@ -3,18 +3,18 @@
 apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
-  name: paperless-ngx-restic
+  name: paperless-restic
   namespace: default
 spec:
   secretStoreRef:
     kind: ClusterSecretStore
     name: onepassword
   target:
-    name: paperless-ngx-restic-secret
+    name: paperless-restic-secret
     creationPolicy: Owner
     template:
       data:
-        RESTIC_REPOSITORY: '{{ .REPOSITORY_TEMPLATE }}/paperless-ngx'
+        RESTIC_REPOSITORY: '{{ .REPOSITORY_TEMPLATE }}/paperless'
         RESTIC_PASSWORD: '{{ .RESTIC_PASSWORD }}'
         AWS_ACCESS_KEY_ID: '{{ .AWS_ACCESS_KEY_ID }}'
         AWS_SECRET_ACCESS_KEY: '{{ .AWS_SECRET_ACCESS_KEY }}'
@@ -25,16 +25,16 @@ spec:
 apiVersion: volsync.backube/v1alpha1
 kind: ReplicationSource
 metadata:
-  name: paperless-ngx-data
+  name: paperless-data
   namespace: default
 spec:
-  sourcePVC: paperless-ngx-data
+  sourcePVC: paperless-data
   trigger:
     schedule: "0 2 * * *"  # 2 AM daily backup
   restic:
     copyMethod: Snapshot
     pruneIntervalDays: 7
-    repository: paperless-ngx-restic-secret
+    repository: paperless-restic-secret
     cacheCapacity: 2Gi
     volumeSnapshotClassName: democratic-csi-local-hostpath
     storageClassName: democratic-csi-local-hostpath

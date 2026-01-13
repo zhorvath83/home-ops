@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: paperless-ngx-data
+  name: paperless-gpt
   namespace: default
 spec:
   accessModes:
@@ -10,4 +10,4 @@ spec:
   storageClassName: democratic-csi-local-hostpath
   resources:
     requests:
-      storage: 20Gi
+      storage: 1Gi

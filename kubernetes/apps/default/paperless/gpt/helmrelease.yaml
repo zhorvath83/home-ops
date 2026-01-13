@@ -1,0 +1,163 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &app paperless-gpt
+  namespace: default
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: paperless-gpt
+
+  install:
+    createNamespace: true
+    remediation:
+      retries: -1
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  uninstall:
+    keepHistory: false
+
+  values:
+    defaultPodOptions:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+
+    controllers:
+      *app :
+        annotations:
+          reloader.stakater.com/auto: "true"
+
+        containers:
+          app:
+            image:
+              repository: ghcr.io/icereed/paperless-gpt
+              tag: v0.23.0
+
+            env:
+              # Paperless-ngx connection
+              PAPERLESS_BASE_URL: "http://paperless.default.svc.cluster.local:8000"
+              PAPERLESS_PUBLIC_URL: "https://documents.${PUBLIC_DOMAIN}"
+
+              # LLM Provider (Mistral for title/tag/correspondent generation)
+              LLM_PROVIDER: "mistral"
+              LLM_LANGUAGE: "Hungarian"
+
+              # OCR Provider (Mistral dedicated OCR service)
+              OCR_PROVIDER: "mistral_ocr"
+              OCR_PROCESS_MODE: "pdf"
+              PDF_SKIP_EXISTING_OCR: "false"
+              OCR_LIMIT_PAGES: "0"
+
+              # Auto processing settings
+              AUTO_GENERATE_TITLE: "true"
+              AUTO_GENERATE_TAGS: "true"
+              AUTO_GENERATE_CORRESPONDENTS: "true"
+              AUTO_GENERATE_CREATED_DATE: "true"
+
+              # Logging
+              LOG_LEVEL: "info"
+
+            envFrom:
+              - secretRef:
+                  name: paperless-gpt-secret
+
+            probes:
+              startup:
+                enabled: true
+                spec:
+                  failureThreshold: 30
+                  periodSeconds: 5
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /
+                    port: &port 8080
+                  periodSeconds: 30
+                  timeoutSeconds: 5
+                  failureThreshold: 3
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /
+                    port: *port
+                  periodSeconds: 10
+                  timeoutSeconds: 5
+                  failureThreshold: 3
+
+            securityContext:
+              privileged: false
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                  - ALL
+
+            resources:
+              requests:
+                cpu: 10m
+                memory: 128Mi
+              limits:
+                memory: 512Mi
+
+    service:
+      app:
+        controller: *app
+        ports:
+          http:
+            port: *port
+
+    route:
+      app:
+        annotations:
+          gethomepage.dev/enabled: "true"
+          gethomepage.dev/name: Paperless-GPT
+          gethomepage.dev/group: Selfhosted
+          gethomepage.dev/icon: paperless-ngx.svg
+        hostnames:
+          - "paperless-gpt.${PUBLIC_DOMAIN}"
+        parentRefs:
+          - name: external
+            namespace: networking
+            sectionName: websecure
+        rules:
+          - backendRefs:
+              - identifier: app
+                port: *port
+
+    persistence:
+      data:
+        existingClaim: *app
+        advancedMounts:
+          *app :
+            app:
+              - path: /app/db
+                subPath: db
+              - path: /app/prompts
+                subPath: prompts
+      tmpfs:
+        type: emptyDir
+        advancedMounts:
+          *app :
+            app:
+              - path: /app/config
+                subPath: config
+              - path: /tmp
+                subPath: tmp
