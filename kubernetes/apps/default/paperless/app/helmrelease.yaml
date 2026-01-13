@@ -201,21 +201,19 @@ spec:
 
       tmp:
         type: emptyDir
+        medium: Memory
+        sizeLimit: 1Gi
         advancedMounts:
           *app :
             app:
-              - path: /run
-                subPath: run
-              - path: /var/lib/apt
-                subPath: apt
-              - path: /usr/share/tesseract-ocr/5/tessdata
-                subPath: tessdata
-              - path: /tmp
-                subPath: tmp
-              - path: /data/export
-                subPath: export
-              - path: /cache
-                subPath: cache
+              - subPath: run
+                path: /run
+              - subPath: apt
+                path: /var/lib/apt
+              - subPath: tessdata
+                path: /usr/share/tesseract-ocr/5/tessdata
+              - subPath: tmp-app
+                path: /tmp
             01-download-languages:
               - path: /tessdata
                 subPath: tessdata
