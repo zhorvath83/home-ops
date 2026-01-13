@@ -58,7 +58,7 @@ spec:
 
               # OCR Provider (Mistral dedicated OCR service)
               OCR_PROVIDER: "mistral_ocr"
-              OCR_PROCESS_MODE: "pdf"
+              OCR_PROCESS_MODE: "image" # "image" or "pdf"
               PDF_SKIP_EXISTING_OCR: "false"
               OCR_LIMIT_PAGES: "0"
 
