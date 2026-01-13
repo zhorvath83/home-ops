@@ -122,6 +122,7 @@ spec:
               USERMAP_UID: "1000"
               USERMAP_GID: "1000"
               S6_READ_ONLY_ROOT: 1
+              S6_YES_I_WANT_A_WORLD_WRITABLE_RUN_BECAUSE_KUBERNETES: 1
 
             envFrom:
               - secretRef:
