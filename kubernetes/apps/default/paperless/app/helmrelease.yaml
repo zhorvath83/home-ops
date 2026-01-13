@@ -27,14 +27,6 @@ spec:
     defaultPodOptions:
       automountServiceAccountToken: false
       enableServiceLinks: false
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 1000
-        fsGroup: 1000
-        fsGroupChangePolicy: OnRootMismatch
-        seccompProfile:
-          type: RuntimeDefault
 
     controllers:
       *app :
@@ -42,32 +34,11 @@ spec:
           reloader.stakater.com/auto: "true"
         type: statefulset
 
-        initContainers:
-          01-download-languages:
-            image: &img
-              repository: ghcr.io/paperless-ngx/paperless-ngx
-              tag: 2.20.3@sha256:cd7622df6e0463a00d9aa381c756b052a00baec36b87c51085d54a1037fec74a
-            command:
-              - "/bin/sh"
-              - "-c"
-              - |
-                cp -r /usr/share/tesseract-ocr/5/tessdata/* /tessdata/
-                curl -o /tessdata/hun.traineddata \
-                https://raw.githubusercontent.com/tesseract-ocr/tessdata/refs/heads/main/hun.traineddata
-            securityContext: &sc
-              allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: true
-              capabilities:
-                drop:
-                  - ALL
-            resources:
-              requests:
-                cpu: 5m
-                memory: 10M
-
         containers:
           app:
-            image: *img
+            image:
+              repository: ghcr.io/paperless-ngx/paperless-ngx
+              tag: 2.20.3@sha256:cd7622df6e0463a00d9aa381c756b052a00baec36b87c51085d54a1037fec74a
 
             env:
               # Application settings
@@ -119,10 +90,8 @@ spec:
 
               # Security
               PAPERLESS_ENABLE_HTTP_REMOTE_USER: "false"
-              USERMAP_UID: "1000"
-              USERMAP_GID: "1000"
-              S6_READ_ONLY_ROOT: 1
-              S6_YES_I_WANT_A_WORLD_WRITABLE_RUN_BECAUSE_KUBERNETES: 1
+              USERMAP_UID: "10001"
+              USERMAP_GID: "10001"
 
             envFrom:
               - secretRef:
@@ -138,8 +107,6 @@ spec:
                 enabled: true
               readiness:
                 enabled: true
-
-            securityContext: *sc
 
             resources:
               requests:
@@ -198,22 +165,3 @@ spec:
           *app :
             app:
               - path: /data/nas/export
-
-      tmp:
-        type: emptyDir
-        medium: Memory
-        sizeLimit: 1Gi
-        advancedMounts:
-          *app :
-            app:
-              - subPath: run
-                path: /run
-              - subPath: apt
-                path: /var/lib/apt
-              - subPath: tessdata
-                path: /usr/share/tesseract-ocr/5/tessdata
-              - subPath: tmp-app
-                path: /tmp
-            01-download-languages:
-              - path: /tessdata
-                subPath: tessdata
