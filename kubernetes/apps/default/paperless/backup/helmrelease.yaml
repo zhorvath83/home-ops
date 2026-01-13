@@ -111,6 +111,7 @@ spec:
               - path: /data/media
                 subPath: media
                 readOnly: true
+
       backup:
         type: nfs
         server: ${CONF_NFS_SRV_IP}
@@ -119,9 +120,13 @@ spec:
           *app :
             app:
               - path: /backup
+
       tmp:
         type: emptyDir
         advancedMounts:
           *app :
             app:
+              - path: /run
+                subPath: run
               - path: /tmp
+                subPath: tmp

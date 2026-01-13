@@ -77,16 +77,16 @@ spec:
               PAPERLESS_PORT: "8000"
 
               # Date parsing (Hungarian format: év.hónap.nap)
-              # PAPERLESS_DATE_ORDER: "YMD"
-              # PAPERLESS_DATE_PARSER_LANGUAGES: "hu,en"
+              PAPERLESS_DATE_ORDER: "YMD"
 
               # Paths
-              PAPERLESS_DATA_DIR: /data/data
-              PAPERLESS_MEDIA_ROOT: /data/media
-              PAPERLESS_CONSUMPTION_DIR: /data/consume
-              PAPERLESS_EXPORT_DIR: /data/export
-              PAPERLESS_TRASH_DIR: /data/trash
-              PAPERLESS_FILENAME_FORMAT: "{created_year}/{correspondent}/{title}"
+              PAPERLESS_CONSUMPTION_DIR: /data/nas/inbox
+              PAPERLESS_EXPORT_DIR: /data/nas/export
+
+              PAPERLESS_DATA_DIR: /data/local/data
+              PAPERLESS_MEDIA_ROOT: /data/local/media
+
+              PAPERLESS_FILENAME_FORMAT: "{{ created_year }}/{{ correspondent }}/{{ title }}"
 
               # Configure folder importer
               PAPERLESS_CONSUMER_RECURSIVE: "true"
@@ -106,9 +106,9 @@ spec:
                 value: redis://:$(REDIS_PASSWORD)@valkey.default.svc.cluster.local:6379
                 dependsOn: REDIS_PASSWORD
 
-              # OCR settings (minimized - paperless-gpt handles OCR via Mistral)
-              PAPERLESS_OCR_LANGUAGE: hun+eng
-              PAPERLESS_OCR_LANGUAGES: hun eng
+              # OCR settings
+              PAPERLESS_OCR_LANGUAGE: hun
+              PAPERLESS_OCR_LANGUAGES: hun
               PAPERLESS_OCR_MODE: "skip"
               PAPERLESS_OCR_USER_ARGS: '{"invalidate_digital_signatures": true}'
 
@@ -179,20 +179,26 @@ spec:
         advancedMounts:
           *app :
             app:
-              - path: /data/data
-                subPath: data
-              - path: /data/media
-                subPath: media
-              - path: /data/trash
-                subPath: trash
-      consume:
+              - path: /data/local
+
+      nas-inbox:
         type: nfs
         server: ${CONF_NFS_SRV_IP}
-        path: /tmp/paperless-consume
+        path: /tmp/paperless-inbox
         advancedMounts:
           *app :
             app:
-              - path: /data/consume
+              - path: /data/nas/inbox
+
+      nas-export:
+        type: nfs
+        server: ${CONF_NFS_SRV_IP}
+        path: /backups/paperless
+        advancedMounts:
+          *app :
+            app:
+              - path: /data/nas/export
+
       tmp:
         type: emptyDir
         advancedMounts:
@@ -205,7 +211,7 @@ spec:
               - path: /usr/share/tesseract-ocr/5/tessdata
                 subPath: tessdata
               - path: /tmp
-                subPath: tmp-app
+                subPath: tmp
               - path: /data/export
                 subPath: export
               - path: /cache
