@@ -65,6 +65,11 @@ spec:
               PAPERLESS_MEDIA_ROOT: /data/media
               PAPERLESS_DBENGINE: sqlite
 
+              # Security
+              USERMAP_UID: "1000"
+              USERMAP_GID: "1000"
+              S6_READ_ONLY_ROOT: 1
+
             probes:
               liveness:
                 enabled: false
