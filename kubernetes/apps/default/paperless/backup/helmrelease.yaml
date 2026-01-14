@@ -48,14 +48,20 @@ spec:
               - "-c"
               - |
                 echo "Starting paperless-ngx document export..."
-                python3 /usr/src/paperless/src/manage.py document_exporter /backup --compare-checksums --delete
+                python3 /usr/src/paperless/src/manage.py document_exporter /data/nas/export --compare-checksums --delete
                 echo "Export completed successfully."
 
             env:
-              TZ: "Europe/Budapest"
-              PAPERLESS_DATA_DIR: /data/data
-              PAPERLESS_MEDIA_ROOT: /data/media
+              TZ: &tz "Europe/Budapest"
+              PAPERLESS_TIME_ZONE: *tz
+
+              # Paths
+              PAPERLESS_EXPORT_DIR: /data/nas/export
+              PAPERLESS_DATA_DIR: /data/local/data
+              PAPERLESS_MEDIA_ROOT: /data/local/media
               PAPERLESS_DBENGINE: sqlite
+
+              PAPERLESS_FILENAME_FORMAT: "{created_year}/{correspondent}/{title}"
 
               # Security
               USERMAP_UID: "10001"
@@ -72,10 +78,9 @@ spec:
             resources:
               requests:
                 cpu: 10m
-                memory: 256Mi
               limits:
-                memory: 1Gi
-                cpu: 2000m
+                memory: 2Gi
+                cpu: 3000m
 
     service:
       app:
@@ -88,28 +93,13 @@ spec:
         advancedMounts:
           *app :
             app:
-              - path: /data/data
-                subPath: data
-                readOnly: true
-              - path: /data/media
-                subPath: media
-                readOnly: true
+              - path: /data/local
 
-      backup:
+      nas-export:
         type: nfs
         server: ${CONF_NFS_SRV_IP}
         path: /backups/paperless
         advancedMounts:
           *app :
             app:
-              - path: /backup
-
-      tmp:
-        type: emptyDir
-        advancedMounts:
-          *app :
-            app:
-              - path: /run
-                subPath: run
-              - path: /tmp
-                subPath: tmp
+              - path: /data/nas/export
