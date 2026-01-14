@@ -57,7 +57,7 @@ spec:
               PAPERLESS_DATA_DIR: /data/local/data
               PAPERLESS_MEDIA_ROOT: /data/local/media
 
-              PAPERLESS_FILENAME_FORMAT: "{created_year}/{correspondent}/{title}"
+              PAPERLESS_FILENAME_FORMAT: "{{ `{{ created_year }}/{{ created_year }}-{{ created_month }}-{{ created_day }}_{{ correspondent }}_{{ title }}` }}"
 
               # Configure folder importer
               PAPERLESS_CONSUMER_RECURSIVE: "true"
@@ -68,14 +68,8 @@ spec:
               # Database (SQLite)
               PAPERLESS_DBENGINE: sqlite
 
-              # Redis/Valkey connection
-              REDIS_PASSWORD:
-                secretKeyRef:
-                  name: valkey-secret
-                  key: VALKEY_PASSWORD
-              PAPERLESS_REDIS:
-                value: redis://:$(REDIS_PASSWORD)@valkey.default.svc.cluster.local:6379
-                dependsOn: REDIS_PASSWORD
+              # Redis/Valkey connection (sidecar)
+              PAPERLESS_REDIS: "redis://localhost:6379"
 
               # OCR settings
               PAPERLESS_OCR_LANGUAGE: hun
@@ -114,6 +108,36 @@ spec:
               limits:
                 memory: 2Gi
                 cpu: 3000m
+
+          valkey:
+            image:
+              repository: ghcr.io/valkey-io/valkey
+              tag: "9.0.1"
+            args:
+              - --port
+              - "6379"
+              - --maxmemory
+              - "64mb"
+              - --maxmemory-policy
+              - allkeys-lru
+              - --save
+              - ""
+              - --appendonly
+              - "no"
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 10001
+              runAsGroup: 10001
+              privileged: false
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
+            resources:
+              requests:
+                cpu: 1m
+                memory: 8Mi
+              limits:
+                memory: 96Mi
 
     service:
       app:

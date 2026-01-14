@@ -6,7 +6,6 @@ resources:
   # Pre Flux-Kustomizations
   - ./namespace.yaml
   # Flux-Kustomizations
-  - ./valkey/ks.yaml
   - ./actual/ks.yaml
   - ./wallos/ks.yaml
   - ./plex/ks.yaml

@@ -61,8 +61,6 @@ spec:
               PAPERLESS_MEDIA_ROOT: /data/local/media
               PAPERLESS_DBENGINE: sqlite
 
-              PAPERLESS_FILENAME_FORMAT: "{created_year}/{correspondent}/{title}"
-
               # Security
               USERMAP_UID: "10001"
               USERMAP_GID: "10001"

@@ -12,7 +12,6 @@ spec:
   dependsOn:
     - name: cluster-apps-onepassword-store
     - name: cluster-apps-democratic-csi
-    - name: cluster-apps-valkey
   path: ./kubernetes/apps/default/paperless/app
   prune: true
   sourceRef:
