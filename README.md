@@ -14,7 +14,7 @@ The infrastructure is built on a Debian 13 Proxmox server with the following spe
 
 | Device | Quantity | OS Disk Size | Data Disk Size             | RAM  | OS        | Function                              |
 |--------|----------|--------------|----------------------------|------|-----------|---------------------------------------|
-| NAS VM | 1        | 16 GB        | USB3 DAS 16TB EXT4 (host)  | 2 GB | Debian 12 | SMB + NFS NAS, OpenMediaVault         |
+| NAS VM | 1        | 16 GB        | USB3 DAS 16TB EXT4 (host)  | 2GB  | Debian 13 | SMB + NFS NAS, OpenMediaVault 8       |
 | K3s VM | 1        | 200GB        | -                          | 12GB | Debian 13 | K3s master node - single node cluster |
 
 ## 🔄 GitOps Workflow

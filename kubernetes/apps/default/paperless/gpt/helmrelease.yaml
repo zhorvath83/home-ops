@@ -58,13 +58,15 @@ spec:
 
               # OCR Provider (Mistral dedicated OCR service)
               OCR_PROVIDER: "mistral_ocr"
-              OCR_PROCESS_MODE: "image" # "image" or "pdf"
+              MISTRAL_MODEL: "mistral-ocr-latest"
+              OCR_PROCESS_MODE: "whole_pdf" # "image" or "pdf"
               PDF_SKIP_EXISTING_OCR: "false"
               OCR_LIMIT_PAGES: "0"
 
               # Auto processing settings
               AUTO_GENERATE_TITLE: "true"
               AUTO_GENERATE_TAGS: "true"
+              AUTO_GENERATE_DOCUMENT_TYPE: "true"
               AUTO_GENERATE_CORRESPONDENTS: "true"
               AUTO_GENERATE_CREATED_DATE: "true"
 
@@ -130,7 +132,7 @@ spec:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Paperless-GPT
           gethomepage.dev/group: Selfhosted
-          gethomepage.dev/icon: paperless-ngx.svg
+          gethomepage.dev/icon: mistral-ai.svg
         hostnames:
           - "paperless-gpt.${PUBLIC_DOMAIN}"
         parentRefs:
