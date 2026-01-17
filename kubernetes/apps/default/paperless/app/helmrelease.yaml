@@ -49,11 +49,11 @@ spec:
           # Adding allowPrivilegeEscalation: false and dropping ALL capabilities breaks startup.
           app:
             dependsOn: [valkey]
-            image:
+            image: &image
               repository: ghcr.io/paperless-ngx/paperless-ngx
               tag: 2.20.4@sha256:0dd610e06781c9ffafe413eaccdacd7305bcba54ab3457fe080ed3071315e27c
 
-            env:
+            env: &env
               # Application settings
               TZ: &tz "Europe/Budapest"
               PAPERLESS_TIME_ZONE: *tz
@@ -123,7 +123,7 @@ spec:
               readiness:
                 enabled: true
 
-            resources:
+            resources: &resources
               requests:
                 cpu: 10m
               limits:
@@ -160,6 +160,36 @@ spec:
               limits:
                 memory: 96Mi
 
+      backup:
+        type: cronjob
+        cronjob:
+          concurrencyPolicy: Forbid
+          schedule: "30 0 * * *"
+          successfulJobsHistory: 1
+          failedJobsHistory: 3
+
+        containers:
+          app:
+            image: *image
+            env: *env
+            resources: *resources
+
+            command:
+              - "/bin/sh"
+              - "-c"
+              - |
+                echo "Starting paperless-ngx document export..."
+                python3 /usr/src/paperless/src/manage.py document_exporter /data/nas/export --compare-checksums --delete
+                echo "Export completed successfully."
+
+            probes:
+              liveness:
+                enabled: false
+              readiness:
+                enabled: false
+              startup:
+                enabled: false
+
     service:
       app:
         controller: *app
@@ -192,6 +222,9 @@ spec:
           *app :
             app:
               - path: /data/local
+          backup:
+            app:
+              - path: /data/local
 
       nas-inbox:
         type: nfs
@@ -208,6 +241,9 @@ spec:
         path: /backups/paperless
         advancedMounts:
           *app :
+            app:
+              - path: /data/nas/export
+          backup:
             app:
               - path: /data/nas/export
 
