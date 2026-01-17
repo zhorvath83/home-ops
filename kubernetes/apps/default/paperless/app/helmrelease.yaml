@@ -221,8 +221,10 @@ spec:
         path: /tmp/paperless-inbox
         advancedMounts:
           *app :
-            app:
+            app: &inboxMount
               - path: /data/nas/inbox
+          backup:
+            app: *inboxMount
 
       nas-export:
         type: nfs
