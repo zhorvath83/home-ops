@@ -48,7 +48,7 @@ spec:
               # Application settings
               TZ: &tz "Europe/Budapest"
               PAPERLESS_TIME_ZONE: *tz
-              PAPERLESS_URL: https://documents.${PUBLIC_DOMAIN}
+              PAPERLESS_URL: https://docs.${PUBLIC_DOMAIN}
               PAPERLESS_PORT: "8000"
               PAPERLESS_TRUSTED_PROXIES: 10.42.0.0/16,192.168.1.0/24
 
