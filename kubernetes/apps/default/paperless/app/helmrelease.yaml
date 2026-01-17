@@ -68,6 +68,9 @@ spec:
               PAPERLESS_CONSUMER_ENABLE_BARCODES: "true"
               PAPERLESS_CONSUMER_POLLING: "60"
 
+              # Pre-consume script for PDF password removal
+              PAPERLESS_PRE_CONSUME_SCRIPT: /usr/src/paperless/scripts/removepdfpassword.py
+
               # Database (SQLite)
               PAPERLESS_DBENGINE: sqlite
 
@@ -192,3 +195,14 @@ spec:
           *app :
             app:
               - path: /data/nas/export
+
+      scripts:
+        type: configMap
+        name: paperless-scripts
+        defaultMode: 0755
+        advancedMounts:
+          *app :
+            app:
+              - path: /usr/src/paperless/scripts/removepdfpassword.py
+                subPath: removepdfpassword.py
+                readOnly: true
