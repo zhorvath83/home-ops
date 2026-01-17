@@ -63,8 +63,7 @@ spec:
               PAPERLESS_MEDIA_ROOT: /data/local/media
               PAPERLESS_LOGGING_DIR: /data/local/logs
 
-              PAPERLESS_FILENAME_FORMAT: "{{ `{{ created_year }}/{{ created_year }}-{{ created_month }}-{{ created_day }} _ {{ correspondent }} _ {{ title }} _ {{ pk }}` }}"
-              PAPERLESS_FILENAME_FORMAT_REMOVE_NONE: "true"
+              PAPERLESS_FILENAME_FORMAT: "{{ `{{ created_year }}/{{ correspondent | default('uncategorized') | slugify }}/{{ created_year }}-{{ created_month }}-{{ created_day }}_{{ title | slugify }}_{{ doc_pk }}` }}"
 
               # Configure folder importer
               PAPERLESS_CONSUMER_IGNORE_PATTERNS: '[".DS_STORE/*", "._*", ".stfolder/*", "@eaDir/*"]'
@@ -170,7 +169,7 @@ spec:
               - "-c"
               - |
                 echo "Starting paperless-ngx document export..."
-                python3 /usr/src/paperless/src/manage.py document_exporter /data/nas/export --compare-checksums --delete
+                python3 /usr/src/paperless/src/manage.py document_exporter /data/nas/export --compare-checksums --delete --use-filename-format --use-folder-prefix
                 echo "Export completed successfully."
 
             probes:
@@ -211,11 +210,10 @@ spec:
         existingClaim: paperless-data
         advancedMounts:
           *app :
-            app:
+            app: &dataMount
               - path: /data/local
           backup:
-            app:
-              - path: /data/local
+            app: *dataMount
 
       nas-inbox:
         type: nfs
@@ -232,11 +230,10 @@ spec:
         path: /backups/paperless
         advancedMounts:
           *app :
-            app:
+            app: &exportMount
               - path: /data/nas/export
           backup:
-            app:
-              - path: /data/nas/export
+            app: *exportMount
 
       scripts:
         type: configMap
