@@ -11,8 +11,14 @@ Based on: https://github.com/mahescho/paperless-ngx-rmpw
 Modified to read passwords from environment variable (comma-separated).
 """
 
+from __future__ import annotations
+
 import os
 import sys
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pikepdf
 
 try:
     import pikepdf
@@ -28,141 +34,146 @@ def is_pdf(file_path: str) -> bool:
     return os.path.splitext(file_path.lower())[1] == ".pdf"
 
 
-def is_pdf_encrypted(file_path: str) -> bool:
-    """Check if PDF is password protected."""
-    try:
-        with pikepdf.open(file_path) as pdf:
-            return pdf.is_encrypted
-    except pikepdf.PasswordError:
-        return True
-    except Exception as e:
-        print(f"ERROR: Could not open PDF to check encryption: {e}")
-        return True
-
-
-def pdf_has_attachments(file_path: str) -> bool:
-    """Check if PDF contains embedded attachments."""
-    try:
-        with pikepdf.open(file_path) as pdf:
-            return len(pdf.attachments) > 0
-    except Exception as e:
-        print(f"ERROR: Could not check PDF attachments: {e}")
-        return False
-
-
 def get_passwords_from_env() -> list[str]:
     """Read comma-separated passwords from environment variable."""
     passwords_str = os.environ.get("PAPERLESS_PDF_PASSWORDS", "")
     if not passwords_str:
-        print("WARNING: PAPERLESS_PDF_PASSWORDS environment variable is empty")
         return []
-
-    passwords = [p.strip() for p in passwords_str.split(",") if p.strip()]
-    print(f"INFO: Loaded {len(passwords)} password(s) from environment")
-    return passwords
+    return [p.strip() for p in passwords_str.split(",") if p.strip()]
 
 
-def unlock_pdf(file_path: str, passwords: list[str]) -> bool:
+def try_open_pdf(
+    file_path: str, passwords: list[str]
+) -> tuple[pikepdf.Pdf | None, bool]:
     """
-    Attempt to unlock PDF using provided passwords.
+    Try to open PDF, attempting passwords if encrypted.
 
-    Returns True if successfully unlocked, False otherwise.
+    Returns tuple of (pdf_object or None, was_encrypted).
+    Caller is responsible for closing the PDF.
     """
+    # First try without password
+    try:
+        pdf = pikepdf.open(file_path, allow_overwriting_input=True)
+        return pdf, False
+    except pikepdf.PasswordError:
+        pass
+    except Exception as e:
+        print(f"ERROR: Could not open PDF: {e}")
+        return None, False
+
+    # PDF is encrypted, try passwords
     if not passwords:
-        print("ERROR: No passwords available to try")
-        return False
+        print("WARNING: PDF is encrypted but no passwords configured")
+        return None, True
 
     for password in passwords:
         try:
-            with pikepdf.open(
+            pdf = pikepdf.open(
                 file_path, password=password, allow_overwriting_input=True
-            ) as pdf:
-                pdf.save(file_path, deterministic_id=True)
-                print("INFO: PDF unlocked successfully")
-                return True
+            )
+            return pdf, True
         except pikepdf.PasswordError:
             continue
         except Exception as e:
-            print(f"ERROR: Failed to process PDF with password: {e}")
+            print(f"ERROR: Failed to open PDF with password: {e}")
             continue
 
     print("WARNING: None of the provided passwords worked")
-    return False
+    return None, True
 
 
-def extract_pdf_attachments(file_path: str, consume_path: str) -> None:
+def extract_pdf_attachments(pdf: pikepdf.Pdf, consume_path: str) -> None:
     """Extract PDF attachments to consume directory for separate processing."""
     try:
-        with pikepdf.open(file_path) as pdf:
-            attachments = pdf.attachments
-            for attachment_name in attachments:
-                attachment = attachments.get(attachment_name)
-                target_filename = attachment.filename
+        attachments = pdf.attachments
+    except Exception as e:
+        print(f"ERROR: Could not access PDF attachments: {e}")
+        return
 
-                if not is_pdf(target_filename):
-                    print(f"INFO: Skipping non-PDF attachment: {target_filename}")
-                    continue
+    if not attachments:
+        return
 
-                target_path = os.path.join(consume_path, target_filename)
+    print(f"INFO: Found {len(attachments)} attachment(s)")
 
-                # Avoid overwriting existing files
-                if os.path.exists(target_path):
-                    base, ext = os.path.splitext(target_filename)
-                    counter = 1
-                    while os.path.exists(target_path):
-                        target_path = os.path.join(
-                            consume_path, f"{base}_{counter}{ext}"
-                        )
-                        counter += 1
+    for attachment_name in attachments:
+        try:
+            attachment = attachments.get(attachment_name)
+            if attachment is None:
+                continue
 
-                try:
-                    with open(target_path, "wb") as output_file:
-                        output_file.write(attachment.obj["/EF"]["/F"].read_bytes())
-                    print(f"INFO: Extracted attachment: {target_path}")
-                except Exception as e:
-                    print(f"ERROR: Failed to extract attachment {target_filename}: {e}")
+            target_filename = attachment.filename
+
+            if not is_pdf(target_filename):
+                print(f"INFO: Skipping non-PDF attachment: {target_filename}")
+                continue
+
+            target_path = os.path.join(consume_path, target_filename)
+
+            # Avoid overwriting existing files
+            if os.path.exists(target_path):
+                base, ext = os.path.splitext(target_filename)
+                counter = 1
+                while os.path.exists(target_path):
+                    target_path = os.path.join(consume_path, f"{base}_{counter}{ext}")
+                    counter += 1
+
+            with open(target_path, "wb") as output_file:
+                output_file.write(attachment.obj["/EF"]["/F"].read_bytes())
+            print(f"INFO: Extracted attachment: {target_path}")
+
+        except Exception as e:
+            print(f"ERROR: Failed to extract attachment {attachment_name}: {e}")
+
+
+def process_pdf(file_path: str, consume_path: str, passwords: list[str]) -> None:
+    """Process a single PDF file - decrypt if needed and extract attachments."""
+    pdf, was_encrypted = try_open_pdf(file_path, passwords)
+
+    if pdf is None:
+        if was_encrypted:
+            print("ERROR: Could not decrypt PDF")
+        return
+
+    try:
+        # Save decrypted version if it was encrypted
+        if was_encrypted:
+            pdf.save(file_path, deterministic_id=True)
+            print("INFO: PDF decrypted successfully")
+
+        # Extract attachments
+        extract_pdf_attachments(pdf, consume_path)
 
     except Exception as e:
-        print(f"ERROR: Failed to process PDF attachments: {e}")
+        print(f"ERROR: Failed to process PDF: {e}")
+    finally:
+        pdf.close()
 
 
 def main() -> None:
     """Main entry point for pre-consume script."""
-    # Get the document path from Paperless environment
     src_file_path = os.environ.get("DOCUMENT_WORKING_PATH")
     consume_path = os.environ.get(
         "PAPERLESS_CONSUMPTION_DIR", "/usr/src/paperless/consume"
     )
 
-    print(f"INFO: Pre-consume script started for: {src_file_path}")
-
-    # Validate input
+    # Quick validation - silent exit for non-PDF files
     if not src_file_path:
-        print("INFO: No DOCUMENT_WORKING_PATH provided, skipping")
+        return
+
+    if not is_pdf(src_file_path):
         return
 
     if not os.path.exists(src_file_path):
         print(f"ERROR: File does not exist: {src_file_path}")
         return
 
-    if not is_pdf(src_file_path):
-        print("INFO: Not a PDF file, skipping")
-        return
+    print(f"INFO: Processing: {os.path.basename(src_file_path)}")
 
-    # Check if PDF is encrypted
-    if is_pdf_encrypted(src_file_path):
-        print("INFO: PDF is encrypted, attempting to decrypt")
-        passwords = get_passwords_from_env()
-        unlock_pdf(src_file_path, passwords)
-    else:
-        print("INFO: PDF is not encrypted")
+    passwords = get_passwords_from_env()
+    if passwords:
+        print(f"INFO: {len(passwords)} password(s) available")
 
-    # Extract any PDF attachments
-    if pdf_has_attachments(src_file_path):
-        print("INFO: PDF has attachments, extracting")
-        extract_pdf_attachments(src_file_path, consume_path)
-    else:
-        print("INFO: No attachments found")
+    process_pdf(src_file_path, consume_path, passwords)
 
     print("INFO: Pre-consume script completed")
 
