@@ -27,6 +27,14 @@ spec:
     defaultPodOptions:
       automountServiceAccountToken: false
       enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
 
     controllers:
       *app :
@@ -38,6 +46,10 @@ spec:
           failedJobsHistory: 3
 
         containers:
+          # NOTE: Container-level security contexts are NOT used for paperless-ngx containers
+          # because the s6-overlay init system requires privileges to fix /run permissions.
+          # Pod-level security context (runAsUser: 1000, fsGroup: 1000) is sufficient.
+          # Adding allowPrivilegeEscalation: false and dropping ALL capabilities breaks startup.
           app:
             image:
               repository: ghcr.io/paperless-ngx/paperless-ngx
