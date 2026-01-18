@@ -189,6 +189,57 @@ spec:
               startup:
                 enabled: false
 
+      # Metadata seeder job - seeds document_types, tags, custom_fields
+      # Run manually: kubectl create job --from=cronjob/paperless-seed-metadata paperless-seed-metadata-manual -n default
+      seed-metadata:
+        type: cronjob
+        cronjob:
+          concurrencyPolicy: Forbid
+          # Disabled schedule - run manually only
+          schedule: "0 0 31 2 *"
+          suspend: true
+          successfulJobsHistory: 1
+          failedJobsHistory: 3
+
+        containers:
+          app:
+            image:
+              repository: ghcr.io/pascaliske/alpine-curl-jq
+              tag: "2.2.0"
+            env:
+              TZ: *tz
+              # Internal service URL (bypasses Cloudflare Access)
+              PAPERLESS_URL: "http://paperless:8000"
+              # SEED_MODE: skip = don't update existing, update = overwrite existing
+              SEED_MODE: "skip"
+              SEED_DATA_FILE: /config/seed-metadata.json
+            envFrom:
+              - secretRef:
+                  name: "{{ .Release.Name }}-secret"
+            command: ["/bin/sh", "/scripts/seed-metadata.sh"]
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 10001
+              runAsGroup: 10001
+              privileged: false
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
+            resources:
+              requests:
+                cpu: 5m
+                memory: 32Mi
+              limits:
+                cpu: 500m
+                memory: 128Mi
+            probes:
+              liveness:
+                enabled: false
+              readiness:
+                enabled: false
+              startup:
+                enabled: false
+
     service:
       app:
         controller: *app
@@ -253,4 +304,25 @@ spec:
             app:
               - path: /usr/src/paperless/scripts/removepdfpassword.py
                 subPath: removepdfpassword.py
+                readOnly: true
+
+      seed-scripts:
+        type: configMap
+        name: paperless-seed-scripts
+        defaultMode: 0755
+        advancedMounts:
+          seed-metadata:
+            app:
+              - path: /scripts/seed-metadata.sh
+                subPath: seed-metadata.sh
+                readOnly: true
+
+      seed-data:
+        type: secret
+        name: paperless-seed-metadata
+        advancedMounts:
+          seed-metadata:
+            app:
+              - path: /config/seed-metadata.json
+                subPath: seed-metadata.json
                 readOnly: true

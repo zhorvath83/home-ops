@@ -9,6 +9,7 @@ resources:
   - ./helmrelease.yaml
   - ./pvc.yaml
   - ./volsync.yaml
+  - ./config/secret.sops.yaml
 
 commonLabels:
   app.kubernetes.io/name: paperless-ngx
@@ -18,6 +19,9 @@ configMapGenerator:
   - name: paperless-scripts
     files:
       - config/removepdfpassword.py
+  - name: paperless-seed-scripts
+    files:
+      - config/seed-metadata.sh
 
 generatorOptions:
   disableNameSuffixHash: true
