@@ -122,7 +122,7 @@ spec:
           valkey:
             image:
               repository: ghcr.io/valkey-io/valkey
-              tag: "9.0.1"
+              tag: 9.0.1@sha256:2acd71cda5cd2b664d65ba3d758a9fb69df2e2b40fcc1795d501e6561965f7ef
             args:
               - --port
               - "6379"
@@ -204,8 +204,8 @@ spec:
         containers:
           app:
             image:
-              repository: ghcr.io/pascaliske/alpine-curl-jq
-              tag: "2.2.0"
+              repository: ghcr.io/home-operations/k8s-sidecar
+              tag: 2.3.0@sha256:e611277a3b1d31a03cb11a86b3e55571ca918d00cb2eedbbd573595722a65899
             env:
               TZ: *tz
               # Internal service URL (bypasses Cloudflare Access)
