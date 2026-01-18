@@ -116,8 +116,8 @@ spec:
               requests:
                 cpu: 10m
               limits:
-                memory: 2Gi
-                cpu: 3000m
+                memory: 5Gi
+                cpu: 3500m
 
           valkey:
             image:
