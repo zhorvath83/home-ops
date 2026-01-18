@@ -44,7 +44,7 @@ spec:
               repository: ghcr.io/paperless-ngx/paperless-ngx
               tag: 2.20.4@sha256:0dd610e06781c9ffafe413eaccdacd7305bcba54ab3457fe080ed3071315e27c
 
-            env: &env
+            env:
               # Application settings
               TZ: &tz "Europe/Budapest"
               PAPERLESS_TIME_ZONE: *tz
@@ -57,10 +57,9 @@ spec:
 
               # Paths
               PAPERLESS_CONSUMPTION_DIR: /data/nas/inbox
-              PAPERLESS_EXPORT_DIR: /data/nas/export
-
-              PAPERLESS_DATA_DIR: /data/local/data
-              PAPERLESS_MEDIA_ROOT: /data/local/media
+              PAPERLESS_EXPORT_DIR: &exportDir /data/nas/export
+              PAPERLESS_DATA_DIR: &dataDir /data/local/data
+              PAPERLESS_MEDIA_ROOT: &mediaRoot /data/local/media
               PAPERLESS_LOGGING_DIR: /data/local/logs
 
               PAPERLESS_FILENAME_FORMAT: "{{ `{{ created_year }}/{{ correspondent | default('uncategorized') | slugify }}/{{ created_year }}-{{ created_month }}-{{ created_day }}_{{ title | slugify }}_{{ doc_pk }}` }}"
@@ -77,7 +76,7 @@ spec:
               PAPERLESS_PRE_CONSUME_SCRIPT: /usr/src/paperless/scripts/removepdfpassword.py
 
               # Database (SQLite)
-              PAPERLESS_DBENGINE: sqlite
+              PAPERLESS_DBENGINE: &dbEngine sqlite
 
               # Redis/Valkey connection (sidecar)
               PAPERLESS_REDIS: "redis://localhost:6379"
@@ -95,8 +94,8 @@ spec:
 
               # Security
               PAPERLESS_ENABLE_HTTP_REMOTE_USER: "false"
-              USERMAP_UID: "10001"
-              USERMAP_GID: "10001"
+              USERMAP_UID: &uid "10001"
+              USERMAP_GID: &gid "10001"
 
             envFrom:
               - secretRef:
@@ -161,8 +160,17 @@ spec:
         containers:
           app:
             image: *image
-            env: *env
             resources: *resources
+
+            env:
+              TZ: *tz
+              PAPERLESS_TIME_ZONE: *tz
+              PAPERLESS_EXPORT_DIR: *exportDir
+              PAPERLESS_DATA_DIR: *dataDir
+              PAPERLESS_MEDIA_ROOT: *mediaRoot
+              PAPERLESS_DBENGINE: *dbEngine
+              USERMAP_UID: *uid
+              USERMAP_GID: *gid
 
             command:
               - "/bin/sh"
@@ -215,17 +223,6 @@ spec:
           backup:
             app: *dataMount
 
-      nas-inbox:
-        type: nfs
-        server: ${CONF_NFS_SRV_IP}
-        path: /tmp/paperless-inbox
-        advancedMounts:
-          *app :
-            app: &inboxMount
-              - path: /data/nas/inbox
-          backup:
-            app: *inboxMount
-
       nas-export:
         type: nfs
         server: ${CONF_NFS_SRV_IP}
@@ -236,6 +233,15 @@ spec:
               - path: /data/nas/export
           backup:
             app: *exportMount
+
+      nas-inbox:
+        type: nfs
+        server: ${CONF_NFS_SRV_IP}
+        path: /tmp/paperless-inbox
+        advancedMounts:
+          *app :
+            app:
+              - path: /data/nas/inbox
 
       scripts:
         type: configMap
