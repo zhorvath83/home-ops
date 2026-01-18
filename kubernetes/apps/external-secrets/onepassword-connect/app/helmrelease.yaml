@@ -80,6 +80,7 @@ spec:
                   - "ALL"
             resources: &resources
               requests:
+                memory: 48M
                 cpu: 5m
               limits:
                 memory: 256M
