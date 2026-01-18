@@ -155,6 +155,7 @@ spec:
         cronjob:
           concurrencyPolicy: Forbid
           schedule: "30 0 * * *"
+          suspend: true
           successfulJobsHistory: 1
           failedJobsHistory: 3
 
