@@ -62,7 +62,7 @@ spec:
               PAPERLESS_MEDIA_ROOT: &mediaRoot /data/local/media
               PAPERLESS_LOGGING_DIR: /data/local/logs
 
-              PAPERLESS_FILENAME_FORMAT: "{{ `{{ created_year }}/{{ correspondent | default('uncategorized') | slugify }}/{{ created_year }}-{{ created_month }}-{{ created_day }}_{{ title | slugify }}_{{ doc_pk }}` }}"
+              PAPERLESS_FILENAME_FORMAT: &filenameFormat "{{ `{{ created_year }}/{{ correspondent | default('uncategorized') | slugify }}/{{ created_year }}-{{ created_month }}-{{ created_day }}_{{ title | slugify }}_{{ doc_pk }}` }}"
 
               # Configure folder importer
               PAPERLESS_CONSUMER_IGNORE_PATTERNS: '[".DS_STORE/*", "._*", ".stfolder/*", "@eaDir/*"]'
@@ -168,6 +168,7 @@ spec:
               PAPERLESS_EXPORT_DIR: *exportDir
               PAPERLESS_DATA_DIR: *dataDir
               PAPERLESS_MEDIA_ROOT: *mediaRoot
+              PAPERLESS_FILENAME_FORMAT: *filenameFormat
               PAPERLESS_DBENGINE: *dbEngine
               USERMAP_UID: *uid
               USERMAP_GID: *gid
