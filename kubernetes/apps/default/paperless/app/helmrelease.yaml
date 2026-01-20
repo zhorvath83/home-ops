@@ -207,7 +207,7 @@ spec:
           app:
             image:
               repository: ghcr.io/home-operations/k8s-sidecar
-              tag: 2.3.0@sha256:e611277a3b1d31a03cb11a86b3e55571ca918d00cb2eedbbd573595722a65899
+              tag: 2.4.0@sha256:4e0bd67727c412f61c452b86325753e19b9b733b8404b1206dfd7d2dbb8d3312
             env:
               TZ: *tz
               # Internal service URL (bypasses Cloudflare Access)
