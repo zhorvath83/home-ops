@@ -42,7 +42,7 @@ spec:
             dependsOn: [valkey]
             image: &image
               repository: ghcr.io/paperless-ngx/paperless-ngx
-              tag: 2.20.5@sha256:f3bfc0397f8fba864fe3e74883481b653f416807179399fbf13e74e85baefa6e
+              tag: 2.20.5@sha256:d35fa00286e582fa2efe0f9828738a83ce7cbbebdd0b139a1f27c2b3544db1b5
 
             env:
               # Application settings
