@@ -18,7 +18,7 @@ commonLabels:
 configMapGenerator:
   - name: paperless-scripts
     files:
-      - config/removepdfpassword.py
+      - config/pre-consume.sh
   - name: paperless-seed-scripts
     files:
       - config/seed-metadata.sh
