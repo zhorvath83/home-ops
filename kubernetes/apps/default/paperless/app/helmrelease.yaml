@@ -72,11 +72,8 @@ spec:
               PAPERLESS_CONSUMER_ENABLE_BARCODES: "true"
               PAPERLESS_CONSUMER_POLLING: "60"
 
-              # Pre-consume script for PDF processing (decrypt, blank removal, OCR, PDF/A)
+              # Pre-consume script for PDF processing (decrypt, blank removal, optimization)
               PAPERLESS_PRE_CONSUME_SCRIPT: /usr/src/paperless/scripts/pre-consume.sh
-              # Pre-consume OCR settings (OCR is done in pre-consume script)
-              PRECONSUME_PDF_OCR: "true"
-              # PRECONSUME_OCR_LANGUAGE defaults to PAPERLESS_OCR_LANGUAGE
 
               # Database (SQLite)
               PAPERLESS_DBENGINE: &dbEngine sqlite
@@ -84,12 +81,11 @@ spec:
               # Redis/Valkey connection (sidecar)
               PAPERLESS_REDIS: "redis://localhost:6379"
 
-              # OCR settings - OCR is performed by pre-consume script, Paperless only indexes
+              # OCR settings
               PAPERLESS_OCR_LANGUAGE: hun
               PAPERLESS_OCR_LANGUAGES: hun
-              PAPERLESS_OCR_MODE: "skip"
-              # PAPERLESS_OCR_USER_ARGS: '{"invalidate_digital_signatures": true}'
-              PAPERLESS_OCR_SKIP_ARCHIVE_FILE: "always"
+              PAPERLESS_OCR_MODE: "redo"
+              PAPERLESS_OCR_USER_ARGS: '{"invalidate_digital_signatures": true}'
 
               # Configure Remote User auth
               PAPERLESS_ACCOUNT_ALLOW_SIGNUPS: "false"
