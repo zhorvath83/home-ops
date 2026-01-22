@@ -14,24 +14,33 @@
 # 3. ATTACHMENT EXTRACTION: Extracts embedded PDF attachments to the consume
 #    directory for separate processing by Paperless-ngx.
 #
-# 4. LOSSLESS OPTIMIZATION: Applies maximum lossless compression to reduce
-#    file size while preserving quality.
+# 4. OCR + PDF/A CONVERSION (optional): When PRECONSUME_PDF_OCR=true:
+#    - Deskew: Corrects skewed pages
+#    - Rotate: Auto-rotates pages to correct orientation
+#    - Clean: Removes background noise for better OCR
+#    - OCR: Adds searchable text layer (replaces existing OCR)
+#    - PDF/A-2b: Converts to archival format
+#
+# 5. LOSSLESS OPTIMIZATION: When OCR is disabled, applies qpdf compression.
 #
 # EXIT CODES:
 #   0: Success - document processing can continue
 #   1: Failure - document will NOT be consumed, file remains in consume dir
 #
 # ENVIRONMENT VARIABLES:
-#   DOCUMENT_WORKING_PATH:     Set by Paperless-ngx, path to document
-#   PAPERLESS_CONSUMPTION_DIR: Consume directory (default: /usr/src/paperless/consume)
-#   PAPERLESS_PDF_PASSWORDS:   Comma-separated passwords for encrypted PDFs
-#   BLANK_PAGE_THRESHOLD:      Ink coverage threshold (default: 0.5)
+#   DOCUMENT_WORKING_PATH:      Set by Paperless-ngx, path to document
+#   PAPERLESS_CONSUMPTION_DIR:  Consume directory (default: /usr/src/paperless/consume)
+#   PAPERLESS_PDF_PASSWORDS:    Comma-separated passwords for encrypted PDFs
+#   BLANK_PAGE_THRESHOLD:       Ink coverage threshold (default: 0.5)
+#   PRECONSUME_PDF_OCR:         Enable OCR+PDF/A (default: true)
+#   PRECONSUME_OCR_LANGUAGE:    OCR language (default: from PAPERLESS_OCR_LANGUAGE or "hun")
 #
 # DEPENDENCIES (all included in paperless-ngx image):
 #   - qpdf: PDF manipulation and optimization
 #   - gs (Ghostscript): Ink coverage analysis for blank detection
 #   - pdfinfo: PDF page count
 #   - file: File type detection
+#   - ocrmypdf: OCR and PDF/A conversion
 #
 # =============================================================================
 
@@ -50,6 +59,13 @@ CONSUME_DIR="${PAPERLESS_CONSUMPTION_DIR:-/usr/src/paperless/consume}"
 # 0.5 works well for most scanners
 THRESHOLD="${BLANK_PAGE_THRESHOLD:-0.5}"
 
+# OCR + PDF/A conversion switch (default: enabled)
+# Set to "false", "no", "0", or "off" to disable
+ENABLE_OCR="${PRECONSUME_PDF_OCR:-true}"
+
+# OCR language - fallback chain: PRECONSUME_OCR_LANGUAGE -> PAPERLESS_OCR_LANGUAGE -> hun
+OCR_LANGUAGE="${PRECONSUME_OCR_LANGUAGE:-${PAPERLESS_OCR_LANGUAGE:-hun}}"
+
 # -----------------------------------------------------------------------------
 # Logging functions
 # -----------------------------------------------------------------------------
@@ -64,6 +80,21 @@ log_warn() {
 
 log_error() {
     echo "[ERROR] $*" >&2
+}
+
+# -----------------------------------------------------------------------------
+# Helper: Check if pre-consume OCR is enabled
+# -----------------------------------------------------------------------------
+
+is_preconsume_ocr_enabled() {
+    case "${ENABLE_OCR,,}" in
+        false|no|0|off)
+            return 1
+            ;;
+        *)
+            return 0
+            ;;
+    esac
 }
 
 # -----------------------------------------------------------------------------
@@ -100,19 +131,26 @@ decrypt_pdf() {
     local pdf_file="$1"
 
     # Check if PDF is encrypted
-    if ! qpdf --requires-password "${pdf_file}" 2>/dev/null; then
-        # Exit code 2 = not encrypted, 3 = correct password supplied
-        local exit_code=$?
-        if [[ ${exit_code} -eq 2 ]]; then
-            log_info "PDF is not encrypted"
-            return 0
-        elif [[ ${exit_code} -eq 3 ]]; then
-            log_info "PDF is encrypted but accessible"
-            return 0
-        fi
+    # qpdf --requires-password exit codes:
+    #   0 = password IS required
+    #   2 = not encrypted
+    #   3 = encrypted but accessible (empty password)
+    qpdf --requires-password "${pdf_file}" 2>/dev/null
+    local exit_code=$?
+
+    if [[ ${exit_code} -eq 2 ]]; then
+        log_info "PDF is not encrypted"
+        return 0
+    elif [[ ${exit_code} -eq 3 ]]; then
+        log_info "PDF is encrypted but accessible (empty password)"
+        return 0
+    elif [[ ${exit_code} -ne 0 ]]; then
+        # Other unexpected error - continue anyway
+        log_warn "Could not determine encryption status (exit code: ${exit_code})"
+        return 0
     fi
 
-    # PDF requires password - exit code 0 means password IS required
+    # exit_code = 0 means password IS required
     log_info "PDF is password-protected"
 
     # Get passwords from environment
@@ -278,7 +316,60 @@ extract_attachments() {
 }
 
 # -----------------------------------------------------------------------------
-# Function: Optimize PDF (lossless)
+# Function: Pre-consume OCR and PDF/A conversion
+# -----------------------------------------------------------------------------
+# Performs OCR with deskew, rotation, cleaning, and converts to PDF/A-2b.
+# Replaces any existing OCR text layer.
+
+perform_preconsume_ocr() {
+    local pdf_file="$1"
+    local ocr_output
+    local ocr_exit_code
+
+    log_info "Starting pre-consume OCR processing (language: ${OCR_LANGUAGE})"
+
+    # ocrmypdf options:
+    # --deskew: Correct skewed pages
+    # --rotate-pages: Auto-rotate pages to correct orientation
+    # --clean: Clean pages before OCR (removes background noise)
+    # --redo-ocr: Replace existing OCR text layer
+    # --output-type pdfa-2: Convert to PDF/A-2b archival format
+    # --language: OCR language
+    # --invalidate-digital-signatures: Required if PDF has signatures
+    # --skip-big 50: Skip pages larger than 50 megapixels (prevents memory issues)
+    # --optimize 1: Light optimization (lossless)
+
+    # Capture output and exit code separately (pipe would lose exit code)
+    ocr_output=$(ocrmypdf \
+        --deskew \
+        --rotate-pages \
+        --clean \
+        --redo-ocr \
+        --output-type pdfa-2 \
+        --language "${OCR_LANGUAGE}" \
+        --invalidate-digital-signatures \
+        --skip-big 50 \
+        --optimize 1 \
+        "${pdf_file}" "${pdf_file}" 2>&1) || ocr_exit_code=$?
+
+    # Log output if any
+    if [[ -n "${ocr_output}" ]]; then
+        while IFS= read -r line; do
+            log_info "pre-consume ocrmypdf: ${line}"
+        done <<< "${ocr_output}"
+    fi
+
+    if [[ ${ocr_exit_code:-0} -eq 0 ]]; then
+        log_info "Pre-consume OCR and PDF/A conversion completed"
+        return 0
+    else
+        log_warn "Pre-consume OCR processing failed (exit code: ${ocr_exit_code}) - continuing with original"
+        return 0
+    fi
+}
+
+# -----------------------------------------------------------------------------
+# Function: Optimize PDF (lossless) - only when OCR is disabled
 # -----------------------------------------------------------------------------
 # Applies maximum lossless compression to reduce file size.
 # Does NOT use lossy image optimization.
@@ -328,8 +419,14 @@ remove_blank_pages "${IN}"
 # Step 3: Extract embedded PDF attachments
 extract_attachments "${IN}"
 
-# Step 4: Optimize (lossless compression)
-optimize_pdf "${IN}"
+# Step 4: Pre-consume OCR + PDF/A conversion OR lossless optimization
+if is_preconsume_ocr_enabled; then
+    log_info "Pre-consume OCR is enabled"
+    perform_preconsume_ocr "${IN}"
+else
+    log_info "Pre-consume OCR is disabled - applying lossless optimization only"
+    optimize_pdf "${IN}"
+fi
 
 log_info "Pre-consume script completed successfully"
 exit 0
