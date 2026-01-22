@@ -87,6 +87,10 @@ spec:
               PAPERLESS_OCR_MODE: "redo"
               PAPERLESS_OCR_USER_ARGS: '{"invalidate_digital_signatures": true}'
 
+              # Worker settings - single-threaded processing to reduce memory usage
+              PAPERLESS_TASK_WORKERS: "1"
+              PAPERLESS_THREADS_PER_WORKER: "1"
+
               # Configure Remote User auth
               PAPERLESS_ACCOUNT_ALLOW_SIGNUPS: "false"
               PAPERLESS_SOCIALACCOUNT_ALLOW_SIGNUPS: "true"
