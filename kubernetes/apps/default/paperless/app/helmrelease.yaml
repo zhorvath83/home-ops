@@ -86,6 +86,10 @@ spec:
               PAPERLESS_OCR_LANGUAGES: hun
               PAPERLESS_OCR_MODE: "skip"
               PAPERLESS_OCR_SKIP_ARCHIVE_FILE: "always"
+              PAPERLESS_OCR_CLEAN: "none"
+              PAPERLESS_OCR_DESKEW: "false"
+              PAPERLESS_OCR_ROTATE_PAGES: "false"
+              PAPERLESS_OCR_PAGES: "1"
 
               # Worker settings - single-threaded processing to reduce memory usage
               PAPERLESS_TASK_WORKERS: "1"
@@ -295,7 +299,7 @@ spec:
       nas-inbox:
         type: nfs
         server: ${CONF_NFS_SRV_IP}
-        path: /tmp/paperless-inbox
+        path: /scanner/paperless-inbox
         advancedMounts:
           *app :
             app:
