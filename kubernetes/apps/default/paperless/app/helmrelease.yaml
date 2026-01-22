@@ -125,7 +125,7 @@ spec:
                 memory: 512Mi
                 cpu: 10m
               limits:
-                memory: 6Gi
+                memory: 5Gi
                 cpu: 2500m
 
           valkey:
