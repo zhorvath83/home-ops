@@ -32,7 +32,6 @@ spec:
       *app :
         annotations:
           reloader.stakater.com/auto: "true"
-        # type: statefulset
 
         containers:
           # NOTE: Container-level security contexts are NOT used for paperless-ngx containers
