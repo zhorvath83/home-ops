@@ -38,26 +38,14 @@ spec:
 
     controllers:
       plex-trakt-sync:
-        type: statefulset
-
         annotations:
           reloader.stakater.com/auto: "true"
-
-        statefulset:
-          volumeClaimTemplates:
-            - name: config
-              accessMode: ReadWriteOnce
-              size: 1Gi
-              storageClass: democratic-csi-local-hostpath
-              globalMounts:
-                - path: /app/config
 
         containers:
           app:
             image:
               repository: ghcr.io/taxel/plextraktsync
               tag: 0.34.20@sha256:13317255bb0eae21a7140bad1c93a06693a58e3f4ea027b308068cced4cae49a
-
 
             args:
               - watch
@@ -95,6 +83,12 @@ spec:
                 memory: 100Mi
 
     persistence:
+      config:
+        type: persistentVolumeClaim
+        existingClaim: "{{ .Release.Name }}"
+        globalMounts:
+          - path: /app/config
+
       config-yml:
         type: configMap
         name: plex-tract-sync-configmap
