@@ -136,7 +136,7 @@ spec:
               - --port
               - "6379"
               - --maxmemory
-              - "64mb"
+              - "96mb"
               - --maxmemory-policy
               - allkeys-lru
               - --save
@@ -156,14 +156,14 @@ spec:
                 cpu: 1m
                 memory: 8Mi
               limits:
-                memory: 96Mi
+                memory: 128Mi
 
       backup:
         type: cronjob
         cronjob:
           concurrencyPolicy: Forbid
           schedule: "30 0 * * *"
-          suspend: true
+          suspend: false
           successfulJobsHistory: 1
           failedJobsHistory: 3
 
