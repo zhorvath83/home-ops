@@ -32,7 +32,7 @@ spec:
       *app :
         annotations:
           reloader.stakater.com/auto: "true"
-        type: statefulset
+        # type: statefulset
 
         containers:
           # NOTE: Container-level security contexts are NOT used for paperless-ngx containers
@@ -48,42 +48,44 @@ spec:
               # Application settings
               TZ: &tz "Europe/Budapest"
               PAPERLESS_TIME_ZONE: *tz
-              PAPERLESS_URL: https://docs.${PUBLIC_DOMAIN}
+              PAPERLESS_URL: "https://docs.${PUBLIC_DOMAIN}"
               PAPERLESS_PORT: "8000"
-              PAPERLESS_TRUSTED_PROXIES: 10.42.0.0/16,192.168.1.0/24
+              PAPERLESS_ENABLE_COMPRESSION: "false"
+              PAPERLESS_TRUSTED_PROXIES: "10.42.0.0/16,192.168.1.0/24"
 
               # Date parsing (Hungarian format: év.hónap.nap)
               PAPERLESS_DATE_ORDER: "YMD"
 
               # Paths
-              PAPERLESS_CONSUMPTION_DIR: /data/nas/inbox
-              PAPERLESS_EXPORT_DIR: &exportDir /data/nas/export
-              PAPERLESS_DATA_DIR: &dataDir /data/local/data
-              PAPERLESS_MEDIA_ROOT: &mediaRoot /data/local/media
-              PAPERLESS_LOGGING_DIR: /data/local/logs
+              PAPERLESS_CONSUMPTION_DIR: "/data/nas/inbox"
+              PAPERLESS_EXPORT_DIR: &exportDir "/data/nas/export"
+              PAPERLESS_DATA_DIR: &dataDir "/data/local/data"
+              PAPERLESS_MEDIA_ROOT: &mediaRoot "/data/local/media"
+              PAPERLESS_LOGGING_DIR: "/data/local/logs"
 
               PAPERLESS_FILENAME_FORMAT: &filenameFormat "{{ `{{ created_year }}/{{ correspondent | default('uncategorized') | slugify }}/{{ created_year }}-{{ created_month }}-{{ created_day }}_{{ title | slugify }}_{{ doc_pk }}` }}"
 
               # Configure folder importer
-              PAPERLESS_CONSUMER_IGNORE_PATTERNS: '[".DS_STORE/*", "._*", ".stfolder/*", "@eaDir/*"]'
+              PAPERLESS_CONSUMER_IGNORE_PATTERNS: '[".DS_Store", ".DS_STORE", "._*", ".stfolder/*", ".stversions/*", ".localized/*", "desktop.ini", "@eaDir/*", "Thumbs.db"]'
               PAPERLESS_CONSUMER_DELETE_DUPLICATES: "true"
               PAPERLESS_CONSUMER_RECURSIVE: "true"
-              PAPERLESS_CONSUMER_SUBDIRS_AS_TAGS: "true"
-              PAPERLESS_CONSUMER_ENABLE_BARCODES: "true"
               PAPERLESS_CONSUMER_POLLING: "60"
+              # Print a Patch-Code-T sheet as a separator page between different documents when scanning.
+              # https://www.alliancegroup.co.uk/downloads/patch-code-t.pdf
+              PAPERLESS_CONSUMER_ENABLE_BARCODES: "true"
 
               # Pre-consume script for PDF processing (decrypt, blank removal, optimization)
-              PAPERLESS_PRE_CONSUME_SCRIPT: /usr/src/paperless/scripts/pre-consume.sh
+              PAPERLESS_PRE_CONSUME_SCRIPT: "/usr/src/paperless/scripts/pre-consume.sh"
 
               # Database (SQLite)
-              PAPERLESS_DBENGINE: &dbEngine sqlite
+              PAPERLESS_DBENGINE: &dbEngine "sqlite"
 
               # Redis/Valkey connection (sidecar)
               PAPERLESS_REDIS: "redis://localhost:6379"
 
               # OCR settings
-              PAPERLESS_OCR_LANGUAGE: hun
-              PAPERLESS_OCR_LANGUAGES: hun
+              PAPERLESS_OCR_LANGUAGE: "hun"
+              PAPERLESS_OCR_LANGUAGES: "hun"
               PAPERLESS_OCR_MODE: "skip"
               PAPERLESS_OCR_SKIP_ARCHIVE_FILE: "always"
               PAPERLESS_OCR_CLEAN: "none"
@@ -94,14 +96,14 @@ spec:
               # Worker settings - single-threaded processing to reduce memory usage
               PAPERLESS_TASK_WORKERS: "1"
               PAPERLESS_THREADS_PER_WORKER: "1"
+              PAPERLESS_WEBSERVER_WORKERS: "1"
 
               # Configure Remote User auth
               PAPERLESS_ACCOUNT_ALLOW_SIGNUPS: "false"
-              PAPERLESS_SOCIALACCOUNT_ALLOW_SIGNUPS: "true"
-              PAPERLESS_SOCIAL_AUTO_SIGNUP: "true"
+              PAPERLESS_SOCIALACCOUNT_ALLOW_SIGNUPS: "false"
+              PAPERLESS_SOCIAL_AUTO_SIGNUP: "false"
 
               # Security
-              PAPERLESS_ENABLE_HTTP_REMOTE_USER: "false"
               USERMAP_UID: &uid "10001"
               USERMAP_GID: &gid "10001"
 
@@ -122,7 +124,7 @@ spec:
 
             resources: &resources
               requests:
-                memory: 512Mi
+                memory: 650Mi
                 cpu: 10m
               limits:
                 memory: 5Gi
@@ -218,7 +220,7 @@ spec:
               tag: 2.4.0@sha256:4e0bd67727c412f61c452b86325753e19b9b733b8404b1206dfd7d2dbb8d3312
             env:
               TZ: *tz
-              # Internal service URL (bypasses Cloudflare Access)
+              # Internal service URL
               PAPERLESS_URL: "http://paperless:8000"
               # SEED_MODE: skip = don't update existing, update = overwrite existing
               SEED_MODE: "skip"
