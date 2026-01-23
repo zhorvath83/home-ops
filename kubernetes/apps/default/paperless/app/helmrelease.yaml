@@ -216,7 +216,7 @@ spec:
           app:
             image:
               repository: ghcr.io/home-operations/k8s-sidecar
-              tag: 2.4.0@sha256:4e0bd67727c412f61c452b86325753e19b9b733b8404b1206dfd7d2dbb8d3312
+              tag: 2.5.0@sha256:de494401b2e82d94e613b3fbad52859ab6f14f80b031bc8b0c702f52eed765bf
             env:
               TZ: *tz
               # Internal service URL
