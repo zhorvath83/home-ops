@@ -198,9 +198,9 @@ remove_blank_pages() {
         # Compare with threshold using awk (bash can't do float comparison)
         if awk "BEGIN {exit !(${ink_coverage} > ${THRESHOLD})}"; then
             non_blank_pages+=("${i}")
-            log_info "Page ${i}: ink=${ink_coverage} - keeping"
+            log_info "Page ${i}: ink=${ink_coverage} - keeping (threshold: ${THRESHOLD})"
         else
-            log_info "Page ${i}: ink=${ink_coverage} - removing (blank)"
+            log_info "Page ${i}: ink=${ink_coverage} - removing as blank (threshold: ${THRESHOLD})"
         fi
     done
 
@@ -316,14 +316,19 @@ optimize_pdf() {
     local temp_file
     temp_file=$(mktemp /tmp/qpdf-optimize-XXXXXXXXXXXX.pdf)
 
-    if qpdf "${pdf_file}" \
+    # Run qpdf optimization
+    # Exit codes: 0 = success, 2 = error, 3 = success with warnings
+    qpdf "${pdf_file}" \
         --recompress-flate \
         --compression-level=9 \
         --object-streams=generate \
         --compress-streams=y \
         --remove-unreferenced-resources=yes \
         --coalesce-contents \
-        "${temp_file}" 2>/dev/null && [[ -s "${temp_file}" ]]; then
+        "${temp_file}" 2>/dev/null
+    local qpdf_exit=$?
+
+    if [[ ${qpdf_exit} -eq 0 || ${qpdf_exit} -eq 3 ]] && [[ -s "${temp_file}" ]]; then
         mv "${temp_file}" "${pdf_file}"
         log_info "Optimization completed"
     else
