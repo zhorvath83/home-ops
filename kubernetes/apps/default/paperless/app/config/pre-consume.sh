@@ -244,7 +244,8 @@ extract_attachments() {
     local attachments
     attachments=$(qpdf --list-attachments "${pdf_file}" 2>/dev/null) || true
 
-    if [[ -z "${attachments}" ]]; then
+    # Check if there are actual attachments (not just "has no embedded files" message)
+    if [[ -z "${attachments}" ]] || [[ "${attachments}" == *"has no embedded files"* ]]; then
         return 0
     fi
 
@@ -311,6 +312,10 @@ optimize_pdf() {
     # --remove-unreferenced-resources=yes: Remove unused resources
     # --coalesce-contents: Merge content streams
 
+    # Use temp file instead of --replace-input for NFS compatibility
+    local temp_file
+    temp_file=$(mktemp /tmp/qpdf-optimize-XXXXXXXXXXXX.pdf)
+
     if qpdf "${pdf_file}" \
         --recompress-flate \
         --compression-level=9 \
@@ -318,10 +323,12 @@ optimize_pdf() {
         --compress-streams=y \
         --remove-unreferenced-resources=yes \
         --coalesce-contents \
-        --replace-input 2>/dev/null; then
+        "${temp_file}" 2>/dev/null && [[ -s "${temp_file}" ]]; then
+        mv "${temp_file}" "${pdf_file}"
         log_info "Optimization completed"
     else
         log_warn "Optimization failed - continuing with original"
+        rm -f "${temp_file}" 2>/dev/null || true
     fi
 
     return 0
