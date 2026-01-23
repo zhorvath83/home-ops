@@ -318,6 +318,8 @@ optimize_pdf() {
 
     # Run qpdf optimization
     # Exit codes: 0 = success, 2 = error, 3 = success with warnings
+    # Temporarily disable exit on error to capture exit code
+    set +e
     qpdf "${pdf_file}" \
         --recompress-flate \
         --compression-level=9 \
@@ -327,12 +329,13 @@ optimize_pdf() {
         --coalesce-contents \
         "${temp_file}" 2>/dev/null
     local qpdf_exit=$?
+    set -e
 
     if [[ ${qpdf_exit} -eq 0 || ${qpdf_exit} -eq 3 ]] && [[ -s "${temp_file}" ]]; then
         mv "${temp_file}" "${pdf_file}"
         log_info "Optimization completed"
     else
-        log_warn "Optimization failed - continuing with original"
+        log_warn "Optimization failed (exit code: ${qpdf_exit}) - continuing with original"
         rm -f "${temp_file}" 2>/dev/null || true
     fi
 
