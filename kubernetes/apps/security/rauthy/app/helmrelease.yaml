@@ -18,7 +18,7 @@ spec:
           app:
             image:
               repository: ghcr.io/sebadob/rauthy
-              tag: 0.33.4@sha256:18ac93fdc345f2e076bf23eadaf04277fb923a453d04922317bf11e968ca18a7
+              tag: 0.34.1@sha256:aa876232eb1262ade56c5ec13b8f64904ca046477c6f8b38e6653fc55a9f435f
 
             env:
               TZ: "Europe/Budapest"
