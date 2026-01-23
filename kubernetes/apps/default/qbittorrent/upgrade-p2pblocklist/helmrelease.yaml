@@ -47,9 +47,9 @@ spec:
                 QBITTORRENT_POD=$(echo $result | awk '{ print $NF }')
                 if [[ $QBITTORRENT_POD == *"qbittorrent"* ]]; then
                   kubectl cp /tmp/ipfilter.dat default/$QBITTORRENT_POD:/config/ipfilter.dat
-                  kubectl rollout restart statefulset qbittorrent --namespace default
+                  kubectl rollout restart deployment qbittorrent --namespace default
                 else
-                  echo "qbittorrent statefulset not found!"
+                  echo "qbittorrent deployment not found!"
                   exit 1
                 fi
 
@@ -69,7 +69,7 @@ spec:
               resources: ["pods/exec"]
               verbs: ["create"]
             - apiGroups: ["apps"]
-              resources: ["statefulsets"]
+              resources: ["deployments"]
               verbs: ["get", "patch"]
       bindings:
         qbittorrent-binding:
