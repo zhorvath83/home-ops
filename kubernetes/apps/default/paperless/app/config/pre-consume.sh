@@ -25,7 +25,7 @@
 #   DOCUMENT_WORKING_PATH:      Set by Paperless-ngx, path to document
 #   PAPERLESS_CONSUMPTION_DIR:  Consume directory (default: /usr/src/paperless/consume)
 #   PAPERLESS_PDF_PASSWORDS:    Comma-separated passwords for encrypted PDFs
-#   BLANK_PAGE_THRESHOLD:       Ink coverage threshold (default: 0.5)
+#   BLANK_PAGE_THRESHOLD:       Ink coverage threshold (default: 0.3)
 #
 # DEPENDENCIES (all included in paperless-ngx image):
 #   - qpdf: PDF manipulation and optimization
@@ -47,8 +47,16 @@ CONSUME_DIR="${PAPERLESS_CONSUMPTION_DIR:-/usr/src/paperless/consume}"
 
 # Ink coverage threshold for blank page detection
 # Lower value = more aggressive blank detection
-# 0.5 works well for most scanners
-THRESHOLD="${BLANK_PAGE_THRESHOLD:-0.5}"
+# 0.3 works well for most scanners
+
+# | Ink coverage | Jelentés
+# |--------------|-----------------------------------------
+# | 0.0          | Teljesen üres (fehér) oldal
+# | 0.1 - 0.5    | Szinte üres, esetleg halvány vízjel, scanner árnyék
+# | 0.5 - 2.0    | Kevés tartalom (pl. csak fejléc/lábléc)
+# | 2.0 - 10.0   | Normál szöveges oldal
+
+THRESHOLD="${BLANK_PAGE_THRESHOLD:-0.3}"
 
 # -----------------------------------------------------------------------------
 # Logging functions
