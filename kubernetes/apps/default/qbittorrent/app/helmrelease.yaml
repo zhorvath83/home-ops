@@ -39,8 +39,6 @@ spec:
 
     controllers:
       qbittorrent:
-        type: statefulset
-
         annotations:
           reloader.stakater.com/auto: "true"
 

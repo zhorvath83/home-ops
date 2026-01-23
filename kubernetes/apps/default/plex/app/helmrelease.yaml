@@ -38,8 +38,6 @@ spec:
 
     controllers:
       plex:
-        type: statefulset
-
         containers:
           app:
             image:

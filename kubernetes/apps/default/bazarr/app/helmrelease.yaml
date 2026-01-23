@@ -38,8 +38,6 @@ spec:
 
     controllers:
       bazarr:
-        type: statefulset
-
         annotations:
           reloader.stakater.com/auto: "true"
 

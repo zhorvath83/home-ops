@@ -38,8 +38,6 @@ spec:
 
     controllers:
       jellyseerr:
-        type: statefulset
-
         containers:
           app:
             image:

@@ -38,8 +38,6 @@ spec:
 
     controllers:
       maintainerr:
-        type: statefulset
-
         containers:
           app:
             image:

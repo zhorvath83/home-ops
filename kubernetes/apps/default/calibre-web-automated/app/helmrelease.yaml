@@ -39,8 +39,6 @@ spec:
 
     controllers:
       calibre-web-automated:
-        type: statefulset
-
         annotations:
           reloader.stakater.com/auto: "true"
 
