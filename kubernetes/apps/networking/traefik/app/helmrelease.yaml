@@ -77,22 +77,24 @@ spec:
         expose:
           default: false
       web:
-        redirections:
-          entryPoint:
-            to: websecure
-            scheme: https
-            permanent: true
+        http:
+          redirections:
+            entryPoint:
+              to: websecure
+              scheme: https
+              permanent: true
         transport:
           respondingTimeouts:
             readTimeout: 60s
       websecure:
-        middlewares:
-          - networking-blockuseragent@kubernetescrd
-          - networking-ratelimit@kubernetescrd
-          - networking-secure-headers@kubernetescrd
-        tls:
-          enabled: true
-          options: default
+        http:
+          middlewares:
+            - networking-blockuseragent@kubernetescrd
+            - networking-ratelimit@kubernetescrd
+            - networking-secure-headers@kubernetescrd
+          tls:
+            enabled: true
+            options: default
         transport:
           respondingTimeouts:
             readTimeout: 60s
