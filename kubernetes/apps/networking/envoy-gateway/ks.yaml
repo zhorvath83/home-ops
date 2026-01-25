@@ -20,3 +20,24 @@ spec:
   targetNamespace: networking
   timeout: 5m
   wait: false
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: envoy-gateway-config
+  namespace: flux-system
+spec:
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: envoy-gateway
+  dependsOn:
+    - name: envoy-gateway
+  path: ./kubernetes/apps/networking/envoy-gateway/config
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: home-ops-kubernetes
+  interval: 1h
+  targetNamespace: networking
+  timeout: 5m
+  wait: false

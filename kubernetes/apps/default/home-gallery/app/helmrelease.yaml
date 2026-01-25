@@ -152,9 +152,8 @@ spec:
           - "photos.${PUBLIC_DOMAIN}"
           - "fenykepek.${PUBLIC_DOMAIN}"
         parentRefs:
-          - name: external
+          - name: envoy-external
             namespace: networking
-            sectionName: websecure
         rules:
           - backendRefs:
               - identifier: app

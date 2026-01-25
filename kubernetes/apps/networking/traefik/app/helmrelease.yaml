@@ -50,7 +50,7 @@ spec:
       enabled: true
       type: ClusterIP  # Since using Cloudflare Tunnel, don't need LoadBalancer.
       annotations:
-        external-dns.alpha.kubernetes.io/hostname: "tunnel.${PUBLIC_DOMAIN}"
+        external-dns.alpha.kubernetes.io/hostname: "external.${PUBLIC_DOMAIN}"
 
     env:
       - name: TZ
@@ -177,7 +177,7 @@ spec:
       name: external
       annotations:
         # https://kubernetes-sigs.github.io/external-dns/v0.14.2/sources/gateway/#targets
-        external-dns.alpha.kubernetes.io/target: "tunnel.${PUBLIC_DOMAIN}"
+        external-dns.alpha.kubernetes.io/target: "external.${PUBLIC_DOMAIN}"
       listeners:
         web:
           port: 8000
@@ -191,7 +191,7 @@ spec:
             from: All
           protocol: HTTPS
           certificateRefs:
-            - name: "${PUBLIC_DOMAIN/./-}-tls"
+            - name: "${PUBLIC_DOMAIN/./-}"
           mode: Terminate
 
     gatewayClass:

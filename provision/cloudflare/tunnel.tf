@@ -17,7 +17,7 @@ resource "null_resource" "store-tunnel-secret" {
 
 # Create CNAME record for the tunnel
 resource "cloudflare_dns_record" "tunnel_cname" {
-  name    = "tunnel"
+  name    = "external"
   zone_id = cloudflare_zone.domain.id
   content = "${cloudflare_zero_trust_tunnel_cloudflared.home-ops-tunnel.id}.cfargotunnel.com"
   type    = "CNAME"

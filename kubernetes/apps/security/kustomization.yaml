@@ -3,7 +3,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - ./namespace.yaml
-  - ./crowdsec/ks.yaml
+  # - ./crowdsec/ks.yaml
   - ./pocket-id/ks.yaml
-  - ./rauthy/ks.yaml
+  # - ./rauthy/ks.yaml
   - ./tinyauth/ks.yaml

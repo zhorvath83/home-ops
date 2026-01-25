@@ -123,9 +123,8 @@ spec:
         hostnames:
           - "backup.${PUBLIC_DOMAIN}"
         parentRefs:
-          - name: external
+          - name: envoy-external
             namespace: networking
-            sectionName: websecure
         rules:
           - backendRefs:
               - identifier: app
