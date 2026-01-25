@@ -24,6 +24,23 @@ spec:
     keepHistory: false
 
   values:
+    configMaps:
+      config:
+        data:
+          config.yaml: |-
+            ingress:
+              - hostname: "${PUBLIC_DOMAIN}"
+                originRequest:
+                  http2Origin: true
+                  originServerName: "${PUBLIC_DOMAIN}"
+                service: &envoy-external-svc "https://envoy-external.networking.svc.cluster.local"
+              - hostname: "*.${PUBLIC_DOMAIN}"
+                originRequest:
+                  http2Origin: true
+                  originServerName: "external.${PUBLIC_DOMAIN}"
+                service: *envoy-external-svc
+              - service: http_status:404
+
     defaultPodOptions:
       automountServiceAccountToken: false
       enableServiceLinks: false
@@ -63,7 +80,9 @@ spec:
               - secretRef:
                   name: "{{ .Release.Name }}-secret"
 
-            args: ["tunnel", "run"]
+            args:
+              - tunnel
+              - run
 
             probes:
               liveness:
@@ -121,9 +140,7 @@ spec:
     persistence:
       config:
         type: configMap
-        name: cloudflare-tunnel-config
-        defaultMode: 0775
+        identifier: config
         globalMounts:
           - path: /etc/cloudflared/config.yaml
             subPath: config.yaml
-            readOnly: true

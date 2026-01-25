@@ -4,18 +4,14 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: networking
 resources:
-  - ./ocirepository.yaml
+  - networkpolicy.yaml
+  - ocirepository.yaml
   - externalsecret.yaml
   - helmrelease.yaml
-  - networkpolicy.yaml
 labels:
   - pairs:
       app.kubernetes.io/name: cloudflare-tunnel
 
-configMapGenerator:
-  - name: cloudflare-tunnel-config
-    files:
-      - config.yaml=./resources/config.yaml
 generatorOptions:
   disableNameSuffixHash: true
   annotations:
