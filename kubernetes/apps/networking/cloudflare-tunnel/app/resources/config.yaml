@@ -6,9 +6,7 @@ originRequest:
 # https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/configuration/ingress
 ingress:
   - hostname: "${PUBLIC_DOMAIN}"
-    service: &traefik-svc "https://traefik.networking.svc.cluster.local"
-  - hostname: "grafana.${PUBLIC_DOMAIN}"
-    service: "https://envoy-external.networking.svc.cluster.local"
+    service: &envoy-external-svc "https://envoy-external.networking.svc.cluster.local"
   - hostname: "*.${PUBLIC_DOMAIN}"
-    service: *traefik-svc
+    service: *envoy-external-svc
   - service: http_status:404
