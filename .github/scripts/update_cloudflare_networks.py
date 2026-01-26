@@ -2,12 +2,8 @@
 """
 Update Cloudflare IP ranges in Kubernetes manifests.
 
-This script fetches the current Cloudflare IP ranges from their API and updates:
-1. NetworkPolicy egress rules for cloudflare-tunnel
-2. Traefik HelmRelease trustedIPs (forwardedHeaders and proxyProtocol via YAML anchor)
-
-Note: RFC1918 ranges are no longer included in Traefik trustedIPs since a
-NetworkPolicy restricts ingress to only the cloudflare-tunnel pod.
+This script fetches the current Cloudflare IP ranges from their API and updates
+the NetworkPolicy egress rules for cloudflare-tunnel.
 
 The script preserves YAML formatting, comments, and structure while only updating
 the relevant IP address sections.
@@ -35,14 +31,10 @@ logger = logging.getLogger(__name__)
 CLOUDFLARE_API_URL = "https://api.cloudflare.com/client/v4/ips"
 REQUEST_TIMEOUT = 30
 
-# File paths from environment or defaults
+# File path from environment or default
 NETWORKPOLICY_FILE = os.getenv(
     "NETWORKPOLICY_FILE",
     "kubernetes/apps/networking/cloudflare-tunnel/app/networkpolicy.yaml",
-)
-TRAEFIK_HELMRELEASE_FILE = os.getenv(
-    "TRAEFIK_HELMRELEASE_FILE",
-    "kubernetes/apps/networking/traefik/app/helmrelease.yaml",
 )
 
 
@@ -148,7 +140,6 @@ def update_networkpolicy(cloudflare_cidrs: list[str]) -> UpdateResult:
     Update NetworkPolicy with Cloudflare IP ranges.
 
     This updates the egress rule that contains ipBlock entries for Cloudflare IPs.
-    RFC1918 ranges are NOT included here as they're for internal cluster traffic.
 
     Args:
         cloudflare_cidrs: List of Cloudflare CIDR strings.
@@ -190,7 +181,7 @@ def update_networkpolicy(cloudflare_cidrs: list[str]) -> UpdateResult:
     added = new_cidrs - current_cidrs
     removed = current_cidrs - new_cidrs
 
-    # Update the rule with new CIDRs (Cloudflare only, no RFC1918)
+    # Update the rule with new CIDRs
     cloudflare_egress_rule["to"] = [
         {"ipBlock": {"cidr": cidr}} for cidr in cloudflare_cidrs
     ]
@@ -199,69 +190,6 @@ def update_networkpolicy(cloudflare_cidrs: list[str]) -> UpdateResult:
 
     return UpdateResult(
         file_path=NETWORKPOLICY_FILE,
-        added=added,
-        removed=removed,
-        total=len(cloudflare_cidrs),
-    )
-
-
-def update_traefik_helmrelease(cloudflare_cidrs: list[str]) -> UpdateResult:
-    """
-    Update Traefik HelmRelease trustedIPs with Cloudflare ranges.
-
-    This updates the forwardedHeaders.trustedIPs section which uses a YAML anchor.
-    The proxyProtocol.trustedIPs uses an alias to the same anchor, so it's
-    automatically updated.
-
-    Note: RFC1918 ranges are no longer included since NetworkPolicy restricts
-    ingress to only the cloudflare-tunnel pod.
-
-    Args:
-        cloudflare_cidrs: List of Cloudflare CIDR strings.
-
-    Returns:
-        UpdateResult with details of changes made.
-
-    Raises:
-        ValueError: If the HelmRelease structure is invalid.
-    """
-    logger.info("Updating Traefik HelmRelease: %s", TRAEFIK_HELMRELEASE_FILE)
-
-    helmrelease, yaml = load_yaml_file(TRAEFIK_HELMRELEASE_FILE)
-
-    # Navigate to trustedIPs location
-    try:
-        websecure_config = (
-            helmrelease.get("spec", {})
-            .get("values", {})
-            .get("ports", {})
-            .get("websecure", {})
-        )
-        trusted_ips = websecure_config.get("forwardedHeaders", {}).get("trustedIPs")
-    except (KeyError, TypeError) as e:
-        raise ValueError(f"Invalid HelmRelease structure: {e}") from e
-
-    if trusted_ips is None:
-        raise ValueError(
-            "Could not find forwardedHeaders.trustedIPs in Traefik HelmRelease"
-        )
-
-    # Extract current Cloudflare CIDRs
-    current_cloudflare = set(trusted_ips)
-    new_cloudflare = set(cloudflare_cidrs)
-
-    # Calculate changes
-    added = new_cloudflare - current_cloudflare
-    removed = current_cloudflare - new_cloudflare
-
-    # Update the trustedIPs list in place to preserve the anchor
-    trusted_ips.clear()
-    trusted_ips.extend(cloudflare_cidrs)
-
-    save_yaml_file(TRAEFIK_HELMRELEASE_FILE, helmrelease, yaml)
-
-    return UpdateResult(
-        file_path=TRAEFIK_HELMRELEASE_FILE,
         added=added,
         removed=removed,
         total=len(cloudflare_cidrs),
@@ -292,23 +220,15 @@ def main() -> int:
         # Fetch Cloudflare IPs
         cloudflare_cidrs = fetch_cloudflare_networks()
 
-        # Update both files
-        results: list[UpdateResult] = []
+        # Update NetworkPolicy
+        result = update_networkpolicy(cloudflare_cidrs)
 
-        # Update NetworkPolicy (Cloudflare IPs only)
-        results.append(update_networkpolicy(cloudflare_cidrs))
-
-        # Update Traefik HelmRelease (Cloudflare IPs only, no RFC1918)
-        results.append(update_traefik_helmrelease(cloudflare_cidrs))
-
-        # Print results
-        for result in results:
-            print_result(result)
+        # Print result
+        print_result(result)
 
         # Summary
-        total_changes = sum(1 for r in results if r.has_changes)
         print(f"\n=== Summary ===")
-        print(f"Files updated: {total_changes}/{len(results)}")
+        print(f"Files updated: {1 if result.has_changes else 0}/1")
 
         return 0
 
