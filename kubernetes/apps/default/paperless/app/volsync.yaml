@@ -25,10 +25,10 @@ spec:
 apiVersion: volsync.backube/v1alpha1
 kind: ReplicationSource
 metadata:
-  name: paperless-data
+  name: paperless
   namespace: default
 spec:
-  sourcePVC: paperless-data
+  sourcePVC: paperless
   trigger:
     schedule: "0 2 * * *"  # 2 AM daily backup
   restic:
