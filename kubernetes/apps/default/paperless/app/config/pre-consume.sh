@@ -99,6 +99,16 @@ FILENAME=$(basename "${IN}")
 log_info "Processing: ${FILENAME}"
 
 # -----------------------------------------------------------------------------
+# Function: Check for digital signature
+# -----------------------------------------------------------------------------
+# Returns 0 if PDF is digitally signed, 1 otherwise.
+
+is_digitally_signed() {
+    local pdf_file="$1"
+    qpdf --json "${pdf_file}" 2>/dev/null | grep -q '"fieldtype": "/Sig"'
+}
+
+# -----------------------------------------------------------------------------
 # Function: Decrypt PDF
 # -----------------------------------------------------------------------------
 # Attempts to decrypt password-protected PDFs using configured passwords.
@@ -309,8 +319,13 @@ optimize_pdf() {
     # --compression-level=9: Maximum compression (1-9)
     # --object-streams=generate: Compress PDF objects into streams
     # --compress-streams=y: Ensure all streams are compressed
+    # --decode-level=generalized: Recompress LZW/ASCII streams to flate
     # --remove-unreferenced-resources=yes: Remove unused resources
     # --coalesce-contents: Merge content streams
+    # --externalize-inline-images: Convert inline images to regular images
+    # --ii-min-bytes=0: Apply to all inline images regardless of size
+    # --optimize-images: Convert non-JPEG images to JPEG if it reduces size
+    # --oi-min-*=0: Apply to all images regardless of size
 
     # Use temp file instead of --replace-input for NFS compatibility
     local temp_file
@@ -325,8 +340,15 @@ optimize_pdf() {
         --compression-level=9 \
         --object-streams=generate \
         --compress-streams=y \
+        --decode-level=generalized \
         --remove-unreferenced-resources=yes \
         --coalesce-contents \
+        --externalize-inline-images \
+        --ii-min-bytes=0 \
+        --optimize-images \
+        --oi-min-width=0 \
+        --oi-min-height=0 \
+        --oi-min-area=0 \
         "${temp_file}" 2>/dev/null
     local qpdf_exit=$?
     set -e
@@ -345,6 +367,12 @@ optimize_pdf() {
 # -----------------------------------------------------------------------------
 # Main processing
 # -----------------------------------------------------------------------------
+
+# Step 0: Skip digitally signed PDFs to preserve signature validity
+if is_digitally_signed "${IN}"; then
+    log_info "Digitally signed PDF detected - skipping all modifications to preserve signature"
+    exit 0
+fi
 
 # Step 1: Decrypt if encrypted
 if ! decrypt_pdf "${IN}"; then
