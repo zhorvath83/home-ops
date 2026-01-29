@@ -107,7 +107,11 @@ is_digitally_signed() {
     local pdf_file="$1"
     local json_output
     json_output=$(qpdf --json "${pdf_file}" 2>/dev/null) || true
-    echo "${json_output}" | grep -q '"fieldtype": "/Sig"'
+    if [[ "${json_output}" == *'"fieldtype": "/Sig"'* ]]; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 # -----------------------------------------------------------------------------
