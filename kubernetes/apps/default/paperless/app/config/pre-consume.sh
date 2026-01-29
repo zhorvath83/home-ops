@@ -105,7 +105,9 @@ log_info "Processing: ${FILENAME}"
 
 is_digitally_signed() {
     local pdf_file="$1"
-    qpdf --json "${pdf_file}" 2>/dev/null | grep -q '"fieldtype": "/Sig"'
+    local json_output
+    json_output=$(qpdf --json "${pdf_file}" 2>/dev/null) || true
+    echo "${json_output}" | grep -q '"fieldtype": "/Sig"'
 }
 
 # -----------------------------------------------------------------------------
