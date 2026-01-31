@@ -42,7 +42,7 @@ spec:
           app:
             image:
               repository: ghcr.io/maintainerr/maintainerr
-              tag: 2.26.1@sha256:86f7e583ffcf8dba3ce9fade4ad408b5760d050b93fddfaac57f083c51992ce2
+              tag: 2.26.1@sha256:2a308972e6b70bbd82942c4050edbd02c38044d623ecc96c82efba7a057cf99c
 
             env:
               TZ: "Europe/Budapest"
