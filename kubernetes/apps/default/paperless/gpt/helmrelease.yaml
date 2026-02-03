@@ -72,8 +72,8 @@ spec:
 
               AUTO_OCR_TAG: "AI OCR"
               AUTO_TAG: "AI feldolgozás"
-              PDF_OCR_TAGGING: "true"
-              PDF_OCR_COMPLETE_TAG: "Review"
+              # PDF_OCR_TAGGING: "true"
+              # PDF_OCR_COMPLETE_TAG: "Review"
 
               # Logging
               LOG_LEVEL: "info"
