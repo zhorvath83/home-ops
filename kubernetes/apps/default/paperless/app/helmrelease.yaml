@@ -27,6 +27,14 @@ spec:
     defaultPodOptions:
       automountServiceAccountToken: false
       enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
 
     controllers:
       *app :
@@ -107,6 +115,9 @@ spec:
               USERMAP_UID: &uid "10001"
               USERMAP_GID: &gid "10001"
 
+              S6_READ_ONLY_ROOT: 1
+              S6_YES_I_WANT_A_WORLD_WRITABLE_RUN_BECAUSE_KUBERNETES: 1
+
             envFrom:
               - secretRef:
                   name: "{{ .Release.Name }}-secret"
@@ -121,6 +132,12 @@ spec:
                 enabled: true
               readiness:
                 enabled: true
+
+            securityContext:
+              privileged: false
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
 
             resources: &resources
               requests:
@@ -145,6 +162,7 @@ spec:
               - ""
               - --appendonly
               - "no"
+
             securityContext:
               runAsNonRoot: true
               runAsUser: 10001
@@ -153,6 +171,7 @@ spec:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
               capabilities: { drop: ["ALL"] }
+
             resources:
               requests:
                 cpu: 1m
@@ -218,6 +237,7 @@ spec:
             image:
               repository: ghcr.io/home-operations/k8s-sidecar
               tag: 2.5.0@sha256:de494401b2e82d94e613b3fbad52859ab6f14f80b031bc8b0c702f52eed765bf
+
             env:
               TZ: *tz
               # Internal service URL
@@ -229,6 +249,7 @@ spec:
               - secretRef:
                   name: "{{ .Release.Name }}-secret"
             command: ["/bin/sh", "/scripts/seed-metadata.sh"]
+
             securityContext:
               runAsNonRoot: true
               runAsUser: 10001
@@ -237,6 +258,7 @@ spec:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
               capabilities: { drop: ["ALL"] }
+
             resources:
               requests:
                 cpu: 5m
@@ -244,6 +266,7 @@ spec:
               limits:
                 cpu: 500m
                 memory: 128Mi
+
             probes:
               liveness:
                 enabled: false
@@ -277,6 +300,13 @@ spec:
                 port: *port
 
     persistence:
+      tmpfs:
+        globalMounts:
+          - path: /tmp
+            subPath: tmp
+          - path: /run
+        type: emptyDir
+
       data:
         existingClaim: paperless
         advancedMounts:
