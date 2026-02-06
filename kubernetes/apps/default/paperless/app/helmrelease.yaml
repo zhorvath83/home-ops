@@ -69,9 +69,10 @@ spec:
               PAPERLESS_CONSUMER_DELETE_DUPLICATES: "true"
               PAPERLESS_CONSUMER_RECURSIVE: "true"
               PAPERLESS_CONSUMER_POLLING: "60"
+
               # Print a Patch-Code-T sheet as a separator page between different documents when scanning.
               # https://www.alliancegroup.co.uk/downloads/patch-code-t.pdf
-              PAPERLESS_CONSUMER_ENABLE_BARCODES: "true"
+              # PAPERLESS_CONSUMER_ENABLE_BARCODES: "true"
 
               # Pre-consume script for PDF processing (decrypt, blank removal, optimization)
               PAPERLESS_PRE_CONSUME_SCRIPT: "/usr/src/paperless/scripts/pre-consume.sh"
@@ -83,8 +84,8 @@ spec:
               PAPERLESS_REDIS: "redis://localhost:6379"
 
               # OCR settings
-              PAPERLESS_OCR_LANGUAGE: "hun"
-              PAPERLESS_OCR_LANGUAGES: "hun"
+              # PAPERLESS_OCR_LANGUAGE: "hun"
+              # PAPERLESS_OCR_LANGUAGES: "hun"
               PAPERLESS_OCR_MODE: "skip"
               PAPERLESS_OCR_SKIP_ARCHIVE_FILE: "always"
               PAPERLESS_OCR_CLEAN: "none"

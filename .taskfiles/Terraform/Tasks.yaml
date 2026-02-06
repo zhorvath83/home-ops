@@ -16,7 +16,7 @@ tasks:
       - "op run --no-masking --env-file=./.env -- terraform plan"
 
   apply:cloudflare:
-    desc: Prepare Cloudflare settings
+    desc: Apply Cloudflare settings
     dir: provision/cloudflare
     cmds:
       - "op run --no-masking --env-file=./.env -- terraform apply"

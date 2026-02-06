@@ -2,6 +2,22 @@ locals {
   github_meta = jsondecode(data.http.github_ip_ranges.response_body)
 }
 
+# Service token for mobile apps (bypasses browser-based auth)
+resource "cloudflare_zero_trust_access_service_token" "mobile_apps" {
+  account_id = var.CF_ACCOUNT_ID
+  name       = "MobileAppsServiceToken"
+}
+
+# Store service token credentials in 1Password
+resource "null_resource" "store-service-token-secret" {
+  provisioner "local-exec" {
+    command     = "op item edit cloudflare --vault HomeOps 'CF-Access-Client-Id=${cloudflare_zero_trust_access_service_token.mobile_apps.client_id}' 'CF-Access-Client-Secret=${cloudflare_zero_trust_access_service_token.mobile_apps.client_secret}'"
+    interpreter = ["/bin/bash", "-c"]
+    working_dir = path.module
+    quiet       = false
+  }
+}
+
 # Access groups
 
 ## My unrestricted user group - unlimited access for all Apps
@@ -80,6 +96,18 @@ resource "cloudflare_zero_trust_access_policy" "bypass_github_cidr_policy" {
   ]
 }
 
+resource "cloudflare_zero_trust_access_policy" "service_token_auth" {
+  account_id = var.CF_ACCOUNT_ID
+  name       = "ServiceTokenAuth"
+  decision   = "non_identity"
+
+  include = [{
+    service_token = {
+      token_id = cloudflare_zero_trust_access_service_token.mobile_apps.id
+    }
+  }]
+}
+
 # # One time pin auth method
 # resource "cloudflare_zero_trust_access_identity_provider" "pin_login" {
 #   account_id = var.CF_ACCOUNT_ID
@@ -110,9 +138,16 @@ resource "cloudflare_zero_trust_access_application" "private_cloud" {
   type             = "self_hosted"
   session_duration = "720h"
 
-  policies = [{
-    id = cloudflare_zero_trust_access_policy.unrestricted_users_policy.id
-  }]
+  policies = [
+    {
+      id         = cloudflare_zero_trust_access_policy.service_token_auth.id
+      precedence = 1
+    },
+    {
+      id         = cloudflare_zero_trust_access_policy.unrestricted_users_policy.id
+      precedence = 2
+    }
+  ]
 }
 
 ## Photos
