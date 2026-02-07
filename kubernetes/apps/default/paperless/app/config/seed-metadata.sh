@@ -76,6 +76,9 @@ process_item() {
     item="$2"
     name=$(printf '%s' "$item" | jq -r '.name')
 
+    # Remove custom fields not recognized by Paperless API (e.g. parent_name)
+    api_item=$(printf '%s' "$item" | jq -c 'del(.parent_name)')
+
     existing_id=$(get_existing_id "$endpoint" "$name")
 
     if [ -n "$existing_id" ]; then
@@ -84,7 +87,7 @@ process_item() {
             if ! curl -sf -X PATCH "${PAPERLESS_URL}/api/${endpoint}/${existing_id}/" \
                 -H "Authorization: Token ${PAPERLESS_TOKEN}" \
                 -H "Content-Type: application/json" \
-                -d "$item" > /dev/null 2>&1; then
+                -d "$api_item" > /dev/null 2>&1; then
                 error "Failed to update $endpoint: $name"
                 return 1
             fi
@@ -97,7 +100,7 @@ process_item() {
         if ! curl -sf -X POST "${PAPERLESS_URL}/api/${endpoint}/" \
             -H "Authorization: Token ${PAPERLESS_TOKEN}" \
             -H "Content-Type: application/json" \
-            -d "$item" > /dev/null 2>&1; then
+            -d "$api_item" > /dev/null 2>&1; then
             error "Failed to create $endpoint: $name"
             return 1
         fi
@@ -135,6 +138,49 @@ process_items() {
     log "Finished processing $item_type"
 }
 
+# Resolve parent relationships for tags using parent_name field
+resolve_tag_parents() {
+    log "Resolving tag parent relationships..."
+
+    if ! jq -e '.tags' "$SEED_DATA_FILE" > /dev/null 2>&1; then
+        return 0
+    fi
+
+    # Find tags with parent_name defined
+    count=$(jq '.tags | length' "$SEED_DATA_FILE")
+    i=0
+    while [ "$i" -lt "$count" ]; do
+        parent_name=$(jq -r ".tags[$i].parent_name // empty" "$SEED_DATA_FILE")
+        if [ -n "$parent_name" ]; then
+            name=$(jq -r ".tags[$i].name" "$SEED_DATA_FILE")
+            tag_id=$(get_existing_id "tags" "$name")
+            parent_id=$(get_existing_id "tags" "$parent_name")
+
+            if [ -n "$tag_id" ] && [ -n "$parent_id" ]; then
+                log "Setting parent of '$name' to '$parent_name' (id: $parent_id)"
+                if ! curl -sf -X PATCH "${PAPERLESS_URL}/api/tags/${tag_id}/" \
+                    -H "Authorization: Token ${PAPERLESS_TOKEN}" \
+                    -H "Content-Type: application/json" \
+                    -d "{\"parent\": ${parent_id}}" > /dev/null 2>&1; then
+                    error "Failed to set parent for tag: $name"
+                else
+                    log "Parent set for tag: $name -> $parent_name"
+                fi
+            else
+                if [ -z "$tag_id" ]; then
+                    error "Tag not found: $name"
+                fi
+                if [ -z "$parent_id" ]; then
+                    error "Parent tag not found: $parent_name"
+                fi
+            fi
+        fi
+        i=$((i + 1))
+    done
+
+    log "Finished resolving tag parent relationships"
+}
+
 main() {
     log "=== Paperless Metadata Seeder ==="
     log "URL: ${PAPERLESS_URL}"
@@ -159,6 +205,9 @@ main() {
     process_items "document_types"
     process_items "tags"
     process_items "custom_fields"
+
+    # Resolve tag parent relationships (must run after tags are created)
+    resolve_tag_parents
 
     log "=== Seeding completed ==="
 }

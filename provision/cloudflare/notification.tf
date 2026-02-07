@@ -32,25 +32,6 @@ resource "cloudflare_notification_policy" "tunnel_creation_deletion" {
   }
 }
 
-# Incident Alert - Cloudflare platform incidents (critical only)
-resource "cloudflare_notification_policy" "incident_alert" {
-  account_id  = var.CF_ACCOUNT_ID
-  name        = "Cloudflare Incident Alert"
-  description = "Alert for Cloudflare platform incidents"
-  enabled     = true
-  alert_type  = "incident_alert"
-
-  mechanisms = {
-    email = [{
-      id = var.PUSHOVER_CLOUDFLARE_EMAIL
-    }]
-  }
-
-  filters = {
-    incident_impact = ["INCIDENT_IMPACT_CRITICAL"]
-  }
-}
-
 # HTTP DDoS Attack Alert
 resource "cloudflare_notification_policy" "http_ddos_attack" {
   account_id  = var.CF_ACCOUNT_ID
