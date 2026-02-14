@@ -88,7 +88,7 @@ spec:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Seerr
           gethomepage.dev/group: Arr Stack
-          gethomepage.dev/icon: seerr.svg
+          gethomepage.dev/icon: jellyseerr.svg
         hostnames:
           - "reqs.${PUBLIC_DOMAIN}"
         parentRefs:
