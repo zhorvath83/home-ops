@@ -46,5 +46,5 @@ spec:
       hourly: 0
       daily: 14
       weekly: 4
-      monthly: 3
+      monthly: 12
       within: 7d
