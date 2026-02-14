@@ -1,0 +1,60 @@
+---
+# Temporary migration job: copy data from jellyseerr PVC to seerr PVC
+# and chown from 10001:10001 to 1000:1000 (seerr node user)
+#
+# Usage:
+#   kubectl apply -f migration-job.yaml
+#   kubectl -n default logs -f job/migrate-jellyseerr-to-seerr
+#   kubectl -n default delete job migrate-jellyseerr-to-seerr
+#
+# Prerequisites:
+#   - jellyseerr deployment scaled to 0
+#   - seerr PVC already created
+#
+# DELETE THIS FILE AFTER SUCCESSFUL MIGRATION
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrate-jellyseerr-to-seerr
+  namespace: default
+spec:
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: public.ecr.aws/docker/library/alpine:3.21
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              echo "=== Starting migration: jellyseerr -> seerr ==="
+              echo ""
+              echo "Source PVC (jellyseerr) contents:"
+              ls -la /source/
+              echo ""
+              echo "Copying data..."
+              cp -av /source/. /dest/
+              echo ""
+              echo "Changing ownership from 10001:10001 to 1000:1000..."
+              chown -R 1000:1000 /dest/
+              echo ""
+              echo "Destination PVC (seerr) contents after migration:"
+              ls -la /dest/
+              echo ""
+              echo "=== Migration completed successfully ==="
+          volumeMounts:
+            - name: source
+              mountPath: /source
+              readOnly: true
+            - name: dest
+              mountPath: /dest
+      volumes:
+        - name: source
+          persistentVolumeClaim:
+            claimName: jellyseerr
+        - name: dest
+          persistentVolumeClaim:
+            claimName: seerr
