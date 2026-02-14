@@ -24,7 +24,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: migrate
-          image: public.ecr.aws/docker/library/alpine:3.21
+          image: public.ecr.aws/docker/library/alpine:3.23
           command:
             - /bin/sh
             - -c
