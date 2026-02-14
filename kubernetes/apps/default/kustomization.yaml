@@ -18,7 +18,6 @@ resources:
   - ./subsyncarr/ks.yaml
   - ./calibre-web-automated/ks.yaml
   - ./resticprofile/ks.yaml
-  - ./jellyseerr/ks.yaml
   - ./seerr/ks.yaml
   - ./maintainerr/ks.yaml
   - ./mealie/ks.yaml
