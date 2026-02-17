@@ -75,6 +75,10 @@ spec:
 
             env:
               TZ: "Europe/Budapest"
+              QBT_WEBUI_PORT: &port 8080
+              QBT_TORRENTING_PORT: &torrentPort 62418
+
+            nameOverride: qbittorrent
 
             probes:
               liveness:
@@ -89,7 +93,7 @@ spec:
                 spec:
                   httpGet:
                     path: /api/v2/app/version
-                    port: &port 8080
+                    port: *port
                   periodSeconds: 10
                   timeoutSeconds: 5
                   failureThreshold: 5
@@ -123,10 +127,10 @@ spec:
           http:
             port: *port
           bittorrent-tcp:
-            port: 62418
+            port: *torrentPort
             protocol: TCP
           bittorrent-udp:
-            port: 62418
+            port: *torrentPort
             protocol: UDP
 
     route:
