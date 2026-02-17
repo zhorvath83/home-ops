@@ -55,6 +55,13 @@ spec:
               - --verbose=6
               - --one-time
 
+            resources:
+              requests:
+                cpu: 5m
+                memory: 20Mi
+              limits:
+                memory: 128Mi
+
         containers:
           app:
             image:

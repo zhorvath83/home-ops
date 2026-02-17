@@ -53,6 +53,13 @@ spec:
                   exit 1
                 fi
 
+            resources:
+              requests:
+                cpu: 10m
+                memory: 30Mi
+              limits:
+                memory: 128Mi
+
     serviceAccount:
       qbittorrent-upgrade-p2pblocklist: {}
 
