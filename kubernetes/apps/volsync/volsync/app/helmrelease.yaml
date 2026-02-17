@@ -27,3 +27,9 @@ spec:
     manageCRDs: true
     metrics:
       disableAuth: true
+    resources:
+      requests:
+        cpu: 10m
+        memory: 140Mi
+      limits:
+        memory: 512Mi

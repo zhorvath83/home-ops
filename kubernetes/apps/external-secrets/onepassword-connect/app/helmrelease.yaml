@@ -81,7 +81,7 @@ spec:
             resources: &resources
               requests:
                 memory: 48M
-                cpu: 5m
+                cpu: 16m
               limits:
                 memory: 256M
           sync:

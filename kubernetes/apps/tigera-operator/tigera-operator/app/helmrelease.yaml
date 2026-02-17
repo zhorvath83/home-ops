@@ -33,9 +33,8 @@ spec:
       enabled: false
     # Resources for the operator
     resources:
+      requests:
+        cpu: 5m
+        memory: 170Mi
       limits:
         memory: 300Mi
-        cpu: 5m
-      requests:
-        cpu: 10m
-        memory: 128Mi
