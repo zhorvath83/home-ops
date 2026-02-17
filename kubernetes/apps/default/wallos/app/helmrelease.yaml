@@ -52,10 +52,18 @@ spec:
               TZ: "Europe/Budapest"
 
             probes:
-              liveness:
-                enabled: false
-              readiness:
-                enabled: false
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health.php
+                    port: &port 80
+                  initialDelaySeconds: 20
+                  periodSeconds: 10
+                  timeoutSeconds: 2
+                  failureThreshold: 3
+              readiness: *probes
 
             securityContext:
               allowPrivilegeEscalation: false
@@ -76,7 +84,7 @@ spec:
         controller: *app
         ports:
           http:
-            port: &port 80
+            port: *port
 
     route:
       app:

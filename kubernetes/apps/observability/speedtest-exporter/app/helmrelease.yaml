@@ -56,11 +56,9 @@ spec:
 
             probes:
               liveness:
-                enabled: false
+                enabled: true
               readiness:
-                enabled: false
-              startup:
-                enabled: false
+                enabled: true
 
             securityContext:
               privileged: false

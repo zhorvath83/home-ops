@@ -78,11 +78,26 @@ spec:
 
             probes:
               liveness:
-                enabled: false
+                enabled: true
+                spec:
+                  periodSeconds: 30
+                  timeoutSeconds: 5
+                  failureThreshold: 5
               readiness:
-                enabled: false
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /api/v2/app/version
+                    port: &port 8080
+                  periodSeconds: 10
+                  timeoutSeconds: 5
+                  failureThreshold: 5
               startup:
-                enabled: false
+                enabled: true
+                spec:
+                  failureThreshold: 30
+                  periodSeconds: 10
 
             securityContext:
               privileged: false
@@ -106,7 +121,7 @@ spec:
         externalTrafficPolicy: Local
         ports:
           http:
-            port: &port 8080
+            port: *port
           bittorrent-tcp:
             port: 62418
             protocol: TCP

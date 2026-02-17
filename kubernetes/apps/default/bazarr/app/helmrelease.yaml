@@ -74,11 +74,26 @@ spec:
 
             probes:
               liveness:
-                enabled: false
+                enabled: true
+                spec:
+                  periodSeconds: 30
+                  timeoutSeconds: 5
+                  failureThreshold: 5
               readiness:
-                enabled: false
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /api/system/ping
+                    port: &port 6767
+                  periodSeconds: 10
+                  timeoutSeconds: 5
+                  failureThreshold: 5
               startup:
-                enabled: false
+                enabled: true
+                spec:
+                  failureThreshold: 30
+                  periodSeconds: 10
 
             securityContext:
               privileged: false
@@ -98,7 +113,7 @@ spec:
         controller: bazarr
         ports:
           http:
-            port: &port 6767
+            port: *port
 
     route:
       app:
