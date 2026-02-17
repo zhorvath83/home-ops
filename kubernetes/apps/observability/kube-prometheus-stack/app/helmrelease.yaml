@@ -172,6 +172,12 @@ spec:
       enabled: true
 
     kube-state-metrics:
+      resources:
+        requests:
+          cpu: 5m
+          memory: 90Mi
+        limits:
+          memory: 256Mi
       rbac:
         extraRules:
           - apiGroups: ["kustomize.toolkit.fluxcd.io"]
@@ -278,6 +284,12 @@ spec:
       enabled: true
 
     prometheus-node-exporter:
+      resources:
+        requests:
+          cpu: 5m
+          memory: 30Mi
+        limits:
+          memory: 128Mi
       prometheus:
         monitor:
           metricRelabelings:
@@ -305,6 +317,12 @@ spec:
     # ============================================================================
     prometheusOperator:
       enabled: true
+      resources:
+        requests:
+          cpu: 5m
+          memory: 30Mi
+        limits:
+          memory: 256Mi
       serviceMonitor:
         selfMonitor: true
         metricRelabelings:
@@ -344,6 +362,12 @@ spec:
         retention: 7d
         retentionSize: 4500MB
         replicas: 1
+        resources:
+          requests:
+            cpu: 50m
+            memory: 400Mi
+          limits:
+            memory: 2Gi
         storageSpec:
           volumeClaimTemplate:
             spec:

@@ -29,18 +29,36 @@ spec:
     image:
       repository: ghcr.io/external-secrets/external-secrets
     installCRDs: true
+    resources:
+      requests:
+        cpu: 10m
+        memory: 70Mi
+      limits:
+        memory: 256Mi
     serviceMonitor:
       enabled: true
       interval: 1m
     certController:
       image:
         repository: ghcr.io/external-secrets/external-secrets
+      resources:
+        requests:
+          cpu: 10m
+          memory: 70Mi
+        limits:
+          memory: 256Mi
       serviceMonitor:
         enabled: true
         interval: 1m
     webhook:
       image:
         repository: ghcr.io/external-secrets/external-secrets
+      resources:
+        requests:
+          cpu: 5m
+          memory: 50Mi
+        limits:
+          memory: 128Mi
       serviceMonitor:
         enabled: true
         interval: 1m

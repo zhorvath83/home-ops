@@ -35,7 +35,20 @@ spec:
   values:
     crds:
       enabled: true
+    controller:
+      resources:
+        requests:
+          cpu: 5m
+          memory: 80Mi
+        limits:
+          memory: 256Mi
     speaker:
+      resources:
+        requests:
+          cpu: 5m
+          memory: 130Mi
+        limits:
+          memory: 384Mi
       tolerations:
         - effect: "NoExecute"
           operator: "Exists"

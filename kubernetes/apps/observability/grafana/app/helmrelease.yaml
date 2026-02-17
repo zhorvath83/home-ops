@@ -73,6 +73,13 @@ spec:
     persistence:
       enabled: false
 
+    resources:
+      requests:
+        cpu: 10m
+        memory: 290Mi
+      limits:
+        memory: 1Gi
+
     testFramework:
       enabled: false
 
@@ -98,6 +105,12 @@ spec:
     # Sidecar for ConfigMap dashboards
     # ============================================================================
     sidecar:
+      resources:
+        requests:
+          cpu: 5m
+          memory: 30Mi
+        limits:
+          memory: 128Mi
       dashboards:
         enabled: true
         searchNamespace: ALL

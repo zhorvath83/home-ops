@@ -26,6 +26,12 @@ spec:
 
   values:
     controller:
+      resources:
+        requests:
+          cpu: 5m
+          memory: 30Mi
+        limits:
+          memory: 128Mi
       serviceMonitor:
         create: true
 

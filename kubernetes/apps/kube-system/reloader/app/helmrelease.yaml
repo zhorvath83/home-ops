@@ -27,3 +27,10 @@ spec:
       podMonitor:
         enabled: false
         namespace: *namespace
+      deployment:
+        resources:
+          requests:
+            cpu: 5m
+            memory: 170Mi
+          limits:
+            memory: 512Mi
