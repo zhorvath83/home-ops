@@ -77,14 +77,15 @@ spec:
               LLM_LANGUAGE: "Hungarian"
 
               # LLM Provider (for title/tag/correspondent generation)
-              LLM_PROVIDER: "ollama"
-              LLM_MODEL: "qwen3:8b"
-              OLLAMA_HOST: "http://192.168.1.100:11434"
-              OLLAMA_CONTEXT_LENGTH: "4096"
-              TOKEN_LIMIT: "2000"
+              # LLM_PROVIDER: "ollama"
+              # LLM_MODEL: "qwen3:8b"
+              # OLLAMA_HOST: "http://192.168.1.100:11434"
+              # OLLAMA_CONTEXT_LENGTH: "4096"
 
-              # LLM_PROVIDER: "mistral"
-              # LLM_MODEL: "mistral-large-latest"
+              TOKEN_LIMIT: "500"
+
+              LLM_PROVIDER: "mistral"
+              LLM_MODEL: "mistral-large-latest"
 
             envFrom:
               - secretRef:
