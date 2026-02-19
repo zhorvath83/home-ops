@@ -80,8 +80,8 @@ spec:
               LLM_PROVIDER: "ollama"
               LLM_MODEL: "qwen3:8b"
               OLLAMA_HOST: "http://192.168.1.100:11434"
-              OLLAMA_CONTEXT_LENGTH: "12288"
-              TOKEN_LIMIT: "9000"
+              OLLAMA_CONTEXT_LENGTH: "8192"
+              TOKEN_LIMIT: "2000"
 
               # LLM_PROVIDER: "mistral"
               # LLM_MODEL: "mistral-large-latest"
