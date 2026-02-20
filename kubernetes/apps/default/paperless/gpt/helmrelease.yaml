@@ -78,7 +78,7 @@ spec:
               LLM_LANGUAGE: "Hungarian"
               LLM_PROVIDER: "mistral"
               LLM_MODEL: "mistral-small-latest"
-              TOKEN_LIMIT: "2000"
+              TOKEN_LIMIT: "5000"
 
             envFrom:
               - secretRef:
