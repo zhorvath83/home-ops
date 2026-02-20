@@ -77,7 +77,7 @@ spec:
               # LLM Provider (for title/tag/correspondent generation)
               LLM_LANGUAGE: "Hungarian"
               LLM_PROVIDER: "mistral"
-              LLM_MODEL: "mistral-small-latest"
+              LLM_MODEL: "mistral-large-latest"
               # TOKEN_LIMIT: "5000"
 
             envFrom:
