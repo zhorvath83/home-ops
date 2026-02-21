@@ -24,17 +24,17 @@ spec:
     keepHistory: false
 
   values:
-    flux-systemPodOptions:
+    defaultPodOptions:
       automountServiceAccountToken: false
       enableServiceLinks: false
       securityContext:
-        runAsNonRoot: false
-        runAsUser: 0
-        runAsGroup: 0
-        fsGroup: 0
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
-          type: Runtimeflux-system
+          type: RuntimeDefault
 
     controllers:
       flux-provider-pushover:
@@ -92,5 +92,5 @@ spec:
         controller: *app
         ports:
           http:
-            port: 80
-            targetPort: 8080
+            port: *port
+            targetPort: *port
