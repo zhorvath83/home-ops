@@ -20,7 +20,18 @@ spec:
       retries: 3
   uninstall:
     keepHistory: false
+
   values:
+    defaultPodOptions:
+      automountServiceAccountToken: true
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+
     controllers:
       qbittorrent-upgrade-p2pblocklist:
         type: cronjob
@@ -52,6 +63,12 @@ spec:
                   echo "qbittorrent deployment not found!"
                   exit 1
                 fi
+
+            securityContext:
+              privileged: false
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
 
             resources:
               requests:
@@ -88,6 +105,12 @@ spec:
             - kind: ServiceAccount
               name: qbittorrent-upgrade-p2pblocklist
               namespace: "{{ .Release.Namespace }}"
+
+    persistence:
+      tmp:
+        type: emptyDir
+        globalMounts:
+          - path: /tmp
 
     service:
       app:
