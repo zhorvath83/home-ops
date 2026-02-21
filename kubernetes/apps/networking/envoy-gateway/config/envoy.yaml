@@ -23,6 +23,20 @@ spec:
               cpu: 10m
             limits:
               memory: 1Gi
+        patch:
+          type: StrategicMerge
+          value:
+            spec:
+              template:
+                spec:
+                  containers:
+                    - name: shutdown-manager
+                      resources:
+                        requests:
+                          cpu: 5m
+                          memory: 16Mi
+                        limits:
+                          memory: 64Mi
       envoyService:
         type: ClusterIP
         externalTrafficPolicy: Local
