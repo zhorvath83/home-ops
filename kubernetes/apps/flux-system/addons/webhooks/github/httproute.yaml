@@ -8,9 +8,9 @@ spec:
   hostnames:
     - "flux-webhook.${PUBLIC_DOMAIN}"
   parentRefs:
-    - name: external
+    - name: envoy-external
       namespace: networking
-      sectionName: websecure
+      sectionName: https
   rules:
     - backendRefs:
         - name: webhook-receiver
