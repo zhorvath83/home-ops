@@ -68,10 +68,10 @@ spec:
 
             resources:
               requests:
-                cpu: 10m
+                cpu: 100m
                 memory: 30Mi
               limits:
-                memory: 100Mi
+                memory: 128Mi
 
     persistence:
       config:

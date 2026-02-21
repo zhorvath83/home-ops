@@ -122,9 +122,9 @@ spec:
             resources:
               requests:
                 cpu: 10m
-                memory: 10Mi
+                memory: 32Mi
               limits:
-                memory: 2Gi
+                memory: 1Gi
 
     service:
       app:

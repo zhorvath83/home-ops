@@ -50,6 +50,12 @@ spec:
           - --strict-topology=true
           - --enable-capacity=true
           - --capacity-ownerref-level=1
+        resources:
+          requests:
+            cpu: 5m
+            memory: 30Mi
+          limits:
+            memory: 256Mi
 
       externalAttacher:
         enabled: false
@@ -65,6 +71,12 @@ spec:
         extraArgs:
           - --leader-election=false
           # - --node-deployment=true
+        resources:
+          requests:
+            cpu: 5m
+            memory: 20Mi
+          limits:
+            memory: 256Mi
 
       externalHealthMonitorController:
         enabled: false
@@ -77,11 +89,23 @@ spec:
         image:
           registry: public.ecr.aws/docker/library/busybox
           tag: 1.37.0
+        resources:
+          requests:
+            cpu: 5m
+            memory: 5Mi
+          limits:
+            memory: 256Mi
 
       driver:
         image:
           registry: docker.io/democraticcsi/democratic-csi
           tag: v1.9.3
+        resources:
+          requests:
+            cpu: 10m
+            memory: 100Mi
+          limits:
+            memory: 256Mi
 
         extraVolumeMounts:
           - name: local-storage
@@ -99,12 +123,24 @@ spec:
         image:
           registry: registry.k8s.io/sig-storage/csi-node-driver-registrar
           tag: v2.13.0
+        resources:
+          requests:
+            cpu: 5m
+            memory: 12Mi
+          limits:
+            memory: 256Mi
 
     csiProxy:
       enabled: true
       image:
         registry: docker.io/democraticcsi/csi-grpc-proxy
         tag: v0.5.6
+      resources:
+        requests:
+          cpu: 5m
+          memory: 12Mi
+        limits:
+          memory: 256Mi
 
     csiDriver:
       name: "org.democratic-csi.local-hostpath"

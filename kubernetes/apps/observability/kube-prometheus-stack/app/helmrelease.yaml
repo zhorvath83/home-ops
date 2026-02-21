@@ -175,7 +175,7 @@ spec:
       resources:
         requests:
           cpu: 5m
-          memory: 90Mi
+          memory: 110Mi
         limits:
           memory: 256Mi
       rbac:

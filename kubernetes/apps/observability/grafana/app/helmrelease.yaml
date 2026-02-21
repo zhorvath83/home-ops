@@ -108,7 +108,7 @@ spec:
       resources:
         requests:
           cpu: 5m
-          memory: 30Mi
+          memory: 75Mi
         limits:
           memory: 128Mi
       dashboards:
