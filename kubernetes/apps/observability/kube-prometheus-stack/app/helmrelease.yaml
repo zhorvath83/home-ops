@@ -175,7 +175,7 @@ spec:
       resources:
         requests:
           cpu: 5m
-          memory: 110Mi
+          memory: 128Mi
         limits:
           memory: 256Mi
       rbac:
@@ -320,7 +320,7 @@ spec:
       resources:
         requests:
           cpu: 5m
-          memory: 30Mi
+          memory: 64Mi
         limits:
           memory: 256Mi
       serviceMonitor:

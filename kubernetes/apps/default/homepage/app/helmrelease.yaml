@@ -75,10 +75,10 @@ spec:
 
             resources:
               requests:
-                cpu: 5m
-                memory: 120Mi
+                cpu: 10m
+                memory: 150Mi
               limits:
-                memory: 200Mi
+                memory: 256Mi
 
     rbac:
       roles:

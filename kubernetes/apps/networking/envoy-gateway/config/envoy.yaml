@@ -34,7 +34,7 @@ spec:
                       resources:
                         requests:
                           cpu: 5m
-                          memory: 16Mi
+                          memory: 32Mi
                         limits:
                           memory: 64Mi
       envoyService:
