@@ -87,9 +87,9 @@ spec:
 
             probes:
               liveness:
-                enabled: false
+                enabled: true
               readiness:
-                enabled: false
+                enabled: true
               startup:
                 enabled: false
 
