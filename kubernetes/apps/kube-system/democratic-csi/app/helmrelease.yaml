@@ -102,8 +102,8 @@ spec:
           tag: v1.9.3
         resources:
           requests:
-            cpu: 10m
-            memory: 100Mi
+            cpu: 60m
+            memory: 130Mi
           limits:
             memory: 256Mi
 
@@ -126,7 +126,7 @@ spec:
         resources:
           requests:
             cpu: 5m
-            memory: 12Mi
+            memory: 30Mi
           limits:
             memory: 256Mi
 
