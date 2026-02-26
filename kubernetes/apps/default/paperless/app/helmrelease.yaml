@@ -154,8 +154,6 @@ spec:
             args:
               - --port
               - "6379"
-              - --dir
-              - /tmp
               - --maxmemory
               - "96mb"
               - --maxmemory-policy
@@ -264,6 +262,13 @@ spec:
             subPath: tmp
           - path: /run
         type: emptyDir
+
+      valkey-data:
+        type: emptyDir
+        advancedMounts:
+          *app :
+            valkey:
+              - path: /data
 
       data:
         existingClaim: paperless
