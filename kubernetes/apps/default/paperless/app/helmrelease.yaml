@@ -154,6 +154,8 @@ spec:
             args:
               - --port
               - "6379"
+              - --dir
+              - /tmp
               - --maxmemory
               - "96mb"
               - --maxmemory-policy
