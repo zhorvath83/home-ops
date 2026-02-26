@@ -45,7 +45,7 @@ spec:
           app:
             image:
               repository: ghcr.io/icereed/paperless-gpt
-              tag: v0.25.0
+              tag: v0.25.1
 
             env:
               # Paperless-ngx connection
