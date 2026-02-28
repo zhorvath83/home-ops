@@ -185,9 +185,9 @@ spec:
             02-copy-molyhu-provider:
               - path: /tmp/molyhu-provider
             app:
-              - path: /app/calibre-web/cps/metadata_provider/moly_hu.py
+              - path: /app/calibre-web-automated/cps/metadata_provider/moly_hu.py
                 subPath: moly_hu.py
                 readOnly: true
-              - path: /app/calibre-web/cps/metadata_provider/moly_hu_provider.py
+              - path: /app/calibre-web-automated/cps/metadata_provider/moly_hu_provider.py
                 subPath: moly_hu_provider.py
                 readOnly: true
