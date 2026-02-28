@@ -72,7 +72,8 @@ spec:
               - |
                 cp /tmp/molyhu-repo/calibre-molyhu/calibre-web/moly_hu.py /tmp/molyhu-provider/moly_hu.py &&
                 cp /tmp/molyhu-repo/calibre-molyhu/moly_hu/src/moly_hu/moly_hu.py /tmp/molyhu-provider/moly_hu_provider.py &&
-                echo "Moly.hu metadata provider files copied successfully."
+                sed -i 's/return requests.get(page).text/return requests.get(page, headers={"User-Agent": "Mozilla\/5.0 (compatible; CalibreWeb\/1.0)"}).text/' /tmp/molyhu-provider/moly_hu.py &&
+                echo "Moly.hu metadata provider files copied and patched successfully."
             resources:
               requests:
                 cpu: 5m
