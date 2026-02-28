@@ -3,7 +3,7 @@
     {
       "description": ["System Upgrade Controller Group"],
       "groupName": "System Upgrade Controller",
-      "matchPackagePatterns": ["system-upgrade-controller"],
+      "matchPackageNames": ["/system-upgrade-controller/"],
       "matchDatasources": ["docker", "github-releases"],
       "group": {
         "commitMessageTopic": "{{{groupName}}} group"
@@ -13,7 +13,7 @@
     {
       "description": "Group Cert-Manager image (for CRDs) and chart",
       "groupName": "Cert-Manager",
-      "matchPackagePatterns": ["cert-manager"],
+      "matchPackageNames": ["/cert-manager/"],
       "matchDatasources": ["docker", "helm"],
       "group": { "commitMessageTopic": "{{{groupName}}} group" },
       "separateMinorPatch": true
@@ -21,7 +21,7 @@
     {
       "description": "Group metallb image (for CRDs) and chart",
       "groupName": "metallb",
-      "matchPackagePatterns": ["metallb"],
+      "matchPackageNames": ["/metallb/"],
       "matchDatasources": ["docker", "helm"],
       "group": { "commitMessageTopic": "{{{groupName}}} group" },
       "separateMinorPatch": true

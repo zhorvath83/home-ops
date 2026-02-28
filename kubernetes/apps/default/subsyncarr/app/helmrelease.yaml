@@ -45,7 +45,7 @@ spec:
             image:
               # https://github.com/tomtomwillis/subsyncarr_plus
               repository: tomtomw123/subsyncarr-plus
-              tag: latest@sha256:273f4e023479d72b96627163f66f42f8fa1312fbb6aea981b89ffbc818d822be
+              tag: 1.2.5@sha256:273f4e023479d72b96627163f66f42f8fa1312fbb6aea981b89ffbc818d822be
 
             env:
               TZ: "Europe/Budapest"

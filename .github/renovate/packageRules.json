@@ -4,7 +4,13 @@
       "description": ["Loose versioning for non-semver packages"],
       "matchDatasources": ["docker"],
       "versioning": "loose",
-      "matchPackagePatterns": ["plex", "qbittorrent"]
+      "matchPackageNames": ["/plex/", "/qbittorrent/"]
+    },
+    {
+      "description": ["Regex versioning for calibre-web-automated (uses V-prefixed versions like V3.1.4)"],
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["ghcr.io/crocodilestick/calibre-web-automated"],
+      "versioning": "regex:^V(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)$"
     }
   ]
 }

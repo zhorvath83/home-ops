@@ -1,91 +1,59 @@
 {
   "packageRules": [
     {
-      "matchDatasources": [
-      "docker"
-      ],
-      "matchPackageNames": [
-      "cloudflare/cloudflared"
-      ],
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["cloudflare/cloudflared"],
       "prBodyNotes": [
-      "[Release notes](https://github.com/cloudflare/cloudflared/blob/master/RELEASE_NOTES)"
+        "[Release notes](https://github.com/cloudflare/cloudflared/blob/master/RELEASE_NOTES)"
       ]
     },
     {
-      "matchDatasources": [
-      "docker"
-      ],
-      "matchPackageNames": [
-      "ghcr.io/dgtlmoon/changedetection.io"
-      ],
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["ghcr.io/home-operations/plex"],
       "prBodyNotes": [
-      "[Release notes](https://github.com/dgtlmoon/changedetection.io/releases)"
+        "[Plex Media Server release notes](https://forums.plex.tv/t/plex-media-server/30447)"
       ]
     },
     {
-      "matchDatasources": [
-      "docker"
-      ],
-      "matchPackageNames": [
-      "b4bz/homer"
-      ],
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["ghcr.io/home-operations/sonarr"],
       "prBodyNotes": [
-      "[Release notes](https://github.com/bastienwirtz/homer/releases)"
+        "[Upstream release notes](https://github.com/Sonarr/Sonarr/releases)"
       ]
     },
     {
-      "matchDatasources": [
-      "docker"
-      ],
-      "matchPackageNames": [
-      "saspus/duplicacy-web"
-      ],
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["ghcr.io/home-operations/radarr"],
       "prBodyNotes": [
-      "[Release notes](https://bitbucket.org/saspus/duplicacy-web-docker-container/src/master/CHANGELOG.md)"
+        "[Upstream release notes](https://github.com/Radarr/Radarr/releases)"
       ]
     },
     {
-      "matchDatasources": [
-      "docker"
-      ],
-      "matchPackageNames": [
-      "ghcr.io/home-assistant/home-assistant"
-      ],
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["ghcr.io/home-operations/bazarr"],
       "prBodyNotes": [
-      "[Release notes](https://www.home-assistant.io/blog/categories/release-notes/)"
+        "[Upstream release notes](https://github.com/morpheus65535/bazarr/releases)"
       ]
     },
     {
-      "matchDatasources": [
-      "docker"
-      ],
-      "matchPackageNames": [
-      "vabene1111/recipes"
-      ],
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["ghcr.io/home-operations/prowlarr"],
       "prBodyNotes": [
-      "[Release notes](https://github.com/TandoorRecipes/recipes/releases/latest/)"
+        "[Upstream release notes](https://github.com/Prowlarr/Prowlarr/releases)"
       ]
     },
     {
-      "matchDatasources": [
-      "docker"
-      ],
-      "matchPackageNames": [
-      "zadam/trilium"
-      ],
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["ghcr.io/home-operations/qbittorrent"],
       "prBodyNotes": [
-      "[Release notes](https://github.com/zadam/trilium/releases/latest/)"
+        "[Upstream release notes](https://github.com/qbittorrent/qBittorrent/releases)"
       ]
     },
     {
-      "matchDatasources": [
-      "docker"
-      ],
-      "matchPackageNames": [
-      "jellyfin/jellyfin"
-      ],
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["ghcr.io/paperless-ngx/paperless-ngx"],
       "prBodyNotes": [
-      "[Release notes](https://github.com/jellyfin/jellyfin/releases/latest/)"
+        "[Changelog](https://docs.paperless-ngx.com/changelog/)"
       ]
     }
   ]

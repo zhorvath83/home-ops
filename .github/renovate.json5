@@ -14,6 +14,7 @@
     'github>zhorvath83/home-ops//.github/renovate/groupPackages.json',
     'github>zhorvath83/home-ops//.github/renovate/packageRules.json',
     'github>zhorvath83/home-ops//.github/renovate/prBodyNotes.json',
+    'helpers:pinGitHubActionDigests',
   ],
   dependencyDashboardTitle: 'Renovate Dashboard 🤖',
   suppressNotifications: [
@@ -55,32 +56,8 @@
   customManagers: [
     {
       customType: 'regex',
-      description: 'Process CRD dependencies',
-      managerFilePatterns: [
-        '/kubernetes/crds/.+\\.ya?ml$/',
-      ],
-      matchStrings: [
-        'registryUrl=(?<registryUrl>\\S+) chart=(?<depName>\\S+)\n.*?(?<currentValue>[^-\\s]*)\n',
-        'datasource=(?<datasource>\\S+) image=(?<depName>\\S+)\n.*?-\\s(.*?)/(?<currentValue>[^/]+)/[^/]+\n',
-      ],
-      datasourceTemplate: '{{#if datasource}}{{{datasource}}}{{else}}helm{{/if}}',
-    },
-    {
-      customType: 'regex',
-      description: 'Process MetalLB CRD dependencies',
-      managerFilePatterns: [
-        '/crds\\/metallb\\/crds\\.yaml$/',
-      ],
-      matchStrings: [
-        'registryUrl=(?<registryUrl>.*) chart=(?<depName>.*)\\s.*tag: v(?<currentValue>.*)',
-      ],
-      datasourceTemplate: 'helm',
-    },
-    {
-      customType: 'regex',
       description: 'Process various other dependencies',
       managerFilePatterns: [
-        '/provision/ansible/.+\\.ya?ml$/',
         '/kubernetes/.+\\.ya?ml$/',
       ],
       matchStrings: [
