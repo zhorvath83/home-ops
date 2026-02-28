@@ -7,10 +7,10 @@
       "matchPackageNames": ["/plex/", "/qbittorrent/"]
     },
     {
-      "description": ["Regex versioning for calibre-web-automated (uses V-prefixed versions like V3.1.4)"],
+      "description": ["Regex versioning for calibre-web-automated (V/v-prefixed versions)"],
       "matchDatasources": ["docker"],
       "matchPackageNames": ["ghcr.io/crocodilestick/calibre-web-automated"],
-      "versioning": "regex:^V(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)$"
+      "versioning": "regex:^[Vv](?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)$"
     }
   ]
 }
