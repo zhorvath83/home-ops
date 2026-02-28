@@ -42,6 +42,44 @@ spec:
         annotations:
           reloader.stakater.com/auto: "true"
 
+        initContainers:
+          01-clone-molyhu:
+            image:
+              repository: registry.k8s.io/git-sync/git-sync
+              tag: v4.6.0@sha256:228a26d5f55ac5ae9c51635812570ba0073e0b1e0bd8fc3a653a0523b918c092
+            args:
+              - --repo=https://github.com/crash5/calibre-molyhu
+              - --ref=main
+              - --depth=1
+              - --root=/tmp/molyhu-repo
+              - --link=calibre-molyhu
+              - --one-time
+            resources:
+              requests:
+                cpu: 5m
+                memory: 20Mi
+              limits:
+                memory: 128Mi
+
+          02-copy-molyhu-provider:
+            image:
+              repository: public.ecr.aws/docker/library/busybox
+              tag: 1.37.0
+            command:
+              - /bin/sh
+              - -c
+            args:
+              - |
+                cp /tmp/molyhu-repo/calibre-molyhu/calibre-web/moly_hu.py /tmp/molyhu-provider/moly_hu.py &&
+                cp /tmp/molyhu-repo/calibre-molyhu/moly_hu/src/moly_hu/moly_hu.py /tmp/molyhu-provider/moly_hu_provider.py &&
+                echo "Moly.hu metadata provider files copied successfully."
+            resources:
+              requests:
+                cpu: 5m
+                memory: 10Mi
+              limits:
+                memory: 64Mi
+
         containers:
           app:
             image:
@@ -127,3 +165,29 @@ spec:
         path: /backups/documents/personal/ebooks
         globalMounts:
           - path: /calibre-library
+
+      # git-sync clone target for crash5/calibre-molyhu repo
+      molyhu-repo:
+        type: emptyDir
+        advancedMounts:
+          calibre-web-automated:
+            01-clone-molyhu:
+              - path: /tmp/molyhu-repo
+            02-copy-molyhu-provider:
+              - path: /tmp/molyhu-repo
+                readOnly: true
+
+      # Moly.hu metadata provider files for calibre-web
+      molyhu-provider:
+        type: emptyDir
+        advancedMounts:
+          calibre-web-automated:
+            02-copy-molyhu-provider:
+              - path: /tmp/molyhu-provider
+            app:
+              - path: /app/calibre-web/cps/metadata_provider/moly_hu.py
+                subPath: moly_hu.py
+                readOnly: true
+              - path: /app/calibre-web/cps/metadata_provider/moly_hu_provider.py
+                subPath: moly_hu_provider.py
+                readOnly: true
