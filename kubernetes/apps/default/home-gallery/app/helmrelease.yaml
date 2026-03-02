@@ -74,7 +74,7 @@ spec:
           app:
             image:
               repository: xemle/home-gallery
-              tag: latest@sha256:57f1923412bbff2de6e6a463fc5ee3d4b6efb486b4b2594d48729751dc36b7fb
+              tag: latest@sha256:1b491e9a8d18f54b352af61ea0647495646dea3e5b15847feff0e8ca81386e1c
 
             env:
               - name: TZ
