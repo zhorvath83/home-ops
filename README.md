@@ -58,7 +58,7 @@ I use official Helm charts whenever possible for applications. When official cha
 - **[Calico](https://github.com/projectcalico/calico)**: Container networking and network security
 - **[MetalLB](https://github.com/metallb/metallb)**: Load balancer for bare metal clusters
 - **[cloudflared](https://github.com/cloudflare/cloudflared)**: Cloudflare secure tunnel access
-- **[Ingress NGINX](https://github.com/kubernetes/ingress-nginx)**: NGINX-based ingress controller
+- **[Envoy Gateway](https://github.com/envoyproxy/gateway)**: Envoy-based ingress controller
 
 ### DNS & External Integration
 
@@ -68,7 +68,7 @@ I use official Helm charts whenever possible for applications. When official cha
 ### Storage & Backup
 
 - **[democratic-csi](https://github.com/democratic-csi/democratic-csi)**: CSI driver supporting local hostpath, NFS, iSCSI and ZFS storage backends
-- **[volsync](https://github.com/backube/volsync)**: PVC backup and recovery using Restic to Backblaze B2
+- **[volsync](https://github.com/backube/volsync)**: PVC backup and recovery using Restic to Backblaze B2 object storage
 
 ### Configuration Management
 
