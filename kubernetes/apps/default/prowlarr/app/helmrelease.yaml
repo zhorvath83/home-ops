@@ -60,9 +60,9 @@ spec:
                     path: /ping
                     port: &port 9696
                   initialDelaySeconds: 15
-                  periodSeconds: 10
-                  timeoutSeconds: 1
-                  failureThreshold: 3
+                  periodSeconds: 30
+                  timeoutSeconds: 5
+                  failureThreshold: 5
               readiness: *probes
 
             securityContext:

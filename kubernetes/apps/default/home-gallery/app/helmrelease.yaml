@@ -100,8 +100,8 @@ spec:
                     port: &port 3000
                   initialDelaySeconds: 30
                   periodSeconds: 30
-                  timeoutSeconds: 10
-                  failureThreshold: 3
+                  timeoutSeconds: 5
+                  failureThreshold: 5
               readiness:
                 enabled: true
                 custom: true
@@ -109,10 +109,10 @@ spec:
                   httpGet:
                     path: /
                     port: *port
-                  initialDelaySeconds: 15
-                  periodSeconds: 15
+                  initialDelaySeconds: 30
+                  periodSeconds: 30
                   timeoutSeconds: 5
-                  failureThreshold: 3
+                  failureThreshold: 5
               startup:
                 enabled: true
                 custom: true
@@ -120,10 +120,10 @@ spec:
                   httpGet:
                     path: /
                     port: *port
-                  initialDelaySeconds: 10
-                  periodSeconds: 10
+                  initialDelaySeconds: 30
+                  periodSeconds: 30
                   timeoutSeconds: 5
-                  failureThreshold: 30
+                  failureThreshold: 5
 
             securityContext:
               privileged: false

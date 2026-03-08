@@ -61,9 +61,10 @@ spec:
                   httpGet:
                     path: /heartbeat
                     port: *apiPort
-                  initialDelaySeconds: 15
+                  initialDelaySeconds: 30
                   periodSeconds: 30
-                  failureThreshold: 3
+                  timeoutSeconds: 5
+                  failureThreshold: 5
               readiness:
                 enabled: true
                 custom: true
@@ -106,9 +107,10 @@ spec:
                   httpGet:
                     path: /heartbeat
                     port: *syncPort
-                  initialDelaySeconds: 15
+                  initialDelaySeconds: 30
                   periodSeconds: 30
-                  failureThreshold: 3
+                  timeoutSeconds: 5
+                  failureThreshold: 5
               readiness:
                 enabled: true
                 custom: true

@@ -59,10 +59,10 @@ spec:
                   httpGet:
                     path: /ping
                     port: &port 8989
-                  initialDelaySeconds: 15
-                  periodSeconds: 10
-                  timeoutSeconds: 1
-                  failureThreshold: 3
+                  initialDelaySeconds: 30
+                  periodSeconds: 30
+                  timeoutSeconds: 5
+                  failureThreshold: 5
               readiness: *probes
               startup:
                 enabled: false

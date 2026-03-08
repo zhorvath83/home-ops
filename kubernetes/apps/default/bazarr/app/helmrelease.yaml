@@ -86,14 +86,15 @@ spec:
                   httpGet:
                     path: /api/system/ping
                     port: &port 6767
-                  periodSeconds: 10
+                  periodSeconds: 30
                   timeoutSeconds: 5
                   failureThreshold: 5
               startup:
                 enabled: true
                 spec:
-                  failureThreshold: 30
-                  periodSeconds: 10
+                  periodSeconds: 30
+                  timeoutSeconds: 5
+                  failureThreshold: 5
 
             securityContext:
               privileged: false
