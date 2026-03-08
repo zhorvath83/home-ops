@@ -47,7 +47,7 @@ spec:
           app:
             image:
               repository: ghcr.io/zhorvath83/flux-provider-pushover
-              tag: latest@sha256:691677a057785ed4289349326f2c825efd3aa4f9869080dc1f3ca3287e467aef
+              tag: latest@sha256:2c473081ed28518a1140a78830d5d18b21826a5a290bd9cec5538007c834242e
 
             env:
               TZ: "Europe/Budapest"
