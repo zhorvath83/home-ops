@@ -25,6 +25,7 @@ spec:
     keepHistory: false
 
   values:
+    # Chart defaults: seccompProfile=RuntimeDefault, runAsNonRoot, drop ALL, noPrivEsc.
     admin:
       existingSecret: grafana-secret
     rbac:

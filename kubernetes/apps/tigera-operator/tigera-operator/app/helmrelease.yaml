@@ -21,6 +21,9 @@ spec:
     remediation:
       retries: 3
   values:
+    # WARNING: Chart sets NO securityContext at all and uses hostNetwork: true.
+    # Chart has no values key for securityContext — cannot be configured via values.
+    # Tigera operator manages Calico pods which require privileged networking.
     # Tigera operator configuration
     installation:
       enabled: false  # We'll manage the Installation CR separately

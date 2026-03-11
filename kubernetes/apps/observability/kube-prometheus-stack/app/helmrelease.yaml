@@ -27,6 +27,7 @@ spec:
     keepHistory: false
 
   values:
+    # Chart defaults: seccompProfile=RuntimeDefault across all components (operator, prometheus, kube-state-metrics).
     # ============================================================================
     # Global settings
     # ============================================================================

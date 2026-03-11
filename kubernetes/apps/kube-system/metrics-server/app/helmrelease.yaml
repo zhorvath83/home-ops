@@ -23,6 +23,7 @@ spec:
     keepHistory: false
 
   values:
+    # Chart defaults: seccompProfile=RuntimeDefault, runAsNonRoot, readOnlyRootFS, drop ALL.
     env:
       TZ: "Europe/Budapest"
     args:

@@ -25,7 +25,7 @@ spec:
     keepHistory: false
 
   values:
-    # Strict Security Context is defined in the Helm Chart.
+    # Chart defaults: seccompProfile=RuntimeDefault, runAsNonRoot, readOnlyRootFS, drop ALL.
     image:
       repository: ghcr.io/external-secrets/external-secrets
     installCRDs: true

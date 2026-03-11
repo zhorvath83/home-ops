@@ -23,11 +23,19 @@ spec:
     keepHistory: false
 
   values:
+    # Chart defaults: pod=seccompProfile+runAsNonRoot, but containerSecurityContext is empty.
+    # Adding container hardening explicitly below.
     reloader:
       podMonitor:
         enabled: false
         namespace: *namespace
       deployment:
+        containerSecurityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+              - ALL
         resources:
           requests:
             cpu: 5m

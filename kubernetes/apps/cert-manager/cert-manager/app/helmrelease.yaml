@@ -22,7 +22,7 @@ spec:
       retries: 3
 
   values:
-    # Pod Security Context controlled via Helm Chart.
+    # Chart defaults: seccompProfile=RuntimeDefault, runAsNonRoot, drop ALL, noPrivEsc.
     crds:
       enabled: true
     dns01RecursiveNameservers: https://1.1.1.1:443/dns-query,https://1.0.0.1:443/dns-query

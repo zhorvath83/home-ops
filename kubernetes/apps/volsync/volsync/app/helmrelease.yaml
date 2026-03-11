@@ -24,6 +24,12 @@ spec:
   uninstall:
     keepHistory: false
   values:
+    # Chart defaults: container=drop ALL+readOnlyRootFS+noPrivEsc, but NO seccompProfile/runAsNonRoot.
+    # Adding pod-level hardening explicitly.
+    podSecurityContext:
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
     manageCRDs: true
     metrics:
       disableAuth: true

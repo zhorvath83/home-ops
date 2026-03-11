@@ -23,6 +23,8 @@ spec:
     keepHistory: false
 
   values:
+    # NOTE: Chart sets NO securityContext by default. CSI drivers require
+    # privileged access for volume operations — hardening not applicable here.
     env:
       TZ: "Europe/Budapest"
     controller:

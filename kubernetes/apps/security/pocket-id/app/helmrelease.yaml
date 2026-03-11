@@ -71,7 +71,9 @@ spec:
         runAsUser: 10001
         runAsGroup: 10001
         fsGroup: 10001
-        fsGroupChangePolicy: Always
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
 
     service:
       app:

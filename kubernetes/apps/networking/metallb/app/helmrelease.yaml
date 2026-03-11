@@ -33,9 +33,15 @@ spec:
   uninstall:
     keepHistory: false
   values:
+    # Chart defaults: controller=runAsNonRoot+drop ALL+readOnlyRootFS but NO seccompProfile.
+    # Speaker requires NET_RAW/NET_ADMIN/SYS_ADMIN capabilities by design (FRR routing).
+    # Adding seccompProfile to controller pod explicitly.
     crds:
       enabled: true
     controller:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       resources:
         requests:
           cpu: 5m

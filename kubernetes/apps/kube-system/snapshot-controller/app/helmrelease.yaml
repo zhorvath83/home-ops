@@ -25,7 +25,12 @@ spec:
     keepHistory: false
 
   values:
+    # Chart defaults: container=runAsNonRoot+readOnlyRootFS+drop ALL, but NO seccompProfile.
+    # Adding seccompProfile via podSecurityContext for both controller and webhook.
     controller:
+      podSecurityContext:
+        seccompProfile:
+          type: RuntimeDefault
       resources:
         requests:
           cpu: 5m
