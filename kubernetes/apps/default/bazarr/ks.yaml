@@ -10,6 +10,7 @@ spec:
     labels:
       app.kubernetes.io/name: bazarr
   dependsOn:
+    - name: cluster-apps-onepassword-store
     - name: cluster-apps-democratic-csi
   path: ./kubernetes/apps/default/bazarr/app
   prune: true

@@ -10,6 +10,7 @@ spec:
     labels:
       app.kubernetes.io/name: actual
   dependsOn:
+    - name: cluster-apps-onepassword-store
     - name: cluster-apps-democratic-csi
   path: ./kubernetes/apps/default/actual/app
   prune: true

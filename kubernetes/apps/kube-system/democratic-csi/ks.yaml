@@ -9,6 +9,8 @@ spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: democratic-csi
+  dependsOn:
+    - name: cluster-apps-volsync
   path: ./kubernetes/apps/kube-system/democratic-csi/app
   prune: true
   sourceRef:

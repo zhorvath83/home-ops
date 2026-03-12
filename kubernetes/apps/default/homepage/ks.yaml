@@ -9,6 +9,8 @@ spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: homepage
+  dependsOn:
+    - name: cluster-apps-onepassword-store
   path: ./kubernetes/apps/default/homepage/app
   prune: true
   sourceRef:

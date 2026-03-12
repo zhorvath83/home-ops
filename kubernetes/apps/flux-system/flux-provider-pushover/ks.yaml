@@ -9,6 +9,8 @@ spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: flux-provider-pushover
+  dependsOn:
+    - name: cluster-apps-onepassword-store
   path: ./kubernetes/apps/flux-system/flux-provider-pushover/app
   prune: true
   sourceRef:

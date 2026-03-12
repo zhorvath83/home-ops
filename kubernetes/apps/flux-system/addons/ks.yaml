@@ -6,6 +6,8 @@ metadata:
   name: cluster-apps-flux-alerts
   namespace: flux-system
 spec:
+  dependsOn:
+    - name: cluster-apps-onepassword-store
   path: ./kubernetes/apps/flux-system/addons/alerts
   prune: true
   sourceRef:
@@ -23,6 +25,8 @@ metadata:
   name: cluster-apps-flux-webhooks
   namespace: flux-system
 spec:
+  dependsOn:
+    - name: cluster-apps-onepassword-store
   path: ./kubernetes/apps/flux-system/addons/webhooks
   prune: true
   sourceRef:

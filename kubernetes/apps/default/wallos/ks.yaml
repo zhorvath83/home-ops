@@ -10,6 +10,7 @@ spec:
     labels:
       app.kubernetes.io/name: wallos
   dependsOn:
+    - name: cluster-apps-onepassword-store
     - name: cluster-apps-democratic-csi
   path: ./kubernetes/apps/default/wallos/app
   prune: true

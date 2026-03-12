@@ -32,6 +32,9 @@ spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: restic-gui
+  dependsOn:
+    - name: cluster-apps-onepassword-store
+    - name: cluster-apps-democratic-csi
   path: ./kubernetes/apps/default/resticprofile/gui
   prune: true
   sourceRef:

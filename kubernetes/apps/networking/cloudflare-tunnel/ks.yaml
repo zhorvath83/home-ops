@@ -9,6 +9,8 @@ spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: cloudflare-tunnel
+  dependsOn:
+    - name: cluster-apps-onepassword-store
   path: ./kubernetes/apps/networking/cloudflare-tunnel/app
   prune: true
   sourceRef:
