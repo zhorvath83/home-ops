@@ -21,3 +21,10 @@ spec:
   targetNamespace: default
   timeout: 5m
   wait: false
+  components:
+    - ../../../../components/volsync
+  postBuild:
+    substitute:
+      APP: seerr
+      APP_UID: "1000"
+      APP_GID: "1000"

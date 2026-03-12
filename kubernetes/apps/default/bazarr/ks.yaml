@@ -21,3 +21,8 @@ spec:
   targetNamespace: default
   timeout: 5m
   wait: false
+  components:
+    - ../../../../components/volsync
+  postBuild:
+    substitute:
+      APP: bazarr

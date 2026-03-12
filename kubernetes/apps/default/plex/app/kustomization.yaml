@@ -5,10 +5,9 @@ kind: Kustomization
 namespace: default
 resources:
   - ./ocirepository.yaml
-  - ./pvc.yaml
+  - ./pvc-cache.yaml
   - ./externalsecret.yaml
   - ./helmrelease.yaml
-  - ./volsync.yaml
 
 labels:
   - pairs:

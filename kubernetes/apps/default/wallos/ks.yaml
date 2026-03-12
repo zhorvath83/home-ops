@@ -21,3 +21,10 @@ spec:
   targetNamespace: default
   timeout: 5m
   wait: false
+  components:
+    - ../../../../components/volsync
+  postBuild:
+    substitute:
+      APP: wallos
+      APP_UID: "0"
+      APP_GID: "0"

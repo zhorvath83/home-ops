@@ -21,3 +21,9 @@ spec:
   targetNamespace: default
   timeout: 5m
   wait: false
+  components:
+    - ../../../../components/volsync
+  postBuild:
+    substitute:
+      APP: actual
+      VOLSYNC_CAPACITY: "5Gi"

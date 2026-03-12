@@ -21,6 +21,16 @@ spec:
   targetNamespace: default
   timeout: 5m
   wait: false
+  components:
+    - ../../../../components/volsync
+  postBuild:
+    substitute:
+      APP: paperless
+      VOLSYNC_CAPACITY: "20Gi"
+      VOLSYNC_CACHE: "2Gi"
+      VOLSYNC_RETAIN_DAILY: "7"
+      VOLSYNC_RETAIN_WEEKLY: "4"
+      VOLSYNC_RETAIN_MONTHLY: "12"
 ---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/kustomization-kustomize-v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1

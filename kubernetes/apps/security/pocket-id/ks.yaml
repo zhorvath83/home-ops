@@ -20,3 +20,8 @@ spec:
   targetNamespace: security
   timeout: 5m
   wait: false
+  components:
+    - ../../../../components/volsync
+  postBuild:
+    substitute:
+      APP: pocket-id
