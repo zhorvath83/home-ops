@@ -1,0 +1,26 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/volsync.backube/replicationsource_v1alpha1.json
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationSource
+metadata:
+  name: "${APP}"
+spec:
+  sourcePVC: "${VOLSYNC_CLAIM:=${APP}}"
+  trigger:
+    schedule: "${VOLSYNC_SCHEDULE:=0 2 * * *}"
+  restic:
+    copyMethod: Snapshot
+    pruneIntervalDays: ${VOLSYNC_PRUNE_DAYS:=7}
+    repository: "${APP}-volsync-secret"
+    cacheCapacity: "${VOLSYNC_CACHE:=1Gi}"
+    volumeSnapshotClassName: democratic-csi-local-hostpath
+    storageClassName: democratic-csi-local-hostpath
+    moverSecurityContext:
+      runAsUser: ${APP_UID:=10001}
+      runAsGroup: ${APP_GID:=10001}
+      fsGroup: ${APP_GID:=10001}
+    retain:
+      hourly: ${VOLSYNC_RETAIN_HOURLY:=0}
+      daily: ${VOLSYNC_RETAIN_DAILY:=7}
+      weekly: ${VOLSYNC_RETAIN_WEEKLY:=2}
+      monthly: ${VOLSYNC_RETAIN_MONTHLY:=0}

@@ -2,12 +2,11 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: maintainerr
-  namespace: default
+  name: "${VOLSYNC_CLAIM:=${APP}}"
 spec:
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 1Gi
+      storage: "${VOLSYNC_CAPACITY:=1Gi}"
   storageClassName: democratic-csi-local-hostpath
