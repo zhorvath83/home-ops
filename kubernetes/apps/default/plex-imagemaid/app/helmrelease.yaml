@@ -70,19 +70,9 @@ spec:
 
                 echo "Preparing kubectl"
 
-                ARCH="$(uname -m)"
-                case "${ARCH}" in
-                  x86_64|amd64) KUBECTL_ARCH="amd64" ;;
-                  aarch64|arm64) KUBECTL_ARCH="arm64" ;;
-                  *)
-                    echo "Unsupported architecture: ${ARCH}"
-                    exit 1
-                    ;;
-                esac
-
                 KUBECTL_BIN="/tmp/kubectl"
                 curl --fail --silent --show-error --location \
-                  "https://dl.k8s.io/release/v1.32.2/bin/linux/${KUBECTL_ARCH}/kubectl" \
+                  "https://dl.k8s.io/release/v1.32.2/bin/linux/amd64/kubectl" \
                   --output "${KUBECTL_BIN}"
                 chmod +x "${KUBECTL_BIN}"
 
