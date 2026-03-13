@@ -10,7 +10,6 @@ spec:
     labels:
       app.kubernetes.io/name: plex-imagemaid
   dependsOn:
-    - name: cluster-apps-onepassword-store
     - name: cluster-apps-plex
   path: ./kubernetes/apps/default/plex-imagemaid/app
   prune: true

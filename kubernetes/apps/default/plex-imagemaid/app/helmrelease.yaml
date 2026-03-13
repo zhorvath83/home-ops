@@ -63,16 +63,11 @@ spec:
 
             env:
               TZ: Europe/Budapest
-              PLEX_URL: http://plex.default.svc.cluster.local:32400
-              PLEX_PATH: /data/plex_config/Library/Application Support/Plex Media Server
+              PLEX_PATH: /data/plex_config
               MODE: report
               LOCAL_DB: "true"
               IGNORE_RUNNING: "false"
               PHOTO_TRANSCODER: "true"
-
-            envFrom:
-              - secretRef:
-                  name: plex-imagemaid-secret
 
             probes:
               liveness:
@@ -103,7 +98,7 @@ spec:
       plex-cache:
         existingClaim: plex-cache
         globalMounts:
-          - path: /data/plex_config/Library/Application Support/Plex Media Server/Cache
+          - path: /data/plex_config/Cache
 
       config:
         type: emptyDir
