@@ -1,0 +1,109 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: plex-imagemaid
+  namespace: default
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: plex-imagemaid
+
+  install:
+    createNamespace: true
+    remediation:
+      retries: -1
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  uninstall:
+    keepHistory: false
+
+  values:
+    defaultPodOptions:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app.kubernetes.io/name
+                    operator: In
+                    values: ["plex"]
+              topologyKey: kubernetes.io/hostname
+
+    controllers:
+      plex-imagemaid:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        type: cronjob
+        cronjob:
+          schedule: "30 7 * * *"
+          timeZone: Europe/Budapest
+          concurrencyPolicy: Forbid
+
+        containers:
+          app:
+            image:
+              repository: docker.io/kometateam/imagemaid
+              tag: v1.1.1@sha256:fbec331b36c1473f8a9c4214f55e5b097860476c8a5274eb61a2b85df89e56cc
+
+            env:
+              TZ: Europe/Budapest
+              PLEX_URL: http://plex.default.svc.cluster.local:32400
+              PLEX_PATH: /data/plex_config/Library/Application Support/Plex Media Server
+              MODE: report
+              LOCAL_DB: "true"
+              IGNORE_RUNNING: "false"
+              PHOTO_TRANSCODER: "true"
+
+            envFrom:
+              - secretRef:
+                  name: plex-imagemaid-secret
+
+            probes:
+              liveness:
+                enabled: false
+              readiness:
+                enabled: false
+              startup:
+                enabled: false
+
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
+
+            resources:
+              requests:
+                cpu: 25m
+                memory: 128Mi
+              limits:
+                memory: 512Mi
+
+    persistence:
+      plex:
+        existingClaim: plex
+        globalMounts:
+          - path: /data/plex_config
+
+      plex-cache:
+        existingClaim: plex-cache
+        globalMounts:
+          - path: /data/plex_config/Library/Application Support/Plex Media Server/Cache
+
+      config:
+        type: emptyDir

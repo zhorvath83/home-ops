@@ -9,6 +9,7 @@ resources:
   - ./actual/ks.yaml
   - ./wallos/ks.yaml
   - ./plex/ks.yaml
+  - ./plex-imagemaid/ks.yaml
   - ./qbittorrent/ks.yaml
   - ./homepage/ks.yaml
   - ./prowlarr/ks.yaml

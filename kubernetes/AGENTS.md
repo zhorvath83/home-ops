@@ -59,6 +59,7 @@ When editing Kubernetes YAML in this repo:
 - include `yaml-language-server` schema comments when the live sibling files already do so or when a stable schema URL is known
 - keep top-level key order conventional: `apiVersion`, `kind`, `metadata`, then `spec` or `data`
 - prefer short, stable anchors only when the same value is reused several times in one manifest
+- do not use YAML anchors for scalar app names, resource names, or `controllers` keys; write those explicitly to avoid misleading structure reuse
 - keep formatting close to neighboring files instead of reformatting entire manifests
 
 ## Namespace Conventions
