@@ -57,6 +57,27 @@ spec:
           timeZone: Europe/Budapest
           concurrencyPolicy: Forbid
 
+        initContainers:
+          kubectl:
+            image:
+              repository: docker.io/alpine/k8s
+              tag: 1.35.2@sha256:9a87b09e1b6d887fa52c2dea1611d112d9e7d3d0271708588711a2fb2016e82c
+            command:
+              - /bin/sh
+              - -c
+              - |
+                cp /usr/bin/kubectl /shared/kubectl
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
+            resources:
+              requests:
+                cpu: 10m
+                memory: 30Mi
+              limits:
+                memory: 64Mi
+
         containers:
           app:
             image:
@@ -68,13 +89,7 @@ spec:
               - |
                 set -eu
 
-                echo "Preparing kubectl"
-
-                KUBECTL_BIN="/tmp/kubectl"
-                curl --fail --silent --show-error --location \
-                  "https://dl.k8s.io/release/v1.32.2/bin/linux/amd64/kubectl" \
-                  --output "${KUBECTL_BIN}"
-                chmod +x "${KUBECTL_BIN}"
+                KUBECTL_BIN="/shared/kubectl"
 
                 echo "Reading current Plex replica count"
                 ORIGINAL_REPLICAS="$("${KUBECTL_BIN}" get deployment plex --namespace default --output jsonpath='{.spec.replicas}')"
@@ -141,8 +156,10 @@ spec:
         globalMounts:
           - path: /data/plex_config/Cache
 
-      config:
+      shared:
         type: emptyDir
+        globalMounts:
+          - path: /shared
 
       tmp:
         type: emptyDir
