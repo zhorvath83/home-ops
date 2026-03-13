@@ -25,5 +25,3 @@ spec:
   postBuild:
     substitute:
       APP: pocket-id
-      APP_UID: "10001"
-      APP_GID: "10001"

@@ -28,14 +28,12 @@ spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
       securityContext:
-        # disabled for linuxserver.io image
-        # runAsNonRoot: true
-        # runAsUser: 10001
-        # runAsGroup: 10001
-        # fsGroup: 10001
-        fsGroupChangePolicy: OnRootMismatch
+        runAsNonRoot: false # because S6 overlay
+        runAsUser: 0 # because S6 overlay
+        runAsGroup: 0 # because S6 overlay
         seccompProfile:
           type: RuntimeDefault
+        fsGroupChangePolicy: OnRootMismatch
 
     controllers:
       calibre-web-automated:
@@ -88,9 +86,10 @@ spec:
               tag: v4.0.6@sha256:c31a738b6d5ec6982c050063dd3f063b6943eb1051fc81144789f840d9093a8d
 
             env:
+              CACHE_DIR: /cache
               TZ: "Europe/Budapest"
-              PUID: ${APP_UID}
-              PGID: ${APP_GID}
+              PUID: 1000
+              PGID: 100
 
             probes:
               liveness:
@@ -112,16 +111,19 @@ spec:
                   failureThreshold: 45
                   periodSeconds: 5
 
-            # securityContext:
-            #   # because of linuxserver.io image
-            #   privileged: true
-            #   allowPrivilegeEscalation: true
-            #   readOnlyRootFilesystem: false
-            #   capabilities:
-            #     add:
-            #       - CHOWN
-            #     drop:
-            #       - ALL
+            securityContext:
+              allowPrivilegeEscalation: true # because S6 overlay
+              readOnlyRootFilesystem: false # because S6 overlay
+              capabilities:
+                drop:
+                  - ALL
+                add:
+                  # because S6 overlay
+                  - CHOWN
+                  - SETUID
+                  - SETGID
+                  - FOWNER
+                  - DAC_OVERRIDE
 
             resources:
               requests:
@@ -162,6 +164,11 @@ spec:
 
 
     persistence:
+      cache:
+        type: emptyDir
+        globalMounts:
+          - path: /cache
+
       config:
         type: persistentVolumeClaim
         existingClaim: calibre-web-automated

@@ -50,8 +50,8 @@ spec:
 
             env:
               TZ: "Europe/Budapest"
-              PUID: ${APP_UID}
-              PGID: ${APP_GID}
+              PUID: 1000
+              PGID: 1000
 
             probes:
               liveness: &probes

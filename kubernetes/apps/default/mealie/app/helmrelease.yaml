@@ -29,9 +29,9 @@ spec:
       enableServiceLinks: false
       securityContext:
         runAsNonRoot: true
-        runAsUser: ${APP_UID}
-        runAsGroup: ${APP_GID}
-        fsGroup: ${APP_GID}
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
@@ -52,8 +52,8 @@ spec:
               TZ: "Europe/Budapest"
               API_DOCS: "false"
               API_PORT: &port 9000
-              PUID: "${APP_UID}"
-              PGID: "${APP_GID}"
+              PUID: "10001"
+              PGID: "10001"
               ALLOW_SIGNUP: "false"
               BASE_URL: "https://mealie.${PUBLIC_DOMAIN}"
               # SMTP Configuration

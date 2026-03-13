@@ -25,5 +25,3 @@ spec:
   postBuild:
     substitute:
       APP: tinyauth
-      APP_UID: "10001"
-      APP_GID: "10001"

@@ -29,9 +29,9 @@ spec:
       enableServiceLinks: false
       securityContext:
         runAsNonRoot: false
-        runAsUser: ${APP_UID}
-        runAsGroup: ${APP_GID}
-        fsGroup: ${APP_GID}
+        runAsUser: 0
+        runAsGroup: 0
+        fsGroup: 0
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault

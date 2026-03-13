@@ -62,5 +62,3 @@ spec:
   postBuild:
     substitute:
       APP: paperless-gpt
-      APP_UID: "10001"
-      APP_GID: "10001"

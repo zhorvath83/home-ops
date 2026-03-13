@@ -29,9 +29,9 @@ spec:
       enableServiceLinks: false
       securityContext:
         runAsNonRoot: true
-        runAsUser: ${APP_UID}
-        runAsGroup: ${APP_GID}
-        fsGroup: ${APP_GID}
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
@@ -49,8 +49,8 @@ spec:
 
             env:
               TZ: "Europe/Budapest"
-              PUID: "${APP_UID}"
-              PGID: "${APP_GID}"
+              PUID: "1000"
+              PGID: "1000"
               CRON_SCHEDULE: "disabled"
               SCAN_PATHS: "/media"
               MAX_CONCURRENT_SYNC_TASKS: "1"

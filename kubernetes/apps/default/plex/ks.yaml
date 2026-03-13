@@ -26,8 +26,6 @@ spec:
   postBuild:
     substitute:
       APP: plex
-      APP_UID: "10001"
-      APP_GID: "10001"
       VOLSYNC_CAPACITY: "5Gi"
 ---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/kustomization-kustomize-v1.json
@@ -57,5 +55,3 @@ spec:
   postBuild:
     substitute:
       APP: plex-trakt-sync
-      APP_UID: "10001"
-      APP_GID: "10001"

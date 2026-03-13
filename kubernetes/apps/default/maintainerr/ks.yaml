@@ -26,5 +26,3 @@ spec:
   postBuild:
     substitute:
       APP: maintainerr
-      APP_UID: "10001"
-      APP_GID: "10001"
