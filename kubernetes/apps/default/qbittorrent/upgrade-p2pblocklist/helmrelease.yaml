@@ -27,8 +27,8 @@ spec:
       enableServiceLinks: false
       securityContext:
         runAsNonRoot: true
-        runAsUser: 10001
-        runAsGroup: 10001
+        runAsUser: ${APP_UID}
+        runAsGroup: ${APP_GID}
         seccompProfile:
           type: RuntimeDefault
 

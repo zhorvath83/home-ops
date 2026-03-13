@@ -26,3 +26,5 @@ spec:
   postBuild:
     substitute:
       APP: calibre-web-automated
+      APP_UID: "1000"
+      APP_GID: "100"

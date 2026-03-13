@@ -18,6 +18,10 @@ spec:
   targetNamespace: system-upgrade
   timeout: 5m
   wait: false
+  postBuild:
+    substitute:
+      APP_UID: "10001"
+      APP_GID: "10001"
 ---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/kustomization-kustomize-v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1

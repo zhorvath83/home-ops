@@ -18,3 +18,7 @@ spec:
   targetNamespace: default
   timeout: 5m
   wait: false
+  postBuild:
+    substitute:
+      APP_UID: "1000"
+      APP_GID: "1000"

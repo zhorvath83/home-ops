@@ -26,3 +26,5 @@ spec:
   postBuild:
     substitute:
       APP: sonarr
+      APP_UID: "10001"
+      APP_GID: "10001"

@@ -26,6 +26,8 @@ spec:
   postBuild:
     substitute:
       APP: paperless
+      APP_UID: "1000"
+      APP_GID: "1000"
       VOLSYNC_CAPACITY: "20Gi"
       VOLSYNC_CACHE: "2Gi"
       VOLSYNC_RETAIN_DAILY: "7"
@@ -55,3 +57,10 @@ spec:
   targetNamespace: default
   timeout: 5m
   wait: false
+  components:
+    - ../../../../components/volsync
+  postBuild:
+    substitute:
+      APP: paperless-gpt
+      APP_UID: "10001"
+      APP_GID: "10001"

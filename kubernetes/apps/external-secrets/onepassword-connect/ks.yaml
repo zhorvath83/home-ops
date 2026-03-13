@@ -18,3 +18,7 @@ spec:
   targetNamespace: external-secrets
   timeout: 5m
   wait: false
+  postBuild:
+    substitute:
+      APP_UID: "999"
+      APP_GID: "999"

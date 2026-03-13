@@ -26,3 +26,5 @@ spec:
   postBuild:
     substitute:
       APP: prowlarr
+      APP_UID: "10001"
+      APP_GID: "10001"

@@ -20,3 +20,7 @@ spec:
   targetNamespace: networking
   timeout: 5m
   wait: false
+  postBuild:
+    substitute:
+      APP_UID: "10001"
+      APP_GID: "10001"

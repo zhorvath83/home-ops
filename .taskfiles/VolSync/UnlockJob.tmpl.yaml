@@ -12,8 +12,8 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: unlock
-          image: docker.io/restic/restic:0.15.2
+          image: docker.io/restic/restic:latest
           args: ["unlock", "--remove-all"]
           envFrom:
             - secretRef:
-                name: "${rsrc}-restic-secret"
+                name: "${rsrc}-volsync-secret"

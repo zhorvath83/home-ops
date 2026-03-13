@@ -26,5 +26,5 @@ spec:
   postBuild:
     substitute:
       APP: wallos
-      APP_UID: "0"
-      APP_GID: "0"
+      APP_UID: "1000"
+      APP_GID: "1000"
