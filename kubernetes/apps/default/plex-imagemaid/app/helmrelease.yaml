@@ -70,10 +70,10 @@ spec:
 
                 echo "Preparing kubectl"
 
-                ARCH="$(dpkg --print-architecture)"
+                ARCH="$(uname -m)"
                 case "${ARCH}" in
-                  amd64) KUBECTL_ARCH="amd64" ;;
-                  arm64) KUBECTL_ARCH="arm64" ;;
+                  x86_64|amd64) KUBECTL_ARCH="amd64" ;;
+                  aarch64|arm64) KUBECTL_ARCH="arm64" ;;
                   *)
                     echo "Unsupported architecture: ${ARCH}"
                     exit 1
