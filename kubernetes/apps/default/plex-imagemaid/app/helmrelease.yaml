@@ -25,7 +25,7 @@ spec:
 
   values:
     defaultPodOptions:
-      automountServiceAccountToken: false
+      automountServiceAccountToken: true
       enableServiceLinks: false
       securityContext:
         runAsNonRoot: true
@@ -60,6 +60,50 @@ spec:
             image:
               repository: docker.io/kometateam/imagemaid
               tag: v1.1.1@sha256:fbec331b36c1473f8a9c4214f55e5b097860476c8a5274eb61a2b85df89e56cc
+            command:
+              - /bin/sh
+              - -c
+              - |
+                set -eu
+
+                ARCH="$(dpkg --print-architecture)"
+                case "${ARCH}" in
+                  amd64) KUBECTL_ARCH="amd64" ;;
+                  arm64) KUBECTL_ARCH="arm64" ;;
+                  *)
+                    echo "Unsupported architecture: ${ARCH}"
+                    exit 1
+                    ;;
+                esac
+
+                KUBECTL_BIN="/tmp/kubectl"
+                curl --fail --silent --show-error --location \
+                  "https://dl.k8s.io/release/v1.32.2/bin/linux/${KUBECTL_ARCH}/kubectl" \
+                  --output "${KUBECTL_BIN}"
+                chmod +x "${KUBECTL_BIN}"
+
+                ORIGINAL_REPLICAS="$("${KUBECTL_BIN}" get deployment plex --namespace default --output jsonpath='{.spec.replicas}')"
+                if [ -z "${ORIGINAL_REPLICAS}" ]; then
+                  ORIGINAL_REPLICAS="1"
+                fi
+
+                restore_plex() {
+                  if [ "${ORIGINAL_REPLICAS}" != "0" ]; then
+                    "${KUBECTL_BIN}" scale deployment plex --namespace default --replicas="${ORIGINAL_REPLICAS}"
+                    "${KUBECTL_BIN}" rollout status deployment/plex --namespace default --timeout=10m
+                  fi
+                }
+
+                trap restore_plex EXIT
+
+                if [ "${ORIGINAL_REPLICAS}" != "0" ]; then
+                  "${KUBECTL_BIN}" scale deployment plex --namespace default --replicas=0
+                  while "${KUBECTL_BIN}" get pods --namespace default --selector app.kubernetes.io/name=plex --output name | grep -q .; do
+                    sleep 5
+                  done
+                fi
+
+                python3 /imagemaid.py
 
             env:
               TZ: Europe/Budapest
@@ -102,3 +146,39 @@ spec:
 
       config:
         type: emptyDir
+
+      tmp:
+        type: emptyDir
+        globalMounts:
+          - path: /tmp
+
+    serviceAccount:
+      plex-imagemaid: {}
+
+    rbac:
+      roles:
+        plex-imagemaid:
+          enabled: true
+          type: Role
+          rules:
+            - apiGroups: [""]
+              resources: ["pods"]
+              verbs: ["get", "list"]
+            - apiGroups: ["apps"]
+              resources: ["deployments"]
+              verbs: ["get", "patch"]
+      bindings:
+        plex-imagemaid:
+          enabled: true
+          type: RoleBinding
+          roleRef:
+            identifier: plex-imagemaid
+          subjects:
+            - kind: ServiceAccount
+              name: plex-imagemaid
+              namespace: "{{ .Release.Namespace }}"
+
+    service:
+      app:
+        controller: plex-imagemaid
+        enabled: false
