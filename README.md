@@ -2,6 +2,8 @@
 
 This is a mono repository for my home infrastructure and Kubernetes cluster. I try to adhere to Infrastructure as Code (IaC) and GitOps practices using tools like Ansible, Terraform, Kubernetes, Flux, Renovate, and GitHub Actions.
 
+Agent note: this README remains human-facing. Tooling and AI assistants should use the repository `AGENTS.md` files as the operational guide, starting at [AGENTS.md](AGENTS.md) and then following any more specific guides in subdirectories.
+
 ## 🏠 Hardware Infrastructure
 
 The infrastructure is built on a Debian 13 Proxmox server with the following specifications:
