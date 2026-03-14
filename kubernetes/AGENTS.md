@@ -42,6 +42,15 @@ When adding or changing workloads here, optimize for:
 - GitOps-safe declarative changes
 - reuse of established repo patterns before introducing new ones
 
+## Workload Guardrails
+
+When adding or changing Kubernetes workloads:
+
+- prefer `runAsNonRoot`, `allowPrivilegeEscalation: false`, dropped capabilities, and `readOnlyRootFilesystem: true` when the image supports them
+- prefer explicit CPU and memory requests, and prefer memory limits without CPU limits unless a workload has a specific need for CPU throttling
+- do not add `privileged`, `hostNetwork`, `hostPID`, or fixed root execution unless the live sibling patterns or upstream image requirements justify it
+- when an app needs an exception such as root execution, a writable root filesystem, or privileged access, keep the exception narrowly scoped and preserve any nearby comment that explains why
+
 ## Authoritative Patterns
 
 - Flux `Kustomization` objects in `ks.yaml` are the entry points for deployable app units.

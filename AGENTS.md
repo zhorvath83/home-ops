@@ -1,6 +1,16 @@
-# Repository Agent Guide
+# AGENTS.md - AI Assistant Guidance for home-ops
 
 This file is the operational guide for working in this repository. Treat it as the authoritative source for agent behavior inside `home-ops`.
+
+## Non-Negotiables
+
+- Treat this repository as potentially public and durable. Do not introduce plaintext credentials or new sensitive external identifiers.
+- Do not commit plaintext secrets, API keys, tokens, passwords, or certificate material anywhere in the repo.
+- Do not hardcode public domains, public IP addresses, or email addresses in manifests, docs, task wrappers, or examples when the value belongs in secret-backed configuration.
+- Private RFC1918 addresses, cluster-local hostnames, and other internal topology values are acceptable when they reflect the live repo model.
+- Sensitive cluster-wide substitutions belong in `kubernetes/flux/vars/cluster-secrets.sops.yaml`; non-secret cluster-wide values belong in `kubernetes/flux/vars/cluster-settings.yaml`.
+- For app-managed secrets, prefer External Secrets backed by the shared `ClusterSecretStore` named `onepassword` when the target area already follows that pattern.
+- Keep GitOps as the source of truth for steady-state cluster configuration. Avoid manual out-of-band `kubectl apply` changes except for documented bootstrap, recovery, or existing task-driven workflows in the repo.
 
 ## Scope And Priorities
 
@@ -44,9 +54,18 @@ This repository currently manages a single-node home infrastructure stack with t
 - Inspect the target area before editing; do not assume the memory docs are current.
 - Keep changes minimal and consistent with existing patterns.
 - Prefer existing abstractions over inventing new ones.
+- Preserve existing secret flows, shared resource names, and task-driven workflows unless the task explicitly changes them.
 - Do not create new documentation locations unless they clearly fit the current structure.
 - Preserve `README.md` as human-facing overview unless the task explicitly requires changing it.
 - Prefer repo-native operational entry points over raw commands when they already exist in Taskfiles.
+
+## Repo-Wide Anti-Patterns
+
+- Hardcoding public domains, public IPs, email addresses, credentials, or other sensitive external identifiers.
+- Introducing plaintext secrets outside SOPS-encrypted files or External Secrets.
+- Making imperative cluster changes that bypass Flux for normal steady-state configuration.
+- Changing shared secret names, store names, or dependency wiring without tracing the related Flux and Taskfile references first.
+- Refactoring file layout or documentation structure when an established local pattern already exists.
 
 ## State To Assume Today
 
@@ -64,6 +83,7 @@ This repository currently manages a single-node home infrastructure stack with t
 - For Terraform changes, inspect the relevant files in `provision/cloudflare/` and keep commands aligned with `task tf:*`.
 - For Ansible changes, inspect inventory, playbooks, and task wrappers together.
 - After edits, run the most relevant lightweight validation command available for the touched area.
+- If validation cannot be run, say so explicitly and name the missing tool, credential, cluster access, or environment dependency.
 
 ## Repository Knowledge Sources
 
