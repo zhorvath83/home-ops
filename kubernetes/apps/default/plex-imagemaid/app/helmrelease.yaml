@@ -199,8 +199,8 @@ spec:
               resources: ["pods"]
               verbs: ["get", "list"]
             - apiGroups: ["apps"]
-              resources: ["deployments"]
-              verbs: ["get", "patch"]
+              resources: ["deployments", "deployments/scale"]
+              verbs: ["get", "patch", "watch"]
       bindings:
         plex-imagemaid:
           enabled: true
