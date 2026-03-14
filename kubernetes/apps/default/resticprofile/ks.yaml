@@ -55,3 +55,4 @@ spec:
       APP: backrest
       APP_UID: "0"
       APP_GID: "0"
+      VOLSYNC_SCHEDULE: "20 3 * * *"

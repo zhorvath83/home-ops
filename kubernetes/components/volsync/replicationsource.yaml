@@ -24,3 +24,4 @@ spec:
       daily: ${VOLSYNC_RETAIN_DAILY:=7}
       weekly: ${VOLSYNC_RETAIN_WEEKLY:=2}
       monthly: ${VOLSYNC_RETAIN_MONTHLY:=0}
+      within: 7d

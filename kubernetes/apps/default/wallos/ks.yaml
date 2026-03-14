@@ -28,3 +28,4 @@ spec:
       APP: wallos
       APP_UID: "1000"
       APP_GID: "1000"
+      VOLSYNC_SCHEDULE: "35 3 * * *"

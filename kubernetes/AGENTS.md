@@ -366,6 +366,20 @@ Default behavior inherited from the component:
 - retain monthly: `0`
 - storage class and snapshot class: `democratic-csi-local-hostpath`
 
+Scheduling policy:
+
+- Treat backup timing as an app-level concern even though the VolSync manifests come from the shared component.
+- The implementation lives in each app `ks.yaml` under `spec.postBuild.substitute.VOLSYNC_SCHEDULE`.
+- Keep the shared component default as the fallback only; when multiple apps use VolSync, prefer explicit per-app schedules in `ks.yaml`.
+- Reserve earlier isolated slots for the largest or most sensitive backups, then place the rest after them in 5-minute offsets.
+- The current operating convention is: dedicate the first slots to the largest backups, then schedule the remaining apps sequentially in 5-minute increments rather than leaving them on the shared default.
+- When adjusting schedules, inspect the whole fleet first so new entries do not accidentally collide with existing slots.
+
+How to inspect current schedules:
+
+- Preferred: `rg -n "VOLSYNC_SCHEDULE" kubernetes/apps -g 'ks.yaml'`
+- Also works: `grep VOLSYNC_SCHEDULE kubernetes/apps/**/ks.yaml`
+
 Common `postBuild.substitute` knobs:
 
 - `APP` required
