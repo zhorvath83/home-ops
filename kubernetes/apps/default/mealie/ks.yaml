@@ -26,4 +26,4 @@ spec:
   postBuild:
     substitute:
       APP: mealie
-      VOLSYNC_SCHEDULE: "55 2 * * *"
+      VOLSYNC_SCHEDULE: "50 4 * * *"

@@ -28,4 +28,4 @@ spec:
       APP: calibre-web-automated
       APP_UID: "1000"
       APP_GID: "100"
-      VOLSYNC_SCHEDULE: "35 2 * * *"
+      VOLSYNC_SCHEDULE: "10 4 * * *"

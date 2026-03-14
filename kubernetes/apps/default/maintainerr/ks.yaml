@@ -26,4 +26,4 @@ spec:
   postBuild:
     substitute:
       APP: maintainerr
-      VOLSYNC_SCHEDULE: "40 3 * * *"
+      VOLSYNC_SCHEDULE: "20 6 * * *"

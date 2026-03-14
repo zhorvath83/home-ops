@@ -25,4 +25,4 @@ spec:
   postBuild:
     substitute:
       APP: tinyauth
-      VOLSYNC_SCHEDULE: "45 3 * * *"
+      VOLSYNC_SCHEDULE: "30 6 * * *"
