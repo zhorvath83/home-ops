@@ -67,6 +67,7 @@ spec:
               - -c
               - |
                 cp /usr/bin/kubectl /shared/kubectl
+                chmod +x /shared/kubectl
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
