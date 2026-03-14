@@ -105,9 +105,9 @@ spec:
         resources:
           requests:
             cpu: 60m
-            memory: 130Mi
-          limits:
             memory: 256Mi
+          limits:
+            memory: 1Gi
 
         extraVolumeMounts:
           - name: local-storage
