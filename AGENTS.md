@@ -58,12 +58,15 @@ This repository currently manages a single-node home infrastructure stack with t
 - Do not create new documentation locations unless they clearly fit the current structure.
 - Preserve `README.md` as human-facing overview unless the task explicitly requires changing it.
 - Prefer repo-native operational entry points over raw commands when they already exist in Taskfiles.
+- Distinguish carefully between local repository state and live cluster state. Editing files in the working tree does not change the cluster until those changes are committed, pushed to the Git source watched by Flux, and reconciled or picked up by the next sync.
+- Do not run `flux reconcile` just because local files changed. A reconcile only refreshes the committed source and reapplies the live GitOps state; it does not read uncommitted or unpushed local edits.
 
 ## Repo-Wide Anti-Patterns
 
 - Hardcoding public domains, public IPs, email addresses, credentials, or other sensitive external identifiers.
 - Introducing plaintext secrets outside SOPS-encrypted files or External Secrets.
 - Making imperative cluster changes that bypass Flux for normal steady-state configuration.
+- Treating local file edits as if they were already deployed by GitOps, or using `flux reconcile` as though it applied the local working tree.
 - Changing shared secret names, store names, or dependency wiring without tracing the related Flux and Taskfile references first.
 - Refactoring file layout or documentation structure when an established local pattern already exists.
 
@@ -83,6 +86,7 @@ This repository currently manages a single-node home infrastructure stack with t
 - For Terraform changes, inspect the relevant files in `provision/cloudflare/` and keep commands aligned with `task tf:*`.
 - For Ansible changes, inspect inventory, playbooks, and task wrappers together.
 - After edits, run the most relevant lightweight validation command available for the touched area.
+- When mentioning cluster impact, be explicit whether a change is only local, committed but not yet reconciled, or already live in the cluster.
 - If validation cannot be run, say so explicitly and name the missing tool, credential, cluster access, or environment dependency.
 
 ## Repository Knowledge Sources

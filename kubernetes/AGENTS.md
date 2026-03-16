@@ -59,6 +59,17 @@ When adding or changing Kubernetes workloads:
 - Dependencies between apps must be declared in `spec.dependsOn`; do not rely on creation order.
 - Prefer official Helm charts first, then bjw-s `app-template`, then custom manifests only when needed.
 
+## GitOps Apply Boundary
+
+Treat everything under `kubernetes/` as desired state for Flux, not as an imperative apply tree.
+
+- Local edits in this repository do not change the cluster by themselves.
+- `flux reconcile` does not apply the local working tree. It only tells Flux to refresh the configured Git source and reconcile the committed state that Flux can fetch.
+- If changes are uncommitted or not pushed to the Git source watched by Flux, a reconcile will not deploy them.
+- After local Kubernetes edits, first decide which state you are talking about: local-only, committed, pushed, or live in cluster. State that explicitly in user updates and final responses.
+- Only suggest or run `task fx:reconcile` or `flux reconcile ...` when it will help with committed GitOps state, not as a substitute for commit/push.
+- If the user wants to verify or apply uncommitted changes against the cluster, call out that this would require a non-GitOps imperative step and confirm that this is intentionally outside the normal repo workflow.
+
 ## YAML Authoring Rules
 
 When editing Kubernetes YAML in this repo:
@@ -245,6 +256,7 @@ Ordering:
 - Keep `postBuild.substitute` values as the single source of truth for app-specific VolSync variables when that pattern is present.
 - Do not reintroduce app-local `volsync.yaml` or duplicate PVC templates where the shared component already covers the case.
 - Treat commented Traefik remnants as migration leftovers unless the live manifests still depend on them.
+- When reporting progress after edits, do not imply the cluster has changed unless the committed Git source has been updated and Flux has reconciled it successfully.
 
 ## HelmRelease Baseline
 
