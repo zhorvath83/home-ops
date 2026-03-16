@@ -122,9 +122,10 @@ spec:
             action: drop
             regex: ".+;"
           # Extra drops - less useful container metrics
+          # Keep container_oom_events_total for dashboards and future alerting.
           - sourceLabels: [__name__]
             action: drop
-            regex: "container_(memory_failures|last_seen|memory_kernel|memory_failcnt|blkio_device|oom_events|start_time|threads|ulimits_soft).*"
+            regex: "container_(memory_failures|last_seen|memory_kernel|memory_failcnt|blkio_device|start_time|threads|ulimits_soft).*"
         metricRelabelings:
           # Drop almost all kubelet metrics, only want cpu/memory usage
           - sourceLabels: [__name__]
