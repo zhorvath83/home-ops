@@ -101,7 +101,9 @@ Use `Taskfile.yml` as the command index for the repository.
 
 Current task domains:
 
+- `list:` List available tasks grouped by domain
 - `an:` Ansible host and cluster lifecycle tasks
+- `hm:` Host maintenance tasks for Proxmox, OpenMediaVault, OpenWrt, and the k3s host
 - `fx:` Flux bootstrap, reconcile, and cluster inspection tasks
 - `ku:` Kubernetes utility tasks such as kubeconfig fetch and temporary PVC mounts
 - `tf:` Cloudflare Terraform operations
