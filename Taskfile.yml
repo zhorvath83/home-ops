@@ -7,17 +7,12 @@ vars:
   KUBERNETES_DIR: "{{.ROOT_DIR}}/kubernetes"
   ANSIBLE_DIR: "{{.ROOT_DIR}}/provision/kubernetes"
   TERRAFORM_DIR: "{{.ROOT_DIR}}/provision/cloudflare"
+  OPENWRT_HOST: 192.168.1.1
   PVE_1_HOST: 192.168.1.4
   PVE_0_HOST: 192.168.1.5
   K8S_PRIMARY_CONTROL_PLANE_HOST: 192.168.1.6
-  NAS_HOST: 192.168.1.10
-  OPENWRT_HOST: 192.168.1.1
   K8S_API_SERVER_HOST: 192.168.1.6
-  OPENWRT_BACKUP_DIR: /Volumes/backups/openwrt
-  OPENWRT_REMOTE_BACKUP_DIR: /mnt/sda1/backups
-  OPENWRT_USER_PACKAGES_LIST_SCRIPT: /etc/luci-uploads/list-installed-user-packages-apk.sh
-  OPENWRT_BACKUP_SCRIPT: /etc/luci-uploads/openwrt-backup-local.sh
-  NAS_SHARE_MOUNT_SCRIPT: ~/Projects/personal/my-scripts-and-configs/macOS/btt-scripts/nas-share-mount.sh
+  NAS_HOST: 192.168.1.10
 
 env:
   OPERATIONS_USERNAME: zhorvath83

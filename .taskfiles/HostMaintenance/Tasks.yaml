@@ -2,6 +2,13 @@
 # yaml-language-server: $schema=https://taskfile.dev/schema.json
 version: "3"
 
+vars:
+  OPENWRT_LOCAL_BACKUP_DIR: /mnt/sda1/backups
+  OPENWRT_LOCAL_BACKUP_SCRIPT: /etc/luci-uploads/openwrt-backup-local.sh
+  OPENWRT_LOCAL_PKG_BCKUP_SCRIPT: /etc/luci-uploads/list-installed-user-packages-apk.sh
+  NAS_SHARE_MOUNT_SCRIPT_ON_MAC: ~/Projects/personal/my-scripts-and-configs/macOS/btt-scripts/nas-share-mount.sh
+  OPENWRT_BACKUP_DIR_ON_MAC: /Volumes/backups/openwrt
+
 tasks:
 
   all:
@@ -87,7 +94,7 @@ tasks:
       - |
         set -eu
 
-        LOCAL_NAS_SHARE_MOUNT_SCRIPT="$(eval printf '%s' "{{.NAS_SHARE_MOUNT_SCRIPT}}")"
+        LOCAL_NAS_SHARE_MOUNT_SCRIPT_ON_MAC="$(eval printf '%s' "{{.NAS_SHARE_MOUNT_SCRIPT_ON_MAC}}")"
 
         echo "Running OpenMediaVault maintenance on {{.label}} ({{.host}})"
         ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new {{.OPERATIONS_USERNAME}}@{{.host}} '
@@ -100,13 +107,13 @@ tasks:
           sudo -n fstrim -av
         '
 
-        if [ ! -x "${LOCAL_NAS_SHARE_MOUNT_SCRIPT}" ]; then
-          echo "NAS share mount script is not executable: ${LOCAL_NAS_SHARE_MOUNT_SCRIPT}"
+        if [ ! -x "${LOCAL_NAS_SHARE_MOUNT_SCRIPT_ON_MAC}" ]; then
+          echo "NAS share mount script is not executable: ${LOCAL_NAS_SHARE_MOUNT_SCRIPT_ON_MAC}"
           exit 1
         fi
 
         echo "Re-mounting NAS shares locally"
-        "${LOCAL_NAS_SHARE_MOUNT_SCRIPT}"
+        "${LOCAL_NAS_SHARE_MOUNT_SCRIPT_ON_MAC}"
 
   openwrt:regular:
     desc: Run regular maintenance on the OpenWrt router and copy the latest backup locally
@@ -115,33 +122,33 @@ tasks:
       - |
         set -eu
 
-        BACKUP_PARENT_DIR="$(dirname "{{.OPENWRT_BACKUP_DIR}}")"
+        BACKUP_PARENT_DIR="$(dirname "{{.OPENWRT_BACKUP_DIR_ON_MAC}}")"
         if [ ! -d "${BACKUP_PARENT_DIR}" ]; then
           echo "OpenWrt backup parent directory is missing: ${BACKUP_PARENT_DIR}"
           echo "Refusing to create it automatically to avoid writing to the wrong disk."
           exit 1
         fi
 
-        mkdir -p "{{.OPENWRT_BACKUP_DIR}}"
+        mkdir -p "{{.OPENWRT_BACKUP_DIR_ON_MAC}}"
         echo "Running OpenWrt maintenance on {{.OPENWRT_HOST}}"
         ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new root@{{.OPENWRT_HOST}} '
           set -eu
-          {{.OPENWRT_USER_PACKAGES_LIST_SCRIPT}} >/dev/null
-          {{.OPENWRT_BACKUP_SCRIPT}}
+          {{.OPENWRT_LOCAL_PKG_BCKUP_SCRIPT}} >/dev/null
+          {{.OPENWRT_LOCAL_BACKUP_SCRIPT}}
         '
 
         BACKUP_FILE="$(
           ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new root@{{.OPENWRT_HOST}} \
-            "ls -1t {{.OPENWRT_REMOTE_BACKUP_DIR}}/backup-*.tar.gz | head -n 1"
+            "ls -1t {{.OPENWRT_LOCAL_BACKUP_DIR}}/backup-*.tar.gz | head -n 1"
         )"
 
         if [ -z "${BACKUP_FILE}" ]; then
-          echo "Unable to locate the latest OpenWrt backup in {{.OPENWRT_REMOTE_BACKUP_DIR}}"
+          echo "Unable to locate the latest OpenWrt backup in {{.OPENWRT_LOCAL_BACKUP_DIR}}"
           exit 1
         fi
 
-        echo "Copying ${BACKUP_FILE} to {{.OPENWRT_BACKUP_DIR}}"
-        scp -q -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new -p root@{{.OPENWRT_HOST}}:${BACKUP_FILE} "{{.OPENWRT_BACKUP_DIR}}/"
+        echo "Copying ${BACKUP_FILE} to {{.OPENWRT_BACKUP_DIR_ON_MAC}}"
+        scp -q -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new -p root@{{.OPENWRT_HOST}}:${BACKUP_FILE} "{{.OPENWRT_BACKUP_DIR_ON_MAC}}/"
         echo "Latest OpenWrt backup copied successfully."
 
   openwrt:version:
