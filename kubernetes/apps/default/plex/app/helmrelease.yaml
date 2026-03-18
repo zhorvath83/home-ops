@@ -133,12 +133,23 @@ spec:
         globalMounts:
           - path: /config/Library/Application Support/Plex Media Server
 
-      # Separate PVC for cache to avoid backing up cache files
-      # This must be commented on initial install in order to avoid permission issues in '/config/Library/Application Support/Plex Media Server'
-      cache:
-        existingClaim: plex-cache
-        globalMounts:
-          - path: /config/Library/Application Support/Plex Media Server/Cache
+      # Keep the small, stateful Plex core on the main PVC and mount
+      # large, rebuildable directories from a separate PVC.
+      # For existing installs, pre-populate these subPaths on
+      # plex-rebuildable before enabling the mounts, otherwise the empty
+      # PVC will mask the current Metadata/Cache/Scanners directories and
+      # Plex will rebuild them from scratch.
+      rebuildable:
+        existingClaim: plex-rebuildable
+        advancedMounts:
+          plex:
+            app:
+              - path: /config/Library/Application Support/Plex Media Server/Cache
+                subPath: cache
+              - path: /config/Library/Application Support/Plex Media Server/Metadata
+                subPath: metadata
+              - path: /config/Library/Application Support/Plex Media Server/Scanners
+                subPath: scanners
 
       logs:
         type: emptyDir

@@ -1,8 +1,10 @@
 ---
+# Shared PVC for Plex rebuildable data:
+# cache, metadata artwork, and scanner assets.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: plex-cache
+  name: plex-rebuildable
   namespace: default
 spec:
   accessModes:
