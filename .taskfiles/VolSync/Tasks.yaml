@@ -97,7 +97,7 @@ tasks:
   #   - kubectl get replicationsources --all-namespaces --no-headers | awk '{print $2, $1}' | xargs --max-procs=2 -l bash -c 'task vs:restore rsrc=$0 namespace=$1'
   #
   restore:
-    desc: Restore a PVC from restic backup (ex. task vs:restore rsrc=plex [namespace=default] [previous=N] - where N is the snapshot index to restore, default=1 for latest)
+    desc: Restore PVC backup (ex. task vs:restore rsrc=plex [namespace=default] [previous=N] - where N is the snapshot index, default=latest)
     cmds:
       - task: restore-suspend-app
         vars:

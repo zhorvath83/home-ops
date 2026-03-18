@@ -5,15 +5,15 @@ version: "3"
 tasks:
 
   kubeconfig:
-    desc: Download kubeconfig from a remote k3s master node
+    desc: Download kubeconfig from a remote k3s control plane node
     vars:
-      MASTER_USERNAME: '{{.MASTER_USERNAME | default "root"}}'
-      K8S_MASTER_HOST: '{{.K8S_MASTER_HOST | default "192.168.1.6"}}'
-      KUBERNETES_API: '{{.KUBERNETES_API | default "192.168.1.6"}}'
+      OPERATIONS_USERNAME: '{{.OPERATIONS_USERNAME | default "root"}}'
+      K8S_PRIMARY_CONTROL_PLANE_HOST: '{{.K8S_PRIMARY_CONTROL_PLANE_HOST | default "192.168.1.6"}}'
+      K8S_API_SERVER_HOST: '{{.K8S_API_SERVER_HOST | default "192.168.1.6"}}'
     cmds:
       - mkdir -p ~/.kube
-      - rsync --verbose --progress --partial --rsync-path="sudo rsync" {{.MASTER_USERNAME}}@{{.K8S_MASTER_HOST}}:/etc/rancher/k3s/k3s.yaml "${KUBECONFIG}"
-      - sed -i '' 's/127.0.0.1/'"{{.KUBERNETES_API}}"'/g' "${KUBECONFIG}"
+      - rsync --verbose --progress --partial --rsync-path="sudo rsync" {{.OPERATIONS_USERNAME}}@{{.K8S_PRIMARY_CONTROL_PLANE_HOST}}:/etc/rancher/k3s/k3s.yaml "${KUBECONFIG}"
+      - sed -i '' 's/127.0.0.1/'"{{.K8S_API_SERVER_HOST}}"'/g' "${KUBECONFIG}"
       - chmod go-r "${KUBECONFIG}"
 
   mount:

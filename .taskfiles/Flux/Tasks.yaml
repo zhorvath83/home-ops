@@ -55,11 +55,6 @@ tasks:
     cmds:
       - kubectl get helmreleases {{.CLI_ARGS | default "-A"}}
 
-  helmrepositories:
-    desc: List all the helmrepositories in your cluster
-    cmds:
-      - kubectl get helmrepositories {{.CLI_ARGS | default "-A"}}
-
   gitrepositories:
     desc: List all the gitrepositories in your cluster
     cmds:
@@ -71,19 +66,9 @@ tasks:
       - kubectl get certificates {{.CLI_ARGS | default "-A"}}
       - kubectl get certificaterequests {{.CLI_ARGS | default "-A"}}
 
-  ingresses:
-    desc: List all the ingresses in your cluster
+  gateways:
+    desc: List Gateway API resources in your cluster
     cmds:
-      - kubectl get ingress {{.CLI_ARGS | default "-A"}}
-
-  resources:
-    desc: Gather common resources in your cluster, useful when asking for support
-    cmds:
-      - task: nodes
-      - task: kustomizations
-      - task: helmreleases
-      - task: helmrepositories
-      - task: gitrepositories
-      - task: certificates
-      - task: ingresses
-      - task: pods
+      - kubectl get gatewayclass
+      - kubectl get gateways {{.CLI_ARGS | default "-A"}}
+      - kubectl get httproutes {{.CLI_ARGS | default "-A"}}

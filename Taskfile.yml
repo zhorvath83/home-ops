@@ -7,11 +7,20 @@ vars:
   KUBERNETES_DIR: "{{.ROOT_DIR}}/kubernetes"
   ANSIBLE_DIR: "{{.ROOT_DIR}}/provision/kubernetes"
   TERRAFORM_DIR: "{{.ROOT_DIR}}/provision/cloudflare"
+  PVE_1_HOST: 192.168.1.4
+  PVE_0_HOST: 192.168.1.5
+  K8S_PRIMARY_CONTROL_PLANE_HOST: 192.168.1.6
+  NAS_HOST: 192.168.1.10
+  OPENWRT_HOST: 192.168.1.1
+  K8S_API_SERVER_HOST: 192.168.1.6
+  OPENWRT_BACKUP_DIR: /Volumes/backups/openwrt
+  OPENWRT_REMOTE_BACKUP_DIR: /mnt/sda1/backups
+  OPENWRT_USER_PACKAGES_LIST_SCRIPT: /etc/luci-uploads/list-installed-user-packages-apk.sh
+  OPENWRT_BACKUP_SCRIPT: /etc/luci-uploads/openwrt-backup-local.sh
+  NAS_SHARE_MOUNT_SCRIPT: ~/Projects/personal/my-scripts-and-configs/macOS/btt-scripts/nas-share-mount.sh
 
 env:
-  MASTER_USERNAME: zhorvath83
-  K8S_MASTER_HOST: 192.168.1.6
-  KUBERNETES_API: 192.168.1.6
+  OPERATIONS_USERNAME: zhorvath83
   KUBECONFIG: /Users/zhorvath83/.kube/config
   SOPS_AGE_KEY_FILE: /Users/zhorvath83/.config/sops/age/keys.txt
 
@@ -19,6 +28,7 @@ includes:
   an: .taskfiles/Ansible/Tasks.yaml
   es: .taskfiles/ExternalSecrets/Tasks.yaml
   fx: .taskfiles/Flux/Tasks.yaml
+  hm: .taskfiles/HostMaintenance/Tasks.yaml
   ku: .taskfiles/Kubernetes/Tasks.yaml
   pc: .taskfiles/PreCommit/Tasks.yaml
   tf: .taskfiles/Terraform/Tasks.yaml
@@ -29,4 +39,58 @@ tasks:
 
   default:
     silent: true
-    cmds: ["task -l"]
+    cmds: ["task list"]
+
+  list:
+    desc: List available tasks grouped by domain
+    silent: true
+    preconditions:
+      - sh: command -v jq >/dev/null 2>&1
+        msg: jq is required to render the grouped task list
+    cmds:
+      - |
+        set -eu
+
+        task --list-all --sort alphanumeric --json \
+          | jq -r '
+              def domain_name($prefix):
+                {
+                  "an": "Ansible",
+                  "es": "External Secrets",
+                  "fx": "Flux",
+                  "hm": "Host Maintenance",
+                  "ku": "Kubernetes",
+                  "pc": "Pre-Commit",
+                  "so": "SOPS",
+                  "tf": "Terraform",
+                  "vs": "VolSync"
+                }[$prefix] // "General";
+
+              .tasks
+              | map(select(.name != "default" and .name != "list"))
+              | group_by(if (.name | contains(":")) then (.name | split(":")[0]) else "" end)
+              | .[]
+              | (if (.[0].name | contains(":")) then (.[0].name | split(":")[0]) else "" end) as $prefix
+              | "SECTION\t" + (domain_name($prefix)) + "\t" + $prefix,
+                (.[] | "TASK\t" + .name + "\t" + (.desc // ""))
+            ' \
+          | awk -F '\t' '
+              BEGIN {
+                print "task: Available tasks by domain:"
+                print ""
+              }
+              $1 == "SECTION" {
+                if (section_seen++) {
+                  print ""
+                }
+                if ($3 == "") {
+                  print $2
+                } else {
+                  printf "%s (%s)\n", $2, $3
+                }
+                next
+              }
+              $1 == "TASK" {
+                printf "* %-30s %s\n", $2 ":", $3
+              }
+            '

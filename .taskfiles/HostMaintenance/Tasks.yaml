@@ -1,0 +1,637 @@
+---
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: "3"
+
+tasks:
+
+  all:
+    desc: Run regular maintenance across Proxmox, k3s host, OpenMediaVault, and OpenWrt
+    silent: true
+    cmds:
+      - |
+        FAILURES_FILE="$(mktemp "${TMPDIR:-/tmp}/home-ops-hm-failures.XXXXXX")"
+        trap 'rm -f "${FAILURES_FILE}"' EXIT
+
+        run_task() {
+          task_name="$1"
+          label="$2"
+          shift 2
+
+          echo
+          echo "==> ${label}"
+          if task "${task_name}" "$@"; then
+            echo "OK: ${label}"
+          else
+            echo "FAILED: ${label}"
+            printf '%s\n' "${label}" >> "${FAILURES_FILE}"
+          fi
+        }
+
+        run_task hm:proxmox pve-1 label=pve-1 host={{.PVE_1_HOST}}
+        run_task hm:proxmox pve-0 label=pve-0 host={{.PVE_0_HOST}}
+        run_task hm:k8s-host k8s-control-plane label=k8s-control-plane host={{.K8S_PRIMARY_CONTROL_PLANE_HOST}}
+        run_task hm:openmediavault openmediavault label=openmediavault host={{.NAS_HOST}}
+        run_task hm:openwrt:regular openwrt
+        run_task hm:openwrt:check-upgrade openwrt-upgrade-check
+
+        if [ -s "${FAILURES_FILE}" ]; then
+          echo
+          echo "Regular maintenance completed with failures:"
+          sed 's/^/- /' "${FAILURES_FILE}"
+          exit 1
+        fi
+
+        echo
+        echo "Regular maintenance completed successfully."
+
+  proxmox:
+    desc: Run maintenance on a Proxmox host (ex. task hm:proxmox label=pve-1 host=192.168.1.4)
+    silent: true
+    vars:
+      label: '{{.label | default "proxmox"}}'
+      host: '{{ or .host (fail "`host` is required") }}'
+    cmds:
+      - |
+        echo "Running Proxmox maintenance on {{.label}} ({{.host}})"
+        ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new root@{{.host}} '
+          set -eu
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get -y dist-upgrade --autoremove
+          fstrim -av
+        '
+
+  k8s-host:
+    desc: Run maintenance on the primary k3s control plane host
+    silent: true
+    vars:
+      label: '{{.label | default "k8s-control-plane"}}'
+      host: '{{.host | default .K8S_PRIMARY_CONTROL_PLANE_HOST}}'
+    cmds:
+      - |
+        echo "Running k3s host maintenance on {{.label}} ({{.host}})"
+        ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new {{.OPERATIONS_USERNAME}}@{{.host}} '
+          set -eu
+          sudo -n apt-get update
+          sudo -n env DEBIAN_FRONTEND=noninteractive apt-get -y dist-upgrade --autoremove
+          sudo -n k3s crictl rmi --prune
+          sudo -n fstrim -av
+        '
+
+  openmediavault:
+    desc: Run maintenance on the OpenMediaVault NAS host
+    silent: true
+    vars:
+      label: '{{.label | default "openmediavault"}}'
+      host: '{{.host | default .NAS_HOST}}'
+    cmds:
+      - |
+        set -eu
+
+        LOCAL_NAS_SHARE_MOUNT_SCRIPT="$(eval printf '%s' "{{.NAS_SHARE_MOUNT_SCRIPT}}")"
+
+        echo "Running OpenMediaVault maintenance on {{.label}} ({{.host}})"
+        ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new {{.OPERATIONS_USERNAME}}@{{.host}} '
+          set -eu
+          if [ ! -x /usr/sbin/omv-upgrade ]; then
+            echo "omv-upgrade was not found at /usr/sbin/omv-upgrade"
+            exit 1
+          fi
+          sudo -n /usr/sbin/omv-upgrade
+          sudo -n fstrim -av
+        '
+
+        if [ ! -x "${LOCAL_NAS_SHARE_MOUNT_SCRIPT}" ]; then
+          echo "NAS share mount script is not executable: ${LOCAL_NAS_SHARE_MOUNT_SCRIPT}"
+          exit 1
+        fi
+
+        echo "Re-mounting NAS shares locally"
+        "${LOCAL_NAS_SHARE_MOUNT_SCRIPT}"
+
+  openwrt:regular:
+    desc: Run regular maintenance on the OpenWrt router and copy the latest backup locally
+    silent: true
+    cmds:
+      - |
+        set -eu
+
+        BACKUP_PARENT_DIR="$(dirname "{{.OPENWRT_BACKUP_DIR}}")"
+        if [ ! -d "${BACKUP_PARENT_DIR}" ]; then
+          echo "OpenWrt backup parent directory is missing: ${BACKUP_PARENT_DIR}"
+          echo "Refusing to create it automatically to avoid writing to the wrong disk."
+          exit 1
+        fi
+
+        mkdir -p "{{.OPENWRT_BACKUP_DIR}}"
+        echo "Running OpenWrt maintenance on {{.OPENWRT_HOST}}"
+        ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new root@{{.OPENWRT_HOST}} '
+          set -eu
+          {{.OPENWRT_USER_PACKAGES_LIST_SCRIPT}} >/dev/null
+          {{.OPENWRT_BACKUP_SCRIPT}}
+        '
+
+        BACKUP_FILE="$(
+          ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new root@{{.OPENWRT_HOST}} \
+            "ls -1t {{.OPENWRT_REMOTE_BACKUP_DIR}}/backup-*.tar.gz | head -n 1"
+        )"
+
+        if [ -z "${BACKUP_FILE}" ]; then
+          echo "Unable to locate the latest OpenWrt backup in {{.OPENWRT_REMOTE_BACKUP_DIR}}"
+          exit 1
+        fi
+
+        echo "Copying ${BACKUP_FILE} to {{.OPENWRT_BACKUP_DIR}}"
+        scp -q -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new -p root@{{.OPENWRT_HOST}}:${BACKUP_FILE} "{{.OPENWRT_BACKUP_DIR}}/"
+        echo "Latest OpenWrt backup copied successfully."
+
+  openwrt:version:
+    desc: Show the current OpenWrt model, board, target, and release version
+    silent: true
+    preconditions:
+      - sh: command -v jq >/dev/null 2>&1
+        msg: jq is required for parsing OpenWrt board information
+    cmds:
+      - |
+        set -eu
+
+        BOARD_JSON="$(
+          ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new root@{{.OPENWRT_HOST}} \
+            'ubus call system board'
+        )"
+
+        printf '%s' "${BOARD_JSON}" \
+          | jq -r '
+              "Model: \(.model)",
+              "Board Name: \(.board_name)",
+              "Target: \(.release.target)",
+              "Version: \(.release.version)",
+              "Revision: \(.release.revision)",
+              "Description: \(.release.description)"
+            '
+
+  openwrt:check-upgrade:
+    desc: Show OpenWrt attended sysupgrade availability through owut
+    silent: true
+    preconditions:
+      - sh: command -v jq >/dev/null 2>&1
+        msg: jq is required for parsing OpenWrt board information
+      - sh: command -v curl >/dev/null 2>&1
+        msg: curl is required for checking the latest OpenWrt release
+    cmds:
+      - |
+        set -eu
+
+        BOARD_JSON="$(
+          ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new root@{{.OPENWRT_HOST}} \
+            'ubus call system board'
+        )"
+        CURRENT_VERSION="$(printf '%s' "${BOARD_JSON}" | jq -r '.release.version')"
+
+        case "${CURRENT_VERSION}" in
+          SNAPSHOT|*-SNAPSHOT|*SNAPSHOT*)
+            CURRENT_BRANCH="SNAPSHOT"
+            ;;
+          *)
+            CURRENT_BRANCH="$(printf '%s' "${CURRENT_VERSION}" | grep -Eo '^[0-9]+\.[0-9]+' || true)"
+            ;;
+        esac
+
+        OVERVIEW_JSON="$(curl -fsSL https://sysupgrade.openwrt.org/json/v1/overview.json)"
+        BRANCH_LATEST="$(
+          printf '%s' "${OVERVIEW_JSON}" \
+            | jq -r --arg branch "${CURRENT_BRANCH}" '
+                [.branches[$branch].versions[]? | select(contains("-") | not)]
+                | sort_by(split(".") | map(tonumber))
+                | last
+              '
+        )"
+        NEXT_STABLE_BRANCH="$(
+          if [ "${CURRENT_BRANCH}" != "SNAPSHOT" ]; then
+            printf '%s' "${OVERVIEW_JSON}" \
+              | jq -r --arg branch "${CURRENT_BRANCH}" '
+                  [.branches
+                   | to_entries[]
+                   | select((.key | test("^[0-9]+\\.[0-9]+$")))
+                   | {key: .key, parts: (.key | split(".") | map(tonumber))}]
+                  | sort_by(.parts)
+                  | map(select(.parts > ($branch | split(".") | map(tonumber))))
+                  | (.[0].key // empty)
+                '
+          fi
+        )"
+        NEXT_STABLE_VERSION="$(
+          if [ -n "${NEXT_STABLE_BRANCH}" ]; then
+            printf '%s' "${OVERVIEW_JSON}" \
+              | jq -r --arg branch "${NEXT_STABLE_BRANCH}" '
+                  [.branches[$branch].versions[]? | select(contains("-") | not)]
+                  | sort_by(split(".") | map(tonumber))
+                  | last
+                '
+          fi
+        )"
+
+        if [ -z "${CURRENT_VERSION}" ] || [ "${CURRENT_VERSION}" = "null" ] || [ -z "${CURRENT_BRANCH}" ] || [ -z "${BRANCH_LATEST}" ] || [ "${BRANCH_LATEST}" = "null" ]; then
+          echo "Unable to determine current OpenWrt version or branch latest version."
+          exit 1
+        fi
+
+        echo "Checking OpenWrt attended sysupgrade availability on {{.OPENWRT_HOST}}"
+        CHECK_OUTPUT="$(
+          ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new root@{{.OPENWRT_HOST}} "
+            set -eu
+            if ! command -v owut >/dev/null 2>&1; then
+              echo 'owut is not installed on the router'
+              exit 1
+            fi
+            owut check --version-to '${BRANCH_LATEST}' 2>&1
+          "
+        )"
+
+        printf '%s\n' "Current OpenWrt version: ${CURRENT_VERSION}"
+        printf '%s\n' "Current branch: ${CURRENT_BRANCH}"
+        printf '%s\n' "Latest version in current branch: ${BRANCH_LATEST}"
+
+        if [ "${CURRENT_VERSION}" = "${BRANCH_LATEST}" ]; then
+          echo "Current branch status: up to date."
+        else
+          echo "Current branch status: upgrade available."
+        fi
+
+        if [ -n "${NEXT_STABLE_VERSION}" ] && [ "${NEXT_STABLE_VERSION}" != "null" ] && [ "${NEXT_STABLE_VERSION}" != "${BRANCH_LATEST}" ]; then
+          echo "Next stable major branch is also available: ${NEXT_STABLE_VERSION}"
+        fi
+
+        SAFETY_LINE="$(
+          printf '%s\n' "${CHECK_OUTPUT}" \
+            | awk '/^It is / {print; exit}'
+        )"
+        if [ -n "${SAFETY_LINE}" ]; then
+          printf '%s\n' "${SAFETY_LINE}"
+        fi
+
+        FAILURE_SUMMARY="$(
+          printf '%s\n' "${CHECK_OUTPUT}" \
+            | awk '/^There are currently package build failures/ {print; exit}'
+        )"
+        if [ -n "${FAILURE_SUMMARY}" ]; then
+          printf '%s\n' "${FAILURE_SUMMARY}"
+        fi
+
+        if [ "${CURRENT_VERSION}" != "${BRANCH_LATEST}" ]; then
+          echo "Run task hm:openwrt:upgrade to start the attended upgrade."
+        fi
+
+  openwrt:upgrade:
+    desc: Interactively upgrade OpenWrt with attended sysupgrade through owut
+    interactive: true
+    silent: true
+    vars:
+      force: '{{.force | default "false"}}'
+    preconditions:
+      - sh: command -v jq >/dev/null 2>&1
+        msg: jq is required for parsing OpenWrt board information
+      - sh: command -v curl >/dev/null 2>&1
+        msg: curl is required for querying OpenWrt upgrade metadata
+    cmds:
+      - |
+        set -eu
+
+        wait_for_router() {
+          label="$1"
+          attempts="$2"
+          delay_seconds="$3"
+          attempt=1
+
+          while [ "${attempt}" -le "${attempts}" ]; do
+            if ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new root@{{.OPENWRT_HOST}} 'ubus call system board >/dev/null' >/dev/null 2>&1; then
+              echo "${label}: router is reachable again."
+              return 0
+            fi
+
+            echo "${label}: waiting for router (${attempt}/${attempts})..."
+            sleep "${delay_seconds}"
+            attempt=$((attempt + 1))
+          done
+
+          echo "${label}: router did not come back in time."
+          return 1
+        }
+
+        run_owut_check() {
+          version_to="$1"
+
+          ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new root@{{.OPENWRT_HOST}} "
+            set -eu
+            if ! command -v owut >/dev/null 2>&1; then
+              echo 'owut is not installed on the router'
+              exit 1
+            fi
+            owut check --version-to '${version_to}' 2>&1
+          "
+        }
+
+        run_owut_blob() {
+          version_to="$1"
+
+          ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new root@{{.OPENWRT_HOST}} "
+            set -eu
+            if ! command -v owut >/dev/null 2>&1; then
+              echo 'owut is not installed on the router'
+              exit 1
+            fi
+            owut blob --version-to '${version_to}'
+          "
+        }
+
+        asu_request_preflight() {
+          version_to="$1"
+          response_file="$(mktemp "${TMPDIR:-/tmp}/home-ops-openwrt-asu-response.XXXXXX")"
+          build_blob="$(run_owut_blob "${version_to}")"
+
+          http_status="$(
+            curl -sS \
+              -o "${response_file}" \
+              -w '%{http_code}' \
+              -H 'Content-Type: application/json' \
+              -d "${build_blob}" \
+              'https://sysupgrade.openwrt.org/api/v1/build'
+          )"
+
+          if [ "${http_status}" = "200" ] || [ "${http_status}" = "202" ]; then
+            request_hash="$(jq -r '.request_hash // empty' "${response_file}")"
+            if [ -n "${request_hash}" ]; then
+              echo "ASU preflight: build request accepted (${request_hash})."
+            else
+              echo "ASU preflight: build request accepted."
+            fi
+            rm -f "${response_file}"
+            return 0
+          fi
+
+          detail="$(
+            jq -r '.detail // .message // empty' "${response_file}" 2>/dev/null
+          )"
+          if [ -z "${detail}" ]; then
+            detail="$(tr '\n' ' ' < "${response_file}" | sed 's/[[:space:]]\+/ /g')"
+          fi
+
+          rm -f "${response_file}"
+          echo "ASU preflight failed for ${version_to} (HTTP ${http_status})."
+          if [ -n "${detail}" ]; then
+            echo "${detail}"
+          fi
+          return 1
+        }
+
+        BOARD_JSON="$(
+          ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new root@{{.OPENWRT_HOST}} \
+            'ubus call system board'
+        )"
+        CURRENT_VERSION="$(printf '%s' "${BOARD_JSON}" | jq -r '.release.version')"
+
+        case "${CURRENT_VERSION}" in
+          SNAPSHOT|*-SNAPSHOT|*SNAPSHOT*)
+            CURRENT_BRANCH="SNAPSHOT"
+            ;;
+          *)
+            CURRENT_BRANCH="$(printf '%s' "${CURRENT_VERSION}" | grep -Eo '^[0-9]+\.[0-9]+' || true)"
+            ;;
+        esac
+
+        OVERVIEW_JSON="$(curl -fsSL https://sysupgrade.openwrt.org/json/v1/overview.json)"
+        BRANCH_VERSION="$(
+          printf '%s' "${OVERVIEW_JSON}" \
+            | jq -r --arg branch "${CURRENT_BRANCH}" '
+                [.branches[$branch].versions[]? | select(contains("-") | not)]
+                | sort_by(split(".") | map(tonumber))
+                | last
+              '
+        )"
+        NEXT_STABLE_BRANCH="$(
+          if [ "${CURRENT_BRANCH}" != "SNAPSHOT" ]; then
+            printf '%s' "${OVERVIEW_JSON}" \
+              | jq -r --arg branch "${CURRENT_BRANCH}" '
+                  [.branches
+                   | to_entries[]
+                   | select((.key | test("^[0-9]+\\.[0-9]+$")))
+                   | {key: .key, parts: (.key | split(".") | map(tonumber))}]
+                  | sort_by(.parts)
+                  | map(select(.parts > ($branch | split(".") | map(tonumber))))
+                  | (.[0].key // empty)
+                '
+          fi
+        )"
+        NEXT_STABLE_VERSION="$(
+          if [ -n "${NEXT_STABLE_BRANCH}" ]; then
+            printf '%s' "${OVERVIEW_JSON}" \
+              | jq -r --arg branch "${NEXT_STABLE_BRANCH}" '
+                  [.branches[$branch].versions[]? | select(contains("-") | not)]
+                  | sort_by(split(".") | map(tonumber))
+                  | last
+                '
+          fi
+        )"
+
+        if [ -z "${CURRENT_VERSION}" ] || [ -z "${CURRENT_BRANCH}" ] || [ -z "${BRANCH_VERSION}" ] || [ "${CURRENT_VERSION}" = "null" ] || [ "${BRANCH_VERSION}" = "null" ]; then
+          echo "Unable to determine current OpenWrt version or available upgrade versions."
+          exit 1
+        fi
+
+        OPTION_COUNT=0
+        TARGET_VERSION=""
+        TARGET_LABEL=""
+        TARGET_KIND=""
+        OPTION_1_VERSION=""
+        OPTION_1_LABEL=""
+        OPTION_1_KIND=""
+        OPTION_2_VERSION=""
+        OPTION_2_LABEL=""
+        OPTION_2_KIND=""
+        FORCE_FLAG=""
+
+        echo "Current OpenWrt version: ${CURRENT_VERSION}"
+        echo "Current OpenWrt branch: ${CURRENT_BRANCH}"
+        echo
+        echo "Available upgrade targets:"
+        echo "  0) Cancel"
+
+        if [ "${CURRENT_VERSION}" != "${BRANCH_VERSION}" ]; then
+          OPTION_COUNT=$((OPTION_COUNT + 1))
+          if [ "${OPTION_COUNT}" -eq 1 ]; then
+            OPTION_1_VERSION="${BRANCH_VERSION}"
+            OPTION_1_LABEL="Current branch latest"
+            OPTION_1_KIND="branch"
+          else
+            OPTION_2_VERSION="${BRANCH_VERSION}"
+            OPTION_2_LABEL="Current branch latest"
+            OPTION_2_KIND="branch"
+          fi
+          echo "  ${OPTION_COUNT}) ${BRANCH_VERSION}  [Current branch latest]"
+        fi
+
+        if [ -n "${NEXT_STABLE_VERSION}" ] && [ "${NEXT_STABLE_VERSION}" != "null" ] && [ "${NEXT_STABLE_VERSION}" != "${BRANCH_VERSION}" ] && [ -n "${NEXT_STABLE_BRANCH}" ]; then
+          OPTION_COUNT=$((OPTION_COUNT + 1))
+          if [ "${OPTION_COUNT}" -eq 1 ]; then
+            OPTION_1_VERSION="${NEXT_STABLE_VERSION}"
+            OPTION_1_LABEL="Next stable major"
+            OPTION_1_KIND="major"
+          else
+            OPTION_2_VERSION="${NEXT_STABLE_VERSION}"
+            OPTION_2_LABEL="Next stable major"
+            OPTION_2_KIND="major"
+          fi
+          echo "  ${OPTION_COUNT}) ${NEXT_STABLE_VERSION}  [Next stable major]"
+        fi
+
+        if [ "${OPTION_COUNT}" -eq 0 ]; then
+          echo "No upgrade target is available."
+          exit 0
+        fi
+
+        echo
+        printf "Select target version [0-%s]: " "${OPTION_COUNT}"
+        read -r SELECTION
+
+        if [ "${SELECTION}" = "0" ]; then
+          echo "Cancelled."
+          exit 0
+        fi
+
+        case "${SELECTION}" in
+          ''|*[!0-9]*)
+            echo "Invalid selection."
+            exit 1
+            ;;
+        esac
+
+        if [ "${SELECTION}" -lt 1 ] || [ "${SELECTION}" -gt "${OPTION_COUNT}" ]; then
+          echo "Selection out of range."
+          exit 1
+        fi
+
+        case "${SELECTION}" in
+          1)
+            TARGET_VERSION="${OPTION_1_VERSION}"
+            TARGET_LABEL="${OPTION_1_LABEL}"
+            TARGET_KIND="${OPTION_1_KIND}"
+            ;;
+          2)
+            TARGET_VERSION="${OPTION_2_VERSION}"
+            TARGET_LABEL="${OPTION_2_LABEL}"
+            TARGET_KIND="${OPTION_2_KIND}"
+            ;;
+          *)
+            echo "Unsupported selection."
+            exit 1
+            ;;
+        esac
+
+        echo
+        echo "Selected target:"
+        echo "  Version: ${TARGET_VERSION}"
+        echo "  Kind: ${TARGET_LABEL}"
+        if [ "${TARGET_KIND}" = "major" ]; then
+          echo
+          echo "WARNING: Major upgrades are riskier than current-branch upgrades."
+        fi
+
+        CHECK_OUTPUT="$(run_owut_check "${TARGET_VERSION}")"
+
+        SAFETY_LINE="$(
+          printf '%s\n' "${CHECK_OUTPUT}" \
+            | awk '/^It is / {print; exit}'
+        )"
+        WARNING_LINE="$(
+          printf '%s\n' "${CHECK_OUTPUT}" \
+            | awk '/^WARNING: / {print; exit}'
+        )"
+        ERROR_LINE="$(
+          printf '%s\n' "${CHECK_OUTPUT}" \
+            | awk '/^ERROR: / {print; exit}'
+        )"
+        FAILURE_SUMMARY="$(
+          printf '%s\n' "${CHECK_OUTPUT}" \
+            | awk '/^There are currently package build failures/ {print; exit}'
+        )"
+
+        echo
+        echo "Preflight summary:"
+        if [ -n "${SAFETY_LINE}" ]; then
+          printf '%s\n' "  ${SAFETY_LINE}"
+        else
+          echo "  No explicit safety summary returned by owut."
+        fi
+        if [ -n "${WARNING_LINE}" ]; then
+          printf '%s\n' "  ${WARNING_LINE}"
+        fi
+        if [ -n "${ERROR_LINE}" ]; then
+          printf '%s\n' "  ${ERROR_LINE}"
+        fi
+        if [ -n "${FAILURE_SUMMARY}" ]; then
+          printf '%s\n' "  ${FAILURE_SUMMARY}"
+        fi
+
+        if [ "{{.force}}" = "true" ]; then
+          FORCE_FLAG="--force"
+        fi
+
+        if printf '%s\n%s\n' "${WARNING_LINE}" "${ERROR_LINE}" | grep -qi 'package downgrades'; then
+          if [ -z "${FORCE_FLAG}" ]; then
+            echo
+            printf "Package downgrades detected by owut. Continue with forced upgrade? [y/N]: "
+            read -r FORCE_CONFIRM
+
+            case "${FORCE_CONFIRM}" in
+              y|Y|yes|YES)
+                FORCE_FLAG="--force"
+                ;;
+              *)
+                echo "Cancelled."
+                exit 1
+                ;;
+            esac
+          fi
+
+          echo
+          echo "Force mode enabled: proceeding despite package downgrade warnings."
+        fi
+
+        echo
+        echo "Checking ASU build availability for ${TARGET_VERSION}"
+        asu_request_preflight "${TARGET_VERSION}"
+
+        echo
+        printf "Proceed with OpenWrt attended sysupgrade to %s? [y/N]: " "${TARGET_VERSION}"
+        read -r CONFIRM
+
+        case "${CONFIRM}" in
+          y|Y|yes|YES)
+            ;;
+          *)
+            echo "Cancelled."
+            exit 0
+            ;;
+        esac
+
+        echo "Starting attended sysupgrade to ${TARGET_VERSION}"
+        set +e
+        ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new root@{{.OPENWRT_HOST}} \
+          "owut upgrade --verbose ${FORCE_FLAG} --version-to '${TARGET_VERSION}'"
+        OWUT_SSH_STATUS=$?
+        set -e
+
+        case "${OWUT_SSH_STATUS}" in
+          0|255)
+            ;;
+          *)
+            echo "owut upgrade command failed before reboot with exit status ${OWUT_SSH_STATUS}"
+            exit 1
+            ;;
+        esac
+
+        wait_for_router "Post-upgrade wait" 60 5
+
+        echo "Final router version:"
+        ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new root@{{.OPENWRT_HOST}} \
+          'ubus call system board' \
+          | jq -r '"Version: \(.release.version)", "Revision: \(.release.revision)"'
