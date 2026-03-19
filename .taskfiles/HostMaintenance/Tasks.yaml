@@ -5,7 +5,8 @@ version: "3"
 vars:
   OPENWRT_LOCAL_BACKUP_DIR: /mnt/sda1/backups
   OPENWRT_LOCAL_BACKUP_SCRIPT: /etc/luci-uploads/openwrt-backup-local.sh
-  OPENWRT_LOCAL_PKG_BCKUP_SCRIPT: /etc/luci-uploads/list-installed-user-packages-apk.sh
+  OPENWRT_LOCAL_PACKAGE_LIST_SCRIPT: /etc/luci-uploads/list-installed-user-packages-apk.sh
+  OPENWRT_LOCAL_REINSTALL_SCRIPT: /etc/luci-uploads/reinstall-user-packages-apk.sh
   NAS_SHARE_MOUNT_SCRIPT_ON_MAC: ~/Projects/personal/my-scripts-and-configs/macOS/btt-scripts/nas-share-mount.sh
   OPENWRT_BACKUP_DIR_ON_MAC: /Volumes/backups/openwrt
 
@@ -133,7 +134,7 @@ tasks:
         echo "Running OpenWrt maintenance on {{.OPENWRT_HOST}}"
         ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new root@{{.OPENWRT_HOST}} '
           set -eu
-          {{.OPENWRT_LOCAL_PKG_BCKUP_SCRIPT}} >/dev/null
+          {{.OPENWRT_LOCAL_PACKAGE_LIST_SCRIPT}} >/dev/null
           {{.OPENWRT_LOCAL_BACKUP_SCRIPT}}
         '
 
@@ -637,6 +638,16 @@ tasks:
         esac
 
         wait_for_router "Post-upgrade wait" 60 5
+
+        echo "Running OpenWrt reinstall script after upgrade"
+        ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new root@{{.OPENWRT_HOST}} "
+          set -eu
+          if [ ! -x '{{.OPENWRT_LOCAL_REINSTALL_SCRIPT}}' ]; then
+            echo 'Reinstall script is missing or not executable: {{.OPENWRT_LOCAL_REINSTALL_SCRIPT}}'
+            exit 1
+          fi
+          '{{.OPENWRT_LOCAL_REINSTALL_SCRIPT}}'
+        "
 
         echo "Final router version:"
         ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new root@{{.OPENWRT_HOST}} \
