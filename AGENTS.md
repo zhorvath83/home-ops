@@ -58,7 +58,10 @@ This repository currently manages a single-node home infrastructure stack with t
 - Do not create new documentation locations unless they clearly fit the current structure.
 - Preserve `README.md` as human-facing overview unless the task explicitly requires changing it.
 - Prefer repo-native operational entry points over raw commands when they already exist in Taskfiles.
-- Distinguish carefully between local repository state and live cluster state. Editing files in the working tree does not change the cluster until those changes are committed, pushed to the Git source watched by Flux, and reconciled or picked up by the next sync.
+- Distinguish carefully between local repository state and live cluster state.
+  Editing files in the working tree does not change the cluster until those
+  changes are committed, pushed to the Git source watched by Flux, and
+  reconciled or picked up by the next sync.
 - Do not run `flux reconcile` just because local files changed. A reconcile only refreshes the committed source and reapplies the live GitOps state; it does not read uncommitted or unpushed local edits.
 
 ## Repo-Wide Anti-Patterns

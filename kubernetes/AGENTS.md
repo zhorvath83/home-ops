@@ -120,7 +120,10 @@ Rules:
 - Keep names lowercase and hyphenated.
 - Flux Kustomization names follow `cluster-apps-<app>`.
 
-This skeleton is mainly for user-facing or standard app deployments. Platform areas such as `networking/`, `security/`, `external-secrets/`, and `observability/` often have deliberate deviations; inspect sibling trees before copying a default-app pattern into those areas.
+This skeleton is mainly for user-facing or standard app deployments. Platform
+areas such as `networking/`, `security/`, `external-secrets/`, and
+`observability/` often have deliberate deviations; inspect sibling trees before
+copying a default-app pattern into those areas.
 
 ## OCIRepository Rules
 
