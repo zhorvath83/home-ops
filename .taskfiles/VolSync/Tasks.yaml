@@ -6,9 +6,6 @@ vars:
   destinationTemplate: "{{.ROOT_DIR}}/.taskfiles/VolSync/ReplicationDestination.tmpl.yaml"
   wipeJobTemplate: "{{.ROOT_DIR}}/.taskfiles/VolSync/WipeJob.tmpl.yaml"
   waitForJobScript: "{{.ROOT_DIR}}/.taskfiles/VolSync/wait-for-job.sh"
-  listJobTemplate: "{{.ROOT_DIR}}/.taskfiles/VolSync/ListJob.tmpl.yaml"
-  forgetJobTemplate: "{{.ROOT_DIR}}/.taskfiles/VolSync/ForgetJob.tmpl.yaml"
-  unlockJobTemplate: "{{.ROOT_DIR}}/.taskfiles/VolSync/UnlockJob.tmpl.yaml"
   ts: '{{now | date "150405"}}'
 
 env:
@@ -23,81 +20,47 @@ env:
 tasks:
 
   list:
-    desc: List all snapshots taken by restic for a given ReplicationSource (ex. task vs:list rsrc=plex [namespace=default])
-    silent: true
-    cmds:
-      - envsubst < <(cat {{.listJobTemplate}}) | kubectl apply -f -
-      - bash {{.waitForJobScript}} list-{{.rsrc}}-{{.ts}} {{.namespace}}
-      - kubectl -n {{.namespace}} wait job/list-{{.rsrc}}-{{.ts}} --for condition=complete --timeout=1m
-      - kubectl -n {{.namespace}} logs job/list-{{.rsrc}}-{{.ts}} --container list
-      - kubectl -n {{.namespace}} delete job list-{{.rsrc}}-{{.ts}}
-    vars:
-      rsrc: '{{ or .rsrc (fail "ReplicationSource `rsrc` is required") }}'
-      namespace: '{{.namespace | default "default"}}'
-    preconditions:
-      - sh: test -f {{.waitForJobScript}}
-      - sh: test -f {{.listJobTemplate}}
-
-  forget:
-    desc: Forget (delete) old snapshots from restic repository, keeping only last 3 snapshots (ex. task vs:forget rsrc=plex [namespace=default])
+    desc: List Kopia snapshots for a given ReplicationSource identity (ex. task vs:list rsrc=actual [namespace=default])
     silent: true
     cmds:
       - |
-        export rsrc="{{.rsrc}}"
-        export ts="{{.ts}}"
-        export namespace="{{.namespace}}"
-        envsubst < <(cat {{.forgetJobTemplate}}) | kubectl apply -f -
-      - bash {{.waitForJobScript}} forget-{{.rsrc}}-{{.ts}} {{.namespace}}
-      - kubectl -n {{.namespace}} wait job/forget-{{.rsrc}}-{{.ts}} --for condition=complete --timeout=10m
-      - kubectl -n {{.namespace}} logs job/forget-{{.rsrc}}-{{.ts}} --container forget
-      - kubectl -n {{.namespace}} delete job forget-{{.rsrc}}-{{.ts}}
+        kubectl -n {{.kopiaNamespace}} exec deploy/kopia -- kopia snapshot list --all --json \
+          | jq --arg user "{{.rsrc}}" --arg host "{{.namespace}}" \
+            'map(select(.username == $user and .hostname == $host))'
     vars:
       rsrc: '{{ or .rsrc (fail "ReplicationSource `rsrc` is required") }}'
       namespace: '{{.namespace | default "default"}}'
+      kopiaNamespace: '{{.kopiaNamespace | default "system"}}'
     preconditions:
-      - sh: test -f {{.waitForJobScript}}
-      - sh: test -f {{.forgetJobTemplate}}
+      - sh: command -v jq >/dev/null 2>&1
+        msg: jq is required for filtering snapshot JSON
+      - sh: kubectl -n {{.kopiaNamespace}} get deploy/kopia >/dev/null 2>&1
+        msg: "Kopia UI deployment not found in namespace '{{.kopiaNamespace}}'"
 
-  unlock:
-    desc: Unlocks restic repository for a given ReplicationSource (ex. task vs:unlock rsrc=plex [namespace=default])
-    silent: true
-    cmds:
-      - envsubst < <(cat {{.unlockJobTemplate}}) | kubectl apply -f -
-      - bash {{.waitForJobScript}} unlock-{{.rsrc}}-{{.ts}} {{.namespace}}
-      - kubectl -n {{.namespace}} wait job/unlock-{{.rsrc}}-{{.ts}} --for condition=complete --timeout=1m
-      - kubectl -n {{.namespace}} logs job/unlock-{{.rsrc}}-{{.ts}} --container unlock
-      - kubectl -n {{.namespace}} delete job unlock-{{.rsrc}}-{{.ts}}
-    vars:
-      rsrc: '{{ or .rsrc (fail "ReplicationSource `rsrc` is required") }}'
-      namespace: '{{.namespace | default "default"}}'
-    preconditions:
-      - sh: test -f {{.waitForJobScript}}
-      - sh: test -f {{.unlockJobTemplate}}
-
-  # To run backup jobs in parallel for all replicationsources:
-  #  - kubectl get replicationsources --all-namespaces --no-headers | awk '{print $2, $1}' | xargs --max-procs=4 -l bash -c 'task vs:snapshot rsrc=$0 namespace=$1'
-  #
   snapshot:
-    desc: Trigger a Restic ReplicationSource snapshot (ex. task vs:snapshot rsrc=plex [namespace=default])
+    desc: Trigger a Kopia ReplicationSource backup (ex. task vs:snapshot rsrc=actual [namespace=default])
     cmds:
-      - kubectl -n {{.namespace}} patch replicationsources {{.rsrc}} --type merge -p '{"spec":{"trigger":{"manual":"{{.ts}}"}}}'
-      - bash {{.waitForJobScript}} volsync-src-{{.rsrc}} {{.namespace}}
-      - kubectl -n {{.namespace}} wait job/volsync-src-{{.rsrc}} --for condition=complete --timeout=120m
-      # TODO: Error from server (NotFound): jobs.batch "volsync-src-zzztest" not found
-      # - kubectl -n {{.namespace}} logs job/volsync-src-{{.rsrc}}
+      - |
+        kubectl -n {{.namespace}} patch replicationsources {{.rsrc}} --type merge \
+          -p '{"spec":{"trigger":{"manual":"{{.ts}}"}}}'
+      - |
+        while true; do
+          last_manual_sync="$(kubectl -n {{.namespace}} get replicationsource {{.rsrc}} -o jsonpath='{.status.lastManualSync}' 2>/dev/null)"
+          if [ "${last_manual_sync}" = "{{.ts}}" ]; then
+            break
+          fi
+          sleep 2
+        done
+      - kubectl -n {{.namespace}} get replicationsource {{.rsrc}} -o yaml
     vars:
       rsrc: '{{ or .rsrc (fail "ReplicationSource `rsrc` is required") }}'
       namespace: '{{.namespace | default "default"}}'
     preconditions:
-      - sh: test -f {{.waitForJobScript}}
       - sh: kubectl -n {{.namespace}} get replicationsources {{.rsrc}}
         msg: "ReplicationSource '{{.rsrc}}' not found in namespace '{{.namespace}}'"
 
-  # To run restore jobs in parallel for all replicationdestinations:
-  #   - kubectl get replicationsources --all-namespaces --no-headers | awk '{print $2, $1}' | xargs --max-procs=2 -l bash -c 'task vs:restore rsrc=$0 namespace=$1'
-  #
   restore:
-    desc: Restore PVC backup (ex. task vs:restore rsrc=plex [namespace=default] [previous=N] - where N is the snapshot index, default=latest)
+    desc: Restore a PVC from Kopia backup (ex. task vs:restore rsrc=actual [namespace=default] [previous=N])
     cmds:
       - task: restore-suspend-app
         vars:
@@ -192,6 +155,39 @@ tasks:
           claim=$(kubectl -n {{.namespace}} get replicationsource {{.rsrc}} -o jsonpath="{.spec.sourcePVC}" 2>/dev/null)
           kubectl -n {{.namespace}} get pvc "$claim" >/dev/null 2>&1
         msg: "PVC for ReplicationSource '{{.rsrc}}' not found"
+
+  maintenance:
+    desc: Trigger a manual KopiaMaintenance run (ex. task vs:maintenance [name=kopia-daily-maintenance] [namespace=system])
+    cmds:
+      - |
+        kubectl -n {{.namespace}} patch kopiamaintenances {{.name}} --type merge \
+          -p '{"spec":{"trigger":{"manual":"{{.ts}}"}}}'
+      - |
+        while true; do
+          last_manual_sync="$(kubectl -n {{.namespace}} get kopiamaintenances {{.name}} -o jsonpath='{.status.lastManualSync}' 2>/dev/null)"
+          if [ "${last_manual_sync}" = "{{.ts}}" ]; then
+            break
+          fi
+          sleep 2
+        done
+      - kubectl -n {{.namespace}} get kopiamaintenances {{.name}} -o yaml
+    vars:
+      name: '{{.name | default "kopia-daily-maintenance"}}'
+      namespace: '{{.namespace | default "system"}}'
+    preconditions:
+      - sh: kubectl -n {{.namespace}} get kopiamaintenances {{.name}} >/dev/null 2>&1
+        msg: "KopiaMaintenance '{{.name}}' not found in namespace '{{.namespace}}'"
+
+  status:
+    desc: Show VolSync/Kopia status for a given ReplicationSource (ex. task vs:status rsrc=actual [namespace=default])
+    cmds:
+      - kubectl -n {{.namespace}} get replicationsource {{.rsrc}} -o yaml
+    vars:
+      rsrc: '{{ or .rsrc (fail "ReplicationSource `rsrc` is required") }}'
+      namespace: '{{.namespace | default "default"}}'
+    preconditions:
+      - sh: kubectl -n {{.namespace}} get replicationsources {{.rsrc}} >/dev/null 2>&1
+        msg: "ReplicationSource '{{.rsrc}}' not found in namespace '{{.namespace}}'"
 
   # Suspend the Flux ks and hr
   restore-suspend-app:

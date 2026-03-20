@@ -107,7 +107,7 @@ Current task domains:
 - `fx:` Flux bootstrap, reconcile, and cluster inspection tasks
 - `ku:` Kubernetes utility tasks such as kubeconfig fetch and temporary PVC mounts
 - `tf:` Cloudflare Terraform operations
-- `vs:` VolSync snapshot, list, unlock, forget, and restore flows
+- `vs:` VolSync snapshot, list, maintenance, status, and restore flows
 - `es:` ExternalSecret sync helpers
 - `pc:` pre-commit setup and execution
 - `so:` SOPS encryption and re-encryption helpers

@@ -379,12 +379,14 @@ The active backup model is the shared component at [components/volsync/replicati
 Default behavior inherited from the component:
 
 - schedule: `0 2 * * *`
-- prune interval: `7`
 - cache: `1Gi`
 - capacity: `1Gi`
+- compression: `zstd-fastest`
+- parallelism: `2`
+- retain hourly: `24`
 - retain daily: `7`
 - retain weekly: `2`
-- retain monthly: `0`
+- retain monthly: `1`
 - storage class and snapshot class: `democratic-csi-local-hostpath`
 
 Scheduling policy:
@@ -407,15 +409,19 @@ Common `postBuild.substitute` knobs:
 - `APP_UID`, `APP_GID`
 - `VOLSYNC_CAPACITY`
 - `VOLSYNC_CACHE`
+- `VOLSYNC_COMPRESSION`
+- `VOLSYNC_PARALLELISM`
 - `VOLSYNC_SCHEDULE`
-- `VOLSYNC_PRUNE_DAYS`
+- `VOLSYNC_STORAGECLASS`
+- `VOLSYNC_SNAPSHOTCLASS`
+- `VOLSYNC_ACCESSMODES`
 - `VOLSYNC_RETAIN_HOURLY`
 - `VOLSYNC_RETAIN_DAILY`
 - `VOLSYNC_RETAIN_WEEKLY`
 - `VOLSYNC_RETAIN_MONTHLY`
 - `VOLSYNC_CLAIM` for non-default PVC names
 
-Do not create `ReplicationDestination` manifests for normal steady-state config; restores are handled through the VolSync task workflow.
+Do not create app-local backup manifests when the shared component covers the case; in-place restores are handled through the `vs:` workflow.
 
 ## Secrets Rules
 

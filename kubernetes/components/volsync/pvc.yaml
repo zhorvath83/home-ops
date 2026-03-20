@@ -5,8 +5,8 @@ metadata:
   name: "${VOLSYNC_CLAIM:=${APP}}"
 spec:
   accessModes:
-    - ReadWriteOnce
+    - "${VOLSYNC_ACCESSMODES:=ReadWriteOnce}"
   resources:
     requests:
       storage: "${VOLSYNC_CAPACITY:=1Gi}"
-  storageClassName: democratic-csi-local-hostpath
+  storageClassName: "${VOLSYNC_STORAGECLASS:=democratic-csi-local-hostpath}"

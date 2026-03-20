@@ -70,7 +70,7 @@ I use official Helm charts whenever possible for applications. When official cha
 ### Storage & Backup
 
 - **[democratic-csi](https://github.com/democratic-csi/democratic-csi)**: CSI driver supporting local hostpath, NFS, iSCSI and ZFS storage backends
-- **[volsync](https://github.com/backube/volsync)**: PVC backup and recovery using Restic to Backblaze B2 object storage
+- **[volsync](https://github.com/perfectra1n/volsync)**: PVC backup and recovery using Kopia to Backblaze B2 object storage
 
 ### Configuration Management
 

@@ -3,20 +3,26 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: cluster-apps-volsync
+  name: cluster-apps-kopia
   namespace: flux-system
 spec:
   commonMetadata:
     labels:
-      app.kubernetes.io/name: volsync
+      app.kubernetes.io/name: kopia
   dependsOn:
-    - name: cluster-apps-snapshot-controller
-  path: ./kubernetes/apps/volsync/volsync/app
+    - name: cluster-apps-onepassword-store
+    - name: cluster-apps-volsync
+  healthChecks:
+    - apiVersion: helm.toolkit.fluxcd.io/v2
+      kind: HelmRelease
+      name: kopia
+      namespace: system
+  path: ./kubernetes/apps/system/kopia/app
   prune: true
   sourceRef:
     kind: GitRepository
     name: home-ops-kubernetes
   interval: 1h
-  targetNamespace: volsync
+  targetNamespace: system
   timeout: 5m
   wait: false
