@@ -10,7 +10,9 @@ vars:
 
 env:
   rsrc: '{{.rsrc}}'
+  app: '{{.app}}'
   controller: '{{.controller}}'
+  replicas: '{{.replicas}}'
   namespace: '{{.namespace}}'
   claim: '{{.claim}}'
   ts: '{{.ts}}'
@@ -91,12 +93,23 @@ tasks:
   restore:
     desc: Restore a PVC from Kopia backup (ex. task vs:restore rsrc=actual [namespace=default] [id=<snapshot-id>])
     cmds:
+      - defer:
+          task: restore-resume-app
+          vars:
+            rsrc: '{{.rsrc}}'
+            app: '{{.app}}'
+            namespace: '{{.namespace}}'
+            kustomization: '{{.kustomization}}'
+            controller: '{{.controller}}'
+            replicas: '{{.replicas}}'
       - task: restore-suspend-app
         vars:
           rsrc: '{{.rsrc}}'
+          app: '{{.app}}'
           namespace: '{{.namespace}}'
           kustomization: '{{.kustomization}}'
           controller: '{{.controller}}'
+          replicas: '{{.replicas}}'
       - task: restore-wipe-job
         vars:
           rsrc: '{{.rsrc}}'
@@ -110,12 +123,6 @@ tasks:
           claim: '{{.claim}}'
           ts: '{{.ts}}'
           previous: '{{.previous}}'
-      - task: restore-resume-app
-        vars:
-          rsrc: '{{.rsrc}}'
-          namespace: '{{.namespace}}'
-          kustomization: '{{.kustomization}}'
-          controller: '{{.controller}}'
     vars:
       rsrc: '{{ or .rsrc (fail "Variable `rsrc` is required") }}'
       namespace: '{{.namespace | default "default"}}'
@@ -144,33 +151,40 @@ tasks:
           fi
           echo "$claim"
       # 3) Query to find the controller associated with the PersistentVolumeClaim (claim)
-      controller:
+      app:
         sh: |
-          # First get the claim
           claim=$(kubectl -n {{.namespace}} get replicationsource {{.rsrc}} \
             -o jsonpath="{.spec.sourcePVC}" 2>/dev/null)
           if [ -z "$claim" ]; then
             echo "Error: Could not find PVC for ReplicationSource {{.rsrc}}" >&2
             exit 1
           fi
-          # Then get the app name from the claim
           app=$(kubectl -n {{.namespace}} get persistentvolumeclaim "$claim" \
             -o jsonpath="{.metadata.labels.app\.kubernetes\.io/name}" 2>/dev/null)
           if [ -z "$app" ]; then
-            # Try using the claim name as app name
             app="$claim"
             echo "Warning: Using PVC name as app name: $app" >&2
           fi
-          # Check for different controller types
-          if kubectl -n {{.namespace}} get deployment.apps/$app >/dev/null 2>&1; then
-            echo "deployment.apps/$app"
-          elif kubectl -n {{.namespace}} get statefulset.apps/$app >/dev/null 2>&1; then
-            echo "statefulset.apps/$app"
-          elif kubectl -n {{.namespace}} get daemonset.apps/$app >/dev/null 2>&1; then
-            echo "daemonset.apps/$app"
+          echo "$app"
+      controller:
+        sh: |
+          if kubectl -n {{.namespace}} get deployment.apps/{{.app}} >/dev/null 2>&1; then
+            echo "deployment.apps/{{.app}}"
+          elif kubectl -n {{.namespace}} get statefulset.apps/{{.app}} >/dev/null 2>&1; then
+            echo "statefulset.apps/{{.app}}"
+          elif kubectl -n {{.namespace}} get daemonset.apps/{{.app}} >/dev/null 2>&1; then
+            echo "daemonset.apps/{{.app}}"
           else
-            echo "Error: Could not find controller for app: $app" >&2
+            echo "Error: Could not find controller for app: {{.app}}" >&2
             exit 1
+          fi
+      replicas:
+        sh: |
+          replicas=$(kubectl -n {{.namespace}} get {{.controller}} -o jsonpath="{.spec.replicas}" 2>/dev/null)
+          if [ -z "$replicas" ] || [ "$replicas" = "null" ]; then
+            echo "1"
+          else
+            echo "$replicas"
           fi
       previous:
         sh: |
@@ -228,45 +242,49 @@ tasks:
 
   status:
     desc: Show VolSync/Kopia status for a given ReplicationSource (ex. task vs:status rsrc=actual [namespace=default])
+    silent: true
     cmds:
       - |
         kubectl -n {{.namespace}} get replicationsource {{.rsrc}} -o json \
           | jq -r '
             [
-              "Namespace: \(.metadata.namespace)",
-              "ReplicationSource: \(.metadata.name)",
-              "Source PVC: \(.spec.sourcePVC // "-")",
-              "Repository Secret: \(.spec.kopia.repository // .spec.restic.repository // "-")",
-              "Schedule: \(.spec.trigger.schedule // "-")",
-              "Last Sync Time: \(.status.lastSyncTime // "-")",
-              "Last Manual Sync: \(.status.lastManualSync // "-")",
-              "Last Sync Duration: \(.status.lastSyncDuration // "-")",
-              "Last Result: \(.status.latestMoverStatus.result // "-")",
-              "Synchronizing: \(((.status.conditions // []) | map(select(.type == "Synchronizing") | "\(.status) (\(.reason // "-"))") | first) // "-")",
-              "Compression: \(.spec.kopia.compression // "-")",
-              "Retention: hourly=\(.spec.kopia.retain.hourly // "-") daily=\(.spec.kopia.retain.daily // "-") weekly=\(.spec.kopia.retain.weekly // "-") monthly=\(.spec.kopia.retain.monthly // "-")"
+              ["Field", "Value"],
+              ["Namespace", (.metadata.namespace // "-")],
+              ["ReplicationSource", (.metadata.name // "-")],
+              ["Source PVC", (.spec.sourcePVC // "-")],
+              ["Repository Secret", (.spec.kopia.repository // .spec.restic.repository // "-")],
+              ["Schedule", (.spec.trigger.schedule // "-")],
+              ["Last Sync Time", (.status.lastSyncTime // "-")],
+              ["Last Manual Sync", (.status.lastManualSync // "-")],
+              ["Last Sync Duration", (.status.lastSyncDuration // "-")],
+              ["Last Result", (.status.latestMoverStatus.result // "-")],
+              ["Synchronizing", (((.status.conditions // []) | map(select(.type == "Synchronizing") | "\(.status) (\(.reason // "-"))") | first) // "-")],
+              ["Compression", (.spec.kopia.compression // "-")],
+              ["Retention", ("hourly=\(.spec.kopia.retain.hourly // "-") daily=\(.spec.kopia.retain.daily // "-") weekly=\(.spec.kopia.retain.weekly // "-") monthly=\(.spec.kopia.retain.monthly // "-")")]
             ]
-            + (
-              if (.status.latestMoverStatus.logs // "") != "" then
-                ["Latest Mover Log:"]
-                + (
-                  .status.latestMoverStatus.logs
-                  | split("\n")
-                  | map(select(length > 0))
-                  | .[-8:]
-                  | map("  " + .)
-                )
-              else
-                []
-              end
-            )
-            | .[]'
+            | .[]
+            | @tsv' \
+          | column -t -s $'\t'
+      - |
+        log_tail="$(kubectl -n {{.namespace}} get replicationsource {{.rsrc}} -o json \
+          | jq -r '
+              (.status.latestMoverStatus.logs // "")
+              | split("\n")
+              | map(select(length > 0))
+              | .[-6:]
+              | .[]')"
+        if [ -n "$log_tail" ]; then
+          printf "\nRecent Mover Log\n"
+          printf "%s\n" "$log_tail"
+        fi
     vars:
       rsrc: '{{ or .rsrc (fail "ReplicationSource `rsrc` is required") }}'
       namespace: '{{.namespace | default "default"}}'
     preconditions:
       - sh: command -v jq >/dev/null 2>&1
         msg: jq is required for summarizing ReplicationSource status
+      - sh: command -v column >/dev/null 2>&1
+        msg: column is required for tabular status output
       - sh: kubectl -n {{.namespace}} get replicationsources {{.rsrc}} >/dev/null 2>&1
         msg: "ReplicationSource '{{.rsrc}}' not found in namespace '{{.namespace}}'"
 
@@ -275,21 +293,28 @@ tasks:
     internal: true
     vars:
       rsrc: '{{.rsrc}}'
+      app: '{{.app}}'
       namespace: '{{.namespace}}'
       kustomization: '{{.kustomization}}'
       controller: '{{.controller}}'
+      replicas: '{{.replicas}}'
     cmds:
       - flux -n flux-system suspend kustomization {{.kustomization}}
       - flux -n {{.namespace}} suspend helmrelease {{.rsrc}}
       - kubectl -n {{.namespace}} scale {{.controller}} --replicas 0
-      - kubectl -n {{.namespace}} wait pod --for delete --selector="app.kubernetes.io/name={{.rsrc}}" --timeout=2m
+      - |
+        if kubectl -n {{.namespace}} get pods -l "app.kubernetes.io/name={{.app}}" --no-headers 2>/dev/null | grep -q .; then
+          kubectl -n {{.namespace}} wait pod --for delete --selector="app.kubernetes.io/name={{.app}}" --timeout=2m
+        else
+          echo "No pods found for app.kubernetes.io/name={{.app}}, skipping delete wait"
+        fi
       # Double-check that pods are really gone
       - sleep 5
       - |
-        pod_count=$(kubectl -n {{.namespace}} get pods -l "app.kubernetes.io/name={{.rsrc}}" --no-headers | wc -l)
+        pod_count=$(kubectl -n {{.namespace}} get pods -l "app.kubernetes.io/name={{.app}}" --no-headers | wc -l)
         if [ "$pod_count" -gt 0 ]; then
           echo "Warning: Still found $pod_count pod(s) after scale down" >&2
-          kubectl -n {{.namespace}} delete pods -l "app.kubernetes.io/name={{.rsrc}}" --force --grace-period=0
+          kubectl -n {{.namespace}} delete pods -l "app.kubernetes.io/name={{.app}}" --force --grace-period=0
           sleep 10
         fi
 
@@ -339,17 +364,21 @@ tasks:
     internal: true
     vars:
       rsrc: '{{.rsrc}}'
+      app: '{{.app}}'
       namespace: '{{.namespace}}'
       kustomization: '{{.kustomization}}'
       controller: '{{.controller}}'
+      replicas: '{{.replicas}}'
     cmds:
       - flux -n {{.namespace}} resume helmrelease {{.rsrc}}
       - flux -n flux-system resume kustomization {{.kustomization}}
-      # Explicitly scale the controller back up to 1 replica
-      - kubectl -n {{.namespace}} scale {{.controller}} --replicas 1
-      # Wait for the controller to be scaled back up
+      - kubectl -n {{.namespace}} scale {{.controller}} --replicas {{.replicas}}
       - |
-        echo "Waiting for {{.controller}} to be scaled up..."
-        kubectl -n {{.namespace}} wait --for=jsonpath='{.spec.replicas}'=1 {{.controller}} --timeout=2m || true
-      # Wait for pod to be ready
-      - kubectl -n {{.namespace}} wait pod --for=condition=ready --selector="app.kubernetes.io/name={{.rsrc}}" --timeout=5m
+        echo "Waiting for {{.controller}} to be scaled back to {{.replicas}} replica(s)..."
+        kubectl -n {{.namespace}} wait --for=jsonpath='{.spec.replicas}'={{.replicas}} {{.controller}} --timeout=2m || true
+      - |
+        if [ "{{.replicas}}" = "0" ]; then
+          echo "Original replica count was 0, skipping readiness wait"
+        else
+          kubectl -n {{.namespace}} wait pod --for=condition=ready --selector="app.kubernetes.io/name={{.app}}" --timeout=5m
+        fi

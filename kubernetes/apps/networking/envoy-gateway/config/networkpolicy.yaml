@@ -36,11 +36,9 @@ spec:
         - protocol: TCP
           port: 19001
   egress:
-    # Backend services in labeled namespaces
+    # Backend services in any namespace
     - to:
-        - namespaceSelector:
-            matchLabels:
-              gateway-api-backend: "true"
+        - namespaceSelector: {}
     # Kubernetes API server (K3s runs on node, not as pod)
     - to:
         - ipBlock:
