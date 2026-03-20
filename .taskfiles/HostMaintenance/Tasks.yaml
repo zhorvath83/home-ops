@@ -14,11 +14,11 @@ tasks:
 
   all:
     desc: Run regular maintenance across Proxmox, k3s host, OpenMediaVault, and OpenWrt
+    interactive: true
     silent: true
     cmds:
       - |
-        FAILURES_FILE="$(mktemp "${TMPDIR:-/tmp}/home-ops-hm-failures.XXXXXX")"
-        trap 'rm -f "${FAILURES_FILE}"' EXIT
+        HAD_FAILURE=false
 
         run_task() {
           task_name="$1"
@@ -29,23 +29,27 @@ tasks:
           echo "==> ${label}"
           if task "${task_name}" "$@"; then
             echo "OK: ${label}"
+            return 0
           else
+            task_status=$?
             echo "FAILED: ${label}"
-            printf '%s\n' "${label}" >> "${FAILURES_FILE}"
+            HAD_FAILURE=true
+            return "${task_status}"
           fi
         }
 
+        run_task hm:openmediavault openmediavault label=openmediavault host={{.NAS_HOST}}
+        run_task hm:k8s-host k8s-control-plane label=k8s-control-plane host={{.K8S_PRIMARY_CONTROL_PLANE_HOST}}
         run_task hm:proxmox pve-1 label=pve-1 host={{.PVE_1_HOST}}
         run_task hm:proxmox pve-0 label=pve-0 host={{.PVE_0_HOST}}
-        run_task hm:k8s-host k8s-control-plane label=k8s-control-plane host={{.K8S_PRIMARY_CONTROL_PLANE_HOST}}
-        run_task hm:openmediavault openmediavault label=openmediavault host={{.NAS_HOST}}
-        run_task hm:openwrt:regular openwrt
-        run_task hm:openwrt:check-upgrade openwrt-upgrade-check
+        run_task hm:openwrt openwrt
 
-        if [ -s "${FAILURES_FILE}" ]; then
+        run_task hm:proxmox:ensure-reboot pve-1-reboot label=pve-1 host={{.PVE_1_HOST}}
+        run_task hm:proxmox:ensure-reboot pve-0-reboot label=pve-0 host={{.PVE_0_HOST}}
+
+        if [ "${HAD_FAILURE}" = "true" ]; then
           echo
-          echo "Regular maintenance completed with failures:"
-          sed 's/^/- /' "${FAILURES_FILE}"
+          echo "Regular maintenance completed with failures. Review the log output above for details."
           exit 1
         fi
 
@@ -61,12 +65,74 @@ tasks:
     cmds:
       - |
         echo "Running Proxmox maintenance on {{.label}} ({{.host}})"
-        ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new root@{{.host}} '
+        ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=ask root@{{.host}} '
           set -eu
           apt-get update
           DEBIAN_FRONTEND=noninteractive apt-get -y dist-upgrade --autoremove
           fstrim -av
         '
+
+  proxmox:needs-reboot:
+    silent: true
+    vars:
+      host: '{{ or .host (fail "`host` is required") }}'
+    cmds:
+      - |
+        ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=ask root@{{.host}} '
+          set -eu
+
+          if [ -e /run/reboot-required ] || [ -e /var/run/reboot-required ]; then
+            echo true
+            exit 0
+          fi
+
+          running_kernel="$(uname -r)"
+          latest_installed_kernel="$(
+            set -- /boot/vmlinuz-*
+            if [ "$1" = "/boot/vmlinuz-*" ]; then
+              exit 0
+            fi
+            printf "%s\n" "$@" \
+              | sed "s#.*/vmlinuz-##" \
+              | sort -V \
+              | tail -n 1
+          )"
+
+          if [ -n "${latest_installed_kernel}" ] && [ "${running_kernel}" != "${latest_installed_kernel}" ]; then
+            echo true
+            exit 0
+          fi
+
+          echo false
+        '
+
+  proxmox:ensure-reboot:
+    interactive: true
+    silent: true
+    vars:
+      label: '{{.label | default "proxmox"}}'
+      host: '{{ or .host (fail "`host` is required") }}'
+    cmds:
+      - |
+        reboot_needed="$(task --silent hm:proxmox:needs-reboot host={{.host}})"
+
+        if [ "${reboot_needed}" != "true" ]; then
+          echo "No reboot required for {{.label}}"
+          exit 0
+        fi
+
+        printf "%s requires a reboot. Reboot now? [y/N]: " "{{.label}}"
+        read -r REBOOT_CONFIRM
+
+        case "${REBOOT_CONFIRM}" in
+          y|Y|yes|YES)
+            echo "Rebooting {{.label}} ({{.host}})"
+            ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=ask root@{{.host}} 'systemctl reboot'
+            ;;
+          *)
+            echo "Skipping reboot for {{.label}}"
+            ;;
+        esac
 
   k8s-host:
     desc: Run maintenance on the primary k3s control plane host
@@ -77,7 +143,7 @@ tasks:
     cmds:
       - |
         echo "Running k3s host maintenance on {{.label}} ({{.host}})"
-        ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new {{.OPERATIONS_USERNAME}}@{{.host}} '
+        ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=ask {{.OPERATIONS_USERNAME}}@{{.host}} '
           set -eu
           sudo -n apt-get update
           sudo -n env DEBIAN_FRONTEND=noninteractive apt-get -y dist-upgrade --autoremove
@@ -98,7 +164,7 @@ tasks:
         LOCAL_NAS_SHARE_MOUNT_SCRIPT_ON_MAC="$(eval printf '%s' "{{.NAS_SHARE_MOUNT_SCRIPT_ON_MAC}}")"
 
         echo "Running OpenMediaVault maintenance on {{.label}} ({{.host}})"
-        ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new {{.OPERATIONS_USERNAME}}@{{.host}} '
+        ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=ask {{.OPERATIONS_USERNAME}}@{{.host}} '
           set -eu
           if [ ! -x /usr/sbin/omv-upgrade ]; then
             echo "omv-upgrade was not found at /usr/sbin/omv-upgrade"
@@ -116,9 +182,17 @@ tasks:
         echo "Re-mounting NAS shares locally"
         "${LOCAL_NAS_SHARE_MOUNT_SCRIPT_ON_MAC}"
 
-  openwrt:regular:
-    desc: Run regular maintenance on the OpenWrt router and copy the latest backup locally
+  openwrt:
+    desc: Run maintenance on the OpenWrt router, copy the latest backup locally, and perform an attended sysupgrade
+    interactive: true
     silent: true
+    vars:
+      force: '{{.force | default "false"}}'
+    preconditions:
+      - sh: command -v jq >/dev/null 2>&1
+        msg: jq is required for parsing OpenWrt board information
+      - sh: command -v curl >/dev/null 2>&1
+        msg: curl is required for querying OpenWrt upgrade metadata
     cmds:
       - |
         set -eu
@@ -132,14 +206,14 @@ tasks:
 
         mkdir -p "{{.OPENWRT_BACKUP_DIR_ON_MAC}}"
         echo "Running OpenWrt maintenance on {{.OPENWRT_HOST}}"
-        ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new root@{{.OPENWRT_HOST}} '
+        ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=ask root@{{.OPENWRT_HOST}} '
           set -eu
           {{.OPENWRT_LOCAL_PACKAGE_LIST_SCRIPT}} >/dev/null
           {{.OPENWRT_LOCAL_BACKUP_SCRIPT}}
         '
 
         BACKUP_FILE="$(
-          ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new root@{{.OPENWRT_HOST}} \
+          ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=ask root@{{.OPENWRT_HOST}} \
             "ls -1t {{.OPENWRT_LOCAL_BACKUP_DIR}}/backup-*.tar.gz | head -n 1"
         )"
 
@@ -149,149 +223,18 @@ tasks:
         fi
 
         echo "Copying ${BACKUP_FILE} to {{.OPENWRT_BACKUP_DIR_ON_MAC}}"
-        scp -q -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new -p root@{{.OPENWRT_HOST}}:${BACKUP_FILE} "{{.OPENWRT_BACKUP_DIR_ON_MAC}}/"
+        scp -q -o ConnectTimeout=10 -o StrictHostKeyChecking=ask -p root@{{.OPENWRT_HOST}}:${BACKUP_FILE} "{{.OPENWRT_BACKUP_DIR_ON_MAC}}/"
         echo "Latest OpenWrt backup copied successfully."
-
-  openwrt:version:
-    desc: Show the current OpenWrt model, board, target, and release version
-    silent: true
-    preconditions:
-      - sh: command -v jq >/dev/null 2>&1
-        msg: jq is required for parsing OpenWrt board information
-    cmds:
-      - |
-        set -eu
-
-        BOARD_JSON="$(
-          ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new root@{{.OPENWRT_HOST}} \
-            'ubus call system board'
-        )"
-
-        printf '%s' "${BOARD_JSON}" \
-          | jq -r '
-              "Model: \(.model)",
-              "Board Name: \(.board_name)",
-              "Target: \(.release.target)",
-              "Version: \(.release.version)",
-              "Revision: \(.release.revision)",
-              "Description: \(.release.description)"
-            '
-
-  openwrt:check-upgrade:
-    desc: Show OpenWrt attended sysupgrade availability through owut
-    silent: true
-    preconditions:
-      - sh: command -v jq >/dev/null 2>&1
-        msg: jq is required for parsing OpenWrt board information
-      - sh: command -v curl >/dev/null 2>&1
-        msg: curl is required for checking the latest OpenWrt release
-    cmds:
-      - |
-        set -eu
-
-        BOARD_JSON="$(
-          ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new root@{{.OPENWRT_HOST}} \
-            'ubus call system board'
-        )"
-        CURRENT_VERSION="$(printf '%s' "${BOARD_JSON}" | jq -r '.release.version')"
-
-        case "${CURRENT_VERSION}" in
-          SNAPSHOT|*-SNAPSHOT|*SNAPSHOT*)
-            CURRENT_BRANCH="SNAPSHOT"
-            ;;
-          *)
-            CURRENT_BRANCH="$(printf '%s' "${CURRENT_VERSION}" | grep -Eo '^[0-9]+\.[0-9]+' || true)"
-            ;;
-        esac
-
-        OVERVIEW_JSON="$(curl -fsSL https://sysupgrade.openwrt.org/json/v1/overview.json)"
-        BRANCH_LATEST="$(
-          printf '%s' "${OVERVIEW_JSON}" \
-            | jq -r --arg branch "${CURRENT_BRANCH}" '
-                [.branches[$branch].versions[]? | select(contains("-") | not)]
-                | sort_by(split(".") | map(tonumber))
-                | last
-              '
-        )"
-        NEXT_STABLE_BRANCH="$(
-          if [ "${CURRENT_BRANCH}" != "SNAPSHOT" ]; then
-            printf '%s' "${OVERVIEW_JSON}" \
-              | jq -r --arg branch "${CURRENT_BRANCH}" '
-                  [.branches
-                   | to_entries[]
-                   | select((.key | test("^[0-9]+\\.[0-9]+$")))
-                   | {key: .key, parts: (.key | split(".") | map(tonumber))}]
-                  | sort_by(.parts)
-                  | map(select(.parts > ($branch | split(".") | map(tonumber))))
-                  | (.[0].key // empty)
-                '
-          fi
-        )"
-        NEXT_STABLE_VERSION="$(
-          if [ -n "${NEXT_STABLE_BRANCH}" ]; then
-            printf '%s' "${OVERVIEW_JSON}" \
-              | jq -r --arg branch "${NEXT_STABLE_BRANCH}" '
-                  [.branches[$branch].versions[]? | select(contains("-") | not)]
-                  | sort_by(split(".") | map(tonumber))
-                  | last
-                '
-          fi
-        )"
-
-        if [ -z "${CURRENT_VERSION}" ] || [ "${CURRENT_VERSION}" = "null" ] || [ -z "${CURRENT_BRANCH}" ] || [ -z "${BRANCH_LATEST}" ] || [ "${BRANCH_LATEST}" = "null" ]; then
-          echo "Unable to determine current OpenWrt version or branch latest version."
-          exit 1
-        fi
-
-        echo "Checking OpenWrt attended sysupgrade availability on {{.OPENWRT_HOST}}"
-        CHECK_OUTPUT="$(
-          ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new root@{{.OPENWRT_HOST}} "
-            set -eu
-            if ! command -v owut >/dev/null 2>&1; then
-              echo 'owut is not installed on the router'
-              exit 1
-            fi
-            owut check --version-to '${BRANCH_LATEST}' 2>&1
-          "
-        )"
-
-        printf '%s\n' "Current OpenWrt version: ${CURRENT_VERSION}"
-        printf '%s\n' "Current branch: ${CURRENT_BRANCH}"
-        printf '%s\n' "Latest version in current branch: ${BRANCH_LATEST}"
-
-        if [ "${CURRENT_VERSION}" = "${BRANCH_LATEST}" ]; then
-          echo "Current branch status: up to date."
-        else
-          echo "Current branch status: upgrade available."
-        fi
-
-        if [ -n "${NEXT_STABLE_VERSION}" ] && [ "${NEXT_STABLE_VERSION}" != "null" ] && [ "${NEXT_STABLE_VERSION}" != "${BRANCH_LATEST}" ]; then
-          echo "Next stable major branch is also available: ${NEXT_STABLE_VERSION}"
-        fi
-
-        SAFETY_LINE="$(
-          printf '%s\n' "${CHECK_OUTPUT}" \
-            | awk '/^It is / {print; exit}'
-        )"
-        if [ -n "${SAFETY_LINE}" ]; then
-          printf '%s\n' "${SAFETY_LINE}"
-        fi
-
-        FAILURE_SUMMARY="$(
-          printf '%s\n' "${CHECK_OUTPUT}" \
-            | awk '/^There are currently package build failures/ {print; exit}'
-        )"
-        if [ -n "${FAILURE_SUMMARY}" ]; then
-          printf '%s\n' "${FAILURE_SUMMARY}"
-        fi
-
-        if [ "${CURRENT_VERSION}" != "${BRANCH_LATEST}" ]; then
-          echo "Run task hm:openwrt:upgrade to start the attended upgrade."
-        fi
+      - echo
+      - echo "Starting OpenWrt attended sysupgrade workflow"
+      - task: openwrt:upgrade
+        vars:
+          force: '{{.force}}'
 
   openwrt:upgrade:
     desc: Interactively upgrade OpenWrt with attended sysupgrade through owut
     interactive: true
+    internal: true
     silent: true
     vars:
       force: '{{.force | default "false"}}'
@@ -311,7 +254,7 @@ tasks:
           attempt=1
 
           while [ "${attempt}" -le "${attempts}" ]; do
-            if ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new root@{{.OPENWRT_HOST}} 'ubus call system board >/dev/null' >/dev/null 2>&1; then
+            if ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=ask root@{{.OPENWRT_HOST}} 'ubus call system board >/dev/null' >/dev/null 2>&1; then
               echo "${label}: router is reachable again."
               return 0
             fi
@@ -328,7 +271,7 @@ tasks:
         run_owut_check() {
           version_to="$1"
 
-          ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new root@{{.OPENWRT_HOST}} "
+          ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=ask root@{{.OPENWRT_HOST}} "
             set -eu
             if ! command -v owut >/dev/null 2>&1; then
               echo 'owut is not installed on the router'
@@ -341,7 +284,7 @@ tasks:
         run_owut_blob() {
           version_to="$1"
 
-          ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new root@{{.OPENWRT_HOST}} "
+          ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=ask root@{{.OPENWRT_HOST}} "
             set -eu
             if ! command -v owut >/dev/null 2>&1; then
               echo 'owut is not installed on the router'
@@ -392,7 +335,7 @@ tasks:
         }
 
         BOARD_JSON="$(
-          ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new root@{{.OPENWRT_HOST}} \
+          ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=ask root@{{.OPENWRT_HOST}} \
             'ubus call system board'
         )"
         CURRENT_VERSION="$(printf '%s' "${BOARD_JSON}" | jq -r '.release.version')"
@@ -623,7 +566,7 @@ tasks:
 
         echo "Starting attended sysupgrade to ${TARGET_VERSION}"
         set +e
-        ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new root@{{.OPENWRT_HOST}} \
+        ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=ask root@{{.OPENWRT_HOST}} \
           "owut upgrade --verbose ${FORCE_FLAG} --version-to '${TARGET_VERSION}'"
         OWUT_SSH_STATUS=$?
         set -e
@@ -640,7 +583,7 @@ tasks:
         wait_for_router "Post-upgrade wait" 60 5
 
         echo "Running OpenWrt reinstall script after upgrade"
-        ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new root@{{.OPENWRT_HOST}} "
+        ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=ask root@{{.OPENWRT_HOST}} "
           set -eu
           if [ ! -x '{{.OPENWRT_LOCAL_REINSTALL_SCRIPT}}' ]; then
             echo 'Reinstall script is missing or not executable: {{.OPENWRT_LOCAL_REINSTALL_SCRIPT}}'
@@ -650,6 +593,6 @@ tasks:
         "
 
         echo "Final router version:"
-        ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new root@{{.OPENWRT_HOST}} \
+        ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=ask root@{{.OPENWRT_HOST}} \
           'ubus call system board' \
           | jq -r '"Version: \(.release.version)", "Revision: \(.release.revision)"'
