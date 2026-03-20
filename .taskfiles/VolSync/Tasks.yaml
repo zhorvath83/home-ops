@@ -16,6 +16,7 @@ env:
   ts: '{{.ts}}'
   kustomization: '{{.kustomization}}'
   previous: '{{.previous}}'
+  id: '{{.id}}'
 
 tasks:
 
@@ -24,16 +25,44 @@ tasks:
     silent: true
     cmds:
       - |
-        kubectl -n {{.kopiaNamespace}} exec deploy/kopia -- kopia snapshot list --all --json \
-          | jq --arg user "{{.rsrc}}" --arg host "{{.namespace}}" \
-            'map(select(.username == $user and .hostname == $host))'
+        kubectl -n {{.kopiaNamespace}} exec deploy/kopia -- \
+          kopia snapshot list "{{.rsrc}}@{{.namespace}}:{{.sourcePath}}" \
+            --all \
+            --manifest-id \
+            --json \
+          | jq -r '
+              def human_bytes:
+                if . >= 1073741824 then ((. / 1073741824 * 10 | floor) / 10 | tostring) + " GiB"
+                elif . >= 1048576 then ((. / 1048576 * 10 | floor) / 10 | tostring) + " MiB"
+                elif . >= 1024 then ((. / 1024 * 10 | floor) / 10 | tostring) + " KiB"
+                else tostring + " B"
+                end;
+              [
+                ["TIME (UTC)", "SNAPSHOT", "SIZE", "FILES", "DIRS", "RETENTION"],
+                (
+                  sort_by(.startTime) | reverse | map([
+                    (.startTime | sub("\\.[0-9]+Z$"; "Z") | gsub("T"; " ")),
+                    .id,
+                    ((.rootEntry.summ.size // .stats.totalSize // 0) | human_bytes),
+                    ((.rootEntry.summ.files // .stats.fileCount // 0) | tostring),
+                    ((.rootEntry.summ.dirs // .stats.dirCount // 0) | tostring),
+                    ((.retentionReason // []) | join(","))
+                  ])[]
+                )
+              ]
+              | .[]
+              | @tsv' \
+          | column -t -s $'\t'
     vars:
       rsrc: '{{ or .rsrc (fail "ReplicationSource `rsrc` is required") }}'
       namespace: '{{.namespace | default "default"}}'
       kopiaNamespace: '{{.kopiaNamespace | default "system"}}'
+      sourcePath: '{{.sourcePath | default "/data"}}'
     preconditions:
       - sh: command -v jq >/dev/null 2>&1
-        msg: jq is required for filtering snapshot JSON
+        msg: jq is required for formatting snapshot output
+      - sh: command -v column >/dev/null 2>&1
+        msg: column is required for tabular snapshot output
       - sh: kubectl -n {{.kopiaNamespace}} get deploy/kopia >/dev/null 2>&1
         msg: "Kopia UI deployment not found in namespace '{{.kopiaNamespace}}'"
 
@@ -60,7 +89,7 @@ tasks:
         msg: "ReplicationSource '{{.rsrc}}' not found in namespace '{{.namespace}}'"
 
   restore:
-    desc: Restore a PVC from Kopia backup (ex. task vs:restore rsrc=actual [namespace=default] [previous=N])
+    desc: Restore a PVC from Kopia backup (ex. task vs:restore rsrc=actual [namespace=default] [id=<snapshot-id>])
     cmds:
       - task: restore-suspend-app
         vars:
@@ -90,6 +119,8 @@ tasks:
     vars:
       rsrc: '{{ or .rsrc (fail "Variable `rsrc` is required") }}'
       namespace: '{{.namespace | default "default"}}'
+      kopiaNamespace: '{{.kopiaNamespace | default "system"}}'
+      sourcePath: '{{.sourcePath | default "/data"}}'
       # 1) Query to find the Flux Kustomization associated with the ReplicationSource (rsrc)
       # Falls back to common pattern if label is missing
       kustomization:
@@ -141,7 +172,22 @@ tasks:
             echo "Error: Could not find controller for app: $app" >&2
             exit 1
           fi
-      previous: "{{.previous | default 1}}"
+      previous:
+        sh: |
+          if [ -n "{{.id}}" ]; then
+            previous=$(kubectl -n {{.kopiaNamespace}} exec deploy/kopia -- \
+              kopia snapshot list "{{.rsrc}}@{{.namespace}}:{{.sourcePath}}" --all --json \
+              | jq -r --arg id "{{.id}}" 'sort_by(.startTime) | reverse | map(.id) | index($id)')
+            if [ "$previous" = "null" ] || [ -z "$previous" ]; then
+              echo "Error: Snapshot ID '{{.id}}' not found for {{.rsrc}}@{{.namespace}}:{{.sourcePath}}" >&2
+              exit 1
+            fi
+            echo "$previous"
+          elif [ -n "{{.previous}}" ]; then
+            echo "{{.previous}}"
+          else
+            echo "0"
+          fi
     preconditions:
       - sh: test -f {{.wipeJobTemplate}}
         msg: "Wipe job template not found"
@@ -149,6 +195,8 @@ tasks:
         msg: "Destination template not found"
       - sh: test -f {{.waitForJobScript}}
         msg: "Wait for job script not found"
+      - sh: command -v jq >/dev/null 2>&1
+        msg: jq is required for snapshot-id based restore selection
       - sh: kubectl -n {{.namespace}} get replicationsource {{.rsrc}} >/dev/null 2>&1
         msg: "ReplicationSource '{{.rsrc}}' not found in namespace '{{.namespace}}'"
       - sh: |
@@ -181,11 +229,44 @@ tasks:
   status:
     desc: Show VolSync/Kopia status for a given ReplicationSource (ex. task vs:status rsrc=actual [namespace=default])
     cmds:
-      - kubectl -n {{.namespace}} get replicationsource {{.rsrc}} -o yaml
+      - |
+        kubectl -n {{.namespace}} get replicationsource {{.rsrc}} -o json \
+          | jq -r '
+            [
+              "Namespace: \(.metadata.namespace)",
+              "ReplicationSource: \(.metadata.name)",
+              "Source PVC: \(.spec.sourcePVC // "-")",
+              "Repository Secret: \(.spec.kopia.repository // .spec.restic.repository // "-")",
+              "Schedule: \(.spec.trigger.schedule // "-")",
+              "Last Sync Time: \(.status.lastSyncTime // "-")",
+              "Last Manual Sync: \(.status.lastManualSync // "-")",
+              "Last Sync Duration: \(.status.lastSyncDuration // "-")",
+              "Last Result: \(.status.latestMoverStatus.result // "-")",
+              "Synchronizing: \(((.status.conditions // []) | map(select(.type == "Synchronizing") | "\(.status) (\(.reason // "-"))") | first) // "-")",
+              "Compression: \(.spec.kopia.compression // "-")",
+              "Retention: hourly=\(.spec.kopia.retain.hourly // "-") daily=\(.spec.kopia.retain.daily // "-") weekly=\(.spec.kopia.retain.weekly // "-") monthly=\(.spec.kopia.retain.monthly // "-")"
+            ]
+            + (
+              if (.status.latestMoverStatus.logs // "") != "" then
+                ["Latest Mover Log:"]
+                + (
+                  .status.latestMoverStatus.logs
+                  | split("\n")
+                  | map(select(length > 0))
+                  | .[-8:]
+                  | map("  " + .)
+                )
+              else
+                []
+              end
+            )
+            | .[]'
     vars:
       rsrc: '{{ or .rsrc (fail "ReplicationSource `rsrc` is required") }}'
       namespace: '{{.namespace | default "default"}}'
     preconditions:
+      - sh: command -v jq >/dev/null 2>&1
+        msg: jq is required for summarizing ReplicationSource status
       - sh: kubectl -n {{.namespace}} get replicationsources {{.rsrc}} >/dev/null 2>&1
         msg: "ReplicationSource '{{.rsrc}}' not found in namespace '{{.namespace}}'"
 
