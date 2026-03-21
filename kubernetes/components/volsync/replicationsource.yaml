@@ -11,7 +11,10 @@ spec:
   kopia:
     accessModes:
       - "${VOLSYNC_ACCESSMODES:=ReadWriteOnce}"
+    cacheAccessModes:
+      - "${VOLSYNC_CACHE_ACCESSMODES:=ReadWriteOnce}"
     cacheCapacity: "${VOLSYNC_CACHE:=1Gi}"
+    cacheStorageClassName: "${VOLSYNC_CACHE_STORAGECLASS:=democratic-csi-local-hostpath}"
     compression: "${VOLSYNC_COMPRESSION:=zstd-fastest}"
     copyMethod: Snapshot
     parallelism: ${VOLSYNC_PARALLELISM:=2}
