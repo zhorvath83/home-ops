@@ -4,4 +4,4 @@ kind: Kustomization
 resources:
   - ./namespace.yaml
   - ./pocket-id/ks.yaml
-  - ./tinyauth/ks.yaml
+  # - ./tinyauth/ks.yaml
