@@ -6,6 +6,12 @@ metadata:
 spec:
   accessModes:
     - "${VOLSYNC_ACCESSMODES:=ReadWriteOnce}"
+  # Enable for the next cluster recreate when provisioning a new PVC from the
+  # bootstrap ReplicationDestination in replicationdestination.yaml.
+  # dataSourceRef:
+  #   kind: ReplicationDestination
+  #   apiGroup: volsync.backube
+  #   name: "${APP}-bootstrap"
   resources:
     requests:
       storage: "${VOLSYNC_CAPACITY:=1Gi}"

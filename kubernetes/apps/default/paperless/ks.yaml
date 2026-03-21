@@ -28,7 +28,6 @@ spec:
       APP: paperless
       APP_UID: "1000"
       APP_GID: "1000"
-      VOLSYNC_SCHEDULE: "30 1 * * *"
       VOLSYNC_CAPACITY: "20Gi"
       VOLSYNC_CACHE: "2Gi"
       VOLSYNC_RETAIN_DAILY: "7"
@@ -63,4 +62,3 @@ spec:
   postBuild:
     substitute:
       APP: paperless-gpt
-      VOLSYNC_SCHEDULE: "10 5 * * *"

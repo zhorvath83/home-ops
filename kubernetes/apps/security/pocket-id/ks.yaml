@@ -25,4 +25,3 @@ spec:
   postBuild:
     substitute:
       APP: pocket-id
-      VOLSYNC_SCHEDULE: "30 4 * * *"

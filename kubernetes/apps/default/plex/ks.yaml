@@ -26,7 +26,6 @@ spec:
   postBuild:
     substitute:
       APP: plex
-      VOLSYNC_SCHEDULE: "30 2 * * *"
       VOLSYNC_CAPACITY: "5Gi"
       VOLSYNC_CACHE: "2Gi"
 ---
@@ -57,4 +56,3 @@ spec:
   postBuild:
     substitute:
       APP: plex-trakt-sync
-      VOLSYNC_SCHEDULE: "0 5 * * *"

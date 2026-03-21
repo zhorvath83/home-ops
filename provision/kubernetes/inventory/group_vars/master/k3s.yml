@@ -42,3 +42,5 @@ k3s_server:
   kube-apiserver-arg:
     # Required for HAProxy health-checks
     - "anonymous-auth=true"
+    - "feature-gates=MutatingAdmissionPolicy=true"
+    - "runtime-config=admissionregistration.k8s.io/v1beta1=true"

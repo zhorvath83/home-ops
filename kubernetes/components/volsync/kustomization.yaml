@@ -5,4 +5,7 @@ kind: Component
 resources:
   - ./externalsecret.yaml
   - ./pvc.yaml
+  # Enable for the next cluster recreate to bootstrap freshly created PVCs
+  # from VolSync via dataSourceRef -> ReplicationDestination.
+  # - ./replicationdestination.yaml
   - ./replicationsource.yaml

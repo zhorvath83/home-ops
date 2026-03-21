@@ -26,4 +26,3 @@ spec:
   postBuild:
     substitute:
       APP: sonarr
-      VOLSYNC_SCHEDULE: "0 4 * * *"

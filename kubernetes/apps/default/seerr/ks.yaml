@@ -28,4 +28,3 @@ spec:
       APP: seerr
       APP_UID: "1000"
       APP_GID: "1000"
-      VOLSYNC_SCHEDULE: "0 6 * * *"

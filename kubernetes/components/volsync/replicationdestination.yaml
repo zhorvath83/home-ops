@@ -1,0 +1,31 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/volsync.backube/replicationdestination_v1alpha1.json
+# Bootstrap-only manifest for the next cluster recreate.
+# Keep this resource disabled until PVCs are re-created with the matching
+# dataSourceRef in pvc.yaml.
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationDestination
+metadata:
+  name: "${APP}-bootstrap"
+  labels:
+    kustomize.toolkit.fluxcd.io/ssa: IfNotPresent
+spec:
+  trigger:
+    manual: restore-once
+  kopia:
+    accessModes:
+      - "${VOLSYNC_ACCESSMODES:=ReadWriteOnce}"
+    capacity: "${VOLSYNC_CAPACITY:=1Gi}"
+    cleanupCachePVC: true
+    cleanupTempPVC: true
+    copyMethod: Snapshot
+    enableFileDeletion: true
+    repository: "${APP}-volsync-secret"
+    sourceIdentity:
+      sourceName: "${APP}"
+    storageClassName: "${VOLSYNC_STORAGECLASS:=democratic-csi-local-hostpath}"
+    volumeSnapshotClassName: "${VOLSYNC_SNAPSHOTCLASS:=democratic-csi-local-hostpath}"
+    moverSecurityContext:
+      runAsUser: ${APP_UID:=10001}
+      runAsGroup: ${APP_GID:=10001}
+      fsGroup: ${APP_GID:=10001}
