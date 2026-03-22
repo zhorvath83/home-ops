@@ -288,6 +288,123 @@ tasks:
       - sh: kubectl -n {{.namespace}} get replicationsources {{.rsrc}} >/dev/null 2>&1
         msg: "ReplicationSource '{{.rsrc}}' not found in namespace '{{.namespace}}'"
 
+  last-backups:
+    desc: Show the latest VolSync backup per ReplicationSource in a date window, including sync duration, actual backup time, and estimated jitter (ex. task vs:last-backups [date=2026-03-22] [startHour=0] [endHour=8] [namespace=default])
+    silent: true
+    cmds:
+      - |
+        DATE="{{.date}}" START_HOUR="{{.startHour}}" END_HOUR="{{.endHour}}" NAMESPACE="{{.namespace}}" python3 - <<'PY'
+        import json
+        import os
+        import re
+        import statistics
+        import subprocess
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+
+        tz = ZoneInfo("Europe/Budapest")
+        date = os.environ["DATE"]
+        start_hour = int(os.environ["START_HOUR"])
+        end_hour = int(os.environ["END_HOUR"])
+        namespace = os.environ.get("NAMESPACE", "").strip()
+        start_local = datetime.fromisoformat(f"{date}T00:00:00").replace(tzinfo=tz).replace(hour=start_hour)
+        end_local = datetime.fromisoformat(f"{date}T00:00:00").replace(tzinfo=tz).replace(hour=end_hour)
+
+        def parse_duration(value: str) -> float:
+          total = 0.0
+          for amount, unit in re.findall(r"([0-9]+(?:\.[0-9]+)?)(h|m|s)", value or ""):
+            total += float(amount) * {"h": 3600, "m": 60, "s": 1}[unit]
+          return total
+
+        cmd = ["kubectl", "get", "replicationsources"]
+        if namespace:
+          cmd.extend(["-n", namespace])
+        else:
+          cmd.append("-A")
+        cmd.extend(["-o", "json"])
+        obj = json.loads(subprocess.check_output(cmd, text=True))
+
+        rows = []
+        backup_samples = []
+        jitter_samples = []
+        for item in obj.get("items", []):
+          meta = item.get("metadata", {})
+          spec = item.get("spec", {})
+          status = item.get("status", {})
+          last = status.get("lastSyncTime")
+          sync_duration = status.get("lastSyncDuration")
+          if not last or not sync_duration:
+            continue
+          dt = datetime.fromisoformat(last.replace("Z", "+00:00")).astimezone(tz)
+          if not (start_local <= dt < end_local):
+            continue
+
+          sync_seconds = parse_duration(sync_duration)
+          logs = ((status.get("latestMoverStatus") or {}).get("logs") or "")
+          match = re.search(r"TIMING: Total backup operation took ([0-9]+) seconds", logs)
+          backup_seconds = float(match.group(1)) if match else None
+          jitter_seconds = sync_seconds - backup_seconds if backup_seconds is not None else None
+          if backup_seconds is not None:
+            backup_samples.append(backup_seconds)
+            jitter_samples.append(jitter_seconds)
+
+          rows.append({
+            "namespace": meta.get("namespace", "-"),
+            "name": meta.get("name", "-"),
+            "schedule": (((spec.get("trigger") or {}).get("schedule")) or "-"),
+            "last_sync_local": dt.strftime("%Y-%m-%d %H:%M:%S %Z"),
+            "sync": sync_seconds,
+            "backup": backup_seconds,
+            "jitter": jitter_seconds,
+            "result": (((status.get("latestMoverStatus") or {}).get("result")) or "-"),
+          })
+
+        rows.sort(key=lambda row: row["last_sync_local"])
+
+        def human_seconds(value):
+          if value is None:
+            return "-"
+          total = int(round(value))
+          minutes, seconds = divmod(total, 60)
+          hours, minutes = divmod(minutes, 60)
+          if hours:
+            return f"{hours}h{minutes:02d}m{seconds:02d}s"
+          if minutes:
+            return f"{minutes}m{seconds:02d}s"
+          return f"{seconds}s"
+
+        table = [["NAMESPACE", "RSRC", "LAST SYNC", "SCHEDULE", "SYNC", "BACKUP", "JITTER", "RESULT"]]
+        for row in rows:
+          table.append([
+            row["namespace"],
+            row["name"],
+            row["last_sync_local"],
+            row["schedule"],
+            human_seconds(row["sync"]),
+            human_seconds(row["backup"]),
+            human_seconds(row["jitter"]),
+            row["result"],
+          ])
+        widths = [max(len(str(line[idx])) for line in table) for idx in range(len(table[0]))]
+
+        print(f"Window: {start_local.isoformat()} -> {end_local.isoformat()}")
+        print(f"Rows: {len(rows)}")
+        if backup_samples:
+          print(f"Actual backup total: {human_seconds(sum(backup_samples))} (avg {human_seconds(statistics.mean(backup_samples))})")
+          print(f"Estimated jitter total: {human_seconds(sum(jitter_samples))} (avg {human_seconds(statistics.mean(jitter_samples))})")
+        print("")
+        for line in table:
+          print("  ".join(str(value).ljust(widths[idx]) for idx, value in enumerate(line)))
+        PY
+    vars:
+      date: '{{.date | default (now | date "2006-01-02")}}'
+      startHour: '{{.startHour | default "0"}}'
+      endHour: '{{.endHour | default "8"}}'
+      namespace: '{{.namespace | default ""}}'
+    preconditions:
+      - sh: command -v python3 >/dev/null 2>&1
+        msg: python3 is required for analyzing duration data
+
   # Suspend the Flux ks and hr
   restore-suspend-app:
     internal: true
