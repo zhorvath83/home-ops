@@ -73,6 +73,8 @@ tasks:
         '
 
   proxmox:needs-reboot:
+    desc: Check whether a Proxmox host requires a reboot
+    internal: true
     silent: true
     vars:
       host: '{{ or .host (fail "`host` is required") }}'
@@ -107,7 +109,9 @@ tasks:
         '
 
   proxmox:ensure-reboot:
+    desc: Prompt for and perform a reboot on a Proxmox host when required
     interactive: true
+    internal: true
     silent: true
     vars:
       label: '{{.label | default "proxmox"}}'

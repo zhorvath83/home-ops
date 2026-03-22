@@ -289,7 +289,7 @@ tasks:
         msg: "ReplicationSource '{{.rsrc}}' not found in namespace '{{.namespace}}'"
 
   last-backups:
-    desc: Show the latest VolSync backup per ReplicationSource in a date window, including sync duration, actual backup time, and estimated jitter (ex. task vs:last-backups [date=2026-03-22] [startHour=0] [endHour=8] [namespace=default])
+    desc: Show the latest VolSync backup per ReplicationSource in a date window, including sync duration, actual backup time, and estimated jitter
     silent: true
     cmds:
       - |
@@ -373,16 +373,16 @@ tasks:
             return f"{minutes}m{seconds:02d}s"
           return f"{seconds}s"
 
-        table = [["NAMESPACE", "RSRC", "LAST SYNC", "SCHEDULE", "SYNC", "BACKUP", "JITTER", "RESULT"]]
+        table = [["NAMESPACE", "RSRC", "LAST SYNC", "SCHEDULE", "JITTER", "SYNC", "BACKUP", "RESULT"]]
         for row in rows:
           table.append([
             row["namespace"],
             row["name"],
             row["last_sync_local"],
             row["schedule"],
+            human_seconds(row["jitter"]),
             human_seconds(row["sync"]),
             human_seconds(row["backup"]),
-            human_seconds(row["jitter"]),
             row["result"],
           ])
         widths = [max(len(str(line[idx])) for line in table) for idx in range(len(table[0]))]
