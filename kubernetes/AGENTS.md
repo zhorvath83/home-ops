@@ -386,25 +386,32 @@ Default behavior inherited from the component:
 - capacity: `1Gi`
 - compression: `zstd-fastest`
 - parallelism: `2`
-- retain hourly: `24`
+- retain hourly: `0`
 - retain daily: `7`
 - retain weekly: `2`
 - retain monthly: `1`
+- cache access mode: `ReadWriteOnce`
+- cache storage class: `democratic-csi-local-hostpath`
 - storage class and snapshot class: `democratic-csi-local-hostpath`
 
 Scheduling policy:
 
-- Treat backup timing as an app-level concern even though the VolSync manifests come from the shared component.
-- The implementation lives in each app `ks.yaml` under `spec.postBuild.substitute.VOLSYNC_SCHEDULE`.
-- Keep the shared component default as the fallback only; when multiple apps use VolSync, prefer explicit per-app schedules in `ks.yaml`.
-- Reserve earlier isolated slots for the largest or most sensitive backups, then place the rest after them in 5-minute offsets.
-- The current operating convention is: dedicate the first slots to the largest backups, then schedule the remaining apps sequentially in 5-minute increments rather than leaving them on the shared default.
-- When adjusting schedules, inspect the whole fleet first so new entries do not accidentally collide with existing slots.
+- Treat backup timing as a platform concern by default, not an app concern.
+- The normal operating model is a shared cron schedule in the VolSync component plus a cluster-level jitter policy applied to VolSync mover Jobs.
+- The jitter is implemented in [apps/system/volsync/app/mutatingadmissionpolicy.yaml](apps/system/volsync/app/mutatingadmissionpolicy.yaml) and currently spreads mover start times across a short random window instead of requiring hand-assigned per-app cron slots.
+- Prefer this shared schedule + jitter model for new apps and for routine changes to existing apps.
+- Do not introduce explicit per-app `VOLSYNC_SCHEDULE` values just to spread backups across the night when the shared jitter policy already covers the need.
+- Reserve explicit app-level schedule overrides for genuine exceptions only, such as an unusually large backup, a workload with a strict quiet window, or a deliberate operational dependency on backup order.
+- If an app truly needs an override, document the reason in the app `ks.yaml` next to the substitute and make the exception narrow and intentional.
+- When changing backup timing behavior, inspect both the component defaults and the cluster-level jitter policy together; do not reason about one in isolation.
+- Keep future timing changes measurable. Prefer changes that preserve simple fleet-wide reasoning and can be verified from live `ReplicationSource` status and mover logs.
 
 How to inspect current schedules:
 
-- Preferred: `rg -n "VOLSYNC_SCHEDULE" kubernetes/apps -g 'ks.yaml'`
-- Also works: `grep VOLSYNC_SCHEDULE kubernetes/apps/**/ks.yaml`
+- Shared default: inspect [components/volsync/replicationsource.yaml](components/volsync/replicationsource.yaml)
+- Jitter behavior: inspect [apps/system/volsync/app/mutatingadmissionpolicy.yaml](apps/system/volsync/app/mutatingadmissionpolicy.yaml)
+- App-specific exceptions: `rg -n "VOLSYNC_SCHEDULE" kubernetes/apps -g 'ks.yaml'`
+- Live cluster state: inspect `ReplicationSource.status.lastSyncTime`, `lastSyncDuration`, and `latestMoverStatus.logs`
 
 Common `postBuild.substitute` knobs:
 
