@@ -69,6 +69,8 @@ spec:
               PAPERLESS_DATA_DIR: &dataDir "/data/local/data"
               PAPERLESS_MEDIA_ROOT: &mediaRoot "/data/local/media"
               PAPERLESS_LOGGING_DIR: "/data/local/logs"
+              PAPERLESS_LOGROTATE_MAX_SIZE: "1048576"
+              PAPERLESS_LOGROTATE_MAX_BACKUPS: "10"
 
               PAPERLESS_FILENAME_FORMAT: &filenameFormat "{{ `{{ created_year }}/{{ correspondent | default('uncategorized') | slugify }}/{{ created_year }}-{{ created_month }}-{{ created_day }}_{{ title | slugify }}_{{ doc_pk }}` }}"
 

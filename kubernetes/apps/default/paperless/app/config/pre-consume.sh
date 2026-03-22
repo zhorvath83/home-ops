@@ -42,19 +42,19 @@ export LC_ALL=C
 # Configuration
 # -----------------------------------------------------------------------------
 
-IN="${DOCUMENT_WORKING_PATH}"
+IN="${DOCUMENT_WORKING_PATH:-}"
 CONSUME_DIR="${PAPERLESS_CONSUMPTION_DIR:-/usr/src/paperless/consume}"
 
 # Ink coverage threshold for blank page detection
 # Lower value = more aggressive blank detection
 # 0.3 works well for most scanners
 
-# | Ink coverage | Jelentés
+# | Ink coverage | Meaning
 # |--------------|-----------------------------------------
-# | 0.0          | Teljesen üres (fehér) oldal
-# | 0.1 - 0.5    | Szinte üres, esetleg halvány vízjel, scanner árnyék
-# | 0.5 - 2.0    | Kevés tartalom (pl. csak fejléc/lábléc)
-# | 2.0 - 10.0   | Normál szöveges oldal
+# | 0.0          | Completely blank (white) page
+# | 0.1 - 0.5    | Nearly blank, faint watermark, scanner shadow
+# | 0.5 - 2.0    | Very little content (for example header/footer only)
+# | 2.0 - 10.0   | Typical text page
 
 THRESHOLD="${BLANK_PAGE_THRESHOLD:-0.3}"
 
@@ -63,15 +63,24 @@ THRESHOLD="${BLANK_PAGE_THRESHOLD:-0.3}"
 # -----------------------------------------------------------------------------
 
 log_info() {
-    echo "[INFO] $*" >&2
+    printf '[INFO] %s\n' "$*"
 }
 
 log_warn() {
-    echo "[WARNING] $*" >&2
+    printf '[WARNING] %s\n' "$*" >&2
 }
 
 log_error() {
-    echo "[ERROR] $*" >&2
+    printf '[ERROR] %s\n' "$*" >&2
+}
+
+trim_whitespace() {
+    local value="$1"
+
+    value="${value#"${value%%[![:space:]]*}"}"
+    value="${value%"${value##*[![:space:]]}"}"
+
+    printf '%s' "${value}"
 }
 
 # -----------------------------------------------------------------------------
@@ -85,7 +94,7 @@ fi
 
 # Check if file exists
 if [[ ! -f "${IN}" ]]; then
-    log_error "File does not exist: ${IN}"
+    log_warn "Working file no longer exists, skipping: ${IN}"
     exit 0
 fi
 
@@ -122,14 +131,20 @@ is_digitally_signed() {
 
 decrypt_pdf() {
     local pdf_file="$1"
+    local exit_code
 
     # Check if PDF is encrypted
     # qpdf --requires-password exit codes:
     #   0 = password IS required
     #   2 = not encrypted
     #   3 = encrypted but accessible (empty password)
+    #
+    # This command intentionally returns non-zero for common, non-error states,
+    # so temporarily relax errexit and inspect the exit code ourselves.
+    set +e
     qpdf --requires-password "${pdf_file}" 2>/dev/null
-    local exit_code=$?
+    exit_code=$?
+    set -e
 
     if [[ ${exit_code} -eq 2 ]]; then
         log_info "PDF is not encrypted"
@@ -159,7 +174,7 @@ decrypt_pdf() {
 
     # Try each password
     for password in "${PASSWORDS[@]}"; do
-        password=$(echo "${password}" | xargs)  # Trim whitespace
+        password=$(trim_whitespace "${password}")
         if [[ -z "${password}" ]]; then
             continue
         fi
@@ -186,7 +201,7 @@ remove_blank_pages() {
 
     # Get total page count
     local pages
-    pages=$(pdfinfo "${pdf_file}" 2>/dev/null | awk '/Pages:/ {print $2}')
+    pages=$(pdfinfo "${pdf_file}" 2>/dev/null | awk '/Pages:/ {print $2}') || true
 
     if [[ -z "${pages}" ]] || [[ "${pages}" -eq 0 ]]; then
         log_warn "Could not determine page count"
@@ -203,7 +218,7 @@ remove_blank_pages() {
         local ink_coverage
         ink_coverage=$(gs -o - -dFirstPage="${i}" -dLastPage="${i}" \
             -sDEVICE=ink_cov "${pdf_file}" 2>/dev/null | \
-            grep CMYK | awk 'BEGIN {sum=0} {sum += $1 + $2 + $3 + $4} END {printf "%.5f\n", sum}')
+            grep CMYK | awk 'BEGIN {sum=0} {sum += $1 + $2 + $3 + $4} END {printf "%.5f\n", sum}') || true
 
         if [[ -z "${ink_coverage}" ]]; then
             # If we can't analyze, keep the page
