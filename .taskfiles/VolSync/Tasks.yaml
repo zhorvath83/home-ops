@@ -58,7 +58,7 @@ tasks:
     vars:
       rsrc: '{{ or .rsrc (fail "ReplicationSource `rsrc` is required") }}'
       namespace: '{{.namespace | default "default"}}'
-      kopiaNamespace: '{{.kopiaNamespace | default "system"}}'
+      kopiaNamespace: '{{.kopiaNamespace | default "volsync-system"}}'
       sourcePath: '{{.sourcePath | default "/data"}}'
     preconditions:
       - sh: command -v jq >/dev/null 2>&1
@@ -126,7 +126,7 @@ tasks:
     vars:
       rsrc: '{{ or .rsrc (fail "Variable `rsrc` is required") }}'
       namespace: '{{.namespace | default "default"}}'
-      kopiaNamespace: '{{.kopiaNamespace | default "system"}}'
+      kopiaNamespace: '{{.kopiaNamespace | default "volsync-system"}}'
       sourcePath: '{{.sourcePath | default "/data"}}'
       # 1) Query to find the Flux Kustomization associated with the ReplicationSource (rsrc)
       # Falls back to common pattern if label is missing
@@ -219,7 +219,7 @@ tasks:
         msg: "PVC for ReplicationSource '{{.rsrc}}' not found"
 
   maintenance:
-    desc: Trigger a manual KopiaMaintenance run (ex. task vs:maintenance [name=kopia-daily-maintenance] [namespace=system])
+    desc: Trigger a manual KopiaMaintenance run (ex. task vs:maintenance [name=kopia-daily-maintenance] [namespace=volsync-system])
     cmds:
       - |
         kubectl -n {{.namespace}} patch kopiamaintenances {{.name}} --type merge \
@@ -235,7 +235,7 @@ tasks:
       - kubectl -n {{.namespace}} get kopiamaintenances {{.name}} -o yaml
     vars:
       name: '{{.name | default "kopia-daily-maintenance"}}'
-      namespace: '{{.namespace | default "system"}}'
+      namespace: '{{.namespace | default "volsync-system"}}'
     preconditions:
       - sh: kubectl -n {{.namespace}} get kopiamaintenances {{.name}} >/dev/null 2>&1
         msg: "KopiaMaintenance '{{.name}}' not found in namespace '{{.namespace}}'"

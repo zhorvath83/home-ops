@@ -11,6 +11,6 @@ resources:
   - ./networking
   - ./security
   - ./observability
-  - ./system
+  - ./volsync-system
   - ./default
   - ./system-upgrade

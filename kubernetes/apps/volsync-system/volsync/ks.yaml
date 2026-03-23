@@ -15,14 +15,14 @@ spec:
     - apiVersion: helm.toolkit.fluxcd.io/v2
       kind: HelmRelease
       name: volsync
-      namespace: system
-  path: ./kubernetes/apps/system/volsync/app
+      namespace: volsync-system
+  path: ./kubernetes/apps/volsync-system/volsync/app
   prune: true
   sourceRef:
     kind: GitRepository
     name: home-ops-kubernetes
   interval: 1h
-  targetNamespace: system
+  targetNamespace: volsync-system
   timeout: 5m
   wait: false
 ---
@@ -39,12 +39,12 @@ spec:
   dependsOn:
     - name: cluster-apps-onepassword-store
     - name: cluster-apps-volsync
-  path: ./kubernetes/apps/system/volsync/maintenance
+  path: ./kubernetes/apps/volsync-system/volsync/maintenance
   prune: true
   sourceRef:
     kind: GitRepository
     name: home-ops-kubernetes
   interval: 1h
-  targetNamespace: system
+  targetNamespace: volsync-system
   timeout: 5m
   wait: false
