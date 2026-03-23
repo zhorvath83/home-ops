@@ -16,7 +16,6 @@ This guide applies to everything under `kubernetes/`.
 Use more specific guides when working in these areas:
 
 - networking platform: [apps/networking/AGENTS.md](apps/networking/AGENTS.md)
-- security and auth: [apps/security/AGENTS.md](apps/security/AGENTS.md)
 - external secrets platform: [apps/external-secrets/AGENTS.md](apps/external-secrets/AGENTS.md)
 
 ## Traversal Rule
@@ -31,7 +30,6 @@ Examples:
 
 - `kubernetes/apps/default/...` -> root guide + kubernetes guide
 - `kubernetes/apps/networking/...` -> root guide + kubernetes guide + networking guide
-- `kubernetes/apps/security/...` -> root guide + kubernetes guide + security guide
 
 ## Primary Goal
 
@@ -88,7 +86,6 @@ Common live namespaces and their intent:
 
 - `default`: user-facing applications
 - `networking`: ingress, DNS, and edge plumbing
-- `security`: auth and security-facing services
 - `observability`: metrics and dashboards
 - `external-secrets`: secret delivery platform
 - `kube-system`: cluster infrastructure components
@@ -121,9 +118,9 @@ Rules:
 - Flux Kustomization names follow `cluster-apps-<app>`.
 
 This skeleton is mainly for user-facing or standard app deployments. Platform
-areas such as `networking/`, `security/`, `external-secrets/`, and
-`observability/` often have deliberate deviations; inspect sibling trees before
-copying a default-app pattern into those areas.
+areas such as `networking/`, `external-secrets/`, and `observability/` often
+have deliberate deviations; inspect sibling trees before copying a default-app
+pattern into those areas.
 
 ## OCIRepository Rules
 
@@ -349,7 +346,6 @@ Choose storage intentionally:
 Examples:
 
 - `sonarr`: PVC for `/config`, NFS for `/media`, `emptyDir` for `/tmp`
-- `pocket-id`: PVC for `/app/data`, `emptyDir` for `/tmp`
 - `plex`: extra explicit cache PVC in addition to normal app storage
 
 If the app should be backed up, use the VolSync component rather than inventing app-local backup manifests.
@@ -448,7 +444,7 @@ For `ExternalSecret`:
 - prefer `dataFrom.extract` for whole-item imports when the secret structure fits
 - use `template.data` when the app needs renamed or composed fields
 
-Representative example: [apps/security/pocket-id/app/externalsecret.yaml](apps/security/pocket-id/app/externalsecret.yaml).
+Representative example: [apps/default/mealie/app/externalsecret.yaml](apps/default/mealie/app/externalsecret.yaml).
 
 ## Routing And Publication
 
@@ -476,16 +472,16 @@ Infrastructure exceptions:
 
 Authentication strategy today:
 
-- native OIDC against Pocket ID where the app supports it well
-- TinyAuth forward auth for apps without native OIDC
+- no shared auth platform is currently declared under `kubernetes/apps/`
+- prefer app-native auth or OIDC when the target app supports it well
 
 Before adding auth to a new app:
 
 - check whether the app already supports OIDC cleanly
-- inspect live security apps under `apps/security/`
+- inspect the current repo state for any existing shared auth components before introducing new ones
 - inspect sibling apps in the same category for how public routes and secrets are wired
 
-Do not assume the OIDC rollout is complete across the repo; verify the current state for the target app family.
+Do not assume there is a cluster-wide auth layer available; verify the current state for the target app family before wiring dependencies around it.
 
 ## Resource And Health Rules
 
@@ -635,11 +631,11 @@ Helpful repo entry points:
 
 - Use `rg` to find the same pattern in sibling applications before inventing a new one.
 - For dependency-sensitive work, inspect nearby `ks.yaml` files in the same subtree.
-- If changing routing or auth, inspect both the target app and the shared security/networking apps that support it.
+- If changing routing or auth, inspect both the target app and any shared networking or auth components that currently support it.
 - If changing backup behavior, inspect both the app `ks.yaml` and [components/volsync/replicationsource.yaml](components/volsync/replicationsource.yaml).
 
 ## Current Reality To Prefer Over Old Notes
 
-- `pocket-id` and `tinyauth` are present and active under `apps/security/`.
+- No shared auth stack is currently present under `apps/`.
 - Observability is split into `kube-prometheus-stack`, standalone `grafana`, and supporting exporters.
 - CrowdSec does not currently exist in the live `apps/` tree, even though it appears in memory notes.

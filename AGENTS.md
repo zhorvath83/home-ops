@@ -75,7 +75,7 @@ This repository currently manages a single-node home infrastructure stack with t
 
 ## State To Assume Today
 
-- The active identity stack is `pocket-id` plus `tinyauth`, not `rauthy`.
+- There is no shared identity stack currently declared under `kubernetes/apps/`.
 - The active ingress stack is Envoy Gateway with Gateway API, not Traefik.
 - VolSync backups are centralized through `kubernetes/components/volsync/`.
 - Secrets are split between SOPS-managed repo secrets and 1Password through External Secrets.

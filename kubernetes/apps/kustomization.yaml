@@ -9,7 +9,6 @@ resources:
   - ./external-secrets
   - ./kube-system
   - ./networking
-  - ./security
   - ./observability
   - ./volsync-system
   - ./default
