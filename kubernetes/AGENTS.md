@@ -394,7 +394,10 @@ Scheduling policy:
 
 - Treat backup timing as a platform concern by default, not an app concern.
 - The normal operating model is a shared cron schedule in the VolSync component plus a cluster-level jitter policy applied to VolSync mover Jobs.
-- The jitter is implemented in [apps/volsync-system/volsync/app/mutatingadmissionpolicy.yaml](apps/volsync-system/volsync/app/mutatingadmissionpolicy.yaml) and currently spreads mover start times across a short random window instead of requiring hand-assigned per-app cron slots.
+- The jitter is implemented in
+  [apps/volsync-system/volsync/app/mutatingadmissionpolicy.yaml](apps/volsync-system/volsync/app/mutatingadmissionpolicy.yaml)
+  and currently spreads mover start times across a short random window
+  instead of requiring hand-assigned per-app cron slots.
 - Prefer this shared schedule + jitter model for new apps and for routine changes to existing apps.
 - Do not introduce explicit per-app `VOLSYNC_SCHEDULE` values just to spread backups across the night when the shared jitter policy already covers the need.
 - Reserve explicit app-level schedule overrides for genuine exceptions only, such as an unusually large backup, a workload with a strict quiet window, or a deliberate operational dependency on backup order.
