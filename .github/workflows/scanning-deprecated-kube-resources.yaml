@@ -18,7 +18,7 @@ jobs:
           fetch-depth: 0
 
       - name: Download Pluto
-        uses: FairwindsOps/pluto/github-action@master
+        uses: FairwindsOps/pluto/github-action@dcdabde6b68d6f9117fa97361bbc1e25e68df8aa # master
 
       - name: Use pluto
         run: |
@@ -26,7 +26,7 @@ jobs:
 
       - name: Create Issue on Failed workflow
         if: ${{ failure() }}
-        uses: dacbd/create-issue-action@main
+        uses: dacbd/create-issue-action@fec641442c0897e734fad173cfe83ae21a2284a3 # main
         with:
           token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
           title: Action workflow failed.
