@@ -42,7 +42,7 @@ spec:
           app:
             image:
               repository: docker.io/alpine/k8s
-              tag: 1.35.2@sha256:9a87b09e1b6d887fa52c2dea1611d112d9e7d3d0271708588711a2fb2016e82c
+              tag: 1.35.3@sha256:097aa60cbef561146757c7494468e9d7b04d843597ad1a1515ed09d0708c8014
             command:
               - "/bin/bash"
               - "-c"
