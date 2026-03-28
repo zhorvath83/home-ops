@@ -1,0 +1,4 @@
+interface:
+  display_name: "Home Ops Security Review"
+  short_description: "Hardening, exposure, and detection-gap review"
+  default_prompt: "Use $security-review to review security posture and hardening changes in the home-ops repo."

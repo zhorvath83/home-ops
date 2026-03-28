@@ -1,0 +1,4 @@
+interface:
+  display_name: "Home Ops Architecture Review"
+  short_description: "Design tradeoffs and repo-fit evaluation"
+  default_prompt: "Use $architecture-review to evaluate design options in the home-ops repo before implementation."

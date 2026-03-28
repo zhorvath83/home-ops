@@ -1,0 +1,4 @@
+interface:
+  display_name: "Home Ops SOPS Secrets"
+  short_description: "Repo-encrypted secrets and bootstrap flows"
+  default_prompt: "Use $sops-secrets to work on SOPS-encrypted secret material in the home-ops repo."

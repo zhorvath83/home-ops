@@ -1,0 +1,4 @@
+interface:
+  display_name: "Home Ops Cloudflare Terraform"
+  short_description: "Cloudflare Terraform resource workflows"
+  default_prompt: "Use $cloudflare-terraform to change Cloudflare Terraform configuration in the home-ops repo."

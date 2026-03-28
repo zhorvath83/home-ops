@@ -1,0 +1,4 @@
+interface:
+  display_name: "Home Ops Provision Kubernetes"
+  short_description: "Ansible cluster provisioning flows"
+  default_prompt: "Use $provision-kubernetes to work on provisioning/kubernetes in the home-ops repo."

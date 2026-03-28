@@ -1,0 +1,4 @@
+interface:
+  display_name: "Home Ops Flux GitOps"
+  short_description: "Flux bootstrap, vars, and shared GitOps flows"
+  default_prompt: "Use $flux-gitops to change shared Flux and GitOps configuration in the home-ops repo."

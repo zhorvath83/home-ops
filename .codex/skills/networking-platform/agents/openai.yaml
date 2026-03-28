@@ -1,0 +1,4 @@
+interface:
+  display_name: "Home Ops Networking Platform"
+  short_description: "Envoy, Gateway, and Cloudflare platform"
+  default_prompt: "Use $networking-platform to modify shared networking platform resources in the home-ops repo."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Home Ops K8s Workloads"
+  short_description: "Non-platform Kubernetes app workflows"
+  default_prompt: "Use $k8s-workloads to add or modify a non-platform app under kubernetes/apps in the home-ops repo."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Home Ops Taskfiles"
+  short_description: "Taskfile namespaces and operational wrappers"
+  default_prompt: "Use $taskfiles to add or modify task entry points in the home-ops repo."

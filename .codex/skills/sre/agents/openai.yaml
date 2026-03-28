@@ -1,0 +1,4 @@
+interface:
+  display_name: "Home Ops SRE Debugging"
+  short_description: "Evidence-first troubleshooting and root cause analysis"
+  default_prompt: "Use $sre to investigate operational failures in the home-ops repo and cluster."

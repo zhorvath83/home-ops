@@ -1,0 +1,4 @@
+interface:
+  display_name: "Home Ops External Secrets"
+  short_description: "External Secrets and 1Password platform"
+  default_prompt: "Use $external-secrets to change shared secret delivery in the home-ops repo."

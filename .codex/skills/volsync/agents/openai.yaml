@@ -1,0 +1,4 @@
+interface:
+  display_name: "Home Ops VolSync"
+  short_description: "VolSync policy, backup, and restore flows"
+  default_prompt: "Use $volsync to change VolSync policy or restore behavior in the home-ops repo."

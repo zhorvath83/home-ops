@@ -1,0 +1,4 @@
+interface:
+  display_name: "Home Ops Versions And Renovate"
+  short_description: "Renovate annotations and update policy"
+  default_prompt: "Use $versions-renovate to change Renovate tracking or dependency update policy in the home-ops repo."
