@@ -14,7 +14,6 @@ spec:
     - Ingress
     - Egress
   ingress:
-    # Cloudflare Tunnel - HTTP/HTTPS traffic
     - from:
         - podSelector:
             matchLabels:
@@ -24,7 +23,6 @@ spec:
           port: 10080
         - protocol: TCP
           port: 10443
-    # Prometheus scrape (metrics endpoint)
     - from:
         - namespaceSelector:
             matchLabels:
@@ -36,17 +34,14 @@ spec:
         - protocol: TCP
           port: 19001
   egress:
-    # Backend services in any namespace
     - to:
         - namespaceSelector: {}
-    # Kubernetes API server (K3s runs on node, not as pod)
     - to:
         - ipBlock:
             cidr: ${CLUSTER_NODE_1_CIDR}
       ports:
         - protocol: TCP
           port: 6443
-    # DNS resolution (CoreDNS)
     - to:
         - namespaceSelector:
             matchLabels:
@@ -57,7 +52,6 @@ spec:
       ports:
         - protocol: UDP
           port: 53
-    # External HTTPS (OCSP, CRL checks, external APIs if needed)
     - to:
         - ipBlock:
             cidr: 0.0.0.0/0

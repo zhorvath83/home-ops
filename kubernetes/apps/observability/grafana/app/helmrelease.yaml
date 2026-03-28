@@ -57,7 +57,10 @@ spec:
         parentRefs:
           - name: envoy-external
             namespace: networking
-            # sectionName: websecure
+            sectionName: https
+          - name: envoy-internal
+            namespace: networking
+            sectionName: https
 
     serviceMonitor:
       enabled: true

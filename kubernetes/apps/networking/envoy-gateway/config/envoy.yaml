@@ -3,7 +3,7 @@
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: EnvoyProxy
 metadata:
-  name: envoy
+  name: envoy-external
   namespace: networking
 spec:
   logging:
@@ -39,7 +39,6 @@ spec:
                           memory: 64Mi
       envoyService:
         type: ClusterIP
-        externalTrafficPolicy: Local
   shutdown:
     drainTimeout: 90s
   telemetry:
@@ -48,94 +47,51 @@ spec:
         compression:
           type: Zstd
 ---
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/gateway.networking.k8s.io/gatewayclass_v1.json
-apiVersion: gateway.networking.k8s.io/v1
-kind: GatewayClass
-metadata:
-  name: envoy
-spec:
-  controllerName: gateway.envoyproxy.io/gatewayclass-controller
-  parametersRef:
-    group: gateway.envoyproxy.io
-    kind: EnvoyProxy
-    name: envoy
-    namespace: networking
----
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/gateway.envoyproxy.io/backendtrafficpolicy_v1alpha1.json
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/gateway.envoyproxy.io/envoyproxy_v1alpha1.json
 apiVersion: gateway.envoyproxy.io/v1alpha1
-kind: BackendTrafficPolicy
+kind: EnvoyProxy
 metadata:
-  name: envoy
+  name: envoy-internal
   namespace: networking
 spec:
-  compressor:
-    - type: Zstd
-      zstd: {}
-    - type: Brotli
-      brotli: {}
-    - type: Gzip
-      gzip: {}
-  retry:
-    numRetries: 2
-    retryOn:
-      triggers:
-        - reset
-  targetSelectors:
-    - group: gateway.networking.k8s.io
-      kind: Gateway
-  tcpKeepalive: {}
-  timeout:
-    http:
-      requestTimeout: 0s
----
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/gateway.envoyproxy.io/clienttrafficpolicy_v1alpha1.json
-apiVersion: gateway.envoyproxy.io/v1alpha1
-kind: ClientTrafficPolicy
-metadata:
-  name: envoy
-spec:
-  clientIPDetection:
-    xForwardedFor:
-      numTrustedHops: 1
-  connection:
-    bufferLimit: 8Mi
-    maxAcceptPerSocketEvent: 0
-  http2:
-    initialStreamWindowSize: 2Mi
-    initialConnectionWindowSize: 32Mi
-    onInvalidMessage: TerminateStream
-  http3: {}
-  targetSelectors:
-    - group: gateway.networking.k8s.io
-      kind: Gateway
-  tcpKeepalive: {}
-  timeout:
-    http:
-      requestReceivedTimeout: 0s
-  tls:
-    minVersion: "1.3"
-    alpnProtocols:
-      - h2
-      - http/1.1
----
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/gateway.networking.k8s.io/httproute_v1.json
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
-metadata:
-  name: https-redirect
-  annotations:
-    external-dns.alpha.kubernetes.io/controller: none
-spec:
-  parentRefs:
-    - name: envoy-external
-      namespace: networking
-      sectionName: http
-    # - name: envoy-internal
-    #   namespace: networking
-    #   sectionName: http
-  rules:
-    - filters:
-        - type: RequestRedirect
-          requestRedirect:
-            scheme: https
-            statusCode: 301
+  logging:
+    level:
+      default: info
+  provider:
+    type: Kubernetes
+    kubernetes:
+      envoyDeployment:
+        replicas: 1
+        container:
+          image: mirror.gcr.io/envoyproxy/envoy:v1.37.1
+          # imageRepository: mirror.gcr.io/envoyproxy/envoy
+          resources:
+            requests:
+              memory: 96Mi
+              cpu: 10m
+            limits:
+              memory: 1Gi
+        patch:
+          type: StrategicMerge
+          value:
+            spec:
+              template:
+                spec:
+                  containers:
+                    - name: shutdown-manager
+                      resources:
+                        requests:
+                          cpu: 5m
+                          memory: 32Mi
+                        limits:
+                          memory: 64Mi
+      envoyService:
+        type: LoadBalancer
+        externalTrafficPolicy: Local
+  shutdown:
+    drainTimeout: 90s
+  telemetry:
+    metrics:
+      prometheus:
+        compression:
+          type: Zstd
