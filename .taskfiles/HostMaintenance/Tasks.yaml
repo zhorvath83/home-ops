@@ -38,14 +38,98 @@ tasks:
           fi
         }
 
+        proxmox_reboot_needed() {
+          host="$1"
+
+          ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=ask root@"${host}" '
+            set -eu
+
+            if [ -e /run/reboot-required ] || [ -e /var/run/reboot-required ]; then
+              echo true
+              exit 0
+            fi
+
+            running_kernel="$(uname -r)"
+            latest_installed_kernel="$(
+              set -- /boot/vmlinuz-*
+              if [ "$1" = "/boot/vmlinuz-*" ]; then
+                exit 0
+              fi
+              printf "%s\n" "$@" \
+                | sed "s#.*/vmlinuz-##" \
+                | sort -V \
+                | tail -n 1
+            )"
+
+            if [ -n "${latest_installed_kernel}" ] && [ "${running_kernel}" != "${latest_installed_kernel}" ]; then
+              echo true
+              exit 0
+            fi
+
+            echo false
+          '
+        }
+
+        prompt_proxmox_reboot() {
+          label="$1"
+          host="$2"
+
+          echo
+          echo "==> ${label}-reboot"
+
+          if reboot_needed="$(proxmox_reboot_needed "${host}")"; then
+            :
+          else
+            task_status=$?
+            echo "FAILED: ${label}-reboot"
+            HAD_FAILURE=true
+            return "${task_status}"
+          fi
+
+          if [ "${reboot_needed}" != "true" ]; then
+            echo "No reboot required for ${label}"
+            echo "OK: ${label}-reboot"
+            return 0
+          fi
+
+          printf "%s requires a reboot. Reboot now? [y/N]: " "${label}"
+          read -r REBOOT_CONFIRM
+
+          case "${REBOOT_CONFIRM}" in
+            y|Y|yes|YES)
+              echo "Rebooting ${label} (${host})"
+              set +e
+              ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=ask root@"${host}" 'systemctl reboot'
+              task_status=$?
+              set -e
+
+              case "${task_status}" in
+                0|255)
+                  echo "OK: ${label}-reboot"
+                  return 0
+                  ;;
+              esac
+
+              echo "FAILED: ${label}-reboot"
+              HAD_FAILURE=true
+              return "${task_status}"
+              ;;
+            *)
+              echo "Skipping reboot for ${label}"
+              echo "OK: ${label}-reboot"
+              return 0
+              ;;
+          esac
+        }
+
         run_task hm:openmediavault openmediavault label=openmediavault host={{.NAS_HOST}}
         run_task hm:k8s-host k8s-control-plane label=k8s-control-plane host={{.K8S_PRIMARY_CONTROL_PLANE_HOST}}
         run_task hm:proxmox pve-1 label=pve-1 host={{.PVE_1_HOST}}
         run_task hm:proxmox pve-0 label=pve-0 host={{.PVE_0_HOST}}
         run_task hm:openwrt openwrt
 
-        run_task hm:proxmox:ensure-reboot pve-1-reboot label=pve-1 host={{.PVE_1_HOST}}
-        run_task hm:proxmox:ensure-reboot pve-0-reboot label=pve-0 host={{.PVE_0_HOST}}
+        prompt_proxmox_reboot pve-1 {{.PVE_1_HOST}}
+        prompt_proxmox_reboot pve-0 {{.PVE_0_HOST}}
 
         if [ "${HAD_FAILURE}" = "true" ]; then
           echo
@@ -71,72 +155,6 @@ tasks:
           DEBIAN_FRONTEND=noninteractive apt-get -y dist-upgrade --autoremove
           fstrim -av
         '
-
-  proxmox:needs-reboot:
-    desc: Check whether a Proxmox host requires a reboot
-    internal: true
-    silent: true
-    vars:
-      host: '{{ or .host (fail "`host` is required") }}'
-    cmds:
-      - |
-        ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=ask root@{{.host}} '
-          set -eu
-
-          if [ -e /run/reboot-required ] || [ -e /var/run/reboot-required ]; then
-            echo true
-            exit 0
-          fi
-
-          running_kernel="$(uname -r)"
-          latest_installed_kernel="$(
-            set -- /boot/vmlinuz-*
-            if [ "$1" = "/boot/vmlinuz-*" ]; then
-              exit 0
-            fi
-            printf "%s\n" "$@" \
-              | sed "s#.*/vmlinuz-##" \
-              | sort -V \
-              | tail -n 1
-          )"
-
-          if [ -n "${latest_installed_kernel}" ] && [ "${running_kernel}" != "${latest_installed_kernel}" ]; then
-            echo true
-            exit 0
-          fi
-
-          echo false
-        '
-
-  proxmox:ensure-reboot:
-    desc: Prompt for and perform a reboot on a Proxmox host when required
-    interactive: true
-    internal: true
-    silent: true
-    vars:
-      label: '{{.label | default "proxmox"}}'
-      host: '{{ or .host (fail "`host` is required") }}'
-    cmds:
-      - |
-        reboot_needed="$(task --silent hm:proxmox:needs-reboot host={{.host}})"
-
-        if [ "${reboot_needed}" != "true" ]; then
-          echo "No reboot required for {{.label}}"
-          exit 0
-        fi
-
-        printf "%s requires a reboot. Reboot now? [y/N]: " "{{.label}}"
-        read -r REBOOT_CONFIRM
-
-        case "${REBOOT_CONFIRM}" in
-          y|Y|yes|YES)
-            echo "Rebooting {{.label}} ({{.host}})"
-            ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=ask root@{{.host}} 'systemctl reboot'
-            ;;
-          *)
-            echo "Skipping reboot for {{.label}}"
-            ;;
-        esac
 
   k8s-host:
     desc: Run maintenance on the primary k3s control plane host
@@ -201,9 +219,22 @@ tasks:
       - |
         set -eu
 
+        LOCAL_NAS_SHARE_MOUNT_SCRIPT_ON_MAC="$(eval printf '%s' "{{.NAS_SHARE_MOUNT_SCRIPT_ON_MAC}}")"
         BACKUP_PARENT_DIR="$(dirname "{{.OPENWRT_BACKUP_DIR_ON_MAC}}")"
         if [ ! -d "${BACKUP_PARENT_DIR}" ]; then
+          if [ ! -x "${LOCAL_NAS_SHARE_MOUNT_SCRIPT_ON_MAC}" ]; then
+            echo "OpenWrt backup parent directory is missing: ${BACKUP_PARENT_DIR}"
+            echo "NAS share mount script is not executable: ${LOCAL_NAS_SHARE_MOUNT_SCRIPT_ON_MAC}"
+            exit 1
+          fi
+
           echo "OpenWrt backup parent directory is missing: ${BACKUP_PARENT_DIR}"
+          echo "Attempting to mount NAS shares locally before copying backups"
+          "${LOCAL_NAS_SHARE_MOUNT_SCRIPT_ON_MAC}"
+        fi
+
+        if [ ! -d "${BACKUP_PARENT_DIR}" ]; then
+          echo "OpenWrt backup parent directory is still missing: ${BACKUP_PARENT_DIR}"
           echo "Refusing to create it automatically to avoid writing to the wrong disk."
           exit 1
         fi
@@ -235,18 +266,9 @@ tasks:
         vars:
           force: '{{.force}}'
 
-  openwrt:upgrade:
-    desc: Interactively upgrade OpenWrt with attended sysupgrade through owut
-    interactive: true
-    internal: true
+  openwrt:reinstall-packages:
+    desc: Wait for the OpenWrt router and package feeds, then rerun the saved user package reinstall script
     silent: true
-    vars:
-      force: '{{.force | default "false"}}'
-    preconditions:
-      - sh: command -v jq >/dev/null 2>&1
-        msg: jq is required for parsing OpenWrt board information
-      - sh: command -v curl >/dev/null 2>&1
-        msg: curl is required for querying OpenWrt upgrade metadata
     cmds:
       - |
         set -eu
@@ -271,6 +293,60 @@ tasks:
           echo "${label}: router did not come back in time."
           return 1
         }
+
+        wait_for_package_repos() {
+          label="$1"
+          attempts="$2"
+          delay_seconds="$3"
+          attempt=1
+
+          while [ "${attempt}" -le "${attempts}" ]; do
+            if ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=ask root@{{.OPENWRT_HOST}} '
+              set -eu
+              command -v apk >/dev/null 2>&1
+              apk update >/dev/null 2>&1
+            ' >/dev/null 2>&1; then
+              echo "${label}: package repositories are reachable."
+              return 0
+            fi
+
+            echo "${label}: waiting for WAN and package repositories (${attempt}/${attempts})..."
+            sleep "${delay_seconds}"
+            attempt=$((attempt + 1))
+          done
+
+          echo "${label}: package repositories did not become reachable in time."
+          return 1
+        }
+
+        wait_for_router "Router availability check" 60 5
+        wait_for_package_repos "Package repository check" 60 5
+
+        echo "Running OpenWrt reinstall script"
+        ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=ask root@{{.OPENWRT_HOST}} "
+          set -eu
+          if [ ! -x '{{.OPENWRT_LOCAL_REINSTALL_SCRIPT}}' ]; then
+            echo 'Reinstall script is missing or not executable: {{.OPENWRT_LOCAL_REINSTALL_SCRIPT}}'
+            exit 1
+          fi
+          '{{.OPENWRT_LOCAL_REINSTALL_SCRIPT}}'
+        "
+
+  openwrt:upgrade:
+    desc: Interactively upgrade OpenWrt with attended sysupgrade through owut
+    interactive: true
+    internal: true
+    silent: true
+    vars:
+      force: '{{.force | default "false"}}'
+    preconditions:
+      - sh: command -v jq >/dev/null 2>&1
+        msg: jq is required for parsing OpenWrt board information
+      - sh: command -v curl >/dev/null 2>&1
+        msg: curl is required for querying OpenWrt upgrade metadata
+    cmds:
+      - |
+        set -eu
 
         run_owut_check() {
           version_to="$1"
@@ -583,20 +659,10 @@ tasks:
             exit 1
             ;;
         esac
-
-        wait_for_router "Post-upgrade wait" 60 5
-
-        echo "Running OpenWrt reinstall script after upgrade"
-        ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=ask root@{{.OPENWRT_HOST}} "
-          set -eu
-          if [ ! -x '{{.OPENWRT_LOCAL_REINSTALL_SCRIPT}}' ]; then
-            echo 'Reinstall script is missing or not executable: {{.OPENWRT_LOCAL_REINSTALL_SCRIPT}}'
-            exit 1
-          fi
-          '{{.OPENWRT_LOCAL_REINSTALL_SCRIPT}}'
-        "
-
-        echo "Final router version:"
+      - echo "Waiting for router recovery and package feeds before reinstalling user packages"
+      - task: openwrt:reinstall-packages
+      - echo "Final router version:"
+      - |
         ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=ask root@{{.OPENWRT_HOST}} \
           'ubus call system board' \
           | jq -r '"Version: \(.release.version)", "Revision: \(.release.revision)"'
