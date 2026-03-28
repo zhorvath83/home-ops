@@ -17,7 +17,8 @@ Common live patterns here:
 
 - Inspect 2-3 sibling apps with similar exposure, storage, and auth needs before changing structure.
 - Prefer official charts first, then bjw-s `app-template`, then custom manifests only when needed.
-- Routes for published apps usually target `envoy-external` in namespace `networking`.
+- Routes for published apps usually target `envoy-external` in namespace `networking`, and should also target `envoy-internal` when the app is meant to be reachable directly from the LAN.
+- Technical endpoints that do not need LAN publication can remain `envoy-external`-only.
 - User-facing apps that should appear on the dashboard usually carry Homepage annotations.
 - App-managed secrets usually come from an `ExternalSecret` backed by the `onepassword` ClusterSecretStore.
 - Backed-up apps should use the shared VolSync component in `ks.yaml` rather than app-local backup manifests.

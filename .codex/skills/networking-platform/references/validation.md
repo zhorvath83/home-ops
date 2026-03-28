@@ -7,8 +7,9 @@ Use this reference after changing networking platform resources.
 1. Flux Kustomization ordering is still correct.
 2. Gateway, certificate, and policy resources still refer to the same names and namespaces.
 3. Cloudflare Tunnel still targets the intended internal service.
-4. ExternalDNS sources and domain filters still match the active Gateway and HTTPRoute model.
-5. Any affected app route still matches listener and TLS assumptions.
+4. `k8s-gateway` still points at the intended Gateway class and LAN VIP.
+5. ExternalDNS sources and domain filters still match the active public Gateway and HTTPRoute model.
+6. Any affected app route still matches listener and TLS assumptions for each attached Gateway.
 
 ## Useful Checks
 

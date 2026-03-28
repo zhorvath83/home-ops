@@ -61,6 +61,29 @@ I use official Helm charts whenever possible for applications. When official cha
 - **[MetalLB](https://github.com/metallb/metallb)**: Load balancer for bare metal clusters
 - **[cloudflared](https://github.com/cloudflare/cloudflared)**: Cloudflare secure tunnel access
 - **[Envoy Gateway](https://github.com/envoyproxy/gateway)**: Envoy-based ingress controller
+- **[k8s-gateway](https://github.com/k8s-gateway/k8s_gateway)**: Split-DNS bridge from the LAN into Gateway API routes
+
+### Ingress Model
+
+The cluster uses a dual-Gateway Envoy model:
+
+- `envoy-external`: public-facing Gateway API entrypoint behind Cloudflare Tunnel
+- `envoy-internal`: internal Gateway API entrypoint exposed on a LAN VIP through MetalLB
+
+Public DNS and public traffic stay on the external path:
+
+- Cloudflare Tunnel forwards `${PUBLIC_DOMAIN}` and `*.${PUBLIC_DOMAIN}` to `envoy-external`
+- ExternalDNS manages public DNS records for externally published routes
+
+Internal clients use split DNS instead of the tunnel path:
+
+- `k8s-gateway` listens on its own LAN VIP and watches HTTPRoutes attached to `envoy-internal`
+- the home router DNS conditionally forwards `${PUBLIC_DOMAIN}` lookups to `k8s-gateway`
+- internal clients therefore resolve app hostnames to the `envoy-internal` VIP and reach services directly on the LAN
+
+Most user-facing HTTPRoutes attach to both `envoy-external` and `envoy-internal`.
+
+See [docs/networking-readme.md](docs/networking-readme.md) for the current routing and split-DNS model.
 
 ### DNS & External Integration
 

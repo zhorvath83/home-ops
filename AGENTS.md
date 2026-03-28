@@ -77,6 +77,8 @@ This repository currently manages a single-node home infrastructure stack with t
 
 - There is no shared identity stack currently declared under `kubernetes/apps/`.
 - The active ingress stack is Envoy Gateway with Gateway API, not Traefik.
+- The ingress model is split between `envoy-external` for Cloudflare-published traffic and `envoy-internal` for LAN traffic.
+- LAN split DNS is provided by `k8s-gateway`, which watches routes attached to `envoy-internal` and returns the internal Envoy VIP.
 - Backup handling is intentionally split into two planes that both target Backblaze B2:
   - cluster PVC backups use VolSync plus Kopia and are centralized through `kubernetes/components/volsync/`
   - user documents, media, and other file-level data under the shared backup tree use `resticprofile`, with Backrest as the snapshot browser

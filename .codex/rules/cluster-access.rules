@@ -25,6 +25,10 @@ prefix_rule(pattern = ["task", "vs:list"], decision = "allow")
 prefix_rule(pattern = ["task", "vs:status"], decision = "allow")
 prefix_rule(pattern = ["task", "vs:last-backups"], decision = "allow")
 
+# Network diagnostics and HTTP fetches are always allowed
+prefix_rule(pattern = ["dig"], decision = "allow")
+prefix_rule(pattern = ["curl"], decision = "allow")
+
 # Task wrappers that change live state or local access material must stay manual
 prefix_rule(pattern = ["task", "fx:install"], decision = "forbidden", justification = "Flux bootstrap/install mutates the cluster and creates secrets.")
 prefix_rule(pattern = ["task", "ku:kubeconfig"], decision = "forbidden", justification = "Downloading kubeconfig changes local access material.")

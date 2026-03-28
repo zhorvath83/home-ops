@@ -39,6 +39,8 @@ Treat everything under `kubernetes/` as desired state for Flux, not as an impera
 ## Cross-Cutting Platform Facts
 
 - Gateway API with Envoy Gateway is the active ingress model.
+- Gateway exposure is split between `envoy-external` for Cloudflare Tunnel traffic and `envoy-internal` for LAN traffic.
+- `k8s-gateway` provides split DNS for `${PUBLIC_DOMAIN}` on the LAN by resolving HTTPRoutes attached to `envoy-internal`.
 - External Secrets with the `onepassword` ClusterSecretStore is the standard for app-managed secrets.
 - Persistent app PVC backups use the shared VolSync component under `components/volsync/` and store snapshots in B2 through Kopia.
 - File-level backups for shared user data, documents, and media use the `resticprofile` workload and also target B2; Backrest is the browsing surface for that repository.
