@@ -116,10 +116,6 @@ spec:
     service:
       app:
         controller: qbittorrent
-        type: LoadBalancer
-        annotations:
-          metallb.io/loadBalancerIPs: ${LB_QBITTORRENT_IP}
-        externalTrafficPolicy: Local
         ports:
           http:
             port: *port

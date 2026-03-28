@@ -4,6 +4,8 @@ kind: PersistentVolumeClaim
 metadata:
   name: home-gallery
   namespace: default
+# Intentionally excluded from VolSync backups: this PVC only stores generated
+# thumbnails and the local app database, while the source photos live on NFS.
 spec:
   accessModes:
     - ReadWriteOnce
