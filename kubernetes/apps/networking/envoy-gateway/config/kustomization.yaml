@@ -8,4 +8,5 @@ resources:
   - ./gateway-internal.yaml
   - ./gateway-policies.yaml
   - ./networkpolicy-external.yaml
+  - ./networkpolicy-internal.yaml
   - ./observability.yaml
