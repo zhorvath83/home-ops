@@ -177,7 +177,7 @@ spec:
       resources:
         requests:
           cpu: 5m
-          memory: 128Mi
+          memory: 192Mi
         limits:
           memory: 256Mi
       rbac:
@@ -367,7 +367,7 @@ spec:
         resources:
           requests:
             cpu: 50m
-            memory: 450Mi
+            memory: 576Mi
           limits:
             memory: 2Gi
         storageSpec:

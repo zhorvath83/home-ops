@@ -31,21 +31,21 @@ spec:
     resources:
       requests:
         cpu: 10m
-        memory: 50Mi
+        memory: 96Mi
       limits:
         memory: 256Mi
     cainjector:
       resources:
         requests:
           cpu: 10m
-          memory: 100Mi
+          memory: 128Mi
         limits:
           memory: 256Mi
     webhook:
       resources:
         requests:
           cpu: 5m
-          memory: 30Mi
+          memory: 64Mi
         limits:
           memory: 128Mi
     prometheus:

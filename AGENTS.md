@@ -77,7 +77,10 @@ This repository currently manages a single-node home infrastructure stack with t
 
 - There is no shared identity stack currently declared under `kubernetes/apps/`.
 - The active ingress stack is Envoy Gateway with Gateway API, not Traefik.
-- VolSync backups are centralized through `kubernetes/components/volsync/`.
+- Backup handling is intentionally split into two planes that both target Backblaze B2:
+  - cluster PVC backups use VolSync plus Kopia and are centralized through `kubernetes/components/volsync/`
+  - user documents, media, and other file-level data under the shared backup tree use `resticprofile`, with Backrest as the snapshot browser
+- Some critical workloads keep an extra app-level export in addition to PVC snapshots so the exported data is also covered by the file-level backup plane. Current example: Paperless exports documents to `/backups/paperless`.
 - Secrets are split between SOPS-managed repo secrets and 1Password through External Secrets.
 - Cloudflare resources are managed from `provision/cloudflare/`.
 

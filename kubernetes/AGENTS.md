@@ -40,7 +40,9 @@ Treat everything under `kubernetes/` as desired state for Flux, not as an impera
 
 - Gateway API with Envoy Gateway is the active ingress model.
 - External Secrets with the `onepassword` ClusterSecretStore is the standard for app-managed secrets.
-- Persistent app backups use the shared VolSync component under `components/volsync/` where that pattern already exists.
+- Persistent app PVC backups use the shared VolSync component under `components/volsync/` and store snapshots in B2 through Kopia.
+- File-level backups for shared user data, documents, and media use the `resticprofile` workload and also target B2; Backrest is the browsing surface for that repository.
+- Critical apps may intentionally use both layers: PVC snapshots for the live app volume and a separate export into the shared `/backups/...` tree for secondary recovery coverage. Paperless is the canonical example.
 - There is no shared auth platform currently declared under `kubernetes/apps/`.
 
 ## Default Patterns
@@ -51,6 +53,10 @@ Treat everything under `kubernetes/` as desired state for Flux, not as an impera
 - Shared reusable logic belongs in `components/` only when it is already proven across multiple apps.
 - Dependencies between apps must be declared in `spec.dependsOn`; do not rely on creation order.
 - Prefer official Helm charts first, then bjw-s `app-template`, then custom manifests only when needed.
+- Resource policy baseline:
+  - user-facing workloads should declare explicit `resources.requests.cpu`, `resources.requests.memory`, and `resources.limits.memory`
+  - CPU limits are optional and should be added only when there is a clear workload-specific reason
+  - observability and platform components may use different resource profiles than user-facing apps, but should still set explicit requests and memory limits where the chart allows it
 
 ## Editing And Validation
 

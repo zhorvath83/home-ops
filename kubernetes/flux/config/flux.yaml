@@ -67,7 +67,7 @@ spec:
                   resources:
                     requests:
                       cpu: 10m
-                      memory: 190Mi
+                      memory: 256Mi
                     limits:
                       cpu: 2000m
                       memory: 2Gi
@@ -87,7 +87,7 @@ spec:
                   resources:
                     requests:
                       cpu: 10m
-                      memory: 70Mi
+                      memory: 128Mi
                     limits:
                       cpu: 2000m
                       memory: 2Gi

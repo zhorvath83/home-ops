@@ -71,9 +71,9 @@ spec:
             resources:
               requests:
                 cpu: 10m
-                memory: 260Mi
+                memory: 320Mi
               limits:
-                memory: 1500Mi
+                memory: 1Gi
 
     service:
       app:

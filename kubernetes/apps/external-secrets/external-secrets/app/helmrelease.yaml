@@ -32,7 +32,7 @@ spec:
     resources:
       requests:
         cpu: 10m
-        memory: 130Mi
+        memory: 160Mi
       limits:
         memory: 256Mi
     serviceMonitor:
@@ -56,7 +56,7 @@ spec:
       resources:
         requests:
           cpu: 5m
-          memory: 50Mi
+          memory: 64Mi
         limits:
           memory: 128Mi
       serviceMonitor:

@@ -77,7 +77,7 @@ spec:
     resources:
       requests:
         cpu: 10m
-        memory: 290Mi
+        memory: 384Mi
       limits:
         memory: 1Gi
 
@@ -117,7 +117,7 @@ spec:
       resources:
         requests:
           cpu: 5m
-          memory: 75Mi
+          memory: 96Mi
         limits:
           memory: 128Mi
       dashboards:

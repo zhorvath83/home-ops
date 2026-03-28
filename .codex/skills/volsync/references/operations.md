@@ -13,6 +13,7 @@ The repo already provides `vs:` task wrappers for:
 - status inspection
 
 Prefer those workflows over ad-hoc kubectl sequences when feasible.
+Use Kopia-backed `vs:` workflows for PVC snapshots and restores. Do not redirect those tasks through Backrest, which belongs to the separate `resticprofile` file-level backup plane.
 
 ## Restore Model
 
