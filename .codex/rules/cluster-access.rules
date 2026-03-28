@@ -1,0 +1,67 @@
+# home-ops cluster access rules
+#
+# Goal:
+# - allow evidence-first troubleshooting in the live cluster
+# - prefer repo task wrappers for common read-only checks
+# - block direct Kubernetes Secret inspection
+# - leave live-changing kubectl and flux actions outside the allowlist so they require an explicit decision
+#
+# Notes:
+# - ExternalSecret and ClusterSecretStore output is intentionally allowed because those
+#   resources carry delivery/status metadata rather than secret payloads.
+# - This file intentionally hard-denies only a small set of unsafe defaults.
+# - Commands that are not explicitly allowed here should fall back to an explicit user decision.
+
+# Preferred read-only repo task wrappers
+prefix_rule(pattern = ["task", "fx:verify"], decision = "allow")
+prefix_rule(pattern = ["task", "fx:nodes"], decision = "allow")
+prefix_rule(pattern = ["task", "fx:pods"], decision = "allow")
+prefix_rule(pattern = ["task", "fx:kustomizations"], decision = "allow")
+prefix_rule(pattern = ["task", "fx:helmreleases"], decision = "allow")
+prefix_rule(pattern = ["task", "fx:gitrepositories"], decision = "allow")
+prefix_rule(pattern = ["task", "fx:certificates"], decision = "allow")
+prefix_rule(pattern = ["task", "fx:gateways"], decision = "allow")
+prefix_rule(pattern = ["task", "vs:list"], decision = "allow")
+prefix_rule(pattern = ["task", "vs:status"], decision = "allow")
+prefix_rule(pattern = ["task", "vs:last-backups"], decision = "allow")
+
+# Task wrappers that change live state or local access material must stay manual
+prefix_rule(pattern = ["task", "fx:install"], decision = "forbidden", justification = "Flux bootstrap/install mutates the cluster and creates secrets.")
+prefix_rule(pattern = ["task", "ku:kubeconfig"], decision = "forbidden", justification = "Downloading kubeconfig changes local access material.")
+
+# Block direct Kubernetes Secret inspection
+prefix_rule(pattern = ["kubectl", "get", "secret"], decision = "forbidden", justification = "Agents should not inspect Kubernetes Secret resources directly. Debug secret delivery via ExternalSecret, ClusterSecretStore, events, or dependent workloads.")
+prefix_rule(pattern = ["kubectl", "get", "secrets"], decision = "forbidden", justification = "Agents should not inspect Kubernetes Secret resources directly. Debug secret delivery via ExternalSecret, ClusterSecretStore, events, or dependent workloads.")
+prefix_rule(pattern = ["kubectl", "describe", "secret"], decision = "forbidden", justification = "Agents should not inspect Kubernetes Secret resources directly. Debug secret delivery via ExternalSecret, ClusterSecretStore, events, or dependent workloads.")
+prefix_rule(pattern = ["kubectl", "describe", "secrets"], decision = "forbidden", justification = "Agents should not inspect Kubernetes Secret resources directly. Debug secret delivery via ExternalSecret, ClusterSecretStore, events, or dependent workloads.")
+
+# Allow read-only cluster inspection
+prefix_rule(pattern = ["kubectl", "get"], decision = "allow")
+prefix_rule(pattern = ["kubectl", "describe"], decision = "allow")
+prefix_rule(pattern = ["kubectl", "logs"], decision = "allow")
+prefix_rule(pattern = ["kubectl", "top"], decision = "allow")
+prefix_rule(pattern = ["kubectl", "events"], decision = "allow")
+prefix_rule(pattern = ["kubectl", "auth", "can-i"], decision = "allow")
+prefix_rule(pattern = ["kubectl", "wait"], decision = "allow")
+prefix_rule(pattern = ["kubectl", "rollout", "status"], decision = "allow")
+prefix_rule(pattern = ["kubectl", "api-resources"], decision = "allow")
+prefix_rule(pattern = ["kubectl", "api-versions"], decision = "allow")
+prefix_rule(pattern = ["kubectl", "cluster-info"], decision = "allow")
+prefix_rule(pattern = ["kubectl", "version"], decision = "allow")
+prefix_rule(pattern = ["kubectl", "explain"], decision = "allow")
+prefix_rule(pattern = ["kubectl", "completion"], decision = "allow")
+prefix_rule(pattern = ["kubectl", "options"], decision = "allow")
+prefix_rule(pattern = ["kubectl", "kustomize"], decision = "allow")
+
+# Flux read-only inspection is allowed
+prefix_rule(pattern = ["flux", "get"], decision = "allow")
+prefix_rule(pattern = ["flux", "logs"], decision = "allow")
+prefix_rule(pattern = ["flux", "check"], decision = "allow")
+prefix_rule(pattern = ["flux", "events"], decision = "allow")
+prefix_rule(pattern = ["flux", "stats"], decision = "allow")
+prefix_rule(pattern = ["flux", "tree"], decision = "allow")
+prefix_rule(pattern = ["flux", "trace"], decision = "allow")
+prefix_rule(pattern = ["flux", "version"], decision = "allow")
+prefix_rule(pattern = ["flux", "export"], decision = "allow")
+prefix_rule(pattern = ["flux", "list"], decision = "allow")
+prefix_rule(pattern = ["flux", "debug"], decision = "allow")

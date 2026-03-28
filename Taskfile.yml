@@ -18,9 +18,12 @@ env:
   OPERATIONS_USERNAME: zhorvath83
   KUBECONFIG: /Users/zhorvath83/.kube/config
   SOPS_AGE_KEY_FILE: /Users/zhorvath83/.config/sops/age/keys.txt
+  CODEX_HOME:
+    sh: 'printf "%s" "${CODEX_HOME:-$HOME/.codex}"'
 
 includes:
   an: .taskfiles/Ansible/Tasks.yaml
+  cx: .taskfiles/Codex/Tasks.yaml
   es: .taskfiles/ExternalSecrets/Tasks.yaml
   fx: .taskfiles/Flux/Tasks.yaml
   hm: .taskfiles/HostMaintenance/Tasks.yaml
@@ -51,6 +54,7 @@ tasks:
               def domain_name($prefix):
                 {
                   "an": "Ansible",
+                  "cx": "Codex",
                   "es": "External Secrets",
                   "fx": "Flux",
                   "hm": "Host Maintenance",
