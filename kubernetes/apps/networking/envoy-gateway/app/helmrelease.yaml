@@ -25,7 +25,7 @@ spec:
     keepHistory: false
 
   values:
-    # Chart defaults: seccompProfile=RuntimeDefault, runAsNonRoot, drop ALL, noPrivEsc.
+    # Chart defaults: seccompProfile, runAsNonRoot, drop ALL, noPrivEscalation
     global:
       imageRegistry: mirror.gcr.io
 
@@ -47,14 +47,3 @@ spec:
             memory: 192Mi
           limits:
             memory: 1024Mi
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-              - ALL
-          privileged: false
-          runAsNonRoot: true
-          runAsGroup: 65532
-          runAsUser: 65532
-          seccompProfile:
-            type: RuntimeDefault
