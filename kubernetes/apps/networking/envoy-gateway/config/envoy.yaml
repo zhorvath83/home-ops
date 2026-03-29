@@ -19,8 +19,8 @@ spec:
           # imageRepository: mirror.gcr.io/envoyproxy/envoy
           resources:
             requests:
-              memory: 96Mi
-              cpu: 10m
+              memory: 64Mi
+              cpu: 5m
             limits:
               memory: 1Gi
         patch:
@@ -32,9 +32,6 @@ spec:
                   containers:
                     - name: shutdown-manager
                       resources:
-                        requests:
-                          cpu: 5m
-                          memory: 32Mi
                         limits:
                           memory: 64Mi
       envoyService:
@@ -67,8 +64,8 @@ spec:
           # imageRepository: mirror.gcr.io/envoyproxy/envoy
           resources:
             requests:
-              memory: 96Mi
-              cpu: 10m
+              memory: 64Mi
+              cpu: 5m
             limits:
               memory: 1Gi
         patch:
@@ -80,9 +77,6 @@ spec:
                   containers:
                     - name: shutdown-manager
                       resources:
-                        requests:
-                          cpu: 5m
-                          memory: 32Mi
                         limits:
                           memory: 64Mi
       envoyService:

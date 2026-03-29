@@ -108,6 +108,12 @@ spec:
               PAPERLESS_THREADS_PER_WORKER: "1"
               PAPERLESS_WEBSERVER_WORKERS: "1"
 
+              # Disable optional features for reduced resource usage
+              PAPERLESS_ENABLE_NLTK: "false"
+              PAPERLESS_TRAIN_TASK_CRON: "disable"
+              PAPERLESS_EMAIL_TASK_CRON: "disable"
+              PAPERLESS_WORKFLOW_SCHEDULED_TASK_CRON: "disable"
+
               # Configure Remote User auth
               PAPERLESS_ACCOUNT_ALLOW_SIGNUPS: "false"
               PAPERLESS_SOCIALACCOUNT_ALLOW_SIGNUPS: "false"
@@ -152,7 +158,7 @@ spec:
 
             resources: &resources
               requests:
-                memory: 1400Mi
+                memory: 800Mi
                 cpu: 10m
               limits:
                 memory: 5Gi
@@ -197,7 +203,7 @@ spec:
             resources:
               requests:
                 cpu: 5m
-                memory: 20Mi
+                memory: 12Mi
               limits:
                 memory: 128Mi
 

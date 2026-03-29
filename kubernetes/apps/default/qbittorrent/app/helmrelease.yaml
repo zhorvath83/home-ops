@@ -49,9 +49,6 @@ spec:
               tag: 1.37.0
 
             resources:
-              requests:
-                cpu: 5m
-                memory: 10Mi
               limits:
                 memory: 64Mi
 
@@ -109,7 +106,7 @@ spec:
             resources:
               requests:
                 cpu: 50m
-                memory: 768Mi
+                memory: 300Mi
               limits:
                 memory: 3000Mi
 

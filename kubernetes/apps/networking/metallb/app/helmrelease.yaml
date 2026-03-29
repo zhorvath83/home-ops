@@ -11,15 +11,6 @@ spec:
     kind: OCIRepository
     name: metallb
 
-  # driftDetection:
-  #   mode: enabled
-  #   ignore:
-  #     # Exclude bgppeers CRD from drift detection because of Flux issue
-  #     - paths: [""]
-  #       target:
-  #         kind: CustomResourceDefinition
-  #         name: bgppeers.metallb.io
-
   install:
     createNamespace: true
     crds: CreateReplace
@@ -32,6 +23,7 @@ spec:
       retries: 3
   uninstall:
     keepHistory: false
+
   values:
     # Chart defaults: controller=runAsNonRoot+drop ALL+readOnlyRootFS but NO seccompProfile.
     # Speaker requires NET_RAW/NET_ADMIN/SYS_ADMIN capabilities by design (FRR routing).
@@ -45,16 +37,54 @@ spec:
       resources:
         requests:
           cpu: 5m
-          memory: 192Mi
+          memory: 100Mi
         limits:
           memory: 256Mi
     speaker:
+      # The speaker pod includes FRR sidecars and init containers, so define
+      # resources for each chart-managed container instead of relying on zeros.
       resources:
         requests:
-          cpu: 5m
-          memory: 130Mi
+          cpu: 3m
+          memory: 100Mi
         limits:
           memory: 384Mi
+      frr:
+        resources:
+          requests:
+            cpu: 1m
+            memory: 50Mi
+          limits:
+            memory: 128Mi
+      reloader:
+        resources:
+          requests:
+            cpu: 1m
+            memory: 1Mi
+          limits:
+            memory: 32Mi
+      frrMetrics:
+        resources:
+          requests:
+            cpu: 1m
+            memory: 20Mi
+          limits:
+            memory: 64Mi
+
+      initContainers:
+        cpFrrFiles:
+          resources:
+            limits:
+              memory: 256Mi
+        cpReloader:
+          resources:
+            limits:
+              memory: 256Mi
+        cpMetrics:
+          resources:
+            limits:
+              memory: 256Mi
+
       tolerations:
         - effect: "NoExecute"
           operator: "Exists"

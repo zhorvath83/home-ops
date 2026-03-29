@@ -56,9 +56,6 @@ spec:
               - --one-time
 
             resources:
-              requests:
-                cpu: 5m
-                memory: 20Mi
               limits:
                 memory: 128Mi
 
@@ -105,7 +102,7 @@ spec:
             resources:
               requests:
                 cpu: 25m
-                memory: 320Mi
+                memory: 250Mi
               limits:
                 memory: 768Mi
 

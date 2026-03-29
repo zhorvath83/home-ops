@@ -67,13 +67,13 @@ spec:
                   resources:
                     requests:
                       cpu: 10m
-                      memory: 256Mi
+                      memory: 128Mi
                     limits:
                       cpu: 2000m
                       memory: 2Gi
       target:
         kind: Deployment
-        name: (kustomize-controller|helm-controller)
+        name: kustomize-controller
     - patch: |
         apiVersion: apps/v1
         kind: Deployment
@@ -87,7 +87,27 @@ spec:
                   resources:
                     requests:
                       cpu: 10m
-                      memory: 128Mi
+                      memory: 300Mi
+                    limits:
+                      cpu: 2000m
+                      memory: 2Gi
+      target:
+        kind: Deployment
+        name: helm-controller
+    - patch: |
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: not-used
+        spec:
+          template:
+            spec:
+              containers:
+                - name: manager
+                  resources:
+                    requests:
+                      cpu: 10m
+                      memory: 64Mi
                     limits:
                       cpu: 2000m
                       memory: 2Gi

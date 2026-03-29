@@ -30,22 +30,22 @@ spec:
     replicaCount: 1
     resources:
       requests:
-        cpu: 10m
-        memory: 96Mi
+        cpu: 5m
+        memory: 64Mi
       limits:
         memory: 256Mi
     cainjector:
       resources:
         requests:
-          cpu: 10m
-          memory: 128Mi
+          cpu: 5m
+          memory: 96Mi
         limits:
           memory: 256Mi
     webhook:
       resources:
         requests:
-          cpu: 5m
-          memory: 64Mi
+          cpu: 1m
+          memory: 32Mi
         limits:
           memory: 128Mi
     prometheus:

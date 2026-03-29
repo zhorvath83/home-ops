@@ -31,8 +31,8 @@ spec:
     installCRDs: true
     resources:
       requests:
-        cpu: 10m
-        memory: 160Mi
+        cpu: 5m
+        memory: 64Mi
       limits:
         memory: 256Mi
     serviceMonitor:
@@ -43,7 +43,7 @@ spec:
         repository: ghcr.io/external-secrets/external-secrets
       resources:
         requests:
-          cpu: 10m
+          cpu: 5m
           memory: 96Mi
         limits:
           memory: 256Mi
@@ -55,8 +55,8 @@ spec:
         repository: ghcr.io/external-secrets/external-secrets
       resources:
         requests:
-          cpu: 5m
-          memory: 64Mi
+          cpu: 1m
+          memory: 48Mi
         limits:
           memory: 128Mi
       serviceMonitor:

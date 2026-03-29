@@ -58,8 +58,8 @@ spec:
                   periodSeconds: 10
             resources:
               requests:
-                cpu: 15m
-                memory: 128Mi
+                cpu: 5m
+                memory: 48Mi
               limits:
                 memory: 1Gi
             securityContext:

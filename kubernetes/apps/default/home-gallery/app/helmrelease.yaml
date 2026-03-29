@@ -54,9 +54,6 @@ spec:
                 drop:
                   - ALL
             resources:
-              requests:
-                cpu: 5m
-                memory: 10Mi
               limits:
                 memory: 64Mi
             command:
@@ -135,8 +132,8 @@ spec:
 
             resources:
               requests:
-                cpu: 5m
-                memory: 220Mi
+                cpu: 1m
+                memory: 170Mi
               limits:
                 memory: 2000Mi
 
