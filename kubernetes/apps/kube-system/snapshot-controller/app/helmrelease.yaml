@@ -40,6 +40,17 @@ spec:
       serviceMonitor:
         create: true
 
+    webhook:
+      podSecurityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      resources:
+        requests:
+          cpu: 1m
+          memory: 20Mi
+        limits:
+          memory: 128Mi
+
     volumeSnapshotClasses:
       - name: democratic-csi-local-hostpath
         driver: org.democratic-csi.local-hostpath
