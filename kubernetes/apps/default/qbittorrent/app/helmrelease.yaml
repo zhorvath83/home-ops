@@ -47,6 +47,11 @@ spec:
             image:
               repository: public.ecr.aws/docker/library/busybox
               tag: 1.37.0
+            securityContext:
+              privileged: false
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
 
             resources:
               limits:

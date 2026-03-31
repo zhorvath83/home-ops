@@ -24,6 +24,14 @@ spec:
   values:
     domain: "${PUBLIC_DOMAIN}"
     ttl: 300
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities: { drop: ["ALL"] }
+      seccompProfile:
+        type: RuntimeDefault
     watchedResources:
       - HTTPRoute
     filters:
