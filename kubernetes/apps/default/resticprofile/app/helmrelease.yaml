@@ -28,10 +28,10 @@ spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 10001
-        runAsGroup: 10001
-        fsGroup: 10001
+        runAsNonRoot: false
+        runAsUser: 0
+        runAsGroup: 0
+        fsGroup: 0
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
@@ -106,9 +106,9 @@ spec:
                 enabled: false
 
             securityContext:
-              privileged: false
-              allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: true
+              privileged: true
+              allowPrivilegeEscalation: true
+              readOnlyRootFilesystem: false
               capabilities: { drop: ["ALL"] }
 
             resources:
