@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/usr/bin/env bash
 
 set -euo pipefail
 
@@ -14,14 +14,11 @@ mkdir -p "${codex_skills_dir}" "${codex_rules_dir}"
 
 sync_skills() {
   local skill skill_name target link
-  local -a repo_skill_names
 
-  repo_skill_names=()
   for skill in "${repo_skills_dir}"/*; do
     [[ -d "${skill}" ]] || continue
     [[ -f "${skill}/SKILL.md" ]] || continue
-    skill_name="${skill:t}"
-    repo_skill_names+=("${skill_name}")
+    skill_name="${skill##*/}"
     link="${codex_skills_dir}/${skill_name}"
     if [[ -e "${link}" && ! -L "${link}" ]]; then
       echo "Refusing to replace non-symlink skill path: ${link}" >&2
@@ -34,8 +31,8 @@ sync_skills() {
     [[ -L "${link}" ]] || continue
     target="$(readlink "${link}")"
     [[ "${target}" == "${repo_skills_dir}/"* ]] || continue
-    skill_name="${link:t}"
-    if (( ${repo_skill_names[(Ie)${skill_name}]} == 0 )); then
+    skill_name="${link##*/}"
+    if [[ ! -f "${repo_skills_dir}/${skill_name}/SKILL.md" ]]; then
       rm "${link}"
     fi
   done
@@ -43,13 +40,10 @@ sync_skills() {
 
 sync_rules() {
   local rule rule_name target link
-  local -a repo_rule_names
 
-  repo_rule_names=()
-  for rule in "${repo_rules_dir}"/*.rules(N); do
+  for rule in "${repo_rules_dir}"/*.rules; do
     [[ -f "${rule}" ]] || continue
-    rule_name="${rule:t}"
-    repo_rule_names+=("${rule_name}")
+    rule_name="${rule##*/}"
     link="${codex_rules_dir}/${rule_name}"
     if [[ -e "${link}" && ! -L "${link}" ]]; then
       echo "Refusing to replace non-symlink rule path: ${link}" >&2
@@ -62,8 +56,8 @@ sync_rules() {
     [[ -L "${link}" ]] || continue
     target="$(readlink "${link}")"
     [[ "${target}" == "${repo_rules_dir}/"* ]] || continue
-    rule_name="${link:t}"
-    if (( ${repo_rule_names[(Ie)${rule_name}]} == 0 )); then
+    rule_name="${link##*/}"
+    if [[ ! -f "${repo_rules_dir}/${rule_name}" ]]; then
       rm "${link}"
     fi
   done

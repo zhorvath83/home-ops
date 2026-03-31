@@ -7,4 +7,4 @@ tasks:
   sync:
     desc: Sync repo Codex skills and rules into ${CODEX_HOME}
     cmds:
-      - /bin/zsh {{.ROOT_DIR}}/.taskfiles/Codex/sync-links.sh
+      - /bin/bash {{.ROOT_DIR}}/.taskfiles/Codex/sync-links.sh

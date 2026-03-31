@@ -1,13 +1,16 @@
 ---
 name: volsync
-description: Work on backup and restore behavior in the home-ops repository using VolSync and Kopia. Use when Codex needs to integrate non-trivial app backup settings, change shared schedule, jitter, retention, or storage defaults, inspect ReplicationSource behavior, trigger snapshot or maintenance flows, or perform or review restore workflows tied to the `vs:` task model. Do not use this skill for unrelated secret delivery changes.
+description: Work on backup and restore behavior in the home-ops repository using VolSync and Kopia. Use when Codex needs to integrate non-trivial app backup settings, change shared schedule, jitter, retention, or storage defaults, inspect ReplicationSource behavior, trigger maintenance or snapshot flows, or perform or review restore workflows tied to the `vs:` task model. Do not use this skill for unrelated secret delivery changes.
 ---
 
 # Home Ops VolSync
 
 ## Overview
 
-Use this skill when backup policy or restore mechanics are part of the task. It is separate from the External Secrets skill because backup timing, mover behavior, and restore safety have different operators, different failure modes, and different validation workflows.
+Use this skill when backup policy or restore mechanics are part of the task.
+It is separate from the External Secrets skill because backup timing, mover
+behavior, and restore safety have different operators, different failure
+modes, and different validation workflows.
 
 ## Workflow
 

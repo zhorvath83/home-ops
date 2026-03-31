@@ -1,13 +1,16 @@
 ---
 name: flux-gitops
-description: Work on Flux and shared GitOps wiring in the home-ops repository. Use when Codex needs to modify kubernetes/flux resources, Flux bootstrap files, Flux-managed cluster variables, flux-system add-ons such as GitHub webhooks, or shared Kustomization dependency wiring that sits above one specific app. Do not use this skill for routine app manifest edits that stay inside a single application subtree.
+description: Work on Flux and shared GitOps wiring in the home-ops repository. Use when Codex needs to modify kubernetes/flux resources, Flux bootstrap files, Flux-managed cluster variables, flux-system add-ons such as GitHub webhooks, or shared Kustomization dependency wiring above one specific app. Do not use this skill for routine app manifest edits that stay inside a single application subtree.
 ---
 
 # Home Ops Flux GitOps
 
 ## Overview
 
-Use this skill when a task changes the repo's GitOps control plane rather than one workload. It complements the `kubernetes/AGENTS.md` guardrails with workflow and validation guidance for Flux bootstrap, shared vars, and cluster-wide apply ordering.
+Use this skill when a task changes the repo's GitOps control plane rather
+than one workload. It complements the `kubernetes/AGENTS.md` guardrails with
+workflow and validation guidance for Flux bootstrap, shared vars, and
+cluster-wide apply ordering.
 
 ## Workflow
 

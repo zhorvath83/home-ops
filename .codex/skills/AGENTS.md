@@ -68,7 +68,11 @@ For skill edits:
 3. Run the validator:
 
    ```bash
-   python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-creator/scripts/quick_validate.py" .codex/skills/<skill-name>
+   codex_home="${CODEX_HOME:-$HOME/.codex}"
+   validator_dir="${codex_home}/skills/.system/skill-creator/scripts"
+   validator="${validator_dir}/quick_validate.py"
+   python3 "${validator}" .codex/skills/<skill-name>
    ```
 
-4. If the skill is meant to be auto-discovered by Codex, mirror or symlink it into `${CODEX_HOME:-$HOME/.codex}/skills/`.
+4. If the skill is meant to be auto-discovered by Codex, mirror or symlink
+   it into `${CODEX_HOME:-$HOME/.codex}/skills/`.
