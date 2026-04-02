@@ -45,7 +45,7 @@ spec:
           app:
             image:
               repository: ghcr.io/zhorvath83/resticprofile
-              tag: 0.32.0@sha256:c83bdc891ad5dd0e6ec1ba42ed8a4885ee8c4ba4e583a839f59e11b9f0fd6195
+              tag: 0.32.0@sha256:ee2270bed2318e877bc3b63f24a6958c3e913ad6aa3a21d62fe53cdfffe93f30
 
             command:
               - "/bin/sh"
