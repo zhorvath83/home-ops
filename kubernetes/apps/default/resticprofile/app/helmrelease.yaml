@@ -51,7 +51,7 @@ spec:
               - "/bin/sh"
               - -ec
             args:
-              - resticprofile schedule --all && exec /usr/bin/supercronic /resticprofile/crontab
+              - /usr/bin/resticprofile schedule --all && exec /usr/bin/supercronic /resticprofile/crontab
 
             env:
               - name: TZ
