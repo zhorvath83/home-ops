@@ -28,10 +28,10 @@ spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
       securityContext:
-        runAsNonRoot: false
-        runAsUser: 0
-        runAsGroup: 0
-        fsGroup: 0
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
@@ -44,22 +44,22 @@ spec:
         containers:
           app:
             image:
-              repository: creativeprojects/resticprofile
-              tag: 0.32.0@sha256:81069ba7e40d461e311a02e870f513cebf9f36eef653893b816af86c3e33ffc9
+              repository: ghcr.io/zhorvath83/resticprofile
+              tag: 0.32.0@sha256:4fc4550abae176690aa20c74fa83bafcefa46f91e6b1cb78bc63714e75b66f40
 
 
             command:
               - "/bin/sh"
-              - -c
+              - -ec
             args:
-              - resticprofile schedule --all && crond -f
+              - resticprofile schedule --all && exec supercronic /resticprofile/crontab
 
             env:
               - name: TZ
                 value: "Europe/Budapest"
 
               - name: RESTIC_CACHE_DIR
-                value: "/mnt/nfs-tmp/resticprofile-cache"
+                value: "/tmp/resticprofile-cache"
 
               - name: RESTIC_PASSWORD
                 valueFrom:
@@ -106,9 +106,9 @@ spec:
                 enabled: false
 
             securityContext:
-              privileged: true
-              allowPrivilegeEscalation: true
-              readOnlyRootFilesystem: false
+              privileged: false
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
               capabilities: { drop: ["ALL"] }
 
             resources:
@@ -119,14 +119,26 @@ spec:
                 memory: 1Gi
 
     persistence:
+      state:
+        type: emptyDir
+        globalMounts:
+          - path: /resticprofile
+
+      tmp:
+        type: emptyDir
+        globalMounts:
+          - path: /tmp
+
       profiles-yaml:
         type: configMap
         name: resticprofile-configmap
-        defaultMode: 0775
-        globalMounts:
-          - path: /etc/resticprofile/profiles.yaml
-            subPath: profiles.yaml
-            readOnly: true
+        defaultMode: 0444
+        advancedMounts:
+          resticprofile:
+            app:
+              - path: /resticprofile/profiles.yaml
+                subPath: profiles.yaml
+                readOnly: true
 
       nfs-tmp:
         type: nfs
@@ -141,3 +153,4 @@ spec:
         path: /backups
         globalMounts:
           - path: /backups
+            readOnly: true

@@ -3,7 +3,7 @@
 version: "1"
 
 global:
-  scheduler: crond
+  scheduler: crontab:-:/resticprofile/crontab
   default-command: snapshots
   restic-lock-retry-after: 5m
   restic-stale-lock-age: 24h
