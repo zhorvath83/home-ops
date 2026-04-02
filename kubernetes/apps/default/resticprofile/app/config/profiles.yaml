@@ -10,6 +10,7 @@ global:
 
 backups:
   repository: "{{ .Env.RESTIC_REPOSITORY_TEMPLATE }}backups"
+  host: restic
   lock: "/tmp/resticprofile-profile-backups.lock"
   force-inactive-lock: true
   compression: auto
