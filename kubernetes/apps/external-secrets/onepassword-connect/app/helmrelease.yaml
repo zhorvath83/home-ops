@@ -44,4 +44,4 @@ spec:
             memory: 16M
           limits:
             memory: 128M
-      credentialsName: onepassword-secret
+      credentialsName: onepassword-connect-credentials

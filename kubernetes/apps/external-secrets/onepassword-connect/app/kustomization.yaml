@@ -6,6 +6,7 @@ namespace: external-secrets
 resources:
   - ./ocirepository.yaml
   - ./helmrelease.yaml
+  - ./externalsecret.yaml
 
 labels:
   - pairs:
