@@ -10,4 +10,4 @@ resources:
 
 labels:
   - pairs:
-      app.kubernetes.io/name: external-secrets
+      app.kubernetes.io/name: onepassword-connect
