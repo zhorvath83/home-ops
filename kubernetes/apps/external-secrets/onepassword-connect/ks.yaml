@@ -19,7 +19,6 @@ spec:
     - apiVersion: external-secrets.io/v1
       kind: ClusterSecretStore
       name: onepassword
-      namespace: external-secrets
   healthCheckExprs:
     - apiVersion: external-secrets.io/v1
       kind: ClusterSecretStore
