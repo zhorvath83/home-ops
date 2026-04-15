@@ -10,7 +10,7 @@ Current live layers:
 
 - `external-secrets/` deploys the operator itself
 - `onepassword-connect/` deploys the 1Password Connect service
-- the onepassword `ClusterSecretStore` is applied as a separate Flux Kustomization under `external-secrets/external-secrets/stores/onepassword`
+- the onepassword `ClusterSecretStore` is applied as a separate Flux Kustomization under `onepassword-connect/stores/onepassword` (co-located with the 1Password Connect app, since the store is functionally useless without it)
 
 ## Sequencing Rules
 
@@ -18,9 +18,10 @@ Order matters here.
 
 Current dependency chain:
 
-1. External Secrets operator
-2. OnePassword-backed ClusterSecretStore
-3. Application `ExternalSecret` resources in other subtrees
+1. External Secrets operator (`cluster-apps-external-secrets`)
+2. 1Password Connect (`cluster-apps-onepassword-connect`)
+3. OnePassword-backed ClusterSecretStore (`cluster-apps-onepassword-store`, depends on both of the above)
+4. Application `ExternalSecret` resources in other subtrees
 
 Implication:
 

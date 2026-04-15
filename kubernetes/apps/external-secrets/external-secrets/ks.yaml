@@ -37,7 +37,7 @@ spec:
   dependsOn:
     - name: cluster-apps-external-secrets
     - name: cluster-apps-onepassword-connect
-  path: ./kubernetes/apps/external-secrets/external-secrets/stores/onepassword
+  path: ./kubernetes/apps/external-secrets/onepassword-connect/stores/onepassword
   prune: true
   sourceRef:
     kind: GitRepository
