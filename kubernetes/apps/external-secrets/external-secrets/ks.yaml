@@ -14,6 +14,11 @@ spec:
   sourceRef:
     kind: GitRepository
     name: home-ops-kubernetes
+  healthChecks:
+    - apiVersion: helm.toolkit.fluxcd.io/v2
+      kind: HelmRelease
+      name: external-secrets
+      namespace: external-secrets
   interval: 1h
   targetNamespace: external-secrets
   timeout: 5m
@@ -31,12 +36,22 @@ spec:
       app.kubernetes.io/name: external-secrets
   dependsOn:
     - name: cluster-apps-external-secrets
+    - name: cluster-apps-onepassword-connect
   path: ./kubernetes/apps/external-secrets/external-secrets/stores/onepassword
   prune: true
   sourceRef:
     kind: GitRepository
     name: home-ops-kubernetes
+  healthChecks:
+    - apiVersion: external-secrets.io/v1
+      kind: ClusterSecretStore
+      name: onepassword
+  healthCheckExprs:
+    - apiVersion: external-secrets.io/v1
+      kind: ClusterSecretStore
+      failed: status.conditions.filter(e, e.type == 'Ready').all(e, e.status == 'False')
+      current: status.conditions.filter(e, e.type == 'Ready').all(e, e.status == 'True')
   interval: 1h
   targetNamespace: external-secrets
-  timeout: 5m
+  timeout: 10m
   wait: false
