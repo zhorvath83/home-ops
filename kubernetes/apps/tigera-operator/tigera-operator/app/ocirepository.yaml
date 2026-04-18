@@ -11,4 +11,4 @@ spec:
     operation: copy
   ref:
     tag: v3.31.4
-  url: oci://quay.io/calico/charts/tigera-operator
+  url: oci://ghcr.io/home-operations/charts-mirror/tigera-operator
