@@ -67,11 +67,11 @@ spec:
                     name: resticprofile-secret
                     key: RESTIC_PASSWORD
 
-              - name: RESTIC_REPOSITORY_TEMPLATE
+              - name: RESTIC_REPOSITORY
                 valueFrom:
                   secretKeyRef:
                     name: resticprofile-secret
-                    key: RESTIC_REPOSITORY_TEMPLATE
+                    key: RESTIC_REPOSITORY
 
               - name: AWS_ACCESS_KEY_ID
                 valueFrom:
