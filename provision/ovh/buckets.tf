@@ -9,3 +9,7 @@ resource "ovh_cloud_project_storage" "backup" {
   region_name  = local.region
   name         = each.key
 }
+
+output "s3_endpoint" {
+  value = "s3.${lower(local.region)}.io.cloud.ovh.net"
+}
