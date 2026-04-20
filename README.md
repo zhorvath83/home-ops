@@ -93,7 +93,7 @@ See [docs/networking-readme.md](docs/networking-readme.md) for the current routi
 ### Storage & Backup
 
 - **[democratic-csi](https://github.com/democratic-csi/democratic-csi)**: CSI driver supporting local hostpath, NFS, iSCSI and ZFS storage backends
-- **[volsync](https://github.com/perfectra1n/volsync)**: PVC backup and recovery using Kopia to Backblaze B2 object storage
+- **[volsync](https://github.com/perfectra1n/volsync)**: PVC backup and recovery using Kopia to OVH object storage
 
 ### Configuration Management
 
