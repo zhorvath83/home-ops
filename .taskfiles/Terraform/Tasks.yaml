@@ -52,16 +52,6 @@ tasks:
           "ovh_s3_access_key[text]=$(op run --no-masking --env-file=./.env -- terraform output -raw s3_access_key)" \
           "ovh_s3_secret_key[password]=$(op run --no-masking --env-file=./.env -- terraform output -raw s3_secret_key)" \
           "ovh_s3_endpoint[text]=$(op run --no-masking --env-file=./.env -- terraform output -raw s3_endpoint)"
-      - |
-        export AWS_ACCESS_KEY_ID=$(op read "op://HomeOps/ovh/ovh_s3_access_key")
-        export AWS_SECRET_ACCESS_KEY=$(op read "op://HomeOps/ovh/ovh_s3_secret_key")
-        IFS=', ' read -ra BUCKETS <<< "$(op read 'op://Private/OVHcloud/list_of_s3_buckets')"
-        for bucket in "${BUCKETS[@]}"; do
-          aws s3api put-bucket-lifecycle-configuration \
-            --bucket "$bucket" \
-            --endpoint-url https://s3.eu-west-par.io.cloud.ovh.net \
-            --lifecycle-configuration '{"Rules":[{"ID":"to-active-archive","Status":"Enabled","Filter":{},"Transitions":[{"Days":1,"StorageClass":"GLACIER_IR"}]}]}'
-        done
 
   unlock:ovh:
     desc: Force unlock OVH Terraform state

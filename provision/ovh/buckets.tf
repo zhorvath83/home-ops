@@ -1,5 +1,5 @@
 locals {
-  region       = "EU-WEST-PAR"
+  region       = "DE"
   bucket_names = toset([for b in split(", ", var.S3_BUCKET_NAMES) : trimspace(b)])
 }
 

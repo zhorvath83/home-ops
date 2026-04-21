@@ -47,7 +47,7 @@ backups:
     schedule-log: /mnt/nfs-tmp/resticprofile-logs/resticprofile-backups-check.log
     schedule-lock-mode: default
     schedule-lock-wait: 1h
-    read-data-subset: "50%"
+    read-data-subset: "100%"
     send-before:
       - method: HEAD
         url: "{{ .Env.HEALTHCHECK_BACKUPS_CHECK_WEBHOOK }}/start"
