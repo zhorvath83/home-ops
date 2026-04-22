@@ -11,7 +11,7 @@ locals {
 }
 
 #
-# Personal website (statichost.page)
+# Personal website (statichost.eu)
 #
 resource "cloudflare_dns_record" "a_record_root" {
   zone_id = local.cf_zone_id
