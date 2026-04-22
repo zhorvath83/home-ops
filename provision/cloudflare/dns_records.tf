@@ -10,13 +10,33 @@ locals {
   cf_zone_id  = cloudflare_zone.domain.id
 }
 
-# Redirected to root via rule
+#
+# Personal website (statichost.page)
+#
+resource "cloudflare_dns_record" "a_record_root" {
+  zone_id = local.cf_zone_id
+  name    = local.domain_name
+  type    = "A"
+  content = "95.217.26.94"
+  proxied = false
+  ttl     = 1
+}
+
+resource "cloudflare_dns_record" "aaaa_record_root" {
+  zone_id = local.cf_zone_id
+  name    = local.domain_name
+  type    = "AAAA"
+  content = "2a01:4f9:c01f:8002::"
+  proxied = false
+  ttl     = 1
+}
+
 resource "cloudflare_dns_record" "www" {
   name    = "www"
   zone_id = local.cf_zone_id
-  content = "192.0.2.1"
-  proxied = true
-  type    = "A"
+  content = local.domain_name
+  proxied = false
+  type    = "CNAME"
   ttl     = 1
 }
 
