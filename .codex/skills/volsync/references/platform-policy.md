@@ -7,7 +7,7 @@ Use this reference when changing cluster-wide backup behavior.
 - the shared component defines default schedule, retention, and storage behavior
 - the VolSync platform subtree defines operator resources and jitter policy
 - VolSync plus Kopia covers cluster PVC snapshots only, even though the repository also contains a separate file-level backup plane
-- the separate file-level backup plane is `resticprofile` -> B2, with Backrest used to browse those snapshots
+- the separate file-level backup plane is `resticprofile` -> OVH Object Storage, with Backrest used to browse those snapshots
 - some critical workloads intentionally use both layers: PVC snapshots via VolSync and a curated export into `/backups/...` that `resticprofile` captures. Paperless is the current example.
 
 ## Scheduling Policy

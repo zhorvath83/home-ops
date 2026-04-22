@@ -22,7 +22,7 @@ Common live patterns here:
 - User-facing apps that should appear on the dashboard usually carry Homepage annotations.
 - App-managed secrets usually come from an `ExternalSecret` backed by the `onepassword` ClusterSecretStore.
 - Backed-up apps should use the shared VolSync component in `ks.yaml` rather than app-local backup manifests.
-- Do not assume VolSync is the only backup layer for an app. Some workloads also write a curated export into the shared `/backups/...` tree so `resticprofile` can capture a second copy in B2.
+- Do not assume VolSync is the only backup layer for an app. Some workloads also write a curated export into the shared `/backups/...` tree so `resticprofile` can capture a second copy in OVH Object Storage.
 - Preserve app-specific export jobs, NFS backup mounts, and export paths when they already exist for a critical workload. Paperless is the reference pattern.
 - For storage, compare against sibling apps first; several media-oriented apps combine PVC, NFS, and `emptyDir` mounts.
 - User-facing app resource baseline:

@@ -107,7 +107,7 @@ All Cloudflare resources are managed using Terraform with the Cloudflare provide
 
 - **DNS records**: For both cluster resources and custom domain email settings
 - **Cloudflare Access**: Zero-trust network access
-- **Cloudflare Pages**: Hosts private homepage (separate repository)
+- **statichost.eu**: Hosts private homepage (separate repository)
 - **Cloudflare Firewall**: Security rules and protection
 - **R2 Bucket**: Storage for homepage downloadable files
 - **Redirect Rules**: HTTP to HTTPS redirects
