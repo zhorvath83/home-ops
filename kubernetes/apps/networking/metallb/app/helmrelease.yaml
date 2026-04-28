@@ -37,7 +37,7 @@ spec:
       resources:
         requests:
           cpu: 5m
-          memory: 100Mi
+          memory: 110Mi
         limits:
           memory: 256Mi
     speaker:
@@ -52,8 +52,8 @@ spec:
       frr:
         resources:
           requests:
-            cpu: 1m
-            memory: 50Mi
+            cpu: 2m
+            memory: 60Mi
           limits:
             memory: 128Mi
       reloader:

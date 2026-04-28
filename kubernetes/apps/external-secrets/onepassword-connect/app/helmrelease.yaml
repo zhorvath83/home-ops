@@ -31,7 +31,7 @@ spec:
         resources:
           requests:
             cpu: 2m
-            memory: 24M
+            memory: 32Mi
           limits:
             memory: 128M
         serviceMonitor:
