@@ -70,6 +70,29 @@ tasks:
           '
         }
 
+        wait_for_proxmox_ssh() {
+          label="$1"
+          host="$2"
+          attempts=60
+          delay_seconds=10
+          attempt=1
+
+          echo "Waiting for ${label} (${host}) to come back online..."
+          while [ "${attempt}" -le "${attempts}" ]; do
+            if ssh -o ConnectTimeout=5 -o StrictHostKeyChecking=ask root@"${host}" 'uptime' >/dev/null 2>&1; then
+              echo "${label} is back online."
+              return 0
+            fi
+            echo "  ${label}: waiting (${attempt}/${attempts})..."
+            sleep "${delay_seconds}"
+            attempt=$((attempt + 1))
+          done
+
+          echo "FAILED: ${label} did not come back within $((attempts * delay_seconds))s."
+          HAD_FAILURE=true
+          return 1
+        }
+
         prompt_proxmox_reboot() {
           label="$1"
           host="$2"
@@ -129,6 +152,7 @@ tasks:
         run_task hm:openwrt openwrt
 
         prompt_proxmox_reboot pve-1 {{.PVE_1_HOST}}
+        wait_for_proxmox_ssh pve-1 {{.PVE_1_HOST}} || true
         prompt_proxmox_reboot pve-0 {{.PVE_0_HOST}}
 
         if [ "${HAD_FAILURE}" = "true" ]; then
@@ -193,6 +217,7 @@ tasks:
             exit 1
           fi
           sudo -n /usr/sbin/omv-upgrade
+          sudo -n omv-rpc -u admin Config applyChanges "{\"modules\":[],\"force\":false}"
           sudo -n fstrim -av
         '
 
