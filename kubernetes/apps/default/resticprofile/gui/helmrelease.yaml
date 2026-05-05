@@ -158,7 +158,7 @@ spec:
         server: ${CONF_NFS_SRV_IP}
         path: /tmp
         globalMounts:
-          - path: /mnt/nfs-tmp
+          - path: /restore
 
       nfs-backups:
         type: nfs
