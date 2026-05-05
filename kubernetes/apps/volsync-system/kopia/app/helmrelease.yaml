@@ -10,6 +10,8 @@ spec:
     name: kopia
   interval: 30m
   values:
+    defaultPodOptions:
+      automountServiceAccountToken: false
     controllers:
       kopia:
         annotations:

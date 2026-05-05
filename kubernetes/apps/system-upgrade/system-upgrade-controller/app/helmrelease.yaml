@@ -25,6 +25,7 @@ spec:
 
   values:
     defaultPodOptions:
+      automountServiceAccountToken: true
       securityContext:
         runAsNonRoot: true
         runAsUser: 10001
