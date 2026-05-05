@@ -21,3 +21,6 @@ This guide applies to `provision/kubernetes/`.
 - For inventory changes, prefer the smallest safe listing or connectivity check through the existing task wrappers.
 - For playbook changes, prefer a syntax-adjacent or narrowly scoped task-backed command when the environment is available.
 - If validation cannot run, say whether the blocker is missing tooling, credentials, SSH reachability, or cluster access.
+- Use repo-local skills for detailed procedures:
+  - Ansible workflows: `.claude/skills/provision-kubernetes/`
+  - shared task wrapper conventions: `.claude/skills/taskfiles/`

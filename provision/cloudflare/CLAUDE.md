@@ -18,3 +18,7 @@ This guide applies to `provision/cloudflare/`.
 
 - Prefer formatting, initialization, or planning within `provision/cloudflare/` when the environment is available.
 - If a change affects credentials, provider auth, or remote state behavior, verify the surrounding workflow before changing command structure.
+- Use repo-local skills for detailed procedures:
+  - Cloudflare Terraform workflows: `.claude/skills/cloudflare-terraform/`
+  - shared task wrapper conventions: `.claude/skills/taskfiles/`
+  - public exposure or tunnel-trust changes: `.claude/skills/security-review/`

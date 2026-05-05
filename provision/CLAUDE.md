@@ -35,3 +35,7 @@ For any work under `provision/`, apply guides in this order:
 
 - For provisioning changes, run the smallest relevant task-backed validation step available for the touched area.
 - If a change touches credentials or secret sourcing, inspect the existing `op run`, `.env`, or 1Password lookup flow before changing command structure.
+- Use repo-local skills for detailed procedures:
+  - Ansible cluster lifecycle: `.claude/skills/provision-kubernetes/`
+  - Cloudflare Terraform: `.claude/skills/cloudflare-terraform/`
+  - shared task wrapper conventions: `.claude/skills/taskfiles/`

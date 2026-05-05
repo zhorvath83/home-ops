@@ -22,3 +22,6 @@ This guide applies to `provision/ovh/`.
 
 - Prefer formatting, initialization, or planning within `provision/ovh/` when the environment is available.
 - If a change affects credentials, provider auth, the 1Password sync block, or remote state behavior, verify the surrounding workflow before changing command structure.
+- Use repo-local skills for detailed procedures:
+  - shared task wrapper conventions: `.claude/skills/taskfiles/`
+  - downstream backup contract impact: `.claude/skills/volsync/`
