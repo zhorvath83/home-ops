@@ -21,7 +21,7 @@ Use these sources in this order:
 3. More specific `AGENTS.md` files in subdirectories
 4. `Taskfile.yml` and `.taskfiles/*`
 5. `.github/renovate.json5` and `.github/renovate/*`
-6. repo-local skills under `.codex/skills/`
+6. repo-local skills under `.claude/skills/`
 7. Root `README.md` and `docs/*.md` for human-facing context
 
 ## Guide Traversal Rule
@@ -46,7 +46,7 @@ This repository currently manages a single-node home infrastructure stack with t
 - `kubernetes/`: GitOps-managed cluster state with Flux `Kustomization` objects, Helm releases, and reusable components
 - `provision/kubernetes/`: Ansible inventory and playbooks for host and cluster lifecycle operations
 - `provision/cloudflare/`: Terraform for Cloudflare DNS, tunnel, workers, pages, redirects, and zone configuration
-- `.codex/skills/`: repo-local Codex skill sources for reusable workflow knowledge
+- `.claude/skills/`: repo-local skill sources for reusable workflow knowledge
 - `.taskfiles/`: operational entry points used from `Taskfile.yml`
 - `.github/renovate*`: Renovate policy and package rule definitions
 - `docs/`: human-facing runbooks and reference notes
@@ -92,14 +92,14 @@ This repository currently manages a single-node home infrastructure stack with t
 - When validation cannot run, say which dependency is missing: tool, credential, cluster access, or other environment requirement.
 - When mentioning Kubernetes impact, be explicit whether the change is local-only, committed, or live.
 - Use repo-local skills for procedures and detailed checklists:
-  - `.codex/skills/architecture-review/`
-  - `.codex/skills/security-review/`
-  - `.codex/skills/sre/`
-  - `.codex/skills/taskfiles/`
-  - `.codex/skills/versions-renovate/`
-  - `.codex/skills/sops-secrets/`
-  - `.codex/skills/flux-gitops/`
-  - other domain skills under `.codex/skills/`
+  - `.claude/skills/architecture-review/`
+  - `.claude/skills/security-review/`
+  - `.claude/skills/sre/`
+  - `.claude/skills/taskfiles/`
+  - `.claude/skills/versions-renovate/`
+  - `.claude/skills/sops-secrets/`
+  - `.claude/skills/flux-gitops/`
+  - other domain skills under `.claude/skills/`
 
 ## Taskfile And Renovate Model
 
@@ -133,4 +133,4 @@ Common types:
 
 - `kubernetes/`: see [kubernetes/AGENTS.md](kubernetes/AGENTS.md)
 - `provision/`: see [provision/AGENTS.md](provision/AGENTS.md)
-- `.codex/skills/`: see [.codex/skills/AGENTS.md](.codex/skills/AGENTS.md)
+- `.claude/skills/`: see [.claude/skills/AGENTS.md](.claude/skills/AGENTS.md)

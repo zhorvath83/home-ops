@@ -36,5 +36,9 @@ megalinter-reports/
 __pycache__/
 *.pyc
 *.pyo
-.claude/
+.claude/*
+!.claude/CLAUDE.md
+!.claude/settings.json
+!.claude/skills/
+.claude/settings.local.json
 .mcp.json

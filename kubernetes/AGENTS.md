@@ -69,12 +69,12 @@ Treat everything under `kubernetes/` as desired state for Flux, not as an impera
 - Keep YAML formatting close to neighboring files rather than reformatting entire manifests.
 - Preserve existing inline `# renovate:` annotations when touching versioned manifests.
 - Use repo-local skills for detailed procedures:
-  - app workloads: `.codex/skills/k8s-workloads/`
-  - shared Flux wiring: `.codex/skills/flux-gitops/`
-  - networking platform: `.codex/skills/networking-platform/`
-  - shared secret delivery: `.codex/skills/external-secrets/`
-  - repo-encrypted secrets: `.codex/skills/sops-secrets/`
-  - backup policy and restore flow: `.codex/skills/volsync/`
+  - app workloads: `.claude/skills/k8s-workloads/`
+  - shared Flux wiring: `.claude/skills/flux-gitops/`
+  - networking platform: `.claude/skills/networking-platform/`
+  - shared secret delivery: `.claude/skills/external-secrets/`
+  - repo-encrypted secrets: `.claude/skills/sops-secrets/`
+  - backup policy and restore flow: `.claude/skills/volsync/`
 - After edits, read the touched `ks.yaml`, `kustomization.yaml`, and primary manifests together, check dependency and naming consistency against sibling trees, and run the smallest relevant validation the environment allows.
 
 ## Current Reality To Prefer Over Old Notes
