@@ -6,6 +6,7 @@ This guide applies to everything under `provision/`.
 
 - `provision/kubernetes/`: Ansible-based host preparation and cluster lifecycle workflows
 - `provision/cloudflare/`: Terraform-managed Cloudflare resources
+- `provision/ovh/`: Terraform-managed OVH Cloud Project Storage (S3 backup buckets and the dedicated S3 user) used by the cluster backup planes
 
 ## Subtree Guides
 
@@ -13,6 +14,7 @@ Use the more specific guide for the target area:
 
 - Kubernetes provisioning: [kubernetes/CLAUDE.md](kubernetes/CLAUDE.md)
 - Cloudflare Terraform: [cloudflare/CLAUDE.md](cloudflare/CLAUDE.md)
+- OVH Terraform: [ovh/CLAUDE.md](ovh/CLAUDE.md)
 
 ## Traversal Rule
 

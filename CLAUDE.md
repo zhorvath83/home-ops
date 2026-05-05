@@ -46,6 +46,7 @@ This repository currently manages a single-node home infrastructure stack with t
 - `kubernetes/`: GitOps-managed cluster state with Flux `Kustomization` objects, Helm releases, and reusable components
 - `provision/kubernetes/`: Ansible inventory and playbooks for host and cluster lifecycle operations
 - `provision/cloudflare/`: Terraform for Cloudflare DNS, tunnel, workers, pages, redirects, and zone configuration
+- `provision/ovh/`: Terraform for OVH Cloud Project Storage (S3 backup buckets and the S3 user consumed by the VolSync/Kopia and resticprofile backup planes)
 - `.claude/skills/`: repo-local skill sources for reusable workflow knowledge
 - `.taskfiles/`: operational entry points used from `Taskfile.yml`
 - `.github/renovate*`: Renovate policy and package rule definitions
@@ -85,6 +86,7 @@ This repository currently manages a single-node home infrastructure stack with t
 - Some critical workloads keep an extra app-level export in addition to PVC snapshots so the exported data is also covered by the file-level backup plane. Current example: Paperless exports documents to `/backups/paperless`.
 - Secrets are split between SOPS-managed repo secrets and 1Password through External Secrets.
 - Cloudflare resources are managed from `provision/cloudflare/`.
+- OVH Cloud Project Storage buckets and the S3 user that backs both backup planes are managed from `provision/ovh/`.
 
 ## Validation And Routing
 
