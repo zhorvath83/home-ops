@@ -11,7 +11,7 @@ Use this skill when the shared 1Password and External Secrets model is part of t
 
 ## Workflow
 
-1. Read the root guide, `kubernetes/AGENTS.md`, and `kubernetes/apps/external-secrets/AGENTS.md`.
+1. Read the root guide, `kubernetes/CLAUDE.md`, and `kubernetes/apps/external-secrets/CLAUDE.md`.
 2. Decide whether the change is:
    - platform topology or sequencing
    - app-level `ExternalSecret` wiring

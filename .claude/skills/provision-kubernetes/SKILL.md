@@ -7,11 +7,11 @@ description: Work on the Ansible-based cluster provisioning area in the home-ops
 
 ## Overview
 
-Use this skill for the Ansible-driven provisioning area. It complements the `provision/kubernetes/AGENTS.md` guardrails with workflow-specific guidance.
+Use this skill for the Ansible-driven provisioning area. It complements the `provision/kubernetes/CLAUDE.md` guardrails with workflow-specific guidance.
 
 ## Workflow
 
-1. Read the root guide, `provision/AGENTS.md`, and `provision/kubernetes/AGENTS.md`.
+1. Read the root guide, `provision/CLAUDE.md`, and `provision/kubernetes/CLAUDE.md`.
 2. Decide whether the task is mainly inventory, playbook, or task-wrapper related.
 3. Load only the needed reference:
    - `references/layout.md`

@@ -7,11 +7,11 @@ description: Work on the Cloudflare Terraform area in the home-ops repository. U
 
 ## Overview
 
-Use this skill for the Terraform-backed Cloudflare area. It complements the `provision/cloudflare/AGENTS.md` guardrails with workflow and validation guidance.
+Use this skill for the Terraform-backed Cloudflare area. It complements the `provision/cloudflare/CLAUDE.md` guardrails with workflow and validation guidance.
 
 ## Workflow
 
-1. Read the root guide, `provision/AGENTS.md`, and `provision/cloudflare/AGENTS.md`.
+1. Read the root guide, `provision/CLAUDE.md`, and `provision/cloudflare/CLAUDE.md`.
 2. Inspect the existing file split before moving or adding resources.
 3. Load only the needed reference:
    - `references/layout.md`

@@ -71,13 +71,6 @@ Rules:
 - preserve Cloudflare-specific hardening and transport flags unless there is a concrete reason to change them
 - keep secret names aligned between `externalsecret.yaml` and chart `envFrom`/`secretKeyRef` usage
 
-## Platform Validation
+## Validation
 
-For networking changes, validate in this order:
-
-1. Flux Kustomization ordering is still correct.
-2. Gateway, policy, and certificate resources still point to the same names and namespaces.
-3. Cloudflare Tunnel config still targets the intended internal service.
-4. `k8s-gateway` still points at the intended internal Gateway class and LAN VIP.
-5. ExternalDNS sources and domain filters still match the active public Gateway/HTTPRoute model.
-6. Any affected app route still matches the listener and TLS assumptions for both Gateways.
+See `.claude/skills/networking-platform/references/validation.md` for the validation procedure.

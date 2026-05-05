@@ -14,7 +14,7 @@ modes, and different validation workflows.
 
 ## Workflow
 
-1. Read the root guide, `kubernetes/AGENTS.md`, and `kubernetes/apps/volsync-system/AGENTS.md` when platform resources are involved.
+1. Read the root guide, `kubernetes/CLAUDE.md`, and `kubernetes/apps/volsync-system/CLAUDE.md` when platform resources are involved.
 2. Decide whether the task is:
    - routine app backup integration
    - cluster-wide backup policy change
@@ -23,6 +23,7 @@ modes, and different validation workflows.
    - `references/app-integration.md`
    - `references/platform-policy.md`
    - `references/operations.md`
+   - `references/validation.md` for final checks
 4. If the task also changes application manifests, use `k8s-workloads` alongside this skill.
 
 ## Scope Boundaries

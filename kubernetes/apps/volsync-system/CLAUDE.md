@@ -23,8 +23,4 @@ Current live layers:
 
 ## Validation
 
-For VolSync platform changes:
-
-1. Inspect the shared component defaults and this subtree together.
-2. Verify that operator, maintenance, and Kopia resources still refer to the same names and namespaces.
-3. Check whether `.taskfiles/VolSync/Tasks.yaml` still matches the resource names and expectations after the change.
+See `.claude/skills/volsync/references/validation.md` for the validation procedure.

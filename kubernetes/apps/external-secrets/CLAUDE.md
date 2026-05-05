@@ -59,9 +59,4 @@ When editing this platform area:
 
 ## Validation
 
-For external-secrets platform changes, verify:
-
-1. the operator, store, and connect service still reconcile in the correct order
-2. the `onepassword` ClusterSecretStore name remains stable
-3. app `dependsOn` assumptions elsewhere in the repo still make sense
-4. Taskfile flows such as `task es:sync` and Flux bootstrap still reference the same secret names
+See `.claude/skills/external-secrets/references/validation.md` for the validation procedure.

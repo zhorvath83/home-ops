@@ -32,9 +32,4 @@ Common live patterns here:
 
 ## Validation
 
-For app changes in this subtree:
-
-1. Read `ks.yaml`, `app/kustomization.yaml`, and the main manifest set together.
-2. Verify `dependsOn`, route targets, and secret names against sibling apps.
-3. If the app is backed up, verify the VolSync-related substitutions and component wiring.
-4. If the app also has an export path or backup job, verify the export mount, schedule, and destination path still match the shared `/backups/...` model.
+See `.claude/skills/k8s-workloads/references/validation.md` for the validation procedure.

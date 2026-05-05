@@ -8,13 +8,13 @@ description: Work on Flux and shared GitOps wiring in the home-ops repository. U
 ## Overview
 
 Use this skill when a task changes the repo's GitOps control plane rather
-than one workload. It complements the `kubernetes/AGENTS.md` guardrails with
+than one workload. It complements the `kubernetes/CLAUDE.md` guardrails with
 workflow and validation guidance for Flux bootstrap, shared vars, and
 cluster-wide apply ordering.
 
 ## Workflow
 
-1. Read the root guide, `kubernetes/AGENTS.md`, and the nearest subtree guide for the target path.
+1. Read the root guide, `kubernetes/CLAUDE.md`, and the nearest subtree guide for the target path.
 2. Decide whether the task is mainly:
    - Flux bootstrap or install flow
    - shared `kubernetes/flux/` configuration or vars

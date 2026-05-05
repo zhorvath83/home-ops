@@ -7,11 +7,11 @@ description: Modify shared networking platform resources in the home-ops reposit
 
 ## Overview
 
-Use this skill when a change touches the shared ingress and public exposure chain. It complements the networking subtree `AGENTS.md` with workflow and validation guidance.
+Use this skill when a change touches the shared ingress and public exposure chain. It complements the networking subtree `CLAUDE.md` with workflow and validation guidance.
 
 ## Workflow
 
-1. Read the root guide, `kubernetes/AGENTS.md`, and `kubernetes/apps/networking/AGENTS.md`.
+1. Read the root guide, `kubernetes/CLAUDE.md`, and `kubernetes/apps/networking/CLAUDE.md`.
 2. Inspect the parent `ks.yaml` plus any split child directories such as `app/`, `config/`, or `certificate/`.
 3. Load only the needed reference:
    - `references/topology.md` for platform layout and ownership

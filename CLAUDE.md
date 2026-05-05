@@ -1,6 +1,6 @@
-# AGENTS.md - AI Assistant Guidance for home-ops
+# CLAUDE.md - AI Assistant Guidance for home-ops
 
-This file is the operational guide for working in this repository. Treat it as the authoritative source for agent behavior inside `home-ops`.
+This file is the operational guide for working in this repository. Treat it as the authoritative source for agent behavior inside `home-ops`. Subdirectory guides live in `CLAUDE.md` files and are traversed manually per the rule below.
 
 ## Non-Negotiables
 
@@ -17,8 +17,8 @@ This file is the operational guide for working in this repository. Treat it as t
 Use these sources in this order:
 
 1. The current files in the repository
-2. This `AGENTS.md`
-3. More specific `AGENTS.md` files in subdirectories
+2. This `CLAUDE.md`
+3. More specific `CLAUDE.md` files in subdirectories
 4. `Taskfile.yml` and `.taskfiles/*`
 5. `.github/renovate.json5` and `.github/renovate/*`
 6. repo-local skills under `.claude/skills/`
@@ -26,7 +26,7 @@ Use these sources in this order:
 
 ## Guide Traversal Rule
 
-When working on any file or subtree, always read `AGENTS.md` files from the repository root down to the target directory.
+When working on any file or subtree, always read this root `CLAUDE.md` first, then descend through any `CLAUDE.md` files on the path to the target directory.
 
 Practical rule:
 
@@ -36,8 +36,8 @@ Practical rule:
 
 Examples:
 
-- `kubernetes/apps/networking/...` -> root guide -> `kubernetes/AGENTS.md` -> `kubernetes/apps/networking/AGENTS.md`
-- `provision/cloudflare/...` -> root guide -> `provision/AGENTS.md` -> `provision/cloudflare/AGENTS.md`
+- `kubernetes/apps/networking/...` -> root `CLAUDE.md` -> `kubernetes/CLAUDE.md` -> `kubernetes/apps/networking/CLAUDE.md`
+- `provision/cloudflare/...` -> root `CLAUDE.md` -> `provision/CLAUDE.md` -> `provision/cloudflare/CLAUDE.md`
 
 ## Current Repository Shape
 
@@ -131,6 +131,6 @@ Common types:
 
 ## Directory Guides
 
-- `kubernetes/`: see [kubernetes/AGENTS.md](kubernetes/AGENTS.md)
-- `provision/`: see [provision/AGENTS.md](provision/AGENTS.md)
-- `.claude/skills/`: see [.claude/skills/AGENTS.md](.claude/skills/AGENTS.md)
+- `kubernetes/`: see [kubernetes/CLAUDE.md](kubernetes/CLAUDE.md)
+- `provision/`: see [provision/CLAUDE.md](provision/CLAUDE.md)
+- `.claude/skills/`: see [.claude/skills/CLAUDE.md](.claude/skills/CLAUDE.md)

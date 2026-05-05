@@ -7,11 +7,11 @@ description: Plan and implement non-platform Flux-managed application workloads 
 
 ## Overview
 
-Use this skill for non-platform application work under `kubernetes/apps/`. Keep repo guardrails in the `AGENTS.md` chain, then load only the reference file needed for the workload shape.
+Use this skill for non-platform application work under `kubernetes/apps/`. Keep repo guardrails in the `CLAUDE.md` chain, then load only the reference file needed for the workload shape.
 
 ## Workflow
 
-1. Read the root guide, `kubernetes/AGENTS.md`, and the nearest subtree guide.
+1. Read the root guide, `kubernetes/CLAUDE.md`, and the nearest subtree guide.
 2. Inspect the target app plus 2-3 sibling apps with similar exposure, storage, and auth.
 3. Load only the reference file needed for the task:
    - `references/app-scaffolding.md` for new apps, folder shape, and dependency wiring

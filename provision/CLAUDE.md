@@ -11,16 +11,16 @@ This guide applies to everything under `provision/`.
 
 Use the more specific guide for the target area:
 
-- Kubernetes provisioning: [kubernetes/AGENTS.md](kubernetes/AGENTS.md)
-- Cloudflare Terraform: [cloudflare/AGENTS.md](cloudflare/AGENTS.md)
+- Kubernetes provisioning: [kubernetes/CLAUDE.md](kubernetes/CLAUDE.md)
+- Cloudflare Terraform: [cloudflare/CLAUDE.md](cloudflare/CLAUDE.md)
 
 ## Traversal Rule
 
 For any work under `provision/`, apply guides in this order:
 
-1. [../AGENTS.md](../AGENTS.md)
-2. [AGENTS.md](AGENTS.md)
-3. the nearest subtree `AGENTS.md`
+1. [../CLAUDE.md](../CLAUDE.md)
+2. [CLAUDE.md](CLAUDE.md)
+3. the nearest subtree `CLAUDE.md`
 
 ## Operating Rules
 

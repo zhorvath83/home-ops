@@ -15,15 +15,15 @@ This guide applies to everything under `kubernetes/`.
 
 Use more specific guides when working in these areas:
 
-- default applications: [apps/default/AGENTS.md](apps/default/AGENTS.md)
-- networking platform: [apps/networking/AGENTS.md](apps/networking/AGENTS.md)
-- external secrets platform: [apps/external-secrets/AGENTS.md](apps/external-secrets/AGENTS.md)
-- VolSync platform: [apps/volsync-system/AGENTS.md](apps/volsync-system/AGENTS.md)
+- default applications: [apps/default/CLAUDE.md](apps/default/CLAUDE.md)
+- networking platform: [apps/networking/CLAUDE.md](apps/networking/CLAUDE.md)
+- external secrets platform: [apps/external-secrets/CLAUDE.md](apps/external-secrets/CLAUDE.md)
+- VolSync platform: [apps/volsync-system/CLAUDE.md](apps/volsync-system/CLAUDE.md)
 
 Examples:
 
-- `kubernetes/apps/default/...` -> root guide -> `kubernetes/AGENTS.md` -> `kubernetes/apps/default/AGENTS.md`
-- `kubernetes/apps/networking/...` -> root guide -> `kubernetes/AGENTS.md` -> `kubernetes/apps/networking/AGENTS.md`
+- `kubernetes/apps/default/...` -> root guide -> `kubernetes/CLAUDE.md` -> `kubernetes/apps/default/CLAUDE.md`
+- `kubernetes/apps/networking/...` -> root guide -> `kubernetes/CLAUDE.md` -> `kubernetes/apps/networking/CLAUDE.md`
 
 ## GitOps Apply Boundary
 

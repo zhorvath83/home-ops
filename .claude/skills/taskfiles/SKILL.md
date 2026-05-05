@@ -7,7 +7,7 @@ description: Work on the Taskfile-based operational entry points in the home-ops
 
 ## Overview
 
-Use this skill for the repo's task-runner surface. It complements the root `AGENTS.md` rule that existing task wrappers are the preferred operational entry points.
+Use this skill for the repo's task-runner surface. It complements the root `CLAUDE.md` rule that existing task wrappers are the preferred operational entry points.
 
 ## Workflow
 

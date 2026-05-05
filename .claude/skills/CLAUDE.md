@@ -5,15 +5,15 @@ This guide applies to everything under `.claude/skills/`.
 ## Purpose
 
 - Treat this subtree as the repo-local source of truth for home-ops project skills.
-- Skills here should complement repo `AGENTS.md` files, not replace them.
-- Keep path-based guardrails in `AGENTS.md`; keep reusable workflows and decision trees in skills.
+- Skills here should complement repo `CLAUDE.md` files, not replace them.
+- Keep path-based guardrails in `CLAUDE.md`; keep reusable workflows and decision trees in skills.
 
 ## Skill Boundary
 
-- `AGENTS.md` files hold durable repo facts, guardrails, and anti-patterns.
+- `CLAUDE.md` files hold durable repo facts, guardrails, and anti-patterns.
 - `SKILL.md` files hold procedural workflows, routing hints, and step ordering.
 - `references/` files hold detailed examples, checklists, and domain notes that should load only when needed.
-- If a fact belongs to one path and is mostly declarative, keep it in the nearest `AGENTS.md`, not in a skill.
+- If a fact belongs to one path and is mostly declarative, keep it in the nearest `CLAUDE.md`, not in a skill.
 
 ## Role Bundles
 
@@ -40,7 +40,7 @@ This guide applies to everything under `.claude/skills/`.
 
 ## Three-Tier Targets
 
-- `AGENTS.md`: high-level context, constraints, and durable path-based facts
+- `CLAUDE.md`: high-level context, constraints, and durable path-based facts
 - `SKILL.md`: workflow shape, routing rules, and decision points
 - `references/*.md`: templates, checklists, and detailed implementation notes
 - Prefer moving detail out of always-on guides before trimming skill metadata or removing real guardrails.
@@ -55,7 +55,7 @@ This guide applies to everything under `.claude/skills/`.
 
 - Add a new skill when the repo has a repeated workflow with 5+ steps, real decision points, or its own task namespace or subtree.
 - Split a skill when two workflows touch different operators, credentials, or failure modes even if both live under the same top-level directory.
-- Do not add a skill for one-off reminders, short file-format notes, or facts that already belong in the nearest `AGENTS.md`.
+- Do not add a skill for one-off reminders, short file-format notes, or facts that already belong in the nearest `CLAUDE.md`.
 
 ## Validation
 
