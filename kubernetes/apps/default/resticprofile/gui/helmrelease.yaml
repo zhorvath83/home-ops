@@ -156,7 +156,7 @@ spec:
       nfs-tmp:
         type: nfs
         server: ${CONF_NFS_SRV_IP}
-        path: /tmp
+        path: /tmp/resticprofile-restore
         globalMounts:
           - path: /restore
 
