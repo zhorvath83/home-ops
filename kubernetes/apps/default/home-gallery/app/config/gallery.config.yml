@@ -34,7 +34,7 @@ sources:
 extractor:
   # Preview image settings
   image:
-    previewSizes: [2560, 800, 320, 128]
+    previewSizes: [2560, 800, 640, 320, 128]
     previewQuality: 90
   # Video settings
   video:
