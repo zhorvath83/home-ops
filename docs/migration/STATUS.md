@@ -6,17 +6,17 @@
 
 ## TL;DR
 
-**Hol tartunk:** A tervezési fázis (15 doc) elkészült. A `talos` branch még **nincs** megnyitva, megvalósítás még nem indult.
+**Hol tartunk:** A tervezési fázis (15 doc) elkészült. A `talos` branch létrehozva, megvalósítás indul.
 
-**Következő lépés:** Tervek átolvasása és véglegesítése → `talos` branch létrehozása → Phase 1 (hardver, hálózat).
+**Következő lépés:** Phase 1 (hardver, hálózat) — HP ProDesk Windows lemez törlés + Talos USB készítése.
 
 ## Fázis tracker
 
 | # | Fázis | Doc | Status | Megjegyzés |
 |---|---|---|---|---|
 | — | Tervezés (docs) | [README](./README.md) | ✅ done | 15 doc kész, lazán kapcsolódó struktúra |
-| — | `talos` branch létrehozása | — | ⏸ pending | Következő lépés |
-| 1 | Hardver, hálózat, IP plan | [01](./01-hardware-and-network.md) | ⏸ pending | HP ProDesk 600 G6 DM beszerzés / fizikai setup |
+| — | `talos` branch létrehozása | — | ✅ done | 2026-05-15 |
+| 1 | Hardver, hálózat, IP plan | [01](./01-hardware-and-network.md) | 🟡 in-progress | HP megvan, Windows törlés szükséges, Talos USB készítendő |
 | 2 | Talos bootstrap | [02](./02-talos-bootstrap.md) | ⏸ pending | machine config, install |
 | 3 | Cilium CNI install + L2 announce | [03](./03-cilium-cni.md) | ⏸ pending | kube-proxy replacement |
 | 4 | Bootstrap helmfile chain | [04](./04-bootstrap-helmfile.md) | ⏸ pending | `op inject` + helmfile |
@@ -66,8 +66,9 @@ Legend: ✅ done · 🟡 in-progress · ⏸ pending · ❌ blocked · ⏭ skippe
 
 ## Open items / blocker
 
-- Nincs aktív blocker — a tervezés zárása után indulhat a Phase 1.
-- Hardver (HP ProDesk 600 G6 DM, P41 + P31 NVMe) beszerzés státusza külön követendő — a [01](./01-hardware-and-network.md) bemenete.
+- Nincs aktív blocker.
+- HP ProDesk 600 G6 DM **megvan**, jelenleg Windows van rajta → törlés szükséges (Talos install felülírja, nem külön lépés).
+- P41 + P31 NVMe beszerzés státusza külön követendő — ha még nincs, a [01](./01-hardware-and-network.md) bemenete.
 
 ## Frissítési konvenció
 
