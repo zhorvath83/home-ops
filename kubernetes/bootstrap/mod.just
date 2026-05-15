@@ -11,7 +11,8 @@ bootstrap_dir := kubernetes_dir + '/bootstrap'
 controller := `talosctl config info -o json 2>/dev/null | jq -r '.endpoints[0]' 2>/dev/null || echo 'cp0-k8s'`
 
 # nodes: derive node *names* from kubernetes/talos/nodes/<name>.yaml.j2 — the talos apply-node recipe is name-based, not IP-based.
-nodes := `find kubernetes/talos/nodes -maxdepth 1 -name '*.yaml.j2' -exec basename {} .yaml.j2 \; 2>/dev/null | tr '\n' ' '`
+# Backticks run with cwd = this mod's directory (kubernetes/bootstrap), so reach into the sibling talos/ tree.
+nodes := `find ../talos/nodes -maxdepth 1 -name '*.yaml.j2' -exec basename {} .yaml.j2 \; | tr '\n' ' '`
 
 [private]
 [script]
