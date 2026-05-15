@@ -117,7 +117,7 @@ talosctl = "1.10.6"
 kubectl = "1.36.1"
 helm = "3.18.2"
 helmfile = "1.1.0"
-flux = "2.7.2"
+flux2 = "2.7.2"                                 # mise registry name; installed binary is `flux`
 just = "1.45.0"
 mise = "2025.1.0"
 
@@ -140,15 +140,28 @@ pre-commit = "4.0.1"
 # Terraform
 terraform = "1.10.5"
 
-# Ansible (OMV deploy)
-"pipx:ansible" = "latest"
+# Linters / formatters (aqua backend, bjw-s parity)
+"aqua:google/yamlfmt" = "latest"
+"aqua:rhysd/actionlint" = "latest"
+
+# Python tooling (pipx backend)
+"pipx:flux-local" = "latest"                    # used by `just k8s apply-ks` (render-local-ks recipe)
+"pipx:ansible" = "latest"                       # OMV deploy (10-omv-ansible.md)
 "pipx:ansible-core" = "latest"
 
 [hooks]
-postinstall = "ansible-galaxy install -r {{config_root}}/provision/openmediavault/requirements.yaml"
+# Enable only AFTER provision/openmediavault/requirements.yaml exists
+# (created in 10-omv-ansible.md phase). Until then keep the [hooks] block
+# commented out — otherwise every `mise install` will fail.
+# postinstall = "ansible-galaxy install -r {{config_root}}/provision/openmediavault/requirements.yaml"
 ```
 
 **Megjegyzés:** A `JUST_UNSTABLE=1` engedélyezi a `mod` keyword-öt (jelenleg unstable feature). A verziók a bjw-s repo aktuális verzióit követik — Renovate frissíteni fogja.
+
+**Mise registry nevek figyelmeztető lista** (nem mindig az, ami a binary neve):
+- `flux2` → installált binary: `flux` (a `flux` név foglalt a registry-ben más csomagra).
+- A többi tool (kubectl, talosctl, helm, helmfile, just, sops, age, yq, jq, gum, terraform, pre-commit, minijinja-cli, 1password-cli) registry- és binary-neve egyezik.
+- Ha `mise install` "not found in mise tool registry" hibát ad, először `mise registry | grep <name>` paranccsal nézz utána.
 
 ## `.minijinja.toml`
 
