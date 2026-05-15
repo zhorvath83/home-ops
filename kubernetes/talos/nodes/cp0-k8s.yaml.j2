@@ -16,12 +16,14 @@ apiVersion: v1alpha1
 kind: HostnameConfig
 hostname: cp0-k8s
 ---
-# Stabilize the on-board Intel I219-LM NIC under the alias `net0` so the
-# DHCPv4Config in machineconfig.yaml.j2 is independent of the kernel-assigned
-# name (enp0s31f6 / similar). Pinned by a 4-byte MAC prefix: HP OUI (50:81:40)
-# plus one product-family byte (80). Matches the on-board HP I219 NIC family
-# but not unrelated HP devices; the last 2 bytes (device identity) are kept
-# out of git.
+# Stabilize the on-board Intel I219-LM NIC under the alias `net0`, then let
+# the shared machineconfig wrap it in a single-member `bond0` so a real
+# kernel device exists with a stable name. The bond decouples Cilium, the L2
+# announcement policy, and the DHCPv4Config from the kernel-assigned link
+# name (eno1 / enp0s31f6 / similar). Same pattern as bjw-s and onedr0p.
+# Pinned by a 4-byte MAC prefix: HP OUI (50:81:40) plus one product-family
+# byte (80). Matches the on-board HP I219 NIC family but not unrelated HP
+# devices; the last 2 bytes (device identity) are kept out of git.
 apiVersion: v1alpha1
 kind: LinkAliasConfig
 name: net0
