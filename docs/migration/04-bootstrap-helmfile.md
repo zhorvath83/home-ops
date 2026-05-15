@@ -7,15 +7,19 @@
 | Cilium app subtree (`kubernetes/apps/kube-system/cilium/{app,config}`) — bootstrap helmfile `values.yaml.gotmpl` forrása | ✅ Phase 3 |
 | `kubernetes/flux/cluster/ks.yaml` (FluxInstance `sync.path` célja) | ✅ Phase 5 részmunka |
 | bjw-s naming + GitRepository név egységesítve | ✅ Phase 6 részmunka |
-| `kubernetes/bootstrap/helmfile.d/00-crds.yaml` | ⏸ pending |
-| `kubernetes/bootstrap/helmfile.d/01-apps.yaml` | ⏸ pending |
-| `kubernetes/bootstrap/helmfile.d/templates/values.yaml.gotmpl` | ⏸ pending |
-| `kubernetes/bootstrap/resources.yaml.j2` (1P Connect creds + sops-age) | ⏸ pending |
-| `kubernetes/bootstrap/mod.just` recipe-ek (cluster, talos, kubernetes, kubeconfig, wait, namespaces, resources, crds, apps) | ⏸ pending — jelenleg csak placeholder |
-| `kubernetes/apps/external-secrets/onepassword-connect/app/clustersecretstore.yaml` (postsync hook által apply-olt) | ⏸ pending — meglévő ClusterSecretStore manifest pozícionálás |
-| `kubernetes/apps/flux-system/flux-operator/` + `flux-instance/` app-subtreek (Phase 5) | ⏸ pending |
-| `1Password HomeOps/homelab-age-key` item létrehozva | ⏸ pending (vagy verifikálandó) |
-| `just k8s-bootstrap cluster` éles futtatás | ⏸ pending |
+| `kubernetes/apps/external-secrets/onepassword-connect/app/clustersecretstore.yaml` (postsync hook által apply-olt) | ✅ kész — bjw-s/onedr0p mintára áthelyezve a `stores/` aldirból a `app/`-ba; CSS resource név `onepassword-connect`-re átnevezve; 1 Flux Kustomization (healthChecks + healthCheckExprs a HelmRelease + ClusterSecretStore Ready-re); 27 consumer ks.yaml `dependsOn` és 19 ExternalSecret `secretStoreRef` átírva |
+| `kubernetes/apps/kube-system/coredns/` subtree | ✅ kész — bjw-s referencia értékekkel (control-plane affinity + CriticalAddonsOnly toleration), `replicaCount: 1` single-node-ra |
+| `kubernetes/apps/flux-system/flux-operator/` subtree | ✅ kész |
+| `kubernetes/apps/flux-system/flux-instance/` subtree | ✅ kész — `sync.url` a `zhorvath83/home-ops` repo, `sync.ref: refs/heads/talos`, `sync.path: kubernetes/flux/cluster`; cutoverkor `refs/heads/main`-re kell állítani |
+| `kubernetes/bootstrap/helmfile.d/00-crds.yaml` (envoy-gateway, kube-prometheus-stack, grafana-operator) | ✅ kész |
+| `kubernetes/bootstrap/helmfile.d/01-apps.yaml` (Cilium → CoreDNS → cert-manager → ESO → 1P Connect → flux-operator → flux-instance, 7 release) | ✅ kész — `cert-manager-webhook-ovh` kihagyva (Cloudflare DNS-01 solver beépített) |
+| `kubernetes/bootstrap/helmfile.d/templates/values.yaml.gotmpl` (DRY: olvas `app/helmrelease.yaml`-ből) | ✅ kész |
+| `kubernetes/bootstrap/resources.yaml.j2` (1P Connect creds + sops-age Secret, `op://` ref-ek) | ✅ kész |
+| `kubernetes/bootstrap/mod.just` recipe-ek (`cluster`, `talos`, `kubernetes`, `kubeconfig`, `wait`, `namespaces`, `resources`, `crds`, `apps`) | ✅ kész |
+| `kubernetes/bootstrap/flux/` k3s-éra legacy törlés | ✅ kész |
+| `1Password HomeOps/homelab-age-key` item létrehozva | ⏸ verifikálandó éles futtatás előtt |
+| `1Password HomeOps/1password-connect-kubernetes` item (credentials + token) | ⏸ verifikálandó éles futtatás előtt |
+| `just k8s-bootstrap cluster` éles futtatás | ⏸ pending — végrehajtás következő session |
 
 ## Cél
 

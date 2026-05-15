@@ -6,26 +6,28 @@
 
 ## TL;DR
 
-**Hol tartunk:** Talos node fent (`cp0-k8s NotReady`, CNI hiányzik). Phase 3 manifestek (Cilium app subtree) és a teljes bjw-s naming + layout refactor a `talos` branch-en kész. A következő nagy lépés a Phase 4 — bootstrap helmfile chain — ami a Cilium-tól a Flux Instance-ig minden release-t telepít, és élesíti a clustert.
+**Hol tartunk:** Talos node fent (`cp0-k8s NotReady`, CNI hiányzik). A Phase 4 **manifest és recipe szintű** munkája is kész a `talos` branch-en — a bootstrap helmfile chain (Cilium → CoreDNS → cert-manager → ESO → 1P Connect → Flux Operator → Flux Instance), a `mod.just` recipe-ek és minden hivatkozott app-subtree elérhető. A következő nagy lépés a `just k8s-bootstrap cluster` **éles futtatása**.
 
-**Mit végeztünk el a `talos` branchen idáig (Phase 3 + Phase 5/6 részmunkák, 2026-05-16):**
+**Mit végeztünk el a `talos` branchen idáig (Phase 3 + 4 + 5/6 részmunkák, 2026-05-16):**
 
 - ✅ Talos schematic + machineconfig template + node patch + `just talos` recipe-ek.
 - ✅ Talos node bootolt, kubeconfig megvan, `cp0-k8s NotReady`.
-- ✅ Cilium app-subtree: `kubernetes/apps/kube-system/cilium/{ks.yaml,app,config}` — bjw-s-stílusú HelmRelease (Cilium 1.19.4, netkit datapath, kubeProxyReplacement, L2 announce), `CiliumLoadBalancerIPPool` (`.15-.25`), `CiliumL2AnnouncementPolicy` (`^net0$`).
-- ✅ Cilium regisztráció a `kubernetes/apps/kube-system/kustomization.yaml`-ben.
+- ✅ Cilium app-subtree (`kubernetes/apps/kube-system/cilium/{ks.yaml,app,config}`) — Cilium 1.19.4, netkit datapath, kubeProxyReplacement, L2 announce, `CiliumLoadBalancerIPPool` (`.15-.25`), `CiliumL2AnnouncementPolicy` (`^net0$`).
+- ✅ CoreDNS app-subtree (`kubernetes/apps/kube-system/coredns/`) — bjw-s mintára control-plane affinity + CriticalAddonsOnly toleration, single-node-on `replicaCount: 1`.
+- ✅ Flux Operator + Flux Instance app-subtreek (`kubernetes/apps/flux-system/flux-{operator,instance}/`) — FluxInstance `sync.ref: refs/heads/talos` (cutover-kor `main`).
 - ✅ bjw-s naming refactor minden Flux Kustomization-en (41 ks.yaml): `cluster-apps-<X>` → `<X>`, `home-ops-kubernetes` → `flux-system`, `sourceRef.namespace: flux-system` mindenhol, schema URL `kubernetes-schemas.pages.dev`-re.
-- ✅ `flux/cluster/ks.yaml` létrehozva (cluster-vars + cluster-apps + HelmRelease default patches, doc 05 spec szerint).
-- ✅ Legacy bootstrap fájlok törölve: `flux/apps.yaml`, `flux/config/{cluster.yaml,flux.yaml,kustomization.yaml,crds/.gitkeep}` — Flux Operator + FluxInstance fogja a feladatukat ellátni.
+- ✅ Onepassword Connect refactor: `clustersecretstore.yaml` a `app/`-ba költözött, CSS resource név `onepassword-connect`-re átnevezve, 1 Flux Kustomization a 2 helyett (healthChecks + healthCheckExprs a HelmRelease + ClusterSecretStore Ready-re); 27 consumer `dependsOn` és 19 ExternalSecret `secretStoreRef` átírva.
+- ✅ `flux/cluster/ks.yaml` (cluster-vars + cluster-apps + HelmRelease default patches), legacy `flux/apps.yaml` + `flux/config/*` törölve.
+- ✅ Bootstrap helmfile chain: `kubernetes/bootstrap/helmfile.d/{00-crds.yaml, 01-apps.yaml, templates/values.yaml.gotmpl}`, `resources.yaml.j2`, `mod.just` recipe-ek (`cluster`, `talos`, `kubernetes`, `kubeconfig`, `wait`, `namespaces`, `resources`, `crds`, `apps`).
+- ✅ Legacy `kubernetes/bootstrap/flux/` (k3s Flux install) törölve.
 - ✅ `kustomize build` minden namespace-en zöld (10/10).
 
-**Következő lépések (Phase 4 kezdő):**
-1. `kubernetes/bootstrap/helmfile.d/{00-crds,01-apps,templates}` létrehozása (doc 04 spec szerint).
-2. `kubernetes/bootstrap/resources.yaml.j2` létrehozása (1Password Connect creds + sops-age Secret `op://` referenciákkal).
-3. `kubernetes/bootstrap/mod.just` recipe-ek (`cluster`, `talos`, `kubernetes`, `kubeconfig`, `wait`, `namespaces`, `resources`, `crds`, `apps`).
-4. `kubernetes/apps/flux-system/flux-operator/` + `kubernetes/apps/flux-system/flux-instance/` app-subtreek (Phase 5 maradék — HelmRelease + OCIRepo + ks.yaml).
-5. `just k8s-bootstrap cluster` → teljes bootstrap chain: Cilium → CoreDNS → cert-manager → ESO → 1P Connect → Flux Operator → Flux Instance.
-6. FluxInstance reconcile-ja kapcsolódik a `flux/cluster/ks.yaml`-hez → `cluster-apps` reconcile-olja a teljes apps fát.
+**Következő lépések (Phase 4 éles futtatás):**
+
+1. ⏸ Verifikáció: 1Password `HomeOps/homelab-age-key` és `HomeOps/1password-connect-kubernetes` item-ek léteznek.
+2. ⏸ `op signin` → `just k8s-bootstrap cluster` futtatás. A chain ~10-20 perc alatt végigfut.
+3. ⏸ `flux check` + `kubectl get nodes` (`cp0-k8s Ready`) + `flux get kustomizations` (cluster-vars + cluster-apps Ready).
+4. ⏸ Phase 6 záró: megszűnő apps eltávolítása (`tigera-operator`, `metallb`, `metallb-config`, esetlegesen `system-upgrade-controller` → `tuppr`-ra cserélés).
 
 ## Fázis tracker
 
@@ -35,10 +37,10 @@
 | — | `talos` branch létrehozása | — | ✅ done | 2026-05-15 |
 | 1 | Hardver, hálózat, IP plan | [01](./01-hardware-and-network.md) | ✅ done | HP fent, Talos installálva |
 | 2 | Talos bootstrap | [02](./02-talos-bootstrap.md) | ✅ done | etcd Healthy, kubeconfig megvan, `cp0-k8s NotReady` (CNI várja) |
-| 3 | Cilium CNI install + L2 announce | [03](./03-cilium-cni.md) | 🟡 in-progress | manifestek kész; runtime install Phase 4 közben |
-| 4 | Bootstrap helmfile chain | [04](./04-bootstrap-helmfile.md) | ⏸ pending | **Következő**: helmfile.d + resources.yaml.j2 + mod.just recipe-ek |
-| 5 | Flux Operator + FluxInstance | [05](./05-flux-operator.md) | 🟡 in-progress | `flux/cluster/ks.yaml` kész, legacy törölve; flux-operator + flux-instance app-subtreek és runtime install Phase 4 része |
-| 6 | Repo refactor (apps struktúra) | [06](./06-repo-restructure.md) | 🟡 in-progress | bjw-s naming + layout refactor kész; megszűnő apps eltávolítása és új apps hozzáadása maradt |
+| 3 | Cilium CNI install + L2 announce | [03](./03-cilium-cni.md) | 🟡 in-progress | manifestek kész; runtime install a Phase 4 éles bootstrap-pel egy menetben jön |
+| 4 | Bootstrap helmfile chain | [04](./04-bootstrap-helmfile.md) | 🟡 in-progress | helmfile.d + resources.yaml.j2 + mod.just + 7 chain-app subtree kész; **Következő**: `just k8s-bootstrap cluster` éles futtatás |
+| 5 | Flux Operator + FluxInstance | [05](./05-flux-operator.md) | 🟡 in-progress | `flux/cluster/ks.yaml` + flux-operator + flux-instance app-subtreek kész; runtime install Phase 4 éles bootstrap-pel együtt |
+| 6 | Repo refactor (apps struktúra) | [06](./06-repo-restructure.md) | 🟡 in-progress | bjw-s naming + layout refactor + onepassword bjw-s alignment kész; megszűnő apps eltávolítása (`tigera-operator`, `metallb`, `system-upgrade-controller`) cutover-előtt |
 | 7 | Components és shared resources | [07](./07-components-and-shared.md) | ⏸ pending | `kubernetes/components/` |
 | 8 | Just migráció | [08](./08-just-migration.md) | 🟡 in-progress | foundation (mise+just+setup.sh) kész; `Taskfile.yml` törlés cutover-előtt |
 | 9 | Renovate rewrite | [09](./09-renovate-rewrite.md) | ⏸ pending | `.renovaterc.json5` + fragmensek |
