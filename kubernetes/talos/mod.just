@@ -71,9 +71,10 @@ download-image:
     curl -fsSL -o "${out}" \
       "https://factory.talos.dev/image/${sid}/${TALOS_VERSION}/metal-amd64.iso"
 
-[doc('Burn Talos installer ISO to a USB device. WIPES the target. Pass full device path (macOS: /dev/diskN, Linux: /dev/sdX). Optional second arg: explicit ISO path; defaults to the newest .iso under kubernetes/talos/.')]
+[doc('Burn Talos installer ISO to a USB device. Interactive picker if device omitted; refuses internal disks and disk images. Optional second arg: explicit ISO path (defaults to newest under kubernetes/talos/).')]
 [script]
-burn-image device iso="":
+burn-image device="" iso="":
+    # 1. Resolve ISO
     img="{{ iso }}"
     if [ -z "${img}" ]; then
         img="$(ls -t {{ talos_dir }}/talos-*.iso 2>/dev/null | head -1)"
@@ -83,40 +84,86 @@ burn-image device iso="":
         echo "Run 'just talos download-image' first, or pass an ISO path as the second argument." >&2
         exit 1
     fi
-    if [ ! -e "{{ device }}" ]; then
-        just log error "Device not found" device "{{ device }}"
+    # 2. Resolve target — interactive picker if device omitted
+    target="{{ device }}"
+    if [ -z "${target}" ]; then
+        case "$(uname -s)" in
+            Darwin)
+                # External physical disks only (excludes disk images, internal)
+                opts=""
+                for d in $(diskutil list external physical 2>/dev/null | grep -E '^/dev/' | awk '{print $1}'); do
+                    info=$(diskutil info "${d}")
+                    size=$(echo "${info}" | awk -F: '/Disk Size/ {sub(/^[ \t]+/, "", $2); print $2; exit}')
+                    name=$(echo "${info}" | awk -F: '/Device \/ Media Name/ {sub(/^[ \t]+/, "", $2); print $2; exit}')
+                    opts+="${d} — ${size} | ${name}"$'\n'
+                done
+                ;;
+            Linux)
+                opts=$(lsblk -dnpo NAME,SIZE,MODEL,TRAN,RM 2>/dev/null \
+                  | awk '($4=="usb"||$5=="1") {printf "%s — %s | %s\n", $1, $2, $3}')
+                ;;
+            *) just log error "Unsupported OS"; exit 1 ;;
+        esac
+        if [ -z "${opts}" ]; then
+            just log error "No external/removable disks found — plug in a USB and retry"
+            exit 1
+        fi
+        choice=$(printf '%s' "${opts}" | gum choose --header "Select target USB device (will be WIPED)")
+        [ -z "${choice}" ] && { just log info "Aborted"; exit 0; }
+        target=$(echo "${choice}" | awk '{print $1}')
+    fi
+    # 3. Validate target exists + is external/USB/removable + not a disk image
+    if [ ! -e "${target}" ]; then
+        just log error "Device not found" device "${target}"
         exit 1
     fi
-    just log warn "Target device will be WIPED" device "{{ device }}" iso "${img}"
     case "$(uname -s)" in
         Darwin)
-            diskutil info "{{ device }}" | grep -E "Device Node|Device / Media Name|Disk Size|Removable Media" || true
+            location=$(diskutil info "${target}" | awk -F: '/Device Location/ {sub(/^[ \t]+/, "", $2); print $2; exit}')
+            protocol=$(diskutil info "${target}" | awk -F: '/Protocol/ {sub(/^[ \t]+/, "", $2); print $2; exit}')
+            if [ "${location}" != "External" ]; then
+                just log error "Refusing — not an external disk" device "${target}" location "${location}"
+                exit 1
+            fi
+            if [ "${protocol}" = "Disk Image" ]; then
+                just log error "Refusing — target is a disk image, not physical media" device "${target}"
+                exit 1
+            fi
             ;;
         Linux)
-            lsblk -o NAME,SIZE,MODEL,TRAN,RM "{{ device }}" 2>/dev/null || true
-            ;;
-        *)
-            just log error "Unsupported OS"; exit 1
+            tran=$(lsblk -dnro TRAN "${target}" 2>/dev/null)
+            rmv=$(lsblk -dnro RM "${target}" 2>/dev/null)
+            if [ "${tran}" != "usb" ] && [ "${rmv}" != "1" ]; then
+                just log error "Refusing — not USB/removable" device "${target}" transport "${tran}" removable "${rmv}"
+                exit 1
+            fi
             ;;
     esac
-    gum confirm "Continue and WIPE {{ device }}?" || { just log info "Aborted"; exit 0; }
+    # 4. Confirm
+    just log warn "Target device will be WIPED" device "${target}" iso "${img}"
+    case "$(uname -s)" in
+        Darwin) diskutil info "${target}" | grep -E "Device Node|Device / Media Name|Disk Size|Protocol|Device Location|Removable Media" || true ;;
+        Linux)  lsblk -o NAME,SIZE,MODEL,TRAN,RM "${target}" 2>/dev/null || true ;;
+    esac
+    gum confirm "Continue and WIPE ${target}?" || { just log info "Aborted"; exit 0; }
+    # 5. Unmount + write + eject
     case "$(uname -s)" in
         Darwin)
-            diskutil unmountDisk "{{ device }}"
-            raw="$(echo '{{ device }}' | sed 's|/dev/disk|/dev/rdisk|')"
+            diskutil unmountDisk "${target}"
+            raw="$(echo "${target}" | sed 's|/dev/disk|/dev/rdisk|')"
             just log info "Writing to ${raw} (press Ctrl+T for progress; takes a few minutes)"
             sudo dd if="${img}" of="${raw}" bs=4m
             sync
-            diskutil eject "{{ device }}"
+            diskutil eject "${target}"
             ;;
         Linux)
-            for p in $(lsblk -nrpo NAME "{{ device }}" | tail -n +2); do
+            for p in $(lsblk -nrpo NAME "${target}" | tail -n +2); do
                 sudo umount "${p}" 2>/dev/null || true
             done
-            just log info "Writing to {{ device }}"
-            sudo dd if="${img}" of="{{ device }}" bs=4M status=progress
+            just log info "Writing to ${target}"
+            sudo dd if="${img}" of="${target}" bs=4M status=progress
             sync
-            sudo eject "{{ device }}" 2>/dev/null || true
+            sudo eject "${target}" 2>/dev/null || true
             ;;
     esac
     just log info "Done — USB ready, can be removed safely"
