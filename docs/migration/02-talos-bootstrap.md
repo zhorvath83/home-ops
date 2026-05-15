@@ -2,7 +2,7 @@
 
 ## Cél
 
-A HP ProDesk node-on Talos Linux telepítése és Kubernetes cluster bootstrap. A bjw-s machineconfig minta adaptált single-node, kettős NVMe szétosztás (PC711 = OS, PC801 = democratic-csi data disk).
+A HP ProDesk node-on Talos Linux telepítése és Kubernetes cluster bootstrap. A bjw-s machineconfig minta adaptált single-node, kettős NVMe szétosztás (PC801 = OS, PC711 = democratic-csi data disk).
 
 ## Inputs
 
@@ -19,10 +19,10 @@ kubernetes/talos/
 ├── schematic.yaml                # factory.talos.dev schematic (extensions)
 ├── machineconfig.yaml.j2         # közös machine config template
 └── nodes/
-    └── main.yaml.j2              # node-specific patches (egyetlen node: "main")
+    └── cp0-k8s.yaml.j2       # node-specific patches (egyetlen node: "cp0-k8s")
 ```
 
-A node neve `main` (egyezik az AD-014 cluster névvel).
+A node hostneve `cp0-k8s` (control-plane #0 a `main` Kubernetes clusterben). Külön a cluster nevétől, ami `main` (AD-014).
 
 ## Talos schematic
 
@@ -35,10 +35,13 @@ A factory.talos.dev custom installer image-et generálunk az alábbi extensions-
 customization:
   extraKernelArgs:
     - initcall_blacklist=algif_aead_init    # bjw-s minta, lassú boot debug fix
+    - i915.enable_guc=3                     # Intel iGPU GuC firmware load — Plex HW transcode (Phase 2)
+    - sysctl.kernel.kexec_load_disabled=1   # kexec hardening (onedr0p / Talos community ajánlás)
   systemExtensions:
     officialExtensions:
       - siderolabs/i915                     # Intel iGPU (Plex HW transcode)
       - siderolabs/intel-ucode              # Intel microcode (security/stability)
+      - siderolabs/mei                      # Intel Management Engine Interface
 ```
 
 A schematic SHA-jét lekérdezzük:
@@ -210,10 +213,15 @@ cluster:
     image: registry.k8s.io/kube-apiserver:{{ ENV.KUBERNETES_VERSION }}
     extraArgs:
       enable-aggregator-routing: "true"
+    auditPolicy:                         # Metadata-level audit log (onedr0p minta)
+      apiVersion: audit.k8s.io/v1
+      kind: Policy
+      rules:
+        - level: Metadata
     certSANs:
       - 127.0.0.1                        # KubePrism
       - 192.168.1.11                     # node IP
-      - k8s.<INTERNAL_DOMAIN>            # belső DNS név
+      - k8s.lan                          # DNS endpoint
     disablePodSecurityPolicy: true
   controllerManager:
     image: registry.k8s.io/kube-controller-manager:{{ ENV.KUBERNETES_VERSION }}
@@ -246,7 +254,7 @@ cluster:
     key: op://HomeOps/talos/CLUSTER_CA_KEY
     {% endif %}
   controlPlane:
-    endpoint: https://192.168.1.11:6443
+    endpoint: https://k8s.lan:6443                                # DNS endpoint (k8s-gateway resolveolja LAN-on)
   clusterName: main
   discovery:
     enabled: true
@@ -266,10 +274,12 @@ cluster:
   token: op://HomeOps/talos/CLUSTER_TOKEN
 
 ---
-# Single NIC config — bjw-s bond+VLAN dropped, HP-n nincs rá szükség
+# Single NIC config — bjw-s bond+VLAN dropped, HP-n nincs rá szükség.
+# A `net0` egy stabil alias név, amit a node patch LinkAliasConfig-ja köt
+# az on-board I219-LM NIC MAC címéhez (kernel-független).
 apiVersion: v1alpha1
 kind: DHCPv4Config
-name: enp0s31f6                          # I219 NIC alapján — első boot után ellenőrizni
+name: net0
 clientIdentifier: mac
 ---
 apiVersion: v1alpha1
@@ -277,7 +287,7 @@ kind: WatchdogTimerConfig
 device: /dev/watchdog0
 timeout: 5m
 ---
-# EPHEMERAL volume a Talos OS disk-en (PC711 / install.disk)
+# EPHEMERAL volume a Talos OS disk-en (PC801 / install.disk)
 apiVersion: v1alpha1
 kind: VolumeConfig
 name: EPHEMERAL
@@ -286,15 +296,15 @@ provisioning:
     match: system_disk
   maxSize: 256GiB
 ---
-# UserVolume a PC801 NVMe-n (democratic-csi data)
-# A democratic-csi local-hostpath driver ezt mountolja /var/mnt/extra-disk-re
+# UserVolume a PC711 NVMe-n (democratic-csi data).
+# A democratic-csi local-hostpath driver ezt mountolja /var/mnt/extra-disk-re.
+# Disk model alapján pinelve (bjw-s / onedr0p referencia stílus).
 apiVersion: v1alpha1
 kind: UserVolumeConfig
 name: local-hostpath
 provisioning:
   diskSelector:
-    # PC801 NVMe — by-id alapján egyértelmű, hogy NEM az install disk
-    match: '!system_disk && disk.transport == "nvme"'
+    match: disk.model == "PC711 NVMe SK hynix 1TB"
   maxSize: 1000GiB
   filesystem:
     type: xfs
@@ -302,23 +312,36 @@ provisioning:
 
 ## Node patch
 
-**Fájl:** `kubernetes/talos/nodes/main.yaml.j2`
+**Fájl:** `kubernetes/talos/nodes/cp0-k8s.yaml.j2`
 
-Egyetlen node, controlplane szerep:
+Egyetlen node, controlplane szerep. A `HostnameConfig` és `LinkAliasConfig` resource-ok a referencia repók (buroa, onedr0p, bjw-s) modern Talos mintáját követik — a hostnév és a NIC alias **külön resource**, nem a `machine.network` blokkban.
 
 ```yaml
+---
 machine:
   type: controlplane
-  network:
-    hostname: main
   install:
-    # Konkrét install disk by-id — első boot Talos installer után:
-    #   talosctl -n 192.168.1.11 get disks
-    # Az nvme0n1 vagy nvme1n1 közül a PC711 (P711, kisebb) modell stringet keressük
-    disk: /dev/disk/by-id/nvme-SK_hynix_Gold_PC711_1TB_<SERIAL>
+    # PC801 NVMe (HP OEM Gen4-capable) → Talos OS + etcd + EPHEMERAL.
+    # Disk model alapján pinelve.
+    diskSelector:
+      model: PC801 NVMe SK hynix 1TB
+---
+apiVersion: v1alpha1
+kind: HostnameConfig
+hostname: cp0-k8s
+---
+# Az on-board Intel I219-LM NIC stabil `net0` aliasra mappolása.
+# 4-byte prefix: HP OUI (50:81:40) + termékvonal byte (80) — a referencia
+# repók (bjw-s, onedr0p) konvenciója szerint. A device-azonosító utolsó 2
+# byte nem kerül git-be.
+apiVersion: v1alpha1
+kind: LinkAliasConfig
+name: net0
+selector:
+  match: mac(link.permanent_addr).startsWith("50:81:40:80:")
 ```
 
-**SERIAL** értékét az első Talos installer boot után `talosctl get disks` adja vissza.
+**Diskmodell + MAC** értékeket az első Talos installer boot után `talosctl get disks --insecure` és `talosctl get links --insecure` adja vissza.
 
 ## Talos install workflow
 
@@ -367,11 +390,11 @@ just talos apply-node 192.168.1.11 --insecure
 ```
 
 A `just talos apply-node` recipe (lásd bjw-s `kubernetes/talos/mod.just`):
-1. minijinja-cli rendereli a `machineconfig.yaml.j2`-t a `nodes/main.yaml.j2` patch-csel.
+1. minijinja-cli rendereli a `machineconfig.yaml.j2`-t a `nodes/cp0-k8s.yaml.j2` patch-csel.
 2. `op inject`-tel kicseréli a `op://HomeOps/talos/*` referenciákat valós értékekre.
 3. `talosctl apply-config -f /dev/stdin --insecure` betölti a node-ra.
 
-A node ezután reboot, és **felinstall-álja magát** az `install.disk`-re a Talos OS-t.
+A node ezután reboot, és **felinstall-álja magát** az `install.diskSelector`-rel kiválasztott disk-re a Talos OS-t.
 
 ### Stage 3: Bootstrap
 
@@ -409,6 +432,9 @@ A `just k8s-bootstrap cluster` recipe ezt a teljes lánc-ot egy parancsban lefut
 |---|---|
 | `siderolabs/intel-ucode` | Intel CPU mikrokód, biztonsági javítások |
 | `siderolabs/i915` | Intel iGPU (`/dev/dri/renderD128`), Plex HW transcode |
+| `siderolabs/mei` | Intel Management Engine Interface — hardware sensor / management bus |
+| `i915.enable_guc=3` (kernel arg) | Intel iGPU GuC firmware betöltés — Plex HW transcode (Phase 2) |
+| `sysctl.kernel.kexec_load_disabled=1` (kernel arg) | kexec hardening (onedr0p / Talos community ajánlás) |
 | **Nem kell**: `nbd` | network block device — bjw-s-nek igen, nekünk nem |
 | **Nem kell**: `thunderbolt` | HP-n nincs thunderbolt |
 
@@ -458,7 +484,7 @@ Ha rosszul apply-eltél, két opció:
 Ha rossz NVMe-re install-elt:
 1. Power off HP.
 2. Cseréld meg a két NVMe-t fizikailag.
-3. Vagy: a `nodes/main.yaml.j2`-ben javítsd a `disk:` mezőt, `just talos reset-node` + újra apply.
+3. Vagy: a `nodes/cp0-k8s.yaml.j2`-ben javítsd az `install.diskSelector.model` mezőt, `just talos reset-node` + újra apply.
 
 ### Bootstrap hiba
 
@@ -475,8 +501,8 @@ just talos reset-cluster reboot
 
 ## Open issues
 
-- **NIC interface név**: A bjw-s `enp0s31f6` (intel chipset standard) **valószínűleg** a HP I219-nek is ez lesz, de **első boot után ellenőrizni** `talosctl get links`-szel. Ha más (pl. `enp1s0`), patchelni a `DHCPv4Config name:` mezőjén.
+- **NIC interface név**: a kernel által adott név (pl. `enp0s31f6` / `enp1s0`) **nem számít** — a node patch `LinkAliasConfig`-ja stabil `net0` aliast köt a HP OUI + termékvonal prefix (`50:81:40:80:`) alapján, és a `DHCPv4Config` ezt a `net0` aliast használja. BIOS / kernel változás esetén csak a prefix marad releváns.
 - **i915 device node létrehozás**: Talos 1.10.x-en megbízható, 1.12.0-rc1-ben regresszió volt — stable release-t használunk.
-- **UserVolumeConfig (local-hostpath) első indítás**: ha a PC801 üres, Talos formázza XFS-re. Ha valami már van rajta (régi adat), előbb `talosctl reset --user-disks-to-wipe`.
+- **UserVolumeConfig (local-hostpath) első indítás**: ha a PC711 üres, Talos formázza XFS-re. Ha valami már van rajta (régi adat), előbb `talosctl reset --user-disks-to-wipe`.
 - **NFS NFSv4 mount sysctls**: a `sunrpc.tcp_*` és `nfsmount.conf` minta bjw-s-től örökölt. NFS performance optimalizáció — ha kell, finomítható.
 - **kubePrism (7445 port)** — Talos beépített K8s API proxy a node-on. ESO és cert-manager hasznosíthatja, hogy ne menjen az API forgalom külön round-tripben.

@@ -12,10 +12,10 @@
 1. ✅ 1Password `HomeOps/talos` item létrehozva (`just talos gen-secrets` egy paranccsal).
 2. **Most**: `just talos download-image` → ISO USB-re (dd / balenaEtcher).
 3. HP Windows boot leállítás → BIOS F9 → USB boot → Talos maintenance mode.
-4. `talosctl -n 192.168.1.11 get links --insecure` (NIC név) és `get disks --insecure` (NVMe SERIAL) → patcheld `kubernetes/talos/nodes/main.yaml.j2`-t a SERIAL-lel, ha kell a `machineconfig.yaml.j2`-t a NIC névvel.
-5. `just talos apply-node 192.168.1.11 main --insecure` → reboot → install.
+4. `talosctl -n 192.168.1.11 get links --insecure` (NIC MAC OUI) és `get disks --insecure` (NVMe model) → ha eltér a default-tól, patcheld `kubernetes/talos/nodes/cp0-k8s.yaml.j2`-t (LinkAliasConfig OUI prefix + install.diskSelector.model).
+5. `just talos apply-node 192.168.1.11 --insecure` → reboot → install.
 6. `just talos bootstrap` → `just talos kubeconfig`.
-7. `kubectl get nodes` → `main NotReady` (CNI hiányzik még, normális, jön a (C) Cilium fázisban).
+7. `kubectl get nodes` → `cp0-k8s NotReady` (CNI hiányzik még, normális, jön a (C) Cilium fázisban).
 
 ## Fázis tracker
 
@@ -77,7 +77,7 @@ Legend: ✅ done · 🟡 in-progress · ⏸ pending · ❌ blocked · ⏭ skippe
 - HP ProDesk 600 G6 DM **megvan**, jelenleg Windows van rajta → törlés szükséges (Talos install felülírja, nem külön lépés).
 - PC801 + PC711 NVMe beszerzés státusza külön követendő — ha még nincs, a [01](./01-hardware-and-network.md) bemenete.
 - ✅ 1Password `HomeOps/talos` item létrehozva (`just talos gen-secrets`, 2026-05-15).
-- `kubernetes/talos/nodes/main.yaml.j2`: az `install.disk` mező `<REPLACE_WITH_REAL_SERIAL>` placeholder — első HP boot után `talosctl get disks --insecure` outputjából cserélni.
+- `kubernetes/talos/nodes/cp0-k8s.yaml.j2`: az `install.diskSelector.model` és `LinkAliasConfig` MAC OUI értékek konfigurálva — első HP boot után érdemes ellenőrizni `talosctl get disks --insecure` és `get links --insecure` outputjából (modell string + permanent MAC OUI).
 
 ## Frissítési konvenció
 

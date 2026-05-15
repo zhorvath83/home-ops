@@ -190,12 +190,12 @@ Minden architekturális döntés egy helyen, indoklással. Ez az "ADR-ek lite" �
 **Indoklás:**
 - A HP ProDesk 600 G6 DM **mindkét M.2 slotja PCIe Gen3** — a PC801 Gen4-es előnye sequential throughput-ban NEM realizálódik.
 - **De**: az etcd fsync latency érzékeny a random write IOPS-ra és a kontroller minőségére. Az **etcd a cluster kritikus írási útvonala** — a lassú etcd disk az egész cluster reconcile-t lassítja, és heavy load esetén "request timeout" hibákat okoz.
-- A PC801 (Aries kontroller, 1.3M IOPS random write) **érdemibb előnyt ad az etcd workloadnak**, mint a PC711-nek a media PVC-ket.
+- A PC801 (1.3M IOPS random write) **érdemibb előnyt ad az etcd workloadnak**, mint a PC711-nek a media PVC-ket.
 - A democratic-csi PVC-k (Plex DB, Paperless, Sonarr config) **kisebb write throughput-ot** generálnak átlagosan, mint amit a PC711 (570K IOPS, 1 GB DRAM cache) kiszolgál.
 - Talos `EPHEMERAL` volume (container image-ek, runtime state) szintén az OS disken él — a gyorsabb image pull + container start előny.
 
 **Tradeoff:**
-- A sebességkülönbség gyakorlatban marginális (Gen3 fal mindkettőn), de a kontroller-szintű különbség (Aries vs Cepheus) etcd-re mérhető.
+- A sebességkülönbség gyakorlatban marginális (Gen3 fal mindkettőn), de a kontroller-szintű különbség (PC801 vs PC711) etcd-re mérhető.
 - Ha a jövőben heavy write PVC kell (pl. PG database 1000+ TPS), érdemes átgondolni a PC801-re átmigrálni a data disket — most ez nem szükséges.
 
 **Kapcsolódó:** [01-hardware-and-network.md](./01-hardware-and-network.md), [02-talos-bootstrap.md](./02-talos-bootstrap.md)

@@ -48,7 +48,7 @@ A jelenlegi Proxmox+OMV VM **leszedésre kerül** a cutover után. Bare metal OM
 | Random IOPS (4K Q32) | 1.4M / 1.3M | 570K / 600K |
 | DRAM cache | 1 GB LPDDR4 | 1 GB LPDDR4 |
 | TBW | 750 | 750 |
-| Kontroller | SK hynix Aries (176-layer TLC) | SK hynix Cepheus (128-layer TLC) |
+| NAND | 176-layer TLC | 128-layer TLC |
 | SLC cache | ~114 GB dynamic | ~92 GB dynamic |
 
 **Szétosztás:** Lásd [AD-012](./00-architecture-decisions.md#ad-012-két-nvme-szétosztás--gyorsabb-az-osetcd-re-lassabb-a-pvc-re).

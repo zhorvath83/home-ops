@@ -236,7 +236,7 @@ metadata:
 spec:
   loadBalancerIPs: true                          # csak LB típusú service-eket
   interfaces:
-    - ^enp.*                                     # NIC interface pattern
+    - ^net0$                                     # Talos LinkAliasConfig stabil NIC alias
   nodeSelector:
     matchLabels:
       kubernetes.io/os: linux
@@ -245,7 +245,7 @@ spec:
       - { key: "policy.cilium.io/exclude", operator: NotIn, values: ["true"] }
 ```
 
-A `interfaces` regex a Talos NIC nevére illeszkedik (`enp0s31f6` vagy hasonló). Az ARP/GARP-ot ezen az interfészen küldi ki.
+A `interfaces` regex a Talos `LinkAliasConfig` által beállított `net0` stabil aliasra illeszkedik. Az ARP/GARP-ot ezen az interfészen küldi ki. (A kernel által adott név — `enp0s31f6` / `enp1s0` — irreleváns, mert a LinkAlias átnevezi kernel-szinten is.)
 
 A `serviceSelector` minden LB service-t bejelentés-ben hagy, kivéve ha a service-en `policy.cilium.io/exclude: "true"` label van (opt-out minta).
 
