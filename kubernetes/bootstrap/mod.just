@@ -70,7 +70,8 @@ wait:
 [script]
 namespaces:
     just log info "Stage: create namespaces"
-    find "{{ kubernetes_dir }}/apps" -mindepth 1 -maxdepth 1 -type d -printf "%f\n" | while IFS= read -r ns; do
+    for d in "{{ kubernetes_dir }}/apps"/*/; do
+      ns=$(basename "$d")
       kubectl create namespace "$ns" --dry-run=client -o yaml | kubectl apply --server-side -f -
     done
 
