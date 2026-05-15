@@ -254,7 +254,7 @@ cluster:
     key: op://HomeOps/talos/CLUSTER_CA_KEY
     {% endif %}
   controlPlane:
-    endpoint: https://k8s.lan:6443                                # DNS endpoint (k8s-gateway resolveolja LAN-on)
+    endpoint: https://192.168.1.11:6443                           # IP endpoint (DHCP-reserved); k8s.lan csak certSAN-ban marad
   clusterName: main
   discovery:
     enabled: true

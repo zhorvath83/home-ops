@@ -151,10 +151,11 @@ cluster:
     key: op://HomeOps/talos/CLUSTER_CA_KEY
     {% endif %}
   controlPlane:
-    # DNS-based endpoint instead of node IP — k8s-gateway resolves k8s.lan
-    # to the control plane on the LAN. Easier cert rotation and future-proof
-    # for adding a VIP / second control plane.
-    endpoint: https://k8s.lan:6443
+    # IP-based endpoint — the node IP is DHCP-reserved on OpenWRT for the
+    # HP's MAC, so it is stable. The `k8s.lan` name is kept in the cert SANs
+    # below so that a future LAN DNS record (manual OpenWRT entry, or a
+    # Cilium L2 API VIP) can use the same certificate without rotation.
+    endpoint: https://192.168.1.11:6443
   clusterName: main
   discovery:
     enabled: true

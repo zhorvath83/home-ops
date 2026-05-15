@@ -77,7 +77,7 @@ gen-secrets vault="HomeOps" item="talos":
 [group('setup')]
 [doc('Generate talosconfig from 1Password secrets (one-time, after gen-secrets)')]
 [script]
-gen-talosconfig endpoint="https://k8s.lan:6443" cluster="main" node=default_node:
+gen-talosconfig endpoint="https://192.168.1.11:6443" cluster="main" node=default_node:
     : "${TALOSCONFIG:?env TALOSCONFIG required (set by .mise.toml)}"
     tmpdir="$(mktemp -d)"
     trap 'rm -rf "${tmpdir}"' EXIT
@@ -321,3 +321,60 @@ status node=controller_node:
     talosctl -n {{ node }} version
     talosctl -n {{ node }} get links
     talosctl -n {{ node }} get disks
+
+[group('lifecycle')]
+[doc('Dump Talos diagnostics to a log file (services, events, logs, dmesg, resources)')]
+[script]
+diag node=controller_node out="talos-diag.log":
+    out="{{ out }}"
+    rm -f "${out}"
+    {
+      echo '=========================================='
+      echo "Talos diagnostics — $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+      echo "Node: {{ node }}"
+      echo '=========================================='
+    } > "${out}"
+
+    echo "==> service" >&2
+    printf '\n### service ###\n' >> "${out}"
+    talosctl -n {{ node }} service >> "${out}" 2>&1 || echo "(failed)" >> "${out}"
+
+    echo "==> events (last 200, bounded 5s)" >&2
+    printf '\n### events (last 200, bounded 5s) ###\n' >> "${out}"
+    # `talosctl events --tail=N` streams indefinitely after the initial dump,
+    # and Talos rejects --tail combined with --duration. macOS has no
+    # timeout(1), so we run events in the background and send SIGINT after 5 s
+    # (SIGINT is the signal talosctl handles cleanly on Ctrl+C).
+    talosctl -n {{ node }} events --tail=200 >> "${out}" 2>&1 &
+    events_pid=$!
+    ( sleep 5; kill -INT "${events_pid}" 2>/dev/null ) &
+    killer_pid=$!
+    wait "${events_pid}" 2>/dev/null || true
+    kill "${killer_pid}" 2>/dev/null || true
+    wait "${killer_pid}" 2>/dev/null || true
+
+    echo "==> machined logs (last 200)" >&2
+    printf '\n### machined logs (last 200) ###\n' >> "${out}"
+    talosctl -n {{ node }} logs --tail=200 machined >> "${out}" 2>&1 || echo "(failed)" >> "${out}"
+
+    echo "==> controller-runtime logs (last 200)" >&2
+    printf '\n### controller-runtime logs (last 200) ###\n' >> "${out}"
+    talosctl -n {{ node }} logs --tail=200 controller-runtime >> "${out}" 2>&1 || echo "(failed)" >> "${out}"
+
+    echo "==> dmesg (last 200)" >&2
+    printf '\n### dmesg (last 200) ###\n' >> "${out}"
+    talosctl -n {{ node }} dmesg 2>&1 | tail -200 >> "${out}" || echo "(failed)" >> "${out}"
+
+    echo "==> volumestatuses" >&2
+    printf '\n### volumestatuses ###\n' >> "${out}"
+    talosctl -n {{ node }} get volumestatuses >> "${out}" 2>&1 || echo "(failed)" >> "${out}"
+
+    echo "==> hostnamestatus" >&2
+    printf '\n### hostnamestatus ###\n' >> "${out}"
+    talosctl -n {{ node }} get hostnamestatus >> "${out}" 2>&1 || echo "(failed)" >> "${out}"
+
+    echo "==> linkstatus" >&2
+    printf '\n### linkstatus ###\n' >> "${out}"
+    talosctl -n {{ node }} get linkstatus >> "${out}" 2>&1 || echo "(failed)" >> "${out}"
+
+    echo "==> done: ${out} ($(wc -l < "${out}" | tr -d ' ') lines)" >&2
