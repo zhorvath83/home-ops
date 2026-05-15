@@ -113,32 +113,31 @@ pipx.uvx = true
 
 [tools]
 # Core CLI tooling
-talosctl = "1.10.6"
+talosctl = "1.13.2"
 kubectl = "1.36.1"
-helm = "3.18.2"
-helmfile = "1.1.0"
-flux2 = "2.7.2"                                 # mise registry name; installed binary is `flux`
+helm = "3.21.0"                                 # staying on v3.x; v4 evaluation is a separate phase
+helmfile = "1.5.1"
+flux2 = "2.8.7"                                 # mise registry name; installed binary is `flux`
 just = "1.51.0"                                 # 1.48+ required for `set lazy`
-mise = "2025.1.0"
 
 # Templating + secrets
-"aqua:mitsuhiko/minijinja" = "2.13.0"          # installed binary is `minijinja-cli`
-sops = "3.10.2"
-age = "1.2.1"
-"1password-cli" = "2.32.0"                      # op
+"aqua:mitsuhiko/minijinja" = "2.19.0"           # installed binary is `minijinja-cli`
+sops = "3.13.0"
+age = "1.3.1"
+"1password-cli" = "2.34.0"                      # op
 
 # YAML/JSON tooling
-yq = "4.47.2"
-jq = "1.7.1"
+yq = "4.53.2"
+jq = "1.8.1"
 
 # UX
-gum = "0.16.0"
+gum = "0.17.0"
 
 # Hooks
-pre-commit = "4.0.1"
+pre-commit = "4.6.0"
 
 # Terraform
-terraform = "1.10.5"
+terraform = "1.15.3"
 
 # Linters / formatters (aqua backend, bjw-s parity)
 "aqua:google/yamlfmt" = "latest"
