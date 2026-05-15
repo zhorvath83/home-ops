@@ -305,9 +305,7 @@ name: local-hostpath
 provisioning:
   diskSelector:
     match: disk.model == "PC711 NVMe SK hynix 1TB"
-  maxSize: 1000GiB
-  filesystem:
-    type: xfs
+  maxSize: 1000GiB                                          # Talos defaultja XFS, nem kell explicit
 ```
 
 ## Node patch

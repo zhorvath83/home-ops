@@ -12,8 +12,13 @@
 1. ✅ 1Password `HomeOps/talos` item létrehozva (`just talos gen-secrets` egy paranccsal).
 2. **Most**: `just talos download-image` → ISO USB-re (dd / balenaEtcher).
 3. HP Windows boot leállítás → BIOS F9 → USB boot → Talos maintenance mode.
-4. `talosctl -n 192.168.1.11 get links --insecure` (NIC MAC OUI) és `get disks --insecure` (NVMe model) → ha eltér a default-tól, patcheld `kubernetes/talos/nodes/cp0-k8s.yaml.j2`-t (LinkAliasConfig OUI prefix + install.diskSelector.model).
-5. `just talos apply-node 192.168.1.11 --insecure` → reboot → install.
+4. Maintenance mode IP-vel (DHCP-től kapott IP, nem feltétlenül `.11`!) inventory check — verifikáld hogy a `nodes/cp0-k8s.yaml.j2` értékei egyeznek a tényleges HP hardverrel:
+   ```bash
+   talosctl -n <IP> get links --insecure   # NIC MAC OUI ≟ 50:81:40:80:
+   talosctl -n <IP> get disks --insecure   # NVMe modellek ≟ "PC801 NVMe SK hynix 1TB" + "PC711 NVMe SK hynix 1TB"
+   ```
+   Ha eltérés van: patcheld `kubernetes/talos/nodes/cp0-k8s.yaml.j2`-t (LinkAliasConfig MAC prefix + install.diskSelector.model).
+5. `just talos apply-node <maintenance-IP> --insecure` → reboot → install. A reboot után már a `192.168.1.11`-en (DHCP rezervált) jelentkezik.
 6. `just talos bootstrap` → `just talos kubeconfig`.
 7. `kubectl get nodes` → `cp0-k8s NotReady` (CNI hiányzik még, normális, jön a (C) Cilium fázisban).
 
