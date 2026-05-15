@@ -20,12 +20,12 @@ Current dependency chain:
 
 1. External Secrets operator (`external-secrets`)
 2. 1Password Connect (`onepassword-connect`)
-3. OnePassword-backed ClusterSecretStore (`onepassword-store`, depends on both of the above)
+3. OnePassword-backed ClusterSecretStore (`onepassword-connect`, applied as part of the `onepassword-connect` Flux Kustomization with a `ClusterSecretStore` health check)
 4. Application `ExternalSecret` resources in other subtrees
 
 Implication:
 
-- if an app uses `ClusterSecretStore` `onepassword`, its Flux Kustomization should depend on `onepassword-store`
+- if an app uses `ClusterSecretStore` `onepassword-connect`, its Flux Kustomization should depend on `onepassword-connect`
 - do not collapse the store into random app trees
 
 ## OnePassword Connect Rules

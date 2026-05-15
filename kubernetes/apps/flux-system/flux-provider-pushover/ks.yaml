@@ -10,7 +10,7 @@ spec:
     labels:
       app.kubernetes.io/name: flux-provider-pushover
   dependsOn:
-    - name: onepassword-store
+    - name: onepassword-connect
   path: ./kubernetes/apps/flux-system/flux-provider-pushover/app
   prune: true
   sourceRef:

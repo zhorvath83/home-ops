@@ -10,7 +10,7 @@ spec:
       app.kubernetes.io/name: grafana
   dependsOn:
     - name: kube-prometheus-stack
-    - name: onepassword-store
+    - name: onepassword-connect
   path: ./kubernetes/apps/observability/grafana/app
   prune: true
   sourceRef:

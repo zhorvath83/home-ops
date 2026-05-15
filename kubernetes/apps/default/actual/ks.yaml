@@ -10,7 +10,7 @@ spec:
     labels:
       app.kubernetes.io/name: actual
   dependsOn:
-    - name: onepassword-store
+    - name: onepassword-connect
     - name: democratic-csi
   path: ./kubernetes/apps/default/actual/app
   prune: true

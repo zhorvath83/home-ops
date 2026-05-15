@@ -9,7 +9,7 @@ spec:
     labels:
       app.kubernetes.io/name: kube-prometheus-stack
   dependsOn:
-    - name: onepassword-store
+    - name: onepassword-connect
   path: ./kubernetes/apps/observability/kube-prometheus-stack/app
   prune: true
   sourceRef:

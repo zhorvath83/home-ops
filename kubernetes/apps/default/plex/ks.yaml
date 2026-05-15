@@ -10,7 +10,7 @@ spec:
     labels:
       app.kubernetes.io/name: plex
   dependsOn:
-    - name: onepassword-store
+    - name: onepassword-connect
     - name: democratic-csi
   path: ./kubernetes/apps/default/plex/app
   prune: true
@@ -41,7 +41,7 @@ spec:
     labels:
       app.kubernetes.io/name: plex-trakt-sync
   dependsOn:
-    - name: onepassword-store
+    - name: onepassword-connect
     - name: democratic-csi
   path: ./kubernetes/apps/default/plex/trakt-sync
   prune: true

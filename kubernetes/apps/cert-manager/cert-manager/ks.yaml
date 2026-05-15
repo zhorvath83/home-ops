@@ -32,7 +32,7 @@ spec:
       app.kubernetes.io/name: cert-manager
   dependsOn:
     - name: cert-manager
-    - name: onepassword-store
+    - name: onepassword-connect
   path: ./kubernetes/apps/cert-manager/cert-manager/issuers
   prune: true
   sourceRef:

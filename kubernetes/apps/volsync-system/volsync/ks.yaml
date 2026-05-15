@@ -38,7 +38,7 @@ spec:
     labels:
       app.kubernetes.io/name: volsync
   dependsOn:
-    - name: onepassword-store
+    - name: onepassword-connect
     - name: volsync
   path: ./kubernetes/apps/volsync-system/volsync/maintenance
   prune: true

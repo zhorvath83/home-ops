@@ -10,7 +10,7 @@ spec:
     labels:
       app.kubernetes.io/name: homepage
   dependsOn:
-    - name: onepassword-store
+    - name: onepassword-connect
   path: ./kubernetes/apps/default/homepage/app
   prune: true
   sourceRef:

@@ -10,7 +10,7 @@ spec:
     labels:
       app.kubernetes.io/name: prowlarr
   dependsOn:
-    - name: onepassword-store
+    - name: onepassword-connect
     - name: democratic-csi
   path: ./kubernetes/apps/default/prowlarr/app
   prune: true

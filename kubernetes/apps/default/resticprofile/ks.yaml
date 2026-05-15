@@ -10,7 +10,7 @@ spec:
     labels:
       app.kubernetes.io/name: resticprofile
   dependsOn:
-    - name: onepassword-store
+    - name: onepassword-connect
     - name: democratic-csi
   path: ./kubernetes/apps/default/resticprofile/app
   prune: true
@@ -38,7 +38,7 @@ spec:
     labels:
       app.kubernetes.io/name: restic-gui
   dependsOn:
-    - name: onepassword-store
+    - name: onepassword-connect
     - name: democratic-csi
   path: ./kubernetes/apps/default/resticprofile/gui
   prune: true
