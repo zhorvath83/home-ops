@@ -1,5 +1,24 @@
 # 06 — Repo restructure: apps + namespace refactor
 
+## Status — 2026-05-16
+
+| Részfeladat | Állapot |
+|---|---|
+| Kustomization név refactor: `cluster-apps-<X>` → `<X>` minden ks.yaml-ben (41 fájl) | ✅ kész |
+| `dependsOn` referenciák átvezetése (`cluster-apps-onepassword-store` → `onepassword-store`, stb.) | ✅ kész |
+| GitRepository név: `home-ops-kubernetes` → `flux-system` minden sourceRef-ben + `flux/config/cluster.yaml` GitRepository erőforrásban | ✅ kész |
+| `sourceRef.namespace: flux-system` mező explicit hozzáadása minden ks.yaml-be | ✅ kész |
+| Schema URL: `fluxcd-community/flux2-schemas` → `kubernetes-schemas.pages.dev` | ✅ kész |
+| GitHub webhook receiver GitRepository ref update | ✅ kész |
+| `kubernetes/flux/` layout bjw-s-re átállítva (`apps.yaml` + `config/` törölve, `flux/cluster/ks.yaml` létrehozva) | ✅ kész — lásd Phase 5 |
+| `kubernetes/apps/kube-system/cilium/` új subtree | ✅ kész — lásd Phase 3 |
+| Megszűnő apps eltávolítása (`tigera-operator`, `metallb`, `metallb-config`, `system-upgrade-controller`, `system-upgrade-controller-plans`, `cloudflare-tunnel` ha leváltjuk) | ⏸ pending — Phase 6 saját scope |
+| Új `flux-operator` + `flux-instance` app-subtree-k létrehozása | ⏸ Phase 5 |
+| Egyéb új apps: `tuppr` (system upgrade Talos-ra) | ⏸ Phase 6 |
+| `cluster-settings` substitution inline-olása (bjw-s minta) | ⏭ scope-on kívül — megőrizzük a substitution pattern-t |
+
+Az aktuális 41 Flux Kustomization név (rövid alak): `actual, bazarr, calibre-web-automated, cert-manager, cert-manager-issuers, cilium, cilium-config, cloudflare-tunnel, democratic-csi, echo, envoy-gateway, envoy-gateway-certificate, envoy-gateway-config, external-dns, external-secrets, flux-alerts, flux-provider-pushover, flux-webhooks, grafana, home-gallery, homepage, isponsorblocktv, k8s-gateway, kopia, kube-prometheus-stack, maintainerr, mealie, metallb, metallb-config, metrics-server, onepassword-connect, onepassword-store, paperless, paperless-gpt, plex, plex-trakt-sync, prowlarr, qbittorrent, qbittorrent-upgrade-p2pblocklist, radarr, reloader, restic-gui, resticprofile, seerr, snapshot-controller, sonarr, speedtest-exporter, subsyncarr, system-upgrade-controller, system-upgrade-controller-plans, tigera-operator, volsync, volsync-maintenance, wallos`.
+
 ## Cél
 
 A jelenlegi `kubernetes/apps/<ns>/<app>/` szerkezet **alapja már jó** (megegyezik a bjw-s `ks.yaml + app/` mintával), de **két ponton refaktorálni kell**:

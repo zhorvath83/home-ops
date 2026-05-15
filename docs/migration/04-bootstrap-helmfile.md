@@ -1,5 +1,22 @@
 # 04 — Bootstrap helmfile chain
 
+## Status — 2026-05-16
+
+| Részfeladat | Állapot |
+|---|---|
+| Cilium app subtree (`kubernetes/apps/kube-system/cilium/{app,config}`) — bootstrap helmfile `values.yaml.gotmpl` forrása | ✅ Phase 3 |
+| `kubernetes/flux/cluster/ks.yaml` (FluxInstance `sync.path` célja) | ✅ Phase 5 részmunka |
+| bjw-s naming + GitRepository név egységesítve | ✅ Phase 6 részmunka |
+| `kubernetes/bootstrap/helmfile.d/00-crds.yaml` | ⏸ pending |
+| `kubernetes/bootstrap/helmfile.d/01-apps.yaml` | ⏸ pending |
+| `kubernetes/bootstrap/helmfile.d/templates/values.yaml.gotmpl` | ⏸ pending |
+| `kubernetes/bootstrap/resources.yaml.j2` (1P Connect creds + sops-age) | ⏸ pending |
+| `kubernetes/bootstrap/mod.just` recipe-ek (cluster, talos, kubernetes, kubeconfig, wait, namespaces, resources, crds, apps) | ⏸ pending — jelenleg csak placeholder |
+| `kubernetes/apps/external-secrets/onepassword-connect/app/clustersecretstore.yaml` (postsync hook által apply-olt) | ⏸ pending — meglévő ClusterSecretStore manifest pozícionálás |
+| `kubernetes/apps/flux-system/flux-operator/` + `flux-instance/` app-subtreek (Phase 5) | ⏸ pending |
+| `1Password HomeOps/homelab-age-key` item létrehozva | ⏸ pending (vagy verifikálandó) |
+| `just k8s-bootstrap cluster` éles futtatás | ⏸ pending |
+
 ## Cél
 
 A Talos cluster bootstrap után az alap Kubernetes platform (CNI, DNS, cert-manager, ESO, Flux) deklaratív helmfile chain-nel install-álódik. Ez váltja le a jelenlegi Ansible-alapú K3s bootstrap-et.

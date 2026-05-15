@@ -1,5 +1,20 @@
 # 05 — Flux Operator + FluxInstance
 
+## Status — 2026-05-16
+
+| Részfeladat | Állapot |
+|---|---|
+| `kubernetes/flux/cluster/ks.yaml` (cluster-vars + cluster-apps Kustomization-ök, SOPS + substituteFrom + HelmRelease default patches) | ✅ kész — bjw-s mintára |
+| Legacy bootstrap fájlok törlése (`flux/apps.yaml`, `flux/config/cluster.yaml`, `flux/config/flux.yaml`, `flux/config/kustomization.yaml`, `flux/config/crds/.gitkeep`) | ✅ kész — FluxInstance fogja a GitRepository-t generálni, manuális Flux install megszűnik |
+| `kubernetes/flux/vars/` megőrizve (cluster-settings + cluster-secrets) | ✅ kész |
+| `kubernetes/apps/flux-system/flux-operator/` subtree (HelmRelease + OCIRepo + ks.yaml) | ⏸ pending |
+| `kubernetes/apps/flux-system/flux-instance/` subtree (HelmRelease a FluxInstance CR-rel + OCIRepo + ks.yaml) | ⏸ pending |
+| `sops-age` Secret bootstrap-idős apply (`resources.yaml.j2`-ben) | ⏸ Phase 4 |
+| Flux Operator + FluxInstance **runtime install** | ⏸ Phase 4 — a bootstrap helmfile chain 7. és 8. release-e |
+| FluxInstance reconcile → GitRepository + bootstrap Kustomization auto-create | ⏸ Phase 4 vége |
+
+A `flux/cluster/ks.yaml` már jelen van — a FluxInstance `sync.path: kubernetes/flux/cluster` rákapcsolódik amint a Flux Operator install fut. A `cluster-vars` Kustomization elsőnek apply-olja a `flux/vars/`-t, majd `cluster-apps` reconcile-ol a teljes `./kubernetes/apps`-on.
+
 ## Cél
 
 A klasszikus `flux bootstrap` parancsot lecseréljük Flux Operator-ra (controlplane.io). A Flux controllerek életciklusát a `FluxInstance` CRD deklaratív módon vezérli — beleértve a performance tuning patch-eket.

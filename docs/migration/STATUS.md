@@ -2,25 +2,30 @@
 
 Élő státusz a K3s → Talos migráció állapotáról. Ez a doc gyors pillanatkép — a részletes terv a [README.md](./README.md)-ben és a `00`–`14` doc-okban van.
 
-**Utolsó frissítés:** 2026-05-15
+**Utolsó frissítés:** 2026-05-16
 
 ## TL;DR
 
-**Hol tartunk:** Tooling foundation kész (mise + just + setup.sh), Talos config blueprint kész (schematic + machineconfig template + node patch + mod.just recipes). 1Password secrets feltöltés és HP első boot a következő.
+**Hol tartunk:** Talos node fent (`cp0-k8s NotReady`, CNI hiányzik). Phase 3 manifestek (Cilium app subtree) és a teljes bjw-s naming + layout refactor a `talos` branch-en kész. A következő nagy lépés a Phase 4 — bootstrap helmfile chain — ami a Cilium-tól a Flux Instance-ig minden release-t telepít, és élesíti a clustert.
 
-**Következő lépés:**
-1. ✅ 1Password `HomeOps/talos` item létrehozva (`just talos gen-secrets` egy paranccsal).
-2. **Most**: `just talos download-image` → ISO USB-re (dd / balenaEtcher).
-3. HP Windows boot leállítás → BIOS F9 → USB boot → Talos maintenance mode.
-4. Maintenance mode IP-vel (DHCP-től kapott IP, nem feltétlenül `.11`!) inventory check — verifikáld hogy a `nodes/cp0-k8s.yaml.j2` értékei egyeznek a tényleges HP hardverrel:
-   ```bash
-   talosctl -n <IP> get links --insecure   # NIC MAC OUI ≟ 50:81:40:80:
-   talosctl -n <IP> get disks --insecure   # NVMe modellek ≟ "PC801 NVMe SK hynix 1TB" + "PC711 NVMe SK hynix 1TB"
-   ```
-   Ha eltérés van: patcheld `kubernetes/talos/nodes/cp0-k8s.yaml.j2`-t (LinkAliasConfig MAC prefix + install.diskSelector.model).
-5. `just talos apply-node cp0-k8s --insecure` → reboot → install. A `cp0-k8s.lan` az OpenWRT dnsmasq-on át a HP DHCP IP-jére mutat (jelenleg `192.168.1.11`). Ha az első bootkor a DNS még nem ismeri a HP-t, az `apply-node` paraméterét lehet IP-vel is hívni (de a `nodes/<IP>.yaml.j2` fájl nem létezne — workaround: szimlink vagy átmeneti OpenWRT statikus mapping).
-6. `just talos bootstrap` → `just talos get-kubeconfig`.
-7. `kubectl get nodes` → `cp0-k8s NotReady` (CNI hiányzik még, normális, jön a (C) Cilium fázisban).
+**Mit végeztünk el a `talos` branchen idáig (Phase 3 + Phase 5/6 részmunkák, 2026-05-16):**
+
+- ✅ Talos schematic + machineconfig template + node patch + `just talos` recipe-ek.
+- ✅ Talos node bootolt, kubeconfig megvan, `cp0-k8s NotReady`.
+- ✅ Cilium app-subtree: `kubernetes/apps/kube-system/cilium/{ks.yaml,app,config}` — bjw-s-stílusú HelmRelease (Cilium 1.19.4, netkit datapath, kubeProxyReplacement, L2 announce), `CiliumLoadBalancerIPPool` (`.15-.25`), `CiliumL2AnnouncementPolicy` (`^net0$`).
+- ✅ Cilium regisztráció a `kubernetes/apps/kube-system/kustomization.yaml`-ben.
+- ✅ bjw-s naming refactor minden Flux Kustomization-en (41 ks.yaml): `cluster-apps-<X>` → `<X>`, `home-ops-kubernetes` → `flux-system`, `sourceRef.namespace: flux-system` mindenhol, schema URL `kubernetes-schemas.pages.dev`-re.
+- ✅ `flux/cluster/ks.yaml` létrehozva (cluster-vars + cluster-apps + HelmRelease default patches, doc 05 spec szerint).
+- ✅ Legacy bootstrap fájlok törölve: `flux/apps.yaml`, `flux/config/{cluster.yaml,flux.yaml,kustomization.yaml,crds/.gitkeep}` — Flux Operator + FluxInstance fogja a feladatukat ellátni.
+- ✅ `kustomize build` minden namespace-en zöld (10/10).
+
+**Következő lépések (Phase 4 kezdő):**
+1. `kubernetes/bootstrap/helmfile.d/{00-crds,01-apps,templates}` létrehozása (doc 04 spec szerint).
+2. `kubernetes/bootstrap/resources.yaml.j2` létrehozása (1Password Connect creds + sops-age Secret `op://` referenciákkal).
+3. `kubernetes/bootstrap/mod.just` recipe-ek (`cluster`, `talos`, `kubernetes`, `kubeconfig`, `wait`, `namespaces`, `resources`, `crds`, `apps`).
+4. `kubernetes/apps/flux-system/flux-operator/` + `kubernetes/apps/flux-system/flux-instance/` app-subtreek (Phase 5 maradék — HelmRelease + OCIRepo + ks.yaml).
+5. `just k8s-bootstrap cluster` → teljes bootstrap chain: Cilium → CoreDNS → cert-manager → ESO → 1P Connect → Flux Operator → Flux Instance.
+6. FluxInstance reconcile-ja kapcsolódik a `flux/cluster/ks.yaml`-hez → `cluster-apps` reconcile-olja a teljes apps fát.
 
 ## Fázis tracker
 
@@ -28,12 +33,12 @@
 |---|---|---|---|---|
 | — | Tervezés (docs) | [README](./README.md) | ✅ done | 15 doc kész, lazán kapcsolódó struktúra |
 | — | `talos` branch létrehozása | — | ✅ done | 2026-05-15 |
-| 1 | Hardver, hálózat, IP plan | [01](./01-hardware-and-network.md) | 🟡 in-progress | HP megvan, Windows törlés szükséges, Talos USB készítendő |
-| 2 | Talos bootstrap | [02](./02-talos-bootstrap.md) | 🟡 in-progress | machine config / mod.just kész; 1P secrets + HP első boot következik |
-| 3 | Cilium CNI install + L2 announce | [03](./03-cilium-cni.md) | ⏸ pending | kube-proxy replacement |
-| 4 | Bootstrap helmfile chain | [04](./04-bootstrap-helmfile.md) | ⏸ pending | `op inject` + helmfile |
-| 5 | Flux Operator + FluxInstance | [05](./05-flux-operator.md) | ⏸ pending | |
-| 6 | Repo refactor (apps struktúra) | [06](./06-repo-restructure.md) | ⏸ pending | bjw-s-labs minta |
+| 1 | Hardver, hálózat, IP plan | [01](./01-hardware-and-network.md) | ✅ done | HP fent, Talos installálva |
+| 2 | Talos bootstrap | [02](./02-talos-bootstrap.md) | ✅ done | etcd Healthy, kubeconfig megvan, `cp0-k8s NotReady` (CNI várja) |
+| 3 | Cilium CNI install + L2 announce | [03](./03-cilium-cni.md) | 🟡 in-progress | manifestek kész; runtime install Phase 4 közben |
+| 4 | Bootstrap helmfile chain | [04](./04-bootstrap-helmfile.md) | ⏸ pending | **Következő**: helmfile.d + resources.yaml.j2 + mod.just recipe-ek |
+| 5 | Flux Operator + FluxInstance | [05](./05-flux-operator.md) | 🟡 in-progress | `flux/cluster/ks.yaml` kész, legacy törölve; flux-operator + flux-instance app-subtreek és runtime install Phase 4 része |
+| 6 | Repo refactor (apps struktúra) | [06](./06-repo-restructure.md) | 🟡 in-progress | bjw-s naming + layout refactor kész; megszűnő apps eltávolítása és új apps hozzáadása maradt |
 | 7 | Components és shared resources | [07](./07-components-and-shared.md) | ⏸ pending | `kubernetes/components/` |
 | 8 | Just migráció | [08](./08-just-migration.md) | 🟡 in-progress | foundation (mise+just+setup.sh) kész; `Taskfile.yml` törlés cutover-előtt |
 | 9 | Renovate rewrite | [09](./09-renovate-rewrite.md) | ⏸ pending | `.renovaterc.json5` + fragmensek |
@@ -79,10 +84,12 @@ Legend: ✅ done · 🟡 in-progress · ⏸ pending · ❌ blocked · ⏭ skippe
 ## Open items / blocker
 
 - Nincs aktív blocker.
-- HP ProDesk 600 G6 DM **megvan**, jelenleg Windows van rajta → törlés szükséges (Talos install felülírja, nem külön lépés).
-- PC801 + PC711 NVMe beszerzés státusza külön követendő — ha még nincs, a [01](./01-hardware-and-network.md) bemenete.
+- HP ProDesk 600 G6 DM **fent**, Talos installálva (`cp0-k8s NotReady`, CNI várja).
+- PC801 + PC711 NVMe beszerelve (a 2026-05-16-i `talosctl get disks` output szerint).
 - ✅ 1Password `HomeOps/talos` item létrehozva (`just talos gen-secrets`, 2026-05-15).
-- `kubernetes/talos/nodes/cp0-k8s.yaml.j2`: az `install.diskSelector.model` és `LinkAliasConfig` MAC OUI értékek konfigurálva — első HP boot után érdemes ellenőrizni `talosctl get disks --insecure` és `get links --insecure` outputjából (modell string + permanent MAC OUI).
+- ✅ `kubernetes/talos/nodes/cp0-k8s.yaml.j2`: `install.diskSelector.model` és `LinkAliasConfig` MAC OUI értékek validálva az élő hardveren.
+- ⏭ Cilium runtime install: nem külön lépés — a Phase 4 bootstrap helmfile chain első release-e fogja telepíteni a `kubernetes/apps/kube-system/cilium/app/helmrelease.yaml` value-jaival (templates/values.yaml.gotmpl readback).
+- ⏭ Phase 5 flux-operator + flux-instance app-subtreek a Phase 4 előfeltétele (a bootstrap helmfile a `kubernetes/apps/flux-system/flux-operator/` és `flux-instance/` HelmRelease-eit a `values.yaml.gotmpl`-en keresztül fogja olvasni).
 
 ## Frissítési konvenció
 

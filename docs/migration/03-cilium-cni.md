@@ -1,5 +1,17 @@
 # 03 — Cilium CNI install + L2 announcement
 
+## Status — 2026-05-16
+
+| Részfeladat | Állapot |
+|---|---|
+| `kubernetes/apps/kube-system/cilium/` subtree (ks.yaml + app/ + config/) | ✅ kész — 7 fájl committed (HelmRelease + OCIRepository + L2 pool + L2 announcement policy) |
+| `kubernetes/apps/kube-system/kustomization.yaml` regisztráció | ✅ kész — `./cilium/ks.yaml` felvéve |
+| Manifestek validáció (`kustomize build`) | ✅ kész — `kube-system` namespace build zöld |
+| Cilium **runtime install** a clusterre | ⏸ Phase 4 — a bootstrap helmfile chain első release-e fogja telepíteni (CRD apply hook a `config/`-ra) |
+| Node `Ready=True` | ⏸ Phase 4 közben éleződik |
+
+A Cilium HelmRelease konfigurációja már a `helmrelease.yaml`-ben kész — Phase 4 bootstrap helmfile a `templates/values.yaml.gotmpl`-en keresztül onnan olvas. Drift nincs bootstrap és runtime között.
+
 ## Cél
 
 Calico (`tigera-operator`) lecserélése Cilium-ra, kube-proxy replacement módban. MetalLB lecserélése Cilium L2 announcement-tel. Hubble UI engedélyezve.
