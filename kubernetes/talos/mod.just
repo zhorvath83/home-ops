@@ -187,7 +187,7 @@ render node:
 
 [doc('Apply Talos config to a node. mode="" for normal apply, "--insecure" for first apply on a fresh installer')]
 [script]
-apply-node ip node="main" mode="":
+apply-node ip node="cp0-k8s" mode="":
     just talos render {{ node }} | talosctl apply-config -n {{ ip }} -f /dev/stdin {{ mode }}
 
 [doc('Reset a Talos node (wipe STATE + EPHEMERAL, reboot to installer)')]

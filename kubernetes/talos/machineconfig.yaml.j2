@@ -108,6 +108,13 @@ cluster:
     image: registry.k8s.io/kube-apiserver:{{ ENV.KUBERNETES_VERSION }}
     extraArgs:
       enable-aggregator-routing: "true"
+    # Metadata-level audit log — request/response body NOT recorded, only
+    # request metadata (who, what, when). Low overhead, useful for forensics.
+    auditPolicy:
+      apiVersion: audit.k8s.io/v1
+      kind: Policy
+      rules:
+        - level: Metadata
     certSANs:
       - 127.0.0.1
       - 192.168.1.11
@@ -144,7 +151,10 @@ cluster:
     key: op://HomeOps/talos/CLUSTER_CA_KEY
     {% endif %}
   controlPlane:
-    endpoint: https://192.168.1.11:6443
+    # DNS-based endpoint instead of node IP — k8s-gateway resolves k8s.lan
+    # to the control plane on the LAN. Easier cert rotation and future-proof
+    # for adding a VIP / second control plane.
+    endpoint: https://k8s.lan:6443
   clusterName: main
   discovery:
     enabled: true
@@ -165,12 +175,11 @@ cluster:
   secret: op://HomeOps/talos/CLUSTER_SECRET
   token: op://HomeOps/talos/CLUSTER_TOKEN
 ---
-# Single NIC config — verify interface name after first boot:
-#   talosctl -n 192.168.1.11 get links --insecure
-# Intel I219 typically lands at enp0s31f6, but BIOS / kernel can change it.
+# DHCP on the stable alias `net0` — the actual kernel link is mapped to this
+# name by the per-node LinkAliasConfig (see nodes/<node>.yaml.j2).
 apiVersion: v1alpha1
 kind: DHCPv4Config
-name: enp0s31f6
+name: net0
 clientIdentifier: mac
 ---
 apiVersion: v1alpha1
@@ -189,13 +198,13 @@ provisioning:
 ---
 # UserVolume on the PC711 NVMe (democratic-csi data disk).
 # Mounted by Talos at /var/mnt/extra-disk; democratic-csi local-hostpath driver
-# uses that path for PVC provisioning.
+# uses that path for PVC provisioning. Pinned by disk model.
 apiVersion: v1alpha1
 kind: UserVolumeConfig
 name: local-hostpath
 provisioning:
   diskSelector:
-    match: '!system_disk && disk.transport == "nvme"'
+    match: disk.model == "PC711 NVMe SK hynix 1TB"
   maxSize: 1000GiB
   filesystem:
     type: xfs
