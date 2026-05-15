@@ -7,12 +7,12 @@ metadata:
   namespace: flux-system
 spec:
   dependsOn:
-    - name: cluster-apps-cert-manager-issuers
+    - name: cert-manager-issuers
   path: ./kubernetes/apps/networking/envoy-gateway/certificate
   prune: true
   sourceRef:
     kind: GitRepository
-    name: home-ops-kubernetes
+    name: flux-system
     namespace: flux-system
   interval: 1h
   targetNamespace: networking
@@ -35,7 +35,8 @@ spec:
   prune: true
   sourceRef:
     kind: GitRepository
-    name: home-ops-kubernetes
+    name: flux-system
+    namespace: flux-system
   interval: 1h
   targetNamespace: networking
   timeout: 5m
@@ -56,7 +57,8 @@ spec:
   prune: true
   sourceRef:
     kind: GitRepository
-    name: home-ops-kubernetes
+    name: flux-system
+    namespace: flux-system
   interval: 1h
   targetNamespace: networking
   timeout: 5m

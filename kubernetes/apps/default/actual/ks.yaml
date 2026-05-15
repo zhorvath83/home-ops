@@ -1,22 +1,23 @@
 ---
-# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/kustomization-kustomize-v1.json
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: cluster-apps-actual
+  name: actual
   namespace: flux-system
 spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: actual
   dependsOn:
-    - name: cluster-apps-onepassword-store
-    - name: cluster-apps-democratic-csi
+    - name: onepassword-store
+    - name: democratic-csi
   path: ./kubernetes/apps/default/actual/app
   prune: true
   sourceRef:
     kind: GitRepository
-    name: home-ops-kubernetes
+    name: flux-system
+    namespace: flux-system
   interval: 1h
   targetNamespace: default
   timeout: 5m

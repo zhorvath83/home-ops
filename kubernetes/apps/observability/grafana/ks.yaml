@@ -2,20 +2,21 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: cluster-apps-grafana
+  name: grafana
   namespace: flux-system
 spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: grafana
   dependsOn:
-    - name: cluster-apps-kube-prometheus-stack
-    - name: cluster-apps-onepassword-store
+    - name: kube-prometheus-stack
+    - name: onepassword-store
   path: ./kubernetes/apps/observability/grafana/app
   prune: true
   sourceRef:
     kind: GitRepository
-    name: home-ops-kubernetes
+    name: flux-system
+    namespace: flux-system
   interval: 1h
   targetNamespace: observability
   timeout: 5m

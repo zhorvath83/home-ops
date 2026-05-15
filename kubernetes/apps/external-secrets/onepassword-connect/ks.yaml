@@ -1,16 +1,16 @@
 ---
-# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/kustomization-kustomize-v1.json
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: cluster-apps-onepassword-connect
+  name: onepassword-connect
   namespace: flux-system
 spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: onepassword-connect
   dependsOn:
-    - name: cluster-apps-external-secrets
+    - name: external-secrets
   healthChecks:
     - apiVersion: helm.toolkit.fluxcd.io/v2
       kind: HelmRelease
@@ -20,29 +20,31 @@ spec:
   prune: true
   sourceRef:
     kind: GitRepository
-    name: home-ops-kubernetes
+    name: flux-system
+    namespace: flux-system
   interval: 1h
   targetNamespace: external-secrets
   timeout: 5m
 ---
-# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/kustomization-kustomize-v1.json
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: cluster-apps-onepassword-store
+  name: onepassword-store
   namespace: flux-system
 spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: external-secrets
   dependsOn:
-    - name: cluster-apps-external-secrets
-    - name: cluster-apps-onepassword-connect
+    - name: external-secrets
+    - name: onepassword-connect
   path: ./kubernetes/apps/external-secrets/onepassword-connect/stores/onepassword
   prune: true
   sourceRef:
     kind: GitRepository
-    name: home-ops-kubernetes
+    name: flux-system
+    namespace: flux-system
   healthChecks:
     - apiVersion: external-secrets.io/v1
       kind: ClusterSecretStore

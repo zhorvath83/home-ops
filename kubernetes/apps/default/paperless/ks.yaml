@@ -1,22 +1,23 @@
 ---
-# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/kustomization-kustomize-v1.json
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: cluster-apps-paperless
+  name: paperless
   namespace: flux-system
 spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: paperless
   dependsOn:
-    - name: cluster-apps-onepassword-store
-    - name: cluster-apps-democratic-csi
+    - name: onepassword-store
+    - name: democratic-csi
   path: ./kubernetes/apps/default/paperless/app
   prune: true
   sourceRef:
     kind: GitRepository
-    name: home-ops-kubernetes
+    name: flux-system
+    namespace: flux-system
   interval: 1h
   targetNamespace: default
   timeout: 5m
@@ -34,25 +35,26 @@ spec:
       VOLSYNC_RETAIN_WEEKLY: "4"
       VOLSYNC_RETAIN_MONTHLY: "12"
 ---
-# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/kustomization-kustomize-v1.json
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: cluster-apps-paperless-gpt
+  name: paperless-gpt
   namespace: flux-system
 spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: paperless-gpt
   dependsOn:
-    - name: cluster-apps-onepassword-store
-    - name: cluster-apps-democratic-csi
-    - name: cluster-apps-paperless
+    - name: onepassword-store
+    - name: democratic-csi
+    - name: paperless
   path: ./kubernetes/apps/default/paperless/gpt
   prune: true
   sourceRef:
     kind: GitRepository
-    name: home-ops-kubernetes
+    name: flux-system
+    namespace: flux-system
   interval: 1h
   targetNamespace: default
   timeout: 5m
