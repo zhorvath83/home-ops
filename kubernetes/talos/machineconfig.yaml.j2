@@ -37,7 +37,6 @@ machine:
       allowedKubernetesNamespaces:
         - system-upgrade
     {% endif %}
-    rbac: true
   files:
     - op: create
       path: /etc/cri/conf.d/20-customization.part
