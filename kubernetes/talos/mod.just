@@ -27,8 +27,9 @@ gen-secrets vault="HomeOps" item="talos":
         echo "    op item delete '{{ item }}' --vault '{{ vault }}'" >&2
         exit 1
     fi
-    tmp="$(mktemp -t talos-secrets.XXXXXX)"
-    trap 'rm -f "${tmp}"' EXIT
+    tmpdir="$(mktemp -d)"
+    trap 'rm -rf "${tmpdir}"' EXIT
+    tmp="${tmpdir}/talos-secrets.yaml"
     just log info "Generating Talos secrets bundle"
     talosctl gen secrets -o "${tmp}"
     extract() {
