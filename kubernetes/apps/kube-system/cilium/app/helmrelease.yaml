@@ -30,7 +30,7 @@ spec:
       enabled: true
       annotations:
         grafana_folder: Cilium
-    devices: net0
+    devices: eno+
     enableIPv4BIGTCP: true
     endpointRoutes:
       enabled: true
