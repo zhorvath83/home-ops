@@ -35,6 +35,11 @@ pre-commit = "4.0.1"
 # Terraform
 terraform = "1.10.5"
 
-# Ansible (OMV deploy — bare metal install playbook)
+# Linters / formatters (aqua backend, follows bjw-s pattern)
+"aqua:google/yamlfmt" = "latest"
+"aqua:rhysd/actionlint" = "latest"
+
+# Python tooling (pipx backend)
+"pipx:flux-local" = "latest"
 "pipx:ansible" = "latest"
 "pipx:ansible-core" = "latest"
