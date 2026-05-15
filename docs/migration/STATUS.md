@@ -9,7 +9,7 @@
 **Hol tartunk:** Tooling foundation kész (mise + just + setup.sh), Talos config blueprint kész (schematic + machineconfig template + node patch + mod.just recipes). 1Password secrets feltöltés és HP első boot a következő.
 
 **Következő lépés:**
-1. Manuális (te): `talosctl gen secrets` → fields copy `op://automation/talos/`-ba (egyszer).
+1. Manuális (te): `talosctl gen secrets` → fields copy `op://HomeOps/talos/`-ba (egyszer).
 2. Manuális (te): HP Windows törlés → Talos USB boot → `talosctl get links/disks` a NIC név és NVMe SERIAL leolvasásához → patch `kubernetes/talos/nodes/main.yaml.j2`.
 3. `just talos apply-node 192.168.1.11 main --insecure` → `just talos bootstrap` → `just talos kubeconfig`.
 

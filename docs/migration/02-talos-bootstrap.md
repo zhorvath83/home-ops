@@ -56,28 +56,55 @@ factory.talos.dev/metal-installer/<SCHEMATIC_ID>:<TALOS_VERSION>
 
 **Talos verzió**: **a legfrissebb stable** ([releases](https://github.com/siderolabs/talos/releases)) — soha NE rc/beta-t. A `gen-schematic-id` + `download-image` recipe-ek a fenti `curl ... releases/latest` lookup-pal dolgoznak. A schematic `release-<minor>` schema URL-jét a Talos verzió alapján kell frissíteni a `machineconfig.yaml.j2`-ben.
 
-## 1Password vault items
+## 1Password vault item
 
-A `op://automation/talos/` alá az alábbi mezők kellenek (a `talosctl gen secrets` parancs adja meg az értékeket első cluster generálásnál — egyszer kell elkészíteni):
+Egyetlen item (`HomeOps` vault, `talos` cím, kategória: **API Credential**) tartalmazza az összes szükséges mezőt. A `talosctl gen secrets` outputjából 14 mezőt mapelünk:
 
-| Field | Mit ad |
-|---|---|
-| `MACHINE_CA_CRT` / `MACHINE_CA_KEY` | Talos API CA |
-| `MACHINE_TOKEN` | machine.token |
-| `CLUSTER_CA_CRT` / `CLUSTER_CA_KEY` | K8s API CA |
-| `CLUSTER_AGGREGATORCA_CRT` / `CLUSTER_AGGREGATORCA_KEY` | aggregation layer CA |
-| `CLUSTER_ETCD_CA_CRT` / `CLUSTER_ETCD_CA_KEY` | etcd CA |
-| `CLUSTER_ID` | cluster.id |
-| `CLUSTER_SECRET` | cluster.secret |
-| `CLUSTER_TOKEN` | cluster.token |
-| `CLUSTER_SERVICEACCOUNT_KEY` | service account signing key |
-| `CLUSTER_SECRETBOXENCRYPTIONSECRET` | etcd encryption at rest |
+| 1P mező | YAML path a secrets bundle-ben | Funkció |
+|---|---|---|
+| `MACHINE_CA_CRT` | `.certs.os.crt` | Talos API CA cert |
+| `MACHINE_CA_KEY` | `.certs.os.key` | Talos API CA private key |
+| `MACHINE_TOKEN` | `.trustdinfo.token` | node ↔ Talos API trust token (`machine.token`) |
+| `CLUSTER_CA_CRT` | `.certs.k8s.crt` | K8s API CA cert |
+| `CLUSTER_CA_KEY` | `.certs.k8s.key` | K8s API CA private key |
+| `CLUSTER_AGGREGATORCA_CRT` | `.certs.k8saggregator.crt` | aggregation layer CA |
+| `CLUSTER_AGGREGATORCA_KEY` | `.certs.k8saggregator.key` | aggregation layer CA key |
+| `CLUSTER_SERVICEACCOUNT_KEY` | `.certs.k8sserviceaccount.key` | service account signing key |
+| `CLUSTER_ETCD_CA_CRT` | `.certs.etcd.crt` | etcd CA cert |
+| `CLUSTER_ETCD_CA_KEY` | `.certs.etcd.key` | etcd CA private key |
+| `CLUSTER_ID` | `.cluster.id` | cluster identifier |
+| `CLUSTER_SECRET` | `.cluster.secret` | cluster secret |
+| `CLUSTER_TOKEN` | `.secrets.bootstraptoken` | `talosctl bootstrap` token (`cluster.token`) |
+| `CLUSTER_SECRETBOXENCRYPTIONSECRET` | `.secrets.secretboxencryptionsecret` | etcd encryption at rest |
 
-**Egyszeri generálás**:
+Plusz egy plain text mező:
+
+| 1P mező | Érték | Funkció |
+|---|---|---|
+| `INTERNAL_DOMAIN` | a LAN-os belső DNS suffix-od (pl. `home.<saját>`) | `certSANs` mezőhöz a `k8s.<INTERNAL_DOMAIN>` hostname |
+
+**Két különböző token a bundle-ben**: a `trustdinfo.token` (node trust) és a `secrets.bootstraptoken` (bootstrap join) — nem cserélhetők össze, ezért a mapping a fenti táblázat szerint pontos.
+
+**Egy paranccsal generálás + 1P feltöltés**:
+```bash
+just talos gen-secrets                                    # vault=HomeOps, item=talos, INTERNAL_DOMAIN hozzáadás manuálisan
+just talos gen-secrets HomeOps talos home.example.org     # az INTERNAL_DOMAIN-t is feltölti
+```
+
+A recipe:
+1. Ellenőrzi, hogy az item még nem létezik (különben fail) — biztonsági reflex, hogy ne írjon felül élő clusters secret-eket.
+2. `talosctl gen secrets -o <tmp>` egy tempfájlba.
+3. `yq`-vel kiolvassa a 14 mezőt + valid-elja, hogy egyik sem `null`/üres.
+4. `op item create --category="API Credential" --vault=HomeOps --title=talos` mind a 14 + opcionális `INTERNAL_DOMAIN`-nel.
+5. `trap` törli a tempfájlt EXIT-kor (sikeres vagy hibás futás esetén is).
+
+A recipe **idempotens** csak negatív értelemben: ha létezik az item, fail. Új generálás előtt: `op item delete talos --vault HomeOps`.
+
+**Manuális workflow** (ha a recipe-t nem akarod használni):
 ```bash
 talosctl gen secrets -o /tmp/talos-secrets.yaml
-# Manuálisan átemeled 1Password-ba az "automation/talos" item-be field-enkén.
-# /tmp/talos-secrets.yaml-t TÖRÖLD utána.
+# Manuálisan átemeled 1Password-ba a HomeOps/talos item field-jeit a fenti tábla szerint.
+rm /tmp/talos-secrets.yaml
 ```
 
 ## Machine config template
@@ -92,9 +119,9 @@ Az alábbi a bjw-s minta egyszerűsítve single-node-ra és HP hardverre. Eltér
 version: v1alpha1
 machine:
   ca:
-    crt: op://automation/talos/MACHINE_CA_CRT
+    crt: op://HomeOps/talos/MACHINE_CA_CRT
     {% if ENV.IS_CONTROLPLANE %}
-    key: op://automation/talos/MACHINE_CA_KEY
+    key: op://HomeOps/talos/MACHINE_CA_KEY
     {% endif %}
   features:
     apidCheckExtKeyUsage: true
@@ -175,13 +202,13 @@ machine:
     sunrpc.tcp_slot_table_entries: "128"
     user.max_user_namespaces: "11255"
     vm.nr_hugepages: "1024"
-  token: op://automation/talos/MACHINE_TOKEN
+  token: op://HomeOps/talos/MACHINE_TOKEN
 
 cluster:
   {% if ENV.IS_CONTROLPLANE %}
   aggregatorCA:
-    crt: op://automation/talos/CLUSTER_AGGREGATORCA_CRT
-    key: op://automation/talos/CLUSTER_AGGREGATORCA_KEY
+    crt: op://HomeOps/talos/CLUSTER_AGGREGATORCA_CRT
+    key: op://HomeOps/talos/CLUSTER_AGGREGATORCA_KEY
   allowSchedulingOnControlPlanes: true   # single node, kötelező
   apiServer:
     image: registry.k8s.io/kube-apiserver:{{ ENV.KUBERNETES_VERSION }}
@@ -202,8 +229,8 @@ cluster:
     advertisedSubnets:
       - 192.168.1.0/24
     ca:
-      crt: op://automation/talos/CLUSTER_ETCD_CA_CRT
-      key: op://automation/talos/CLUSTER_ETCD_CA_KEY
+      crt: op://HomeOps/talos/CLUSTER_ETCD_CA_CRT
+      key: op://HomeOps/talos/CLUSTER_ETCD_CA_KEY
     extraArgs:
       listen-metrics-urls: http://0.0.0.0:2381
   proxy:
@@ -213,14 +240,14 @@ cluster:
     extraArgs:
       bind-address: 0.0.0.0
     image: registry.k8s.io/kube-scheduler:{{ ENV.KUBERNETES_VERSION }}
-  secretboxEncryptionSecret: op://automation/talos/CLUSTER_SECRETBOXENCRYPTIONSECRET
+  secretboxEncryptionSecret: op://HomeOps/talos/CLUSTER_SECRETBOXENCRYPTIONSECRET
   serviceAccount:
-    key: op://automation/talos/CLUSTER_SERVICEACCOUNT_KEY
+    key: op://HomeOps/talos/CLUSTER_SERVICEACCOUNT_KEY
   {% endif %}
   ca:
-    crt: op://automation/talos/CLUSTER_CA_CRT
+    crt: op://HomeOps/talos/CLUSTER_CA_CRT
     {% if ENV.IS_CONTROLPLANE %}
-    key: op://automation/talos/CLUSTER_CA_KEY
+    key: op://HomeOps/talos/CLUSTER_CA_KEY
     {% endif %}
   controlPlane:
     endpoint: https://192.168.1.11:6443
@@ -230,7 +257,7 @@ cluster:
     registries:
       kubernetes: { disabled: true }
       service: { disabled: false }
-  id: op://automation/talos/CLUSTER_ID
+  id: op://HomeOps/talos/CLUSTER_ID
   network:
     cni:
       name: none                         # Cilium veszi át, lásd 03-cilium-cni.md
@@ -239,8 +266,8 @@ cluster:
       - 10.244.0.0/16
     serviceSubnets:
       - 10.245.0.0/16
-  secret: op://automation/talos/CLUSTER_SECRET
-  token: op://automation/talos/CLUSTER_TOKEN
+  secret: op://HomeOps/talos/CLUSTER_SECRET
+  token: op://HomeOps/talos/CLUSTER_TOKEN
 
 ---
 # Single NIC config — bjw-s bond+VLAN dropped, HP-n nincs rá szükség
@@ -345,7 +372,7 @@ just talos apply-node 192.168.1.11 --insecure
 
 A `just talos apply-node` recipe (lásd bjw-s `kubernetes/talos/mod.just`):
 1. minijinja-cli rendereli a `machineconfig.yaml.j2`-t a `nodes/main.yaml.j2` patch-csel.
-2. `op inject`-tel kicseréli a `op://automation/talos/*` referenciákat valós értékekre.
+2. `op inject`-tel kicseréli a `op://HomeOps/talos/*` referenciákat valós értékekre.
 3. `talosctl apply-config -f /dev/stdin --insecure` betölti a node-ra.
 
 A node ezután reboot, és **felinstall-álja magát** az `install.disk`-re a Talos OS-t.

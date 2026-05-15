@@ -95,7 +95,7 @@ metadata:
   name: onepassword-connect-credentials-secret
   namespace: external-secrets
 stringData:
-  1password-credentials.json: 'op://Automation/1password connect/credentials'
+  1password-credentials.json: 'op://HomeOps/1password-connect-kubernetes/credentials'
 ---
 apiVersion: v1
 kind: Secret
@@ -103,7 +103,7 @@ metadata:
   name: onepassword-connect-vault-secret
   namespace: external-secrets
 stringData:
-  token: op://Automation/1password connect/token
+  token: op://HomeOps/1password-connect-kubernetes/token
 ---
 # SOPS age key — Flux ezzel decrypt-eli a *.sops.yaml fájlokat reconcile-on
 # (cluster-secrets.sops.yaml + homepage/secret.sops.yaml)
@@ -127,8 +127,8 @@ Ez a **három Secret**:
 - `sops-age`: a Flux Kustomization-ök `decryption.secretRef`-ben hivatkozzák, hogy a SOPS-titkosított fájlokat dekódolják reconcile időben.
 
 **1Password item path-ek** (a `op inject` ezt cseréli):
-- `op://Automation/1password connect/credentials` — Connect server credentials.json
-- `op://Automation/1password connect/token` — vault token
+- `op://HomeOps/1password-connect-kubernetes/credentials` — Connect server credentials.json
+- `op://HomeOps/1password-connect-kubernetes/token` — vault token
 - `op://HomeOps/homelab-age-key/keys.txt` — age private key (a jelenlegi K3s setup-ban is itt él)
 
 ## SOPS bootstrap

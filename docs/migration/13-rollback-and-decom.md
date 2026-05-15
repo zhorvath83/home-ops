@@ -185,13 +185,13 @@ A régi K3s VM-et (Proxmox-on, `192.168.1.6`):
 ### Régi 1Password items törlése
 
 A régi cluster-specifikus 1Password item-ek (ha vannak) törölhetők:
-- `op://Automation/k3s-token` — ha volt
-- `op://Automation/old-cluster-*` — bármi cluster-specifikus
+- `op://HomeOps/k3s-token` — ha volt
+- `op://HomeOps/old-cluster-*` — bármi cluster-specifikus
 
 **FONTOS — NE töröld**:
-- `op://Automation/talos/*` — az új clusternek kell
-- `op://Automation/1password connect/*` — a Connect Server-nek kell
-- `op://Kubernetes/*` — app-secrets, runtime-ban használt
+- `op://HomeOps/talos/*` — az új clusternek kell
+- `op://HomeOps/1password-connect-kubernetes/*` — a Connect Server-nek kell
+- `op://HomeOps/*` — app-secrets, runtime-ban használt
 
 ### Provision/kubernetes mappa törlése
 

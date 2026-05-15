@@ -434,10 +434,10 @@ metadata:
   name: sops-age
   namespace: flux-system
 stringData:
-  age.agekey: op://Automation/sops-age/keys.txt
+  age.agekey: op://HomeOps/homelab-age-key/keys.txt
 ```
 
-A `1Password Automation/sops-age` item-ben tárolt age private key-t injektálja `op inject`-tel.
+A `1Password HomeOps/homelab-age-key` item-ben tárolt age private key-t injektálja `op inject`-tel.
 
 ## Validation
 

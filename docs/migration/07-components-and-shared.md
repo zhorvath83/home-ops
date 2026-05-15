@@ -236,7 +236,7 @@ Ahhoz, hogy a Flux a `cluster-secrets.sops.yaml`-t reconcile-on dekódolja, a `s
 
 ## SOPS age key
 
-Cluster bootstrap-kor a `sops-age` Secret-et a `flux-system` namespace-be kell injektálni — `op://Automation/sops-age/keys.txt`-ből. Részletek a [05-flux-operator.md](./05-flux-operator.md)-ben.
+Cluster bootstrap-kor a `sops-age` Secret-et a `flux-system` namespace-be kell injektálni — `op://HomeOps/homelab-age-key/keys.txt`-ből. Részletek a [05-flux-operator.md](./05-flux-operator.md)-ben.
 
 A `.sops.yaml` változatlan (`age1el7uu5gzqsdp8wz7y9mcpqsy08l894twxg0jm5cm0jps3hkp2veqdpn5az` continues).
 
@@ -255,8 +255,7 @@ spec:
     onepassword:
       connectHost: http://onepassword-connect.external-secrets.svc.cluster.local:8080
       vaults:
-        Kubernetes: 1                          # main vault
-        Automation: 2                          # bootstrap creds
+        HomeOps: 1                             # single source vault for runtime + bootstrap items
       auth:
         secretRef:
           connectTokenSecretRef:
@@ -265,7 +264,7 @@ spec:
             namespace: external-secrets
 ```
 
-A `vaults:` lista a 1Password vault neveket és prioritásokat. **A jelenlegi vault setup-ot** megőrizzük.
+A `vaults:` listában csak a `HomeOps` vault szerepel — a tényleges setupban minden 1Password item (bootstrap creds, runtime app secrets, talos secrets, age key) ebben él. A `Kubernetes`/`Automation` névcsoport elképzelés a doc korábbi verziójában megjelent, de a tényleges repo Taskfile-ja (`.taskfiles/Flux/Tasks.yaml`) is `HomeOps`-ra mutat — egy vault elég.
 
 ## Validation
 

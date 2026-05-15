@@ -18,6 +18,56 @@ gen-schematic-id:
       https://factory.talos.dev/schematics \
       | jq -r .id
 
+[doc('Generate Talos cluster secrets and store them as a 1Password API Credential item (one-time per cluster)')]
+[script]
+gen-secrets vault="HomeOps" item="talos" internal_domain="":
+    if op item get "{{ item }}" --vault "{{ vault }}" >/dev/null 2>&1; then
+        just log error "1Password item already exists" vault "{{ vault }}" item "{{ item }}"
+        echo "To regenerate (DESTRUCTIVE — invalidates any cluster using these secrets):" >&2
+        echo "    op item delete '{{ item }}' --vault '{{ vault }}'" >&2
+        exit 1
+    fi
+    tmp="$(mktemp -t talos-secrets.XXXXXX)"
+    trap 'rm -f "${tmp}"' EXIT
+    just log info "Generating Talos secrets bundle"
+    talosctl gen secrets -o "${tmp}"
+    extract() {
+        local path=$1 value
+        value="$(yq -r "${path}" "${tmp}")"
+        if [ -z "${value}" ] || [ "${value}" = "null" ]; then
+            just log error "Empty value in secrets bundle" path "${path}"
+            exit 1
+        fi
+        printf '%s' "${value}"
+    }
+    args=(
+        "--category=API Credential"
+        "--vault={{ vault }}"
+        "--title={{ item }}"
+        "MACHINE_CA_CRT[password]=$(extract '.certs.os.crt')"
+        "MACHINE_CA_KEY[password]=$(extract '.certs.os.key')"
+        "MACHINE_TOKEN[password]=$(extract '.trustdinfo.token')"
+        "CLUSTER_CA_CRT[password]=$(extract '.certs.k8s.crt')"
+        "CLUSTER_CA_KEY[password]=$(extract '.certs.k8s.key')"
+        "CLUSTER_AGGREGATORCA_CRT[password]=$(extract '.certs.k8saggregator.crt')"
+        "CLUSTER_AGGREGATORCA_KEY[password]=$(extract '.certs.k8saggregator.key')"
+        "CLUSTER_SERVICEACCOUNT_KEY[password]=$(extract '.certs.k8sserviceaccount.key')"
+        "CLUSTER_ETCD_CA_CRT[password]=$(extract '.certs.etcd.crt')"
+        "CLUSTER_ETCD_CA_KEY[password]=$(extract '.certs.etcd.key')"
+        "CLUSTER_ID[password]=$(extract '.cluster.id')"
+        "CLUSTER_SECRET[password]=$(extract '.cluster.secret')"
+        "CLUSTER_TOKEN[password]=$(extract '.secrets.bootstraptoken')"
+        "CLUSTER_SECRETBOXENCRYPTIONSECRET[password]=$(extract '.secrets.secretboxencryptionsecret')"
+    )
+    if [ -n "{{ internal_domain }}" ]; then
+        args+=("INTERNAL_DOMAIN[text]={{ internal_domain }}")
+    fi
+    just log info "Creating 1Password item" vault "{{ vault }}" item "{{ item }}"
+    op item create "${args[@]}"
+    if [ -z "{{ internal_domain }}" ]; then
+        just log warn "INTERNAL_DOMAIN field NOT set — add it manually before applying machine config (certSANs depends on it)"
+    fi
+
 [doc('Download Talos metal-amd64 installer ISO (uses TALOS_VERSION env)')]
 [script]
 download-image:

@@ -10,14 +10,14 @@
 #   KUBERNETES_VERSION    e.g. v1.36.1
 #   IS_CONTROLPLANE       "true" for control plane nodes (single-node = always true)
 #
-# After rendering, `op inject` substitutes every op://automation/talos/* reference
+# After rendering, `op inject` substitutes every op://HomeOps/talos/* reference
 # with the corresponding 1Password field value.
 version: v1alpha1
 machine:
   ca:
-    crt: op://automation/talos/MACHINE_CA_CRT
+    crt: op://HomeOps/talos/MACHINE_CA_CRT
     {% if ENV.IS_CONTROLPLANE == "true" %}
-    key: op://automation/talos/MACHINE_CA_KEY
+    key: op://HomeOps/talos/MACHINE_CA_KEY
     {% endif %}
   features:
     apidCheckExtKeyUsage: true
@@ -98,12 +98,12 @@ machine:
     sunrpc.tcp_slot_table_entries: "128"
     user.max_user_namespaces: "11255"
     vm.nr_hugepages: "1024"
-  token: op://automation/talos/MACHINE_TOKEN
+  token: op://HomeOps/talos/MACHINE_TOKEN
 cluster:
   {% if ENV.IS_CONTROLPLANE == "true" %}
   aggregatorCA:
-    crt: op://automation/talos/CLUSTER_AGGREGATORCA_CRT
-    key: op://automation/talos/CLUSTER_AGGREGATORCA_KEY
+    crt: op://HomeOps/talos/CLUSTER_AGGREGATORCA_CRT
+    key: op://HomeOps/talos/CLUSTER_AGGREGATORCA_KEY
   allowSchedulingOnControlPlanes: true
   apiServer:
     image: registry.k8s.io/kube-apiserver:{{ ENV.KUBERNETES_VERSION }}
@@ -112,7 +112,7 @@ cluster:
     certSANs:
       - 127.0.0.1
       - 192.168.1.11
-      - k8s.op://automation/talos/INTERNAL_DOMAIN
+      - k8s.op://HomeOps/talos/INTERNAL_DOMAIN
     disablePodSecurityPolicy: true
   controllerManager:
     image: registry.k8s.io/kube-controller-manager:{{ ENV.KUBERNETES_VERSION }}
@@ -124,8 +124,8 @@ cluster:
     advertisedSubnets:
       - 192.168.1.0/24
     ca:
-      crt: op://automation/talos/CLUSTER_ETCD_CA_CRT
-      key: op://automation/talos/CLUSTER_ETCD_CA_KEY
+      crt: op://HomeOps/talos/CLUSTER_ETCD_CA_CRT
+      key: op://HomeOps/talos/CLUSTER_ETCD_CA_KEY
     extraArgs:
       listen-metrics-urls: http://0.0.0.0:2381
   proxy:
@@ -135,14 +135,14 @@ cluster:
     extraArgs:
       bind-address: 0.0.0.0
     image: registry.k8s.io/kube-scheduler:{{ ENV.KUBERNETES_VERSION }}
-  secretboxEncryptionSecret: op://automation/talos/CLUSTER_SECRETBOXENCRYPTIONSECRET
+  secretboxEncryptionSecret: op://HomeOps/talos/CLUSTER_SECRETBOXENCRYPTIONSECRET
   serviceAccount:
-    key: op://automation/talos/CLUSTER_SERVICEACCOUNT_KEY
+    key: op://HomeOps/talos/CLUSTER_SERVICEACCOUNT_KEY
   {% endif %}
   ca:
-    crt: op://automation/talos/CLUSTER_CA_CRT
+    crt: op://HomeOps/talos/CLUSTER_CA_CRT
     {% if ENV.IS_CONTROLPLANE == "true" %}
-    key: op://automation/talos/CLUSTER_CA_KEY
+    key: op://HomeOps/talos/CLUSTER_CA_KEY
     {% endif %}
   controlPlane:
     endpoint: https://192.168.1.11:6443
@@ -154,7 +154,7 @@ cluster:
         disabled: true
       service:
         disabled: false
-  id: op://automation/talos/CLUSTER_ID
+  id: op://HomeOps/talos/CLUSTER_ID
   network:
     cni:
       name: none
@@ -163,8 +163,8 @@ cluster:
       - 10.244.0.0/16
     serviceSubnets:
       - 10.245.0.0/16
-  secret: op://automation/talos/CLUSTER_SECRET
-  token: op://automation/talos/CLUSTER_TOKEN
+  secret: op://HomeOps/talos/CLUSTER_SECRET
+  token: op://HomeOps/talos/CLUSTER_TOKEN
 ---
 # Single NIC config — verify interface name after first boot:
 #   talosctl -n 192.168.1.11 get links --insecure
