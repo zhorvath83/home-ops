@@ -18,7 +18,7 @@
    talosctl -n <IP> get disks --insecure   # NVMe modellek ≟ "PC801 NVMe SK hynix 1TB" + "PC711 NVMe SK hynix 1TB"
    ```
    Ha eltérés van: patcheld `kubernetes/talos/nodes/cp0-k8s.yaml.j2`-t (LinkAliasConfig MAC prefix + install.diskSelector.model).
-5. `just talos apply-node <maintenance-IP> --insecure` → reboot → install. A reboot után már a `192.168.1.11`-en (DHCP rezervált) jelentkezik.
+5. `just talos apply-node cp0-k8s --insecure` → reboot → install. A `cp0-k8s.lan` az OpenWRT dnsmasq-on át a HP DHCP IP-jére mutat (jelenleg `192.168.1.11`). Ha az első bootkor a DNS még nem ismeri a HP-t, az `apply-node` paraméterét lehet IP-vel is hívni (de a `nodes/<IP>.yaml.j2` fájl nem létezne — workaround: szimlink vagy átmeneti OpenWRT statikus mapping).
 6. `just talos bootstrap` → `just talos kubeconfig`.
 7. `kubectl get nodes` → `cp0-k8s NotReady` (CNI hiányzik még, normális, jön a (C) Cilium fázisban).
 

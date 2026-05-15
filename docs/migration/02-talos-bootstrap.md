@@ -383,8 +383,10 @@ export TALOS_SCHEMATIC_ID="$(just talos gen-schematic-id)"
 export TALOS_VERSION="$(curl -s https://api.github.com/repos/siderolabs/talos/releases/latest | jq -r .tag_name)"
 export KUBERNETES_VERSION="$(curl -s https://api.github.com/repos/kubernetes/kubernetes/releases/latest | jq -r .tag_name)"
 
-# Apply (insecure mode — első apply esetén)
-just talos apply-node 192.168.1.11 --insecure
+# Apply (insecure mode — első apply esetén). A `cp0-k8s` mind a node patch
+# fájlnév (nodes/cp0-k8s.yaml.j2), mind a talosctl target (DNS-szel feloldódik
+# 192.168.1.11-re az OpenWRT dnsmasq-en keresztül).
+just talos apply-node cp0-k8s --insecure
 ```
 
 A `just talos apply-node` recipe (lásd bjw-s `kubernetes/talos/mod.just`):
@@ -475,7 +477,7 @@ kubectl get nodes
 
 Ha rosszul apply-eltél, két opció:
 1. **Online patch**: `talosctl -n 192.168.1.11 apply-config -f new-config.yaml` (újra, javított yaml-lel).
-2. **Reset**: `just talos reset-node 192.168.1.11` → wipe STATE + EPHEMERAL → újra Stage 1-től.
+2. **Reset**: `just talos reset-node cp0-k8s` → wipe STATE + EPHEMERAL + u-local-hostpath → újra Stage 1-től.
 
 ### Hibás install disk
 
