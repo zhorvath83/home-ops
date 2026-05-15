@@ -112,7 +112,7 @@ cluster:
     certSANs:
       - 127.0.0.1
       - 192.168.1.11
-      - k8s.op://HomeOps/talos/INTERNAL_DOMAIN
+      - k8s.lan
     disablePodSecurityPolicy: true
   controllerManager:
     image: registry.k8s.io/kube-controller-manager:{{ ENV.KUBERNETES_VERSION }}

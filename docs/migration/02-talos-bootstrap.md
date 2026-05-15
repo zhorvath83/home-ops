@@ -77,25 +77,21 @@ Egyetlen item (`HomeOps` vault, `talos` cím, kategória: **API Credential**) ta
 | `CLUSTER_TOKEN` | `.secrets.bootstraptoken` | `talosctl bootstrap` token (`cluster.token`) |
 | `CLUSTER_SECRETBOXENCRYPTIONSECRET` | `.secrets.secretboxencryptionsecret` | etcd encryption at rest |
 
-Plusz egy plain text mező:
-
-| 1P mező | Érték | Funkció |
-|---|---|---|
-| `INTERNAL_DOMAIN` | a LAN-os belső DNS suffix-od (pl. `home.<saját>`) | `certSANs` mezőhöz a `k8s.<INTERNAL_DOMAIN>` hostname |
-
 **Két különböző token a bundle-ben**: a `trustdinfo.token` (node trust) és a `secrets.bootstraptoken` (bootstrap join) — nem cserélhetők össze, ezért a mapping a fenti táblázat szerint pontos.
+
+**Internal domain**: a `certSANs` listában szereplő `k8s.lan` hostname közvetlenül a `machineconfig.yaml.j2`-ben van hardkódolva — nem 1P field, mert a `.lan` suffix nem titok. Ha más belső DNS suffix-ot használsz, a template-ben írd át.
 
 **Egy paranccsal generálás + 1P feltöltés**:
 ```bash
-just talos gen-secrets                                    # vault=HomeOps, item=talos, INTERNAL_DOMAIN hozzáadás manuálisan
-just talos gen-secrets HomeOps talos home.example.org     # az INTERNAL_DOMAIN-t is feltölti
+just talos gen-secrets                       # vault=HomeOps, item=talos (default-ok)
+just talos gen-secrets HomeOps cluster-talos # custom vault/item név
 ```
 
 A recipe:
-1. Ellenőrzi, hogy az item még nem létezik (különben fail) — biztonsági reflex, hogy ne írjon felül élő clusters secret-eket.
+1. Ellenőrzi, hogy az item még nem létezik (különben fail) — biztonsági reflex, hogy ne írjon felül élő cluster secret-eket.
 2. `talosctl gen secrets -o <tmp>` egy tempfájlba.
 3. `yq`-vel kiolvassa a 14 mezőt + valid-elja, hogy egyik sem `null`/üres.
-4. `op item create --category="API Credential" --vault=HomeOps --title=talos` mind a 14 + opcionális `INTERNAL_DOMAIN`-nel.
+4. `op item create --category="API Credential" --vault=HomeOps --title=talos` mind a 14 field-del.
 5. `trap` törli a tempfájlt EXIT-kor (sikeres vagy hibás futás esetén is).
 
 A recipe **idempotens** csak negatív értelemben: ha létezik az item, fail. Új generálás előtt: `op item delete talos --vault HomeOps`.
