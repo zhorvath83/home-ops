@@ -17,7 +17,7 @@ flux2 = "2.7.2"
 just = "1.45.0"
 
 # Templating + secrets
-minijinja-cli = "2.13.0"
+"aqua:mitsuhiko/minijinja" = "2.13.0"
 sops = "3.10.2"
 age = "1.2.1"
 "1password-cli" = "2.32.0"

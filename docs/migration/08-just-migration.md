@@ -122,7 +122,7 @@ just = "1.45.0"
 mise = "2025.1.0"
 
 # Templating + secrets
-minijinja-cli = "2.13.0"
+"aqua:mitsuhiko/minijinja" = "2.13.0"          # installed binary is `minijinja-cli`
 sops = "3.10.2"
 age = "1.2.1"
 "1password-cli" = "2.32.0"                      # op
@@ -160,7 +160,8 @@ terraform = "1.10.5"
 
 **Mise registry nevek figyelmeztető lista** (nem mindig az, ami a binary neve):
 - `flux2` → installált binary: `flux` (a `flux` név foglalt a registry-ben más csomagra).
-- A többi tool (kubectl, talosctl, helm, helmfile, just, sops, age, yq, jq, gum, terraform, pre-commit, minijinja-cli, 1password-cli) registry- és binary-neve egyezik.
+- `aqua:mitsuhiko/minijinja` → installált binary: `minijinja-cli` (a `minijinja-cli` név nincs a registry-ben).
+- A többi tool (kubectl, talosctl, helm, helmfile, just, sops, age, yq, jq, gum, terraform, pre-commit, 1password-cli) registry- és binary-neve egyezik.
 - Ha `mise install` "not found in mise tool registry" hibát ad, először `mise registry | grep <name>` paranccsal nézz utána.
 
 ## `.minijinja.toml`
