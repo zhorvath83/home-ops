@@ -2,7 +2,7 @@
 # setup.sh — Initialize developer tooling for home-ops
 #
 # What it does (idempotent — safe to run multiple times):
-#   1. Installs mise CLI if missing (via brew on macOS, otherwise mise.run).
+#   1. Verifies mise CLI is installed (does NOT install it — fails with guidance).
 #   2. Wires mise into the shell rc so tools land on PATH automatically:
 #        - interactive shell:    eval "$(mise activate <shell>)" in rc
 #        - non-interactive shell: mise shims dir prepended in env rc
@@ -68,15 +68,17 @@ SHIMS_LINE='export PATH="$HOME/.local/share/mise/shims:$PATH"'
 log_step "Checking mise CLI"
 
 if ! command -v mise >/dev/null 2>&1; then
-    log_warn "mise not found — installing"
-    if [[ "$OSTYPE" == "darwin"* ]] && command -v brew >/dev/null 2>&1; then
-        brew install mise
-    else
-        curl -fsSL https://mise.run | sh
-    fi
-    # Installer typically lands at $HOME/.local/bin/mise — make it reachable for the rest of this run.
-    export PATH="$HOME/.local/bin:$PATH"
-    command -v mise >/dev/null 2>&1 || die "mise install completed but binary still not on PATH — open a new shell and re-run."
+    cat >&2 <<EOF
+${RED}[ERROR]${NC} mise CLI not found on PATH.
+
+This script does not install mise for you. Install it yourself, then re-run:
+
+  macOS:   brew install mise
+  Linux:   curl -fsSL https://mise.run | sh
+  other:   https://mise.jdx.dev/getting-started.html#installing-mise-cli
+
+EOF
+    exit 1
 fi
 log_info "mise: $(mise --version)"
 
