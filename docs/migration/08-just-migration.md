@@ -118,7 +118,7 @@ kubectl = "1.36.1"
 helm = "3.18.2"
 helmfile = "1.1.0"
 flux2 = "2.7.2"                                 # mise registry name; installed binary is `flux`
-just = "1.45.0"
+just = "1.51.0"                                 # 1.48+ required for `set lazy`
 mise = "2025.1.0"
 
 # Templating + secrets

@@ -14,7 +14,7 @@ kubectl = "1.36.1"
 helm = "3.18.2"
 helmfile = "1.1.0"
 flux2 = "2.7.2"
-just = "1.45.0"
+just = "1.51.0"
 
 # Templating + secrets
 "aqua:mitsuhiko/minijinja" = "2.13.0"
