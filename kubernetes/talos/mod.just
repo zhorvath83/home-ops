@@ -6,14 +6,16 @@ set shell := ['bash', '-euo', 'pipefail', '-c']
 
 talos_dir := justfile_dir() + '/kubernetes/talos'
 
-# Default control plane IP — fallback when no talosconfig exists yet
+# Default control plane node — fallback when no talosconfig exists yet
 # (pre-bootstrap, fresh repo clone). Single hardcoded source of truth.
-default_ip := '192.168.1.11'
+# Must match the filename under nodes/<NAME>.yaml.j2 AND be resolvable on
+# the LAN (cp0-k8s.lan via OpenWRT dnsmasq → 192.168.1.11).
+default_node := 'cp0-k8s'
 
-# controller_ip: dynamically extracted from the active talosconfig endpoint
-# (set by `gen-talosconfig`). Falls back to default_ip if talosconfig is
+# controller_node: dynamically extracted from the active talosconfig endpoint
+# (set by `gen-talosconfig`). Falls back to default_node if talosconfig is
 # absent. `set lazy` above defers evaluation until a recipe actually uses it.
-controller_ip := `talosctl config info -o yaml 2>/dev/null | yq -e '.endpoints[0]' 2>/dev/null || echo '192.168.1.11'`
+controller_node := `talosctl config info -o yaml 2>/dev/null | yq -e '.endpoints[0]' 2>/dev/null || echo 'cp0-k8s'`
 
 [private]
 [script]
@@ -75,7 +77,7 @@ gen-secrets vault="HomeOps" item="talos":
 [group('setup')]
 [doc('Generate talosconfig from 1Password secrets (one-time, after gen-secrets)')]
 [script]
-gen-talosconfig endpoint="https://k8s.lan:6443" cluster="main" ip=default_ip:
+gen-talosconfig endpoint="https://k8s.lan:6443" cluster="main" node=default_node:
     : "${TALOSCONFIG:?env TALOSCONFIG required (set by .mise.toml)}"
     tmpdir="$(mktemp -d)"
     trap 'rm -rf "${tmpdir}"' EXIT
@@ -114,9 +116,9 @@ gen-talosconfig endpoint="https://k8s.lan:6443" cluster="main" ip=default_ip:
       --output-types talosconfig \
       --output "${TALOSCONFIG}" \
       --force
-    just log info "Setting talosctl endpoint and node" ip "{{ ip }}"
-    talosctl config endpoint "{{ ip }}"
-    talosctl config node "{{ ip }}"
+    just log info "Setting talosctl endpoint and node" node "{{ node }}"
+    talosctl config endpoint "{{ node }}"
+    talosctl config node "{{ node }}"
     just log info "Talosconfig written" file "${TALOSCONFIG}"
 
 [group('image')]
@@ -250,14 +252,14 @@ render-config node:
 [group('config')]
 [doc('Apply Talos config to a node (pass extra talosctl flags as args, e.g. --insecure)')]
 [script]
-apply-node ip node="cp0-k8s" *args:
-    just talos render-config {{ node }} | talosctl apply-config -n {{ ip }} -f /dev/stdin {{ args }}
+apply-node node *args:
+    just talos render-config {{ node }} | talosctl -n {{ node }} apply-config -f /dev/stdin {{ args }}
 
 [group('recovery')]
 [doc('Reset a Talos node (wipe STATE + EPHEMERAL + u-local-hostpath, reboot to installer)')]
 [script]
-reset-node ip:
-    talosctl -n {{ ip }} reset \
+reset-node node:
+    talosctl -n {{ node }} reset \
       --system-labels-to-wipe STATE \
       --system-labels-to-wipe EPHEMERAL \
       --system-labels-to-wipe u-local-hostpath \
@@ -265,42 +267,42 @@ reset-node ip:
       --reboot
 
 [group('recovery')]
-[doc('Reset the single-node cluster (alias for reset-node with controller_ip)')]
+[doc('Reset the single-node cluster (alias for reset-node with controller_node)')]
 [script]
 reset-cluster:
-    just talos reset-node {{ controller_ip }}
+    just talos reset-node {{ controller_node }}
 
 [group('lifecycle')]
 [doc('Reboot a Talos node (powercycle mode = full hardware reset)')]
 [script]
-reboot-node ip:
-    talosctl -n {{ ip }} reboot -m powercycle
+reboot-node node:
+    talosctl -n {{ node }} reboot -m powercycle
 
 [group('lifecycle')]
 [doc('Shutdown a Talos node (force). Pass extra talosctl flags as additional args.')]
 [script]
-shutdown-node ip *args:
-    talosctl -n {{ ip }} shutdown --force {{ args }}
+shutdown-node node *args:
+    talosctl -n {{ node }} shutdown --force {{ args }}
 
 [group('setup')]
 [doc('Bootstrap etcd on a fresh control plane (one-time, after first apply)')]
 [script]
-bootstrap ip=controller_ip:
-    talosctl -n {{ ip }} bootstrap
+bootstrap node=controller_node:
+    talosctl -n {{ node }} bootstrap
 
 [group('lifecycle')]
 [doc('Fetch kubeconfig from the cluster (writes to ./kubeconfig)')]
 [script]
-kubeconfig ip=controller_ip:
-    talosctl -n {{ ip }} kubeconfig -f --force-context-name main {{ justfile_dir() }}/kubeconfig
+kubeconfig node=controller_node:
+    talosctl -n {{ node }} kubeconfig -f --force-context-name main {{ justfile_dir() }}/kubeconfig
 
 [group('lifecycle')]
 [doc('Upgrade Talos OS on a node (uses TALOS_VERSION + current schematic, powercycle reboot, 10m timeout)')]
 [script]
-upgrade-node ip=controller_ip:
+upgrade-node node=controller_node:
     : "${TALOS_VERSION:?env TALOS_VERSION required}"
     sid="$(just talos gen-schematic-id)"
-    talosctl -n {{ ip }} upgrade \
+    talosctl -n {{ node }} upgrade \
       --image "factory.talos.dev/metal-installer/${sid}:${TALOS_VERSION}" \
       -m powercycle \
       --timeout=10m
@@ -308,14 +310,14 @@ upgrade-node ip=controller_ip:
 [group('lifecycle')]
 [doc('Upgrade Kubernetes to a specific version (e.g. v1.37.0)')]
 [script]
-upgrade-k8s version ip=controller_ip:
-    talosctl --nodes {{ ip }} upgrade-k8s --to {{ version }}
+upgrade-k8s version node=controller_node:
+    talosctl --nodes {{ node }} upgrade-k8s --to {{ version }}
 
 [group('lifecycle')]
 [doc('Show node health, version, NIC links and disk inventory')]
 [script]
-status ip=controller_ip:
-    talosctl -n {{ ip }} health
-    talosctl -n {{ ip }} version
-    talosctl -n {{ ip }} get links
-    talosctl -n {{ ip }} get disks
+status node=controller_node:
+    talosctl -n {{ node }} health
+    talosctl -n {{ node }} version
+    talosctl -n {{ node }} get links
+    talosctl -n {{ node }} get disks
