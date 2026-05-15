@@ -290,10 +290,10 @@ shutdown-node node *args:
 bootstrap node=controller_node:
     talosctl -n {{ node }} bootstrap
 
-[group('lifecycle')]
+[group('setup')]
 [doc('Fetch kubeconfig from the cluster (writes to ./kubeconfig)')]
 [script]
-kubeconfig node=controller_node:
+get-kubeconfig node=controller_node:
     talosctl -n {{ node }} kubeconfig -f --force-context-name main {{ justfile_dir() }}/kubeconfig
 
 [group('lifecycle')]
