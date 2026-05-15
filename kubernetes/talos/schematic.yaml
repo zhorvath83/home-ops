@@ -1,0 +1,19 @@
+---
+# Talos factory.talos.dev schematic.
+# POST this file to https://factory.talos.dev/schematics to obtain a schematic ID.
+# That ID becomes part of the installer image URL:
+#   factory.talos.dev/metal-installer/<schematic-id>:<TALOS_VERSION>
+#
+# Regenerate the ID via: `just talos gen-schematic-id`
+customization:
+  extraKernelArgs:
+    # bjw-s pattern — works around a slow boot path on some Intel platforms.
+    - initcall_blacklist=algif_aead_init
+  systemExtensions:
+    officialExtensions:
+      # Intel iGPU driver. Kept available for a possible future Plex hardware
+      # transcode setup. Device mount into the Plex pod is NOT enabled today
+      # (see docs/migration/14-post-cutover.md, Phase 2).
+      - siderolabs/i915
+      # Intel CPU microcode — security and stability updates.
+      - siderolabs/intel-ucode

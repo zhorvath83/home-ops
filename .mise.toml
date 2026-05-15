@@ -3,6 +3,11 @@ JUST_UNSTABLE = "1"
 KUBECONFIG = '{{config_root}}/kubeconfig'
 TALOSCONFIG = '{{config_root}}/talosconfig'
 MINIJINJA_CONFIG_FILE = "{{config_root}}/.minijinja.toml"
+# Talos + Kubernetes versions consumed by kubernetes/talos templates and recipes.
+# renovate: datasource=github-releases depName=siderolabs/talos
+TALOS_VERSION = "v1.13.2"
+# renovate: datasource=github-releases depName=kubernetes/kubernetes
+KUBERNETES_VERSION = "v1.36.1"
 
 [settings]
 pipx.uvx = true

@@ -1,0 +1,14 @@
+---
+# Node-specific patch for the single control plane node `main` (192.168.1.11).
+# Applied on top of machineconfig.yaml.j2 via `talosctl machineconfig patch`.
+machine:
+  type: controlplane
+  network:
+    hostname: main
+  install:
+    # Concrete install disk by-id. Resolve the actual SERIAL after the first
+    # Talos installer boot, before applying:
+    #   talosctl -n 192.168.1.11 get disks --insecure
+    # Pick the smaller of the two NVMe drives (P31, OS+etcd target); the
+    # larger one (P41) is left for the democratic-csi UserVolume.
+    disk: /dev/disk/by-id/nvme-SK_hynix_Gold_P31_1TB_<REPLACE_WITH_REAL_SERIAL>

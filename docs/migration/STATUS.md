@@ -6,9 +6,12 @@
 
 ## TL;DR
 
-**Hol tartunk:** A tervezési fázis (15 doc) elkészült. A `talos` branch létrehozva, megvalósítás indul.
+**Hol tartunk:** Tooling foundation kész (mise + just + setup.sh), Talos config blueprint kész (schematic + machineconfig template + node patch + mod.just recipes). 1Password secrets feltöltés és HP első boot a következő.
 
-**Következő lépés:** Phase 1 (hardver, hálózat) — HP ProDesk Windows lemez törlés + Talos USB készítése.
+**Következő lépés:**
+1. Manuális (te): `talosctl gen secrets` → fields copy `op://automation/talos/`-ba (egyszer).
+2. Manuális (te): HP Windows törlés → Talos USB boot → `talosctl get links/disks` a NIC név és NVMe SERIAL leolvasásához → patch `kubernetes/talos/nodes/main.yaml.j2`.
+3. `just talos apply-node 192.168.1.11 main --insecure` → `just talos bootstrap` → `just talos kubeconfig`.
 
 ## Fázis tracker
 
@@ -17,13 +20,13 @@
 | — | Tervezés (docs) | [README](./README.md) | ✅ done | 15 doc kész, lazán kapcsolódó struktúra |
 | — | `talos` branch létrehozása | — | ✅ done | 2026-05-15 |
 | 1 | Hardver, hálózat, IP plan | [01](./01-hardware-and-network.md) | 🟡 in-progress | HP megvan, Windows törlés szükséges, Talos USB készítendő |
-| 2 | Talos bootstrap | [02](./02-talos-bootstrap.md) | ⏸ pending | machine config, install |
+| 2 | Talos bootstrap | [02](./02-talos-bootstrap.md) | 🟡 in-progress | machine config / mod.just kész; 1P secrets + HP első boot következik |
 | 3 | Cilium CNI install + L2 announce | [03](./03-cilium-cni.md) | ⏸ pending | kube-proxy replacement |
 | 4 | Bootstrap helmfile chain | [04](./04-bootstrap-helmfile.md) | ⏸ pending | `op inject` + helmfile |
 | 5 | Flux Operator + FluxInstance | [05](./05-flux-operator.md) | ⏸ pending | |
 | 6 | Repo refactor (apps struktúra) | [06](./06-repo-restructure.md) | ⏸ pending | bjw-s-labs minta |
 | 7 | Components és shared resources | [07](./07-components-and-shared.md) | ⏸ pending | `kubernetes/components/` |
-| 8 | Just migráció | [08](./08-just-migration.md) | ⏸ pending | Task → Just |
+| 8 | Just migráció | [08](./08-just-migration.md) | 🟡 in-progress | foundation (mise+just+setup.sh) kész; `Taskfile.yml` törlés cutover-előtt |
 | 9 | Renovate rewrite | [09](./09-renovate-rewrite.md) | ⏸ pending | `.renovaterc.json5` + fragmensek |
 | 10 | OMV Ansible playbook | [10](./10-omv-ansible.md) | ⏸ pending | Csak cutover után |
 | 11 | Data migration runbook | [11](./11-data-migration.md) | ⏸ pending | refs only |
@@ -56,7 +59,7 @@ Legend: ✅ done · 🟡 in-progress · ⏸ pending · ❌ blocked · ⏭ skippe
 ## Branch model
 
 - **`main`** — éles K3s clustert tükrözi, folyamatosan él
-- **`talos`** — még nincs létrehozva, majd ezen épül ki az új cluster (big-bang cutover)
+- **`talos`** — létrehozva, ezen épül ki az új cluster (big-bang cutover)
 - Cutover-kor: `talos` → merge `main`, régi cluster 1-2 hétig standby, utána decom
 
 ## Becsült munka
@@ -69,6 +72,8 @@ Legend: ✅ done · 🟡 in-progress · ⏸ pending · ❌ blocked · ⏭ skippe
 - Nincs aktív blocker.
 - HP ProDesk 600 G6 DM **megvan**, jelenleg Windows van rajta → törlés szükséges (Talos install felülírja, nem külön lépés).
 - P41 + P31 NVMe beszerzés státusza külön követendő — ha még nincs, a [01](./01-hardware-and-network.md) bemenete.
+- 1Password `automation/talos` item létrehozása szükséges (mezők: MACHINE_CA_*, MACHINE_TOKEN, CLUSTER_*_CA_*, CLUSTER_ID, CLUSTER_SECRET, CLUSTER_TOKEN, CLUSTER_SERVICEACCOUNT_KEY, CLUSTER_SECRETBOXENCRYPTIONSECRET, INTERNAL_DOMAIN) — `talosctl gen secrets`-ből.
+- `kubernetes/talos/nodes/main.yaml.j2`: az `install.disk` mező `<REPLACE_WITH_REAL_SERIAL>` placeholder — első HP boot után `talosctl get disks --insecure` outputjából cserélni.
 
 ## Frissítési konvenció
 
