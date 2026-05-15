@@ -7,11 +7,11 @@ set shell := ['bash', '-euo', 'pipefail', '-c']
 kubernetes_dir := justfile_dir() + '/kubernetes'
 bootstrap_dir := kubernetes_dir + '/bootstrap'
 
-# controller: pick a node from the active talosconfig.endpoints.
-controller := `talosctl config info -o json 2>/dev/null | jq -r '.endpoints[]' 2>/dev/null | shuf -n 1 || echo 'cp0-k8s'`
+# controller: the first endpoint from the active talosconfig (IP-based; what talosctl -n expects for bootstrap/kubeconfig).
+controller := `talosctl config info -o json 2>/dev/null | jq -r '.endpoints[0]' 2>/dev/null || echo 'cp0-k8s'`
 
-# nodes: every node listed in talosconfig.
-nodes := `talosctl config info -o yaml 2>/dev/null | yq -e '.nodes | join(" ")' 2>/dev/null || echo 'cp0-k8s'`
+# nodes: derive node *names* from kubernetes/talos/nodes/<name>.yaml.j2 — the talos apply-node recipe is name-based, not IP-based.
+nodes := `find kubernetes/talos/nodes -maxdepth 1 -name '*.yaml.j2' -exec basename {} .yaml.j2 \; 2>/dev/null | tr '\n' ' '`
 
 [private]
 [script]
