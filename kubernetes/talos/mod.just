@@ -71,6 +71,56 @@ download-image:
     curl -fsSL -o "${out}" \
       "https://factory.talos.dev/image/${sid}/${TALOS_VERSION}/metal-amd64.iso"
 
+[doc('Burn Talos installer ISO to a USB device. WIPES the target. Pass full device path (macOS: /dev/diskN, Linux: /dev/sdX). Optional second arg: explicit ISO path; defaults to the newest .iso under kubernetes/talos/.')]
+[script]
+burn-image device iso="":
+    img="{{ iso }}"
+    if [ -z "${img}" ]; then
+        img="$(ls -t {{ talos_dir }}/talos-*.iso 2>/dev/null | head -1)"
+    fi
+    if [ -z "${img}" ] || [ ! -f "${img}" ]; then
+        just log error "ISO not found" path "${img:-<none under kubernetes/talos>}"
+        echo "Run 'just talos download-image' first, or pass an ISO path as the second argument." >&2
+        exit 1
+    fi
+    if [ ! -e "{{ device }}" ]; then
+        just log error "Device not found" device "{{ device }}"
+        exit 1
+    fi
+    just log warn "Target device will be WIPED" device "{{ device }}" iso "${img}"
+    case "$(uname -s)" in
+        Darwin)
+            diskutil info "{{ device }}" | grep -E "Device Node|Device / Media Name|Disk Size|Removable Media" || true
+            ;;
+        Linux)
+            lsblk -o NAME,SIZE,MODEL,TRAN,RM "{{ device }}" 2>/dev/null || true
+            ;;
+        *)
+            just log error "Unsupported OS"; exit 1
+            ;;
+    esac
+    gum confirm "Continue and WIPE {{ device }}?" || { just log info "Aborted"; exit 0; }
+    case "$(uname -s)" in
+        Darwin)
+            diskutil unmountDisk "{{ device }}"
+            raw="$(echo '{{ device }}' | sed 's|/dev/disk|/dev/rdisk|')"
+            just log info "Writing to ${raw} (press Ctrl+T for progress; takes a few minutes)"
+            sudo dd if="${img}" of="${raw}" bs=4m
+            sync
+            diskutil eject "{{ device }}"
+            ;;
+        Linux)
+            for p in $(lsblk -nrpo NAME "{{ device }}" | tail -n +2); do
+                sudo umount "${p}" 2>/dev/null || true
+            done
+            just log info "Writing to {{ device }}"
+            sudo dd if="${img}" of="{{ device }}" bs=4M status=progress
+            sync
+            sudo eject "{{ device }}" 2>/dev/null || true
+            ;;
+    esac
+    just log info "Done — USB ready, can be removed safely"
+
 # Render the merged Talos machine config for a node (base + node patch), with
 # op:// references resolved. Stdout = ready-to-apply YAML. Internal helper.
 [private]
