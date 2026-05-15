@@ -16,11 +16,11 @@ set -euo pipefail
 
 # --- helpers ------------------------------------------------------------------
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+RED=$'\033[0;31m'
+GREEN=$'\033[0;32m'
+YELLOW=$'\033[1;33m'
+BLUE=$'\033[0;34m'
+NC=$'\033[0m'
 
 log_info() { printf "${GREEN}[INFO]${NC}  %s\n" "$*"; }
 log_warn() { printf "${YELLOW}[WARN]${NC}  %s\n" "$*"; }
@@ -110,9 +110,12 @@ fi
 
 # --- done ---------------------------------------------------------------------
 
-cat <<EOF
+printf "\n%s✓ Done.%s\n" "$GREEN" "$NC"
 
-${GREEN}✓ Done.${NC}
+# Only print the activation hint if the current shell session is NOT already
+# wired up (i.e. mise-managed binaries are not yet reachable on PATH).
+if ! command -v just >/dev/null 2>&1; then
+    cat <<EOF
 
 To activate mise in your CURRENT shell session (one-time, until you open a new terminal):
 
@@ -120,3 +123,4 @@ To activate mise in your CURRENT shell session (one-time, until you open a new t
 
 Then run \`just\` to list available recipes. New terminals pick this up automatically.
 EOF
+fi
