@@ -6,11 +6,21 @@ set shell := ['bash', '-euo', 'pipefail', '-c']
 
 talos_dir := justfile_dir() + '/kubernetes/talos'
 
+# Default control plane IP — fallback when no talosconfig exists yet
+# (pre-bootstrap, fresh repo clone). Single hardcoded source of truth.
+default_ip := '192.168.1.11'
+
+# controller_ip: dynamically extracted from the active talosconfig endpoint
+# (set by `gen-talosconfig`). Falls back to default_ip if talosconfig is
+# absent. `set lazy` above defers evaluation until a recipe actually uses it.
+controller_ip := `talosctl config info -o yaml 2>/dev/null | yq -e '.endpoints[0]' 2>/dev/null || echo '192.168.1.11'`
+
 [private]
 [script]
 default:
     just -l talos
 
+[group('image')]
 [doc('Generate Talos factory schematic ID by POSTing schematic.yaml to factory.talos.dev')]
 [script]
 gen-schematic-id:
@@ -18,6 +28,7 @@ gen-schematic-id:
       https://factory.talos.dev/schematics \
       | jq -r .id
 
+[group('setup')]
 [doc('Generate Talos cluster secrets and store them as a 1Password API Credential item (one-time per cluster)')]
 [script]
 gen-secrets vault="HomeOps" item="talos":
@@ -61,6 +72,54 @@ gen-secrets vault="HomeOps" item="talos":
         "CLUSTER_TOKEN[password]=$(extract '.secrets.bootstraptoken')" \
         "CLUSTER_SECRETBOXENCRYPTIONSECRET[password]=$(extract '.secrets.secretboxencryptionsecret')"
 
+[group('setup')]
+[doc('Generate talosconfig from 1Password secrets (one-time, after gen-secrets)')]
+[script]
+gen-talosconfig endpoint="https://k8s.lan:6443" cluster="main" ip=default_ip:
+    : "${TALOSCONFIG:?env TALOSCONFIG required (set by .mise.toml)}"
+    tmpdir="$(mktemp -d)"
+    trap 'rm -rf "${tmpdir}"' EXIT
+    # Reconstruct the Talos secrets bundle from 1Password (same fields as
+    # gen-secrets pushed). Talos expects base64-encoded cert/key strings,
+    # which is exactly how 1Password stores them.
+    cat > "${tmpdir}/secrets.yaml.j2" <<'EOF'
+    cluster:
+      id: op://HomeOps/talos/CLUSTER_ID
+      secret: op://HomeOps/talos/CLUSTER_SECRET
+    secrets:
+      bootstraptoken: op://HomeOps/talos/CLUSTER_TOKEN
+      secretboxencryptionsecret: op://HomeOps/talos/CLUSTER_SECRETBOXENCRYPTIONSECRET
+    trustdinfo:
+      token: op://HomeOps/talos/MACHINE_TOKEN
+    certs:
+      etcd:
+        crt: op://HomeOps/talos/CLUSTER_ETCD_CA_CRT
+        key: op://HomeOps/talos/CLUSTER_ETCD_CA_KEY
+      k8s:
+        crt: op://HomeOps/talos/CLUSTER_CA_CRT
+        key: op://HomeOps/talos/CLUSTER_CA_KEY
+      k8saggregator:
+        crt: op://HomeOps/talos/CLUSTER_AGGREGATORCA_CRT
+        key: op://HomeOps/talos/CLUSTER_AGGREGATORCA_KEY
+      k8sserviceaccount:
+        key: op://HomeOps/talos/CLUSTER_SERVICEACCOUNT_KEY
+      os:
+        crt: op://HomeOps/talos/MACHINE_CA_CRT
+        key: op://HomeOps/talos/MACHINE_CA_KEY
+    EOF
+    op inject -i "${tmpdir}/secrets.yaml.j2" -o "${tmpdir}/secrets.yaml"
+    just log info "Generating talosconfig" cluster "{{ cluster }}" endpoint "{{ endpoint }}"
+    talosctl gen config "{{ cluster }}" "{{ endpoint }}" \
+      --with-secrets "${tmpdir}/secrets.yaml" \
+      --output-types talosconfig \
+      --output "${TALOSCONFIG}" \
+      --force
+    just log info "Setting talosctl endpoint and node" ip "{{ ip }}"
+    talosctl config endpoint "{{ ip }}"
+    talosctl config node "{{ ip }}"
+    just log info "Talosconfig written" file "${TALOSCONFIG}"
+
+[group('image')]
 [doc('Download Talos metal-amd64 installer ISO (uses TALOS_VERSION env)')]
 [script]
 download-image:
@@ -71,7 +130,8 @@ download-image:
     curl -fsSL -o "${out}" \
       "https://factory.talos.dev/image/${sid}/${TALOS_VERSION}/metal-amd64.iso"
 
-[doc('Burn Talos installer ISO to a USB device. Interactive picker if device omitted; refuses internal disks and disk images. Optional second arg: explicit ISO path (defaults to newest under kubernetes/talos/).')]
+[group('image')]
+[doc('Burn Talos installer ISO to USB (interactive picker if no device given)')]
 [script]
 burn-image device="" iso="":
     # 1. Resolve ISO
@@ -168,68 +228,93 @@ burn-image device="" iso="":
     esac
     just log info "Done — USB ready, can be removed safely"
 
-# Render the merged Talos machine config for a node (base + node patch), with
-# op:// references resolved. Stdout = ready-to-apply YAML. Internal helper.
-[private]
+[group('config')]
+[doc('Render Talos config for a node (base + node patch merged, op:// refs resolved). Stdout = ready-to-apply YAML; useful for dry-run before apply.')]
 [script]
-render node:
+render-config node:
     : "${TALOS_VERSION:?env TALOS_VERSION required}"
     : "${KUBERNETES_VERSION:?env KUBERNETES_VERSION required}"
     : "${IS_CONTROLPLANE:=true}"
     TALOS_SCHEMATIC_ID="$(just talos gen-schematic-id)"
     export TALOS_SCHEMATIC_ID TALOS_VERSION KUBERNETES_VERSION IS_CONTROLPLANE
-    base="$(mktemp)" patch="$(mktemp)" merged="$(mktemp)"
-    trap 'rm -f "${base}" "${patch}" "${merged}"' EXIT
-    minijinja-cli --env "{{ talos_dir }}/machineconfig.yaml.j2" > "${base}"
+    base="$(mktemp)" patch="$(mktemp)"
+    trap 'rm -f "${base}" "${patch}"' EXIT
+    # `op inject` must run BEFORE `talosctl machineconfig patch`, otherwise
+    # the latter rejects the op://… placeholders as malformed base64 in the
+    # cert/key fields. (No op://… refs in node patches today, so the patch
+    # file does not need op inject.)
+    minijinja-cli --env "{{ talos_dir }}/machineconfig.yaml.j2" | op inject > "${base}"
     minijinja-cli --env "{{ talos_dir }}/nodes/{{ node }}.yaml.j2" > "${patch}"
-    talosctl machineconfig patch "${base}" --patch "@${patch}" -o "${merged}"
-    op inject -i "${merged}"
+    talosctl machineconfig patch "${base}" --patch "@${patch}"
 
-[doc('Apply Talos config to a node. mode="" for normal apply, "--insecure" for first apply on a fresh installer')]
+[group('config')]
+[doc('Apply Talos config to a node (pass extra talosctl flags as args, e.g. --insecure)')]
 [script]
-apply-node ip node="cp0-k8s" mode="":
-    just talos render {{ node }} | talosctl apply-config -n {{ ip }} -f /dev/stdin {{ mode }}
+apply-node ip node="cp0-k8s" *args:
+    just talos render-config {{ node }} | talosctl apply-config -n {{ ip }} -f /dev/stdin {{ args }}
 
-[doc('Reset a Talos node (wipe STATE + EPHEMERAL, reboot to installer)')]
+[group('recovery')]
+[doc('Reset a Talos node (wipe STATE + EPHEMERAL + u-local-hostpath, reboot to installer)')]
 [script]
 reset-node ip:
     talosctl -n {{ ip }} reset \
       --system-labels-to-wipe STATE \
       --system-labels-to-wipe EPHEMERAL \
+      --system-labels-to-wipe u-local-hostpath \
       --graceful=false \
       --reboot
 
-[doc('Reset the single-node cluster (alias for reset-node 192.168.1.11)')]
+[group('recovery')]
+[doc('Reset the single-node cluster (alias for reset-node with controller_ip)')]
 [script]
 reset-cluster:
-    just talos reset-node 192.168.1.11
+    just talos reset-node {{ controller_ip }}
 
+[group('lifecycle')]
+[doc('Reboot a Talos node (powercycle mode = full hardware reset)')]
+[script]
+reboot-node ip:
+    talosctl -n {{ ip }} reboot -m powercycle
+
+[group('lifecycle')]
+[doc('Shutdown a Talos node (force). Pass extra talosctl flags as additional args.')]
+[script]
+shutdown-node ip *args:
+    talosctl -n {{ ip }} shutdown --force {{ args }}
+
+[group('setup')]
 [doc('Bootstrap etcd on a fresh control plane (one-time, after first apply)')]
 [script]
-bootstrap ip="192.168.1.11":
+bootstrap ip=controller_ip:
     talosctl -n {{ ip }} bootstrap
 
+[group('lifecycle')]
 [doc('Fetch kubeconfig from the cluster (writes to ./kubeconfig)')]
 [script]
-kubeconfig ip="192.168.1.11":
+kubeconfig ip=controller_ip:
     talosctl -n {{ ip }} kubeconfig -f --force-context-name main {{ justfile_dir() }}/kubeconfig
 
-[doc('Upgrade Talos OS on a node (uses TALOS_VERSION + current schematic)')]
+[group('lifecycle')]
+[doc('Upgrade Talos OS on a node (uses TALOS_VERSION + current schematic, powercycle reboot, 10m timeout)')]
 [script]
-upgrade-node ip:
+upgrade-node ip=controller_ip:
     : "${TALOS_VERSION:?env TALOS_VERSION required}"
     sid="$(just talos gen-schematic-id)"
     talosctl -n {{ ip }} upgrade \
-      --image "factory.talos.dev/metal-installer/${sid}:${TALOS_VERSION}"
+      --image "factory.talos.dev/metal-installer/${sid}:${TALOS_VERSION}" \
+      -m powercycle \
+      --timeout=10m
 
+[group('lifecycle')]
 [doc('Upgrade Kubernetes to a specific version (e.g. v1.37.0)')]
 [script]
-upgrade-k8s version ip="192.168.1.11":
+upgrade-k8s version ip=controller_ip:
     talosctl --nodes {{ ip }} upgrade-k8s --to {{ version }}
 
+[group('lifecycle')]
 [doc('Show node health, version, NIC links and disk inventory')]
 [script]
-status ip="192.168.1.11":
+status ip=controller_ip:
     talosctl -n {{ ip }} health
     talosctl -n {{ ip }} version
     talosctl -n {{ ip }} get links

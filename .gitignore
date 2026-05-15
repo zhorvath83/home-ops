@@ -28,6 +28,10 @@ terraform.tfstate*
 # Kubernetes
 kubeconfig*
 talosconfig*
+# Defense in depth — never commit raw certs/keys. SOPS-encrypted versions
+# use distinct extensions (e.g. *.sops.yaml), so they are not affected.
+*.crt
+*.key
 # Folder Structure v3
 /root
 megalinter-reports/

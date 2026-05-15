@@ -10,8 +10,8 @@
 #   KUBERNETES_VERSION    e.g. v1.36.1
 #   IS_CONTROLPLANE       "true" for control plane nodes (single-node = always true)
 #
-# After rendering, `op inject` substitutes every op://HomeOps/talos/* reference
-# with the corresponding 1Password field value.
+# After rendering, `op inject` substitutes each 1Password secret reference
+# (vault HomeOps, item talos) with the corresponding field value.
 version: v1alpha1
 machine:
   ca:
@@ -198,7 +198,8 @@ provisioning:
 ---
 # UserVolume on the PC711 NVMe (democratic-csi data disk).
 # Mounted by Talos at /var/mnt/extra-disk; democratic-csi local-hostpath driver
-# uses that path for PVC provisioning. Pinned by disk model.
+# uses that path for PVC provisioning. Pinned by disk model. Talos defaults
+# the filesystem to XFS for UserVolume — no need to set it explicitly.
 apiVersion: v1alpha1
 kind: UserVolumeConfig
 name: local-hostpath
@@ -206,5 +207,3 @@ provisioning:
   diskSelector:
     match: disk.model == "PC711 NVMe SK hynix 1TB"
   maxSize: 1000GiB
-  filesystem:
-    type: xfs
