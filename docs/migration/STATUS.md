@@ -75,7 +75,7 @@ Legend: ✅ done · 🟡 in-progress · ⏸ pending · ❌ blocked · ⏭ skippe
 
 - Nincs aktív blocker.
 - HP ProDesk 600 G6 DM **megvan**, jelenleg Windows van rajta → törlés szükséges (Talos install felülírja, nem külön lépés).
-- P41 + P31 NVMe beszerzés státusza külön követendő — ha még nincs, a [01](./01-hardware-and-network.md) bemenete.
+- PC801 + PC711 NVMe beszerzés státusza külön követendő — ha még nincs, a [01](./01-hardware-and-network.md) bemenete.
 - ✅ 1Password `HomeOps/talos` item létrehozva (`just talos gen-secrets`, 2026-05-15).
 - `kubernetes/talos/nodes/main.yaml.j2`: az `install.disk` mező `<REPLACE_WITH_REAL_SERIAL>` placeholder — első HP boot után `talosctl get disks --insecure` outputjából cserélni.
 

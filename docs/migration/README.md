@@ -21,7 +21,7 @@ Ez a könyvtár tartalmazza a home-ops infrastruktúra teljes átalakításának
 | Renovate | `.github/renovate.json5` | `.renovaterc.json5` root + `.renovate/*.json5` fragmensek |
 | Provision | `provision/kubernetes` Ansible (K3s) | `provision/openmediavault` Ansible (OMV base only, NFS UI-ból) |
 | Storage | democratic-csi local-hostpath | democratic-csi local-hostpath (változatlan) |
-| NVMe szétosztás | n/a | P41 → OS + etcd, P31 → data PVC |
+| NVMe szétosztás | n/a | PC801 → OS + etcd, PC711 → data PVC |
 | Ingress | Envoy Gateway | Envoy Gateway (változatlan, `envoy-external` + `envoy-internal`) |
 | Split-DNS | k8s-gateway | k8s-gateway (változatlan) |
 | Backup | VolSync + Kopia + OVH S3 | VolSync + Kopia + OVH S3 (változatlan, 3-4 GB total) |

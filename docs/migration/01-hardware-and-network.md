@@ -23,7 +23,7 @@ A fizikai infrastruktúra cél-állapotát rögzítjük: melyik gép, milyen sze
 | Idle | ~10-15 W |
 | Load | ~35-45 W |
 
-**Kritikus megállapítás:** A Q470 chipset és Comet Lake CPU **NEM tud PCIe Gen4**-et. Mindkét M.2 slot Gen3 x4 (~3500 MB/s seq fal). A SK hynix P41 (Gen4 SSD) bedugva Gen3 sebességen fog futni — visszafelé kompatibilis, semmi gond, csak az "advertised 7000 MB/s" elveszik.
+**Kritikus megállapítás:** A Q470 chipset és Comet Lake CPU **NEM tud PCIe Gen4**-et. Mindkét M.2 slot Gen3 x4 (~3500 MB/s seq fal). A SK hynix PC801 (Gen4 SSD) bedugva Gen3 sebességen fog futni — visszafelé kompatibilis, semmi gond, csak az "advertised 7000 MB/s" elveszik.
 
 ### Lenovo M93p Tiny — bare metal OMV (M93p)
 
@@ -40,7 +40,7 @@ A jelenlegi Proxmox+OMV VM **leszedésre kerül** a cutover után. Bare metal OM
 
 ### SK hynix NVMe-k
 
-| Spec | P41 (P801 OEM) | P31 (P711 OEM) |
+| Spec | PC801 | PC711 |
 |---|---|---|
 | Kapacitás | 1 TB | 1 TB |
 | Interfész | PCIe 4.0 x4 (HP-n Gen3-ra korlátozva) | PCIe 3.0 x4 |
@@ -52,10 +52,10 @@ A jelenlegi Proxmox+OMV VM **leszedésre kerül** a cutover után. Bare metal OM
 | SLC cache | ~114 GB dynamic | ~92 GB dynamic |
 
 **Szétosztás:** Lásd [AD-012](./00-architecture-decisions.md#ad-012-két-nvme-szétosztás--gyorsabb-az-osetcd-re-lassabb-a-pvc-re).
-- **P41 (P801, "Gen4")** → Talos OS install disk + etcd + EPHEMERAL (`install.disk`)
-- **P31 (P711, "Gen3")** → democratic-csi data disk (`/var/mnt/extra-disk`)
+- **PC801 (Gen4)** → Talos OS install disk + etcd + EPHEMERAL (`install.disk`)
+- **PC711 (Gen3)** → democratic-csi data disk (`/var/mnt/extra-disk`)
 
-A két M.2 slot közül a primary slot (általában az alaplaphoz közelebbi) kapja a **P41**-et (OS, boot priority), a másodlagos a **P31**-et. Talos `install.disk` mezőben `/dev/disk/by-id/nvme-...` formátum, nem `/dev/nvme0n1` (boot-order független).
+A két M.2 slot közül a primary slot (általában az alaplaphoz közelebbi) kapja a **PC801**-et (OS, boot priority), a másodlagos a **PC711**-et. Talos `install.disk` mezőben `/dev/disk/by-id/nvme-...` formátum, nem `/dev/nvme0n1` (boot-order független).
 
 ## Hálózati terv
 
@@ -213,8 +213,8 @@ A telepítés előtt a BIOS-t végigfotóztuk. A `Cél` szekció szerinti **köt
 1. **Power off**, AC ki.
 2. **Talp eltávolítás** (általában 1 csavar a hátlapon).
 3. **Mind a két M.2 slot azonosítás** (alaplap felirata: `M.2_1` és `M.2_2`, vagy hasonló).
-4. **P41 az elsődleges slotba** (M.2_1, közelebbi az alaplap éléhez, általában a CPU-hűtő mellé) → ez lesz a Talos OS install disk (+ etcd, EPHEMERAL).
-5. **P31 a másodlagos slotba** (M.2_2) → ez lesz a democratic-csi data disk.
+4. **PC801 az elsődleges slotba** (M.2_1, közelebbi az alaplap éléhez, általában a CPU-hűtő mellé) → ez lesz a Talos OS install disk (+ etcd, EPHEMERAL).
+5. **PC711 a másodlagos slotba** (M.2_2) → ez lesz a democratic-csi data disk.
 6. Csavarok visszahúzás (M.2 sztender csavarok, NE húzd túl).
 7. Talp vissza, AC be, boot, BIOS-ban ellenőrizd, hogy mindkét NVMe felismerve.
 
@@ -252,7 +252,7 @@ A jelenlegi OMV NFS exportok IP whitelist-jét kell **kibővíteni** a HP node I
 
 ## Validation checklist (HP bekapcsolás után)
 
-- [ ] BIOS-ban mindkét NVMe felismerve, modell + serial olvashatóan (M.2 SSD 1 = PC801 P41 `SJBAN46291390A74`, M.2 SSD 2 = PC711 P31 `KDA8N47141100896`).
+- [ ] BIOS-ban mindkét NVMe felismerve, modell + serial olvashatóan (M.2 SSD 1 = PC801 `SJBAN46291390A74W`, M.2 SSD 2 = PC711 `KDA8N47141100896P`).
 - [ ] BIOS-ban VT-d enabled, Secure Boot disabled.
 - [ ] BIOS delta végrehajtva: Fast Boot = Disabled, After Power Loss = Power On, HP Sure Recover = Disabled, HP Application Driver = Disabled, Intel AMT = Disabled, PXE Boot = Disabled, IPv6 during UEFI Boot = Disabled, M.2 WLAN/BT = Disabled, Sure Start Verify Boot Block on every boot = Enabled.
 - [ ] (Opcionális, irreverzibilis) Absolute Persistence Module → Permanent Disable.

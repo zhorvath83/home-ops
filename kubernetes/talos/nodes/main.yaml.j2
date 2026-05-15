@@ -6,9 +6,9 @@ machine:
   network:
     hostname: main
   install:
-    # Concrete install disk by-id. Resolve the actual SERIAL after the first
-    # Talos installer boot, before applying:
-    #   talosctl -n 192.168.1.11 get disks --insecure
-    # Pick the smaller of the two NVMe drives (P31, OS+etcd target); the
-    # larger one (P41) is left for the democratic-csi UserVolume.
-    disk: /dev/disk/by-id/nvme-SK_hynix_Gold_P31_1TB_<REPLACE_WITH_REAL_SERIAL>
+    # PC801 NVMe (faster Gen4 capable disk, HP OEM variant of the SK hynix
+    # Platinum P41 line) → Talos OS + etcd + EPHEMERAL volume.
+    # The other NVMe (PC711, HP OEM variant of the SK hynix Gold P31) is left
+    # unselected and gets claimed by the UserVolumeConfig in machineconfig.yaml.j2
+    # for the democratic-csi local-hostpath data volume.
+    disk: /dev/disk/by-id/nvme-PC801_NVMe_SK_hynix_1TB_SJBAN46291390A74W

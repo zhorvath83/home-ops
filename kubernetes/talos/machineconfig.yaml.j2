@@ -178,7 +178,7 @@ kind: WatchdogTimerConfig
 device: /dev/watchdog0
 timeout: 5m
 ---
-# EPHEMERAL volume on the Talos OS disk (= install.disk, the P31 NVMe).
+# EPHEMERAL volume on the Talos OS disk (= install.disk, the PC801 NVMe).
 apiVersion: v1alpha1
 kind: VolumeConfig
 name: EPHEMERAL
@@ -187,7 +187,7 @@ provisioning:
     match: system_disk
   maxSize: 256GiB
 ---
-# UserVolume on the P41 NVMe (democratic-csi data disk).
+# UserVolume on the PC711 NVMe (democratic-csi data disk).
 # Mounted by Talos at /var/mnt/extra-disk; democratic-csi local-hostpath driver
 # uses that path for PVC provisioning.
 apiVersion: v1alpha1

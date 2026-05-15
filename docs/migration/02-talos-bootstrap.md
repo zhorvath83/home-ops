@@ -2,7 +2,7 @@
 
 ## Cél
 
-A HP ProDesk node-on Talos Linux telepítése és Kubernetes cluster bootstrap. A bjw-s machineconfig minta adaptált single-node, kettős NVMe szétosztás (P31 = OS, P41 = democratic-csi data disk).
+A HP ProDesk node-on Talos Linux telepítése és Kubernetes cluster bootstrap. A bjw-s machineconfig minta adaptált single-node, kettős NVMe szétosztás (PC711 = OS, PC801 = democratic-csi data disk).
 
 ## Inputs
 
@@ -277,7 +277,7 @@ kind: WatchdogTimerConfig
 device: /dev/watchdog0
 timeout: 5m
 ---
-# EPHEMERAL volume a Talos OS disk-en (P31 / install.disk)
+# EPHEMERAL volume a Talos OS disk-en (PC711 / install.disk)
 apiVersion: v1alpha1
 kind: VolumeConfig
 name: EPHEMERAL
@@ -286,14 +286,14 @@ provisioning:
     match: system_disk
   maxSize: 256GiB
 ---
-# UserVolume a P41 NVMe-n (democratic-csi data)
+# UserVolume a PC801 NVMe-n (democratic-csi data)
 # A democratic-csi local-hostpath driver ezt mountolja /var/mnt/extra-disk-re
 apiVersion: v1alpha1
 kind: UserVolumeConfig
 name: local-hostpath
 provisioning:
   diskSelector:
-    # P41 NVMe — by-id alapján egyértelmű, hogy NEM az install disk
+    # PC801 NVMe — by-id alapján egyértelmű, hogy NEM az install disk
     match: '!system_disk && disk.transport == "nvme"'
   maxSize: 1000GiB
   filesystem:
@@ -314,8 +314,8 @@ machine:
   install:
     # Konkrét install disk by-id — első boot Talos installer után:
     #   talosctl -n 192.168.1.11 get disks
-    # Az nvme0n1 vagy nvme1n1 közül a P31 (P711, kisebb) modell stringet keressük
-    disk: /dev/disk/by-id/nvme-SK_hynix_Gold_P31_1TB_<SERIAL>
+    # Az nvme0n1 vagy nvme1n1 közül a PC711 (P711, kisebb) modell stringet keressük
+    disk: /dev/disk/by-id/nvme-SK_hynix_Gold_PC711_1TB_<SERIAL>
 ```
 
 **SERIAL** értékét az első Talos installer boot után `talosctl get disks` adja vissza.
@@ -477,6 +477,6 @@ just talos reset-cluster reboot
 
 - **NIC interface név**: A bjw-s `enp0s31f6` (intel chipset standard) **valószínűleg** a HP I219-nek is ez lesz, de **első boot után ellenőrizni** `talosctl get links`-szel. Ha más (pl. `enp1s0`), patchelni a `DHCPv4Config name:` mezőjén.
 - **i915 device node létrehozás**: Talos 1.10.x-en megbízható, 1.12.0-rc1-ben regresszió volt — stable release-t használunk.
-- **UserVolumeConfig (local-hostpath) első indítás**: ha a P41 üres, Talos formázza XFS-re. Ha valami már van rajta (régi adat), előbb `talosctl reset --user-disks-to-wipe`.
+- **UserVolumeConfig (local-hostpath) első indítás**: ha a PC801 üres, Talos formázza XFS-re. Ha valami már van rajta (régi adat), előbb `talosctl reset --user-disks-to-wipe`.
 - **NFS NFSv4 mount sysctls**: a `sunrpc.tcp_*` és `nfsmount.conf` minta bjw-s-től örökölt. NFS performance optimalizáció — ha kell, finomítható.
 - **kubePrism (7445 port)** — Talos beépített K8s API proxy a node-on. ESO és cert-manager hasznosíthatja, hogy ne menjen az API forgalom külön round-tripben.

@@ -222,7 +222,7 @@ kubectl -n default get es
 | Kopia decompression overhead | ~20% lassítás |
 | Teljes restore idő (mindenre) | **10-15 perc** |
 
-A 17 RD-t **párhuzamosan** indíthatjuk, mert mindegyik külön Kopia mover pod-ban fut. A bottleneck a hálózati sávszél (1 GbE), de 3-4 GB teljes méret mellett ez nem szűk keresztmetszet. A target PVC írási sebesség (P31 NVMe Gen3-on) bőven a hálózati throughput felett.
+A 17 RD-t **párhuzamosan** indíthatjuk, mert mindegyik külön Kopia mover pod-ban fut. A bottleneck a hálózati sávszél (1 GbE), de 3-4 GB teljes méret mellett ez nem szűk keresztmetszet. A target PVC írási sebesség (PC711 NVMe Gen3-on) bőven a hálózati throughput felett.
 
 **Megjegyzés**: a "3-4 GB" a Kopia repó teljes mérete az OVH-n (deduplikált). Egy-egy app PVC fizikai mérete nagyobb lehet, de a Kopia mover csak a snapshot blokkokat tölti le → restore-kor a target PVC csak a snapshot-ban szereplő fájlokat tartalmazza.
 
