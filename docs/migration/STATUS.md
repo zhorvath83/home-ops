@@ -9,9 +9,13 @@
 **Hol tartunk:** Tooling foundation kész (mise + just + setup.sh), Talos config blueprint kész (schematic + machineconfig template + node patch + mod.just recipes). 1Password secrets feltöltés és HP első boot a következő.
 
 **Következő lépés:**
-1. Manuális (te): `talosctl gen secrets` → fields copy `op://HomeOps/talos/`-ba (egyszer).
-2. Manuális (te): HP Windows törlés → Talos USB boot → `talosctl get links/disks` a NIC név és NVMe SERIAL leolvasásához → patch `kubernetes/talos/nodes/main.yaml.j2`.
-3. `just talos apply-node 192.168.1.11 main --insecure` → `just talos bootstrap` → `just talos kubeconfig`.
+1. ✅ 1Password `HomeOps/talos` item létrehozva (`just talos gen-secrets` egy paranccsal).
+2. **Most**: `just talos download-image` → ISO USB-re (dd / balenaEtcher).
+3. HP Windows boot leállítás → BIOS F9 → USB boot → Talos maintenance mode.
+4. `talosctl -n 192.168.1.11 get links --insecure` (NIC név) és `get disks --insecure` (NVMe SERIAL) → patcheld `kubernetes/talos/nodes/main.yaml.j2`-t a SERIAL-lel, ha kell a `machineconfig.yaml.j2`-t a NIC névvel.
+5. `just talos apply-node 192.168.1.11 main --insecure` → reboot → install.
+6. `just talos bootstrap` → `just talos kubeconfig`.
+7. `kubectl get nodes` → `main NotReady` (CNI hiányzik még, normális, jön a (C) Cilium fázisban).
 
 ## Fázis tracker
 
@@ -72,7 +76,7 @@ Legend: ✅ done · 🟡 in-progress · ⏸ pending · ❌ blocked · ⏭ skippe
 - Nincs aktív blocker.
 - HP ProDesk 600 G6 DM **megvan**, jelenleg Windows van rajta → törlés szükséges (Talos install felülírja, nem külön lépés).
 - P41 + P31 NVMe beszerzés státusza külön követendő — ha még nincs, a [01](./01-hardware-and-network.md) bemenete.
-- 1Password `HomeOps/talos` item létrehozása: `just talos gen-secrets` egy paranccsal megcsinálja a `talosctl gen secrets` + 14-field 1P feltöltést.
+- ✅ 1Password `HomeOps/talos` item létrehozva (`just talos gen-secrets`, 2026-05-15).
 - `kubernetes/talos/nodes/main.yaml.j2`: az `install.disk` mező `<REPLACE_WITH_REAL_SERIAL>` placeholder — első HP boot után `talosctl get disks --insecure` outputjából cserélni.
 
 ## Frissítési konvenció
