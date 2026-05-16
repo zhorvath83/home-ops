@@ -46,27 +46,11 @@ spec:
         - ports:
             - port: "19003"
               protocol: TCP
-  egress:
-    # CoreDNS.
-    - toEndpoints:
-        - matchLabels:
-            io.kubernetes.pod.namespace: kube-system
-            k8s-app: kube-dns
-      toPorts:
-        - ports:
-            - port: "53"
-              protocol: UDP
-    # In-cluster traffic to HTTPRoute backends and xDS upstream
-    # (envoy-gateway controller, services in any namespace).
-    - toEntities:
-        - cluster
-    # Kubernetes API server.
-    - toEntities:
-        - kube-apiserver
-    # Outbound HTTPS for HTTPRoute backends that target external services.
-    - toEntities:
-        - world
-      toPorts:
-        - ports:
-            - port: "443"
-              protocol: TCP
+  # No egress section: the cluster-wide CCNPs allow-cluster-egress and
+  # allow-dns-egress under kubernetes/apps/kube-system/cilium/netpols/ cover
+  # DNS (UDP+TCP/53 via L7 proxy), in-cluster traffic (xDS to envoy-gateway,
+  # HTTPRoute backends across namespaces), and outbound HTTPS to the public
+  # internet. envoy-internal is a traffic forwarder — a tight egress allowlist
+  # adds maintenance overhead without meaningful threat-model coverage on this
+  # workload. Reference repos (bjw-s-labs, onedr0p, buroa) also do not write
+  # egress restrictions on Envoy proxy pods.
