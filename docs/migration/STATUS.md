@@ -2,13 +2,13 @@
 
 Élő státusz a K3s → Talos migráció állapotáról. Ez a doc gyors pillanatkép — a részletes terv a [README.md](./README.md)-ben és a `00`–`14` doc-okban van.
 
-**Utolsó frissítés:** 2026-05-16 este — Phase 4–7 + 11 ✅, adatmigráció + ingress stack E2E zöld, orphan `metallb` HR runtime cleanup (Cilium LB-IPAM stabil), follow-up-ok rögzítve.
+**Utolsó frissítés:** 2026-05-16 este — Phase 4–7 + 11 ✅, adatmigráció + ingress stack E2E zöld, orphan `metallb` HR runtime cleanup (Cilium LB-IPAM stabil), **CiliumNetworkPolicy migráció ✅** (stateful ingress hardening visszahozva), follow-up-ok rögzítve.
 
 ## TL;DR
 
 **Hol tartunk:** Teljes GitOps reconcile zöld (**0 Failing KS, 0 Failing HR**). 17 VolSync ReplicationDestination Kopia-restore-olt OVH snapshotokból (12–19 s/db). 18+ default app pod 1/1 Running, `cloudflare-tunnel` 1/1 Running 4 connection regisztrálva (bud01/vie05/vie06). A `replicationdestination + dataSourceRef` mostantól **always-on** pattern (bjw-s/onedr0p minta), nem cutover-only. **Ingress stack él** kívülről (Cloudflare tunnel) és belülről (envoy-internal `192.168.1.18`) — végpont tesztek HTTP 200/302 (normál login redirectek). A régi K3s cluster áll, a migráció gyakorlatilag adat-szinten is megtörtént a `talos` branchen.
 
-**Ismert follow-up-ok** (egyik sem blocker, részletek az `Open items`-ben): `plex-trakt-sync` Plex API token frissítés, `envoy-gateway` v1.9.0 GA → BTP rate-limit visszakapcsolás, search domain `lan` cluster-szintű kezelés, `CiliumNetworkPolicy` migráció (ingress hardening visszahozása stateful módon), `Taskfile.yml` törlés cutover-előtt, **Phase 15: repo doc + AI-guide refresh** (13 `docs/*.md` + 11 `CLAUDE.md` + 12 skill audit, cutover-előtt).
+**Ismert follow-up-ok** (egyik sem blocker, részletek az `Open items`-ben): `plex-trakt-sync` Plex API token frissítés, `envoy-gateway` v1.9.0 GA → BTP rate-limit visszakapcsolás, search domain `lan` cluster-szintű kezelés, `Taskfile.yml` törlés cutover-előtt, **Phase 15: repo doc + AI-guide refresh** (13 `docs/*.md` + 11 `CLAUDE.md` + 12 skill audit, cutover-előtt).
 
 ## Session 2026-05-16 — Phase 4 éles bootstrap napló
 
@@ -246,6 +246,37 @@ Az `envoy-gateway` controller restart-jára szükség volt — status_updater lo
   - Több route teszt: `docs/grafana` HTTP 302 (login redirect, normál); `plex` HTTP 404 (Plex token issue, task #9)
 - 🟡 1 app-szintű follow-up: `plex-trakt-sync` 401 unauthorized — Plex API token elavult a friss DB-ben
 
+## Session 2026-05-16 este — CiliumNetworkPolicy migráció + ingress hardening visszahozva
+
+A délutáni `606fe6479` workaround a 3 K8s `NetworkPolicy`-t (`cloudflare-tunnel`, `envoy-external`, `envoy-internal`) `policyTypes: [Egress]`-re csökkentette, mert a Cilium stateless módon kezeli az UDP reply pakettokat ingress oldalon (random destination port nem matchel ingress rule-lal, CoreDNS-választ eldob). Ez **ingress hardening regressziót** okozott: a 3 pod ingress oldalán default-allow lett.
+
+`CiliumNetworkPolicy` (CNP) **stateful conntrack-kal** működik — a kifelé menő DNS query alapján az UDP reply automatikusan engedélyezett, így a stateless-UDP probléma megszűnik. Migráció: 3 K8s NP → 3 CNP + 1 közös `CiliumCIDRGroup/cloudflare` (cluster-scoped, 22 Cloudflare CIDR, DRY).
+
+### Manifestek (`4f4b76eec`)
+
+- **Új**: `kubernetes/apps/networking/cloudflare-tunnel/app/ciliumcidrgroup.yaml` (cluster-scoped, `apiVersion: cilium.io/v2`).
+- **Új**: `kubernetes/apps/networking/cloudflare-tunnel/app/ciliumnetworkpolicy.yaml` (ingress: Prometheus scrape; egress: kube-dns, envoy-external pod 10080/10443, Cloudflare CIDRGroup 443/80/7844 TCP+UDP).
+- **Új**: `kubernetes/apps/networking/envoy-gateway/config/ciliumnetworkpolicy-{external,internal}.yaml` (ingress: 10080/10443 a megfelelő forrásból, 19001 Prometheus, 19003 host/remote-node; egress: kube-dns, `toEntities: [cluster, kube-apiserver, world]` 443 TCP-re).
+- **Törölve**: a régi 3 K8s `NetworkPolicy` fájl.
+- **Frissítve**: 2 `kustomization.yaml` resource lista.
+
+### Eredmény
+
+- `kubectl get ciliumnetworkpolicy -A` → 3/3 VALID=True
+- `kubectl get networkpolicy -n networking` → üres (régiek prune-olva)
+- Cilium endpoint policy state (`cilium endpoint list`): **mindhárom endpoint Enabled/Enabled** (ingress + egress enforcement aktív):
+  - `619` cloudflare-tunnel: Enabled/Enabled
+  - `2179` envoy-internal:   Enabled/Enabled
+  - `3591` envoy-external:   Enabled/Enabled
+- Pod-ok stabil (envoy-{external,internal} 2/2, cloudflare-tunnel 1/1, **0 új restart** a CNP apply óta).
+- Gateway-ek `PROGRAMMED=True`, `envoy-internal ADDRESS=192.168.1.18`.
+- Ingress smoke: external HTTPS `https://dash.horvathzoltan.me/` → HTTP 200, internal `https://192.168.1.18/` (SNI dash) → HTTP 200.
+- Cloudflare tunnel log az apply óta **csendben** (az addigi hibák a 13:11–13:39 közötti envoy-restart-loopból maradtak).
+
+### Megjegyzés
+
+A `CiliumCIDRGroup` cluster-scoped, de a kustomization `namespace: networking` direktívája `metadata.namespace: networking`-et rárakott. **A Kubernetes API server cluster-scoped erőforrásokon ezt csendben ignorálja** (server-side dry-run megerősítette: `ciliumcidrgroup.cilium.io/cloudflare created`), tehát a manifest működik. Tisztább lenne kustomize patch-csel kiszedni a namespace mezőt (`op: remove, path: /metadata/namespace`), de a jelenlegi forma is helyes és Flux apply-on átmegy.
+
 ## Session 2026-05-16 este — PVC újratöltés helyes Kopia snapshotokból
 
 Felhasználói visszajelzés: a délutáni „17 PVC restore" valójában egy üres, Talos-éra Kopia snapshot-ot húzott le, nem a K3s-éra adatokat. Az üres snapshot(ok) az OVH bucketről manuálisan törölve, futtatunk egy fresh restore-t.
@@ -396,7 +427,7 @@ A teljes GitOps reconcile zöld (0 failing KS, 0 failing HR).
     2. Kubelet `--resolv-conf=/etc/resolv.conf` flag (`machine.kubelet.extraArgs`) — a pod-ok `dnsPolicy: ClusterFirst` esetén is örökli a node search-jét
     A két lépés csak együtt ér valamit (az egyik a másik nélkül nem hat). Egyik referencia repó (bjw-s/onedr0p/buroa) sem foglalkozik ezzel.
 
-- **CiliumNetworkPolicy migráció — ingress hardening stateful módon**: A jelenlegi 3 K8s `NetworkPolicy` `policyTypes: [Egress]`-re lett csökkentve a Cilium stateless-UDP minta-bug miatt (a return DNS reply random destination porton érkezik, ingress drop-ot kapna). Emiatt **az ingress oldali hardening elveszett** (default-allow ingress). A `CiliumNetworkPolicy` CRD stateful conntrack-kal (a UDP reply automatikusan engedélyezett a kifelé menő flow alapján) lehetővé teszi az ingress visszakapcsolást is. Plusz minőség: közös `CiliumCIDRGroup` (Cloudflare 22 CIDR) újrahasznosítható `cloudflare-tunnel` + `envoy-external` között, `toFQDNs` a config DNS-szintű felbontásra. Érintett fájlok: `cloudflare-tunnel/networkpolicy.yaml`, `envoy-gateway/config/networkpolicy-{external,internal}.yaml`. Hivatkozási minta: [bjw-s forgejo-runner CNP](https://github.com/bjw-s-labs/home-ops/blob/9f8311d192b08d1ae12880fdae005e2c27d6c2df/kubernetes/apps/dev/forgejo/runner/ciliumnetworkpolicy.yaml). Becsült munka ~30-45 perc.
+- ~~**CiliumNetworkPolicy migráció — ingress hardening stateful módon**~~: **✅ done** (commit `4f4b76eec`, 2026-05-16 este). A 3 K8s `NetworkPolicy` lecserélve `CiliumNetworkPolicy`-ra, közös `CiliumCIDRGroup/cloudflare` (22 CF CIDR) bevezetve. Cilium endpoint policy state mindhárom pod-on Enabled/Enabled (stateful conntrack), ingress smoke HTTP 200 mindkét irányból, 0 új pod-restart.
 
 - **`Taskfile.yml` + `.taskfiles/` törlés**: Phase 8 záró feladat — cutover-előtt, hogy a `talos` branch tisztán Just-alapú legyen.
 
