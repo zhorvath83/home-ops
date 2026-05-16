@@ -138,25 +138,21 @@ kopia-maintenance:
     done
     kubectl -n volsync-system get kopiamaintenances kopia-daily-maintenance -o yaml
 
-[doc('Show latest backups per ReplicationSource in a date window with timing and jitter (positional args: [date=today] [start_hour=0] [end_hour=23] [ns=all])')]
+[doc('Show latest backups per ReplicationSource for a given date (positional arg: [date=today])')]
 [script]
-last-backups date=`date +%Y-%m-%d` start_hour="0" end_hour="23" ns="":
-    DATE="{{ date }}" START_HOUR="{{ start_hour }}" END_HOUR="{{ end_hour }}" NAMESPACE="{{ ns }}" python3 - <<'PY'
+last-backups date=`date +%Y-%m-%d`:
+    DATE="{{ date }}" python3 - <<'PY'
     import json
     import os
     import re
-    import statistics
     import subprocess
-    from datetime import datetime
+    from datetime import datetime, timedelta
     from zoneinfo import ZoneInfo
 
     tz = ZoneInfo("Europe/Budapest")
     date = os.environ["DATE"]
-    start_hour = int(os.environ["START_HOUR"])
-    end_hour = int(os.environ["END_HOUR"])
-    namespace = os.environ.get("NAMESPACE", "").strip()
-    start_local = datetime.fromisoformat(f"{date}T00:00:00").replace(tzinfo=tz).replace(hour=start_hour)
-    end_local = datetime.fromisoformat(f"{date}T00:00:00").replace(tzinfo=tz).replace(hour=end_hour)
+    start_local = datetime.fromisoformat(f"{date}T00:00:00").replace(tzinfo=tz)
+    end_local = start_local + timedelta(days=1)
 
     def parse_duration(value: str) -> float:
         total = 0.0
@@ -164,13 +160,8 @@ last-backups date=`date +%Y-%m-%d` start_hour="0" end_hour="23" ns="":
             total += float(amount) * {"h": 3600, "m": 60, "s": 1}[unit]
         return total
 
-    cmd = ["kubectl", "get", "replicationsources"]
-    if namespace:
-        cmd += ["-n", namespace]
-    else:
-        cmd += ["-A"]
-    cmd += ["-o", "json"]
-    data = json.loads(subprocess.check_output(cmd))
+    data = json.loads(subprocess.check_output(
+        ["kubectl", "get", "replicationsources", "-A", "-o", "json"]))
 
     rows = []
     for item in data.get("items", []):
@@ -180,7 +171,7 @@ last-backups date=`date +%Y-%m-%d` start_hour="0" end_hour="23" ns="":
             continue
         utc = datetime.fromisoformat(last_sync.replace("Z", "+00:00"))
         local = utc.astimezone(tz)
-        if not (start_local <= local <= end_local):
+        if not (start_local <= local < end_local):
             continue
         duration = parse_duration(status.get("lastSyncDuration") or "")
         rows.append((
@@ -192,7 +183,7 @@ last-backups date=`date +%Y-%m-%d` start_hour="0" end_hour="23" ns="":
         ))
 
     if not rows:
-        print(f"No backups in window {start_local} – {end_local}")
+        print(f"No backups on {date}")
         raise SystemExit(0)
 
     rows.sort(key=lambda r: r[2])
