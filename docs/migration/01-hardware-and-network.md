@@ -53,7 +53,7 @@ A jelenlegi Proxmox+OMV VM **leszedésre kerül** a cutover után. Bare metal OM
 
 **Szétosztás:** Lásd [AD-012](./00-architecture-decisions.md#ad-012-két-nvme-szétosztás--gyorsabb-az-osetcd-re-lassabb-a-pvc-re).
 - **PC801 (Gen4)** → Talos OS install disk + etcd + EPHEMERAL (`install.disk`)
-- **PC711 (Gen3)** → democratic-csi data disk (`/var/mnt/extra-disk`)
+- **PC711 (Gen3)** → democratic-csi data disk (`/var/mnt/local-hostpath`)
 
 A két M.2 slot közül a primary slot (általában az alaplaphoz közelebbi) kapja a **PC801**-et (OS, boot priority), a másodlagos a **PC711**-et. Talos `install.disk` mezőben `/dev/disk/by-id/nvme-...` formátum, nem `/dev/nvme0n1` (boot-order független).
 

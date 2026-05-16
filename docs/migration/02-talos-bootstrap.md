@@ -297,7 +297,8 @@ provisioning:
   maxSize: 256GiB
 ---
 # UserVolume a PC711 NVMe-n (democratic-csi data).
-# A democratic-csi local-hostpath driver ezt mountolja /var/mnt/extra-disk-re.
+# Talos a UserVolume nevéből származó mount path-on csatolja: /var/mnt/local-hostpath.
+# A democratic-csi local-hostpath driver ezt a path-ot használja PVC provisioninghoz.
 # Disk model alapján pinelve (bjw-s / onedr0p referencia stílus).
 apiVersion: v1alpha1
 kind: UserVolumeConfig

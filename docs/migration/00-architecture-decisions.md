@@ -185,7 +185,7 @@ Minden architekturális döntés egy helyen, indoklással. Ez az "ADR-ek lite" �
 
 ## AD-012: Két NVMe szétosztás — gyorsabb az OS+etcd-re, lassabb a PVC-re
 
-**Döntés:** A két SK hynix NVMe közül a **PC801 (Gen4)** lesz a **Talos OS install disk** (ami egyben az etcd és EPHEMERAL volume helye), a **PC711 (Gen3)** a democratic-csi data disk (`/var/mnt/extra-disk`).
+**Döntés:** A két SK hynix NVMe közül a **PC801 (Gen4)** lesz a **Talos OS install disk** (ami egyben az etcd és EPHEMERAL volume helye), a **PC711 (Gen3)** a democratic-csi data disk (`/var/mnt/local-hostpath`).
 
 **Indoklás:**
 - A HP ProDesk 600 G6 DM **mindkét M.2 slotja PCIe Gen3** — a PC801 Gen4-es előnye sequential throughput-ban NEM realizálódik.

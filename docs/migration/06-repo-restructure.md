@@ -386,7 +386,7 @@ kubernetes/apps/kube-system/democratic-csi-local-hostpath/
     └── ocirepository.yaml
 ```
 
-A `helmrelease.yaml` értékek: `hostPathDir: /var/mnt/extra-disk` (Talos UserVolume mount).
+A `helmrelease.yaml` értékek: `hostPathDir: /var/mnt/local-hostpath` (Talos UserVolume mount — a `local-hostpath` UserVolume nevéből származó path).
 
 ## Namespace szervezés — bjw-s mintába illeszkedés
 
