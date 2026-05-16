@@ -123,20 +123,20 @@ rs-status rsrc ns="default":
         | @tsv' \
       | column -t -s $'\t'
 
-[doc('Trigger a manual KopiaMaintenance run (positional args: [name=kopia-daily-maintenance] [ns=volsync-system])')]
+[doc('Trigger a manual KopiaMaintenance run on the cluster-wide kopia-daily-maintenance CR')]
 [script]
-kopia-maintenance name="kopia-daily-maintenance" ns="volsync-system":
+kopia-maintenance:
     ts="$(date +%H%M%S)"
-    kubectl -n "{{ ns }}" patch kopiamaintenances "{{ name }}" --type merge \
+    kubectl -n volsync-system patch kopiamaintenances kopia-daily-maintenance --type merge \
       -p "{\"spec\":{\"trigger\":{\"manual\":\"${ts}\"}}}"
     while true; do
-      last_manual_sync="$(kubectl -n {{ ns }} get kopiamaintenances {{ name }} -o jsonpath='{.status.lastManualSync}' 2>/dev/null)"
+      last_manual_sync="$(kubectl -n volsync-system get kopiamaintenances kopia-daily-maintenance -o jsonpath='{.status.lastManualSync}' 2>/dev/null)"
       if [ "${last_manual_sync}" = "${ts}" ]; then
         break
       fi
       sleep 2
     done
-    kubectl -n "{{ ns }}" get kopiamaintenances "{{ name }}" -o yaml
+    kubectl -n volsync-system get kopiamaintenances kopia-daily-maintenance -o yaml
 
 [doc('Show latest backups per ReplicationSource in a date window with timing and jitter (positional args: [date=today] [start_hour=0] [end_hour=23] [ns=all])')]
 [script]
