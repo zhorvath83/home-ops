@@ -34,11 +34,10 @@ restore app ns="default":
       -p '{"spec":{"trigger":{"manual":"restore-once"}}}'
     just volsync wait-rd "{{ ns }}" "{{ app }}-bootstrap"
 
-[doc('Point-in-time restore into the existing PVC via VolSync Direct copyMethod (positional args: ns app [previous=0] [ks=app]).')]
+[doc('Point-in-time restore into the existing PVC via VolSync Direct copyMethod (positional args: ns app [previous=0]).')]
 [script]
-restore-into ns app previous="0" ks="":
-    ks="{{ ks }}"; [ -z "${ks}" ] && ks="{{ app }}"
-    flux -n "{{ ns }}" suspend kustomization "${ks}"
+restore-into ns app previous="0":
+    flux -n "{{ ns }}" suspend kustomization "{{ app }}"
     flux -n "{{ ns }}" suspend helmrelease "{{ app }}"
     kubectl -n "{{ ns }}" get deploy,sts -l "app.kubernetes.io/name={{ app }}" -o name \
       | xargs -r -I{} kubectl -n "{{ ns }}" scale {} --replicas=0
@@ -63,7 +62,7 @@ restore-into ns app previous="0" ks="":
     kubectl -n "{{ ns }}" wait "job/volsync-dst-{{ app }}-manual" --for=create --timeout=120s
     kubectl -n "{{ ns }}" wait "job/volsync-dst-{{ app }}-manual" --for=condition=complete --timeout=120m
     kubectl -n "{{ ns }}" delete replicationdestination "{{ app }}-manual"
-    flux -n "{{ ns }}" resume kustomization "${ks}"
+    flux -n "{{ ns }}" resume kustomization "{{ app }}"
     flux -n "{{ ns }}" resume helmrelease "{{ app }}"
     flux -n "{{ ns }}" reconcile helmrelease "{{ app }}" --force
     kubectl -n "{{ ns }}" wait pod --for=condition=ready --selector="app.kubernetes.io/name={{ app }}" --timeout=5m
