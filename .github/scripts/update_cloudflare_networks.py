@@ -1,15 +1,12 @@
 #!/usr/bin/env python3
 """
-Update Cloudflare IP ranges across the manifests that mirror them.
+Update Cloudflare IP ranges in the cluster-scoped CiliumCIDRGroup manifest.
 
-Fetches the current Cloudflare IP ranges from the public API and rewrites:
-  1. The CiliumCIDRGroup `spec.externalCIDRs` list — referenced by the
-     cloudflare-tunnel CiliumNetworkPolicy via `toCIDRSet.cidrGroupRef`.
-  2. The Envoy Gateway SecurityPolicy `envoy-external-cloudflare` —
-     specifically the `spec.authorization.rules[0].principal.clientCIDRs`
-     list — which restricts external Gateway requests to the Cloudflare edge.
+Fetches the current Cloudflare IP ranges from the public API and rewrites the
+`spec.externalCIDRs` list of the CiliumCIDRGroup that the cloudflare-tunnel
+CiliumNetworkPolicy references via `toCIDRSet.cidrGroupRef`.
 
-YAML formatting, document markers, and comments are preserved (ruamel.yaml).
+YAML formatting, top-level document marker, and comments are preserved.
 """
 
 from __future__ import annotations
@@ -32,16 +29,6 @@ REQUEST_TIMEOUT = 30
 CIDRGROUP_FILE = os.getenv(
     "CIDRGROUP_FILE",
     "kubernetes/apps/networking/cloudflare-tunnel/app/ciliumcidrgroup.yaml",
-)
-
-SECURITYPOLICY_FILE = os.getenv(
-    "SECURITYPOLICY_FILE",
-    "kubernetes/apps/networking/envoy-gateway/config/gateway-policies.yaml",
-)
-
-SECURITYPOLICY_NAME = os.getenv(
-    "SECURITYPOLICY_NAME",
-    "envoy-external-cloudflare",
 )
 
 
@@ -137,79 +124,6 @@ def update_cidrgroup(cloudflare_cidrs: list[str]) -> UpdateResult:
     )
 
 
-def update_securitypolicy(cloudflare_cidrs: list[str]) -> UpdateResult | None:
-    """Update the Envoy Gateway SecurityPolicy clientCIDRs allowlist.
-
-    The target file is a multi-document YAML containing several Gateway API
-    extension policies. We locate the SecurityPolicy by metadata.name and
-    rewrite its principal.clientCIDRs in place, preserving the surrounding
-    documents and comments.
-
-    Returns None (with a warning) if the target file or named SecurityPolicy
-    is absent, so a temporary removal does not break the workflow.
-    """
-    if not os.path.exists(SECURITYPOLICY_FILE):
-        logger.warning(
-            "SecurityPolicy file not found: %s — skipping", SECURITYPOLICY_FILE
-        )
-        return None
-
-    logger.info(
-        "Updating SecurityPolicy %s in: %s",
-        SECURITYPOLICY_NAME,
-        SECURITYPOLICY_FILE,
-    )
-    yaml = create_yaml_handler()
-
-    with open(SECURITYPOLICY_FILE, encoding="utf-8") as f:
-        documents = list(yaml.load_all(f))
-
-    target_doc = None
-    for doc in documents:
-        if (
-            doc is not None
-            and doc.get("kind") == "SecurityPolicy"
-            and doc.get("metadata", {}).get("name") == SECURITYPOLICY_NAME
-        ):
-            target_doc = doc
-            break
-
-    if target_doc is None:
-        logger.warning(
-            "SecurityPolicy %r not found in %s — skipping",
-            SECURITYPOLICY_NAME,
-            SECURITYPOLICY_FILE,
-        )
-        return None
-
-    try:
-        rules = target_doc["spec"]["authorization"]["rules"]
-        principal = rules[0]["principal"]
-        current_cidrs_list = principal["clientCIDRs"]
-    except (KeyError, IndexError, TypeError) as e:
-        raise ValueError(
-            f"SecurityPolicy {SECURITYPOLICY_NAME!r} in {SECURITYPOLICY_FILE} "
-            f"has no spec.authorization.rules[0].principal.clientCIDRs: {e}"
-        ) from e
-
-    current_cidrs = set(current_cidrs_list)
-    new_cidrs = set(cloudflare_cidrs)
-    added = new_cidrs - current_cidrs
-    removed = current_cidrs - new_cidrs
-
-    principal["clientCIDRs"] = list(cloudflare_cidrs)
-
-    with open(SECURITYPOLICY_FILE, "w", encoding="utf-8") as f:
-        yaml.dump_all(documents, f)
-
-    return UpdateResult(
-        file_path=SECURITYPOLICY_FILE,
-        added=added,
-        removed=removed,
-        total=len(cloudflare_cidrs),
-    )
-
-
 def print_result(result: UpdateResult) -> None:
     print(f"\n=== {result.file_path} ===")
     print(f"Total CIDRs: {result.total}")
@@ -224,20 +138,10 @@ def print_result(result: UpdateResult) -> None:
 def main() -> int:
     try:
         cloudflare_cidrs = fetch_cloudflare_networks()
-        results: list[UpdateResult] = []
-
-        cidrgroup_result = update_cidrgroup(cloudflare_cidrs)
-        results.append(cidrgroup_result)
-        print_result(cidrgroup_result)
-
-        securitypolicy_result = update_securitypolicy(cloudflare_cidrs)
-        if securitypolicy_result is not None:
-            results.append(securitypolicy_result)
-            print_result(securitypolicy_result)
-
-        changed = sum(1 for r in results if r.has_changes)
+        result = update_cidrgroup(cloudflare_cidrs)
+        print_result(result)
         print("\n=== Summary ===")
-        print(f"Files updated: {changed}/{len(results)}")
+        print(f"Files updated: {1 if result.has_changes else 0}/1")
         return 0
     except requests.RequestException as e:
         logger.error("Failed to fetch Cloudflare networks: %s", e)

@@ -6,8 +6,6 @@ on:
     - cron: "0 0 * * *"
 env:
   CIDRGROUP_FILE: kubernetes/apps/networking/cloudflare-tunnel/app/ciliumcidrgroup.yaml
-  SECURITYPOLICY_FILE: kubernetes/apps/networking/envoy-gateway/config/gateway-policies.yaml
-  SECURITYPOLICY_NAME: envoy-external-cloudflare
 jobs:
   update-cloudflare-networks:
     name: Update Cloudflare Networks
@@ -49,11 +47,11 @@ jobs:
           signoff: true
           commit-message: "chore(github-action): update cloudflare networks"
           body: |
-            Update Cloudflare networks in the manifests that mirror them.
+            Update Cloudflare networks in CiliumCIDRGroup referenced by the
+            cloudflare-tunnel CiliumNetworkPolicy.
 
             **Updated files:**
-            - `${{ env.CIDRGROUP_FILE }}` — CiliumCIDRGroup `spec.externalCIDRs` (referenced by the cloudflare-tunnel CiliumNetworkPolicy via `toCIDRSet.cidrGroupRef`)
-            - `${{ env.SECURITYPOLICY_FILE }}` — Envoy Gateway SecurityPolicy `${{ env.SECURITYPOLICY_NAME }}` `spec.authorization.rules[0].principal.clientCIDRs` (defense-in-depth source-CIDR allowlist for the public Gateway)
+            - `${{ env.CIDRGROUP_FILE }}` - CiliumCIDRGroup `spec.externalCIDRs`
 
             **Changes:**
             ```
