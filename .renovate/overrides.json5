@@ -1,0 +1,65 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  packageRules: [
+    {
+      description: "Loose versioning for non-semver image tags",
+      matchDatasources: ["docker"],
+      matchPackageNames: ["/plex/", "/qbittorrent/"],
+      versioning: "loose",
+    },
+    {
+      description: "Regex versioning for calibre-web-automated (V/v-prefixed)",
+      matchDatasources: ["docker"],
+      matchPackageNames: ["ghcr.io/crocodilestick/calibre-web-automated"],
+      versioning: "regex:^[Vv](?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)$",
+    },
+    {
+      description: "Override helmfile dependency name so charts surface as their packageName",
+      matchDatasources: ["docker"],
+      matchManagers: ["helmfile"],
+      overrideDepName: "{{packageName}}",
+    },
+    {
+      description: "Separate minor and patch updates for Helm charts; skip deprecated chart versions",
+      matchDatasources: ["helm"],
+      separateMinorPatch: true,
+      ignoreDeprecated: true,
+    },
+    {
+      description: "Labels for image updates — major",
+      matchDatasources: ["docker"],
+      matchUpdateTypes: ["major"],
+      labels: ["renovate/image", "dep/major"],
+    },
+    {
+      description: "Labels for image updates — minor",
+      matchDatasources: ["docker"],
+      matchUpdateTypes: ["minor"],
+      labels: ["renovate/image", "dep/minor"],
+    },
+    {
+      description: "Labels for image updates — patch",
+      matchDatasources: ["docker"],
+      matchUpdateTypes: ["patch"],
+      labels: ["renovate/image", "dep/patch"],
+    },
+    {
+      description: "Labels for helm chart updates — major",
+      matchDatasources: ["helm"],
+      matchUpdateTypes: ["major"],
+      labels: ["renovate/helm", "dep/major"],
+    },
+    {
+      description: "Labels for helm chart updates — minor",
+      matchDatasources: ["helm"],
+      matchUpdateTypes: ["minor"],
+      labels: ["renovate/helm", "dep/minor"],
+    },
+    {
+      description: "Labels for helm chart updates — patch",
+      matchDatasources: ["helm"],
+      matchUpdateTypes: ["patch"],
+      labels: ["renovate/helm", "dep/patch"],
+    },
+  ],
+}

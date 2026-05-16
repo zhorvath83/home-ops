@@ -1,0 +1,41 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  customManagers: [
+    {
+      customType: "regex",
+      description: "Process OCI dependencies in Kubernetes YAML",
+      managerFilePatterns: [
+        "/^kubernetes/.+\\.yaml(?:\\.j2)?$/",
+      ],
+      matchStrings: [
+        "oci://(?<depName>[^:\\s]+):(?<currentValue>\\S+)",
+      ],
+      datasourceTemplate: "docker",
+    },
+    {
+      customType: "regex",
+      description: "Process inline `# renovate: datasource=X depName=Y` annotations in YAML and mise.toml",
+      managerFilePatterns: [
+        "/^kubernetes/.+\\.yaml(?:\\.j2)?$/",
+        "/(^|/)mise\\.toml$/",
+      ],
+      matchStrings: [
+        "datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)( versioning=(?<versioning>\\S+))?\\n.+?[\"'](?<currentValue>[^\"']+)[\"']",
+      ],
+      datasourceTemplate: "{{#if datasource}}{{{datasource}}}{{else}}github-releases{{/if}}",
+      versioningTemplate: "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}",
+    },
+    {
+      customType: "regex",
+      description: "Process registry.k8s.io container images by tag",
+      managerFilePatterns: [
+        "/^kubernetes/.+\\.yaml(?:\\.j2)?$/",
+      ],
+      matchStrings: [
+        "registry\\.k8s\\.io/(?<depName>[^:\\s]+):(?<currentValue>v\\d+\\.\\d+\\.\\d+)",
+      ],
+      datasourceTemplate: "docker",
+      packageNameTemplate: "registry.k8s.io/{{depName}}",
+    },
+  ],
+}

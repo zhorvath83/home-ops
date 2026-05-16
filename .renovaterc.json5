@@ -1,0 +1,62 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: [
+    ":enableRenovate",
+    "config:recommended",
+    ":disableRateLimiting",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    ":separatePatchReleases",
+    ":automergeBranch",
+    "docker:enableMajor",
+    ":enablePreCommit",
+    "helpers:pinGitHubActionDigests",
+
+    // Local fragments
+    "github>zhorvath83/home-ops//.renovate/allowedVersions.json5",
+    "github>zhorvath83/home-ops//.renovate/autoMerge.json5",
+    "github>zhorvath83/home-ops//.renovate/customManagers.json5",
+    "github>zhorvath83/home-ops//.renovate/disabledDatasources.json5",
+    "github>zhorvath83/home-ops//.renovate/groups.json5",
+    "github>zhorvath83/home-ops//.renovate/overrides.json5",
+    "github>zhorvath83/home-ops//.renovate/prBodyNotes.json5",
+    "github>zhorvath83/home-ops//.renovate/semanticCommits.json5",
+    "github>zhorvath83/home-ops//.renovate/talosFactory.json5",
+  ],
+
+  dependencyDashboardTitle: "Renovate Dashboard 🤖",
+  suppressNotifications: ["prIgnoreNotification"],
+  rebaseWhen: "conflicted",
+  assignees: ["@zhorvath83"],
+  timezone: "Europe/Budapest",
+  minimumReleaseAge: "3 days",
+  minimumReleaseAgeBehaviour: "timestamp-optional",
+
+  // mirror.gcr.io is a read-only Docker Hub proxy; the source of truth is docker.io.
+  // This alias makes Renovate look up versions against docker.io for mirror.gcr.io packages.
+  registryAliases: {
+    "mirror.gcr.io": "docker.io",
+  },
+
+  // Flux / Helm-values / Kubernetes managers scan kubernetes/ YAML and Talos Jinja templates.
+  flux: {
+    managerFilePatterns: [
+      "/^kubernetes/.+\\.yaml(?:\\.j2)?$/",
+    ],
+  },
+  "helm-values": {
+    managerFilePatterns: [
+      "/^kubernetes/.+\\.yaml(?:\\.j2)?$/",
+    ],
+  },
+  kubernetes: {
+    managerFilePatterns: [
+      "/^kubernetes/.+\\.yaml(?:\\.j2)?$/",
+    ],
+  },
+  helmfile: {
+    managerFilePatterns: [
+      "/^kubernetes/bootstrap/helmfile\\.d/.+\\.yaml$/",
+    ],
+  },
+}

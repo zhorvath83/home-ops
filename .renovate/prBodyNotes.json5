@@ -1,0 +1,90 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  packageRules: [
+    {
+      description: "Manual-review note for any major bump",
+      matchUpdateTypes: ["major"],
+      prBodyNotes: [
+        "⚠️ **Major version bump** — review breaking changes manually before merge.",
+      ],
+    },
+    {
+      description: "Reminder for Talos upgrades",
+      matchPackageNames: ["siderolabs/talos", "/installer/", "/talosctl/"],
+      prBodyNotes: [
+        "ℹ️ Talos upgrade — also update `mise.toml` (`TALOS_VERSION`, `talosctl`) and rerun `just talos gen-schematic-id` if the schematic changed.",
+      ],
+    },
+    {
+      description: "Reminder for Cilium upgrades",
+      matchPackageNames: ["/cilium/"],
+      prBodyNotes: [
+        "ℹ️ Cilium upgrade — also update `kubernetes/bootstrap/helmfile.d/01-apps.yaml`. Do not auto-merge.",
+      ],
+    },
+    {
+      description: "Changelog link for Cloudflared",
+      matchDatasources: ["docker"],
+      matchPackageNames: ["cloudflare/cloudflared"],
+      prBodyNotes: [
+        "[Release notes](https://github.com/cloudflare/cloudflared/blob/master/RELEASE_NOTES)",
+      ],
+    },
+    {
+      description: "Changelog link for Plex",
+      matchDatasources: ["docker"],
+      matchPackageNames: ["ghcr.io/home-operations/plex"],
+      prBodyNotes: [
+        "[Plex Media Server release notes](https://forums.plex.tv/t/plex-media-server/30447)",
+      ],
+    },
+    {
+      description: "Changelog link for Sonarr",
+      matchDatasources: ["docker"],
+      matchPackageNames: ["ghcr.io/home-operations/sonarr"],
+      prBodyNotes: [
+        "[Upstream release notes](https://github.com/Sonarr/Sonarr/releases)",
+      ],
+    },
+    {
+      description: "Changelog link for Radarr",
+      matchDatasources: ["docker"],
+      matchPackageNames: ["ghcr.io/home-operations/radarr"],
+      prBodyNotes: [
+        "[Upstream release notes](https://github.com/Radarr/Radarr/releases)",
+      ],
+    },
+    {
+      description: "Changelog link for Bazarr",
+      matchDatasources: ["docker"],
+      matchPackageNames: ["ghcr.io/home-operations/bazarr"],
+      prBodyNotes: [
+        "[Upstream release notes](https://github.com/morpheus65535/bazarr/releases)",
+      ],
+    },
+    {
+      description: "Changelog link for Prowlarr",
+      matchDatasources: ["docker"],
+      matchPackageNames: ["ghcr.io/home-operations/prowlarr"],
+      prBodyNotes: [
+        "[Upstream release notes](https://github.com/Prowlarr/Prowlarr/releases)",
+      ],
+    },
+    {
+      description: "Changelog link for qBittorrent",
+      matchDatasources: ["docker"],
+      matchPackageNames: ["ghcr.io/home-operations/qbittorrent"],
+      prBodyNotes: [
+        "[Upstream release notes](https://github.com/qbittorrent/qBittorrent/releases)",
+      ],
+    },
+    {
+      description: "Changelog link for Paperless-ngx",
+      matchDatasources: ["docker"],
+      matchPackageNames: ["ghcr.io/paperless-ngx/paperless-ngx"],
+      prBodyNotes: [
+        "[Changelog](https://docs.paperless-ngx.com/changelog/)",
+      ],
+    },
+  ],
+}

@@ -1,0 +1,25 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  packageRules: [
+    {
+      description: "Pin Kubernetes to the 1.36.x line (manual minor bumps via `just talos upgrade-k8s`)",
+      matchDatasources: ["docker", "github-releases"],
+      matchPackageNames: [
+        "/kube-apiserver/",
+        "/kube-controller-manager/",
+        "/kube-scheduler/",
+        "/kube-proxy/",
+        "/kubelet/",
+        "ghcr.io/siderolabs/kubelet",
+        "kubernetes/kubernetes",
+      ],
+      allowedVersions: "1.36.x",
+    },
+    {
+      description: "Pin PostgreSQL to the 17 line",
+      matchDatasources: ["docker"],
+      matchPackageNames: ["/postgresql/"],
+      allowedVersions: "<=18",
+    },
+  ],
+}
