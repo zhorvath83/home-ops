@@ -6,15 +6,11 @@ set shell := ['bash', '-euo', 'pipefail', '-c']
 
 talos_dir := justfile_dir() + '/kubernetes/talos'
 
-# Default control plane node — fallback when no talosconfig exists yet
-# (pre-bootstrap, fresh repo clone). Single hardcoded source of truth.
-# Must match the filename under nodes/<NAME>.yaml.j2 AND be resolvable on
-# the LAN (cp0-k8s.lan via OpenWRT dnsmasq → 192.168.1.11).
-default_node := 'cp0-k8s'
-
 # controller_node: dynamically extracted from the active talosconfig endpoint
-# (set by `gen-talosconfig`). Falls back to default_node if talosconfig is
-# absent. `set lazy` above defers evaluation until a recipe actually uses it.
+# (set by `gen-talosconfig`). Falls back to the hardcoded 'cp0-k8s' when
+# talosconfig is absent (fresh repo clone, pre-bootstrap). Must match the
+# filename under nodes/<NAME>.yaml.j2. `set lazy` defers evaluation until a
+# recipe actually uses it.
 controller_node := `talosctl config info -o yaml 2>/dev/null | yq -e '.endpoints[0]' 2>/dev/null || echo 'cp0-k8s'`
 
 [private]
@@ -77,7 +73,7 @@ gen-secrets vault="HomeOps" item="talos":
 [group('setup')]
 [doc('Generate talosconfig from 1Password secrets (one-time, after gen-secrets)')]
 [script]
-gen-talosconfig endpoint="https://192.168.1.11:6443" cluster="main" node=default_node:
+gen-talosconfig endpoint="https://192.168.1.11:6443" cluster="main" node=controller_node:
     : "${TALOSCONFIG:?env TALOSCONFIG required (set by .mise.toml)}"
     tmpdir="$(mktemp -d)"
     trap 'rm -rf "${tmpdir}"' EXIT
@@ -258,13 +254,13 @@ apply-node node *args:
 [group('config')]
 [doc('Print whether a node is a controlplane (from its rendered machineconfig)')]
 [script]
-machine-controller node=default_node:
+machine-controller node=controller_node:
     just talos render-config "{{ node }}" | yq -e 'select(.machine) | (.machine.type == "controlplane") // ""'
 
 [group('config')]
 [doc('Print the Talos install image used by a node (from its rendered machineconfig)')]
 [script]
-machine-image node=default_node:
+machine-image node=controller_node:
     just talos render-config "{{ node }}" | yq -e 'select(.machine) | .machine.install.image'
 
 [group('recovery')]

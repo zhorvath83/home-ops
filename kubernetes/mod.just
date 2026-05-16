@@ -28,14 +28,14 @@ sync resource:
 [group('sync')]
 [doc('Sync single ExternalSecret')]
 [script]
-sync-es ns name:
+sync-es name ns:
     kubectl -n "{{ ns }}" annotate --field-manager flux-client-side-apply --overwrite es "{{ name }}" \
       force-sync="$(date +%s)"
 
 [group('sync')]
 [doc('Sync single Flux HelmRelease')]
 [script]
-sync-hr ns name:
+sync-hr name ns:
     kubectl -n "{{ ns }}" annotate --field-manager flux-client-side-apply --overwrite hr "{{ name }}" \
       reconcile.fluxcd.io/requestedAt="$(date +%s)" \
       reconcile.fluxcd.io/forceAt="$(date +%s)"
@@ -43,7 +43,7 @@ sync-hr ns name:
 [group('sync')]
 [doc('Sync single Flux Kustomization')]
 [script]
-sync-ks ns name:
+sync-ks name ns:
     kubectl -n "{{ ns }}" annotate --field-manager flux-client-side-apply --overwrite ks "{{ name }}" \
       reconcile.fluxcd.io/requestedAt="$(date +%s)"
 
@@ -52,15 +52,15 @@ sync-ks ns name:
 [group('flux')]
 [doc('Apply local Flux Kustomization')]
 [script]
-apply-ks ns ks:
-    just k8s render-local-ks "{{ ns }}" "{{ ks }}" \
+apply-ks name ns:
+    just k8s render-local-ks "{{ name }}" "{{ ns }}" \
       | kubectl apply --server-side --force-conflicts --field-manager=kustomize-controller -f -
 
 [group('flux')]
 [doc('Delete local Flux Kustomization')]
 [script]
-delete-ks ns ks:
-    just k8s render-local-ks "{{ ns }}" "{{ ks }}" | kubectl delete -f -
+delete-ks name ns:
+    just k8s render-local-ks "{{ name }}" "{{ ns }}" | kubectl delete -f -
 
 [group('flux')]
 [doc('Verify Flux prerequisites (flux check --pre)')]
@@ -94,8 +94,8 @@ restart-failed-hrs:
 [group('debug')]
 [doc('Browse a PVC')]
 [script]
-browse-pvc namespace claim:
-    kubectl browse-pvc -n {{ namespace }} -i mirror.gcr.io/alpine:latest {{ claim }}
+browse-pvc claim ns="default":
+    kubectl browse-pvc -n {{ ns }} -i mirror.gcr.io/alpine:latest {{ claim }}
 
 [group('debug')]
 [doc('Run a debug Alpine pod with a PVC mounted at /data/config (Ctrl-D to clean up)')]
@@ -136,10 +136,10 @@ prune-pods:
 [group('debug')]
 [doc('Decode and print a Kubernetes Secret (requires kubectl-view-secret krew plugin)')]
 [script]
-view-secret ns secret:
+view-secret secret ns:
     kubectl view-secret -n {{ ns }} {{ secret }}
 
 [private]
 [script]
-render-local-ks ns ks:
-    flux-local build ks --namespace "{{ ns }}" --path "{{ kubernetes_dir }}/flux/cluster" "{{ ks }}"
+render-local-ks name ns:
+    flux-local build ks --namespace "{{ ns }}" --path "{{ kubernetes_dir }}/flux/cluster" "{{ name }}"
