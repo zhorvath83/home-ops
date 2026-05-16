@@ -22,7 +22,7 @@ snapshot-all:
       just volsync snapshot "$ns" "$name"
     done
 
-[doc('Wipe the PVC and restore it from a Kopia snapshot (positional args: app [previous=0] [ns=default]). previous=0 = latest, previous=N = N-th historical.')]
+[doc('Wipe the PVC and restore it from a Kopia snapshot (positional args: app [previous=0] [ns=default]). previous=0 = latest.')]
 [script]
 restore app previous="0" ns="default":
     flux -n "{{ ns }}" suspend kustomization "{{ app }}"
