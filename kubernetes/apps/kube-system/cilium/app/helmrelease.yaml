@@ -111,4 +111,15 @@ spec:
           - BPF
     socketLB:
       enabled: true
-      hostNamespaceOnly: true
+      # hostNamespaceOnly: true was a copy from older Talos/Istio bootstrap templates.
+      # With bpf.datapathMode: netkit, that setting forces service IP translation to
+      # the per-packet tc-LB BPF program, which records the Service ClusterIP into
+      # the conntrack entry. When the SYN-ACK comes back from the backend pod, its
+      # source IP appears as the Service IP, the CT reply lookup fails, and the
+      # ingress policy on the originating pod drops the return flow (seen on the
+      # envoy-external -> envoy-gateway xDS stream after 4f4b76eec landed).
+      # The chart default (false) keeps service translation at connect() time via
+      # cgroup BPF, so the CT entry holds the real backend pod IP — the return
+      # flow matches stateful CT correctly. Istio compatibility is the only reason
+      # to flip it back to true, and we do not run Istio.
+      hostNamespaceOnly: false
