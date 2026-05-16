@@ -26,7 +26,7 @@ spec:
 
   values:
     # Chart defaults: container=runAsNonRoot+readOnlyRootFS+drop ALL, but NO seccompProfile.
-    # Adding seccompProfile via podSecurityContext for both controller and webhook.
+    # Adding seccompProfile via podSecurityContext on the controller.
     controller:
       podSecurityContext:
         seccompProfile:
@@ -40,16 +40,11 @@ spec:
       serviceMonitor:
         create: true
 
+    # Disable the validating admission webhook — single-node cluster, the
+    # extra deployment + cert lifecycle is unnecessary overhead. bjw-s,
+    # onedr0p, and buroa all set this to false.
     webhook:
-      podSecurityContext:
-        seccompProfile:
-          type: RuntimeDefault
-      resources:
-        requests:
-          cpu: 1m
-          memory: 20Mi
-        limits:
-          memory: 128Mi
+      enabled: false
 
     # VolumeSnapshotClass definitions live with the CSI driver that owns them
     # — see kubernetes/apps/kube-system/democratic-csi/app/volumesnapshotclass.yaml.
