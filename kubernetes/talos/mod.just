@@ -227,7 +227,7 @@ burn-image device="" iso="":
     just log info "Done — USB ready, can be removed safely"
 
 [group('config')]
-[doc('Render Talos config for a node (base + node patch merged, op:// refs resolved). Stdout = ready-to-apply YAML; useful for dry-run before apply.')]
+[doc('Render Talos config for a node (base + node patch merged). Useful for dry-run before apply.')]
 [script]
 render-config node:
     : "${TALOS_VERSION:?env TALOS_VERSION required}"
