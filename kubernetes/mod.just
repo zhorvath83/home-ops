@@ -264,10 +264,12 @@ mount-pvc claim ns="default":
       }
     }'
 
-[doc('Force a full Flux reconcile of the root cluster Kustomization (with-source)')]
+[doc('Force a full Flux reconcile: refresh the Git source, then reconcile both root Kustomizations (cluster-vars + cluster-apps)')]
 [script]
 flux-reconcile:
-    flux reconcile -n flux-system kustomization cluster --with-source
+    flux reconcile source git flux-system -n flux-system
+    flux reconcile kustomization cluster-vars -n flux-system
+    flux reconcile kustomization cluster-apps -n flux-system
 
 [doc('Verify Flux prerequisites (flux check --pre)')]
 [script]
