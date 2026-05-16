@@ -10,14 +10,14 @@ Use this reference to understand where repo-encrypted secrets are consumed.
 
 ## Bootstrap Flow
 
-`task fx:install` currently:
+`just k8s-bootstrap cluster` runs the full chain. The secret-relevant stages, rendered from `kubernetes/bootstrap/resources.yaml.j2` through `minijinja-cli | op inject`, are:
 
-1. creates `sops-age` in `flux-system`
-2. creates the `onepassword-secret` bootstrap secret in `external-secrets`
-3. decrypts `kubernetes/flux/vars/cluster-secrets.sops.yaml`
-4. applies the Flux config under `kubernetes/flux/config/`
+1. creates `sops-age` in `flux-system` (Age key fetched from 1Password)
+2. creates the `onepassword-secret` bootstrap secret in `external-secrets` (1Password Connect credentials + token)
+3. decrypts and applies `kubernetes/flux/vars/cluster-secrets.sops.yaml` via the `cluster-vars` Flux Kustomization (managed by `FluxInstance`)
+4. lets `cluster-apps` reconcile the rest of the tree
 
-If a secret name or file path changes, inspect that task flow together with the manifests.
+If a secret name or file path changes, inspect `kubernetes/bootstrap/resources.yaml.j2`, the `kubernetes/bootstrap/mod.just` `resources` stage, and the consuming manifests together.
 
 ## App-Level Secrets
 
@@ -25,11 +25,11 @@ If a secret name or file path changes, inspect that task flow together with the 
 - they must be registered in `app/kustomization.yaml`
 - mounted or referenced Secret names must stay aligned with `helmrelease.yaml` and any sibling manifests
 
-## Helper Tasks
+## Helper Recipes
 
-The repo already provides:
+The repo provides Just recipes under the `sops` group:
 
-- `task so:re-encrypt`
-- `task so:fix-mac`
-- `task so:encrypt-file file=...`
-- `task so:decrypt-file file=...`
+- `just sops re-encrypt`
+- `just sops fix-mac`
+- `just sops encrypt-file <path>`
+- `just sops decrypt-file <path>`

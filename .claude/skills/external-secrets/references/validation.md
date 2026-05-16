@@ -6,7 +6,7 @@ Use this reference after changing platform or app-level secret delivery.
 
 1. operator, store, and Connect service still reconcile in the intended order
 2. `onepassword` ClusterSecretStore name remains stable unless the entire repo migration is intentional
-3. task-backed flows such as `task es:sync` and Flux bootstrap still match the secret names in the repo
+3. recipe-backed flows such as `just k8s sync-es <ns> <name>` and the `just k8s-bootstrap cluster` chain still match the secret names in the repo
 
 ## App-Level Checks
 

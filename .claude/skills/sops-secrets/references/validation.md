@@ -16,12 +16,12 @@ Read together:
 - verify generated Secret names still match all mounts, env refs, or substitutions
 - verify app-local `secret.sops.yaml` files are still listed in `kustomization.yaml`
 - verify cluster-wide key names still match the manifests that use them
-- if bootstrap flow changed, verify `task fx:install` and `task so:*` expectations still line up
+- if bootstrap flow changed, verify `just k8s-bootstrap cluster` (rendered from `kubernetes/bootstrap/resources.yaml.j2`) and the `just sops` recipes still line up with the manifests
 
 ## Useful Commands
 
-- `task so:re-encrypt` for broad refresh after structural edits
-- `task so:encrypt-file file=...` for newly added secret files
-- `task so:fix-mac` when a MAC mismatch needs repair
+- `just sops re-encrypt` for broad refresh after structural edits
+- `just sops encrypt-file <path>` for newly added secret files
+- `just sops fix-mac` when a MAC mismatch needs repair
 
 If validation cannot run, say whether the blocker is missing `sops`, Age keys, or other local credentials.

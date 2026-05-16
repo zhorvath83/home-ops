@@ -26,7 +26,7 @@ Expected output:
 Use for normal repository changes.
 
 - combine the domain skill for the touched area
-- add `taskfiles`, `versions-renovate`, or `sops-secrets` when those concerns are part of the change
+- add `just`, `versions-renovate`, or `sops-secrets` when those concerns are part of the change
 
 Expected output:
 

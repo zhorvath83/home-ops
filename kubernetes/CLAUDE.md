@@ -33,7 +33,7 @@ Treat everything under `kubernetes/` as desired state for Flux, not as an impera
 - `flux reconcile` only refreshes committed state that Flux can fetch.
 - If changes are uncommitted or not pushed to the watched Git source, a reconcile will not deploy them.
 - Be explicit whether you are describing local-only, committed, or live state.
-- Use `task fx:reconcile` or `flux reconcile ...` only for committed GitOps state, not as a substitute for commit or push.
+- Use `just k8s flux-reconcile` or `flux reconcile ...` only for committed GitOps state, not as a substitute for commit or push.
 - If the user wants to verify or apply uncommitted changes against the cluster, call out that this is intentionally outside the normal GitOps flow.
 
 ## Cross-Cutting Platform Facts

@@ -1,84 +1,80 @@
 # GitOps with Flux
 
-📍 Here we will be installing flux after some quick bootstrap steps.
+The cluster runs Flux through the [Flux Operator](https://fluxcd.control-plane.io/) pattern: a single `FluxInstance` CR declares the controllers, GitRepository, and root Kustomization. There is no classic `flux bootstrap` step.
 
-1.)Verify Flux can be installed
-`flux check --pre`
+The full bootstrap procedure is described in [`docs/migration/05-flux-operator.md`](./migration/05-flux-operator.md) and triggered by `just k8s-bootstrap cluster`. This document is an operational cheatsheet for the running cluster.
 
-2.)Pre-create the flux-system namespace
-`kubectl create namespace flux-system`
+## Topology
 
-3.)Add the Flux age key in-order for Flux to decrypt SOPS secrets
+- `kubernetes/apps/flux-system/flux-operator/` — operator HelmRelease + OCIRepository
+- `kubernetes/apps/flux-system/flux-instance/` — FluxInstance HelmRelease + OCIRepository; `sync.ref` points at the active branch (currently `talos`, becomes `main` at cutover)
+- `kubernetes/flux/cluster/ks.yaml` — root `cluster-vars` + `cluster-apps` Kustomizations that the FluxInstance reconciles
+- `kubernetes/flux/vars/` — `cluster-settings.yaml` (non-secret) + `cluster-secrets.sops.yaml` (SOPS-encrypted) cluster-wide substitutions
 
-Create age public / private key:
-`age-keygen -o age.agekey`
+## Cheatsheet
 
-```bash
-mkdir -p ~/.config/sops/age
-mv age.agekey ~/.config/sops/age/keys.txt
-echo "export SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt" | \
-  tee -a "$HOME/.profile"
-source ~/.profile
+Force a full reconcile (refresh GitRepository, then reconcile both root Kustomizations):
+
+```sh
+just k8s flux-reconcile
 ```
 
-4.)Pull repo source
+Verify Flux prerequisites (`flux check --pre`):
 
-5.)Install Flux
-`kubectl apply --kustomize=./cluster/base/flux-system`
+```sh
+just k8s flux-check
+```
 
-## Post installation
+Sync a single resource without waiting for the next interval:
 
-📍  Verify Flux
-`kubectl --kubeconfig=./kubeconfig get pods -n flux-system`
+```sh
+just k8s sync-hr <namespace> <name>           # HelmRelease
+just k8s sync-ks <namespace> <name>           # Kustomization
+just k8s sync-es <namespace> <name>           # ExternalSecret
 
-📍 VSCode SOPS extension
-VSCode SOPS is a neat little plugin for those using VSCode. It will automatically decrypt you SOPS secrets when you click on the file in the editor and encrypt them when you save and exit the file.
+# polymorphic shortcut (resource = hr|ks|gitrepo|ocirepo|es)
+just k8s sync <resource>
+```
 
-## Debugging
+Inspect Flux state directly with the upstream CLI:
 
-📍 Manually sync Flux with your Git repository
-`flux reconcile source git home-ops-kubernetes`
+```sh
+flux get sources git -A
+flux get ks -A
+flux get hr -A
+flux get sources oci -A
+flux events --watch
+flux logs --all-namespaces --follow --level=error
+```
 
-📍 Show the health of you kustomizations
-`kubectl get kustomization -A`
+## Failed HelmReleases
 
-📍 Manually reconcile kustomization
-`flux reconcile kustomization cluster-apps`
+List or restart failed HRs:
 
-📍 Show the health of your main Flux GitRepository
-`flux get sources git`
+```sh
+just k8s list-failed-hrs
+just k8s restart-failed-hrs
+```
 
-📍 Show the health of your HelmReleases
-`flux get helmrelease -A`
+When a single HR is stuck with `MissingRollbackTarget` or a similar uninstall artefact, a Flux reconcile is **not** enough. Use `helm uninstall <release> -n <ns>` followed by `flux reconcile hr <name> -n <ns> --force`. The pattern is documented in `docs/migration/STATUS.md` (Phase 6 zárás).
 
-📍 Show the health of your HelmRepositorys
-`flux get sources helm -A`
+## Local Kustomization Apply
 
-📍 Reconcile Flux resources
-`flux reconcile helmrelease <release> -n <name-space>`
+Apply or delete a Flux Kustomization defined in the working tree without going through Git:
 
-📍 Pause the Flux Helm Release
-`flux suspend hr <release> -n <name-space>`
+```sh
+just k8s apply-ks <ns> <ks-name>
+just k8s delete-ks <ns> <ks-name>
+```
 
-📍 Print the reconciliation logs of all Flux custom resources in your cluster
-`flux logs --all-namespaces`
+Use this only when intentionally working outside the normal GitOps flow — by default everything goes through commit → push → reconcile.
 
-📍 Stream logs for a particular log level
-`flux logs --follow --level=error --all-namespaces`
+## Debug Helpers
 
-📍 Filter logs by kind, name and namespace
-`flux logs --kind=Kustomization --name=podinfo --namespace=default`
-
-📍 Print logs when Flux is installed in a different namespace than flux-system
-`flux logs --flux-namespace=<name-space>`
-
-## Troubleshooting
-
-📍 Use the following command to also see charts in all namespaces and also the ones where installation is in progress
-`helm list -Aa`
-
-📍 If experiencing "Helm upgrade failed: another operation (install/upgrade/rollback) is in progress..."
-`helm history <release> -n <name-space>`
-
-📍 Then apply a rollback to the latest helathy revision.
-`helm rollback <release> <revision> -n <name-space>`
+```sh
+just k8s browse-pvc <namespace> <claim>
+just k8s mount-pvc <claim> [<ns>]
+just k8s node-shell <node>
+just k8s prune-pods
+just k8s view-secret <namespace> <secret>     # requires kubectl-view-secret krew plugin
+```

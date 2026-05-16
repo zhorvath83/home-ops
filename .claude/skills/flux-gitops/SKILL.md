@@ -24,7 +24,7 @@ cluster-wide apply ordering.
    - `references/layout.md`
    - `references/operations.md`
    - `references/validation.md`
-4. Prefer the existing `fx:` task wrappers for inspection or reconcile steps when the environment is available.
+4. Prefer the existing `just k8s` recipes (`flux-reconcile`, `flux-check`, `sync-hr`, `sync-ks`, `sync-es`, `sync`, `list-failed-hrs`, `restart-failed-hrs`) for inspection or reconcile steps when the environment is available.
 5. Treat local edits as Git state only; do not imply live cluster change without commit, push, and reconcile.
 
 ## Scope Boundaries

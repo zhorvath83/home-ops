@@ -17,7 +17,7 @@ Use this reference to structure operational debugging.
 - workload status, events, and logs for app failures
 - Gateway, HTTPRoute, tunnel, and DNS resources for exposure failures
 - ExternalSecret, generated Secret refs, and bootstrap flows for secret issues
-- ReplicationSource, maintenance resources, and `vs:` task assumptions for backup issues
+- ReplicationSource, ReplicationDestination, maintenance resources, and the `just volsync` recipes for backup issues
 
 ## Reasoning Rules
 

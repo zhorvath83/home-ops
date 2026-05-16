@@ -40,7 +40,7 @@ Observed live behavior:
 When editing OnePassword Connect:
 
 - preserve the UID/GID assumptions unless upstream changes require otherwise
-- keep secret key names aligned with the Taskfile bootstrap flow
+- keep secret key names aligned with `kubernetes/bootstrap/resources.yaml.j2` — the `just k8s-bootstrap cluster` chain renders that template through `op inject` to create the `onepassword-secret` Secret consumed by this Deployment
 - verify both `api` and `sync` containers if changing ports, probes, or env vars
 
 ## ExternalSecret Rules For The Repo

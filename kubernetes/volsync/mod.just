@@ -22,26 +22,44 @@ snapshot-all:
       just volsync snapshot "$ns" "$name"
     done
 
-[doc('Wait for a ReplicationDestination to finish synchronizing (positional args: ns name)')]
+[doc('Wipe the PVC and restore it from a Kopia snapshot (positional args: app [previous=0] [ns=default]). previous=0 = latest, previous=N = N-th historical.')]
 [script]
-wait-rd ns name:
-    kubectl -n "{{ ns }}" wait --for=condition=Synchronizing=False --timeout=30m replicationdestination/"{{ name }}"
-
-[doc('Trigger the always-on bootstrap restore for an app (positional args: app [ns=default])')]
-[script]
-restore app ns="default":
-    kubectl -n "{{ ns }}" patch replicationdestination "{{ app }}-bootstrap" --type merge \
-      -p '{"spec":{"trigger":{"manual":"restore-once"}}}'
-    just volsync wait-rd "{{ ns }}" "{{ app }}-bootstrap"
-
-[doc('Point-in-time restore into the existing PVC via VolSync Direct copyMethod (positional args: ns app [previous=0]).')]
-[script]
-restore-into ns app previous="0":
+restore app previous="0" ns="default":
     flux -n "{{ ns }}" suspend kustomization "{{ app }}"
     flux -n "{{ ns }}" suspend helmrelease "{{ app }}"
     kubectl -n "{{ ns }}" get deploy,sts -l "app.kubernetes.io/name={{ app }}" -o name \
       | xargs -r -I{} kubectl -n "{{ ns }}" scale {} --replicas=0
     kubectl -n "{{ ns }}" wait pod --for=delete --selector="app.kubernetes.io/name={{ app }}" --timeout=5m || true
+    cat <<EOF | kubectl apply --server-side -f -
+    apiVersion: batch/v1
+    kind: Job
+    metadata:
+      name: {{ app }}-wipe
+      namespace: {{ ns }}
+    spec:
+      ttlSecondsAfterFinished: 60
+      backoffLimit: 0
+      template:
+        spec:
+          restartPolicy: Never
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+            fsGroup: 0
+          containers:
+            - name: wipe
+              image: docker.io/library/alpine:latest
+              command: ["sh", "-c", "find /data -mindepth 1 -delete"]
+              volumeMounts:
+                - name: target
+                  mountPath: /data
+          volumes:
+            - name: target
+              persistentVolumeClaim:
+                claimName: {{ app }}
+    EOF
+    kubectl -n "{{ ns }}" wait "job/{{ app }}-wipe" --for=condition=complete --timeout=10m
+    kubectl -n "{{ ns }}" delete job "{{ app }}-wipe"
     cat <<EOF | kubectl apply --server-side -f -
     apiVersion: volsync.backube/v1alpha1
     kind: ReplicationDestination

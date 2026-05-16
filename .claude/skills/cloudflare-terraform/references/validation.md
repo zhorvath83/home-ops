@@ -4,9 +4,10 @@ Use this reference after changing Cloudflare Terraform files.
 
 ## Preferred Validation Flow
 
-1. `task tf:init:cloudflare` when initialization is needed
-2. `task tf:plan:cloudflare` for behavioral validation
-3. `task tf:apply:cloudflare` only when the user explicitly wants the change applied
+1. `just cloudflare init` when initialization is needed
+2. `just cloudflare plan` for behavioral validation
+3. `just cloudflare apply` only when the user explicitly wants the change applied
+4. `just cloudflare unlock <id>` only for state-lock recovery, never as a routine step
 
 ## Checks
 

@@ -25,10 +25,10 @@ modes, and different validation workflows.
    - `references/operations.md`
    - `references/validation.md` for final checks
 4. If the task also changes application manifests, use `k8s-workloads` alongside this skill.
-5. If the task also touches `kubernetes/volsync/mod.just` recipe wiring or adds new operational entry points, use `taskfiles` alongside this skill.
+5. If the task also touches `kubernetes/volsync/mod.just` recipe wiring or adds new operational entry points, use `just` alongside this skill.
 
 ## Scope Boundaries
 
 - Use this skill when backup policy, restore behavior, or VolSync platform resources are part of the task.
 - Use `k8s-workloads` for ordinary app manifest changes that only consume an unchanged backup model.
-- Use `taskfiles` as well when the `just volsync` recipes or their wiring are changing.
+- Use `just` as well when the `just volsync` recipes or their wiring are changing.

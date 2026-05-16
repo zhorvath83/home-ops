@@ -22,7 +22,7 @@ Read the touched files together:
 ## Useful Commands
 
 - search sibling patterns with `rg`
-- inspect task-backed entry points in `Taskfile.yml`
-- use Flux and Kubernetes task wrappers when the environment is available
+- inspect recipe-backed entry points in the root `.justfile` and `kubernetes/mod.just`
+- use `just k8s` and `flux`/`kubectl` directly when the environment is available
 
 If validation cannot run, say whether the blocker is missing tooling, credentials, or cluster access.
