@@ -4,18 +4,18 @@ Use this reference when choosing Flux-related commands or recipes.
 
 ## Canonical Entry Points
 
-The cluster runs Flux through the Flux Operator + `FluxInstance` pattern. There is no classic `flux bootstrap`; the platform is brought up by `just k8s-bootstrap cluster`.
+The cluster runs Flux through the Flux Operator + `FluxInstance` pattern. There is no classic `flux bootstrap`; the platform is brought up by `just cluster-bootstrap cluster`.
 
 For everyday Flux work, prefer the `just k8s` recipes (group `flux` and `sync`):
 
 - `just k8s flux-reconcile` — refresh the Git source and reconcile both root Kustomizations (`cluster-vars` + `cluster-apps`)
 - `just k8s flux-check` — `flux check --pre`
-- `just k8s sync-hr <ns> <name>` — sync a single HelmRelease
-- `just k8s sync-ks <ns> <name>` — sync a single Kustomization
-- `just k8s sync-es <ns> <name>` — sync a single ExternalSecret
+- `just k8s sync-hr <name> <namespace>` — sync a single HelmRelease
+- `just k8s sync-ks <name> <namespace>` — sync a single Kustomization
+- `just k8s sync-es <name> <namespace>` — sync a single ExternalSecret
 - `just k8s sync <resource>` — polymorphic cluster-wide sync (`hr|ks|gitrepo|ocirepo|es`)
 - `just k8s list-failed-hrs` / `just k8s restart-failed-hrs`
-- `just k8s apply-ks <ns> <name>` / `just k8s delete-ks <ns> <name>` — local-only Kustomization apply/delete
+- `just k8s apply-ks <name> <namespace>` / `just k8s delete-ks <name> <namespace>` — local-only Kustomization apply/delete
 
 Use the upstream CLI directly when no recipe wraps the operation:
 

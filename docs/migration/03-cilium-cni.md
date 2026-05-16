@@ -437,7 +437,7 @@ Tipikus hibák:
 helm -n kube-system uninstall cilium
 kubectl -n kube-system delete crd $(kubectl get crd -o name | grep cilium.io)
 # Most a node NotReady — gyors reinstall:
-just k8s-bootstrap apps         # helmfile sync
+just cluster-bootstrap apps         # helmfile sync
 ```
 
 A pod-ok újraindulnak, de a service IP-k újragenerálódnak L2-n.

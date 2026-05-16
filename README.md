@@ -25,7 +25,7 @@ The cluster runs Flux through the [Flux Operator](https://fluxcd.control-plane.i
 - `cluster-apps` recursively walks `kubernetes/apps/` and applies every `ks.yaml`.
 - Each app folder generally contains a `ks.yaml`, the actual manifests under `app/`, and optionally extra directories such as `config/`, `certificate/`, or `backup/`.
 
-The full bootstrap procedure is described in [docs/migration/05-flux-operator.md](docs/migration/05-flux-operator.md) and triggered by `just k8s-bootstrap cluster`.
+The full bootstrap procedure is described in [docs/migration/05-flux-operator.md](docs/migration/05-flux-operator.md) and triggered by `just cluster-bootstrap cluster`.
 
 ### Renovate
 
@@ -109,7 +109,7 @@ See [docs/networking-readme.md](docs/networking-readme.md) for the current routi
 
 - **[sops](https://github.com/getsops/sops)**: Git-committed secrets for Kubernetes and Terraform (Age-encrypted)
 - **[mise](https://mise.jdx.dev/)**: Pinned versions for `talosctl`, `kubectl`, `helm`, `helmfile`, `flux2`, `just`, `sops`, and the rest of the CLI surface
-- **[Just](https://github.com/casey/just)**: Recipe runner; the root `.justfile` imports per-area `mod.just` modules (`k8s`, `k8s-bootstrap`, `talos`, `volsync`, `omv`, `cloudflare`, `ovh`, `sops`, `openwrt`)
+- **[Just](https://github.com/casey/just)**: Recipe runner; the root `.justfile` imports per-area `mod.just` modules (`k8s`, `cluster-bootstrap`, `talos`, `volsync`, `omv`, `cloudflare`, `ovh`, `sops`, `openwrt`)
 - **[minijinja-cli](https://github.com/mitsuhiko/minijinja)** + `op inject`: Templated bootstrap-time resources fed from 1Password
 
 ## ☁️ Cloud Provider: Cloudflare
@@ -132,7 +132,7 @@ All Cloudflare resources are managed using Terraform with the Cloudflare provide
 The cluster uses a hybrid approach for secrets management:
 
 - **Cluster-wide and bootstrap secrets**: Encrypted with SOPS (Age) and stored in the Git repository
-- **Application secrets**: Stored in 1Password and accessed via the External Secrets operator against the shared `onepassword` `ClusterSecretStore`
+- **Application secrets**: Stored in 1Password and accessed via the External Secrets operator against the shared `onepassword-connect` `ClusterSecretStore`
 
 This setup ensures sensitive data is properly secured while maintaining the GitOps workflow.
 

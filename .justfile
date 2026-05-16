@@ -6,8 +6,8 @@ set quiet
 set script-interpreter := ['bash', '-euo', 'pipefail']
 set shell := ['bash', '-euo', 'pipefail', '-c']
 
-[group: 'k8s-bootstrap']
-mod k8s-bootstrap "kubernetes/bootstrap"
+[group: 'cluster-bootstrap']
+mod cluster-bootstrap "kubernetes/bootstrap"
 
 [group: 'k8s']
 mod k8s "kubernetes"

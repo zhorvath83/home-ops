@@ -19,7 +19,7 @@
 | `kubernetes/bootstrap/flux/` k3s-éra legacy törlés | ✅ kész |
 | `1Password HomeOps/homelab-age-key` item létrehozva | ⏸ verifikálandó éles futtatás előtt |
 | `1Password HomeOps/1password-connect-kubernetes` item (credentials + token) | ⏸ verifikálandó éles futtatás előtt |
-| `just k8s-bootstrap cluster` éles futtatás | ⏸ pending — végrehajtás következő session |
+| `just cluster-bootstrap cluster` éles futtatás | ⏸ pending — végrehajtás következő session |
 
 ## Cél
 
@@ -307,7 +307,7 @@ nodes := `talosctl config info -o yaml | yq -e '.nodes | join (" ")'`
 [private]
 [script]
 default:
-    just -l k8s-bootstrap
+    just -l cluster-bootstrap
 
 [doc('Bootstrap Cluster — teljes Talos+K8s lánc')]
 [script]
@@ -389,7 +389,7 @@ export TALOS_SCHEMATIC_ID="$(just talos gen-schematic-id)"
 export TALOS_VERSION="$(curl -s https://api.github.com/repos/siderolabs/talos/releases/latest | jq -r .tag_name)"
 export KUBERNETES_VERSION="$(curl -s https://api.github.com/repos/kubernetes/kubernetes/releases/latest | jq -r .tag_name)"
 
-just k8s-bootstrap cluster
+just cluster-bootstrap cluster
 ```
 
 Egyetlen parancs → teljes cluster (Talos config → bootstrap → kubeconfig → namespaces → resources → CRDs → 8 release helmfile chain).
@@ -478,7 +478,7 @@ kubectl -n external-secrets logs deploy/external-secrets-webhook
 # diagnose
 
 # Fix → helmfile retry:
-just k8s-bootstrap apps
+just cluster-bootstrap apps
 ```
 
 A helmfile idempotens — már install-elt release-eket nem nyúlja, csak ami hiányzik vagy diff-ben van.
@@ -489,7 +489,7 @@ A helmfile idempotens — már install-elt release-eket nem nyúlja, csak ami hi
 just talos reset-cluster reboot
 # minden disk wipe
 # majd újra:
-just k8s-bootstrap cluster
+just cluster-bootstrap cluster
 ```
 
 ## Open issues

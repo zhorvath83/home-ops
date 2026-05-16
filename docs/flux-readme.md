@@ -2,7 +2,7 @@
 
 The cluster runs Flux through the [Flux Operator](https://fluxcd.control-plane.io/) pattern: a single `FluxInstance` CR declares the controllers, GitRepository, and root Kustomization. There is no classic `flux bootstrap` step.
 
-The full bootstrap procedure is described in [`docs/migration/05-flux-operator.md`](./migration/05-flux-operator.md) and triggered by `just k8s-bootstrap cluster`. This document is an operational cheatsheet for the running cluster.
+The full bootstrap procedure is described in [`docs/migration/05-flux-operator.md`](./migration/05-flux-operator.md) and triggered by `just cluster-bootstrap cluster`. This document is an operational cheatsheet for the running cluster.
 
 ## Topology
 
@@ -28,9 +28,9 @@ just k8s flux-check
 Sync a single resource without waiting for the next interval:
 
 ```sh
-just k8s sync-hr <namespace> <name>           # HelmRelease
-just k8s sync-ks <namespace> <name>           # Kustomization
-just k8s sync-es <namespace> <name>           # ExternalSecret
+just k8s sync-hr <name> <namespace>           # HelmRelease
+just k8s sync-ks <name> <namespace>           # Kustomization
+just k8s sync-es <name> <namespace>           # ExternalSecret
 
 # polymorphic shortcut (resource = hr|ks|gitrepo|ocirepo|es)
 just k8s sync <resource>
@@ -63,8 +63,8 @@ When a single HR is stuck with `MissingRollbackTarget` or a similar uninstall ar
 Apply or delete a Flux Kustomization defined in the working tree without going through Git:
 
 ```sh
-just k8s apply-ks <ns> <ks-name>
-just k8s delete-ks <ns> <ks-name>
+just k8s apply-ks <name> <namespace>
+just k8s delete-ks <name> <namespace>
 ```
 
 Use this only when intentionally working outside the normal GitOps flow — by default everything goes through commit → push → reconcile.
@@ -72,9 +72,9 @@ Use this only when intentionally working outside the normal GitOps flow — by d
 ## Debug Helpers
 
 ```sh
-just k8s browse-pvc <namespace> <claim>
-just k8s mount-pvc <claim> [<ns>]
+just k8s browse-pvc <claim> [<namespace>]
+just k8s mount-pvc <claim> [<namespace>]
 just k8s node-shell <node>
 just k8s prune-pods
-just k8s view-secret <namespace> <secret>     # requires kubectl-view-secret krew plugin
+just k8s view-secret <secret> <namespace>     # requires kubectl-view-secret krew plugin
 ```

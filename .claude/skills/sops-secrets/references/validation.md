@@ -16,7 +16,7 @@ Read together:
 - verify generated Secret names still match all mounts, env refs, or substitutions
 - verify app-local `secret.sops.yaml` files are still listed in `kustomization.yaml`
 - verify cluster-wide key names still match the manifests that use them
-- if bootstrap flow changed, verify `just k8s-bootstrap cluster` (rendered from `kubernetes/bootstrap/resources.yaml.j2`) and the `just sops` recipes still line up with the manifests
+- if bootstrap flow changed, verify `just cluster-bootstrap cluster` (rendered from `kubernetes/bootstrap/resources.yaml.j2`) and the `just sops` recipes still line up with the manifests
 
 ## Useful Commands
 

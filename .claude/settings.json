@@ -36,7 +36,7 @@
       "Bash(flux debug:*)"
     ],
     "deny": [
-      "Bash(just k8s-bootstrap cluster:*)",
+      "Bash(just cluster-bootstrap cluster:*)",
       "Bash(just talos get-kubeconfig:*)",
       "Bash(just talos apply-node:*)",
       "Bash(just talos upgrade-node:*)",
@@ -48,7 +48,6 @@
       "Bash(just talos bootstrap:*)",
       "Bash(just talos gen-secrets:*)",
       "Bash(just volsync restore:*)",
-      "Bash(just volsync restore-into:*)",
       "Bash(just volsync state:*)",
       "Bash(just k8s restart-failed-hrs:*)",
       "Bash(just k8s delete-ks:*)",

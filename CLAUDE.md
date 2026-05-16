@@ -9,7 +9,7 @@ This file is the operational guide for working in this repository. Treat it as t
 - Do not hardcode public domains, public IP addresses, or email addresses in manifests, docs, operational wrappers, or examples when the value belongs in secret-backed configuration.
 - Private RFC1918 addresses, cluster-local hostnames, and other internal topology values are acceptable when they reflect the live repo model.
 - Sensitive cluster-wide substitutions belong in `kubernetes/flux/vars/cluster-secrets.sops.yaml`; non-secret cluster-wide values belong in `kubernetes/flux/vars/cluster-settings.yaml`.
-- For app-managed secrets, prefer External Secrets backed by the shared `ClusterSecretStore` named `onepassword` when the target area already follows that pattern.
+- For app-managed secrets, prefer External Secrets backed by the shared `ClusterSecretStore` named `onepassword-connect` when the target area already follows that pattern.
 - Keep GitOps as the source of truth for steady-state cluster configuration. Avoid manual out-of-band `kubectl apply` changes except for documented bootstrap, recovery, or existing Just-driven workflows in the repo.
 
 ## Scope And Priorities
@@ -20,7 +20,7 @@ Use these sources in this order:
 2. This `CLAUDE.md`
 3. More specific `CLAUDE.md` files in subdirectories
 4. `.justfile` (root) and `mod.just` files under `kubernetes/`, `kubernetes/bootstrap/`, `kubernetes/talos/`, `kubernetes/volsync/`, `provision/openmediavault/`, `provision/cloudflare/`, `provision/ovh/`, `provision/sops/`, `provision/openwrt/`
-5. `.github/renovate.json5` and `.github/renovate/*`
+5. `.renovaterc.json5` (repo root) and the imported fragments under `.renovate/*.json5`
 6. repo-local skills under `.claude/skills/`
 7. Root `README.md` and `docs/*.md` for human-facing context
 
@@ -48,7 +48,7 @@ This repository currently manages a single-node home infrastructure stack with t
 - `provision/ovh/`: Terraform for OVH Cloud Project Storage (S3 backup buckets and the S3 user consumed by the VolSync/Kopia and resticprofile backup planes)
 - `.claude/skills/`: repo-local skill sources for reusable workflow knowledge
 - `.justfile` + `**/mod.just`: operational entry points (Just-based, replaces the previous Task system)
-- `.github/renovate*`: Renovate policy and package rule definitions
+- `.renovaterc.json5` + `.renovate/*.json5`: Renovate policy and package rule definitions (root config + per-topic fragments)
 - `docs/`: human-facing runbooks and reference notes
 
 ## Working Rules
@@ -104,12 +104,12 @@ This repository currently manages a single-node home infrastructure stack with t
 ## Just And Renovate Model
 
 - The root `.justfile` is the command index; prefer existing Just modules over ad-hoc shell flows.
-- Current Just modules (groups) are: `k8s-bootstrap`, `k8s`, `talos`, `volsync`, `omv`, `cloudflare`, `ovh`, `sops`, `openwrt`.
+- Current Just modules (groups) are: `cluster-bootstrap`, `k8s`, `talos`, `volsync`, `omv`, `cloudflare`, `ovh`, `sops`, `openwrt`.
 - Each module lives next to the area it operates on: `kubernetes/bootstrap/mod.just`, `kubernetes/mod.just`, `kubernetes/talos/mod.just`, `kubernetes/volsync/mod.just`, `provision/openmediavault/mod.just`, `provision/cloudflare/mod.just`, `provision/ovh/mod.just`, `provision/sops/mod.just`, `provision/openwrt/mod.just`.
-- Invoke recipes as `just <group> <recipe> [args]` (e.g. `just k8s sync-hr ns name`, `just volsync list-snapshots actual`, `just sops re-encrypt`, `just talos apply-node cp0-k8s`).
+- Invoke recipes as `just <group> <recipe> [args]` (e.g. `just k8s sync-hr paperless default`, `just volsync list-snapshots actual`, `just sops re-encrypt`, `just talos apply-node cp0-k8s`).
 - Recipe arguments are **positional only** — Just does not parse `key=value` named arguments the way the previous Task system did. Pass values in order, omitting trailing defaults.
 - Pre-commit is invoked directly via the `pre-commit` CLI (no Just wrapper); the hook list is in `.pre-commit-config.yaml`.
-- Renovate configuration starts in `.github/renovate.json5` and imports the fragments under `.github/renovate/`.
+- Renovate configuration starts in `.renovaterc.json5` at the repo root and imports the fragments under `.renovate/` (`allowedVersions`, `autoMerge`, `customManagers`, `disabledDatasources`, `groups`, `overrides`, `prBodyNotes`, `semanticCommits`, `talosFactory`).
 - Preserve inline `# renovate:` annotations when touching versioned manifests.
 - If Renovate behavior changes, inspect the root config together with the touched fragment or annotation.
 

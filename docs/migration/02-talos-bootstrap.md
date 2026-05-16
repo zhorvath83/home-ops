@@ -425,7 +425,7 @@ kubectl get nodes
 
 ### Stage 4: Cilium install — átadás a [03-cilium-cni.md](./03-cilium-cni.md) docnak
 
-A `just k8s-bootstrap cluster` recipe ezt a teljes lánc-ot egy parancsban lefutta — lásd [04-bootstrap-helmfile.md](./04-bootstrap-helmfile.md).
+A `just cluster-bootstrap cluster` recipe ezt a teljes lánc-ot egy parancsban lefutta — lásd [04-bootstrap-helmfile.md](./04-bootstrap-helmfile.md).
 
 ## Talos kernel modulok és extensions
 

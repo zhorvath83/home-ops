@@ -15,7 +15,7 @@ Read the touched files together:
 - verify Flux object names and `dependsOn` references still match the repo's live naming scheme
 - verify shared vars still match the manifests that consume them
 - verify webhook, provider, and receiver resources still agree on names and namespaces
-- if bootstrap flow changed, verify `just k8s-bootstrap cluster` (and the rendered `kubernetes/bootstrap/resources.yaml.j2`) still points at the same Secret and `kubernetes/flux/vars/` files
+- if bootstrap flow changed, verify `just cluster-bootstrap cluster` (and the rendered `kubernetes/bootstrap/resources.yaml.j2`) still points at the same Secret and `kubernetes/flux/vars/` files
 - if app dependencies changed, confirm the effect is intentionally cluster-wide rather than app-local
 
 If validation cannot run, say whether the blocker is missing Flux tooling, credentials, or cluster access.

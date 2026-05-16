@@ -17,11 +17,18 @@ nodes := `find ../talos/nodes -maxdepth 1 -name '*.yaml.j2' -exec basename {} .y
 [private]
 [script]
 default:
-    just -l k8s-bootstrap
+    just -l cluster-bootstrap
 
-[doc('Bootstrap the full Talos + Kubernetes platform chain')]
+[doc('Reassemble the Talos + Kubernetes platform on already-prepared nodes. Pre-requisites: just talos gen-secrets + USB-install done manually.')]
 [script]
-cluster: talos kubernetes (kubeconfig "node") wait namespaces resources crds apps kubeconfig
+cluster: talosconfig talos kubernetes (kubeconfig "node") wait namespaces resources crds apps kubeconfig
+
+[private]
+[doc('Stage: regenerate the local talosconfig from 1Password secrets (idempotent — overwrites the local file).')]
+[script]
+talosconfig:
+    just log info "Stage: regenerate talosconfig from 1Password"
+    just talos gen-talosconfig
 
 [private]
 [doc('Stage: apply Talos machine config to every node (idempotent — skips already configured nodes)')]

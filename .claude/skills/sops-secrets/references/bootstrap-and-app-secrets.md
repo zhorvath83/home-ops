@@ -10,7 +10,7 @@ Use this reference to understand where repo-encrypted secrets are consumed.
 
 ## Bootstrap Flow
 
-`just k8s-bootstrap cluster` runs the full chain. The secret-relevant stages, rendered from `kubernetes/bootstrap/resources.yaml.j2` through `minijinja-cli | op inject`, are:
+`just cluster-bootstrap cluster` runs the full chain. The secret-relevant stages, rendered from `kubernetes/bootstrap/resources.yaml.j2` through `minijinja-cli | op inject`, are:
 
 1. creates `sops-age` in `flux-system` (Age key fetched from 1Password)
 2. creates the `onepassword-secret` bootstrap secret in `external-secrets` (1Password Connect credentials + token)
