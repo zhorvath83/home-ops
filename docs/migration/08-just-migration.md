@@ -46,8 +46,8 @@ set quiet
 set script-interpreter := ['bash', '-euo', 'pipefail']
 set shell := ['bash', '-euo', 'pipefail', '-c']
 
-[group: 'k8s-bootstrap']
-mod k8s-bootstrap "kubernetes/bootstrap"
+[group: 'cluster-bootstrap']
+mod cluster-bootstrap "kubernetes/bootstrap"
 
 [group: 'k8s']
 mod k8s "kubernetes"
@@ -86,8 +86,8 @@ A `just -l` (vagy csak `just`) megmutatja a top-level mod-ok és group-ok listá
 ```
 Available recipes:
 
-  [k8s-bootstrap]
-    just k8s-bootstrap <recipe>
+  [cluster-bootstrap]
+    just cluster-bootstrap <recipe>
 
   [k8s]
     just k8s <recipe>
@@ -303,9 +303,9 @@ render-local-ks ns ks:
 ## `kubernetes/bootstrap/mod.just`
 
 A 04-es docban már részletezett. Itt referenciaként:
-- `just k8s-bootstrap cluster` — teljes lánc (talos → k8s → kubeconfig → namespaces → resources → crds → apps)
-- `just k8s-bootstrap apps` — csak a helmfile sync
-- `just k8s-bootstrap crds` — csak CRD apply
+- `just cluster-bootstrap cluster` — teljes lánc (talos → k8s → kubeconfig → namespaces → resources → crds → apps)
+- `just cluster-bootstrap apps` — csak a helmfile sync
+- `just cluster-bootstrap crds` — csak CRD apply
 - Privát stage recipe-ek
 
 ## `kubernetes/talos/mod.just`
@@ -415,7 +415,7 @@ Hasonlóan `provision/ovh/mod.just`.
 | `task an:force-poweroff` | `talosctl -n <ip> shutdown` | |
 | `task es:sync` | `just k8s sync-es <ns> <name>` | egyszerűbb név |
 | `task fx:verify` | `flux check --pre` | natív flux parancs |
-| `task fx:install` | `just k8s-bootstrap cluster` | Talos bootstrap is benne |
+| `task fx:install` | `just cluster-bootstrap cluster` | Talos bootstrap is benne |
 | `task fx:reconcile` | `flux reconcile -n flux-system ks cluster-apps --with-source` | natív |
 | `task fx:hr-restart` | `just k8s restart-failed-hrs` | |
 | `task fx:nodes` | `kubectl get nodes` | natív |

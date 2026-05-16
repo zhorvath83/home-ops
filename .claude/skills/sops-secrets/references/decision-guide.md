@@ -12,7 +12,7 @@ Use this reference when deciding whether a secret belongs in SOPS or in External
 ## Prefer External Secrets When
 
 - the value should be sourced from 1Password rather than stored in repo
-- the app follows the shared `ClusterSecretStore` `onepassword` pattern
+- the app follows the shared `ClusterSecretStore` `onepassword-connect` pattern
 - the task is about operator ordering, store names, or templated extraction from 1Password items
 
 ## Mixed Cases

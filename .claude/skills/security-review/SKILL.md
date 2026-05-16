@@ -1,6 +1,6 @@
 ---
 name: security-review
-description: Review security posture and hardening changes in the home-ops repository. Use when assessing real exploitability, blast radius, exposure surface, detection gaps, or hardening regressions across Kubernetes, Flux, secrets, networking, Cloudflare, or task-backed workflows. Do not use this skill for open-ended destructive testing or for ordinary implementation work with no explicit security angle.
+description: Review security posture and hardening changes in the home-ops repository. Use when assessing real exploitability, blast radius, exposure surface, detection gaps, or hardening regressions across Kubernetes, Flux, secrets, networking, Cloudflare, or Just-driven operational workflows. Do not use this skill for open-ended destructive testing or for ordinary implementation work with no explicit security angle.
 ---
 
 # Home Ops Security Review

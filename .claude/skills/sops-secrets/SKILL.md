@@ -1,6 +1,6 @@
 ---
 name: sops-secrets
-description: Work on SOPS-encrypted secret material in the home-ops repository. Use when modifying kubernetes/flux/vars/cluster-secrets.sops.yaml, app-level secret.sops.yaml files, the repo's SOPS helper tasks, or bootstrap secret flows that depend on repo-encrypted values. Do not use this skill for ExternalSecret and 1Password delivery changes unless repo-encrypted secret material is also part of the task.
+description: Work on SOPS-encrypted secret material in the home-ops repository. Use when modifying kubernetes/flux/vars/cluster-secrets.sops.yaml, app-level secret.sops.yaml files, the repo's `just sops` helper recipes, or bootstrap secret flows that depend on repo-encrypted values. Do not use this skill for ExternalSecret and 1Password delivery changes unless repo-encrypted secret material is also part of the task.
 ---
 
 # Home Ops SOPS Secrets
@@ -15,7 +15,7 @@ Use this skill when secret data is stored in git in SOPS-encrypted form. It comp
 2. Decide whether the task is mainly:
    - cluster-wide secret substitutions under `kubernetes/flux/vars/`
    - app-level `secret.sops.yaml` material
-   - bootstrap or task-backed SOPS workflow changes
+   - bootstrap or recipe-backed SOPS workflow changes
 3. Load only the needed reference:
    - `references/decision-guide.md`
    - `references/bootstrap-and-app-secrets.md`

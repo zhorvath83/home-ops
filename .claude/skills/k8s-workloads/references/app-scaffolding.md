@@ -32,7 +32,7 @@ For scheduled sidecar work, a sibling directory such as `backup/` is acceptable 
 ## `ks.yaml`
 
 - `ks.yaml` is the Flux entry point.
-- Flux Kustomization names follow `cluster-apps-<app>`.
+- Flux Kustomization names follow the simple `<app>` convention (e.g. `paperless`, `plex`, `backrest`). The Kustomization lives in the `flux-system` namespace but its workloads target `default` or another app namespace.
 - `path` should point to the concrete child directory being applied.
 - `dependsOn` must declare real startup dependencies; never rely on creation order.
 - Use `postBuild.substitute` for repeated app-local values when the sibling pattern already does that.
@@ -40,8 +40,8 @@ For scheduled sidecar work, a sibling directory such as `backup/` is acceptable 
 
 ## Dependency Heuristics
 
-- PVC-backed app: add the CSI dependency used by sibling apps.
-- App secrets from 1Password: add `cluster-apps-onepassword-store`.
+- PVC-backed app: add the CSI dependency used by sibling apps (typically `democratic-csi`).
+- App secrets from 1Password: add `dependsOn: [{ name: onepassword-connect }]` (the Kustomization that applies the 1Password Connect Deployment and the `ClusterSecretStore/onepassword-connect`).
 - App needs another in-cluster service on startup: depend on that app's Flux Kustomization.
 - Child or sidecar workload: depend on the parent app when ordering matters.
 

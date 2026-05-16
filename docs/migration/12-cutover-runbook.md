@@ -16,7 +16,7 @@ Egyetlen cutover ablakban átkapcsolni a teljes éles stack-et a régi K3s clust
 ### T-5 nap: új cluster build a talos branch-en
 
 - [ ] Talos schematic + ISO + USB elkészítve ([02-talos-bootstrap.md](./02-talos-bootstrap.md)).
-- [ ] `just k8s-bootstrap cluster` lefutott, új cluster `Ready`.
+- [ ] `just cluster-bootstrap cluster` lefutott, új cluster `Ready`.
 - [ ] Cilium L2 announcement működik (test LoadBalancer service kap IP-t).
 - [ ] Flux Operator + FluxInstance reconcile-olja a `talos` branch-et.
 - [ ] **MINDEN PVC NÉLKÜLI app fut** (cert-manager, ESO, k8s-gateway, envoy-gateway, observability stack, etc.).

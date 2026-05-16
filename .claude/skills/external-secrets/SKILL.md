@@ -1,6 +1,6 @@
 ---
 name: external-secrets
-description: Work on shared secret delivery in the home-ops repository. Use when modifying the external-secrets platform, 1Password Connect, the onepassword ClusterSecretStore, or non-routine app-level ExternalSecret wiring and validation patterns that depend on the shared secret delivery model. Do not use this skill for unrelated SOPS-only changes or routine app edits that merely consume an unchanged Secret.
+description: Work on shared secret delivery in the home-ops repository. Use when modifying the external-secrets platform, 1Password Connect, the `onepassword-connect` ClusterSecretStore, or non-routine app-level ExternalSecret wiring and validation patterns that depend on the shared secret delivery model. Do not use this skill for unrelated SOPS-only changes or routine app edits that merely consume an unchanged Secret.
 ---
 
 # Home Ops External Secrets

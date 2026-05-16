@@ -24,10 +24,10 @@ Additionally needed before running:
 A single recipe runs the entire chain idempotently:
 
 ```sh
-just k8s-bootstrap cluster
+just cluster-bootstrap cluster
 ```
 
-The composed stages (each can be inspected via `just --list k8s-bootstrap`):
+The composed stages (each can be inspected via `just --list cluster-bootstrap`):
 
 1. **`talos`** — apply Talos machine config to every node listed under `kubernetes/talos/nodes/`. Skips nodes that already accept a non-insecure connection.
 2. **`kubernetes`** — `talosctl bootstrap` against the first controller to initialize etcd.

@@ -10,7 +10,7 @@
 | `kubernetes/apps/flux-system/flux-operator/` subtree (HelmRelease + OCIRepo + ks.yaml) | ✅ kész |
 | `kubernetes/apps/flux-system/flux-instance/` subtree (HelmRelease a FluxInstance CR-rel + OCIRepo + ks.yaml; `sync.ref: refs/heads/talos`, cutover-kor `main`) | ✅ kész |
 | `sops-age` Secret bootstrap-idős apply (`resources.yaml.j2`-ben, `op://HomeOps/homelab-age-key/keys.txt`) | ✅ kész |
-| Flux Operator + FluxInstance **runtime install** | ⏸ Phase 4 éles futtatás (`just k8s-bootstrap cluster`) |
+| Flux Operator + FluxInstance **runtime install** | ⏸ Phase 4 éles futtatás (`just cluster-bootstrap cluster`) |
 | FluxInstance reconcile → GitRepository + bootstrap Kustomization auto-create | ⏸ Phase 4 éles futtatás után |
 
 A `flux/cluster/ks.yaml` már jelen van — a FluxInstance `sync.path: kubernetes/flux/cluster` rákapcsolódik amint a Flux Operator install fut. A `cluster-vars` Kustomization elsőnek apply-olja a `flux/vars/`-t, majd `cluster-apps` reconcile-ol a teljes `./kubernetes/apps`-on.
