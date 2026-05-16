@@ -76,7 +76,7 @@ A Phase 8 foundation (mise + just + setup.sh + 6 mod) reggel kész volt, de a `T
 | 12 | Cutover runbook | [12](./12-cutover-runbook.md) | 🟡 in-progress | `talos`→`main` merge + FluxInstance ref switch |
 | 13 | Rollback / decom | [13](./13-rollback-and-decom.md) | ⏸ pending | |
 | 14 | Post-cutover | [14](./14-post-cutover.md) | ⏸ pending | 1-2 hét observation |
-| 15 | Repo refactor (ks.yaml flatten + doc + AI-guide refresh) | — | 🟡 in-progress | 4 app-szintű multi-KS `ks.yaml` lapítása + `docs/*.md` + `CLAUDE.md` lánc + `.claude/skills/*` átírás migráció eredménye alapján; cutover-előtt zárandó |
+| 15 | Repo refactor (ks.yaml flatten + doc + AI-guide refresh) | [15](./15-repo-refactor.md) | 🟡 in-progress | 4 app-szintű multi-KS `ks.yaml` lapítása + `docs/*.md` + `CLAUDE.md` lánc + `.claude/skills/*` átírás migráció eredménye alapján; cutover-előtt zárandó |
 
 Legend: ✅ done · 🟡 in-progress · ⏸ pending · ❌ blocked · ⏭ skipped
 

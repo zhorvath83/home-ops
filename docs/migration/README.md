@@ -57,6 +57,7 @@ Ez a könyvtár tartalmazza a home-ops infrastruktúra teljes átalakításának
 | 12 | Cutover runbook | [12](./12-cutover-runbook.md) | 4-8h éles cutover |
 | 13 | Rollback és decommission | [13](./13-rollback-and-decom.md) | — |
 | 14 | Post-cutover megfigyelés | [14](./14-post-cutover.md) | 1-2 hét observation |
+| 15 | Repo refactor (ks.yaml flatten + doc + AI-guide refresh) | [15](./15-repo-refactor.md) | 5-7h (cutover-előtt) |
 
 **Teljes munkaóra becslés (cutover-ig)**: ~25-40 óra effektív munka. Naptári időben ~2-4 hetes projekt, ha esténként és hétvégénként dolgozol.
 
@@ -69,9 +70,9 @@ A docok **lazán kapcsolódnak**, ezért nem kell szigorú sorrendben olvasni. A
                                               ↓
                   06 (repo refactor) ← 07 (components) ← 08 (just) ← 09 (renovate)
                                               ↓
-                                      11 (data migration) → 12 (cutover) → 14 (post-cutover)
-                                                                 ↓
-                                                        13 (rollback if needed)
+                                      11 (data migration) → 15 (repo refactor cleanup) → 12 (cutover) → 14 (post-cutover)
+                                                                                              ↓
+                                                                                     13 (rollback if needed)
 
 10 (OMV) — csak a cutover után, párhuzamosan a 14-essel
 ```
