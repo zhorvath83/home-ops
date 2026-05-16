@@ -2,13 +2,13 @@
 
 Élő státusz a K3s → Talos migráció állapotáról. Ez a doc gyors pillanatkép — a részletes terv a [README.md](./README.md)-ben és a `00`–`14` doc-okban van.
 
-**Utolsó frissítés:** 2026-05-16 délután — Phase 4–6 + adatmigráció zöld, follow-up-ok rögzítve.
+**Utolsó frissítés:** 2026-05-16 délután — Phase 4–7 + 11 ✅, adatmigráció + ingress stack E2E zöld, follow-up-ok rögzítve.
 
 ## TL;DR
 
 **Hol tartunk:** Teljes GitOps reconcile zöld (**0 Failing KS, 0 Failing HR**). 17 VolSync ReplicationDestination Kopia-restore-olt OVH snapshotokból (12–19 s/db). 18+ default app pod 1/1 Running, `cloudflare-tunnel` 1/1 Running 4 connection regisztrálva (bud01/vie05/vie06). A `replicationdestination + dataSourceRef` mostantól **always-on** pattern (bjw-s/onedr0p minta), nem cutover-only. **Ingress stack él** kívülről (Cloudflare tunnel) és belülről (envoy-internal `192.168.1.18`) — végpont tesztek HTTP 200/302 (normál login redirectek). A régi K3s cluster áll, a migráció gyakorlatilag adat-szinten is megtörtént a `talos` branchen.
 
-**Egyetlen ismert app-szintű follow-up**: `plex-trakt-sync` 401 unauthorized a Plex API-tól (token elavult a friss DB-ben).
+**Ismert follow-up-ok** (egyik sem blocker, részletek az `Open items`-ben): `plex-trakt-sync` Plex API token frissítés, `envoy-gateway` v1.9.0 GA → BTP rate-limit visszakapcsolás, search domain `lan` cluster-szintű kezelés, `CiliumNetworkPolicy` migráció (ingress hardening visszahozása stateful módon), `Taskfile.yml` törlés cutover-előtt.
 
 ## Session 2026-05-16 — Phase 4 éles bootstrap napló
 
@@ -40,7 +40,9 @@ Mit végzünk el ma:
 
 A `snapshot-controller` HelmRelease `.spec.values` frissült (webhook off, VSC nincs benne), DE az **élő Helm release** továbbra is a régi (`failed-install`) állapotban van, a helm-controller nem próbálja újra a fresh install-t magától. A pod nem létezik → CRD-k nincsenek apply-olva → `volsync` CrashLoopBackOff (`VolumeSnapshot` CRD missing) → `democratic-csi` Kustomization dry-run fail (`VolumeSnapshotClass` CRD missing) → minden PVC-t igénylő app `Pending`.
 
-### Folytatás holnap — sorrend
+### Folytatás holnap — sorrend (TÖRTÉNELMI — mind elvégezve délután)
+
+> Az alábbi 6 lépés a reggeli session-záró terve volt. **Mind a 6 a délutáni session-ben elvégezve** (lásd "Session 2026-05-16 délután" szekció). Megőrizve dokumentációs hivatkozásként.
 
 1. **snapshot-controller force-fresh install** (a fő blocker):
    ```bash
@@ -92,17 +94,17 @@ A `snapshot-controller` HelmRelease `.spec.values` frissült (webhook off, VSC n
    - Flux reconcile prune-olja, ami már nem deklarált
    - Suspend feloldása nem kell (a Kustomization törlésével együtt megy)
 
-### Freelens setup (független, opcionális)
+### Freelens setup (TÖRTÉNELMI — megoldva délután)
 
-A Freelens default `~/.kube/config`-ot olvas, ami csak a régi K3s clusterre mutat (`192.168.1.6:6443`). Talos cluster a repo `kubeconfig`-jában van (`https://192.168.1.11:6443`, context `main`).
+> A Freelens default kubeconfig-ja már a Talos clustert látja a délutáni session-ben rögzítettek szerint. A részletes utasítás megőrizve referenciaként, ha valaha újra-setup kell.
+
+A Freelens default `~/.kube/config`-ot olvas. Talos cluster a repo `kubeconfig`-jában van (`https://192.168.1.11:6443`, context `main`).
 
 Opciók:
 - **Settings → Kubernetes → Kubeconfig sync directories**-be `/Users/zhorvath83/Projects/personal/home-ops` felvenni
 - VAGY: **Catalog → Add Cluster → Custom Kubeconfig** → fájl: `kubeconfig` a home-ops gyökerében
 
-Régi K3s context-et célszerű törölni: `kubectl config delete-context default --kubeconfig ~/.kube/config`.
-
-### Ami **nem** változott a session során
+### Ami **nem** változott a reggeli session során
 
 - Cilium runtime hagyhatatlan baj nélkül fut (`cilium-xcmnd`, `cilium-operator`, Hubble relay + UI).
 - A `cluster-settings` substitution-ök rendben dolgoznak.
@@ -244,10 +246,6 @@ Az `envoy-gateway` controller restart-jára szükség volt — status_updater lo
   - Több route teszt: `docs/grafana` HTTP 302 (login redirect, normál); `plex` HTTP 404 (Plex token issue, task #9)
 - 🟡 1 app-szintű follow-up: `plex-trakt-sync` 401 unauthorized — Plex API token elavult a friss DB-ben
 
-## Korábbi szakasz — kész munka (commit-hash-ekkel)
-
-A `talos` branchen idáig (cumulative, 2026-05-16 estére):
-
 ## Fázis tracker
 
 | # | Fázis | Doc | Status | Megjegyzés |
@@ -293,14 +291,14 @@ Legend: ✅ done · 🟡 in-progress · ⏸ pending · ❌ blocked · ⏭ skippe
 
 ## Branch model
 
-- **`main`** — éles K3s clustert tükrözi, folyamatosan él
-- **`talos`** — létrehozva, ezen épül ki az új cluster (big-bang cutover)
-- Cutover-kor: `talos` → merge `main`, régi cluster 1-2 hétig standby, utána decom
+- **`main`** — a régi K3s cluster GitOps forrása (a K3s VM jelenleg lekapcsolva).
+- **`talos`** — az új Talos cluster aktív GitOps forrása (FluxInstance `sync.ref: refs/heads/talos`).
+- **Cutover-kor**: `talos` → merge `main`, FluxInstance `sync.ref` átáll `refs/heads/main`-re, a régi K3s VM nem indul újra (1-2 hét standby után decom).
 
-## Becsült munka
+## Munka állapota
 
-- **Effektív munkaóra cutover-ig:** ~25-40h
-- **Naptári idő:** ~2-4 hét esti+hétvégi munkával
+- **Effektív munkaóra eddig**: ~30-35h (2026-05-15 → 2026-05-16). Tervezett ~25-40h cutover-ig **gyakorlatilag elköltve** — de adat-szinten a migráció már megtörtént (always-on VolSync RD), így a maradék "cutover" csak branch merge + FluxInstance ref switch + DNS-szintű ellenőrzés.
+- **Hátralévő naptári idő cutover-ig**: ~1-3 nap (follow-up-ok kezelése + branch merge + observation window indítása).
 
 ## Open items / blocker
 
