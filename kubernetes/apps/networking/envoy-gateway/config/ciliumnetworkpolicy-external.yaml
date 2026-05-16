@@ -1,0 +1,68 @@
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: envoy-external
+  namespace: networking
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: envoy
+      gateway.envoyproxy.io/owning-gateway-name: envoy-external
+  ingress:
+    # HTTP and HTTPS listener traffic. envoy-external is the Cloudflare tunnel
+    # target, but the source is the cloudflared pod inside the cluster, not the
+    # public internet directly. Allow only that pod plus generic cluster pods
+    # so the surface stays narrow.
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: networking
+            app.kubernetes.io/name: cloudflare-tunnel
+      toPorts:
+        - ports:
+            - port: "10080"
+              protocol: TCP
+            - port: "10443"
+              protocol: TCP
+    # Prometheus scrape of the envoy admin metrics port.
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: observability
+            app.kubernetes.io/name: prometheus
+      toPorts:
+        - ports:
+            - port: "19001"
+              protocol: TCP
+    # Kubelet readiness probe (host network).
+    - fromEntities:
+        - host
+        - remote-node
+      toPorts:
+        - ports:
+            - port: "19003"
+              protocol: TCP
+  egress:
+    # CoreDNS.
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+    # In-cluster traffic to HTTPRoute backends and xDS upstream
+    # (envoy-gateway controller, services in any namespace).
+    - toEntities:
+        - cluster
+    # Kubernetes API server.
+    - toEntities:
+        - kube-apiserver
+    # Outbound HTTPS for HTTPRoute backends that target external services or
+    # the rare cert validation flow.
+    - toEntities:
+        - world
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
