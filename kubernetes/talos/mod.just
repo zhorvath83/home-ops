@@ -274,12 +274,6 @@ reset-node node:
       --graceful=false \
       --reboot
 
-[group('recovery')]
-[doc('Reset the single-node cluster (alias for reset-node with controller_node)')]
-[script]
-reset-cluster:
-    just talos reset-node {{ controller_node }}
-
 [group('lifecycle')]
 [doc('Reboot a Talos node (powercycle mode = full hardware reset)')]
 [script]
@@ -334,8 +328,8 @@ status node=controller_node:
 [group('lifecycle')]
 [doc('Dump Talos diagnostics to a log file (services, events, logs, dmesg, resources)')]
 [script]
-diag node=controller_node out="talos-diag.log":
-    out="{{ out }}"
+diag node=controller_node:
+    out="talos-diag.log"
     rm -f "${out}"
     {
       echo '=========================================='

@@ -211,7 +211,7 @@ Cutover-előtti repo-doksi és AI-guide tisztítás. 10-fázisú audit + szerkes
 
 **7. `.claude/settings.json` permissions refresh**:
 - 11 `task fx:*` + `task vs:*` allow → 4 `just`-recept: `just k8s flux-check`, `just volsync list-snapshots/rs-status/last-backups`. A többi `task fx:nodes/pods/kustomizations/...` allow drop — a meglévő `kubectl get:*` és `flux get:*` permission már lefedi őket.
-- 2 régi deny (`task fx:install`, `task ku:kubeconfig`) → 16 deny: `just cluster-bootstrap cluster`, `just talos {get-kubeconfig,apply-node,upgrade-node,upgrade-k8s,reset-cluster,reset-node,reboot-node,shutdown-node,bootstrap,gen-secrets}`, `just volsync {restore,restore-into,state}`, `just k8s {restart-failed-hrs,delete-ks}`. A 4 `kubectl get/describe secret(s)` deny változatlan.
+- 2 régi deny (`task fx:install`, `task ku:kubeconfig`) → 15 deny: `just cluster-bootstrap cluster`, `just talos {get-kubeconfig,apply-node,upgrade-node,upgrade-k8s,reset-node,reboot-node,shutdown-node,bootstrap,gen-secrets}`, `just volsync {restore,restore-into,state}`, `just k8s {restart-failed-hrs,delete-ks}`. A 4 `kubectl get/describe secret(s)` deny változatlan.
 
 **8. Kód-comment cleanup**:
 - `kubernetes/apps/observability/kube-prometheus-stack/app/helmrelease.yaml:153` comment `"single-node K3s"` → `"single-node Talos"`. A disabled component lista (kubeApiServer/kubeControllerManager/kubeScheduler/kubeProxy/kubeEtcd/coreDns/kubeDns) változatlan (bjw-s parity, single-node Talos kontextusban is helyes).

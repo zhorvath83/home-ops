@@ -486,7 +486,7 @@ A helmfile idempotens — már install-elt release-eket nem nyúlja, csak ami hi
 ### Teljes cluster nuke + reinstall
 
 ```bash
-just talos reset-cluster reboot
+just talos reset-node cp0-k8s
 # minden disk wipe
 # majd újra:
 just cluster-bootstrap cluster

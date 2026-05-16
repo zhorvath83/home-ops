@@ -407,7 +407,7 @@ Hasonlóan `provision/ovh/mod.just`.
 | `task an:list` | **TÖRÖL** | |
 | `task an:prepare` | **TÖRÖL** | |
 | `task an:install` | **TÖRÖL** | Talos saját maga telepedik |
-| `task an:nuke` | `just talos reset-cluster reboot` | Talos reset |
+| `task an:nuke` | `just talos reset-node cp0-k8s` | Talos reset |
 | `task an:ping` | `just omv check` | csak OMV-re (Talos: `talosctl health`) |
 | `task an:uptime` | `talosctl -n <ip> dmesg` | Talos-natív |
 | `task an:rollout-reboot` | `just talos reboot-node <ip>` | |

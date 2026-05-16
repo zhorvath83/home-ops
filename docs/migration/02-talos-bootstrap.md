@@ -496,7 +496,7 @@ Ha `talosctl bootstrap` hibázik:
 ### Teljes újrakezdés
 
 ```bash
-just talos reset-cluster reboot
+just talos reset-node cp0-k8s
 # minden disk wipe-elve, node újraindul installer módba
 ```
 

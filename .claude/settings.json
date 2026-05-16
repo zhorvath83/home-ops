@@ -40,7 +40,6 @@
       "Bash(just talos apply-node:*)",
       "Bash(just talos upgrade-node:*)",
       "Bash(just talos upgrade-k8s:*)",
-      "Bash(just talos reset-cluster:*)",
       "Bash(just talos reset-node:*)",
       "Bash(just talos reboot-node:*)",
       "Bash(just talos shutdown-node:*)",
