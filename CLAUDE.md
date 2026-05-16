@@ -44,7 +44,6 @@ Examples:
 This repository currently manages a single-node home infrastructure stack with these main areas:
 
 - `kubernetes/`: GitOps-managed cluster state with Flux `Kustomization` objects, Helm releases, and reusable components
-- `provision/kubernetes/`: Ansible inventory and playbooks for host and cluster lifecycle operations
 - `provision/cloudflare/`: Terraform for Cloudflare DNS, tunnel, workers, pages, redirects, and zone configuration
 - `provision/ovh/`: Terraform for OVH Cloud Project Storage (S3 backup buckets and the S3 user consumed by the VolSync/Kopia and resticprofile backup planes)
 - `.claude/skills/`: repo-local skill sources for reusable workflow knowledge
