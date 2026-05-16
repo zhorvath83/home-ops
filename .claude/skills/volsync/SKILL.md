@@ -1,6 +1,6 @@
 ---
 name: volsync
-description: Work on backup and restore behavior in the home-ops repository using VolSync and Kopia. Use when integrating non-trivial app backup settings, change shared schedule, jitter, retention, or storage defaults, inspect ReplicationSource behavior, trigger maintenance or snapshot flows, or perform or review restore workflows tied to the `vs:` task model. Do not use this skill for unrelated secret delivery changes.
+description: Work on backup and restore behavior in the home-ops repository using VolSync and Kopia. Use when integrating non-trivial app backup settings, change shared schedule, jitter, retention, or storage defaults, inspect ReplicationSource behavior, trigger maintenance or snapshot flows, or perform or review restore workflows driven by the `just volsync` recipes. Do not use this skill for unrelated secret delivery changes.
 ---
 
 # Home Ops VolSync
@@ -25,9 +25,10 @@ modes, and different validation workflows.
    - `references/operations.md`
    - `references/validation.md` for final checks
 4. If the task also changes application manifests, use `k8s-workloads` alongside this skill.
+5. If the task also touches `kubernetes/volsync/mod.just` recipe wiring or adds new operational entry points, use `taskfiles` alongside this skill.
 
 ## Scope Boundaries
 
 - Use this skill when backup policy, restore behavior, or VolSync platform resources are part of the task.
 - Use `k8s-workloads` for ordinary app manifest changes that only consume an unchanged backup model.
-- Use `taskfiles` as well when the `vs:` wrappers or restore helper flows are changing.
+- Use `taskfiles` as well when the `just volsync` recipes or their wiring are changing.

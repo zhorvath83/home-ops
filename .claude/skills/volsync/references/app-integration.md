@@ -25,3 +25,4 @@ Common knobs include:
 - prefer the shared component over app-local backup manifests
 - treat `APP_UID` and `APP_GID` as the ownership source of truth when the workload uses VolSync
 - only add schedule overrides for real exceptions, not for routine staggering
+- the `${APP}` substitution drives every Kopia, RS, RD, PVC, and ExternalSecret name plus the OVH bucket identity; keep the app directory, Flux Kustomization, and HelmRelease aligned on that same name so the `just volsync` recipes work without overrides
