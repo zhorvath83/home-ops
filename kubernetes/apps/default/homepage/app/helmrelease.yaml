@@ -127,13 +127,6 @@ spec:
               verbs:
                 - get
                 - list
-            # - apiGroups:
-            #     - traefik.io
-            #   resources:
-            #     - ingressroutes
-            #   verbs:
-            #     - get
-            #     - list
             - apiGroups:
                 - gateway.networking.k8s.io
               resources:
@@ -178,8 +171,6 @@ spec:
 
     route:
       app:
-        # annotations:
-        #   traefik.ingress.kubernetes.io/router.middlewares: ""
         hostnames:
           - "dash.${PUBLIC_DOMAIN}"
         parentRefs:

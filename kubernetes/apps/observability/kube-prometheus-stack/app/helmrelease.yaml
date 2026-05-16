@@ -150,7 +150,7 @@ spec:
             action: drop
 
     # ============================================================================
-    # Disabled components (not needed for single-node K3s)
+    # Disabled components (not needed for single-node Talos)
     # ============================================================================
     kubeApiServer:
       enabled: false

@@ -76,7 +76,7 @@ This repository currently manages a single-node home infrastructure stack with t
 ## State To Assume Today
 
 - There is no shared identity stack currently declared under `kubernetes/apps/`.
-- The active ingress stack is Envoy Gateway with Gateway API, not Traefik.
+- The active ingress stack is Envoy Gateway with Gateway API.
 - The ingress model is split between `envoy-external` for Cloudflare-published traffic and `envoy-internal` for LAN traffic.
 - LAN split DNS is provided by `k8s-gateway`, which watches routes attached to `envoy-internal` and returns the internal Envoy VIP.
 - Backup handling is intentionally split into two planes that both target OVH object storage:

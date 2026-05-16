@@ -2,13 +2,13 @@
 
 Élő státusz a K3s → Talos migráció állapotáról. Ez a doc gyors pillanatkép — a részletes terv a [README.md](./README.md)-ben és a `00`–`14` doc-okban van.
 
-**Utolsó frissítés:** 2026-05-16 hajnal — Phase 1–9 + 11 + **15.a** ✅, ingress stack stabil, CNP migráció kész, Task→Just teljes migráció lezárva, Renovate `.renovaterc.json5` + `.renovate/` fragmens-szerkezetre átírva, default ns ks.yaml lapítás kész (4 split + 2 KS rename), **K3s `system-upgrade-controller` orphan + `provision/kubernetes/` Ansible plane teljesen lebontva**, follow-up-ok rögzítve.
+**Utolsó frissítés:** 2026-05-16 — Phase 1–9 + 11 + **15.a + 15.b** ✅, ingress stack stabil, CNP migráció kész, Task→Just teljes migráció lezárva, Renovate `.renovaterc.json5` + `.renovate/` fragmens-szerkezetre átírva, default ns ks.yaml lapítás kész (4 split + 2 KS rename), **K3s `system-upgrade-controller` orphan + `provision/kubernetes/` Ansible plane teljesen lebontva**, doc + AI-guide réteg (`docs/*.md` + 11 `CLAUDE.md` + 12 `.claude/skills/*` + `settings.json` + `README.md`) átírva a `talos`-éra realitásra, follow-up-ok rögzítve.
 
 ## TL;DR
 
 **Hol tartunk:** Teljes GitOps reconcile zöld (**0 Failing KS, 0 Failing HR**). 17 VolSync PVC restore-olt OVH Kopia snapshotokból, 18 default app pod 1/1 Running, `cloudflare-tunnel` 1/1 Running. A `replicationdestination + dataSourceRef` mostantól **always-on** pattern (bjw-s minta). Ingress stack él kívülről (Cloudflare tunnel) és belülről (envoy-internal `192.168.1.18`), Cilium L2 announce egyedüli LB-IPAM. Stateful ingress hardening visszahozva 3 `CiliumNetworkPolicy`-val + közös `CiliumCIDRGroup/cloudflare`-rel. A régi K3s cluster áll.
 
-**Ismert follow-up-ok** (egyik sem blocker): `envoy-gateway` v1.9.0 GA → BTP rate-limit visszakapcsolás, search domain `lan` cluster-szintű kezelés, **Phase 15.b** doc + AI-guide refresh és **15.c** per-app CNP threat-model audit (15.a kész).
+**Ismert follow-up-ok** (egyik sem blocker): `envoy-gateway` v1.9.0 GA → BTP rate-limit visszakapcsolás, search domain `lan` cluster-szintű kezelés, **15.c** per-app CNP threat-model audit (15.a + 15.b kész).
 
 ## Sessions — 2026-05-16
 
@@ -174,6 +174,66 @@ Cilium kutatás megerősítette: a fix `hostNamespaceOnly: false` (kommentár a 
 
 **Phase 15.c plan-update** (`52c607120`): a per-app CNP audit szekció kibővítve a **B-csapdával** (opt-out label custom egress nélkül = csak DNS marad, pod indul fail). Két szint formalizálva: **Tier I** (ingress-only, no label, baseline egress — paperless minta) és **Tier II** (ingress + strict egress + opt-out label — pl. magas threat-modelű app-okhoz). A 4f4b76eec-ből megmaradó CNP-k Tier I-re átírva ma — a 3 érintett CNP közül `cloudflare-tunnel` még nem volt egyszerűsítve, az a következő session-re marad (15.c-ben).
 
+### Phase 15.b — Doc + AI-guide refresh
+
+Cutover-előtti repo-doksi és AI-guide tisztítás. 10-fázisú audit + szerkesztés sorozat: a `talos`-éra realitás (Talos + Cilium LB-IPAM + L2 announce + Envoy Gateway + Flux Operator + FluxInstance + always-on VolSync + Just + mise + bjw-s lapos layout + CCNP baseline) átvezetve a `docs/*.md` + `CLAUDE.md` lánc + `.claude/skills/*` + `.claude/settings.json` + `README.md` rétegeken.
+
+**1. Pure deletes (8 doc + 1 skill)**: K3s-éra vagy duplikált / vendor-cseré doc-ok törölve — `docs/{backup-kubernetes-host,host-configuration,ingress-basic-auth,k3s-readme,k3s-system-upgrade,kubernetes-readme,postgresql-backup-readme,sops-readme}.md`. A `.claude/skills/taskfiles/` skill (4 fájl) is törölve — funkcióját az új `just` skill veszi át.
+
+**2. Új `just` skill**: `.claude/skills/just/{SKILL.md,references/{catalog,authoring,validation}.md}`. Frontmatter: "Work on the Just-based operational entry points…". Catalog felsorolja a 9 mod-csoportot (`k8s`, `k8s-bootstrap`, `talos`, `volsync`, `omv`, `cloudflare`, `ovh`, `sops`, `openwrt`) és a kritikus per-csoport recipe-eket (`k8s-bootstrap cluster`, `k8s flux-reconcile/flux-check/sync-hr/sync-ks/sync-es/sync/list-failed-hrs/restart-failed-hrs/apply-ks/delete-ks`, `talos {apply-node,upgrade-node,upgrade-k8s,get-kubeconfig,gen-secrets,bootstrap,reset-*,reboot-node,shutdown-node,diag,status}`, `volsync {restore,restore-into,snapshot,snapshot-all,list-snapshots,rs-status,wait-rd,last-backups,state,kopia-maintenance}`, `{cloudflare,ovh} {init|plan|apply|unlock}`, `sops {re-encrypt,fix-mac,encrypt-file,decrypt-file}`, `omv {install,check,update,update-host}`, `openwrt {maintain,upgrade,reinstall-packages}`). Authoring: positional-only argumentumok, `[group:]` label, env a `.mise.toml`-ból. Validation: `just --list`, `--dry-run`, pre-commit CLI (nincs Just wrapper).
+
+**3. `docs/flux-readme.md` REWRITE + `docs/networking-readme.md` REWRITE**:
+- `flux-readme.md`: klasszikus `flux install/bootstrap` install rész lecserélve Flux Operator + `FluxInstance` topológiára (`kubernetes/apps/flux-system/flux-{operator,instance}/` + `kubernetes/flux/cluster/ks.yaml`). Cheatsheet rész `just k8s flux-reconcile/flux-check/sync-hr/sync-ks/sync-es/sync`, `list-failed-hrs/restart-failed-hrs`, `apply-ks/delete-ks`, `browse-pvc/mount-pvc/node-shell/prune-pods/view-secret`. Direkt `flux get/events/logs` upstream CLI említve.
+- `networking-readme.md`: MetalLB → Cilium L2 announcement / LB-IPAM. `envoy-internal` `lbipam.cilium.io/ips` annotáció, `CiliumLoadBalancerIPPool/default` (`192.168.1.15-25`), `LB_ENVOY_INTERNAL_IP` / `LB_K8S_GATEWAY_IP` `cluster-settings.yaml`-ből. Új szekció: cluster-wide CCNP baseline (`allow-cluster-egress` + `allow-dns-egress` L7 DNS proxy) + per-app Tier I / Tier II döntésmodell utalás Phase 15.c-re.
+
+**4. `kubernetes/bootstrap/readme.md` REWRITE**: prerequisite-okból Task drop, `mise install` add (`.mise.toml` pinneli a `talosctl`/`kubectl`/`helm`/`helmfile`/`flux2`/`just`/`sops`/`age`/`1password-cli`/`minijinja`/`yq`/`jq`/`gum`-ot). A 9-stage bootstrap chain részletesen: `talos → kubernetes → kubeconfig(node) → wait → namespaces → resources → crds → apps → kubeconfig(cilium)`. Recovery utal a STATUS.md Phase 6 `helm uninstall + flux reconcile hr --force` és `safe-upgrades VAP` mintákra.
+
+**5. CLAUDE.md lánc (8 fájl)**:
+- `.claude/CLAUDE.md` Cluster Access Policy `task fx:*` / `task vs:*` → read-only `just k8s` / `just volsync`; deny lista a cluster-mutáló `just k8s-bootstrap cluster`, `just talos {get-kubeconfig,apply-node,upgrade-*,reset-*,reboot-node}`, `just volsync {restore,restore-into}`-re bővítve.
+- `.claude/skills/CLAUDE.md` line 66 `task pc:run` → `pre-commit run --all-files`.
+- `kubernetes/CLAUDE.md` line 36 `task fx:reconcile` → `just k8s flux-reconcile`.
+- `kubernetes/apps/external-secrets/CLAUDE.md` line 44 "Taskfile bootstrap flow" → `kubernetes/bootstrap/resources.yaml.j2 + op inject`.
+- `kubernetes/apps/networking/CLAUDE.md` 3× MetalLB → Cilium L2 announcement + LB-IPAM. `metallb/` subtree említés törölve (mappa Phase 6-ban már törölve volt). `envoy-external` ClusterIP-only Service felemlítve a CF Tunnel architektúra fényében.
+- `kubernetes/apps/volsync-system/CLAUDE.md` `vs:` task → `just volsync` recept-nevek; always-on RD pattern (`<app>-bootstrap` + `dataSourceRef`, `IfNotPresent` SSA label fresh-fetch kockázat) magyarázat hozzáadva.
+- `provision/CLAUDE.md` + `provision/cloudflare/CLAUDE.md` + `provision/ovh/CLAUDE.md` Task wrapper konvenció → `.justfile` / `mod.just`; `task tf:*` → `just cloudflare/ovh init/plan/apply/unlock`; `taskfiles` skill ref → `just` skill ref.
+
+**6. `.claude/skills/*` refresh (10 skill)**:
+- `cloudflare-terraform/SKILL.md` frontmatter "task-backed Terraform workflows" → `just cloudflare` recipes; `references/validation.md` 3× `task tf:*:cloudflare` → `just cloudflare init/plan/apply/unlock`.
+- `external-secrets/references/validation.md` `task es:sync` → `just k8s sync-es <ns> <name>`.
+- `flux-gitops/SKILL.md` + `references/operations.md` (rewrite) + `references/validation.md`: 7× `task fx:*` → `just k8s flux-{reconcile,check}/sync-{hr,ks,es}/sync`; `flux/config/` → `flux/cluster/`; `task fx:install` → `just k8s-bootstrap cluster`.
+- `k8s-workloads/references/{validation,publication-and-jobs}.md`: `Taskfile.yml` → `.justfile + mod.just`; Traefik warning sor törölve (user: "minden nginx és traefik szar mehet").
+- `networking-platform/SKILL.md` + `references/topology.md` rewrite: frontmatter MetalLB → "Cilium LB-IPAM / L2 announcement, cluster-wide CiliumNetworkPolicy baseline"; topology szekció új CCNP baseline blokk Phase 15.c utalással.
+- `sops-secrets/references/{validation,bootstrap-and-app-secrets}.md`: `task fx:install` → `just k8s-bootstrap cluster` + `resources.yaml.j2` magyarázat; 4× `task so:*` → `just sops re-encrypt/fix-mac/encrypt-file/decrypt-file`.
+- `sre/references/investigation.md` `vs:` task → `just volsync` recipes.
+- `versions-renovate/references/annotations.md` `v1.35.2+k3s1` deprecated példa → `.mise.toml` `TALOS_VERSION` / `KUBERNETES_VERSION` annotációk + `.renovate/{customManagers,talosFactory}.json5` jelenlegi struktúra.
+- `references/role-bundles.md` Implementer bundle: `taskfiles` → `just`.
+- `volsync/SKILL.md` `taskfiles` skill-ref → `just` skill-ref.
+
+**7. `.claude/settings.json` permissions refresh**:
+- 11 `task fx:*` + `task vs:*` allow → 4 `just`-recept: `just k8s flux-check`, `just volsync list-snapshots/rs-status/last-backups`. A többi `task fx:nodes/pods/kustomizations/...` allow drop — a meglévő `kubectl get:*` és `flux get:*` permission már lefedi őket.
+- 2 régi deny (`task fx:install`, `task ku:kubeconfig`) → 16 deny: `just k8s-bootstrap cluster`, `just talos {get-kubeconfig,apply-node,upgrade-node,upgrade-k8s,reset-cluster,reset-node,reboot-node,shutdown-node,bootstrap,gen-secrets}`, `just volsync {restore,restore-into,state}`, `just k8s {restart-failed-hrs,delete-ks}`. A 4 `kubectl get/describe secret(s)` deny változatlan.
+
+**8. Kód-comment cleanup**:
+- `kubernetes/apps/observability/kube-prometheus-stack/app/helmrelease.yaml:153` comment `"single-node K3s"` → `"single-node Talos"`. A disabled component lista (kubeApiServer/kubeControllerManager/kubeScheduler/kubeProxy/kubeEtcd/coreDns/kubeDns) változatlan (bjw-s parity, single-node Talos kontextusban is helyes).
+- `kubernetes/apps/default/homepage/app/helmrelease.yaml` 9 sor commented-out `traefik.io` / `traefik.ingress.kubernetes.io/router.middlewares` rész teljes törlése.
+- `.gitignore:16` `xanmanning.k3s*` orphan ignore-bejegyzés törölve (`provision/kubernetes/` Ansible plane már Phase 6-ban törölve volt, `582ddda8e`). Az általános Ansible role ignore-ok (`mrlesmithjr.zfs`, `geerlingguy.docker`, `geerlingguy.pip`) megmaradnak — esetlegesen használhatók a Phase 10 OMV Ansible-ben.
+- Root `CLAUDE.md:79` `"Envoy Gateway with Gateway API, not Traefik"` → `"Envoy Gateway with Gateway API"` (negation törlése — Traefik már nem létezett a `talos` branchen).
+
+**9. Root `README.md` rewrite**: Phase 9 — user-facing human doc, angolul (nyelvi átírást a 15.b nem érintette).
+- Hardware section: K3s VM sor törölve; HP ProDesk 600 G6 DM (Talos, NVMe PC801 OS + PC711 data, 64GB) hozzáadva; Lenovo M93p szerepe "Proxmox + OMV VM (transitional)"-re átírva azzal a megjegyzéssel, hogy Phase 10-ben bare-metal OMV váltja.
+- Tooling lead bővítve: Talos Linux, Helmfile, Just, mise.
+- GitOps Workflow / Flux: FluxInstance pattern leírás (`kubernetes/flux/cluster/` + `cluster-vars` + `cluster-apps`); `just k8s-bootstrap cluster` reference.
+- Repository Structure: új mappák (`components`, `talos`, `volsync` + `provision/{sops,openwrt}`).
+- Core Components: új **Operating System & Cluster** szekció (Talos Linux + Cilium + Flux Operator + FluxInstance). Networking szekciónál Calico/MetalLB cseréje Cilium-ra. Storage: VolSync always-on RD + resticprofile/Backrest emphasis. Configuration Management: SOPS Age + mise + Just + minijinja-cli + `op inject`.
+- Ingress Model szekció finomítva: `envoy-external` ClusterIP-only, `envoy-internal` Cilium L2-announced VIP.
+- Renovate szekció `.github/renovate.json5` → `.renovaterc.json5` + `.renovate/` fragmens-szerkezetre.
+
+**10. Verifikáció**:
+- `git grep` ellenőrzés `K3s|MetalLB|Traefik|nginx|Calico|tigera|Taskfile|.taskfiles|task fx:/vs:/...` mintákra a `docs/migration/` historikus narratívát kivéve: csak 3 szándékos historizáló ref maradt (`README.md:9` "K3s → Talos migration" transitional note, `.claude/skills/just/SKILL.md:10` "no Task / Taskfile is present", `.claude/skills/just/references/catalog.md:32` "Replaces the historical task fx:install flow").
+- `pre-commit run --all-files` zöld (yamllint, trim trailing whitespace, fix end of files, mixed line ending, CRLF/Tabs/smartquote remover, Kubernetes secret check, hardcoded secret detect mind PASS).
+
+**Phase 15.b exit criteria teljesítve**: a `docs/*.md` + `CLAUDE.md` lánc + `.claude/skills/*` réteg konzisztens a `talos`-éra realitással. A `taskfiles` skill helyét az új `just` skill veszi át. A `provision/openmediavault/CLAUDE.md` stub szándékosan Phase 10-re halasztva (user 8. döntés).
+
 ## Fázis tracker
 
 | # | Fázis | Doc | Status | Megjegyzés |
@@ -194,7 +254,7 @@ Cilium kutatás megerősítette: a fix `hostNamespaceOnly: false` (kommentár a 
 | 12 | Cutover runbook | [12](./12-cutover-runbook.md) | 🟡 in-progress | `talos`→`main` merge + FluxInstance ref switch |
 | 13 | Rollback / decom | [13](./13-rollback-and-decom.md) | ⏸ pending | |
 | 14 | Post-cutover | [14](./14-post-cutover.md) | ⏸ pending | 1-2 hét observation |
-| 15 | Repo refactor (ks.yaml flatten + doc + AI-guide refresh) | [15](./15-repo-refactor.md) | 🟡 in-progress | **15.a kész** (4 split + 2 KS rename: `restic-gui`→`backrest`, `qbittorrent-upgrade-p2pblocklist`→`qbittorrent-p2pblocklist`); 15.b doc + AI-guide refresh és 15.c per-app CNP threat-model audit hátra |
+| 15 | Repo refactor (ks.yaml flatten + doc + AI-guide refresh) | [15](./15-repo-refactor.md) | 🟡 in-progress | **15.a + 15.b kész** (15.a: 4 split + 2 KS rename; 15.b: 8 doc delete + új `just` skill + flux/networking-readme rewrite + bootstrap readme rewrite + CLAUDE.md lánc + 10 skill refresh + settings.json permissions + code comments + README.md); 15.c per-app CNP threat-model audit hátra |
 
 Legend: ✅ done · 🟡 in-progress · ⏸ pending · ❌ blocked · ⏭ skipped
 

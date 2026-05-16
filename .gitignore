@@ -13,7 +13,6 @@ bin
 # Log files
 *.log
 # Ansible
-xanmanning.k3s*
 mrlesmithjr.zfs*
 geerlingguy.docker*
 geerlingguy.pip*

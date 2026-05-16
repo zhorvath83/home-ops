@@ -1,47 +1,52 @@
 # Home Infrastructure & Kubernetes Cluster
 
-This is a mono repository for my home infrastructure and Kubernetes cluster. I try to adhere to Infrastructure as Code (IaC) and GitOps practices using tools like Ansible, Terraform, Kubernetes, Flux, Renovate, and GitHub Actions.
+This is a mono repository for my home infrastructure and Kubernetes cluster. I try to adhere to Infrastructure as Code (IaC) and GitOps practices using tools like Talos Linux, Kubernetes, Flux, Helmfile, Just, mise, Renovate, Ansible, and Terraform.
 
 Agent note: this README remains human-facing. Tooling and AI assistants should use the repository guidance files as the operational guide, starting at [CLAUDE.md](CLAUDE.md) and then following any more specific `CLAUDE.md` files in subdirectories.
 
 ## 🏠 Hardware Infrastructure
 
-The infrastructure is built on a Debian 13 Proxmox server with the following specifications:
+The cluster runs on a single bare-metal Talos node. A second machine handles file-level storage (NAS) and, during the K3s → Talos migration, still hosts the OpenMediaVault VM under Proxmox until Phase 10 retires the hypervisor layer.
 
-| Device                | Quantity | CPU                      | OS Disk Size | RAM  | OS        | Function           |
-|-----------------------|----------|--------------------------|--------------|------|-----------|--------------------|
-| Lenovo M93p tiny USFF | 1        | Intel i5-4570T @ 2.90GHz | 512GB SSD    | 16GB | Debian 13 | Proxmox hypervisor |
+| Device                              | Quantity | CPU                       | OS Disk            | Data Disk                    | RAM  | OS                | Function                                  |
+|-------------------------------------|----------|---------------------------|--------------------|------------------------------|------|-------------------|-------------------------------------------|
+| HP ProDesk 600 G6 Desktop Mini      | 1        | Intel i7-10700T @ 2.0 GHz | NVMe (PC801)       | NVMe (PC711)                 | 64GB | Talos Linux       | Single-node Kubernetes control plane + workloads |
+| Lenovo M93p tiny USFF               | 1        | Intel i5-4570T @ 2.90GHz  | 512GB SSD          | USB3 DAS 16TB EXT4 (host)    | 16GB | Debian 13 + Proxmox | NAS host; OpenMediaVault VM (transitional) |
 
-**Virtual Machines:**
-
-| Device | Quantity | OS Disk Size | Data Disk Size             | RAM  | OS        | Function                              |
-|--------|----------|--------------|----------------------------|------|-----------|---------------------------------------|
-| NAS VM | 1        | 16 GB        | USB3 DAS 16TB EXT4 (host)  | 2GB  | Debian 13 | SMB + NFS NAS, OpenMediaVault 8       |
-| K3s VM | 1        | 200GB        | -                          | 12GB | Debian 13 | K3s master node - single node cluster |
+The Lenovo M93p will become a bare-metal OpenMediaVault host after the Talos cutover; the Proxmox + OMV VM model is intentionally temporary.
 
 ## 🔄 GitOps Workflow
 
 ### Flux
 
-Flux watches the clusters in my kubernetes folder and makes changes to my clusters based on the state of this Git repository. The workflow operates as follows:
+The cluster runs Flux through the [Flux Operator](https://fluxcd.control-plane.io/) pattern: a single `FluxInstance` CR declares the controllers, GitRepository, and root Kustomization. There is no classic `flux bootstrap` step.
 
-- Flux recursively searches the `kubernetes/apps` folder until it finds the most top level `kustomization.yaml` per directory
-- Each `kustomization.yaml` generally contains:
-  - A namespace resource
-  - One or many Flux kustomizations (`ks.yaml`)
-- Under the control of those Flux kustomizations, there will be a `HelmRelease` or other resources related to the application
+- The `FluxInstance` resource points at `kubernetes/flux/cluster/`, which holds two root Kustomizations: `cluster-vars` (applies `kubernetes/flux/vars/`) and `cluster-apps` (reconciles `kubernetes/apps/`).
+- `cluster-apps` recursively walks `kubernetes/apps/` and applies every `ks.yaml`.
+- Each app folder generally contains a `ks.yaml`, the actual manifests under `app/`, and optionally extra directories such as `config/`, `certificate/`, or `backup/`.
+
+The full bootstrap procedure is described in [docs/migration/05-flux-operator.md](docs/migration/05-flux-operator.md) and triggered by `just k8s-bootstrap cluster`.
 
 ### Renovate
 
-Renovate watches the entire repository for dependency updates. When updates are found, a PR is automatically created. When PRs are merged, Flux applies the changes to the cluster.
+Renovate watches the entire repository for dependency updates. When updates are found, a PR is automatically created. When PRs are merged, Flux applies the changes to the cluster. The root config lives in `.renovaterc.json5`, with topic-scoped fragments under `.renovate/`.
 
 ## 📁 Repository Structure
 
 ```text
 📁 kubernetes
-├── 📁 apps       # applications
-├── 📁 bootstrap  # initial cluster setup and configuration
-└── 📁 flux       # flux system configuration
+├── 📁 apps         # applications grouped by namespace
+├── 📁 bootstrap    # Talos + Kubernetes platform bootstrap chain (helmfile + resources.yaml.j2)
+├── 📁 components   # reusable Kustomize components (e.g. volsync)
+├── 📁 flux         # FluxInstance entry point + cluster-wide vars
+├── 📁 talos        # Talos machine configs and node templates
+└── 📁 volsync      # operational helpers for the backup plane
+📁 provision
+├── 📁 cloudflare       # Cloudflare Terraform
+├── 📁 ovh              # OVH Cloud Project Storage Terraform
+├── 📁 openmediavault   # OMV Ansible (Phase 10) + just recipes
+├── 📁 sops             # SOPS helper recipes
+└── 📁 openwrt          # OpenWrt maintenance recipes
 ```
 
 ## 🔧 Application Deployment Strategy
@@ -54,21 +59,25 @@ I use official Helm charts whenever possible for applications. When official cha
 
 ## 🛠️ Core Components
 
+### Operating System & Cluster
+
+- **[Talos Linux](https://www.talos.dev/)**: Immutable, API-driven Linux distribution for Kubernetes; the cluster control plane and kubelet run on the HP node directly, with no general-purpose SSH access.
+- **[Cilium](https://github.com/cilium/cilium)**: CNI, kube-proxy replacement, eBPF datapath, L2 announcement, and LB-IPAM (single source of truth for LoadBalancer IPs)
+- **[Flux Operator + FluxInstance](https://fluxcd.control-plane.io/)**: Declarative install and lifecycle for the Flux controllers
+
 ### Networking & Security
 
 - **[cert-manager](https://github.com/cert-manager/cert-manager)**: SSL certificates for services
-- **[Calico](https://github.com/projectcalico/calico)**: Container networking and network security
-- **[MetalLB](https://github.com/metallb/metallb)**: Load balancer for bare metal clusters
-- **[cloudflared](https://github.com/cloudflare/cloudflared)**: Cloudflare secure tunnel access
-- **[Envoy Gateway](https://github.com/envoyproxy/gateway)**: Envoy-based ingress controller
+- **[cloudflared](https://github.com/cloudflare/cloudflared)**: Cloudflare Tunnel for public ingress
+- **[Envoy Gateway](https://github.com/envoyproxy/gateway)**: Gateway API ingress (external + internal)
 - **[k8s-gateway](https://github.com/k8s-gateway/k8s_gateway)**: Split-DNS bridge from the LAN into Gateway API routes
 
 ### Ingress Model
 
 The cluster uses a dual-Gateway Envoy model:
 
-- `envoy-external`: public-facing Gateway API entrypoint behind Cloudflare Tunnel
-- `envoy-internal`: internal Gateway API entrypoint exposed on a LAN VIP through MetalLB
+- `envoy-external`: public-facing Gateway API entrypoint behind Cloudflare Tunnel (ClusterIP-only Service inside the cluster)
+- `envoy-internal`: internal Gateway API entrypoint exposed on a Cilium L2-announced VIP for direct LAN access
 
 Public DNS and public traffic stay on the external path:
 
@@ -77,7 +86,7 @@ Public DNS and public traffic stay on the external path:
 
 Internal clients use split DNS instead of the tunnel path:
 
-- `k8s-gateway` listens on its own LAN VIP and watches HTTPRoutes attached to `envoy-internal`
+- `k8s-gateway` listens on its own Cilium L2-announced LAN VIP and watches HTTPRoutes attached to `envoy-internal`
 - the home router DNS conditionally forwards `${PUBLIC_DOMAIN}` lookups to `k8s-gateway`
 - internal clients therefore resolve app hostnames to the `envoy-internal` VIP and reach services directly on the LAN
 
@@ -92,12 +101,16 @@ See [docs/networking-readme.md](docs/networking-readme.md) for the current routi
 
 ### Storage & Backup
 
-- **[democratic-csi](https://github.com/democratic-csi/democratic-csi)**: CSI driver supporting local hostpath, NFS, iSCSI and ZFS storage backends
-- **[volsync](https://github.com/perfectra1n/volsync)**: PVC backup and recovery using Kopia to OVH object storage
+- **[democratic-csi](https://github.com/democratic-csi/democratic-csi)**: CSI driver supporting local-hostpath, NFS, iSCSI and ZFS storage backends
+- **[volsync](https://github.com/perfectra1n/volsync)**: PVC backup and recovery using Kopia to OVH Cloud Project Storage (S3-compatible). Always-on `ReplicationDestination` + `dataSourceRef` populates every PVC from its bootstrap snapshot on first apply.
+- **[resticprofile](https://github.com/creativeprojects/resticprofile)** + **[Backrest](https://github.com/garethgeorge/backrest)**: File-level backup of the shared NAS tree to the same OVH bucket; Backrest is the snapshot browser
 
 ### Configuration Management
 
-- **[sops](https://github.com/getsops/sops)**: Git-committed secrets for Kubernetes and Terraform
+- **[sops](https://github.com/getsops/sops)**: Git-committed secrets for Kubernetes and Terraform (Age-encrypted)
+- **[mise](https://mise.jdx.dev/)**: Pinned versions for `talosctl`, `kubectl`, `helm`, `helmfile`, `flux2`, `just`, `sops`, and the rest of the CLI surface
+- **[Just](https://github.com/casey/just)**: Recipe runner; the root `.justfile` imports per-area `mod.just` modules (`k8s`, `k8s-bootstrap`, `talos`, `volsync`, `omv`, `cloudflare`, `ovh`, `sops`, `openwrt`)
+- **[minijinja-cli](https://github.com/mitsuhiko/minijinja)** + `op inject`: Templated bootstrap-time resources fed from 1Password
 
 ## ☁️ Cloud Provider: Cloudflare
 
@@ -118,8 +131,8 @@ All Cloudflare resources are managed using Terraform with the Cloudflare provide
 
 The cluster uses a hybrid approach for secrets management:
 
-- **Basic cluster secrets**: Encrypted with SOPS and stored in the Git repository
-- **Application secrets**: Stored in 1Password and accessed via External Secrets operator
+- **Cluster-wide and bootstrap secrets**: Encrypted with SOPS (Age) and stored in the Git repository
+- **Application secrets**: Stored in 1Password and accessed via the External Secrets operator against the shared `onepassword` `ClusterSecretStore`
 
 This setup ensures sensitive data is properly secured while maintaining the GitOps workflow.
 
