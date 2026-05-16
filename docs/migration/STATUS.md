@@ -319,6 +319,8 @@ A teljes GitOps reconcile zöld (0 failing KS, 0 failing HR).
     2. Kubelet `--resolv-conf=/etc/resolv.conf` flag (`machine.kubelet.extraArgs`) — a pod-ok `dnsPolicy: ClusterFirst` esetén is örökli a node search-jét
     A két lépés csak együtt ér valamit (az egyik a másik nélkül nem hat). Egyik referencia repó (bjw-s/onedr0p/buroa) sem foglalkozik ezzel.
 
+- **CiliumNetworkPolicy migráció — ingress hardening stateful módon**: A jelenlegi 3 K8s `NetworkPolicy` `policyTypes: [Egress]`-re lett csökkentve a Cilium stateless-UDP minta-bug miatt (a return DNS reply random destination porton érkezik, ingress drop-ot kapna). Emiatt **az ingress oldali hardening elveszett** (default-allow ingress). A `CiliumNetworkPolicy` CRD stateful conntrack-kal (a UDP reply automatikusan engedélyezett a kifelé menő flow alapján) lehetővé teszi az ingress visszakapcsolást is. Plusz minőség: közös `CiliumCIDRGroup` (Cloudflare 22 CIDR) újrahasznosítható `cloudflare-tunnel` + `envoy-external` között, `toFQDNs` a config DNS-szintű felbontásra. Érintett fájlok: `cloudflare-tunnel/networkpolicy.yaml`, `envoy-gateway/config/networkpolicy-{external,internal}.yaml`. Hivatkozási minta: [bjw-s forgejo-runner CNP](https://github.com/bjw-s-labs/home-ops/blob/9f8311d192b08d1ae12880fdae005e2c27d6c2df/kubernetes/apps/dev/forgejo/runner/ciliumnetworkpolicy.yaml). Becsült munka ~30-45 perc.
+
 - **`Taskfile.yml` + `.taskfiles/` törlés**: Phase 8 záró feladat — cutover-előtt, hogy a `talos` branch tisztán Just-alapú legyen.
 
 ### Tudnivalók / üzemeltetési reminderek
