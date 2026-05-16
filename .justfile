@@ -24,6 +24,12 @@ mod cloudflare "provision/cloudflare"
 [group: 'ovh']
 mod ovh "provision/ovh"
 
+[group: 'sops']
+mod sops "provision/sops"
+
+[group: 'openwrt']
+mod openwrt "provision/openwrt"
+
 [private]
 [script]
 default:

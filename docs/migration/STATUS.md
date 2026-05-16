@@ -2,13 +2,13 @@
 
 Élő státusz a K3s → Talos migráció állapotáról. Ez a doc gyors pillanatkép — a részletes terv a [README.md](./README.md)-ben és a `00`–`14` doc-okban van.
 
-**Utolsó frissítés:** 2026-05-16 este — Phase 1–7 + 11 ✅, ingress stack stabil, CNP migráció kész, follow-up-ok rögzítve.
+**Utolsó frissítés:** 2026-05-16 este — Phase 1–8 + 11 ✅, ingress stack stabil, CNP migráció kész, Task→Just teljes migráció lezárva, follow-up-ok rögzítve.
 
 ## TL;DR
 
 **Hol tartunk:** Teljes GitOps reconcile zöld (**0 Failing KS, 0 Failing HR**). 17 VolSync PVC restore-olt OVH Kopia snapshotokból, 18 default app pod 1/1 Running, `cloudflare-tunnel` 1/1 Running. A `replicationdestination + dataSourceRef` mostantól **always-on** pattern (bjw-s minta). Ingress stack él kívülről (Cloudflare tunnel) és belülről (envoy-internal `192.168.1.18`), Cilium L2 announce egyedüli LB-IPAM. Stateful ingress hardening visszahozva 3 `CiliumNetworkPolicy`-val + közös `CiliumCIDRGroup/cloudflare`-rel. A régi K3s cluster áll.
 
-**Ismert follow-up-ok** (egyik sem blocker): `envoy-gateway` v1.9.0 GA → BTP rate-limit visszakapcsolás, search domain `lan` cluster-szintű kezelés, **Phase 8** `Taskfile.yml` törlés, **Phase 9** Renovate rewrite, **Phase 15** repo doc + AI-guide refresh.
+**Ismert follow-up-ok** (egyik sem blocker): `envoy-gateway` v1.9.0 GA → BTP rate-limit visszakapcsolás, search domain `lan` cluster-szintű kezelés, **Phase 9** Renovate rewrite, **Phase 15** repo doc + AI-guide refresh.
 
 ## Sessions — 2026-05-16
 
@@ -42,6 +42,16 @@ Az esti session 4 különálló problémát zárt le, mindegyik más-más tünet
 
 **4. Cloudflare CIDR auto-update workflow retarget** (`4d5d93035`). A `.github/workflows/update-cloudflare-networks.yaml` (napi cron) a most törölt `networkpolicy.yaml`-t targetelte; a python script `spec.externalCIDRs`-t frissít a `CiliumCIDRGroup`-on. Env var: `NETWORKPOLICY_FILE` → `CIDRGROUP_FILE`. Lokálisan venv-ben stubbolt API-val validálva (formátum-megőrzés, diff-detekció OK). **Mellék-megerősítés**: a `https://api.cloudflare.com/client/v4/ips` aktuális listája byte-azonos a commitolt 22 CIDR-rel (etag `38f79d050aa027e3be3865e495dcc9bc`).
 
+### Este — Phase 8 zárás (Task → Just teljes migráció)
+
+A Phase 8 foundation (mise + just + setup.sh + 6 mod) reggel kész volt, de a `Taskfile.yml` és `.taskfiles/` lemaradt mert pár domain nem volt teljes lefedettséggel migrálva. Lefedettségi audit után **minden releváns task** (`so:`, `hm:openwrt*`, `vs:status`, `vs:list`, `vs:maintenance`, `vs:last-backups`, `ku:mount`, `fx:reconcile`, `fx:verify`, `hm:openmediavault` SSH-flow) migrálva a Just oldalra. Eldobva mint elavult: `an:*` (K3s Ansible — Talos váltja), `hm:proxmox` + `hm:k8s-host` + `hm:all` (Proxmox-K3s láncolat), `tf:*` (már a `cloudflare`/`ovh` mod-okban), `fx:install` (`just k8s-bootstrap cluster` váltja), `fx:hr-restart` (= `just k8s restart-failed-hrs`), `fx:nodes/pods/list` (use `kubectl get` / `flux get` directly), `ku:kubeconfig` (Talos-éra: `just talos get-kubeconfig`), `pc:*` (a `pre-commit` CLI-t direkt használjuk), `es:sync` (= `just k8s sync-es` / `sync-all es`).
+
+**Új modulok**: `provision/sops/mod.just` (4 recipe: re-encrypt, fix-mac, encrypt-file, decrypt-file) és `provision/openwrt/mod.just` (3 recipe: maintain, reinstall-packages, upgrade — eredeti ~400 sor bash interaktív sysupgrade flow Just `[script]` recipe-ekbe csomagolva). **`provision/openmediavault/mod.just`** kapott egy `update-host` recipe-et (SSH-alapú `omv-upgrade` + applyChanges + NAS share remount — az aktuális, pre-Phase-10 omv-maintenance út). **`kubernetes/mod.just`** kibővítve: `rs-status`, `kopia-maintenance`, `last-backups` (Python window overview), `mount-pvc`, `flux-reconcile`, `flux-check`; a meglevő `list-snapshots` rich tabular formátumra cserélve.
+
+**Root `.justfile`** kapott `mod sops "provision/sops"` és `mod openwrt "provision/openwrt"` import-okat — most 8 mod-csoport listázódik (`k8s`, `k8s-bootstrap`, `talos`, `omv`, `cloudflare`, `ovh`, `sops`, `openwrt`). **Root `CLAUDE.md`** „Taskfile And Renovate Model" szekciója „Just And Renovate Model"-re cserélve, „Current Repository Shape" `.taskfiles/` hivatkozása `.justfile + **/mod.just`-ra. **Törölve**: `Taskfile.yml` + a teljes `.taskfiles/` (9 mappa, 13 fájl).
+
+**Verifikáció**: `just --list` 8 csoportot mutat, `just sops/openwrt/omv/k8s --list` mind parse-ol és listáz. Egy parse-hiba a Python f-string `{{:<{w}}}` format-spec miatt javítva `str.ljust()`-tal (Just `{{ ... }}` template-szintaxissal ütközött a literal Python escape). A subtree `CLAUDE.md`-k (`provision/CLAUDE.md`, `kubernetes/apps/*/CLAUDE.md` stb.) még tartalmaznak `Taskfile`/`.taskfiles` hivatkozást — ezek Phase 15 hatáskörébe esnek.
+
 ## Fázis tracker
 
 | # | Fázis | Doc | Status | Megjegyzés |
@@ -55,7 +65,7 @@ Az esti session 4 különálló problémát zárt le, mindegyik más-más tünet
 | 5 | Flux Operator + FluxInstance | [05](./05-flux-operator.md) | ✅ done | 4 controller, 11 CRD |
 | 6 | Repo refactor | [06](./06-repo-restructure.md) | ✅ done | bjw-s layout + K3s subtree törlés + LB-IPAM annotáció csere |
 | 7 | Components / shared | [07](./07-components-and-shared.md) | ✅ done | Always-on VolSync RD aktív |
-| 8 | Just migráció | [08](./08-just-migration.md) | 🟡 in-progress | foundation kész; `Taskfile.yml` törlés hátra |
+| 8 | Just migráció | [08](./08-just-migration.md) | ✅ done | `Taskfile.yml` + `.taskfiles/` törölve, 2 új mod (sops, openwrt), 4 új k8s recipe (rs-status, kopia-maintenance, last-backups, mount-pvc + flux-reconcile/check), root `CLAUDE.md` átírva |
 | 9 | Renovate rewrite | [09](./09-renovate-rewrite.md) | ⏸ pending | `.renovaterc.json5` + fragmensek |
 | 10 | OMV Ansible | [10](./10-omv-ansible.md) | ⏸ pending | Csak cutover után |
 | 11 | Data migration | [11](./11-data-migration.md) | ✅ done | 17 PVC restore-olt (always-on RD) |
@@ -84,7 +94,6 @@ A teljes GitOps reconcile zöld (0 failing KS, 0 failing HR).
 
 - **Search domain `lan` cluster-szintű kezelés**: A Talos node `ResolverStatus SEARCH DOMAINS: []` üres. FQDN-szintű `.lan` resolve cluster-en át jelenleg működik (CoreDNS `forward . /etc/resolv.conf`). Akkor szükséges, ha valaha rövid host neveket (`nas`) hivatkoznánk app config-ban — jelenleg minden manifest FQDN-t vagy IP-t használ. Megoldás (csak együtt): Talos machineconfig `machine.network.searchDomains: [lan]` + kubelet `--resolv-conf=/etc/resolv.conf`. Egyik referencia repó sem foglalkozik vele.
 
-- **`Taskfile.yml` + `.taskfiles/` törlés**: Phase 8 záró feladat — cutover-előtt, hogy a `talos` branch tisztán Just-alapú legyen.
 
 - **Phase 15 — Repo doc + AI-guide refresh** (cutover előtti zárás): a migráció átszabta a stacket (K3s → Talos, Task → Just, Calico → Cilium, MetalLB → Cilium LB-IPAM, Traefik → Envoy Gateway, bjw-s layout, always-on VolSync). A `docs/migration/00–14` doc-ok ezt tükrözik, de a többi repo-doksi és AI-guide nagyrészt még a K3s-éra valóságot írja le.
 

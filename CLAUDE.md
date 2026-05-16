@@ -6,11 +6,11 @@ This file is the operational guide for working in this repository. Treat it as t
 
 - Treat this repository as potentially public and durable. Do not introduce plaintext credentials or new sensitive external identifiers.
 - Do not commit plaintext secrets, API keys, tokens, passwords, or certificate material anywhere in the repo.
-- Do not hardcode public domains, public IP addresses, or email addresses in manifests, docs, task wrappers, or examples when the value belongs in secret-backed configuration.
+- Do not hardcode public domains, public IP addresses, or email addresses in manifests, docs, operational wrappers, or examples when the value belongs in secret-backed configuration.
 - Private RFC1918 addresses, cluster-local hostnames, and other internal topology values are acceptable when they reflect the live repo model.
 - Sensitive cluster-wide substitutions belong in `kubernetes/flux/vars/cluster-secrets.sops.yaml`; non-secret cluster-wide values belong in `kubernetes/flux/vars/cluster-settings.yaml`.
 - For app-managed secrets, prefer External Secrets backed by the shared `ClusterSecretStore` named `onepassword` when the target area already follows that pattern.
-- Keep GitOps as the source of truth for steady-state cluster configuration. Avoid manual out-of-band `kubectl apply` changes except for documented bootstrap, recovery, or existing task-driven workflows in the repo.
+- Keep GitOps as the source of truth for steady-state cluster configuration. Avoid manual out-of-band `kubectl apply` changes except for documented bootstrap, recovery, or existing Just-driven workflows in the repo.
 
 ## Scope And Priorities
 
@@ -19,7 +19,7 @@ Use these sources in this order:
 1. The current files in the repository
 2. This `CLAUDE.md`
 3. More specific `CLAUDE.md` files in subdirectories
-4. `Taskfile.yml` and `.taskfiles/*`
+4. `.justfile` (root) and `mod.just` files under `kubernetes/`, `kubernetes/bootstrap/`, `kubernetes/talos/`, `provision/openmediavault/`, `provision/cloudflare/`, `provision/ovh/`, `provision/sops/`, `provision/openwrt/`
 5. `.github/renovate.json5` and `.github/renovate/*`
 6. repo-local skills under `.claude/skills/`
 7. Root `README.md` and `docs/*.md` for human-facing context
@@ -48,7 +48,7 @@ This repository currently manages a single-node home infrastructure stack with t
 - `provision/cloudflare/`: Terraform for Cloudflare DNS, tunnel, workers, pages, redirects, and zone configuration
 - `provision/ovh/`: Terraform for OVH Cloud Project Storage (S3 backup buckets and the S3 user consumed by the VolSync/Kopia and resticprofile backup planes)
 - `.claude/skills/`: repo-local skill sources for reusable workflow knowledge
-- `.taskfiles/`: operational entry points used from `Taskfile.yml`
+- `.justfile` + `**/mod.just`: operational entry points (Just-based, replaces the previous Task system)
 - `.github/renovate*`: Renovate policy and package rule definitions
 - `docs/`: human-facing runbooks and reference notes
 
@@ -57,10 +57,10 @@ This repository currently manages a single-node home infrastructure stack with t
 - Inspect the target area before editing; do not assume the memory docs are current.
 - Keep changes minimal and consistent with existing patterns.
 - Prefer existing abstractions over inventing new ones.
-- Preserve existing secret flows, shared resource names, and task-driven workflows unless the task explicitly changes them.
+- Preserve existing secret flows, shared resource names, and Just-driven workflows unless the task explicitly changes them.
 - Do not create new documentation locations unless they clearly fit the current structure.
 - Preserve `README.md` as human-facing overview unless the task explicitly requires changing it.
-- Prefer repo-native operational entry points over raw commands when they already exist in Taskfiles.
+- Prefer repo-native operational entry points over raw commands when they already exist as Just recipes.
 - Distinguish carefully between local repository state and live cluster state.
 - Local file edits do not change the cluster until the watched Git source is updated and reconciled.
 - Do not treat `flux reconcile` as if it applied the local working tree.
@@ -71,7 +71,7 @@ This repository currently manages a single-node home infrastructure stack with t
 - Introducing plaintext secrets outside SOPS-encrypted files or External Secrets.
 - Making imperative cluster changes that bypass Flux for normal steady-state configuration.
 - Treating local file edits as if they were already deployed by GitOps, or using `flux reconcile` as though it applied the local working tree.
-- Changing shared secret names, store names, or dependency wiring without tracing the related Flux and Taskfile references first.
+- Changing shared secret names, store names, or dependency wiring without tracing the related Flux and Just recipe references first.
 - Refactoring file layout or documentation structure when an established local pattern already exists.
 
 ## State To Assume Today
@@ -97,17 +97,18 @@ This repository currently manages a single-node home infrastructure stack with t
   - `.claude/skills/architecture-review/`
   - `.claude/skills/security-review/`
   - `.claude/skills/sre/`
-  - `.claude/skills/taskfiles/`
   - `.claude/skills/versions-renovate/`
   - `.claude/skills/sops-secrets/`
   - `.claude/skills/flux-gitops/`
   - other domain skills under `.claude/skills/`
 
-## Taskfile And Renovate Model
+## Just And Renovate Model
 
-- `Taskfile.yml` is the command index; prefer existing task namespaces over ad-hoc shell flows.
-- Current task domains are `an:`, `es:`, `fx:`, `hm:`, `ku:`, `pc:`, `so:`, `tf:`, and `vs:`.
-- Task orchestration fans out through `.taskfiles/Ansible`, `.taskfiles/ExternalSecrets`, `.taskfiles/Flux`, `.taskfiles/Kubernetes`, `.taskfiles/PreCommit`, `.taskfiles/Sops`, `.taskfiles/Terraform`, and `.taskfiles/VolSync`.
+- The root `.justfile` is the command index; prefer existing Just modules over ad-hoc shell flows.
+- Current Just modules (groups) are: `k8s-bootstrap`, `k8s`, `talos`, `omv`, `cloudflare`, `ovh`, `sops`, `openwrt`.
+- Each module lives next to the area it operates on: `kubernetes/bootstrap/mod.just`, `kubernetes/mod.just`, `kubernetes/talos/mod.just`, `provision/openmediavault/mod.just`, `provision/cloudflare/mod.just`, `provision/ovh/mod.just`, `provision/sops/mod.just`, `provision/openwrt/mod.just`.
+- Invoke recipes as `just <group> <recipe> [args]` (e.g. `just k8s sync-hr ns name`, `just sops re-encrypt`, `just talos apply-node cp0-k8s`).
+- Pre-commit is invoked directly via the `pre-commit` CLI (no Just wrapper); the hook list is in `.pre-commit-config.yaml`.
 - Renovate configuration starts in `.github/renovate.json5` and imports the fragments under `.github/renovate/`.
 - Preserve inline `# renovate:` annotations when touching versioned manifests.
 - If Renovate behavior changes, inspect the root config together with the touched fragment or annotation.
