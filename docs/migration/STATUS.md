@@ -2,13 +2,13 @@
 
 Élő státusz a K3s → Talos migráció állapotáról. Ez a doc gyors pillanatkép — a részletes terv a [README.md](./README.md)-ben és a `00`–`14` doc-okban van.
 
-**Utolsó frissítés:** 2026-05-16 délután — Phase 4–7 + 11 ✅, adatmigráció + ingress stack E2E zöld, follow-up-ok rögzítve.
+**Utolsó frissítés:** 2026-05-16 este — Phase 4–7 + 11 ✅, adatmigráció + ingress stack E2E zöld, orphan `metallb` HR runtime cleanup (Cilium LB-IPAM stabil), follow-up-ok rögzítve.
 
 ## TL;DR
 
 **Hol tartunk:** Teljes GitOps reconcile zöld (**0 Failing KS, 0 Failing HR**). 17 VolSync ReplicationDestination Kopia-restore-olt OVH snapshotokból (12–19 s/db). 18+ default app pod 1/1 Running, `cloudflare-tunnel` 1/1 Running 4 connection regisztrálva (bud01/vie05/vie06). A `replicationdestination + dataSourceRef` mostantól **always-on** pattern (bjw-s/onedr0p minta), nem cutover-only. **Ingress stack él** kívülről (Cloudflare tunnel) és belülről (envoy-internal `192.168.1.18`) — végpont tesztek HTTP 200/302 (normál login redirectek). A régi K3s cluster áll, a migráció gyakorlatilag adat-szinten is megtörtént a `talos` branchen.
 
-**Ismert follow-up-ok** (egyik sem blocker, részletek az `Open items`-ben): `plex-trakt-sync` Plex API token frissítés, `envoy-gateway` v1.9.0 GA → BTP rate-limit visszakapcsolás, search domain `lan` cluster-szintű kezelés, `CiliumNetworkPolicy` migráció (ingress hardening visszahozása stateful módon), `Taskfile.yml` törlés cutover-előtt.
+**Ismert follow-up-ok** (egyik sem blocker, részletek az `Open items`-ben): `plex-trakt-sync` Plex API token frissítés, `envoy-gateway` v1.9.0 GA → BTP rate-limit visszakapcsolás, search domain `lan` cluster-szintű kezelés, `CiliumNetworkPolicy` migráció (ingress hardening visszahozása stateful módon), `Taskfile.yml` törlés cutover-előtt, **Phase 15: repo doc + AI-guide refresh** (13 `docs/*.md` + 11 `CLAUDE.md` + 12 skill audit, cutover-előtt).
 
 ## Session 2026-05-16 — Phase 4 éles bootstrap napló
 
@@ -246,6 +246,84 @@ Az `envoy-gateway` controller restart-jára szükség volt — status_updater lo
   - Több route teszt: `docs/grafana` HTTP 302 (login redirect, normál); `plex` HTTP 404 (Plex token issue, task #9)
 - 🟡 1 app-szintű follow-up: `plex-trakt-sync` 401 unauthorized — Plex API token elavult a friss DB-ben
 
+## Session 2026-05-16 este — PVC újratöltés helyes Kopia snapshotokból
+
+Felhasználói visszajelzés: a délutáni „17 PVC restore" valójában egy üres, Talos-éra Kopia snapshot-ot húzott le, nem a K3s-éra adatokat. Az üres snapshot(ok) az OVH bucketről manuálisan törölve, futtatunk egy fresh restore-t.
+
+### Procedúra (17 app)
+
+`actual, backrest, bazarr, calibre-web-automated, isponsorblocktv, maintainerr, mealie, paperless, paperless-gpt, plex, plex-trakt-sync, prowlarr, qbittorrent, radarr, seerr, sonarr, wallos` — per app:
+
+1. `flux suspend hr <app> -n default`
+2. `kubectl scale deploy/<app> --replicas=0` (mind Deployment, nincs StatefulSet)
+3. Pod terminálás bevárása
+4. `kubectl delete pvc <app> -n default` — törli a PV-t is (Delete reclaim policy)
+5. `kubectl delete replicationdestination <app>-bootstrap -n default` — **kritikus**, különben az új PVC `dataSourceRef`-en át a régi (üres) `VolumeSnapshot`-ot klónozta volna a populator
+6. `flux resume hr <app>` + `flux reconcile ks <app> -n flux-system` — új RD `manual: restore-once` triggerrel + új PVC
+7. `kubectl scale deploy/<app> --replicas=1` (Helm a meglévő `replicas` mezőt nem patcheli felül)
+
+A `backrest` egy speciális eset: a Flux Kustomization-je `restic-gui` néven él a `flux-system`-ben (nem `backrest`), így a tömeges `flux reconcile ks backrest` time-out-olt; külön `flux reconcile ks restic-gui -n flux-system --timeout=60s` szükséges. A `restic-gui` `ks.yaml` második Kustomization-blokkja hordozza a volsync component-et `APP: backrest` substitution-nel.
+
+Az RS-ek `NEXT SYNC` mezője `2026-05-17T02:00:00Z` volt — tehát a restore-ablakban nem volt verseny az újra-feltöltéssel.
+
+### Eredmény
+
+17/17 RD synced 11s–1m48s alatt (Plex 1m48s a legnagyobb, paperless 45s, sonarr 39s, többi 11-35s). Pod-ok mind 1/1 Running (paperless 2/2 a valkey sidecarral). PVC-ken validált tartalom: sonarr 373M (`sonarr.db` 74M), plex 964M (Library DB 48M + history 2026.05.05/08/11/14), radarr 313M, calibre-web 129M, qbittorrent 46M (549 BT_backup), prowlarr 22M, bazarr 7.3M (backup zip-ek), backrest 7.8M, actual 4.6M, mealie 1.4M, wallos sqlite present, paperless 445M (`/data/local/data/db.sqlite3` 57M, `/data/local/media` 281M, 3485 dokumentum-fájl).
+
+### Ellenőrzési csapda — paperless path felülírás
+
+A verifikáció során egy időre tévesen üresnek minősítettem a paperless restore-t, mert a paperless-ngx upstream image default path-jait (`/usr/src/paperless/{data,media,consume,export}`) néztem. A `helmrelease.yaml` env-blokkja viszont **felülírja** ezeket:
+
+```yaml
+PAPERLESS_DATA_DIR:     /data/local/data
+PAPERLESS_MEDIA_ROOT:   /data/local/media
+PAPERLESS_LOGGING_DIR:  /data/local/logs
+PAPERLESS_EXPORT_DIR:   /data/nas/export    # NFS NAS
+PAPERLESS_CONSUMPTION_DIR: /data/nas/inbox  # NFS NAS scanner
+```
+
+A PVC `/data/local` alá van mountolva (egyetlen mountpoint, nem subPath-okkal felszabdalva), a paperless onnan olvas/ír; az image-beli `/usr/src/paperless/{data,media,…}` üres stub könyvtárak. **Tanulság**: restore-verifikáció előtt minden alkalommal a manifest env-blokkját kell elolvasni, nem az upstream image default path-ait feltételezni. Egyszerűbb fallback: `kubectl exec -- du -sh /data/* /config/* 2>/dev/null` plusz `mount | grep -v overlay`.
+
+### Tanulság
+
+Az always-on `dataSourceRef` minta + `kustomize.toolkit.fluxcd.io/ssa: IfNotPresent` címke az RD-n azt jelenti, hogy egy RD egyszer fut le `manual: restore-once`-szal, utána statikus. Új Kopia-fetch indításához **mindkettőt** kell törölni: a PVC-t **és** az RD-t — különben az új PVC az RD `status.latestImage` mezőből populálódik a régi (immár üres) VolumeSnapshot-tal.
+
+## Session 2026-05-16 este — orphan `metallb` HR runtime cleanup
+
+Felhasználói visszajelzés: external irányból minden zöld, **belső irányból viszont a homepage akadozik, a `subscriptions.horvathzoltan.me` teljesen elérhetetlen**. SRE diagnose:
+
+- `envoy-internal` Service `EXTERNAL-IP=<pending>`, Gateway `PROGRAMMED=False` (`AddressNotAssigned`).
+- `k8s-gateway` (split DNS LB) szintén `<pending>`.
+- `cilium-operator-lb-ipam` a `status.loadBalancer.ingress` mezőbe **beírja** a `192.168.1.18` / `192.168.1.19` IP-t — majd a következő reconcile-ban **üres lesz** (oszcillál).
+- `metallb-controller` log: `failed to handle service` minden LoadBalancer Service-re, miközben felülírja a Cilium által beírt status mezőt. **MetalLB IPAddressPool / L2Advertisement nincs deklarálva** — a Cilium L2 announce csak akkor küld ARP-t a `.18`-ra, amíg a status megvan, innen az akadozás.
+
+### Mi maradt benn
+
+A reggeli session a Flux Kustomization-t `suspended` állapotba tette → suspended Kustomization **nem prune-ol**. A délutáni `478446aaf` commit a repo subtree-t törölte, a Kustomization is így „eltűnt" a görbe ablakon át. A `helm uninstall metallb` lefutott, **de a `HelmRelease/metallb -n networking` objektum nem lett törölve** — a helm-controller újra-installálta, ~2 órája pörgött ebben az állapotban a délutáni „minden zöld" pillanatfotó után.
+
+Tüneti rejtőzködés: a Cilium reconcile pillanatokra visszahozta a `.18`-at, így a délutáni session-záró smoke teszt (HTTP 200 a `dash.horvathzoltan.me`-re) **véletlenül egy ilyen pillanatban futott**, és a probléma rejtve maradt.
+
+### Cleanup
+
+Mivel a repóban már nincs `metallb` referencia (`find kubernetes -iname '*metallb*'` üres), ez nem-deklarált runtime takarítás, nem repo-változás:
+
+```bash
+kubectl delete hr -n networking metallb
+# helm-controller uninstall-olja → controller + speaker pod elmegy
+helm ls -n networking | grep metallb       # üres
+kubectl get deploy,ds -n networking | grep metallb  # üres
+```
+
+### Eredmény
+
+- `kubectl get svc -n networking envoy-internal k8s-gateway` → `EXTERNAL-IP` **stabil** (`192.168.1.18` és `192.168.1.19`), két egymást követő olvasás között nincs flap.
+- `envoy-internal` Gateway `PROGRAMMED=True`, `ADDRESS=192.168.1.18`.
+- Belső ingress most már valóban él, nem csak race-window-ban.
+
+### Tanulság — cutover előtt ellenőrizni
+
+A Flux **Kustomization suspend → repo subtree delete** kombináció **orphan child HR-eket hagy maga után**. Cutover előtt érdemes a `networking` és `kube-system` namespace-ben `kubectl get hr -A` listát átfutni, és minden olyan HR-t törölni, amire `flux get ks -A` nem mutat parent-et. Vagy: suspend HELYETT a Kustomization-t törölni `prune: true` mellett, mert az automatikusan eltakarítja a managed objektumokat.
+
 ## Fázis tracker
 
 | # | Fázis | Doc | Status | Megjegyzés |
@@ -254,7 +332,7 @@ Az `envoy-gateway` controller restart-jára szükség volt — status_updater lo
 | — | `talos` branch létrehozása | — | ✅ done | 2026-05-15 |
 | 1 | Hardver, hálózat, IP plan | [01](./01-hardware-and-network.md) | ✅ done | HP fent, Talos installálva |
 | 2 | Talos bootstrap | [02](./02-talos-bootstrap.md) | ✅ done | etcd Healthy, kubeconfig megvan, `cp0-k8s NotReady` (CNI várja) |
-| 3 | Cilium CNI install + L2 announce | [03](./03-cilium-cni.md) | ✅ done | Cilium 1.19.4 fent + L2 announce egyedül felelős az LB IP-kért (MetalLB uninstalled), Hubble UI elérhető |
+| 3 | Cilium CNI install + L2 announce | [03](./03-cilium-cni.md) | ✅ done | Cilium 1.19.4 fent + L2 announce egyedül felelős az LB IP-kért (MetalLB Helm release + HR runtime cleanup esti session-ben — orphan HR rejtett flap-et okozott), Hubble UI elérhető |
 | 4 | Bootstrap helmfile chain | [04](./04-bootstrap-helmfile.md) | ✅ done | 7 release deployed; snapshot-controller magától visszaállt, kopia + external-dns helm uninstall + reinstall recovery után Ready |
 | 5 | Flux Operator + FluxInstance | [05](./05-flux-operator.md) | ✅ done | FluxInstance Ready, 4 controller fut, 11 CRD apply-olva, `flux-system` GitRepository auto-created, `cluster-vars` + `cluster-apps` Ready |
 | 6 | Repo refactor (apps struktúra) | [06](./06-repo-restructure.md) | ✅ done | bjw-s naming + layout refactor + onepassword bjw-s alignment + K3s-éra subtree-k repo-szintű törlése (tigera-operator/, networking/metallb/, system-upgrade-controller/) + Cilium LB-IPAM annotation csere |
@@ -266,6 +344,7 @@ Az `envoy-gateway` controller restart-jára szükség volt — status_updater lo
 | 12 | Cutover runbook | [12](./12-cutover-runbook.md) | 🟡 in-progress | A `talos`→`main` branch merge + FluxInstance ref switch + régi K3s decom hátra van |
 | 13 | Rollback és decommission | [13](./13-rollback-and-decom.md) | ⏸ pending | |
 | 14 | Post-cutover megfigyelés | [14](./14-post-cutover.md) | ⏸ pending | 1-2 hét observation |
+| 15 | Repo doc + AI-guide refresh | — | 🟡 in-progress | `docs/*.md` + `CLAUDE.md` lánc + `.claude/skills/*` audit + átírás a migráció eredménye alapján; cutover-előtt zárandó, hogy a `main` branch konzisztens legyen |
 
 Legend: ✅ done · 🟡 in-progress · ⏸ pending · ❌ blocked · ⏭ skipped
 
@@ -320,6 +399,49 @@ A teljes GitOps reconcile zöld (0 failing KS, 0 failing HR).
 - **CiliumNetworkPolicy migráció — ingress hardening stateful módon**: A jelenlegi 3 K8s `NetworkPolicy` `policyTypes: [Egress]`-re lett csökkentve a Cilium stateless-UDP minta-bug miatt (a return DNS reply random destination porton érkezik, ingress drop-ot kapna). Emiatt **az ingress oldali hardening elveszett** (default-allow ingress). A `CiliumNetworkPolicy` CRD stateful conntrack-kal (a UDP reply automatikusan engedélyezett a kifelé menő flow alapján) lehetővé teszi az ingress visszakapcsolást is. Plusz minőség: közös `CiliumCIDRGroup` (Cloudflare 22 CIDR) újrahasznosítható `cloudflare-tunnel` + `envoy-external` között, `toFQDNs` a config DNS-szintű felbontásra. Érintett fájlok: `cloudflare-tunnel/networkpolicy.yaml`, `envoy-gateway/config/networkpolicy-{external,internal}.yaml`. Hivatkozási minta: [bjw-s forgejo-runner CNP](https://github.com/bjw-s-labs/home-ops/blob/9f8311d192b08d1ae12880fdae005e2c27d6c2df/kubernetes/apps/dev/forgejo/runner/ciliumnetworkpolicy.yaml). Becsült munka ~30-45 perc.
 
 - **`Taskfile.yml` + `.taskfiles/` törlés**: Phase 8 záró feladat — cutover-előtt, hogy a `talos` branch tisztán Just-alapú legyen.
+
+- **Phase 15 — Repo doc + AI-guide refresh** (cutover előtti zárás): a migráció gyökeresen átszabta a stacket (K3s → Talos, Task → Just, Calico/tigera-operator → Cilium + Cilium L2 announce, MetalLB → Cilium LB-IPAM, Traefik → Envoy Gateway + Gateway API, `system-upgrade-controller` → `tuppr` post-cutover, bjw-s repo layout, always-on VolSync `replicationdestination`). A migrációs `docs/migration/00–14` doc-ok ezt tükrözik, **de a többi repo-doksi és AI-guide nagyrészt még a K3s-éra valóságot írja le**. Audit + átírás szükséges.
+
+  **Hatáskör — érintett fájlok:**
+
+  *`docs/*.md` (13 fájl) — várhatóan többségben elavult vagy törlendő:*
+  - `docs/k3s-readme.md` — elavult, vélhetően törlendő (Talos-specifikus alternatíva: nincs külön doc, `docs/migration/02-talos-bootstrap.md` lefedi)
+  - `docs/k3s-system-upgrade.md` — elavult (Rancher SUC kivéve), `tuppr` post-cutover, addig nincs replacement
+  - `docs/networking-readme.md` — átírás Traefik+MetalLB → Envoy Gateway+Cilium-ra
+  - `docs/kubernetes-readme.md` — Talos + bjw-s layout
+  - `docs/flux-readme.md` — Flux Operator + FluxInstance pattern
+  - `docs/helm-readme.md`, `docs/cert-manager-readme.md`, `docs/sops-readme.md`, `docs/pluto-readme.md` — ellenőrzés, kis frissítések
+  - `docs/host-configuration.md` — Talos machineconfig (1Password forrás), `provision/kubernetes` Ansible kivonás
+  - `docs/backup-kubernetes-host.md` — felülvizsgálat (Talos host-szintű backup szükséges-e)
+  - `docs/postgresql-backup-readme.md` — ellenőrzés (CNPG még él-e a cluster-ben)
+  - `docs/ingress-basic-auth.md` — Envoy Gateway SecurityPolicy mintára átírás
+
+  *Root + path-szintű `CLAUDE.md`-k (11 fájl, worktree-másolatok kihagyva):*
+  - `CLAUDE.md` (root) — task domain lista (`an: es: fx: hm: ku: pc: so: tf: vs:`) Just-receptekre cserélendő; "Current Repository Shape" + "State To Assume Today" frissítés (a MetalLB már leszerelve, ingress stack él, bjw-s parity rögzítve)
+  - `kubernetes/CLAUDE.md`, `kubernetes/apps/{default,external-secrets,networking,volsync-system}/CLAUDE.md` — bjw-s layout + új namespace + always-on VolSync minta
+  - `provision/CLAUDE.md`, `provision/kubernetes/CLAUDE.md`, `provision/cloudflare/CLAUDE.md`, `provision/ovh/CLAUDE.md` — Talos Ansible scope szűkítés, Cloudflare/OVH változatlan
+  - `.claude/CLAUDE.md` — Cluster Access Policy a `task fx:*` / `task vs:*` helyett Just receptekre
+
+  *`.claude/skills/*/SKILL.md` + referenciák (12 skill):*
+  - `taskfiles/` skill — Phase 8 lezárása után **törlendő vagy átírandó "just" skillé** (a workflow-rétegre a `just` lesz a belépés)
+  - `versions-renovate/` skill — Phase 9 után átírás az új `.renovaterc.json5` + `.renovate/` fragmens-struktúrára
+  - `provision-kubernetes/` skill — Talos-fókusz, K3s referenciák kivétele
+  - `networking-platform/` skill — Envoy Gateway + Cilium LB-IPAM minta megerősítése (a Cilium L2 + LB-IPAM él, MetalLB referenciák ki); CiliumNetworkPolicy migráció után stateful CNP minta hozzáadása
+  - `flux-gitops/` skill — Flux Operator + FluxInstance pattern + cluster-vars/cluster-secrets aktualizálás
+  - `external-secrets/`, `sops-secrets/`, `volsync/`, `cloudflare-terraform/` — kisebb frissítések (always-on RD minta a `volsync/` skill-be)
+  - `sre/`, `architecture-review/`, `security-review/`, `k8s-workloads/` — sample-ek frissítése Talos/Cilium kontextusra
+
+  *Root `README.md`*: a globális szabály szerint **csak explicit kérésre módosítható**. Külön ASK kell rá; a magyar nyelvű, human-facing áttekintés a `talos` ágon még a K3s világot mutatja (várhatóan).
+
+  **Megközelítés:**
+  1. **Olvasási fázis** (~1h): a 13 `docs/*.md` átolvasása, megjelölés (delete / rewrite / minor edit / keep).
+  2. **CLAUDE.md lánc audit** (~1-1.5h): top-down, a root → kubernetes → apps sorrendben, a "State To Assume Today" + "Repo-Wide Anti-Patterns" szakaszok aktualizálása.
+  3. **Skill refresh** (~1-2h): a 12 skill `SKILL.md` + `references/*.md` átfutása; `taskfiles/` skill sorsa Phase 8-tól függ.
+  4. **README.md** (~30 min, opcionális ASK után): a Hungarian human-facing változat.
+
+  **Becsült összmunka**: ~4-6h, parallel-izálható (skill ↔ CLAUDE.md egymástól függetlenül).
+
+  **Miért cutover-előtt**: a `main` branch a hosszú távú forrás; ha a migrációval érkező új repo-modellt a doksi nem tükrözi, minden új AI-session és minden új issue félreértésre épül.
 
 ### Tudnivalók / üzemeltetési reminderek
 
