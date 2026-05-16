@@ -22,7 +22,7 @@ spec:
   gatewayClassName: envoy-internal
   infrastructure:
     annotations:
-      metallb.io/loadBalancerIPs: "${LB_ENVOY_INTERNAL_IP}"
+      lbipam.cilium.io/ips: "${LB_ENVOY_INTERNAL_IP}"
   listeners:
     - name: http
       protocol: HTTP

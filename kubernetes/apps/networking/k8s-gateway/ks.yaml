@@ -10,7 +10,6 @@ spec:
     labels:
       app.kubernetes.io/name: k8s-gateway
   dependsOn:
-    - name: metallb-config
     - name: envoy-gateway-config
   path: ./kubernetes/apps/networking/k8s-gateway/app
   prune: true
