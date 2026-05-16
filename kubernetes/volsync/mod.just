@@ -214,9 +214,9 @@ last-backups date=`date +%Y-%m-%d`:
         print(fmt_row(r))
     PY
 
-[doc('Suspend or resume the global VolSync stack (state=suspend|resume) — pauses backup jobs cluster-wide')]
+[doc('Suspend or resume the global VolSync stack (action=suspend|resume) — pauses backup jobs cluster-wide')]
 [script]
-state state:
-    flux -n volsync-system {{ state }} kustomization volsync
-    flux -n volsync-system {{ state }} helmrelease volsync
-    kubectl -n volsync-system scale deployment volsync --replicas {{ if state != "suspend" { "1" } else { "0" } }}
+state action:
+    flux -n volsync-system {{ action }} kustomization volsync
+    flux -n volsync-system {{ action }} helmrelease volsync
+    kubectl -n volsync-system scale deployment volsync --replicas {{ if action != "suspend" { "1" } else { "0" } }}
