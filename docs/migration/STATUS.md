@@ -112,7 +112,19 @@ A teljes GitOps reconcile zöld (0 failing KS, 0 failing HR).
 
   Platform-szintű multi-KS-eket (`networking/envoy-gateway/{certificate,app,config}`, `cert-manager/{cert-manager,issuers}`, `kube-system/cilium/{app,config}`, `volsync-system/volsync/{app,maintenance}`, `flux-system/addons/{alerts,webhooks}`) **nem érintjük** — ezek a referencia repokban is multi-KS staging mintázattal élnek (szigorú `dependsOn` sorrend).
 
-  Kockázat: 3 path-only split alacsony (Flux a `kustomize.toolkit.fluxcd.io/name` label alapján észleli a path-váltást, nincs ownership transfer). **A `restic-gui` → `backrest` KS rename** valós prune-kockázattal jár: a régi KS prune-ja megpróbálná törölni a HR-t a régi labellel. Mitigáció: előbb a régi KS-t `prune: false`-ra vagy `flux suspend`-be, csak utána a forrás-fájlokat törölni; a `dependsOn` referenciákat is át kell írni minden helyen. Becsült munka: ~30-45 perc.
+  Kockázat: 3 path-only split alacsony (Flux a `kustomize.toolkit.fluxcd.io/name` label alapján észleli a path-váltást, nincs ownership transfer). **A `restic-gui` → `backrest` KS rename** valós prune-kockázattal jár: a régi KS prune-ja megpróbálná törölni a HR-t a régi labellel. Mitigáció: előbb a régi KS-t `prune: false`-ra vagy `flux suspend`-be, csak utána a forrás-fájlokat törölni. Becsült munka: ~30-45 perc.
+
+  **Hol feltételezünk `app == KS == HR` egyezőséget a repo-ban** (audit eredménye — mindegyik a 15.a után stimmelni fog automatikusan):
+
+  - **`kubernetes/components/volsync/*.yaml` `${APP}` substitution**: a `replicationsource.yaml` (`name: ${APP}`, `sourcePVC: ${VOLSYNC_CLAIM:=${APP}}`, `repository: ${APP}-volsync-secret`), `replicationdestination.yaml` (`name: ${APP}-bootstrap`, `repository: ${APP}-volsync-secret`, `sourceIdentity.sourceName: ${APP}`), `pvc.yaml` (`name: ${VOLSYNC_CLAIM:=${APP}}`, `dataSourceRef.name: ${APP}-bootstrap`), `externalsecret.yaml` (`name: ${APP}-volsync`, `target.name: ${APP}-volsync-secret`). Az `APP` érték a `ks.yaml` `postBuild.substitute`-jából jön — ma a `restic-gui` KS-ben `APP: backrest`, ezért a generált RS/RD/PVC/ES nevek `backrest`-ek, **csak a Flux Kustomization neve és `commonMetadata` címkéje (`restic-gui`) divergál**. A 15.a után a KS is `backrest` lesz, minden réteg azonos nevet kap.
+  - **`just volsync restore-into ns app [previous] [ks]`**: a `ks` paraméter default `app`, de a backrest-hez ma `ks=restic-gui` override kell. 15.a után az override **fölöslegessé válik**, lehet törölni a recipe doc-stringjéből és a STATUS.md példáiból.
+  - **`just volsync restore app`**: az `${app}-bootstrap` RD-t patcheli — a név a `${APP}` substitutionból jön, a flatten után is `backrest-bootstrap` marad, **változás nincs**.
+  - **`just volsync list-snapshots/rs-status/snapshot/wait-rd`**: ezek nyersen pozicionálisan veszik a RS/RD nevét, **nem feltételeznek KS-egyezőséget** — változás nincs.
+  - **`dependsOn` referenciák**: `git grep -E "name:\s+(restic-gui|paperless-gpt|plex-trakt-sync|qbittorrent-upgrade-p2pblocklist)" -- 'kubernetes/**/ks.yaml'` jelenleg **nem ad találatot a `dependsOn`-on belül** (csak a saját `metadata.name`-ben). Tehát a rename nem lánc-tör.
+  - **`kubernetes/apps/default/kustomization.yaml`**: 4 új `./<app>/ks.yaml` referencia kell. A flatten lépés része.
+  - **Path-szintű `CLAUDE.md`-k és `.claude/skills/*`**: a 15.b-ben átírjuk mind a `paperless/gpt`, `plex/trakt-sync`, `qbittorrent/upgrade-p2pblocklist`, `resticprofile/gui` hivatkozást a lapos szerkezetre — egyúttal a `taskfiles` skill törlés/átírás mellett.
+
+  Ezért is **15.a előbb** sorrend: utána a 15.b dokumentáció-átírások már a lapos struktúrára hivatkozhatnak, nem kell „flatten előtt / után" verziókat tartani.
 
   **15.b — Doc + AI-guide refresh**. A migráció átszabta a stacket (K3s → Talos, Task → Just, Calico → Cilium, MetalLB → Cilium LB-IPAM, Traefik → Envoy Gateway, bjw-s layout, always-on VolSync). A `docs/migration/00–14` doc-ok ezt tükrözik, de a többi repo-doksi és AI-guide nagyrészt még a K3s-éra valóságot írja le.
 
