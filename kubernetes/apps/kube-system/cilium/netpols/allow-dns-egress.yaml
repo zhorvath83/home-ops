@@ -1,0 +1,37 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/cilium.io/ciliumclusterwidenetworkpolicy_v2.json
+#
+# Cluster-wide DNS egress with L7 proxy (bjw-s-labs pattern).
+#
+# Applies to EVERY pod (including those opted out of `allow-cluster-egress`).
+# Allows DNS resolution against the in-cluster kube-dns Service on both UDP/53
+# (primary) and TCP/53 (truncation fallback). The `rules.dns.matchPattern: "*"`
+# routes every DNS query through Cilium's L7 DNS proxy, which:
+#   - emits a Hubble flow event per query (audit visibility)
+#   - is a prerequisite for any future `toFQDNs` allowlist policy
+#   - returns DNS replies via a local-node fast path that bypasses ingress
+#     policy enforcement on the requesting pod (this is what unbreaks pods
+#     that also carry a strict ingress CNP)
+#
+# Cilium agent flag `enable-l7-proxy: true` is already on by default in our
+# install; no helmrelease change required.
+apiVersion: cilium.io/v2
+kind: CiliumClusterwideNetworkPolicy
+metadata:
+  name: allow-dns-egress
+spec:
+  endpointSelector: {}
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s-app: kube-dns
+            k8s:io.kubernetes.pod.namespace: kube-system
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+          rules:
+            dns:
+              - matchPattern: "*"

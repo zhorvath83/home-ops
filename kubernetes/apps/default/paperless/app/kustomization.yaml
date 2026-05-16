@@ -7,6 +7,7 @@ resources:
   - ./ocirepository.yaml
   - ./externalsecret.yaml
   - ./helmrelease.yaml
+  - ./ciliumnetworkpolicy.yaml
 
 commonLabels:
   app.kubernetes.io/name: paperless-ngx

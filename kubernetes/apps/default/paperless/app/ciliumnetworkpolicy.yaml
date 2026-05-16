@@ -1,0 +1,41 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/cilium.io/ciliumnetworkpolicy_v2.json
+#
+# Ingress restriction for paperless — bjw-s-labs pattern.
+#
+# Allows TCP/8000 only from the Envoy Gateway proxy pods (both `envoy-external`
+# and `envoy-internal`, since paperless is dual-attached per the public-facing
+# HTTPRoute in helmrelease.yaml). Every other in-cluster client (other app
+# pods, manually-curl'd ServiceAccount tokens, lateral movement attempts) is
+# blocked at the pod's network interface before reaching the application.
+#
+# No egress section: paperless relies on the cluster-wide baseline policies
+# (`allow-cluster-egress` + `allow-dns-egress` under
+# kubernetes/apps/kube-system/cilium/netpols/) for DNS, in-cluster services
+# (Postgres, Redis), and outbound HTTPS. Add the `egress.home.arpa/custom-egress`
+# label to the workload only if a stricter per-app egress allowlist is needed.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: paperless
+  namespace: default
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: paperless
+      app.kubernetes.io/instance: paperless
+      app.kubernetes.io/controller: paperless
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: networking
+          matchExpressions:
+            - key: gateway.networking.k8s.io/gateway-name
+              operator: In
+              values:
+                - envoy-external
+                - envoy-internal
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP
