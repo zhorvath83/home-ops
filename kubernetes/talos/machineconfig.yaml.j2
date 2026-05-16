@@ -29,14 +29,6 @@ machine:
     kubePrism:
       enabled: true
       port: 7445
-    {% if ENV.IS_CONTROLPLANE == "true" %}
-    kubernetesTalosAPIAccess:
-      enabled: true
-      allowedRoles:
-        - os:admin
-      allowedKubernetesNamespaces:
-        - system-upgrade
-    {% endif %}
   files:
     - op: create
       path: /etc/cri/conf.d/20-customization.part

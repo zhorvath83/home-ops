@@ -11,4 +11,3 @@ resources:
   - ./observability
   - ./volsync-system
   - ./default
-  - ./system-upgrade
