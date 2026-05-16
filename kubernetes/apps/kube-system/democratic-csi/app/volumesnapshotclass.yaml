@@ -1,0 +1,10 @@
+---
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshotClass
+metadata:
+  name: democratic-csi-local-hostpath
+  annotations:
+    snapshot.storage.kubernetes.io/is-default-class: "true"
+driver: org.democratic-csi.local-hostpath
+deletionPolicy: Delete
+parameters: {}

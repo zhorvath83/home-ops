@@ -51,10 +51,6 @@ spec:
         limits:
           memory: 128Mi
 
-    volumeSnapshotClasses:
-      - name: democratic-csi-local-hostpath
-        driver: org.democratic-csi.local-hostpath
-        annotations:
-          snapshot.storage.kubernetes.io/is-default-class: "true"
-        deletionPolicy: Delete
-        parameters: {}
+    # VolumeSnapshotClass definitions live with the CSI driver that owns them
+    # — see kubernetes/apps/kube-system/democratic-csi/app/volumesnapshotclass.yaml.
+    # Defining them here would race against the CRDs this chart installs.
