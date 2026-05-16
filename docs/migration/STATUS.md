@@ -240,9 +240,9 @@ Az `envoy-gateway` controller restart-jára szükség volt — status_updater lo
 - ✅ 18 default app pod 1/1 Running
 - ✅ `cloudflare-tunnel` 1/1 Running, tunnel connections regisztrálva
 - ✅ **Ingress stack él**:
-  - Kívülről (Cloudflare tunnel): `https://dash.horvathzoltan.me/` → HTTP 200
-  - LAN split-DNS: `dig dash.horvathzoltan.me @192.168.1.1` → `192.168.1.18`
-  - Belül (envoy-internal `.18`): `https://dash.horvathzoltan.me/` → HTTP 200
+  - Kívülről (Cloudflare tunnel): `https://dash.${PUBLIC_DOMAIN}/` → HTTP 200
+  - LAN split-DNS: `dig dash.${PUBLIC_DOMAIN} @192.168.1.1` → `192.168.1.18`
+  - Belül (envoy-internal `.18`): `https://dash.${PUBLIC_DOMAIN}/` → HTTP 200
   - Több route teszt: `docs/grafana` HTTP 302 (login redirect, normál); `plex` HTTP 404 (Plex token issue, task #9)
 - ✅ `plex-trakt-sync` magától rendbe jött a helyes Kopia-snapshot restore után (mai esti session): 4 indulási restart után stabil 1/1 Running, log csendes — a tegnapi 401-es follow-up a tegnapi üres restore tüneti következménye volt, a valódi K3s-éra adatra szinkronizálódott token konzisztens.
 
@@ -270,7 +270,7 @@ A délutáni `606fe6479` workaround a 3 K8s `NetworkPolicy`-t (`cloudflare-tunne
   - `3591` envoy-external:   Enabled/Enabled
 - Pod-ok stabil (envoy-{external,internal} 2/2, cloudflare-tunnel 1/1, **0 új restart** a CNP apply óta).
 - Gateway-ek `PROGRAMMED=True`, `envoy-internal ADDRESS=192.168.1.18`.
-- Ingress smoke: external HTTPS `https://dash.horvathzoltan.me/` → HTTP 200, internal `https://192.168.1.18/` (SNI dash) → HTTP 200.
+- Ingress smoke: external HTTPS `https://dash.${PUBLIC_DOMAIN}/` → HTTP 200, internal `https://192.168.1.18/` (SNI dash) → HTTP 200.
 - Cloudflare tunnel log az apply óta **csendben** (az addigi hibák a 13:11–13:39 közötti envoy-restart-loopból maradtak).
 
 ### Megjegyzés
@@ -325,7 +325,7 @@ A restore közben 17 darab `Warning ClaimMisbound: "Two claims are bound to the 
 
 ## Session 2026-05-16 este — orphan `metallb` HR runtime cleanup
 
-Felhasználói visszajelzés: external irányból minden zöld, **belső irányból viszont a homepage akadozik, a `subscriptions.horvathzoltan.me` teljesen elérhetetlen**. SRE diagnose:
+Felhasználói visszajelzés: external irányból minden zöld, **belső irányból viszont a homepage akadozik, a `subscriptions.${PUBLIC_DOMAIN}` teljesen elérhetetlen**. SRE diagnose:
 
 - `envoy-internal` Service `EXTERNAL-IP=<pending>`, Gateway `PROGRAMMED=False` (`AddressNotAssigned`).
 - `k8s-gateway` (split DNS LB) szintén `<pending>`.
@@ -336,7 +336,7 @@ Felhasználói visszajelzés: external irányból minden zöld, **belső irányb
 
 A reggeli session a Flux Kustomization-t `suspended` állapotba tette → suspended Kustomization **nem prune-ol**. A délutáni `478446aaf` commit a repo subtree-t törölte, a Kustomization is így „eltűnt" a görbe ablakon át. A `helm uninstall metallb` lefutott, **de a `HelmRelease/metallb -n networking` objektum nem lett törölve** — a helm-controller újra-installálta, ~2 órája pörgött ebben az állapotban a délutáni „minden zöld" pillanatfotó után.
 
-Tüneti rejtőzködés: a Cilium reconcile pillanatokra visszahozta a `.18`-at, így a délutáni session-záró smoke teszt (HTTP 200 a `dash.horvathzoltan.me`-re) **véletlenül egy ilyen pillanatban futott**, és a probléma rejtve maradt.
+Tüneti rejtőzködés: a Cilium reconcile pillanatokra visszahozta a `.18`-at, így a délutáni session-záró smoke teszt (HTTP 200 a `dash.${PUBLIC_DOMAIN}`-re) **véletlenül egy ilyen pillanatban futott**, és a probléma rejtve maradt.
 
 ### Cleanup
 
