@@ -16,8 +16,10 @@ re-encrypt:
       echo "Missing SOPS config file (.sops.yaml)" >&2
       exit 1
     fi
-    if [ -z "${SOPS_AGE_KEY_FILE:-}" ] || [ ! -f "${SOPS_AGE_KEY_FILE}" ]; then
-      echo "Missing SOPS Age key file (SOPS_AGE_KEY_FILE)" >&2
+    : "${SOPS_AGE_KEY_FILE:=${HOME}/.config/sops/age/keys.txt}"
+    export SOPS_AGE_KEY_FILE
+    if [ ! -f "${SOPS_AGE_KEY_FILE}" ]; then
+      echo "Missing SOPS Age key file at ${SOPS_AGE_KEY_FILE} (set SOPS_AGE_KEY_FILE if it lives elsewhere)" >&2
       exit 1
     fi
     find . -type f -name '*.sops.yaml' ! -name '.sops.yaml' | while read -r f; do
@@ -33,8 +35,10 @@ fix-mac:
       echo "Missing SOPS config file (.sops.yaml)" >&2
       exit 1
     fi
-    if [ -z "${SOPS_AGE_KEY_FILE:-}" ] || [ ! -f "${SOPS_AGE_KEY_FILE}" ]; then
-      echo "Missing SOPS Age key file (SOPS_AGE_KEY_FILE)" >&2
+    : "${SOPS_AGE_KEY_FILE:=${HOME}/.config/sops/age/keys.txt}"
+    export SOPS_AGE_KEY_FILE
+    if [ ! -f "${SOPS_AGE_KEY_FILE}" ]; then
+      echo "Missing SOPS Age key file at ${SOPS_AGE_KEY_FILE} (set SOPS_AGE_KEY_FILE if it lives elsewhere)" >&2
       exit 1
     fi
     command -v vim >/dev/null || { echo "vim is required" >&2; exit 1; }
