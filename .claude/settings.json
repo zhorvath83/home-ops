@@ -3,8 +3,7 @@
     "allow": [
       "Bash(just k8s flux-check:*)",
       "Bash(just volsync list-snapshots:*)",
-      "Bash(just volsync rs-status:*)",
-      "Bash(just volsync last-backups:*)",
+      "Bash(just volsync last-snapshots:*)",
       "Bash(dig:*)",
       "Bash(curl:*)",
       "Bash(kubectl get:*)",

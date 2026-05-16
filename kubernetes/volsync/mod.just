@@ -117,30 +117,6 @@ list-snapshots rsrc ns="default":
           | @tsv' \
       | column -t -s $'\t'
 
-[doc('Show VolSync ReplicationSource status (positional args: rsrc [ns=default])')]
-[script]
-rs-status rsrc ns="default":
-    kubectl -n "{{ ns }}" get replicationsource "{{ rsrc }}" -o json \
-      | jq -r '
-        [
-          ["Field", "Value"],
-          ["Namespace", (.metadata.namespace // "-")],
-          ["ReplicationSource", (.metadata.name // "-")],
-          ["Source PVC", (.spec.sourcePVC // "-")],
-          ["Repository Secret", (.spec.kopia.repository // .spec.restic.repository // "-")],
-          ["Schedule", (.spec.trigger.schedule // "-")],
-          ["Last Sync Time", (.status.lastSyncTime // "-")],
-          ["Last Manual Sync", (.status.lastManualSync // "-")],
-          ["Last Sync Duration", (.status.lastSyncDuration // "-")],
-          ["Last Result", (.status.latestMoverStatus.result // "-")],
-          ["Synchronizing", (((.status.conditions // []) | map(select(.type == "Synchronizing") | "\(.status) (\(.reason // "-"))") | first) // "-")],
-          ["Compression", (.spec.kopia.compression // "-")],
-          ["Retention", ("hourly=\(.spec.kopia.retain.hourly // "-") daily=\(.spec.kopia.retain.daily // "-") weekly=\(.spec.kopia.retain.weekly // "-") monthly=\(.spec.kopia.retain.monthly // "-")")]
-        ]
-        | .[]
-        | @tsv' \
-      | column -t -s $'\t'
-
 [doc('Trigger a manual KopiaMaintenance run on the cluster-wide kopia-daily-maintenance CR')]
 [script]
 kopia-maintenance:
@@ -156,9 +132,9 @@ kopia-maintenance:
     done
     kubectl -n volsync-system get kopiamaintenances kopia-daily-maintenance -o yaml
 
-[doc('Show latest backups per ReplicationSource for a given date (positional arg: [date=today])')]
+[doc('Show latest snapshots per ReplicationSource for a given date (positional arg: [date=today])')]
 [script]
-last-backups date=`date +%Y-%m-%d`:
+last-snapshots date=`date +%Y-%m-%d`:
     DATE="{{ date }}" python3 - <<'PY'
     import json
     import os

@@ -8,7 +8,7 @@ Use this reference for status, snapshot, maintenance, and restore workflows.
 
 The available recipes group into:
 
-- inspection: `list-snapshots`, `rs-status`, `last-backups`
+- inspection: `list-snapshots`, `last-snapshots`
 - snapshot triggers: `snapshot`, `snapshot-all`
 - maintenance: `kopia-maintenance`
 - restore: `restore` (unified wipe-and-restore from any historical Kopia snapshot)

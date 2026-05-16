@@ -36,7 +36,7 @@ Use this reference to rebuild the current Just surface before editing.
 - `talos apply-node`, `talos render-config`, `talos upgrade-node`, `talos upgrade-k8s` — Talos lifecycle. `upgrade-node` and `upgrade-k8s` read the target version from `.mise.toml` (`TALOS_VERSION`, `KUBERNETES_VERSION`), no positional version arg.
 - `talos get-kubeconfig`, `talos gen-secrets`, `talos gen-talosconfig`, `talos gen-schematic-id`, `talos bootstrap` — one-time setup.
 - `talos diag`, `talos status`, `talos reset-cluster`, `talos reset-node`, `talos reboot-node`, `talos shutdown-node` — diagnostics + recovery.
-- `volsync restore`, `volsync snapshot`, `volsync snapshot-all`, `volsync list-snapshots`, `volsync rs-status`, `volsync last-backups`, `volsync state`, `volsync kopia-maintenance` — backup plane operations.
+- `volsync restore`, `volsync snapshot`, `volsync snapshot-all`, `volsync list-snapshots`, `volsync last-snapshots`, `volsync state`, `volsync kopia-maintenance` — backup plane operations.
 - `cloudflare init|plan|apply|unlock`, `ovh init|plan|apply|unlock` — Terraform per provider, credentials injected via `op run`.
 - `sops re-encrypt|fix-mac|encrypt-file|decrypt-file` — repo SOPS helpers.
 - `omv install|check|update|update-host`, `openwrt maintain|upgrade|reinstall-packages` — provisioning entry points.

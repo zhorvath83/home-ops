@@ -17,5 +17,5 @@ Use this reference after changing VolSync platform resources or app-level backup
 
 ## Useful Commands
 
-- `just volsync list-snapshots`, `just volsync rs-status`, `just volsync last-backups` for snapshot inspection
+- `just volsync list-snapshots`, `just volsync last-snapshots` for snapshot inspection
 - `flux get ks` and `kubectl get hr,replicationsource,replicationdestination` for reconcile and mover state

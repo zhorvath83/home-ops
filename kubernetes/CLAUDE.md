@@ -77,8 +77,7 @@ Treat everything under `kubernetes/` as desired state for Flux, not as an impera
   - backup policy and restore flow: `.claude/skills/volsync/`
 - After edits, read the touched `ks.yaml`, `kustomization.yaml`, and primary manifests together, check dependency and naming consistency against sibling trees, and run the smallest relevant validation the environment allows.
 
-## Current Reality To Prefer Over Old Notes
+## Current Reality
 
 - No shared auth stack is currently present under `apps/`.
 - Observability is split into `kube-prometheus-stack`, standalone `grafana`, and supporting exporters.
-- CrowdSec does not currently exist in the live `apps/` tree, even though it appears in memory notes.
