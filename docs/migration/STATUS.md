@@ -8,7 +8,7 @@
 
 **Hol tartunk:** Teljes GitOps reconcile zöld (**0 Failing KS, 0 Failing HR**). 17 VolSync ReplicationDestination Kopia-restore-olt OVH snapshotokból (12–19 s/db). 18+ default app pod 1/1 Running, `cloudflare-tunnel` 1/1 Running 4 connection regisztrálva (bud01/vie05/vie06). A `replicationdestination + dataSourceRef` mostantól **always-on** pattern (bjw-s/onedr0p minta), nem cutover-only. **Ingress stack él** kívülről (Cloudflare tunnel) és belülről (envoy-internal `192.168.1.18`) — végpont tesztek HTTP 200/302 (normál login redirectek). A régi K3s cluster áll, a migráció gyakorlatilag adat-szinten is megtörtént a `talos` branchen.
 
-**Ismert follow-up-ok** (egyik sem blocker, részletek az `Open items`-ben): `plex-trakt-sync` Plex API token frissítés, `envoy-gateway` v1.9.0 GA → BTP rate-limit visszakapcsolás, search domain `lan` cluster-szintű kezelés, `Taskfile.yml` törlés cutover-előtt, **Phase 15: repo doc + AI-guide refresh** (13 `docs/*.md` + 11 `CLAUDE.md` + 12 skill audit, cutover-előtt).
+**Ismert follow-up-ok** (egyik sem blocker, részletek az `Open items`-ben): `envoy-gateway` v1.9.0 GA → BTP rate-limit visszakapcsolás, search domain `lan` cluster-szintű kezelés, `Taskfile.yml` törlés cutover-előtt, **Phase 15: repo doc + AI-guide refresh** (13 `docs/*.md` + 11 `CLAUDE.md` + 12 skill audit, cutover-előtt).
 
 ## Session 2026-05-16 — Phase 4 éles bootstrap napló
 
@@ -244,7 +244,7 @@ Az `envoy-gateway` controller restart-jára szükség volt — status_updater lo
   - LAN split-DNS: `dig dash.horvathzoltan.me @192.168.1.1` → `192.168.1.18`
   - Belül (envoy-internal `.18`): `https://dash.horvathzoltan.me/` → HTTP 200
   - Több route teszt: `docs/grafana` HTTP 302 (login redirect, normál); `plex` HTTP 404 (Plex token issue, task #9)
-- 🟡 1 app-szintű follow-up: `plex-trakt-sync` 401 unauthorized — Plex API token elavult a friss DB-ben
+- ✅ `plex-trakt-sync` magától rendbe jött a helyes Kopia-snapshot restore után (mai esti session): 4 indulási restart után stabil 1/1 Running, log csendes — a tegnapi 401-es follow-up a tegnapi üres restore tüneti következménye volt, a valódi K3s-éra adatra szinkronizálódott token konzisztens.
 
 ## Session 2026-05-16 este — CiliumNetworkPolicy migráció + ingress hardening visszahozva
 
@@ -318,6 +318,10 @@ A PVC `/data/local` alá van mountolva (egyetlen mountpoint, nem subPath-okkal f
 ### Tanulság
 
 Az always-on `dataSourceRef` minta + `kustomize.toolkit.fluxcd.io/ssa: IfNotPresent` címke az RD-n azt jelenti, hogy egy RD egyszer fut le `manual: restore-once`-szal, utána statikus. Új Kopia-fetch indításához **mindkettőt** kell törölni: a PVC-t **és** az RD-t — különben az új PVC az RD `status.latestImage` mezőből populálódik a régi (immár üres) VolumeSnapshot-tal.
+
+### Várt zaj — `ClaimMisbound` warning event-ek `vs-prime-<uuid>` PVC-ken
+
+A restore közben 17 darab `Warning ClaimMisbound: "Two claims are bound to the same volume, this one is bound incorrectly"` event keletkezett a default ns-ben, `persistentvolumeclaim/vs-prime-<uuid>` objektumokon. Ezek a SIG-storage volume-populator framework átmeneti staging PVC-i. A populator a transzfer alatt rövid ideig két PVC-t (a végső + a prime) köt ugyanahhoz a snapshot/PV-hez, és a K8s claim-controller emiatt warning-ot emittál — anélkül, hogy a hibát meg tudná különböztetni a valódi misbind-tól. A populator a végén törli a prime PVC-t, és `kubectl get pvc -A | grep vs-prime` ekkor már üres. Ez **expected noise**, nem hiba; minden home-ops repó (bjw-s, onedr0p, buroa), amely VolSync `dataSourceRef`-et használ, pontosan ezt látja restore-kor. Az event-ek az alapértelmezett TTL után (1h) magától eltűnnek.
 
 ## Session 2026-05-16 este — orphan `metallb` HR runtime cleanup
 
@@ -418,7 +422,7 @@ A teljes GitOps reconcile zöld (0 failing KS, 0 failing HR).
 
 ### Follow-up — nem blocker, post-cutover ablakra rögzítve
 
-- **`plex-trakt-sync` 401 unauthorized**: A pod CrashLoopBackOff-ban a Plex API tokenre `(401) unauthorized` választ kap. A friss Plex DB-ben (restore után) más token generálódott. Megoldás: 1Password-ben a Plex API token frissítése + ExternalSecret refresh. **App-szintű config, nem infrastruktúra blocker.**
+- ~~**`plex-trakt-sync` 401 unauthorized**~~: **✅ done** — a mai esti PVC re-restore (a helyes Kopia-snapshot-okból) után magától rendbe jött: 4 indulási restart után stabil 1/1 Running, log csendes. A tegnapi 401 a tegnapi üres restore tüneti következménye volt, nem önálló follow-up.
 
 - **`envoy-gateway` v1.9.0 GA → BackendTrafficPolicy visszakapcsolás**: A `rate-limit-external` BTP `kubernetes/apps/networking/envoy-gateway/config/gateway-policies.yaml`-ben **kommentbe téve** az upstream v1.8.0 CRD regression miatt (PR `envoyproxy/gateway#8798`, kubebuilder `uint32` → `format: int32 + maximum: uint32_max`, K8s 1.36 strict OpenAPI elutasít). Renovate hozza a v1.9.0 GA-t, és a `git revert` egyszerű — a workaround commit a `gateway-policies.yaml`-ben megőrzi a manifestet kommentben.
 
