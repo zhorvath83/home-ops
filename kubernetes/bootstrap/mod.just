@@ -8,7 +8,7 @@ kubernetes_dir := justfile_dir() + '/kubernetes'
 bootstrap_dir := kubernetes_dir + '/bootstrap'
 
 # controller: the first endpoint from the active talosconfig (IP-based; what talosctl -n expects for bootstrap/kubeconfig).
-controller := `talosctl config info -o json 2>/dev/null | jq -r '.endpoints[0]' 2>/dev/null || echo 'cp0-k8s'`
+controller := `talosctl config info -o json 2>/dev/null | jq -r '.endpoints[0]' 2>/dev/null || echo 'k8s-cp0'`
 
 # nodes: derive node *names* from kubernetes/talos/nodes/<name>.yaml.j2 — the talos apply-node recipe is name-based, not IP-based.
 # Backticks run with cwd = this mod's directory (kubernetes/bootstrap), so reach into the sibling talos/ tree.

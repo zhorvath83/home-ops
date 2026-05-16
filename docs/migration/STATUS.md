@@ -170,7 +170,7 @@ Cilium kutatás megerősítette: a fix `hostNamespaceOnly: false` (kommentár a 
 - Cilium drop monitor 10s window → 0 valódi network drop ✓
 - envoy CNP-k egress szekciója üres (`kubectl get cnp -n networking envoy-external -o jsonpath='{.spec.egress}'` → empty) ✓
 
-**Talos-quirk reminder élesedett**: a Cilium HelmRelease upgrade hook drain-elte a node-ot (`Ready,SchedulingDisabled`), a friss `envoy-external` és `cloudflare-tunnel` pod-ok FailedScheduling-ba kerültek (`0/1 nodes are available: 1 node(s) were unschedulable`). Mitigáció: `kubectl uncordon cp0-k8s` — a STATUS.md "Talos reboot reminder" pontja most már a **Cilium HR upgrade-re is érvényes**.
+**Talos-quirk reminder élesedett**: a Cilium HelmRelease upgrade hook drain-elte a node-ot (`Ready,SchedulingDisabled`), a friss `envoy-external` és `cloudflare-tunnel` pod-ok FailedScheduling-ba kerültek (`0/1 nodes are available: 1 node(s) were unschedulable`). Mitigáció: `kubectl uncordon k8s-cp0` — a STATUS.md "Talos reboot reminder" pontja most már a **Cilium HR upgrade-re is érvényes**.
 
 **Phase 15.c plan-update** (`52c607120`): a per-app CNP audit szekció kibővítve a **B-csapdával** (opt-out label custom egress nélkül = csak DNS marad, pod indul fail). Két szint formalizálva: **Tier I** (ingress-only, no label, baseline egress — paperless minta) és **Tier II** (ingress + strict egress + opt-out label — pl. magas threat-modelű app-okhoz). A 4f4b76eec-ből megmaradó CNP-k Tier I-re átírva ma — a 3 érintett CNP közül `cloudflare-tunnel` még nem volt egyszerűsítve, az a következő session-re marad (15.c-ben).
 
@@ -312,11 +312,11 @@ A teljes GitOps reconcile zöld (0 failing KS, 0 failing HR).
 
 ## Tudnivalók / üzemeltetési reminderek
 
-- HP ProDesk 600 G6 DM fent, Talos `v1.13.2` v1.36.1 K8s, `cp0-k8s Ready` (bond0 aktív kernel device, eno1 slave).
+- HP ProDesk 600 G6 DM fent, Talos `v1.13.2` v1.36.1 K8s, `k8s-cp0 Ready` (bond0 aktív kernel device, eno1 slave).
 - 1Password `HomeOps/talos` + `HomeOps/homelab-age-key` (`privateKey`) + `HomeOps/1password-connect-kubernetes` (`credentials` + `token`) item-ek verifikálva.
 - Cilium runtime + L2 announce egyedül felelős az LB IP-kért (CiliumLoadBalancerIPPool `.15–.25`, default policy `^bond[0-9]+$`).
 - ClusterSecretStore `onepassword-connect` Valid/Ready.
-- ⚠️ **Talos reboot reminder**: bármely Talos reboot/apply-node után `kubectl get nodes` → ha `SchedulingDisabled`, `kubectl uncordon cp0-k8s`. A bond0-reboot drain után nem uncordon-ol automatikusan, ez minden Pod Pending-jét okozza.
+- ⚠️ **Talos reboot reminder**: bármely Talos reboot/apply-node után `kubectl get nodes` → ha `SchedulingDisabled`, `kubectl uncordon k8s-cp0`. A bond0-reboot drain után nem uncordon-ol automatikusan, ez minden Pod Pending-jét okozza.
 - ⚠️ **`safe-upgrades` VAP kihagyott bootstrap pattern**: a `00-crds.yaml` `yq` szűrője csak `CustomResourceDefinition`-t enged át, így a Gateway API `ValidatingAdmissionPolicy` és `ValidatingAdmissionPolicyBinding` nem jut be a bootstrap apply-ba. Egyezik a bjw-s/onedr0p/buroa mintával. Ha az első Helm install újra timeout-ol certgen Job-on: `kubectl delete vap/vapb safe-upgrades.gateway.networking.k8s.io` + `flux reconcile hr envoy-gateway --force`.
 
 ## Frissítési konvenció

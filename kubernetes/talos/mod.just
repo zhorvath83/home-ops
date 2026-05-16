@@ -7,11 +7,11 @@ set shell := ['bash', '-euo', 'pipefail', '-c']
 talos_dir := justfile_dir() + '/kubernetes/talos'
 
 # controller_node: dynamically extracted from the active talosconfig endpoint
-# (set by `gen-talosconfig`). Falls back to the hardcoded 'cp0-k8s' when
+# (set by `gen-talosconfig`). Falls back to the hardcoded 'k8s-cp0' when
 # talosconfig is absent (fresh repo clone, pre-bootstrap). Must match the
 # filename under nodes/<NAME>.yaml.j2. `set lazy` defers evaluation until a
 # recipe actually uses it.
-controller_node := `talosctl config info -o yaml 2>/dev/null | yq -e '.endpoints[0]' 2>/dev/null || echo 'cp0-k8s'`
+controller_node := `talosctl config info -o yaml 2>/dev/null | yq -e '.endpoints[0]' 2>/dev/null || echo 'k8s-cp0'`
 
 [private]
 [script]

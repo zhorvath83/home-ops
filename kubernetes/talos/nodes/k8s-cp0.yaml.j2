@@ -1,5 +1,5 @@
 ---
-# Node-specific patch for the single control plane node `cp0-k8s`
+# Node-specific patch for the single control plane node `k8s-cp0`
 # (192.168.1.11). Applied on top of machineconfig.yaml.j2 via
 # `talosctl machineconfig patch`.
 machine:
@@ -14,7 +14,7 @@ machine:
 ---
 apiVersion: v1alpha1
 kind: HostnameConfig
-hostname: cp0-k8s
+hostname: k8s-cp0
 ---
 # Stabilize the on-board Intel I219-LM NIC under the alias `net0`, then let
 # the shared machineconfig wrap it in a single-member `bond0` so a real

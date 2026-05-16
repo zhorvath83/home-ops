@@ -19,10 +19,10 @@ kubernetes/talos/
 ├── schematic.yaml                # factory.talos.dev schematic (extensions)
 ├── machineconfig.yaml.j2         # közös machine config template
 └── nodes/
-    └── cp0-k8s.yaml.j2       # node-specific patches (egyetlen node: "cp0-k8s")
+    └── k8s-cp0.yaml.j2       # node-specific patches (egyetlen node: "k8s-cp0")
 ```
 
-A node hostneve `cp0-k8s` (control-plane #0 a `main` Kubernetes clusterben). Külön a cluster nevétől, ami `main` (AD-014).
+A node hostneve `k8s-cp0` (control-plane #0 a `main` Kubernetes clusterben). Külön a cluster nevétől, ami `main` (AD-014).
 
 ## Talos schematic
 
@@ -311,7 +311,7 @@ provisioning:
 
 ## Node patch
 
-**Fájl:** `kubernetes/talos/nodes/cp0-k8s.yaml.j2`
+**Fájl:** `kubernetes/talos/nodes/k8s-cp0.yaml.j2`
 
 Egyetlen node, controlplane szerep. A `HostnameConfig` és `LinkAliasConfig` resource-ok a referencia repók (buroa, onedr0p, bjw-s) modern Talos mintáját követik — a hostnév és a NIC alias **külön resource**, nem a `machine.network` blokkban.
 
@@ -327,7 +327,7 @@ machine:
 ---
 apiVersion: v1alpha1
 kind: HostnameConfig
-hostname: cp0-k8s
+hostname: k8s-cp0
 ---
 # Az on-board Intel I219-LM NIC stabil `net0` aliasra mappolása.
 # 4-byte prefix: HP OUI (50:81:40) + termékvonal byte (80) — a referencia
@@ -384,14 +384,14 @@ export TALOS_SCHEMATIC_ID="$(just talos gen-schematic-id)"
 export TALOS_VERSION="$(curl -s https://api.github.com/repos/siderolabs/talos/releases/latest | jq -r .tag_name)"
 export KUBERNETES_VERSION="$(curl -s https://api.github.com/repos/kubernetes/kubernetes/releases/latest | jq -r .tag_name)"
 
-# Apply (insecure mode — első apply esetén). A `cp0-k8s` mind a node patch
-# fájlnév (nodes/cp0-k8s.yaml.j2), mind a talosctl target (DNS-szel feloldódik
+# Apply (insecure mode — első apply esetén). A `k8s-cp0` mind a node patch
+# fájlnév (nodes/k8s-cp0.yaml.j2), mind a talosctl target (DNS-szel feloldódik
 # 192.168.1.11-re az OpenWRT dnsmasq-en keresztül).
-just talos apply-node cp0-k8s --insecure
+just talos apply-node k8s-cp0 --insecure
 ```
 
 A `just talos apply-node` recipe (lásd bjw-s `kubernetes/talos/mod.just`):
-1. minijinja-cli rendereli a `machineconfig.yaml.j2`-t a `nodes/cp0-k8s.yaml.j2` patch-csel.
+1. minijinja-cli rendereli a `machineconfig.yaml.j2`-t a `nodes/k8s-cp0.yaml.j2` patch-csel.
 2. `op inject`-tel kicseréli a `op://HomeOps/talos/*` referenciákat valós értékekre.
 3. `talosctl apply-config -f /dev/stdin --insecure` betölti a node-ra.
 
@@ -478,14 +478,14 @@ kubectl get nodes
 
 Ha rosszul apply-eltél, két opció:
 1. **Online patch**: `talosctl -n 192.168.1.11 apply-config -f new-config.yaml` (újra, javított yaml-lel).
-2. **Reset**: `just talos reset-node cp0-k8s` → wipe STATE + EPHEMERAL + u-local-hostpath → újra Stage 1-től.
+2. **Reset**: `just talos reset-node k8s-cp0` → wipe STATE + EPHEMERAL + u-local-hostpath → újra Stage 1-től.
 
 ### Hibás install disk
 
 Ha rossz NVMe-re install-elt:
 1. Power off HP.
 2. Cseréld meg a két NVMe-t fizikailag.
-3. Vagy: a `nodes/cp0-k8s.yaml.j2`-ben javítsd az `install.diskSelector.model` mezőt, `just talos reset-node` + újra apply.
+3. Vagy: a `nodes/k8s-cp0.yaml.j2`-ben javítsd az `install.diskSelector.model` mezőt, `just talos reset-node` + újra apply.
 
 ### Bootstrap hiba
 
@@ -496,7 +496,7 @@ Ha `talosctl bootstrap` hibázik:
 ### Teljes újrakezdés
 
 ```bash
-just talos reset-node cp0-k8s
+just talos reset-node k8s-cp0
 # minden disk wipe-elve, node újraindul installer módba
 ```
 
