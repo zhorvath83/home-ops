@@ -2,13 +2,13 @@
 
 Élő státusz a K3s → Talos migráció állapotáról. Ez a doc gyors pillanatkép — a részletes terv a [README.md](./README.md)-ben és a `00`–`14` doc-okban van.
 
-**Utolsó frissítés:** 2026-05-16 (éjszakai szünet — folytatás holnap)
+**Utolsó frissítés:** 2026-05-16 délután — Phase 4–6 + adatmigráció zöld, follow-up-ok rögzítve.
 
 ## TL;DR
 
-**Hol tartunk:** Cluster fent, Cilium + CoreDNS + cert-manager + External Secrets + 1Password Connect + Flux Operator + Flux Instance mind Running. Flux átvette a reconcile-t a `refs/heads/talos` branchről, `cluster-vars` + `cluster-apps` Ready, 10+ app Kustomization Applied. **A storage-rendszer NEM kész** — a `snapshot-controller` Helm release `failed-install` állapotban ragadt (régi VSC-race-condition öröksége), emiatt a `VolumeSnapshot*` CRD-k hiányoznak, a `volsync` CrashLoopBackOff-ban van, és minden PVC-t igénylő app `Pending`.
+**Hol tartunk:** Teljes GitOps reconcile zöld (**0 Failing KS, 0 Failing HR**). 17 VolSync ReplicationDestination Kopia-restore-olt OVH snapshotokból (12–19 s/db). 18+ default app pod 1/1 Running, `cloudflare-tunnel` 1/1 Running 4 connection regisztrálva (bud01/vie05/vie06). A `replicationdestination + dataSourceRef` mostantól **always-on** pattern (bjw-s/onedr0p minta), nem cutover-only. A régi K3s cluster áll, a migráció gyakorlatilag adat-szinten is megtörtént a `talos` branchen.
 
-**A bootstrap menet közben felmerült hibák egyenként kezelve és committolva — a `talos` branch most futható-állapotú minden új clusteren.**
+**Egyetlen ismert app-szintű follow-up**: `plex-trakt-sync` 401 unauthorized a Plex API-tól (token elavult a friss DB-ben).
 
 ## Session 2026-05-16 — Phase 4 éles bootstrap napló
 
@@ -109,6 +109,116 @@ Régi K3s context-et célszerű törölni: `kubectl config delete-context defaul
 - Az ExternalSecret-ek beérkeznek (1P Connect Ready, store Valid).
 - Az `apply` chain idempotensen újrafuttatható: `just k8s-bootstrap apps` bármikor szabadon ismételhető.
 
+## Session 2026-05-16 délután — Phase 6 záró + adatmigráció
+
+A reggeli felmérés szerint a `snapshot-controller` blocker (failed-install) **magától megoldódott** éjszaka — a Flux retry-loop visszahozta. Innen indultunk, és végigvittük az alábbi 6 lépést.
+
+### 1. Phase 6 záró cleanup — K3s-éra subtree-k törlése (`478446aaf`)
+
+- `kubernetes/apps/tigera-operator/`, `kubernetes/apps/networking/metallb/`, `kubernetes/apps/system-upgrade/system-upgrade-controller/` mappák törölve.
+- Parent `kustomization.yaml`-ek tisztítva (`./tigera-operator`, `./metallb/ks.yaml`, `./system-upgrade-controller/ks.yaml` referenciák kivéve).
+- `kubernetes/apps/system-upgrade/namespace.yaml` megőrizve (Tuppr ide kerül később).
+- 23 fájl, 507 sor törölve.
+
+### 2. Cilium LB-IPAM annotation csere (`e90d92ca0`)
+
+A Plex Service `<pending>` ExternalIP-vel volt — kiderült, hogy a `metallb.io/loadBalancerIPs` annotáció Cilium L2 announcement alatt **nem ismert**.
+
+- `kubernetes/apps/networking/envoy-gateway/config/gateway-internal.yaml`: `metallb.io/loadBalancerIPs` → `lbipam.cilium.io/ips`
+- `kubernetes/apps/default/plex/app/helmrelease.yaml`: ugyanaz a csere
+- `kubernetes/apps/networking/k8s-gateway/ks.yaml`: `dependsOn: metallb-config` eltávolítva (a Kustomization már nem létezett)
+
+### 3. Új komponens verziók — bjw-s parity (`d094085d5`)
+
+Verzió-felmérés referencia repok ellen (bjw-s + upstream GitHub releases):
+
+- `external-secrets`: 2.4.1 → **2.5.0** (bjw-s + upstream egyezik)
+- `kube-prometheus-stack`: 85.0.3 → **85.1.1** (bjw-s + upstream egyezik)
+- Többi 10 komponens (cilium, coredns, cert-manager, 1password-connect, flux-operator, flux-instance, envoy-gateway, grafana-operator, democratic-csi, Talos) **már latest**.
+
+### 4. envoy-gateway-config BackendTrafficPolicy disable (`778571544`)
+
+A `rate-limit-external` BTP K8s 1.36 strict OpenAPI validation alatt elbukik: **upstream Envoy Gateway v1.8.0 regression** (PR `envoyproxy/gateway#8798`, merged 2026-04-21). A `Requests` Go-type `uint`→`uint32`-re változott; kubebuilder a CRD-ben `format: int32 + maximum: 4294967295` (uint32 max) ellentmondást emit. K8s 1.36 elutasítja.
+
+- A manifest kommentbe téve. Visszakapcsolás envoy-gateway v1.9.0 GA-kor.
+- Cloudflare WAF amúgy is fedezi az external rate-limitet az `envoy-external` előtt.
+
+### 5. envoy-gateway HR + cloudflare-tunnel recovery
+
+**envoy-gateway HR ValidatingAdmissionPolicy issue** — a Helm upgrade "original object ValidatingAdmissionPolicy `safe-upgrades.gateway.networking.k8s.io` not found" hibára futott. Diagnose:
+
+- A VAP a `gateway-helm` chart `crds` subchart-jának `gatewayapi-crds.yaml`-jéből származik (3 kind: CRD, ValidatingAdmissionPolicy, ValidatingAdmissionPolicyBinding).
+- A bootstrap `00-crds.yaml` `yq` szűrője `select(.kind == "CustomResourceDefinition")` — **kihagyta** a VAP-ot és VAPB-t.
+- Az első Helm install timeout-olt a `certgen` Job-on; a `cluster-apps` Flux Kustomization rátette a `helm.toolkit.fluxcd.io/name` ownership labelt, **de a Helm release-tracking Secret-be NEM rögzült**.
+- A referencia repok (bjw-s, onedr0p, buroa) ugyanezt a CRD-only szűrőt használják — náluk az első install sikerült, így nincs probléma.
+
+**Recovery** (egyedi, NEM repo-szintű):
+1. `helm uninstall metallb -n networking` (régi leftover release törlése — pod még futott)
+2. `kubectl delete validatingadmissionpolicy safe-upgrades.gateway.networking.k8s.io` + `validatingadmissionpolicybinding`
+3. `kubectl uncordon cp0-k8s` (a certgen Job Pending volt, mert a node SchedulingDisabled állapotban volt — Talos reboot drain után)
+4. `flux reconcile hr envoy-gateway -n networking --force` → Helm reinstall sikeres, VAP visszajött Helm-ownership-ben
+5. `envoy-external` + `envoy-internal` pod-ok 1/1 Running
+
+### 6. kopia + external-dns HR recovery
+
+Mindkét HR `MissingRollbackTarget` reason-nel ragadt — kezdeti install timeout + következő upgrade is `Failed`, így nincs prev revision rollback-re.
+
+- `helm uninstall kopia -n volsync-system` és `helm uninstall external-dns -n networking`
+- `flux reconcile hr kopia --force` és `flux reconcile hr external-dns --force` (KS reconcile NEM elég — HR-en külön kell)
+- Mindkettő `Helm install succeeded` → 1/1 Running
+
+### 7. Always-on VolSync component pattern (`a9d5a5f79`)
+
+Referencia repok (bjw-s + onedr0p) **alapból engedélyezve** tartják a `replicationdestination.yaml`-t és a `pvc.yaml` `dataSourceRef`-et. NEM cutover-only minta, hanem **always-on**.
+
+- `kubernetes/components/volsync/kustomization.yaml`: `replicationdestination.yaml` resource visszakommentelve.
+- `kubernetes/components/volsync/pvc.yaml`: `dataSourceRef` visszakommentelve.
+- Új PVC-k mostantól mindig `${APP}-bootstrap` ReplicationDestination-ből populálódnak.
+
+### 8. Adatmigráció — 18 PVC újra-kreálás + OVH snapshot restore
+
+Mivel a `dataSourceRef` immutable, a meglévő (üres) PVC-ket törölni kellett, hogy az új dataSourceRef-fel létrejöhessenek.
+
+Per app (15 + 3 rejtett, két-KS-es ks.yaml fájlokban):
+- `actual, bazarr, calibre-web-automated, isponsorblocktv, maintainerr, mealie, paperless, plex, prowlarr, qbittorrent, radarr, resticprofile, seerr, sonarr, wallos` (15 fő)
+- `paperless-gpt, plex-trakt-sync, backrest` (3 rejtett, két-KS-es ks.yaml fájlokban, `restic-gui` `backrest` PVC-t hivatkozza)
+
+Lépések batch-szel:
+1. `flux suspend hr <app> -n default` minden 15+3 app-ra
+2. `kubectl scale deploy/<app> --replicas=0`
+3. `kubectl delete pods --field-selector=status.phase=Failed -A` (régi Error pod-ok takarítása) + force delete az új Error pod-okra (`pvc-protection` finalizer szabadítása)
+4. `kubectl delete pvc <app>` (Delete reclaim policy → PV is törlődik)
+5. `flux resume hr <app>` + `kubectl scale deploy/<app> --replicas=1` (a Helm a meglévő `replicas` mezőt nem patcheli felül)
+6. `flux reconcile ks <app> -n flux-system` → új PVC `dataSourceRef`-fel + új RD `manual: restore-once` triggerrel
+7. RD azonnal restore-ol (Kopia letöltés OVH-ról) → VolumeSnapshot → PVC Bound a snapshot tartalmával
+8. Pod elindul a populated PVC-vel
+
+**Eredmény: 17 RD synced 12–19 másodperc alatt.** Csak a `resticprofile` nem volsync-os PVC-szinten (NFS + emptyDir-en fut), ott RD nem létezik.
+
+### 9. cloudflare-tunnel NetworkPolicy fix (`b98f7a859`)
+
+A `cloudflare-tunnel` CrashLoopBackOff-ban volt 12 órája — DNS timeout `cfd-features.argotunnel.com` és `_v2-origintunneld._tcp.argotunnel.com` lekérdezéseken (CoreDNS `10.245.0.10:53`).
+
+Root cause diagnose **Hubble flow log**-gal:
+- `cloudflare-tunnel → CoreDNS:53` UDP query: **ALLOWED + FORWARDED** ✅
+- `CoreDNS:53 → cloudflare-tunnel:<random_port>` UDP **reply**: **Policy denied DROPPED** ❌
+
+A `cloudflare-tunnel` `NetworkPolicy` `policyTypes: [Ingress, Egress]` mindkettőt kontrollálta, az ingress oldalon **csak `prometheus:8080` TCP**-t engedte. A K8s NetworkPolicy spec szerint elvileg stateful (return-traffic auto-allowed), de a **Cilium UDP replyket az ingress plane-en validálja** — a destination port a return packetben random, nem matchel sem ingress rule.
+
+- A Calico (régi K3s) stateful tracking-ben ez működött; a Cilium-ra váltáskor regressziót okozott.
+- Referencia repok (bjw-s, onedr0p, buroa) **NEM** korlátozzák az ingress-t a `cloudflared` pod-on.
+
+**Fix**: `policyTypes: [Egress]` (`Ingress` kivéve). Az egress hardening megmarad (Cloudflare CIDR-ek, kube-dns UDP 53, envoy backend portok). A `prometheus:8080` scrape default-allow-on át megy be.
+
+**Eredmény**: tunnel pod 1/1 Running, 4 connection registered (`bud01`, `vie05`, `vie06`).
+
+### Mai cluster állapot session végén
+
+- ✅ **0 Failing KS**, **0 Failing HR**
+- ✅ 18 default app pod 1/1 Running
+- ✅ `cloudflare-tunnel` 1/1 Running, tunnel connections regisztrálva
+- 🟡 1 app-szintű follow-up: `plex-trakt-sync` 401 unauthorized — Plex API token elavult a friss DB-ben
+
 ## Korábbi szakasz — kész munka (commit-hash-ekkel)
 
 A `talos` branchen idáig (cumulative, 2026-05-16 estére):
@@ -122,15 +232,15 @@ A `talos` branchen idáig (cumulative, 2026-05-16 estére):
 | 1 | Hardver, hálózat, IP plan | [01](./01-hardware-and-network.md) | ✅ done | HP fent, Talos installálva |
 | 2 | Talos bootstrap | [02](./02-talos-bootstrap.md) | ✅ done | etcd Healthy, kubeconfig megvan, `cp0-k8s NotReady` (CNI várja) |
 | 3 | Cilium CNI install + L2 announce | [03](./03-cilium-cni.md) | ✅ done | Cilium 1.19.4 fent + L2 announce egyedül felelős az LB IP-kért (MetalLB uninstalled), Hubble UI elérhető |
-| 4 | Bootstrap helmfile chain | [04](./04-bootstrap-helmfile.md) | 🟡 in-progress | Chain végigfutott (7 release deployed); **maradt**: snapshot-controller force-fresh install (failed-install state-ben ragadt), volsync stabilizálás, democratic-csi VSC apply |
+| 4 | Bootstrap helmfile chain | [04](./04-bootstrap-helmfile.md) | ✅ done | 7 release deployed; snapshot-controller magától visszaállt, kopia + external-dns helm uninstall + reinstall recovery után Ready |
 | 5 | Flux Operator + FluxInstance | [05](./05-flux-operator.md) | ✅ done | FluxInstance Ready, 4 controller fut, 11 CRD apply-olva, `flux-system` GitRepository auto-created, `cluster-vars` + `cluster-apps` Ready |
-| 6 | Repo refactor (apps struktúra) | [06](./06-repo-restructure.md) | 🟡 in-progress | bjw-s naming + layout refactor + onepassword bjw-s alignment kész; megszűnő apps Kustomization-jei suspended, Helm release-ek uninstalled — **repo-szintű törlés még hátra** (tigera-operator/, networking/metallb/, system-upgrade/) |
-| 7 | Components és shared resources | [07](./07-components-and-shared.md) | ⏸ pending | `kubernetes/components/` |
+| 6 | Repo refactor (apps struktúra) | [06](./06-repo-restructure.md) | ✅ done | bjw-s naming + layout refactor + onepassword bjw-s alignment + K3s-éra subtree-k repo-szintű törlése (tigera-operator/, networking/metallb/, system-upgrade-controller/) + Cilium LB-IPAM annotation csere |
+| 7 | Components és shared resources | [07](./07-components-and-shared.md) | ✅ done | VolSync component **always-on** pattern engedélyezve (bjw-s minta): `replicationdestination.yaml` + `pvc.yaml dataSourceRef` aktív |
 | 8 | Just migráció | [08](./08-just-migration.md) | 🟡 in-progress | foundation (mise+just+setup.sh) kész; `Taskfile.yml` törlés cutover-előtt |
 | 9 | Renovate rewrite | [09](./09-renovate-rewrite.md) | ⏸ pending | `.renovaterc.json5` + fragmensek |
 | 10 | OMV Ansible playbook | [10](./10-omv-ansible.md) | ⏸ pending | Csak cutover után |
-| 11 | Data migration runbook | [11](./11-data-migration.md) | ⏸ pending | refs only |
-| 12 | Cutover runbook | [12](./12-cutover-runbook.md) | ⏸ pending | éles cutover |
+| 11 | Data migration runbook | [11](./11-data-migration.md) | ✅ done | 17 PVC restore-olt OVH snapshotból 12–19s/db; always-on RD pattern miatt nem lesz külön "cutover" adatmigráció |
+| 12 | Cutover runbook | [12](./12-cutover-runbook.md) | 🟡 in-progress | A `talos`→`main` branch merge + FluxInstance ref switch + régi K3s decom hátra van |
 | 13 | Rollback és decommission | [13](./13-rollback-and-decom.md) | ⏸ pending | |
 | 14 | Post-cutover megfigyelés | [14](./14-post-cutover.md) | ⏸ pending | 1-2 hét observation |
 
@@ -169,16 +279,32 @@ Legend: ✅ done · 🟡 in-progress · ⏸ pending · ❌ blocked · ⏭ skippe
 
 ## Open items / blocker
 
-- **🟡 Aktív blocker**: `snapshot-controller` Helm release `failed-install` state-ben → CSI/snapshot CRD-k hiányoznak → volsync + democratic-csi + minden PVC-t igénylő app blokkolva. Megoldás: `helm uninstall snapshot-controller -n kube-system` + `flux reconcile hr snapshot-controller -n kube-system --force`. Részletek a "Session 2026-05-16" szekcióban fent.
-- **🟡 Phase 6 záró feladat**: K3s-éra app-subtree-k (tigera-operator/, networking/metallb/, system-upgrade/) repo-szintű törlése + namespace `kustomization.yaml`-ek tisztítása. Jelenleg csak Flux Kustomization-jeik suspended állapotban, a manifestek még a repo-ban élnek.
-- **🟡 P2 — envoy-gateway-config validation**: `BackendTrafficPolicy/rate-limit-external` schema-drift (`Maximum boundary must be int32`). Manifest update kell (`requests: 100` → numeric, nem string).
+### Aktív blokkoló — nincs
+
+A teljes GitOps reconcile zöld (0 failing KS, 0 failing HR).
+
+### Follow-up — nem blocker, post-cutover ablakra rögzítve
+
+- **`plex-trakt-sync` 401 unauthorized**: A pod CrashLoopBackOff-ban a Plex API tokenre `(401) unauthorized` választ kap. A friss Plex DB-ben (restore után) más token generálódott. Megoldás: 1Password-ben a Plex API token frissítése + ExternalSecret refresh. **App-szintű config, nem infrastruktúra blocker.**
+
+- **`envoy-gateway` v1.9.0 GA → BackendTrafficPolicy visszakapcsolás**: A `rate-limit-external` BTP `kubernetes/apps/networking/envoy-gateway/config/gateway-policies.yaml`-ben **kommentbe téve** az upstream v1.8.0 CRD regression miatt (PR `envoyproxy/gateway#8798`, kubebuilder `uint32` → `format: int32 + maximum: uint32_max`, K8s 1.36 strict OpenAPI elutasít). Renovate hozza a v1.9.0 GA-t, és a `git revert` egyszerű — a workaround commit a `gateway-policies.yaml`-ben megőrzi a manifestet kommentben.
+
+- **Search domain `lan` cluster-szintű kezelés**: A Talos node `ResolverStatus` `SEARCH DOMAINS: []` üres. **FQDN-szintű `.lan` resolve cluster-en át jelenleg működik** (a CoreDNS `forward . /etc/resolv.conf` minden ismeretlen domain-t a router upstream-re küld; `dig nas.lan @10.245.0.10` válaszol). **Akkor szükséges, ha valaha rövid host neveket (pl. `nas`) hivatkoznánk app config-ban** — jelenleg minden manifest FQDN-t (`nas.lan`) vagy IP-t (`192.168.1.10`) használ. Ha kell:
+    1. Talos machineconfig `machine.network.searchDomains: [lan]` (node `/etc/resolv.conf` `search lan`-t kap)
+    2. Kubelet `--resolv-conf=/etc/resolv.conf` flag (`machine.kubelet.extraArgs`) — a pod-ok `dnsPolicy: ClusterFirst` esetén is örökli a node search-jét
+    A két lépés csak együtt ér valamit (az egyik a másik nélkül nem hat). Egyik referencia repó (bjw-s/onedr0p/buroa) sem foglalkozik ezzel.
+
+- **`Taskfile.yml` + `.taskfiles/` törlés**: Phase 8 záró feladat — cutover-előtt, hogy a `talos` branch tisztán Just-alapú legyen.
+
+### Tudnivalók / üzemeltetési reminderek
+
 - HP ProDesk 600 G6 DM fent, Talos `v1.13.2` v1.36.1 K8s, `cp0-k8s Ready` (bond0 az aktív kernel device, eno1 a slave).
 - PC801 + PC711 NVMe beszerelve és felismerve.
 - ✅ 1Password `HomeOps/talos` + `HomeOps/homelab-age-key` (`privateKey` field) + `HomeOps/1password-connect-kubernetes` (`credentials` + `token`) item-ek mind verifikálva.
 - ✅ Cilium runtime up + L2 announce egyedül felelős az LB IP-kért (CiliumLoadBalancerIPPool `.15-.25` 11 IP, default policy `^bond[0-9]+$`).
 - ✅ ClusterSecretStore `onepassword-connect` Valid/Ready.
-- ⚠️ **Holnapra emlékeztető**: Bármely Talos reboot/apply-node után `kubectl get nodes` → ha `SchedulingDisabled`, `kubectl uncordon cp0-k8s` (ma a bond0-reboot drain után nem uncordon-olt automatikusan, ez minden Pod Pending-jét okozta — időigényes diagnosztika).
-- ⚠️ **Freelens**: a default `~/.kube/config` még a régi K3s cluster-re mutat. A repo `kubeconfig`-ját kell hozzáadni a Freelens-be (Settings → Kubeconfig sync directory), és a K3s context-et törölni.
+- ⚠️ **Talos reboot reminder**: Bármely Talos reboot/apply-node után `kubectl get nodes` → ha `SchedulingDisabled`, `kubectl uncordon cp0-k8s` (a bond0-reboot drain után nem uncordon-ol automatikusan, ez minden Pod Pending-jét okozza — időigényes diagnosztika; a mai session-ben az envoy-gateway certgen Job is ezen akadt el).
+- ⚠️ **`safe-upgrades` VAP kihagyott bootstrap pattern**: A `00-crds.yaml` `yq` szűrője csak `CustomResourceDefinition`-t enged át, így a Gateway API `ValidatingAdmissionPolicy` és `ValidatingAdmissionPolicyBinding` **nem jut be a bootstrap apply-ba**. Egyezik a bjw-s/onedr0p/buroa mintával, de ha valaha az első Helm install újra timeout-ol (certgen Job-on), ugyanaz a recovery kell (`kubectl delete vap/vapb safe-upgrades.gateway.networking.k8s.io` + `flux reconcile hr envoy-gateway --force`).
 
 ## Frissítési konvenció
 
