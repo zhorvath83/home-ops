@@ -67,11 +67,11 @@ restore-into ns app previous="0":
     flux -n "{{ ns }}" reconcile helmrelease "{{ app }}" --force
     kubectl -n "{{ ns }}" wait pod --for=condition=ready --selector="app.kubernetes.io/name={{ app }}" --timeout=5m
 
-[doc('List Kopia snapshots for a ReplicationSource — rich tabular output (positional args: rsrc [ns=default] [source_path=/data] [kopia_ns=volsync-system])')]
+[doc('List Kopia snapshots for a ReplicationSource — rich tabular output (positional args: rsrc [ns=default])')]
 [script]
-list-snapshots rsrc ns="default" source_path="/data" kopia_ns="volsync-system":
-    kubectl -n "{{ kopia_ns }}" exec deploy/kopia -- \
-      kopia snapshot list "{{ rsrc }}@{{ ns }}:{{ source_path }}" \
+list-snapshots rsrc ns="default":
+    kubectl -n volsync-system exec deploy/kopia -- \
+      kopia snapshot list "{{ rsrc }}@{{ ns }}:/data" \
         --all \
         --manifest-id \
         --json \
