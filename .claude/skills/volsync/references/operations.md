@@ -26,21 +26,21 @@ The Kopia repository identity is derived purely from `${APP}` (`${APP}-volsync-s
 
 ## Unified Restore Flow (`just volsync restore`)
 
-`just volsync restore <app> [previous=0] [ns=default]` replays a Kopia snapshot back into an existing PVC. `previous=0` is the latest snapshot, `previous=N` is the N-th historical one.
+`just volsync restore <rsrc> [previous=0] [ns=default]` replays a Kopia snapshot back into an existing PVC. `previous=0` is the latest snapshot, `previous=N` is the N-th historical one.
 
 The recipe walks the workload through eight steps:
 
 1. `flux suspend` on the Flux Kustomization and the HelmRelease for the app
 2. scale the deploy/sts to 0, wait for pods to fully delete
-3. apply a one-shot `<app>-wipe` Job (Alpine, root, `find /data -mindepth 1 -delete`) that mounts the PVC and removes every file under `/data`
+3. apply a one-shot `<rsrc>-wipe` Job (Alpine, root, `find /data -mindepth 1 -delete`) that mounts the PVC and removes every file under `/data`
 4. wait for the wipe Job to complete, then delete it
-5. apply an ad-hoc `<app>-manual` ReplicationDestination with `copyMethod: Direct`, `destinationPVC: <app>`, `previous: N`
-6. wait for the VolSync mover Job (`volsync-dst-<app>-manual`) to complete
+5. apply an ad-hoc `<rsrc>-manual` ReplicationDestination with `copyMethod: Direct`, `destinationPVC: <rsrc>`, `previous: N`
+6. wait for the VolSync mover Job (`volsync-dst-<rsrc>-manual`) to complete
 7. delete the ad-hoc RD
 8. `flux resume` + force HelmRelease reconcile + wait for the app pod to become Ready
 
 The wipe step is what makes the restore an exact replica of the snapshot. Without it, Kopia's Direct mover overwrites the files that exist in the snapshot but leaves leftover files from the live PVC — silent corruption if the live data evolved past the snapshot's file set.
 
-Recipe failure between step 3 and step 6 leaves the PVC empty (workload stays scaled down with Flux suspended). Recovery: investigate `kubectl get job volsync-dst-<app>-manual -n <ns>` and the Kopia repository, then re-run `just volsync restore`.
+Recipe failure between step 3 and step 6 leaves the PVC empty (workload stays scaled down with Flux suspended). Recovery: investigate `kubectl get job volsync-dst-<rsrc>-manual -n <ns>` and the Kopia repository, then re-run `just volsync restore`.
 
 If a recipe change touches resource names, labels, or workflow assumptions, inspect `kubernetes/volsync/mod.just` together with `kubernetes/components/volsync/` and the touched platform resources before editing.

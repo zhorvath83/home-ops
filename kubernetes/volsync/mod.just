@@ -9,32 +9,32 @@ set shell := ['bash', '-euo', 'pipefail', '-c']
 default:
     just -l volsync
 
-[doc('Snapshot a single VolSync ReplicationSource (positional args: ns name)')]
+[doc('Snapshot a single VolSync ReplicationSource (positional args: rsrc [ns=default])')]
 [script]
-snapshot ns name:
-    kubectl -n "{{ ns }}" patch replicationsources "{{ name }}" --type merge \
+snapshot rsrc ns="default":
+    kubectl -n "{{ ns }}" patch replicationsources "{{ rsrc }}" --type merge \
       -p '{"spec":{"trigger":{"manual":"'"$(date +%s)"'"}}}'
 
 [doc('Snapshot ALL VolSync ReplicationSources (cluster-wide)')]
 [script]
 snapshot-all:
     kubectl get replicationsources --no-headers -A | while read -r ns name _; do
-      just volsync snapshot "$ns" "$name"
+      just volsync snapshot "$name" "$ns"
     done
 
-[doc('Wipe the PVC and restore it from a Kopia snapshot (positional args: app [previous=0] [ns=default]). previous=0 = latest.')]
+[doc('Wipe the PVC and restore it from a Kopia snapshot (positional args: rsrc [previous=0] [ns=default]). previous=0 = latest.')]
 [script]
-restore app previous="0" ns="default":
-    flux -n "{{ ns }}" suspend kustomization "{{ app }}"
-    flux -n "{{ ns }}" suspend helmrelease "{{ app }}"
-    kubectl -n "{{ ns }}" get deploy,sts -l "app.kubernetes.io/name={{ app }}" -o name \
+restore rsrc previous="0" ns="default":
+    flux -n "{{ ns }}" suspend kustomization "{{ rsrc }}"
+    flux -n "{{ ns }}" suspend helmrelease "{{ rsrc }}"
+    kubectl -n "{{ ns }}" get deploy,sts -l "app.kubernetes.io/name={{ rsrc }}" -o name \
       | xargs -r -I{} kubectl -n "{{ ns }}" scale {} --replicas=0
-    kubectl -n "{{ ns }}" wait pod --for=delete --selector="app.kubernetes.io/name={{ app }}" --timeout=5m || true
+    kubectl -n "{{ ns }}" wait pod --for=delete --selector="app.kubernetes.io/name={{ rsrc }}" --timeout=5m || true
     cat <<EOF | kubectl apply --server-side -f -
     apiVersion: batch/v1
     kind: Job
     metadata:
-      name: {{ app }}-wipe
+      name: {{ rsrc }}-wipe
       namespace: {{ ns }}
     spec:
       ttlSecondsAfterFinished: 60
@@ -56,34 +56,34 @@ restore app previous="0" ns="default":
           volumes:
             - name: target
               persistentVolumeClaim:
-                claimName: {{ app }}
+                claimName: {{ rsrc }}
     EOF
-    kubectl -n "{{ ns }}" wait "job/{{ app }}-wipe" --for=condition=complete --timeout=10m
-    kubectl -n "{{ ns }}" delete job "{{ app }}-wipe"
+    kubectl -n "{{ ns }}" wait "job/{{ rsrc }}-wipe" --for=condition=complete --timeout=10m
+    kubectl -n "{{ ns }}" delete job "{{ rsrc }}-wipe"
     cat <<EOF | kubectl apply --server-side -f -
     apiVersion: volsync.backube/v1alpha1
     kind: ReplicationDestination
     metadata:
-      name: {{ app }}-manual
+      name: {{ rsrc }}-manual
       namespace: {{ ns }}
     spec:
       trigger:
         manual: restore-$(date +%s)
       kopia:
-        repository: {{ app }}-volsync-secret
+        repository: {{ rsrc }}-volsync-secret
         copyMethod: Direct
-        destinationPVC: {{ app }}
+        destinationPVC: {{ rsrc }}
         previous: {{ previous }}
         sourceIdentity:
-          sourceName: {{ app }}
+          sourceName: {{ rsrc }}
     EOF
-    kubectl -n "{{ ns }}" wait "job/volsync-dst-{{ app }}-manual" --for=create --timeout=120s
-    kubectl -n "{{ ns }}" wait "job/volsync-dst-{{ app }}-manual" --for=condition=complete --timeout=120m
-    kubectl -n "{{ ns }}" delete replicationdestination "{{ app }}-manual"
-    flux -n "{{ ns }}" resume kustomization "{{ app }}"
-    flux -n "{{ ns }}" resume helmrelease "{{ app }}"
-    flux -n "{{ ns }}" reconcile helmrelease "{{ app }}" --force
-    kubectl -n "{{ ns }}" wait pod --for=condition=ready --selector="app.kubernetes.io/name={{ app }}" --timeout=5m
+    kubectl -n "{{ ns }}" wait "job/volsync-dst-{{ rsrc }}-manual" --for=create --timeout=120s
+    kubectl -n "{{ ns }}" wait "job/volsync-dst-{{ rsrc }}-manual" --for=condition=complete --timeout=120m
+    kubectl -n "{{ ns }}" delete replicationdestination "{{ rsrc }}-manual"
+    flux -n "{{ ns }}" resume kustomization "{{ rsrc }}"
+    flux -n "{{ ns }}" resume helmrelease "{{ rsrc }}"
+    flux -n "{{ ns }}" reconcile helmrelease "{{ rsrc }}" --force
+    kubectl -n "{{ ns }}" wait pod --for=condition=ready --selector="app.kubernetes.io/name={{ rsrc }}" --timeout=5m
 
 [doc('List Kopia snapshots for a ReplicationSource — rich tabular output (positional args: rsrc [ns=default])')]
 [script]
