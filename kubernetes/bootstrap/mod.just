@@ -21,7 +21,7 @@ default:
 
 [doc('Bootstrap the full Talos + Kubernetes platform chain')]
 [script]
-cluster: talos kubernetes kubeconfig wait namespaces resources crds apps
+cluster: talos kubernetes (kubeconfig "node") wait namespaces resources crds apps kubeconfig
 
 [private]
 [doc('Stage: apply Talos machine config to every node (idempotent — skips already configured nodes)')]
@@ -49,11 +49,14 @@ kubernetes:
     done
 
 [private]
-[doc('Stage: fetch kubeconfig from a controller node')]
+[doc('Stage: fetch kubeconfig from a controller node. lb="cilium" keeps the cluster API endpoint from talosconfig (default, post-Cilium-L2); lb="node" rewrites the server to the controller IP (pre-CNI bootstrap).')]
 [script]
-kubeconfig:
-    just log info "Stage: fetch kubeconfig"
+kubeconfig lb="cilium":
+    just log info "Stage: fetch kubeconfig" "lb" "{{ lb }}"
     talosctl -n "{{ controller }}" kubeconfig -f --force-context-name main "{{ justfile_dir() }}/kubeconfig"
+    if [[ "{{ lb }}" != "cilium" ]]; then
+      kubectl --kubeconfig "{{ justfile_dir() }}/kubeconfig" config set-cluster main --server "https://{{ controller }}:6443"
+    fi
 
 [private]
 [doc('Stage: wait until the node registers with the K8s API (Ready=False is fine — CNI is the next stage)')]

@@ -59,11 +59,15 @@ sync-es ns name:
     kubectl -n "{{ ns }}" annotate --field-manager flux-client-side-apply --overwrite es "{{ name }}" \
       force-sync="$(date +%s)"
 
-[doc('Sync all HRs / KS / ES of the given type')]
+[arg('resource', pattern='hr|ks|gitrepo|ocirepo|es')]
+[doc('Sync all resources of a Flux type cluster-wide (resource=hr|ks|gitrepo|ocirepo|es)')]
 [script]
-sync-all type:
-    kubectl get {{ type }} --no-headers -A | while read -r ns name _; do
-      just k8s sync-{{ type }} "$ns" "$name"
+sync resource:
+    kubectl get {{ resource }} --no-headers -A | while read -r ns name _; do
+      kubectl -n "$ns" annotate --field-manager flux-client-side-apply --overwrite {{ resource }} "$name" \
+        "force-sync=$(date +%s)" \
+        "reconcile.fluxcd.io/requestedAt=$(date +%s)" \
+        "reconcile.fluxcd.io/forceAt=$(date +%s)"
     done
 
 [doc('Snapshot a VolSync ReplicationSource')]
@@ -269,6 +273,51 @@ flux-reconcile:
 [script]
 flux-check:
     flux check --pre
+
+[doc('Decode and print a Kubernetes Secret (requires kubectl-view-secret krew plugin)')]
+[script]
+view-secret ns secret:
+    kubectl view-secret -n {{ ns }} {{ secret }}
+
+[doc('Suspend or resume the global VolSync stack (state=suspend|resume) — pauses backup jobs cluster-wide')]
+[script]
+volsync-state state:
+    flux -n volsync-system {{ state }} kustomization volsync
+    flux -n volsync-system {{ state }} helmrelease volsync
+    kubectl -n volsync-system scale deployment volsync --replicas {{ if state != "suspend" { "1" } else { "0" } }}
+
+[doc('Point-in-time restore into the existing PVC via VolSync Direct copyMethod (previous=N is the snapshot offset, 0=latest). Suspends app, runs restore, resumes.')]
+[script]
+restore-into ns app previous="0":
+    flux -n "{{ ns }}" suspend kustomization "{{ app }}"
+    flux -n "{{ ns }}" suspend helmrelease "{{ app }}"
+    kubectl -n "{{ ns }}" get deploy,sts -l "app.kubernetes.io/name={{ app }}" -o name \
+      | xargs -r -I{} kubectl -n "{{ ns }}" scale {} --replicas=0
+    kubectl -n "{{ ns }}" wait pod --for=delete --selector="app.kubernetes.io/name={{ app }}" --timeout=5m || true
+    cat <<EOF | kubectl apply --server-side -f -
+    apiVersion: volsync.backube/v1alpha1
+    kind: ReplicationDestination
+    metadata:
+      name: {{ app }}-manual
+      namespace: {{ ns }}
+    spec:
+      trigger:
+        manual: restore-$(date +%s)
+      kopia:
+        repository: {{ app }}-volsync-secret
+        copyMethod: Direct
+        destinationPVC: {{ app }}
+        previous: {{ previous }}
+        sourceIdentity:
+          sourceName: {{ app }}
+    EOF
+    kubectl -n "{{ ns }}" wait "job/volsync-dst-{{ app }}-manual" --for=create --timeout=120s
+    kubectl -n "{{ ns }}" wait "job/volsync-dst-{{ app }}-manual" --for=condition=complete --timeout=120m
+    kubectl -n "{{ ns }}" delete replicationdestination "{{ app }}-manual"
+    flux -n "{{ ns }}" resume kustomization "{{ app }}"
+    flux -n "{{ ns }}" resume helmrelease "{{ app }}"
+    flux -n "{{ ns }}" reconcile helmrelease "{{ app }}" --force
+    kubectl -n "{{ ns }}" wait pod --for=condition=ready --selector="app.kubernetes.io/name={{ app }}" --timeout=5m
 
 [private]
 [script]

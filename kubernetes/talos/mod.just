@@ -255,6 +255,18 @@ render-config node:
 apply-node node *args:
     just talos render-config {{ node }} | talosctl -n {{ node }} apply-config -f /dev/stdin {{ args }}
 
+[group('config')]
+[doc('Print whether a node is a controlplane (from its rendered machineconfig)')]
+[script]
+machine-controller node=default_node:
+    just talos render-config "{{ node }}" | yq -e 'select(.machine) | (.machine.type == "controlplane") // ""'
+
+[group('config')]
+[doc('Print the Talos install image used by a node (from its rendered machineconfig)')]
+[script]
+machine-image node=default_node:
+    just talos render-config "{{ node }}" | yq -e 'select(.machine) | .machine.install.image'
+
 [group('recovery')]
 [doc('Reset a Talos node (wipe STATE + EPHEMERAL + u-local-hostpath, reboot to installer)')]
 [script]
