@@ -8,7 +8,7 @@
 
 **Hol tartunk:** Teljes GitOps reconcile zöld (**0 Failing KS, 0 Failing HR**). 17 VolSync PVC restore-olt OVH Kopia snapshotokból, 18 default app pod 1/1 Running, `cloudflare-tunnel` 1/1 Running. A `replicationdestination + dataSourceRef` mostantól **always-on** pattern (bjw-s minta). Ingress stack él kívülről (Cloudflare tunnel) és belülről (envoy-internal `192.168.1.18`), Cilium L2 announce egyedüli LB-IPAM. Stateful ingress hardening visszahozva 3 `CiliumNetworkPolicy`-val + közös `CiliumCIDRGroup/cloudflare`-rel. A régi K3s cluster áll.
 
-**Ismert follow-up-ok** (egyik sem blocker): `envoy-gateway` v1.9.0 GA → BTP rate-limit visszakapcsolás, search domain `lan` cluster-szintű kezelés, **Phase 8.6** app-szintű nested ks.yaml flatten (4 split + 1 KS rename), **Phase 9** Renovate rewrite, **Phase 15** repo doc + AI-guide refresh.
+**Ismert follow-up-ok** (egyik sem blocker): `envoy-gateway` v1.9.0 GA → BTP rate-limit visszakapcsolás, search domain `lan` cluster-szintű kezelés, **Phase 9** Renovate rewrite, **Phase 15** repo refactor (app-szintű ks.yaml flatten + doc + AI-guide refresh).
 
 ## Sessions — 2026-05-16
 
@@ -76,7 +76,7 @@ A Phase 8 foundation (mise + just + setup.sh + 6 mod) reggel kész volt, de a `T
 | 12 | Cutover runbook | [12](./12-cutover-runbook.md) | 🟡 in-progress | `talos`→`main` merge + FluxInstance ref switch |
 | 13 | Rollback / decom | [13](./13-rollback-and-decom.md) | ⏸ pending | |
 | 14 | Post-cutover | [14](./14-post-cutover.md) | ⏸ pending | 1-2 hét observation |
-| 15 | Repo doc + AI-guide refresh | — | 🟡 in-progress | `docs/*.md` + `CLAUDE.md` lánc + `.claude/skills/*` átírás migráció eredménye alapján; cutover-előtt zárandó |
+| 15 | Repo refactor (ks.yaml flatten + doc + AI-guide refresh) | — | 🟡 in-progress | 4 app-szintű multi-KS `ks.yaml` lapítása + `docs/*.md` + `CLAUDE.md` lánc + `.claude/skills/*` átírás migráció eredménye alapján; cutover-előtt zárandó |
 
 Legend: ✅ done · 🟡 in-progress · ⏸ pending · ❌ blocked · ⏭ skipped
 
@@ -99,9 +99,9 @@ A teljes GitOps reconcile zöld (0 failing KS, 0 failing HR).
 - **Search domain `lan` cluster-szintű kezelés**: A Talos node `ResolverStatus SEARCH DOMAINS: []` üres. FQDN-szintű `.lan` resolve cluster-en át jelenleg működik (CoreDNS `forward . /etc/resolv.conf`). Akkor szükséges, ha valaha rövid host neveket (`nas`) hivatkoznánk app config-ban — jelenleg minden manifest FQDN-t vagy IP-t használ. Megoldás (csak együtt): Talos machineconfig `machine.network.searchDomains: [lan]` + kubelet `--resolv-conf=/etc/resolv.conf`. Egyik referencia repó sem foglalkozik vele.
 
 
-- **Phase 8.6 — App-szintű nested ks.yaml flatten** (cutover-előtti repo-tisztítás): 4 multi-KS `ks.yaml` a `default` ns-ben jelenleg szülő-gyermek mappastruktúrában tart funkcionálisan független KS-eket. A bjw-s/onedr0p/buroa lapos `apps/<ns>/<app>/` mintára kilapítva minden Kustomization egy önálló top-level mappát kap — repo-átláthatóság + `restore-into <app>` ks-override nélkül megy.
+- **Phase 15 — Repo refactor: ks.yaml flatten + doc + AI-guide refresh** (cutover előtti zárás): két, szorosan kapcsolódó repo-szintű refactor egyetlen fázisba sűrítve.
 
-  **Hatáskör (4 split + 1 KS rename)**:
+  **15.a — App-szintű nested `ks.yaml` flatten** (4 split + 1 KS rename). 4 multi-KS `ks.yaml` a `default` ns-ben jelenleg szülő-gyermek mappastruktúrában tart funkcionálisan független KS-eket. A bjw-s/onedr0p/buroa lapos `apps/<ns>/<app>/` mintára kilapítva minden Kustomization egy önálló top-level mappát kap — repo-átláthatóság + `restore-into <app>` ks-override nélkül megy.
 
   | Jelenlegi | Cél | Megjegyzés |
   |---|---|---|
@@ -110,17 +110,15 @@ A teljes GitOps reconcile zöld (0 failing KS, 0 failing HR).
   | `default/qbittorrent/{app,upgrade-p2pblocklist}/` | `default/qbittorrent/app/` + `default/qbittorrent-upgrade-p2pblocklist/app/` | KS-név változatlan, csak path |
   | `default/resticprofile/{app,gui}/` (KS `restic-gui`) | `default/resticprofile/app/` + `default/backrest/app/` (KS **`backrest`**, HR-rel megegyező) | **KS rename** — full bjw-s parity, `restore-into backrest` ks-override nélkül |
 
-  **Mit NEM érintünk**: a platform-szintű multi-KS-ek (`networking/envoy-gateway/{certificate,app,config}`, `cert-manager/{cert-manager,issuers}`, `kube-system/cilium/{app,config}`, `volsync-system/volsync/{app,maintenance}`, `flux-system/addons/{alerts,webhooks}`) — ezek a referencia repokban is multi-KS staging mintázattal élnek (szigorú `dependsOn` sorrend), nem szervezeti kompromisszumok.
+  Platform-szintű multi-KS-eket (`networking/envoy-gateway/{certificate,app,config}`, `cert-manager/{cert-manager,issuers}`, `kube-system/cilium/{app,config}`, `volsync-system/volsync/{app,maintenance}`, `flux-system/addons/{alerts,webhooks}`) **nem érintjük** — ezek a referencia repokban is multi-KS staging mintázattal élnek (szigorú `dependsOn` sorrend).
 
-  **Kockázat**: a 3 path-only split (paperless-gpt, plex-trakt-sync, qbittorrent-upgrade-p2pblocklist) alacsony — Flux a `kustomize.toolkit.fluxcd.io/name` label alapján észleli a path-váltást, nincs ownership transfer. **A `restic-gui` → `backrest` KS rename** viszont valós prune-kockázattal jár: a régi KS prune-ja megpróbálná törölni a HR-t a régi labellel. Mitigáció előbb a régi KS-t `prune: false`-ra vagy `flux suspend`-be, csak utána a forrás-fájlokat törölni; a `dependsOn` referenciákat is át kell írni minden helyen.
+  Kockázat: 3 path-only split alacsony (Flux a `kustomize.toolkit.fluxcd.io/name` label alapján észleli a path-váltást, nincs ownership transfer). **A `restic-gui` → `backrest` KS rename** valós prune-kockázattal jár: a régi KS prune-ja megpróbálná törölni a HR-t a régi labellel. Mitigáció: előbb a régi KS-t `prune: false`-ra vagy `flux suspend`-be, csak utána a forrás-fájlokat törölni; a `dependsOn` referenciákat is át kell írni minden helyen. Becsült munka: ~30-45 perc.
 
-  **Becsült munka**: ~30-45 perc. Logikus elvégezni Phase 9 (Renovate) vagy Phase 15 (Doc refresh) előtt — utóbbi a megírandó CLAUDE.md-kben már lapos szerkezetet feltételezhet.
+  **15.b — Doc + AI-guide refresh**. A migráció átszabta a stacket (K3s → Talos, Task → Just, Calico → Cilium, MetalLB → Cilium LB-IPAM, Traefik → Envoy Gateway, bjw-s layout, always-on VolSync). A `docs/migration/00–14` doc-ok ezt tükrözik, de a többi repo-doksi és AI-guide nagyrészt még a K3s-éra valóságot írja le.
 
-- **Phase 15 — Repo doc + AI-guide refresh** (cutover előtti zárás): a migráció átszabta a stacket (K3s → Talos, Task → Just, Calico → Cilium, MetalLB → Cilium LB-IPAM, Traefik → Envoy Gateway, bjw-s layout, always-on VolSync). A `docs/migration/00–14` doc-ok ezt tükrözik, de a többi repo-doksi és AI-guide nagyrészt még a K3s-éra valóságot írja le.
+  Hatáskör: 13 `docs/*.md` (több törlendő — `k3s-readme.md`, `k3s-system-upgrade.md` — vagy átírandó — `networking-readme.md`, `kubernetes-readme.md`, `flux-readme.md`, `host-configuration.md`), 11 path-szintű `CLAUDE.md` (root task-domain lista Just-ra, „Current Repository Shape" + „State To Assume Today" frissítés), 12 `.claude/skills/*` (`taskfiles/` „just" skillé, `versions-renovate/` Phase 9 után fragmens-struktúrára, `networking-platform/` Cilium LB-IPAM + CNP megerősítés, többi kisebb update). Root `README.md` csak explicit ASK után. Becsült munka: ~4-6h, parallel-izálható.
 
-  **Hatáskör**: 13 `docs/*.md` (több törlendő — `k3s-readme.md`, `k3s-system-upgrade.md` — vagy átírandó — `networking-readme.md`, `kubernetes-readme.md`, `flux-readme.md`, `host-configuration.md`), 11 path-szintű `CLAUDE.md` (root task-domain lista Just-ra, „Current Repository Shape" + „State To Assume Today" frissítés), 12 `.claude/skills/*` (`taskfiles/` Phase 8 után „just" skillé, `versions-renovate/` Phase 9 után fragmens-struktúrára, `networking-platform/` Cilium LB-IPAM + CNP megerősítés, többi kisebb update). Root `README.md` csak explicit ASK után.
-
-  **Becsült munka**: ~4-6h, parallel-izálható. Phase 8 + 9 után érdemes belefogni, hogy a doksi-átírás az új struktúrára hivatkozhasson.
+  **Sorrend**: 15.a előbb — a flatten után a CLAUDE.md / skill leírások már lapos szerkezetre hivatkozhatnak, nem kell kétszer írni.
 
 ## Tudnivalók / üzemeltetési reminderek
 
