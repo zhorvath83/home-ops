@@ -209,9 +209,10 @@ provisioning:
   maxSize: 256GiB
 ---
 # UserVolume on the PC711 NVMe (democratic-csi data disk).
-# Mounted by Talos at /var/mnt/extra-disk; democratic-csi local-hostpath driver
-# uses that path for PVC provisioning. Pinned by disk model. Talos defaults
-# the filesystem to XFS for UserVolume — no need to set it explicitly.
+# Mounted by Talos at /var/mnt/local-hostpath (UserVolume name → mount path);
+# democratic-csi local-hostpath driver uses that path for PVC provisioning.
+# Pinned by disk model. Talos defaults the filesystem to XFS for UserVolume —
+# no need to set it explicitly.
 apiVersion: v1alpha1
 kind: UserVolumeConfig
 name: local-hostpath

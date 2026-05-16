@@ -111,13 +111,13 @@ spec:
 
         extraVolumeMounts:
           - name: local-storage
-            mountPath: /var/lib/csi-local-hostpath
+            mountPath: /var/mnt/local-hostpath
             mountPropagation: Bidirectional
 
       extraVolumes:
         - name: local-storage
           hostPath:
-            path: /var/lib/csi-local-hostpath
+            path: /var/mnt/local-hostpath
             type: DirectoryOrCreate
 
       driverRegistrar:
@@ -155,8 +155,8 @@ spec:
         driver: local-hostpath
         instance_id:
         local-hostpath:
-          shareBasePath: "/var/lib/csi-local-hostpath"
-          controllerBasePath: "/var/lib/csi-local-hostpath"
+          shareBasePath: "/var/mnt/local-hostpath"
+          controllerBasePath: "/var/mnt/local-hostpath"
           dirPermissionsMode: "0777"
           dirPermissionsUser: 0
           dirPermissionsGroup: 0
