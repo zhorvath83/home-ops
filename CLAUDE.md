@@ -19,7 +19,7 @@ Use these sources in this order:
 1. The current files in the repository
 2. This `CLAUDE.md`
 3. More specific `CLAUDE.md` files in subdirectories
-4. `.justfile` (root) and `mod.just` files under `kubernetes/`, `kubernetes/bootstrap/`, `kubernetes/talos/`, `provision/openmediavault/`, `provision/cloudflare/`, `provision/ovh/`, `provision/sops/`, `provision/openwrt/`
+4. `.justfile` (root) and `mod.just` files under `kubernetes/`, `kubernetes/bootstrap/`, `kubernetes/talos/`, `kubernetes/volsync/`, `provision/openmediavault/`, `provision/cloudflare/`, `provision/ovh/`, `provision/sops/`, `provision/openwrt/`
 5. `.github/renovate.json5` and `.github/renovate/*`
 6. repo-local skills under `.claude/skills/`
 7. Root `README.md` and `docs/*.md` for human-facing context
@@ -105,9 +105,10 @@ This repository currently manages a single-node home infrastructure stack with t
 ## Just And Renovate Model
 
 - The root `.justfile` is the command index; prefer existing Just modules over ad-hoc shell flows.
-- Current Just modules (groups) are: `k8s-bootstrap`, `k8s`, `talos`, `omv`, `cloudflare`, `ovh`, `sops`, `openwrt`.
-- Each module lives next to the area it operates on: `kubernetes/bootstrap/mod.just`, `kubernetes/mod.just`, `kubernetes/talos/mod.just`, `provision/openmediavault/mod.just`, `provision/cloudflare/mod.just`, `provision/ovh/mod.just`, `provision/sops/mod.just`, `provision/openwrt/mod.just`.
-- Invoke recipes as `just <group> <recipe> [args]` (e.g. `just k8s sync-hr ns name`, `just sops re-encrypt`, `just talos apply-node cp0-k8s`).
+- Current Just modules (groups) are: `k8s-bootstrap`, `k8s`, `talos`, `volsync`, `omv`, `cloudflare`, `ovh`, `sops`, `openwrt`.
+- Each module lives next to the area it operates on: `kubernetes/bootstrap/mod.just`, `kubernetes/mod.just`, `kubernetes/talos/mod.just`, `kubernetes/volsync/mod.just`, `provision/openmediavault/mod.just`, `provision/cloudflare/mod.just`, `provision/ovh/mod.just`, `provision/sops/mod.just`, `provision/openwrt/mod.just`.
+- Invoke recipes as `just <group> <recipe> [args]` (e.g. `just k8s sync-hr ns name`, `just volsync list-snapshots actual`, `just sops re-encrypt`, `just talos apply-node cp0-k8s`).
+- Recipe arguments are **positional only** — Just does not parse `key=value` named arguments the way the previous Task system did. Pass values in order, omitting trailing defaults.
 - Pre-commit is invoked directly via the `pre-commit` CLI (no Just wrapper); the hook list is in `.pre-commit-config.yaml`.
 - Renovate configuration starts in `.github/renovate.json5` and imports the fragments under `.github/renovate/`.
 - Preserve inline `# renovate:` annotations when touching versioned manifests.

@@ -15,6 +15,9 @@ mod k8s "kubernetes"
 [group: 'talos']
 mod talos "kubernetes/talos"
 
+[group: 'volsync']
+mod volsync "kubernetes/volsync"
+
 [group: 'omv']
 mod omv "provision/openmediavault"
 
