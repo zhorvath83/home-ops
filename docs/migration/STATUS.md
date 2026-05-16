@@ -2,13 +2,13 @@
 
 Élő státusz a K3s → Talos migráció állapotáról. Ez a doc gyors pillanatkép — a részletes terv a [README.md](./README.md)-ben és a `00`–`14` doc-okban van.
 
-**Utolsó frissítés:** 2026-05-16 este — Phase 1–8 + 11 ✅, ingress stack stabil, CNP migráció kész, Task→Just teljes migráció lezárva, follow-up-ok rögzítve.
+**Utolsó frissítés:** 2026-05-16 este — Phase 1–9 + 11 ✅, ingress stack stabil, CNP migráció kész, Task→Just teljes migráció lezárva, Renovate `.renovaterc.json5` + `.renovate/` fragmens-szerkezetre átírva, follow-up-ok rögzítve.
 
 ## TL;DR
 
 **Hol tartunk:** Teljes GitOps reconcile zöld (**0 Failing KS, 0 Failing HR**). 17 VolSync PVC restore-olt OVH Kopia snapshotokból, 18 default app pod 1/1 Running, `cloudflare-tunnel` 1/1 Running. A `replicationdestination + dataSourceRef` mostantól **always-on** pattern (bjw-s minta). Ingress stack él kívülről (Cloudflare tunnel) és belülről (envoy-internal `192.168.1.18`), Cilium L2 announce egyedüli LB-IPAM. Stateful ingress hardening visszahozva 3 `CiliumNetworkPolicy`-val + közös `CiliumCIDRGroup/cloudflare`-rel. A régi K3s cluster áll.
 
-**Ismert follow-up-ok** (egyik sem blocker): `envoy-gateway` v1.9.0 GA → BTP rate-limit visszakapcsolás, search domain `lan` cluster-szintű kezelés, **Phase 9** Renovate rewrite, **Phase 15** repo refactor (app-szintű ks.yaml flatten + doc + AI-guide refresh).
+**Ismert follow-up-ok** (egyik sem blocker): `envoy-gateway` v1.9.0 GA → BTP rate-limit visszakapcsolás, search domain `lan` cluster-szintű kezelés, **Phase 15** repo refactor (app-szintű ks.yaml flatten + doc + AI-guide refresh).
 
 ## Sessions — 2026-05-16
 
@@ -56,6 +56,33 @@ A Phase 8 foundation (mise + just + setup.sh + 6 mod) reggel kész volt, de a `T
 
 **Verifikáció**: `just --list` 8 csoportot mutat, `just sops/openwrt/omv/k8s --list` mind parse-ol és listáz. Egy parse-hiba a Python f-string `{{:<{w}}}` format-spec miatt javítva `str.ljust()`-tal (Just `{{ ... }}` template-szintaxissal ütközött a literal Python escape). A subtree `CLAUDE.md`-k (`provision/CLAUDE.md`, `kubernetes/apps/*/CLAUDE.md` stb.) még tartalmaznak `Taskfile`/`.taskfiles` hivatkozást — ezek Phase 15 hatáskörébe esnek.
 
+### Este — Phase 9 Renovate rewrite
+
+Doc 09 terv végrehajtva: `.github/renovate.json5` + `.github/renovate/*.json` (6 fragmens) törölve, helyettük `.renovaterc.json5` a repo gyökerében + `.renovate/` alatt 7 `.json5` fragmens (`allowedVersions`, `autoMerge`, `customManagers`, `disabledDatasources`, `groups`, `overrides`, `prBodyNotes`). A 3 referencia repó (`bjw-s-labs/home-ops`, `onedr0p/home-ops`, `buroa/k8s-gitops`) Renovate konfigjai átfutva — mindhárom ezt a layoutot használja, a `bjw-s-labs` `bjw-s/renovate-config` shared base-szel, `onedr0p`/`buroa` self-contained módon.
+
+**3 pragmatic deviáció a doc 09 tervtől** a tényleges repo állapot alapján:
+1. **`mise.toml` annotáció-fedés**: a doc 09 `customManagers` annotated-regex matcher file pattern (`/^kubernetes/.+\.yaml(?:\.j2)?$/`) nem fedte volna le a `mise.toml` `[env]` blokk `# renovate: datasource=github-releases depName=siderolabs/talos\nTALOS_VERSION = "v1.13.2"` annotációját. Hozzáadva: `/(^|/)mise\.toml$/` pattern. A `[tools]` szekciót (`talosctl`, `kubectl`, `helm` stb.) Renovate beépített `mise` managere natívan kezeli.
+2. **`kubernetes/kubernetes` depName pin**: a mise.toml `KUBERNETES_VERSION = "v1.36.1"` annotációja `depName=kubernetes/kubernetes`-t használ (nem `/kube-apiserver/` formát) → felvéve az `allowedVersions.json5` K8s pin `matchPackageNames` listájába a doc 09 terv eredeti listája mellé.
+3. **Talos factory image regex harmless**: a `kubernetes/talos/machineconfig.yaml.j2` `image: factory.talos.dev/metal-installer/{{ ENV.TALOS_SCHEMATIC_ID }}:{{ ENV.TALOS_VERSION }}` Jinja templated — literális verziót nem tartalmaz, így a doc 09 Talos image regex nem matchel rá. Megtartva forward-compat-nak (ha valaha hardcode-olt installer URL kerül a repóba, automatikusan elkapja); a tényleges Talos verzió-tracking a `mise.toml` annotáción át megy.
+
+**Megőrzött live behavior**: minimumReleaseAge 3 nap, dependency dashboard, semantic commits, trusted publisher digest+minor+patch auto-merge (`home-operations`, `onedr0p`, `bjw-s`, `bjw-s-labs`, `coredns`), helm minor/patch auto-merge, plex/qbittorrent `loose` versioning, calibre-web-automated `V`/`v`-prefixed regex versioning, pre-commit hook auto-merge, Flux controller disable. **Új**: K8s 1.36.x pin (manuális `just talos upgrade-k8s` miatt), helmfile manager a bootstrap chart verziókhoz, OCI URI regex matcher, `.yaml.j2` Talos template pattern.
+
+**Verifikáció**: node-os JSON5 parse-check mind a 8 fájlon zöld, `pre-commit run --files` zöld. Renovate CLI validator npm cache-corruption miatt nem futott (npm cache `sudo chown` user-intervenciót igényel — nem blocker, a cloud Renovate megfogja a `talos` branch push után). `.claude/skills/versions-renovate/SKILL.md` + `references/config-files.md` frissítve az új layouttal.
+
+### Este — Phase 9 finomítás (4 referencia-repo közelítés)
+
+Az első körös Phase 9 lezárás után második iteráció a 3 referencia repó (`bjw-s-labs`, `onedr0p`, `buroa`) mintáira támaszkodva — 4 konkrét failure-mode-záró / zaj-csökkentő deviáció a doc 09 tervtől, 2 új fragmenssel (`semanticCommits.json5`, `talosFactory.json5`).
+
+**1. `registryAliases: { "mirror.gcr.io": "docker.io" }`** a `.renovaterc.json5`-ben. A `kubernetes/bootstrap/helmfile.d/00-crds.yaml` `oci://mirror.gcr.io/envoyproxy/gateway-helm` chartja erre a proxyra mutat, ami csak Docker Hub read-only mirror. Az alias nélkül a Renovate a proxyt query-zi, ami időnként outdated választ ad — alias-szal a `docker.io` source-of-truth ellen megy.
+
+**2. `custom.talos-factory` datasource** a `talosFactory.json5`-ben. A `https://factory.talos.dev/versions` JSON endpoint csak a factory által ténylegesen buildelhető verziókat listázza. Az eredeti `github-releases` minden `siderolabs/talos` release-t tartalmazott, beleértve azokat is, amiket a factory image-build még nem ért utol — Renovate PR-t nyithatott egy nem-buildelhető verzióra, ami `just talos apply-node`-nál `image pull failed`-del bukott volna. A regex és az ehhez tartozó `addLabels: ["renovate/talos"]` packageRule együtt kiköltözött a `customManagers.json5`-ből egy önálló `talosFactory.json5` fragmensbe (onedr0p/buroa pattern).
+
+**3. `:automergeBranch` preset + globális `automergeType: "branch"`** az `autoMerge.json5`-ben minden szabálynál. A digest/minor/patch auto-merge most direkt branch-push, nem PR-create-then-merge — kevesebb dashboard-zaj, ugyanazok a checkek futnak.
+
+**4. Külön `semanticCommits.json5` fragmens** (onedr0p mintára adaptálva). Az alapértelmezett `:semanticCommits` preset general `chore(deps): update X` formát ad; ezt finomítja per-update-type (`feat` major/minor, `fix` patch, `chore` digest) + per-datasource scope (`container`/`helm`/`github-action`/`github-release`/`talos`) + helmfile + pre-commit topic. Példa: `feat(container): image ghcr.io/foo/bar ( v1.2.3 ➔ v1.3.0 )`. A korábbi `overrides.json5`-beli redundáns docker commit-üzenet szabály eltávolítva, hogy ne ütközzön.
+
+**Verifikáció**: node-os JSON5 parse-check mind a 10 fájlon zöld, `pre-commit run --files` zöld. `references/config-files.md` frissítve az új fragmens-listával és viselkedéssel. Cloud Renovate a `talos` branch push után detektálja az új konfigot.
+
 ## Fázis tracker
 
 | # | Fázis | Doc | Status | Megjegyzés |
@@ -70,7 +97,7 @@ A Phase 8 foundation (mise + just + setup.sh + 6 mod) reggel kész volt, de a `T
 | 6 | Repo refactor | [06](./06-repo-restructure.md) | ✅ done | bjw-s layout + K3s subtree törlés + LB-IPAM annotáció csere |
 | 7 | Components / shared | [07](./07-components-and-shared.md) | ✅ done | Always-on VolSync RD aktív |
 | 8 | Just migráció | [08](./08-just-migration.md) | ✅ done | `Taskfile.yml` + `.taskfiles/` törölve, 2 új mod (sops, openwrt), 4 új k8s recipe (rs-status, kopia-maintenance, last-backups, mount-pvc + flux-reconcile/check), root `CLAUDE.md` átírva |
-| 9 | Renovate rewrite | [09](./09-renovate-rewrite.md) | ⏸ pending | `.renovaterc.json5` + fragmensek |
+| 9 | Renovate rewrite | [09](./09-renovate-rewrite.md) | ✅ done | `.renovaterc.json5` + 9 fragmens a `.renovate/` alatt; `.github/renovate*` törölve; `mise.toml` annotáció-fedés, K8s pin `1.36.x`, `mirror.gcr.io → docker.io` alias, `custom.talos-factory` datasource, `:automergeBranch`, külön `semanticCommits.json5` |
 | 10 | OMV Ansible | [10](./10-omv-ansible.md) | ⏸ pending | Csak cutover után |
 | 11 | Data migration | [11](./11-data-migration.md) | ✅ done | 17 PVC restore-olt (always-on RD) |
 | 12 | Cutover runbook | [12](./12-cutover-runbook.md) | 🟡 in-progress | `talos`→`main` merge + FluxInstance ref switch |

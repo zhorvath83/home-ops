@@ -1,6 +1,6 @@
 ---
 name: versions-renovate
-description: Work on Renovate tracking and dependency update behavior in the home-ops repository. Use when modifying .github/renovate.json5 or its imported fragments, preserve or add inline # renovate annotations in manifests, adjust allowed-version or grouping policy, or reason about why a dependency is or is not being tracked. Do not use this skill for routine app or infrastructure changes when dependency update behavior is unchanged.
+description: Work on Renovate tracking and dependency update behavior in the home-ops repository. Use when modifying .renovaterc.json5 or its imported fragments under .renovate/, preserve or add inline # renovate annotations in manifests, adjust allowed-version or grouping policy, or reason about why a dependency is or is not being tracked. Do not use this skill for routine app or infrastructure changes when dependency update behavior is unchanged.
 ---
 
 # Home Ops Versions And Renovate
@@ -11,7 +11,7 @@ Use this skill when the change is about dependency-tracking behavior rather than
 
 ## Workflow
 
-1. Read the root guide and inspect `.github/renovate.json5` together with any touched fragment under `.github/renovate/`.
+1. Read the root guide and inspect `.renovaterc.json5` together with any touched fragment under `.renovate/`.
 2. Inspect the touched manifest or config file alongside neighboring examples before changing annotation shape.
 3. Load only the needed reference:
    - `references/annotations.md`
