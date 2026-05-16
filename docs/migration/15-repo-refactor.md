@@ -122,13 +122,102 @@ Audit (`git grep` + recipe-átfutás) eredménye, kivetítve a 15.a utáni álla
 - A root `CLAUDE.md` „Current Repository Shape" + „State To Assume Today" frissítve a Talos-éra realitásra.
 - Az érintett 12 skill leírása konzisztens a `.claude/skills/CLAUDE.md` szabályaival.
 
+## 15.c — Per-app CiliumNetworkPolicy threat-model audit
+
+A `4f4b76eec` commit (CNP migration) tanulsága: a per-app default-deny minden poddal mindenre overengineering single-tenant single-node home-lab-on, és valós konnektivitási regressziót okozott (UDP CT, stateful reply bizonytalanság). A bjw-s-labs minta cluster-wide baseline CCNP-it Phase 9 utáni hotfix-ben bevezettük (`kubernetes/apps/kube-system/cilium/netpols/{allow-cluster-egress,allow-dns-egress}.yaml` + új `cilium-netpols` Flux Kustomization).
+
+Ezt követően egy **targetált, threat-model-alapú** per-app CNP-felmérés esedékes — nem default-deny minden poddal mindenre, hanem **kifejezetten azokra az app-okra**, ahol a támadási felület és a kompromittáció utáni mozgástér konkrét védelmi nyereséget indokol.
+
+### Cél
+
+Listázni a futtatott alkalmazásokat, mindegyikhez besorolni egy **támadási felület + blast radius** kategóriába, és csak a magas-érték kategóriából csinálni per-app CNP-t. A többi pod a cluster-wide baseline-on marad (DNS L7 proxy + open egress + open ingress) — az ingress oldali védelmet a Gateway L7 `SecurityPolicy` adja, nem a CNP.
+
+### Hatáskör — felmérendő alkalmazások
+
+A `kubernetes/apps/` alatt élő összes app. Várható kategóriák:
+
+| Kategória | Példa app-ok | CNP indokoltság |
+|---|---|---|
+| **Magas támadási felület + magas blast radius** | qbittorrent (torrent magnet parser, WebUI bug-history), plex (transcode-stack, plugin-system), paperless (dokumentum-upload + OCR), grafana (plugin), 3rd-party image-ek | per-app egress allowlist + opt-out label |
+| **Magas-érték secret-szolgáltatók** (kompromittáció = teljes vault feltárás) | 1password-connect, external-secrets-operator | per-app **ingress** allowlist (csak engedett kliensek) |
+| **Cluster-control surface** | flux-system controllers, cert-manager, snapshot-controller, reloader | per-app `kube-apiserver` egress allowlist (más pod ne tudjon ServiceAccount token-nel apiservert hívni) |
+| **Egyszerű olvasói felület, kicsi felület** | homepage, echo, maintainerr, seerr | nem indokolt — baseline elég |
+| **Belső utility** | k8s-gateway, external-dns | nem indokolt — baseline + Gateway-policy elég |
+
+### Per-app CNP minta — két szint, szándékos választás
+
+A per-app CNP-ket **két szigorúsági szintre** osztjuk. A választás threat-model-alapú, nem default. **Az opt-out label használata önmagában nem extra védelem — pontosan ellenkezőleg, custom egress nélkül törést okoz** (lásd a kockázati szekciót lent).
+
+**Szint I — Ingress-only restrikció (bjw-s-labs paperless minta, alacsony karbantartási költség)**:
+
+- Per-app `CiliumNetworkPolicy` csak `ingress` szekcióval, opt-out label NÉLKÜL.
+- Egress oldalon a baseline `allow-cluster-egress` + `allow-dns-egress` fedez mindent — DNS L7 proxy, cluster pod-okhoz forgalom, `world` HTTPS, minden megy.
+- Védelmi nyereség: a pod-on belüli kompromittáció után **kelet-nyugati lateral move-ot a támadó nem indíthat egy másik pod felé**, ami nem szerepel az ingress allowlist-en — pl. egy kompromittált `qbittorrent`-ből `paperless:8000`-re tett HTTP-kérés drop-pal megy.
+- Karbantartási költség: minimális. A pod minden új egress-szükségletet automatikusan kap a baseline-ból, chart-upgrade nem tör.
+
+**Szint II — Ingress + szigorú egress (magas threat-model, magas karbantartás)**:
+
+- Per-app CNP `ingress` ÉS `egress` szekcióval, **plusz** `egress.home.arpa/custom-egress: ""` label a workload-on (chart `controllers.<name>.labels` vagy kustomization `commonLabels` szinten).
+- A label kiveszi a pod-ot a `allow-cluster-egress`-ből; a `allow-dns-egress` továbbra is hat (minden pod-ra).
+- Effektív egress = DNS L7-proxy ∪ amit a CNP explicit felsorol.
+- Védelmi nyereség: a kompromittált pod **nem tud kifelé kapcsolódni** C2-re, nem tud cluster-belső scant indítani, nem éri el a `kube-apiserver`-t, nem nyúl bele másik app DB-jébe.
+- Karbantartási költség: minden egress-szükségletet (DB pod label, Redis pod label, NFS host-mount, upstream FQDN-ek update-check-hez, image registry) konkrétan fel kell sorolni; chart-frissítés után újra-audit. Deploy-time fail-mode: ha hiányzik egy reális egress-szükséglet, a pod megfekszik.
+
+### Lépések
+
+1. **App-inventory**: `kubectl get hr -A -o name | wc -l` + `find kubernetes/apps -name ks.yaml | wc -l` egyezősége. Lista exportja egy ideiglenes `audit/app-inventory.md`-be (vagy közvetlenül a Phase 15.c session jegyzőkönyvbe).
+2. **Kategorizálás**: minden app-hoz egy sor a fenti táblázat-szerű besorolással + 1-2 mondatos indok.
+3. **Threat-model rögzítés**: a magas-érték kategóriákba sorolt app-okhoz konkrét fenyegetési modell (mi a támadási felület, mit nyer egy támadó a kompromittációval, milyen lateral move-okat akarhat).
+4. **Szint-választás per app**: a fenti **Szint I** vagy **Szint II** explicit döntés a kategória + threat-model alapján. Default Szint I. A Szint II-re lépés csak akkor, ha a threat-model **konkrét** lateral-move / C2 / exfil vektort azonosít, amit a baseline nem fed.
+5. **Per-app CNP design**: a `bjw-s-labs/kubernetes/apps/.../ciliumnetworkpolicy.yaml` mintákat referenciának véve. Szint II esetén a label és az egress szekció **ugyanabban a commit-ban** kerül be — soha nem külön (B-csapda elkerülése).
+6. **Régi `4f4b76eec` CNP-k újragondolása**:
+   - `cloudflare-tunnel` CNP — **törlés** (outbound-only pod, ingress restriction soha nem volt indokolt; bjw-s-labs/onedr0p/buroa egyike sem korlátozza).
+   - `envoy-external`/`envoy-internal` config CNP-k — **törlés vagy egyszerűsítés**: a Gateway-rétegen `SecurityPolicy/envoy-internal-rfc1918` + `SecurityPolicy/envoy-external-cloudflare` (Phase 9 utáni hotfix) pontosabb védelmet ad L7-en, és a CNP L4 IP-szűrés redundáns.
+   - `CiliumCIDRGroup/cloudflare` — **megmarad** önállóan (a `SecurityPolicy/envoy-external-cloudflare` inline tükrözi a CIDR-listát, a daily workflow mindkettőt szinkronban tartja).
+7. **Verifikáció**: per-app, kompromittáció-szimuláció (`kubectl exec` a kérdéses pod-ba, próba-egress nem-engedett cél felé, megfigyelni a Hubble drop event-et). Hubble flow log példák a per-app threat-model jegyzőkönyvbe.
+
+### Aktuális állapot a 15.c szempontjából (Phase 9 utáni hotfix)
+
+A Phase 9 utáni hotfix-ben már bekerült:
+
+- **`kubernetes/apps/kube-system/cilium/netpols/`** — 2 CCNP (`allow-cluster-egress` opt-out + `allow-dns-egress` L7 DNS proxy) + saját Flux `Kustomization` `cilium-netpols` `dependsOn: cilium`-mal.
+- **`kubernetes/apps/default/paperless/app/ciliumnetworkpolicy.yaml`** — első per-app CNP **Szint I** szerint (csak ingress, mindkét Gateway-ből engedve TCP/8000-re). Opt-out label szándékosan **nincs**, a paperless egress oldalon a baseline-on marad.
+
+A 15.c döntési pont a paperless-re: marad Szint I, vagy felemeljük Szint II-re? A paperless threat-modelje (OCR/PDF parser CVE history Tesseract + Ghostscript + ImageMagick miatt; publikus dokumentum-upload endpoint `docs.${PUBLIC_DOMAIN}` route-on át; kompromittáció utáni érték = más app-ok adatainak elérése) **indokolja** a Szint II-t. Audit-szükségletek a Szint II-höz a paperless-re:
+
+- Postgres pod (a paperless saját PG sidecarja vagy külön deployment-je a `default` namespace-ben, az aktuális label-ek és port `5432`)
+- Redis pod (paperless task queue, port `6379`)
+- NFS host-mount a `nas-export` sidecarhoz (`/backups/paperless` → host filesystem) — `toEntities: [host]` vagy konkrét NFS server IP
+- Esetleges upstream FQDN-ek (paperless update check, ha aktív)
+- Esetleges Tika / Gotenberg sidecar (ha külön pod-ban fut)
+
+Ez a Szint II-felmérés a 15.c session jegyzőkönyv egyik konkrét tételes munkája.
+
+### Kockázat
+
+- **B-csapda — opt-out label custom egress nélkül**: a `egress.home.arpa/custom-egress: ""` label önmagában (Szint II egress szekció nélkül) a pod-ot **csak DNS-szel** engedi kifelé, mert a `allow-dns-egress` továbbra is hat, de a `allow-cluster-egress` már nem. Postgres/Redis/upstream HTTPS → DROP, app indulás közben megfekszik. Mitigáció: a label és az egress szekció **mindig ugyanabban a commit-ban** kerül be; pre-commit hook ötlet a `git grep -l 'egress.home.arpa/custom-egress' kubernetes/apps/ | xargs -I{} ...` ellenőrzéshez, hogy ha label-t lát, akkor a hozzátartozó CNP-ben legyen `egress:` szekció (ezt majd a 15.c session ötletként felvetheti).
+- **Túl szigorú egress** új app-ok deploy-jánál (Szint II-n): minden új app-nak első deploy-kor verifikálni kell, hogy az egress szekciója lefedi-e a tényleges szükségleteket. Hubble drop-event monitor + chart-doc átolvasás kötelező.
+- **Hubble flow-log volume**: cluster-wide DNS proxy (`allow-dns-egress`) minden DNS query-ről event-et generál. Single-node home-lab-on várhatóan elhanyagolható, de érdemes a `cilium-agent` resource-okat monitorozni az első hét után.
+- **`envoy-internal`/`envoy-external` config Kustomization** törlése — a config KS `dependsOn` lánc tagja, érdemes a Flux Kustomization-listát is felülvizsgálni (lásd 8.5/8.6 alatti `restore-into <app>` follow-up).
+
+### 15.c verifikáció
+
+- `kubectl get ccnp` ad 2-t: `allow-cluster-egress`, `allow-dns-egress` (már most teljesül, Phase 9 utáni hotfix-ben bevezetve).
+- `kubectl get cnp -A` per-app szám a 15.c döntés alapján — várhatóan 5-8 közötti, nem 3.
+- `kubectl get cnp -n networking` cloudflare-tunnel CNP eltűnik.
+- Minden `egress.home.arpa/custom-egress: ""` label-lel jelölt workload-hoz tartozik CNP `egress:` szekcióval (B-csapda nem fordul elő). Ellenőrzés: `kubectl get pods -A -l egress.home.arpa/custom-egress` listát ad, mindegyikre a saját namespace-ben CNP-vel `spec.egress` szekcióval.
+- Hubble (`cilium hubble observe --verdict DENIED`) zéró tartós denial a normál cluster-forgalomban.
+- A `audit/app-inventory.md` (vagy session jegyzőkönyv) átfutva minden app-hoz egy kategória + Szint I/II döntés + indok van.
+
 ## Exit criteria
 
 - **15.a**: `flux get ks -A` ad 4 új top-level KS-t (paperless-gpt, plex-trakt-sync, qbittorrent-upgrade-p2pblocklist, backrest), `restic-gui` KS törölve, `kubectl get hr -A` mind Ready, RS/RD/PVC nevezéktan változatlan.
 - **15.b**: minden K3s/Task/MetalLB/Traefik/Calico referencia eltűnt a `docs/*.md` + `CLAUDE.md` + `.claude/skills/*` fájlokból (kivéve a `docs/migration/` történelmi narratíváját), és a doc-réteg a `talos` ág realitását tükrözi.
+- **15.c**: az app-inventory táblázat 100%-ban kitöltve, magas-érték app-okhoz konkrét per-app CNP, a `4f4b76eec` overengineered CNP-k vagy törölve vagy threat-model-alapra cserélve, Hubble denial-rate stabil.
 
 ## Becsült munka
 
 - 15.a: ~30-45 perc
 - 15.b: ~4-6 óra, parallel-izálható (skill ↔ CLAUDE.md egymástól függetlenül)
-- Összesen: ~5-7 óra, célszerű Phase 9 (Renovate rewrite) után, Phase 12 (cutover) előtt
+- 15.c: ~2-3 óra (inventory + kategorizálás + 5-8 per-app CNP + szimuláció)
+- Összesen: ~7-10 óra, célszerű Phase 9 (Renovate rewrite) után, Phase 12 (cutover) előtt
