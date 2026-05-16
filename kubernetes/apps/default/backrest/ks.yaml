@@ -3,16 +3,16 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: plex
+  name: backrest
   namespace: flux-system
 spec:
   commonMetadata:
     labels:
-      app.kubernetes.io/name: plex
+      app.kubernetes.io/name: backrest
   dependsOn:
     - name: onepassword-connect
     - name: democratic-csi
-  path: ./kubernetes/apps/default/plex/app
+  path: ./kubernetes/apps/default/backrest/app
   prune: true
   sourceRef:
     kind: GitRepository
@@ -26,6 +26,6 @@ spec:
     - ../../../../components/volsync
   postBuild:
     substitute:
-      APP: plex
-      VOLSYNC_CAPACITY: "5Gi"
-      VOLSYNC_CACHE: "2Gi"
+      APP: backrest
+      APP_UID: "0"
+      APP_GID: "0"

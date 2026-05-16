@@ -27,26 +27,3 @@ spec:
   postBuild:
     substitute:
       APP: qbittorrent
----
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: qbittorrent-upgrade-p2pblocklist
-  namespace: flux-system
-spec:
-  commonMetadata:
-    labels:
-      app.kubernetes.io/name: qbittorrent-upgrade-p2pblocklist
-  dependsOn:
-    - name: democratic-csi
-  path: ./kubernetes/apps/default/qbittorrent/upgrade-p2pblocklist
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
-  interval: 1h
-  targetNamespace: default
-  timeout: 5m
-  wait: false

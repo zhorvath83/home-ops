@@ -3,7 +3,7 @@
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: OCIRepository
 metadata:
-  name: qbittorrent-upgrade-p2pblocklist
+  name: qbittorrent-p2pblocklist
 spec:
   interval: 15m
   layerSelector:

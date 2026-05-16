@@ -3,16 +3,15 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: plex
+  name: qbittorrent-p2pblocklist
   namespace: flux-system
 spec:
   commonMetadata:
     labels:
-      app.kubernetes.io/name: plex
+      app.kubernetes.io/name: qbittorrent-p2pblocklist
   dependsOn:
-    - name: onepassword-connect
     - name: democratic-csi
-  path: ./kubernetes/apps/default/plex/app
+  path: ./kubernetes/apps/default/qbittorrent-p2pblocklist/app
   prune: true
   sourceRef:
     kind: GitRepository
@@ -22,10 +21,3 @@ spec:
   targetNamespace: default
   timeout: 5m
   wait: false
-  components:
-    - ../../../../components/volsync
-  postBuild:
-    substitute:
-      APP: plex
-      VOLSYNC_CAPACITY: "5Gi"
-      VOLSYNC_CACHE: "2Gi"

@@ -3,12 +3,12 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app qbittorrent-upgrade-p2pblocklist
+  name: &app qbittorrent-p2pblocklist
 spec:
   interval: 30m
   chartRef:
     kind: OCIRepository
-    name: qbittorrent-upgrade-p2pblocklist
+    name: qbittorrent-p2pblocklist
   maxHistory: 2
   install:
     createNamespace: true
@@ -33,7 +33,7 @@ spec:
           type: RuntimeDefault
 
     controllers:
-      qbittorrent-upgrade-p2pblocklist:
+      qbittorrent-p2pblocklist:
         type: cronjob
         cronjob:
           concurrencyPolicy: Forbid
@@ -78,7 +78,7 @@ spec:
                 memory: 128Mi
 
     serviceAccount:
-      qbittorrent-upgrade-p2pblocklist: {}
+      qbittorrent-p2pblocklist: {}
 
     rbac:
       roles:
@@ -103,7 +103,7 @@ spec:
             identifier: qbittorrent-role
           subjects:
             - kind: ServiceAccount
-              name: qbittorrent-upgrade-p2pblocklist
+              name: qbittorrent-p2pblocklist
               namespace: "{{ .Release.Namespace }}"
 
     persistence:

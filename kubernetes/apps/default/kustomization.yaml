@@ -9,7 +9,9 @@ resources:
   - ./actual/ks.yaml
   - ./wallos/ks.yaml
   - ./plex/ks.yaml
+  - ./plex-trakt-sync/ks.yaml
   - ./qbittorrent/ks.yaml
+  - ./qbittorrent-p2pblocklist/ks.yaml
   - ./homepage/ks.yaml
   - ./prowlarr/ks.yaml
   - ./radarr/ks.yaml
@@ -18,9 +20,11 @@ resources:
   - ./subsyncarr/ks.yaml
   - ./calibre-web-automated/ks.yaml
   - ./resticprofile/ks.yaml
+  - ./backrest/ks.yaml
   - ./seerr/ks.yaml
   - ./maintainerr/ks.yaml
   - ./mealie/ks.yaml
   - ./paperless/ks.yaml
+  - ./paperless-gpt/ks.yaml
   - ./home-gallery/ks.yaml
   - ./isponsorblocktv/ks.yaml

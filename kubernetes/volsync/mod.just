@@ -34,7 +34,7 @@ restore app ns="default":
       -p '{"spec":{"trigger":{"manual":"restore-once"}}}'
     just volsync wait-rd "{{ ns }}" "{{ app }}-bootstrap"
 
-[doc('Point-in-time restore into the existing PVC via VolSync Direct copyMethod (positional args: ns app [previous=0] [ks=app]). Set ks=restic-gui for backrest.')]
+[doc('Point-in-time restore into the existing PVC via VolSync Direct copyMethod (positional args: ns app [previous=0] [ks=app]).')]
 [script]
 restore-into ns app previous="0" ks="":
     ks="{{ ks }}"; [ -z "${ks}" ] && ks="{{ app }}"
