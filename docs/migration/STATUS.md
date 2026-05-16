@@ -102,7 +102,27 @@ A teljes K3s-éra Rancher SUC stack lebontva:
 
 **Repo cleanup 2** (`582ddda8e`): `provision/kubernetes/` teljes mappa törlése — K3s-specifikus Ansible plane (`xanmanning.k3s` role, Debian host-prep playbook-ok, Calico CNI template), nincs Talos-applicable része. `.claude/skills/provision-kubernetes/` skill törlése (a workflow-i a most törölt Ansible plane-t és a már törölt `.taskfiles/` wrapperokat hivatkozták). Root `CLAUDE.md` "Current Repository Shape" + `provision/CLAUDE.md` "Structure" / "Subtree Guides" / "Validation skill links" frissítése a túlélő `cloudflare/`, `ovh/`, `openmediavault/` (most még csak `mod.just`, Phase 10 hozza az Ansible-t) listára.
 
-**Tuppr döntés**: a README "Cél állapot" táblázat sora ("system-upgrade-controller → Tuppr (bjw-s minta)") **nem kerül telepítésre**. Tuppr a Talos-natív upgrade operator (figyel `TalosUpgrade` + `KubernetesUpgrade` CR-eket, hívja a Talos API-t rolling node-upgrade-hez). Single-node Talos cluster-en overkill — a `just talos upgrade-node` és `just talos upgrade-k8s` ugyanezt manuálisan végzi. Renovate amúgy is hozza a verzió-PR-eket. Akkor érdemes visszanyúlni Tuppr-hoz, ha valaha multi-node Talos vagy fully-unattended renovate-driven upgrade jönne.
+**Tuppr döntés — alapos felmérés után NEM telepítjük**: a README "Cél állapot" táblázat sora ("system-upgrade-controller → Tuppr (bjw-s minta)") elejtve.
+
+Tuppr forráskód-szintű felmérés (`internal/controller/talosupgrade/jobs.go` + `internal/controller/kubernetesupgrade/jobs.go`) megerősítette:
+- **`KubernetesUpgrade` CR**: Job indít a Tuppr ns-ében, ami `talosctl upgrade-k8s --endpoints=<ctrl-ip> --to=<ver>` parancsot futtat. NINCS drain, NINCS reboot. Single-node-on **működik**, csak a kube-apiserver static-pod rövid restart-blip-jét okozza.
+- **`TalosUpgrade` CR**: Job indít `nodeAffinity: NotIn(<targetNode>)` selectorral. `placement: soft` (default) → single-node-on a Job mégis a saját node-ra esik (preferred-only), drain elindul, controller pod meghal a drain alatt → upgrade megreked. `placement: hard` → Job soha nem schedule-ödik → CR Pending-ben marad. Single-node-on **architecturálisan instabil**, semmi módon nem ad új értéket a `just talos upgrade-node` manuális parancshoz képest.
+
+3 referencia repó (bjw-s-labs/home-ops, onedr0p/home-ops, buroa/k8s-gitops) **mind multi-node** és teljes `TalosUpgrade + KubernetesUpgrade` páros — single-node Tuppr deployment nincs az ökoszisztémában.
+
+Tényleges single-node ROI: csak a `KubernetesUpgrade` ér valamit (~6-12 patch/év × ~30 sec parancs = évi 3-6 perc megtakarítás), Talos node-upgrade-et továbbra is `just talos upgrade-node`-tal kell csinálni. Plusz a Tuppr telepítése egy új subsystem-et, security surface-t (`kubernetesTalosAPIAccess` + `os:admin` SA token), és Renovate-zajt visz be — a megtakarítás nem indokolja.
+
+A `just talos upgrade-k8s` recipe inkonzisztencia kijavítva: korábban kötelező pozicionális `version` arg-ot vett, most a `mise.toml`-ban definiált `KUBERNETES_VERSION` env-változót olvassa (`upgrade-node`-mintájára). Tehát a Renovate-driven K8s upgrade folyamat:
+1. Renovate PR a `mise.toml KUBERNETES_VERSION`-re (jelenleg `kubernetes/kubernetes` GH release datasource)
+2. Review + merge
+3. `just talos upgrade-k8s` (paraméter nélkül, single source of truth a `mise.toml`)
+
+Ugyanúgy a Talos-upgrade flow:
+1. Renovate PR a `mise.toml TALOS_VERSION`-re (`custom.talos-factory` datasource, Phase 9 talosFactory.json5)
+2. Review + merge
+3. `just talos upgrade-node` (paraméter nélkül, env-vál)
+
+Akkor érdemes visszanyúlni Tuppr-hoz, ha valaha multi-node Talos jönne.
 
 **Tanulság — `prune: disabled` névtér öröksége**: a Phase 6 esti orphan-tanulság ugyanúgy aktuális marad: ha egy ns-t `prune: disabled`-szel hagyunk meg "tervezett későbbi migrációhoz", **a benne lévő HR + child resources tovább reconcile-olnak** akár hetekig, és későbbi cluster-bootstrapokba is átöröklődnek. Helyesebb a lebontás idejére hagyni a ns-t és a tartalmat is törölni, és a későbbi migráció időpontjában frissen telepíteni — ahogy itt is most a Tuppr-döntéssel végül "ne telepítsük" lett a kimenet.
 

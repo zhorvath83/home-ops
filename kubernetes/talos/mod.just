@@ -320,10 +320,11 @@ upgrade-node node=controller_node:
       --timeout=10m
 
 [group('lifecycle')]
-[doc('Upgrade Kubernetes to a specific version (e.g. v1.37.0)')]
+[doc('Upgrade Kubernetes on a node to the version pinned in mise.toml (KUBERNETES_VERSION)')]
 [script]
-upgrade-k8s version node=controller_node:
-    talosctl --nodes {{ node }} upgrade-k8s --to {{ version }}
+upgrade-k8s node=controller_node:
+    : "${KUBERNETES_VERSION:?env KUBERNETES_VERSION required}"
+    talosctl --nodes {{ node }} upgrade-k8s --to "${KUBERNETES_VERSION}"
 
 [group('lifecycle')]
 [doc('Show node health, version, NIC links and disk inventory')]
