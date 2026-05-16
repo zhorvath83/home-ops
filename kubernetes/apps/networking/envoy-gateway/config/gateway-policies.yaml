@@ -86,29 +86,36 @@ spec:
     kind: Gateway
     name: envoy-external
   type: JSONPatch
----
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/gateway.envoyproxy.io/backendtrafficpolicy_v1alpha1.json
-apiVersion: gateway.envoyproxy.io/v1alpha1
-kind: BackendTrafficPolicy
-metadata:
-  name: rate-limit-external
-  namespace: networking
-spec:
-  targetRefs:
-    - group: gateway.networking.k8s.io
-      kind: Gateway
-      name: envoy-external
-  rateLimit:
-    type: Global
-    global:
-      rules:
-        - clientSelectors:
-            - sourceCIDR:
-                value: 0.0.0.0/0
-                type: Distinct
-          limit:
-            requests: 300
-            unit: Minute
+# NOTE: rate-limit-external BackendTrafficPolicy disabled — upstream Envoy
+# Gateway v1.8.0 ships a CRD regression (PR envoyproxy/gateway#8798): the
+# `Requests` field is declared as uint32 but kubebuilder emits
+# `format: int32 + maximum: 4294967295`, which K8s 1.36 strict OpenAPI
+# validation rejects with "Maximum boundary value must be of type integer
+# with format int32". Re-enable once envoy-gateway v1.9.0 GA lands and the
+# OCIRepository tag is bumped accordingly. Cloudflare WAF covers external
+# rate limiting in the meantime.
+# ---
+# apiVersion: gateway.envoyproxy.io/v1alpha1
+# kind: BackendTrafficPolicy
+# metadata:
+#   name: rate-limit-external
+#   namespace: networking
+# spec:
+#   targetRefs:
+#     - group: gateway.networking.k8s.io
+#       kind: Gateway
+#       name: envoy-external
+#   rateLimit:
+#     type: Global
+#     global:
+#       rules:
+#         - clientSelectors:
+#             - sourceCIDR:
+#                 value: 0.0.0.0/0
+#                 type: Distinct
+#           limit:
+#             requests: 300
+#             unit: Minute
 ---
 # yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/gateway.envoyproxy.io/securitypolicy_v1alpha1.json
 apiVersion: gateway.envoyproxy.io/v1alpha1
