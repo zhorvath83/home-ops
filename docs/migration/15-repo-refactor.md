@@ -182,6 +182,9 @@ A Phase 9 utáni hotfix-ben már bekerült:
 
 - **`kubernetes/apps/kube-system/cilium/netpols/`** — 2 CCNP (`allow-cluster-egress` opt-out + `allow-dns-egress` L7 DNS proxy) + saját Flux `Kustomization` `cilium-netpols` `dependsOn: cilium`-mal.
 - **`kubernetes/apps/default/paperless/app/ciliumnetworkpolicy.yaml`** — első per-app CNP **Szint I** szerint (csak ingress, mindkét Gateway-ből engedve TCP/8000-re). Opt-out label szándékosan **nincs**, a paperless egress oldalon a baseline-on marad.
+- **`envoy-external` / `envoy-internal` CNP-k egress szekciójának törlése** — a baseline `allow-cluster-egress` + `allow-dns-egress` átveszi az egress vezérlést, az ingress allowlistek változatlanok (Cél 1 a Phase 9 utáni Hubble drop-evidence alapján).
+- **`bpf.datapathMode: netkit` + `socketLB.hostNamespaceOnly: false`** Cilium helmrelease fix — a netkit + tc-LB CT-mismatch okozta SYN-ACK drop-ot megszünteti a per-app strict ingress CNP-ken (a return flow CT-bejegyzése pod-IP-pel rögzül, nem Service IP-vel).
+- **`SecurityPolicy/envoy-external-cloudflare` törlés** — a `principal.clientCIDRs` CF-CIDR allowlist nem tud illeszteni a CF tunnel architektúrában (lásd a következő szekciót); helyén a CNP ingress allowlist + ClusterIP-only Service + CF tunnel mTLS adja a védelmet.
 
 A 15.c döntési pont a paperless-re: marad Szint I, vagy felemeljük Szint II-re? A paperless threat-modelje (OCR/PDF parser CVE history Tesseract + Ghostscript + ImageMagick miatt; publikus dokumentum-upload endpoint `docs.${PUBLIC_DOMAIN}` route-on át; kompromittáció utáni érték = más app-ok adatainak elérése) **indokolja** a Szint II-t. Audit-szükségletek a Szint II-höz a paperless-re:
 
@@ -192,6 +195,36 @@ A 15.c döntési pont a paperless-re: marad Szint I, vagy felemeljük Szint II-r
 - Esetleges Tika / Gotenberg sidecar (ha külön pod-ban fut)
 
 Ez a Szint II-felmérés a 15.c session jegyzőkönyv egyik konkrét tételes munkája.
+
+### Tanulság — `SecurityPolicy.principal.clientCIDRs` nem fog menni az `envoy-external`-en
+
+A Phase 9 hotfix első iterációjában bekerült egy `SecurityPolicy/envoy-external-cloudflare` 22 CF CIDR-rel `principal.clientCIDRs`-ben, defense-in-depth gondolattal a `envoy-internal-rfc1918` LAN-only allowlist analógiájára. **Élesben HTTP 403 "RBAC: access denied"-et adott minden kérésre**, ezért törölve lett.
+
+Az ok: a Cloudflare Tunnel architektúrában a CF edge POP IP **soha nem szerepel** az envoy által látható forrás-hop-okban. A flow:
+
+```
+internet client (88.x.x.x)
+  → Cloudflare edge POP
+  → CF Tunnel (mutual TLS QUIC, persistent)
+  → cloudflared pod (10.244.0.x, in-cluster)
+  → envoy-external pod
+```
+
+A `cloudflared` agent **overwrite-olja** az `X-Forwarded-For`-t a valós kliens IP-re (88.x.x.x). A `ClientTrafficPolicy/envoy` `numTrustedHops: 1` setting alapján envoy a (1+1) = 2. entry-t keresi jobbról az XFF-ben; csak 1 entry van, így fallback-el a remote address-re (cloudflared pod IP, `10.244.0.x`), ami **nem** illeszti egyik CF CIDR-t sem → `defaultAction: Deny` érvénybe lép.
+
+Mit ad ez a tanulság a 15.c-nek:
+
+1. **Az `envoy-internal-rfc1918` SecurityPolicy működik** — más architektúrában, LAN kliensből közvetlenül a Cilium-L2-announce VIP-jére (`192.168.1.18`), így a `clientCIDRs` valós LAN forrás-IP-t illeszti.
+2. **Az `envoy-external`-en nincs analóg lehetőség** `clientCIDRs`-szel. A védelmet **architektúra-szinten** kell garantálni:
+   - ClusterIP-only Service (nincs LB IP / NodePort)
+   - CNP ingress allowlist (csak `cloudflare-tunnel` pod 10080/10443-on, plusz Prometheus scrape és kubelet readiness probe)
+   - CF Tunnel mTLS az edge ↔ cloudflared agent között
+3. **Ha valódi L7 defense-in-depth kell az `envoy-external`-en, az ATP a megoldás**: **Cloudflare Authenticated Origin Pull** mTLS-szel autentikálja a CF edge-t az origin (envoy) felé. Cert-alapú, nem IP-alapú, így immunis az XFF-fordítási problémára. Konfiguráció:
+   - Cloudflare zóna szintjén: AOP cert generálás (auto-rotating CF-issued cert vagy custom CA)
+   - Envoy oldalon: `ClientTrafficPolicy.tls.verify.caCertificateRefs` a CF root CA bundle-jével, és kötelező kliens cert validation (`requireClientCertificate: true`)
+   - Test: AOP cert nélküli kérés → TLS handshake fail; CF-tunnel kérés → cert validation pass
+
+Az AOP **csak akkor érdemes** ha a fenti 3-lépéses architektúra-szintű védelmet **kiegészíteni** szeretnénk egy ténylegesen működő L7 réteggel. Single-node home-lab kontextusban marginális, de **doc-elt option** marad — a `clientCIDRs`-alapú workaround **soha nem fog működni** ebben az architektúrában.
 
 ### Kockázat
 
