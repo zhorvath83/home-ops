@@ -288,10 +288,11 @@ volsync-state state:
     flux -n volsync-system {{ state }} helmrelease volsync
     kubectl -n volsync-system scale deployment volsync --replicas {{ if state != "suspend" { "1" } else { "0" } }}
 
-[doc('Point-in-time restore into the existing PVC via VolSync Direct copyMethod (previous=N is the snapshot offset, 0=latest). Suspends app, runs restore, resumes.')]
+[doc('Point-in-time restore into the existing PVC via VolSync Direct copyMethod (previous=N is the snapshot offset, 0=latest). Suspends app, runs restore, resumes. ks defaults to app — set ks=restic-gui for backrest etc.')]
 [script]
-restore-into ns app previous="0":
-    flux -n "{{ ns }}" suspend kustomization "{{ app }}"
+restore-into ns app previous="0" ks="":
+    ks="{{ ks }}"; [ -z "${ks}" ] && ks="{{ app }}"
+    flux -n "{{ ns }}" suspend kustomization "${ks}"
     flux -n "{{ ns }}" suspend helmrelease "{{ app }}"
     kubectl -n "{{ ns }}" get deploy,sts -l "app.kubernetes.io/name={{ app }}" -o name \
       | xargs -r -I{} kubectl -n "{{ ns }}" scale {} --replicas=0
@@ -316,7 +317,7 @@ restore-into ns app previous="0":
     kubectl -n "{{ ns }}" wait "job/volsync-dst-{{ app }}-manual" --for=create --timeout=120s
     kubectl -n "{{ ns }}" wait "job/volsync-dst-{{ app }}-manual" --for=condition=complete --timeout=120m
     kubectl -n "{{ ns }}" delete replicationdestination "{{ app }}-manual"
-    flux -n "{{ ns }}" resume kustomization "{{ app }}"
+    flux -n "{{ ns }}" resume kustomization "${ks}"
     flux -n "{{ ns }}" resume helmrelease "{{ app }}"
     flux -n "{{ ns }}" reconcile helmrelease "{{ app }}" --force
     kubectl -n "{{ ns }}" wait pod --for=condition=ready --selector="app.kubernetes.io/name={{ app }}" --timeout=5m
