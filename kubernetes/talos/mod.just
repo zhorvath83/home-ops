@@ -390,16 +390,26 @@ diag node=controller_node:
       echo '=========================================='
     } > "${out}"
 
-    echo "==> service" >&2
-    printf '\n### service ###\n' >> "${out}"
-    talosctl -n {{ node }} service >> "${out}" 2>&1 || echo "(failed)" >> "${out}"
+    section() {
+      echo "==> $1" >&2
+      printf '\n### %s ###\n' "$1" >> "${out}"
+    }
+    # run <label> <cmd> [args...] — header + redirected execution + failure marker.
+    # For commands that need a pipeline (e.g. talosctl dmesg | tail), wrap the
+    # pipeline in a tiny shell function and pass the function name as <cmd>.
+    run() {
+      local label=$1; shift
+      section "${label}"
+      "$@" >> "${out}" 2>&1 || echo "(failed)" >> "${out}"
+    }
 
-    echo "==> events (last 200, bounded 5s)" >&2
-    printf '\n### events (last 200, bounded 5s) ###\n' >> "${out}"
+    run "service" talosctl -n {{ node }} service
+
     # `talosctl events --tail=N` streams indefinitely after the initial dump,
     # and Talos rejects --tail combined with --duration. macOS has no
     # timeout(1), so we run events in the background and send SIGINT after 5 s
     # (SIGINT is the signal talosctl handles cleanly on Ctrl+C).
+    section "events (last 200, bounded 5s)"
     talosctl -n {{ node }} events --tail=200 >> "${out}" 2>&1 &
     events_pid=$!
     ( sleep 5; kill -INT "${events_pid}" 2>/dev/null ) &
@@ -408,28 +418,14 @@ diag node=controller_node:
     kill "${killer_pid}" 2>/dev/null || true
     wait "${killer_pid}" 2>/dev/null || true
 
-    echo "==> machined logs (last 200)" >&2
-    printf '\n### machined logs (last 200) ###\n' >> "${out}"
-    talosctl -n {{ node }} logs --tail=200 machined >> "${out}" 2>&1 || echo "(failed)" >> "${out}"
+    run "machined logs (last 200)" talosctl -n {{ node }} logs --tail=200 machined
+    run "controller-runtime logs (last 200)" talosctl -n {{ node }} logs --tail=200 controller-runtime
 
-    echo "==> controller-runtime logs (last 200)" >&2
-    printf '\n### controller-runtime logs (last 200) ###\n' >> "${out}"
-    talosctl -n {{ node }} logs --tail=200 controller-runtime >> "${out}" 2>&1 || echo "(failed)" >> "${out}"
+    dmesg_tail() { talosctl -n {{ node }} dmesg 2>&1 | tail -200; }
+    run "dmesg (last 200)" dmesg_tail
 
-    echo "==> dmesg (last 200)" >&2
-    printf '\n### dmesg (last 200) ###\n' >> "${out}"
-    talosctl -n {{ node }} dmesg 2>&1 | tail -200 >> "${out}" || echo "(failed)" >> "${out}"
-
-    echo "==> volumestatuses" >&2
-    printf '\n### volumestatuses ###\n' >> "${out}"
-    talosctl -n {{ node }} get volumestatuses >> "${out}" 2>&1 || echo "(failed)" >> "${out}"
-
-    echo "==> hostnamestatus" >&2
-    printf '\n### hostnamestatus ###\n' >> "${out}"
-    talosctl -n {{ node }} get hostnamestatus >> "${out}" 2>&1 || echo "(failed)" >> "${out}"
-
-    echo "==> linkstatus" >&2
-    printf '\n### linkstatus ###\n' >> "${out}"
-    talosctl -n {{ node }} get linkstatus >> "${out}" 2>&1 || echo "(failed)" >> "${out}"
+    run "volumestatuses" talosctl -n {{ node }} get volumestatuses
+    run "hostnamestatus"  talosctl -n {{ node }} get hostnamestatus
+    run "linkstatus"      talosctl -n {{ node }} get linkstatus
 
     echo "==> done: ${out} ($(wc -l < "${out}" | tr -d ' ') lines)" >&2
