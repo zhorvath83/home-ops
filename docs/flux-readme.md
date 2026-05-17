@@ -7,7 +7,7 @@ The full bootstrap procedure is described in [`docs/migration/05-flux-operator.m
 ## Topology
 
 - `kubernetes/apps/flux-system/flux-operator/` — operator HelmRelease + OCIRepository
-- `kubernetes/apps/flux-system/flux-instance/` — FluxInstance HelmRelease + OCIRepository; `sync.ref` points at the active branch (currently `talos`, becomes `main` at cutover)
+- `kubernetes/apps/flux-system/flux-instance/` — FluxInstance HelmRelease + OCIRepository; `sync.ref` points at `refs/heads/main` (the live cluster source of truth since the K3s → Talos cutover)
 - `kubernetes/flux/cluster/ks.yaml` — root `cluster-apps` Kustomization that the FluxInstance reconciles (single Kustomization, applies the HelmRelease defaults patch)
 - `kubernetes/components/flux-alerts/` — Kustomize component, per-namespace Alert+Provider+ExternalSecret for Pushover notifications
 

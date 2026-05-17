@@ -26,6 +26,6 @@ Use this skill for the repo's command-runner surface. It complements the root `C
 ## Scope Boundaries
 
 - Use this skill when the `just` entry points themselves are changing or need interpretation.
-- If the task changes domain behavior inside Kubernetes, Terraform, Ansible, or VolSync, use the corresponding domain skill alongside this one.
+- If the task changes domain behavior inside Kubernetes, Terraform, Talos, or VolSync, use the corresponding domain skill alongside this one.
 - For dependency-version changes, use `versions-renovate`.
 - For tool-version changes, edit `.mise.toml`, not `mod.just`.

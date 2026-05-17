@@ -21,7 +21,7 @@ The routing chain currently depends on these components:
 - ExternalDNS for public DNS management
 - `k8s-gateway` for LAN split DNS based on Gateway API routes
 
-LAN IPs are allocated from the `CiliumLoadBalancerIPPool/default` pool (`192.168.1.15-25`). The `envoy-internal` Gateway pins its IP through the `lbipam.cilium.io/ips` annotation; `k8s-gateway` pins its IP through the chart's `loadBalancerIP` value. Both values resolve from `kubernetes/flux/vars/cluster-settings.yaml` (`LB_ENVOY_INTERNAL_IP`, `LB_K8S_GATEWAY_IP`).
+LAN IPs are allocated from the `CiliumLoadBalancerIPPool/default` pool (`192.168.1.15-25`). The `envoy-internal` Gateway pins its IP to `192.168.1.18` through the `lbipam.cilium.io/ips` annotation; `k8s-gateway` pins its IP to `192.168.1.19` through the chart's `loadBalancerIP` value. Both IPs are hardcoded directly in their manifests (bjw-s parity, no `cluster-settings` substitution layer).
 
 ## Public Path
 
@@ -77,16 +77,16 @@ Internal DNS:
 - depends on router-side conditional forwarding for `${PUBLIC_DOMAIN}`
 - depends on router-side rebind protection allowing `${PUBLIC_DOMAIN}` to resolve to RFC1918 addresses
 
-The LAN VIPs come from `kubernetes/flux/vars/cluster-settings.yaml`:
+The LAN VIPs are hardcoded inline in the live manifests:
 
-- `LB_ENVOY_INTERNAL_IP`
-- `LB_K8S_GATEWAY_IP`
+- `192.168.1.18` — `envoy-internal` Gateway (via `lbipam.cilium.io/ips` annotation in `kubernetes/apps/networking/envoy-gateway/config/gateway-internal.yaml`)
+- `192.168.1.19` — `k8s-gateway` Service (via `loadBalancerIP` value in `kubernetes/apps/networking/k8s-gateway/app/helmrelease.yaml`)
 
 ## Router Requirements
 
 The router DNS must be configured so LAN clients can actually use the internal path:
 
-1. conditionally forward `${PUBLIC_DOMAIN}` to `${LB_K8S_GATEWAY_IP}`
+1. conditionally forward `${PUBLIC_DOMAIN}` to `192.168.1.19` (the `k8s-gateway` LAN VIP)
 2. allow DNS rebinding for `${PUBLIC_DOMAIN}`
 
 Without the rebind protection exception, the router may drop or rewrite answers that point `${PUBLIC_DOMAIN}` to the RFC1918 internal Envoy VIP.

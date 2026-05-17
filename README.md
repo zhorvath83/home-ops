@@ -1,19 +1,19 @@
 # Home Infrastructure & Kubernetes Cluster
 
-This is a mono repository for my home infrastructure and Kubernetes cluster. I try to adhere to Infrastructure as Code (IaC) and GitOps practices using tools like Talos Linux, Kubernetes, Flux, Helmfile, Just, mise, Renovate, Ansible, and Terraform.
+This is a mono repository for my home infrastructure and Kubernetes cluster. I try to adhere to Infrastructure as Code (IaC) and GitOps practices using tools like Talos Linux, Kubernetes, Flux, Helmfile, Just, mise, Renovate, and Terraform.
 
 Agent note: this README remains human-facing. Tooling and AI assistants should use the repository guidance files as the operational guide, starting at [CLAUDE.md](CLAUDE.md) and then following any more specific `CLAUDE.md` files in subdirectories.
 
 ## 🏠 Hardware Infrastructure
 
-The cluster runs on a single bare-metal Talos node. A second machine handles file-level storage (NAS) and, during the K3s → Talos migration, still hosts the OpenMediaVault VM under Proxmox until Phase 10 retires the hypervisor layer.
+The cluster runs on a single bare-metal Talos node. A second machine handles file-level storage (NAS) and still hosts the OpenMediaVault VM under Proxmox; the Phase 10 bare-metal OMV retirement of that hypervisor layer is a planned post-cutover follow-up.
 
 | Device                              | Quantity | CPU                       | OS Disk            | Data Disk                    | RAM  | OS                | Function                                  |
 |-------------------------------------|----------|---------------------------|--------------------|------------------------------|------|-------------------|-------------------------------------------|
 | HP ProDesk 600 G6 Desktop Mini      | 1        | Intel i7-10700T @ 2.0 GHz | NVMe (PC801)       | NVMe (PC711)                 | 64GB | Talos Linux       | Single-node Kubernetes control plane + workloads |
 | Lenovo M93p tiny USFF               | 1        | Intel i5-4570T @ 2.90GHz  | 512GB SSD          | USB3 DAS 16TB EXT4 (host)    | 16GB | Debian 13 + Proxmox | NAS host; OpenMediaVault VM (transitional) |
 
-The Lenovo M93p will become a bare-metal OpenMediaVault host after the Talos cutover; the Proxmox + OMV VM model is intentionally temporary.
+The Lenovo M93p will become a bare-metal OpenMediaVault host in Phase 10 (post-Talos-cutover follow-up); the current Proxmox + OMV VM model is intentionally temporary.
 
 ## 🔄 GitOps Workflow
 
@@ -21,9 +21,9 @@ The Lenovo M93p will become a bare-metal OpenMediaVault host after the Talos cut
 
 The cluster runs Flux through the [Flux Operator](https://fluxcd.control-plane.io/) pattern: a single `FluxInstance` CR declares the controllers, GitRepository, and root Kustomization. There is no classic `flux bootstrap` step.
 
-- The `FluxInstance` resource points at `kubernetes/flux/cluster/`, which holds two root Kustomizations: `cluster-vars` (applies `kubernetes/flux/vars/`) and `cluster-apps` (reconciles `kubernetes/apps/`).
-- `cluster-apps` recursively walks `kubernetes/apps/` and applies every `ks.yaml`.
-- Each app folder generally contains a `ks.yaml`, the actual manifests under `app/`, and optionally extra directories such as `config/`, `certificate/`, or `backup/`.
+- The `FluxInstance` resource points at `kubernetes/flux/cluster/`, which holds a single root `cluster-apps` Kustomization (the earlier `cluster-vars` split with `kubernetes/flux/vars/` substitution was retired in Phase 6.7 for bjw-s parity).
+- `cluster-apps` recursively walks `kubernetes/apps/` and applies every `ks.yaml`, with a kustomize patch that injects the shared HelmRelease defaults (`install`, `rollback`, `timeout`, `upgrade`) into every HR.
+- Each app folder generally contains a `ks.yaml`, the actual manifests under `app/`, and optionally extra directories such as `config/`, `certificate/`, or `netpols/`.
 
 The full bootstrap procedure is described in [docs/migration/05-flux-operator.md](docs/migration/05-flux-operator.md) and triggered by `just cluster-bootstrap cluster`.
 
@@ -37,15 +37,14 @@ Renovate watches the entire repository for dependency updates. When updates are 
 📁 kubernetes
 ├── 📁 apps         # applications grouped by namespace
 ├── 📁 bootstrap    # Talos + Kubernetes platform bootstrap chain (helmfile + resources.yaml.j2)
-├── 📁 components   # reusable Kustomize components (e.g. volsync)
-├── 📁 flux         # FluxInstance entry point + cluster-wide vars
-├── 📁 talos        # Talos machine configs and node templates
+├── 📁 components   # reusable Kustomize components (volsync, flux-alerts)
+├── 📁 flux         # FluxInstance root Kustomization (`flux/cluster/`) reconciled by Flux Operator
+├── 📁 talos        # Talos machine configs, schematic, node value templates
 └── 📁 volsync      # operational helpers for the backup plane
 📁 provision
 ├── 📁 cloudflare       # Cloudflare Terraform
 ├── 📁 ovh              # OVH Cloud Project Storage Terraform
-├── 📁 openmediavault   # OMV Ansible (Phase 10) + just recipes
-├── 📁 sops             # SOPS helper recipes
+├── 📁 openmediavault   # OMV recipes (Phase 10 Ansible reserved, post-cutover)
 └── 📁 openwrt          # OpenWrt maintenance recipes
 ```
 
@@ -107,10 +106,9 @@ See [docs/networking-readme.md](docs/networking-readme.md) for the current routi
 
 ### Configuration Management
 
-- **[sops](https://github.com/getsops/sops)**: Git-committed secrets for Kubernetes and Terraform (Age-encrypted)
-- **[mise](https://mise.jdx.dev/)**: Pinned versions for `talosctl`, `kubectl`, `helm`, `helmfile`, `flux2`, `just`, `sops`, and the rest of the CLI surface
-- **[Just](https://github.com/casey/just)**: Recipe runner; the root `.justfile` imports per-area `mod.just` modules (`k8s`, `cluster-bootstrap`, `talos`, `volsync`, `omv`, `cloudflare`, `ovh`, `sops`, `openwrt`)
-- **[minijinja-cli](https://github.com/mitsuhiko/minijinja)** + `op inject`: Templated bootstrap-time resources fed from 1Password
+- **[mise](https://mise.jdx.dev/)**: Pinned versions for `talosctl`, `kubectl`, `helm`, `helmfile`, `flux2`, `just`, `minijinja`, `1password-cli`, `yq`, `jq`, `gum`, `pre-commit`, and the rest of the CLI surface
+- **[Just](https://github.com/casey/just)**: Recipe runner; the root `.justfile` imports per-area `mod.just` modules (`k8s`, `cluster-bootstrap`, `talos`, `volsync`, `omv`, `cloudflare`, `ovh`, `openwrt`)
+- **[minijinja-cli](https://github.com/mitsuhiko/minijinja)** + `op inject`: Templated bootstrap-time resources fed from 1Password (Talos `machineconfig`, the 1Password Connect bootstrap Secrets)
 
 ## ☁️ Cloud Provider: Cloudflare
 
@@ -129,12 +127,12 @@ All Cloudflare resources are managed using Terraform with the Cloudflare provide
 
 ## 🔐 Secrets Management
 
-The cluster uses a hybrid approach for secrets management:
+The cluster uses a 1Password-centric model for secrets management; the earlier SOPS layer was fully retired in Phase 6.7 for bjw-s parity:
 
-- **Cluster-wide and bootstrap secrets**: Encrypted with SOPS (Age) and stored in the Git repository
-- **Application secrets**: Stored in 1Password and accessed via the External Secrets operator against the shared `onepassword-connect` `ClusterSecretStore`
+- **Bootstrap-time secrets**: Two 1Password Connect Secrets (`onepassword-connect-credentials-secret` and `onepassword-connect-vault-secret`) are rendered by `minijinja-cli` + `op inject` during `just cluster-bootstrap cluster`. The Talos `machineconfig` is templated through the same `op inject` flow.
+- **Application secrets**: Every runtime secret is delivered through External Secrets against the shared `onepassword-connect` `ClusterSecretStore`. Multi-line config-as-secret content (for example the Homepage dashboard config) is stored as multi-line 1Password text fields and rendered via ESO `template.data`.
 
-This setup ensures sensitive data is properly secured while maintaining the GitOps workflow.
+No SOPS-encrypted secret files exist in the repository: there is no `.sops.yaml`, no `cluster-secrets.sops.yaml`, no per-app `secret.sops.yaml`, and `sops` is not pinned in `.mise.toml`. This keeps the chicken-and-egg surface narrow to the two 1Password Connect bootstrap Secrets.
 
 ## 🚀 Deployment Dependencies
 

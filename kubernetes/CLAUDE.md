@@ -7,9 +7,11 @@ This guide applies to everything under `kubernetes/`.
 `kubernetes/` contains the declarative cluster state reconciled by Flux. The main structure is:
 
 - `apps/`: application and platform workloads grouped by namespace or domain
-- `bootstrap/`: initial Flux bootstrap resources
-- `components/`: reusable Kustomize components
-- `flux/`: Flux configuration, repositories, and cluster variables
+- `bootstrap/`: Talos + Kubernetes platform bootstrap chain (helmfile + `resources.yaml.j2`), wrapped by `just cluster-bootstrap cluster`
+- `components/`: reusable Kustomize components (notably `components/volsync/`)
+- `flux/cluster/`: the single root `cluster-apps` Kustomization that FluxInstance reconciles (no `cluster-vars` / `flux/vars/` substitution layer — that pattern was retired in Phase 6.7 for bjw-s parity)
+- `talos/`: Talos `machineconfig` template, schematic, and node values consumed by `just talos *` recipes
+- `volsync/`: operational helpers (`mod.just` recipes) for the VolSync + Kopia backup plane
 
 ## Subtree Guides
 
