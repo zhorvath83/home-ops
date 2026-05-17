@@ -53,34 +53,53 @@ gen-secrets vault="HomeOps" item="talos":
     tmp="${tmpdir}/talos-secrets.yaml"
     just log info "Generating Talos secrets bundle"
     talosctl gen secrets -o "${tmp}"
+    # `extract` must `return 1` (not `exit 1`): the helper is invoked via
+    # `$(extract …)` command substitution, which runs in a subshell, so an
+    # `exit` would only kill that subshell. The caller chains `|| exit 1`
+    # so an empty/null value aborts the whole recipe instead of silently
+    # writing the bad value into the 1Password item.
     extract() {
         local path=$1 value
         value="$(yq -r "${path}" "${tmp}")"
         if [ -z "${value}" ] || [ "${value}" = "null" ]; then
             just log error "Empty value in secrets bundle" path "${path}"
-            exit 1
+            return 1
         fi
         printf '%s' "${value}"
     }
+    machine_ca_crt="$(extract '.certs.os.crt')" || exit 1
+    machine_ca_key="$(extract '.certs.os.key')" || exit 1
+    machine_token="$(extract '.trustdinfo.token')" || exit 1
+    cluster_ca_crt="$(extract '.certs.k8s.crt')" || exit 1
+    cluster_ca_key="$(extract '.certs.k8s.key')" || exit 1
+    cluster_aggregatorca_crt="$(extract '.certs.k8saggregator.crt')" || exit 1
+    cluster_aggregatorca_key="$(extract '.certs.k8saggregator.key')" || exit 1
+    cluster_serviceaccount_key="$(extract '.certs.k8sserviceaccount.key')" || exit 1
+    cluster_etcd_ca_crt="$(extract '.certs.etcd.crt')" || exit 1
+    cluster_etcd_ca_key="$(extract '.certs.etcd.key')" || exit 1
+    cluster_id="$(extract '.cluster.id')" || exit 1
+    cluster_secret="$(extract '.cluster.secret')" || exit 1
+    cluster_token="$(extract '.secrets.bootstraptoken')" || exit 1
+    cluster_secretboxencryptionsecret="$(extract '.secrets.secretboxencryptionsecret')" || exit 1
     just log info "Creating 1Password item" vault "{{ vault }}" item "{{ item }}"
     op item create \
         --category="API Credential" \
         --vault="{{ vault }}" \
         --title="{{ item }}" \
-        "MACHINE_CA_CRT[password]=$(extract '.certs.os.crt')" \
-        "MACHINE_CA_KEY[password]=$(extract '.certs.os.key')" \
-        "MACHINE_TOKEN[password]=$(extract '.trustdinfo.token')" \
-        "CLUSTER_CA_CRT[password]=$(extract '.certs.k8s.crt')" \
-        "CLUSTER_CA_KEY[password]=$(extract '.certs.k8s.key')" \
-        "CLUSTER_AGGREGATORCA_CRT[password]=$(extract '.certs.k8saggregator.crt')" \
-        "CLUSTER_AGGREGATORCA_KEY[password]=$(extract '.certs.k8saggregator.key')" \
-        "CLUSTER_SERVICEACCOUNT_KEY[password]=$(extract '.certs.k8sserviceaccount.key')" \
-        "CLUSTER_ETCD_CA_CRT[password]=$(extract '.certs.etcd.crt')" \
-        "CLUSTER_ETCD_CA_KEY[password]=$(extract '.certs.etcd.key')" \
-        "CLUSTER_ID[password]=$(extract '.cluster.id')" \
-        "CLUSTER_SECRET[password]=$(extract '.cluster.secret')" \
-        "CLUSTER_TOKEN[password]=$(extract '.secrets.bootstraptoken')" \
-        "CLUSTER_SECRETBOXENCRYPTIONSECRET[password]=$(extract '.secrets.secretboxencryptionsecret')"
+        "MACHINE_CA_CRT[password]=${machine_ca_crt}" \
+        "MACHINE_CA_KEY[password]=${machine_ca_key}" \
+        "MACHINE_TOKEN[password]=${machine_token}" \
+        "CLUSTER_CA_CRT[password]=${cluster_ca_crt}" \
+        "CLUSTER_CA_KEY[password]=${cluster_ca_key}" \
+        "CLUSTER_AGGREGATORCA_CRT[password]=${cluster_aggregatorca_crt}" \
+        "CLUSTER_AGGREGATORCA_KEY[password]=${cluster_aggregatorca_key}" \
+        "CLUSTER_SERVICEACCOUNT_KEY[password]=${cluster_serviceaccount_key}" \
+        "CLUSTER_ETCD_CA_CRT[password]=${cluster_etcd_ca_crt}" \
+        "CLUSTER_ETCD_CA_KEY[password]=${cluster_etcd_ca_key}" \
+        "CLUSTER_ID[password]=${cluster_id}" \
+        "CLUSTER_SECRET[password]=${cluster_secret}" \
+        "CLUSTER_TOKEN[password]=${cluster_token}" \
+        "CLUSTER_SECRETBOXENCRYPTIONSECRET[password]=${cluster_secretboxencryptionsecret}"
 
 [group('setup')]
 [doc('Generate talosconfig from 1Password secrets (one-time, after gen-secrets)')]
