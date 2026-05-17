@@ -10,7 +10,7 @@ The cluster runs on a single bare-metal Talos node. A second machine handles fil
 
 | Device                              | Quantity | CPU                       | OS Disk            | Data Disk                    | RAM  | OS                | Function                                  |
 |-------------------------------------|----------|---------------------------|--------------------|------------------------------|------|-------------------|-------------------------------------------|
-| HP ProDesk 600 G6 Desktop Mini      | 1        | Intel i7-10700T @ 2.0 GHz | NVMe (PC801)       | NVMe (PC711)                 | 64GB | Talos Linux       | Single-node Kubernetes control plane + workloads |
+| HP ProDesk 600 G6 Desktop Mini      | 1        | Intel i7-10700T @ 2.0 GHz | NVMe (SK hynix PC801)       | NVMe (SK hynix PC711)                 | 64GB | Talos Linux       | Single-node Kubernetes control plane + workloads |
 | Lenovo M93p tiny USFF               | 1        | Intel i5-4570T @ 2.90GHz  | 512GB SSD          | USB3 DAS 16TB EXT4 (host)    | 16GB | Debian 13 + Proxmox | NAS host; OpenMediaVault VM  |
 
 
