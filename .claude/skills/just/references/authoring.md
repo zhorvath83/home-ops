@@ -29,3 +29,10 @@ Use this reference when adding or modifying Just recipes.
 - do not chain shell commands across recipe boundaries; if two steps belong together, put them in one recipe and call it from elsewhere
 - do not duplicate logic across mods; factor shared scripts into a dedicated `_<purpose>.sh` file next to the primary mod and invoke it from each consumer (precedent: `kubernetes/talos/_resolve-controller.sh` shared by `kubernetes/talos/mod.just` and `kubernetes/bootstrap/mod.just`)
 - do not bypass `op run` / `op inject` for credentials when the existing recipe already uses them
+
+## Common Pitfalls
+
+- **Subshell `exit` swallowed by `$(…)`**: a helper that calls `exit 1` from inside `$(fn …)` only kills the subshell, not the recipe. Use `return 1` in the helper and `value=$(fn …) || exit 1` at each call site. Precedents in-repo: `kubernetes/talos/mod.just` `gen-secrets extract()` (commit a63d5a710) and `provision/ovh/mod.just` `apply` output-fetch (commit 90a38cae3).
+- **`set -e` does not propagate through `local`**: `local var=$(cmd)` always returns 0 because `local` itself succeeds. Split into `local var; var=$(cmd) || exit 1` when failure must propagate.
+- **mise template functions ≠ Just functions**: `.mise.toml` `[env]` blocks use Tera with `get_env(name="HOME")` (mise's name); Just `mod.just` files use `env_var('HOME')`. The Just builtin does not work in mise.toml, and vice versa.
+- **`pipefail` and `tail`**: `cmd 2>&1 | tail -N` fails if `cmd` fails (with `pipefail` on); use `|| true` only when `cmd` failure is genuinely tolerable, not as a reflex.

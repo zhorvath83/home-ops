@@ -27,4 +27,6 @@ Read the touched files together:
 
 Run `pre-commit run --all-files` before pushing — the hook list lives in `.pre-commit-config.yaml`. There is no `just`-namespaced wrapper for this; use the `pre-commit` CLI directly.
 
+`pre-commit` writes to `~/.cache/pre-commit/` (patch stashing for unstaged changes, hook caches). When the Bash sandbox is active and the operator did not pre-approve that path, `git commit` fails with `PermissionError: Operation not permitted: '/Users/.../.cache/pre-commit/patch...'` and prints the full pre-commit traceback. Either pre-approve the cache path via `/sandbox` or run the failing commit with `dangerouslyDisableSandbox: true`. Re-staging or amending does not help — pre-commit must be able to write its cache for any hook invocation.
+
 If validation cannot run, say whether the blocker is missing tooling, credentials, or cluster access.

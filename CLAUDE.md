@@ -63,6 +63,7 @@ This repository currently manages a single-node home infrastructure stack with t
 - Distinguish carefully between local repository state and live cluster state.
 - Local file edits do not change the cluster until the watched Git source is updated and reconciled.
 - Do not treat `flux reconcile` as if it applied the local working tree.
+- Stage commits with explicit pathspecs (`git add <file>` per touched file), never `git add -A` or `git add .`. The working tree often contains user-driven in-progress work (config refactors, schema URL migrations, doc renames) that must not bleed into unrelated commits. The session-start `git status` snapshot can be stale — always run `git status` immediately before staging to see the live state.
 
 ## Repo-Wide Anti-Patterns
 
