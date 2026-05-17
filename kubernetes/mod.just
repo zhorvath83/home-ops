@@ -18,11 +18,19 @@ default:
 [doc('Sync all resources of a Flux type cluster-wide (resource=hr|ks|gitrepo|ocirepo|es)')]
 [script]
 sync resource:
+    # Annotation set depends on resource type:
+    #   - es:                       force-sync  (External Secrets Operator)
+    #   - hr:                       requestedAt + forceAt  (forceAt drives chart force-upgrade)
+    #   - ks / gitrepo / ocirepo:   requestedAt  (forceAt has no effect on these)
+    ts="$(date +%s)"
+    case "{{ resource }}" in
+      es)  anns=("force-sync=${ts}") ;;
+      hr)  anns=("reconcile.fluxcd.io/requestedAt=${ts}" "reconcile.fluxcd.io/forceAt=${ts}") ;;
+      ks|gitrepo|ocirepo) anns=("reconcile.fluxcd.io/requestedAt=${ts}") ;;
+      *)   echo "Unsupported resource: {{ resource }}" >&2; exit 1 ;;
+    esac
     kubectl get {{ resource }} --no-headers -A | while read -r ns name _; do
-      kubectl -n "$ns" annotate --field-manager flux-client-side-apply --overwrite {{ resource }} "$name" \
-        "force-sync=$(date +%s)" \
-        "reconcile.fluxcd.io/requestedAt=$(date +%s)" \
-        "reconcile.fluxcd.io/forceAt=$(date +%s)"
+      kubectl -n "$ns" annotate --field-manager flux-client-side-apply --overwrite {{ resource }} "$name" "${anns[@]}"
     done
 
 [group('sync')]
