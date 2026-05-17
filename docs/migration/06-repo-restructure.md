@@ -368,30 +368,31 @@ kubernetes/apps/system-upgrade/tuppr/
     └── ocirepository.yaml
 ```
 
-**bjw-s `tuppr/ks.yaml`** mint példa (átemelve):
+**`tuppr/ks.yaml`** példa (bjw-s minta szerint, anchor-mentes a repo-konvenciónak megfelelően — lásd `kubernetes/CLAUDE.md` "YAML anchor policy"):
 ```yaml
 ---
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app tuppr
-  namespace: &namespace flux-system
+  name: tuppr
 spec:
-  targetNamespace: system-upgrade
   commonMetadata:
     labels:
-      app.kubernetes.io/name: *app
+      app.kubernetes.io/name: tuppr
+  interval: 1h
   path: ./kubernetes/apps/system-upgrade/tuppr/app
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
-    namespace: *namespace
-  wait: false
-  interval: 1h
-  retryInterval: 2m
+    namespace: flux-system
+  targetNamespace: system-upgrade
   timeout: 5m
+  wait: false
 ```
+
+(Az eredeti terv `&app`/`&namespace` anchort használt; ezt a Phase 15 bjw-s parity audit szabványosította ki — az app-név két helyen plain szövegként szerepel, mert így pontosan grep-elhető és nem rejt indirekciót.)
 
 A `helmrelease.yaml` Tuppr Helm chart-ot install-ál és a Talos `Plan` resource-ot deklaratíve menedzseli.
 

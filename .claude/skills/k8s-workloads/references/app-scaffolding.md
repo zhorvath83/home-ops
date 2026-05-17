@@ -50,14 +50,16 @@ Always verify sibling apps in the same subtree before copying a dependency patte
 
 - List only resources physically present in the directory.
 - Keep resource ordering close to the live repo pattern.
-- Preserve labels and namespace conventions already used by siblings.
+- Set `namespace: <ns>` at the top level so all rendered manifests target the workload namespace.
+- **Do NOT add `labels:` / `commonLabels:` blocks.** The Flux Kustomization in `ks.yaml` already injects `app.kubernetes.io/name` through `spec.commonMetadata.labels` for every child resource — duplicating it in the kustomize layer is redundant and was dropped repo-wide. This matches the bjw-s-labs reference repo. Bare `resources:` list is the canonical shape.
+- `configMapGenerator` is allowed (homepage + paperless use it). Pair it with `generatorOptions.disableNameSuffixHash: true` and, when the data contains `${...}` literals that must not be substituted by Flux postBuild, `annotations.kustomize.toolkit.fluxcd.io/substitute: disabled`.
 
 Typical resource order:
 
 1. `ocirepository.yaml`
 2. `externalsecret.yaml` if present
 3. `helmrelease.yaml`
-4. extra resources after that
+4. extra resources after that (`ciliumnetworkpolicy.yaml`, `pvc.yaml`, custom config, etc.)
 
 ## `ocirepository.yaml`
 
@@ -65,3 +67,12 @@ Typical resource order:
 - `OCIRepository.metadata.name` must match `HelmRelease.metadata.name`.
 - Do not add `namespace` to OCIRepository metadata or to the HelmRelease `chartRef` block.
 - Keep `interval` and URL patterns aligned with sibling apps and live repo conventions.
+
+## `helmrelease.yaml`
+
+HelmRelease `spec` is intentionally minimal — see `kubernetes/CLAUDE.md` "HelmRelease minimal-spec policy" for the authoritative rule. In short:
+
+- Allowed top-level `spec` fields: `chartRef`, `interval`, `values` (and very rarely `postRenderers` when an upstream chart leaves no other way to patch a manifest field — `nextcloud`-style).
+- The cluster-root `Kustomization` (`kubernetes/flux/cluster/ks.yaml`) injects `install`, `rollback`, `timeout`, `upgrade` defaults into every HelmRelease through a kustomize patch. **Never repeat or override those fields per-app.** Adding `install.createNamespace`, `install.remediation.retries`, `upgrade.remediation.{strategy,retries}`, or `uninstall.keepHistory` to a HelmRelease is no-op drift at best and a maintenance trap at worst — it was historical noise from the K3s era and has been dropped repo-wide.
+- If a future app genuinely needs a different remediation profile, change the root patch in `kubernetes/flux/cluster/ks.yaml` instead of re-introducing per-HR drift.
+- YAML anchors in HelmRelease values are allowed for **scalar values reused multiple times** (`&port`, `&httpPort`, `&host`, `&tz`, `&exportDir`, `&resources`, `&probes`, `&image`). Anchors on `metadata.name` or as map keys for `controllers`/`persistence`/`serviceAccount`/`bindings` are forbidden — see `kubernetes/CLAUDE.md` "YAML anchor policy" for examples and rationale.
