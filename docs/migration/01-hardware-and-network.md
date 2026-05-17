@@ -52,6 +52,7 @@ A jelenlegi Proxmox+OMV VM **leszedésre kerül** a cutover után. Bare metal OM
 | SLC cache | ~114 GB dynamic | ~92 GB dynamic |
 
 **Szétosztás:** Lásd [AD-012](./00-architecture-decisions.md#ad-012-két-nvme-szétosztás--gyorsabb-az-osetcd-re-lassabb-a-pvc-re).
+
 - **P41 (P801, "Gen4")** → Talos OS install disk + etcd + EPHEMERAL (`install.disk`)
 - **P31 (P711, "Gen3")** → democratic-csi data disk (`/var/mnt/extra-disk`)
 
@@ -79,6 +80,7 @@ A két M.2 slot közül a primary slot (általában az alaplaphoz közelebbi) ka
 ### LoadBalancer IP allokáció (Cilium L2)
 
 A `cluster-settings.yaml`-ban (új cluster):
+
 ```yaml
 data:
   LB_POOL_RANGE_START: "192.168.1.15"
@@ -91,6 +93,7 @@ data:
 A pool `.15-.25` tartomány (11 IP), ezen belül a meglévő szolgáltatás VIP-ek (`.18/.19/.20`) változatlanok maradnak. A `LB_ENVOY_EXTERNAL_IP` **nem szükséges** — az `envoy-external` Gateway nem kap LAN LoadBalancer IP-t, csak a Cloudflare Tunnel kapcsolódik a ClusterIP service-éhez.
 
 Az L2 announcement workflow:
+
 1. Régi K3s VM **shutdown** a teszt elején.
 2. HP cluster Cilium átveszi az `.18-.20` IP-ket (`.18` ARP-pal bejelentkezik, stb.).
 3. Ha rollback: HP powerdown → K3s power on → IP-k visszamenadzselődnek a MetalLB-vel.
@@ -264,6 +267,7 @@ A jelenlegi OMV NFS exportok IP whitelist-jét kell **kibővíteni** a HP node I
 ## Rollback
 
 Ha a hardver setup problémás:
+
 - BIOS reset (F10 → Restore Defaults), újrakonfigurálás.
 - NVMe-ket swappelni a slotok között, ha boot order furcsán működik.
 - Talos installer USB recovery módra váltani (lásd [02-talos-bootstrap.md](./02-talos-bootstrap.md) Rollback szekció).

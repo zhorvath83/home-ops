@@ -94,6 +94,7 @@ ping -c 1 192.168.1.19     # no response (régi LB IP)
 ### Stage 2: DNS állapot — NINCS változtatás
 
 **A DNS rekordok és a dnsmasq config változatlan.** Mivel a LB IP-k azonosak (`.18`, `.19`, `.20`), és a Cloudflare tunnel ID/token is ugyanaz, csak a cloudflared pod helye változik:
+
 - Régi cluster: cloudflared pod lekapcsolva (VM shutdown miatt).
 - Új cluster: cloudflared pod elindul, ugyanahhoz a tunnel-hez csatlakozik.
 
@@ -135,6 +136,7 @@ kubectl get pods -A
 ```
 
 Ha valami nem indul:
+
 ```bash
 kubectl -n default describe hr <app>
 kubectl -n default describe pod -l app.kubernetes.io/name=<app>
@@ -142,6 +144,7 @@ kubectl -n default logs <pod> --previous
 ```
 
 Tipikus hibák:
+
 - **PVC nem Bound**: az RD még fut. Várj.
 - **Secret hiányzik**: ExternalSecret nem sync-elt. `kubectl -n default get es` ellenőrzés. Trigger: `just k8s sync-es default <app>-secret`.
 - **ConfigMap substitution miss**: cluster-settings nem frissült. `kubectl -n flux-system get cm cluster-settings -o yaml`.
@@ -202,6 +205,7 @@ A külső forgalom (`*.<CLOUDFLARE_DOMAIN>`) az új clusterre megy — **automat
 #### k8s-gateway split-DNS (LAN)
 
 **Nincs DNS változtatás szükséges** — a `LB_K8S_GATEWAY_IP` `.19` IP **változatlan** az új clusteren is (Cilium L2 announcement bejelentkezik az `.19`-re a HP MAC-jével, miután a régi K3s VM lekapcsolódott). Az OpenWRT dnsmasq config marad:
+
 ```
 server=/<INTERNAL_DOMAIN>/192.168.1.19
 ```
@@ -241,6 +245,7 @@ A FluxInstance továbbra is `refs/heads/main`-re mutat (de a talos branch válto
 #### Út B: FluxInstance ref váltás közvetlen
 
 Ha a talos branch még külön akarjuk tartani egy ideig (kockázatkezelés), a FluxInstance HR-t át kell írni:
+
 ```yaml
 # kubernetes/apps/flux-system/flux-instance/app/helmrelease.yaml
 spec:
