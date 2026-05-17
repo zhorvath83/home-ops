@@ -290,12 +290,74 @@ A választás függ a qBittorrent runtime change-ek értékétől (van-e olyan U
 - Ha A vagy B → implementáció külön commit-ban, helmrelease + (Opció A-nál) 1P item + ExternalSecret módosítva, kustomize build tiszta, pod restart ciklus után a qBittorrent UI elérhető és a WebUI jelszó működik.
 - Ha C → doc-szakasz hozzáadva, semmi cluster-szintű változás.
 
+## 16.e — kube-prometheus-stack observability content extract (follow-up)
+
+### Cél
+
+A 2026-05-17 bjw-s parity audit (`STATUS.md` "Sessions" alatt) **M1**-pontként rögzítette: a `kube-prometheus-stack/app/` mappa nálunk minimalista (csak `helmrelease.yaml + ocirepository.yaml + podmonitor.yaml + kustomization.yaml`), bjw-s ezzel szemben külön CR-fájlokba bontja a scrape-targets-et, prometheus rules-t, grafana datasource-t/dashboards-t.
+
+A 16.e a bjw-s mintával való közelítés első, alacsony-kockázatú lépéseit fedi le: az inline scrape-config-ot kiemeljük `ScrapeConfig` CR-be, és behozunk minimum egy cluster-szintű `PrometheusRule`-t. Az AlertmanagerConfig + GrafanaDashboard CR-eket a 16.e **nem** érinti (előbbi AlertManager-bekapcsolást igényel — külön döntés N1 audit-pont alatt; utóbbi Grafana Operator-t feltételez, mi standalone Grafanát futtatunk).
+
+### Hatáskör
+
+#### 16.e.1 — Inline OpenWrt scrape kiemelése `ScrapeConfig` CR-be
+
+A `kubernetes/apps/observability/kube-prometheus-stack/app/helmrelease.yaml` jelenleg inline `additionalScrapeConfigs` blokkot tart 363-370. soron — egyetlen `openwrt` scrape-target (`192.168.1.1:9100`, `go_*` metric drop). bjw-s ugyanezt önálló `ScrapeConfig` CR-rel oldja meg, ami:
+
+- függetlenül updatelhető a HR-frissítéstől
+- Renovate-nem-blokkoló (HR chart-bumpkor nem zavar bele)
+- konzisztens a többi observability primitívvel (`PodMonitor`, `ServiceMonitor`)
+
+Lépések:
+
+1. Új mappa: `kubernetes/apps/observability/kube-prometheus-stack/app/scrapeconfigs/`
+2. Új fájl: `scrapeconfigs/openwrt.yaml` — `ScrapeConfig` CR (`apiVersion: monitoring.coreos.com/v1alpha1`), tartalom-azonos a kiemelt inline blokkal.
+3. Új fájl: `scrapeconfigs/kustomization.yaml` — `resources: - ./openwrt.yaml`.
+4. `app/kustomization.yaml`: `resources` lista bővítve `- ./scrapeconfigs`-szel.
+5. `helmrelease.yaml`: a `prometheus.prometheusSpec.additionalScrapeConfigs` mező teljes törlése.
+6. Flux reconcile + Prometheus `/targets` UI ellenőrzés: az `openwrt` job továbbra is `UP`-on, azonos metrikákkal.
+
+#### 16.e.2 — `PrometheusRule` fájlok (cluster-szintű alerts)
+
+Új mappa: `kubernetes/apps/observability/kube-prometheus-stack/app/prometheusrules/`. Minimum egy `oomkilled.yaml` szabály — single-node-on **kifejezetten értelmes** stabilitási signál:
+
+- **OOMKilled rule**: ha egy pod-ot a kernel OOM-killel, riasztás. Single-node-on egy túlfogyasztott memóriájú pod **bárki mást** kilőhet — ezért a korai észlelés fontos. bjw-s minta egyszerű: `kube_pod_container_status_last_terminated_reason{reason="OOMKilled"}` predicate, 1m for, severity warning.
+
+Megfontolandó második szabály: **ZFS health**. Mi a Talos host-on ZFS-en vagyunk (NVMe PC711 data + PC801 OS+etcd). bjw-s `zfs.yaml`-t felvesz, ha a cluster ZFS-en fut. **Előfeltétel-ellenőrzés**: a `node_exporter` jelenleg ZFS-metrikákat (`node_zfs_*`) exportál-e? Talos `node-exporter` chart-konfig audit kell — ha nem, az alert szabály false-negative lenne, és a 16.e session jegyzőkönyve rögzítse hogy `--collector.zfs` engedélyezve van-e.
+
+Mindkét szabály opcionális — a 16.e minimum elvárása az OOMKilled, a ZFS jövőbeli bővítés.
+
+#### 16.e.3 — Mit NEM fed le 16.e (explicit scope-határ)
+
+A bjw-s `kube-prometheus-stack/app/` további tartalmai **NEM** részei a 16.e-nek, mert mindegyik vagy más subsystem-bekapcsolást, vagy külön döntést igényel:
+
+- **`AlertmanagerConfig` CR** — AlertManager nálunk **kikapcsolva** (HR `alertmanager.enabled: false`). A Pushover-relay jelenleg Flux Provider-en megy közvetlenül. Az AlertManager bekapcsolás + Flux alerts AlertManager-routing az audit **N1** pontja, **külön döntési ülés**.
+- **`GrafanaDashboard` CR** — Grafana Operator-t igényli; mi standalone Grafanát futtatunk (`kubernetes/apps/observability/grafana/`). Dashboard-management jelenleg ConfigMap-discovery-vel megy (`grafana_dashboard: "1"` label). Operator-bevezetés külön projekt.
+- **`GrafanaDatasource` CR** — szintén Grafana Operator-függő. Jelenleg HR `values.datasources`-on át.
+- **`ScrapeConfig` további target-ek** — csak az OpenWrt van inline, ez az egyetlen kiemelendő. Új scrape target felvétele esetén automatikusan `ScrapeConfig`-fájl jön létre (bjw-s minta).
+
+### 16.e verifikáció
+
+- `kubectl get scrapeconfig -n observability openwrt` → Resource exists, `lastUpdate` időbélyeg friss.
+- Prometheus `/targets` UI: `openwrt` job továbbra is `UP`, `up{job="openwrt"} == 1`.
+- Prometheus `/rules` UI: az új OOMKilled rule megjelenik a `kube-prometheus-stack` rule-group-ja mellett.
+- `kubectl get prometheusrule -n observability` → az új CR(ek) listázódnak.
+- `flux get ks -A` és `flux get hr -A` változatlan (a refactor sema egy meglévő HR-t sem érint funkcionálisan).
+- (Opcionális) `promtool check rules` a `prometheusrules/*.yaml` fájlokon — szintaktikai validáció pre-commit nélkül.
+
+### Kockázat
+
+- **A `ScrapeConfig` CR-kiemelés alacsony kockázatú**: a Prometheus Operator a `ScrapeConfig` v1alpha1 CRD-t a chart amúgy is feltelepíti (`prometheus-operator.prometheusConfigReloader`-rel együtt). Funkcionálisan ekvivalens az inline-nal.
+- **Az OOMKilled rule false-positive-kockázata**: ha valami OOMKill-ben él, riasztás jön. Ez a **kívánatos** viselkedés, de a 16.e session-ben érdemes pre-deploy ellenőrizni a recent OOM-history-t (`kubectl get events -A --field-selector reason=OOMKilling`), hogy ne legyen azonnali alert-flood.
+- **A `kube-prometheus-stack/app/kustomization.yaml` resources lista bővítésénél** vigyázni: a fájl jelenleg `resources: [helmrelease.yaml, ocirepository.yaml, podmonitor.yaml]` formában van, az új `- ./scrapeconfigs` és `- ./prometheusrules` mappa-referenciák alapértelmezett `kustomization.yaml`-t várnak (mind a két új mappában készíteni kell egyet).
+
 ## Exit criteria
 
 - **16.a**: `flux get ks -A` ad 4 új top-level KS-t (paperless-gpt, plex-trakt-sync, qbittorrent-upgrade-p2pblocklist, backrest), `restic-gui` KS törölve, `kubectl get hr -A` mind Ready, RS/RD/PVC nevezéktan változatlan.
 - **16.b**: minden K3s/Task/MetalLB/Traefik/Calico referencia eltűnt a `docs/*.md` + `CLAUDE.md` + `.claude/skills/*` fájlokból (kivéve a `docs/migration/` történelmi narratíváját), és a doc-réteg a `talos` ág realitását tükrözi.
 - **16.c**: az app-inventory táblázat 100%-ban kitöltve, magas-érték app-okhoz konkrét per-app CNP, a `4f4b76eec` overengineered CNP-k vagy törölve vagy threat-model-alapra cserélve, Hubble denial-rate stabil.
 - **16.d**: A/B/C opció közül egy explicit döntés rögzítve; ha A vagy B, az implementáció külön commit-ban landolva és cluster-szinten verifikálva; ha C, doc-szakasz hozzáadva.
+- **16.e**: `additionalScrapeConfigs` blokk eltűnik a `kube-prometheus-stack/app/helmrelease.yaml`-ból, az `openwrt` scrape `ScrapeConfig` CR-ként él, minimum egy `PrometheusRule` (`oomkilled`) deployolva, Prometheus `/targets` és `/rules` UI verifikált.
 
 ## Becsült munka
 
@@ -303,4 +365,5 @@ A választás függ a qBittorrent runtime change-ek értékétől (van-e olyan U
 - 16.b: ~4-6 óra, parallel-izálható (skill ↔ CLAUDE.md egymástól függetlenül)
 - 16.c: ~2-3 óra (inventory + kategorizálás + 5-8 per-app CNP + szimuláció)
 - 16.d: ~30 perc döntés + ~1-2 óra implementáció (A vagy B opció esetén) / ~15 perc doc-szakasz (C opció)
-- Összesen: ~7-12 óra, célszerű Phase 9 (Renovate rewrite) után, Phase 12 (cutover) előtt
+- 16.e: ~30 perc ScrapeConfig extract + ~15-30 perc OOMKilled rule + opcionális ~15-30 perc ZFS rule audit/add → összesen ~1-1.5 óra
+- Összesen: ~8-14 óra, célszerű Phase 9 (Renovate rewrite) után, Phase 12 (cutover) előtt

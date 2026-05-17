@@ -348,7 +348,7 @@ Cutover-előtti repo-doksi és AI-guide tisztítás. 10-fázisú audit + szerkes
 | 13 | Cutover runbook | [13](./13-cutover-runbook.md) | 🟡 in-progress | `talos`→`main` merge + FluxInstance ref switch |
 | 14 | Rollback / decom | [14](./14-rollback-and-decom.md) | ⏸ pending | |
 | 15 | Post-cutover | [15](./15-post-cutover.md) | ⏸ pending | 1-2 hét observation |
-| 16 | Repo refactor (ks.yaml flatten + doc + AI-guide refresh) | [16](./16-repo-refactor.md) | 🟡 in-progress | **16.a + 16.b kész** (16.a: 4 split + 2 KS rename; 16.b: 8 doc delete + új `just` skill + flux/networking-readme rewrite + bootstrap readme rewrite + CLAUDE.md lánc + 10 skill refresh + settings.json permissions + code comments + README.md); 16.c per-app CNP threat-model audit hátra |
+| 16 | Repo refactor (ks.yaml flatten + doc + AI-guide refresh) | [16](./16-repo-refactor.md) | 🟡 in-progress | **16.a + 16.b kész** (16.a: 4 split + 2 KS rename; 16.b: 8 doc delete + új `just` skill + flux/networking-readme rewrite + bootstrap readme rewrite + CLAUDE.md lánc + 10 skill refresh + settings.json permissions + code comments + README.md); 16.c per-app CNP threat-model audit, 16.d qbittorrent config-handling döntés, 16.e kube-prometheus-stack ScrapeConfig+PrometheusRule extract hátra |
 
 Legend: ✅ done · 🟡 in-progress · ⏸ pending · ❌ blocked · ⏭ skipped
 
@@ -407,6 +407,8 @@ A teljes GitOps reconcile zöld (0 failing KS, 0 failing HR).
   Hatáskör: 13 `docs/*.md` (több törlendő — `k3s-readme.md`, `k3s-system-upgrade.md` — vagy átírandó — `networking-readme.md`, `kubernetes-readme.md`, `flux-readme.md`, `host-configuration.md`), 11 path-szintű `CLAUDE.md` (root task-domain lista Just-ra, „Current Repository Shape" + „State To Assume Today" frissítés), 12 `.claude/skills/*` (`taskfiles/` „just" skillé, `versions-renovate/` Phase 9 után fragmens-struktúrára, `networking-platform/` Cilium LB-IPAM + CNP megerősítés, többi kisebb update). Root `README.md` csak explicit ASK után. Becsült munka: ~4-6h, parallel-izálható.
 
   **Sorrend**: 16.a előbb — a flatten után a CLAUDE.md / skill leírások már lapos szerkezetre hivatkozhatnak, nem kell kétszer írni.
+
+  **16.e — kube-prometheus-stack observability content extract** (post-Phase-15 bjw-s parity audit M1-pont): a `kube-prometheus-stack/app/` mappa nálunk minimalista (helmrelease + ocirepository + podmonitor + kustomization), bjw-s ezt CR-fájlokra bontja. A 16.e az alacsony-kockázatú lépéseket fedi: (16.e.1) inline `additionalScrapeConfigs.openwrt` (helmrelease.yaml sor 363-370) kiemelése `ScrapeConfig` CR-be új `app/scrapeconfigs/` mappa alatt; (16.e.2) minimum egy `PrometheusRule` (`oomkilled` — single-node-on értelmes stabilitási signál) új `app/prometheusrules/` mappa alatt, opcionálisan `zfs.yaml` (előfeltétel: `node-exporter` ZFS collector ellenőrzés). NEM fed le: AlertmanagerConfig (AlertManager kikapcsolva, N1 audit külön döntés), GrafanaDashboard/Datasource CR (Grafana Operator-t igényelne, mi standalone). Részletek és lépések: `docs/migration/16-repo-refactor.md` 16.e. Becsült munka: ~1-1.5 óra.
 
 ## Tudnivalók / üzemeltetési reminderek
 
