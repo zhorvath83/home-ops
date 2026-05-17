@@ -31,6 +31,7 @@ Ez a könyvtár tartalmazza a home-ops infrastruktúra teljes átalakításának
 ## Migráció modellje
 
 **Big-bang cutover**: az új cluster a `talos` branch-en teljesen kiépül és teszteltetik, mielőtt egyetlen forgalom is rákerül. A régi cluster a main branch-szel folyamatosan él. Cutover-kor:
+
 1. Régi clusteren utolsó VolSync snapshot OVH-ra.
 2. Új clusteren VolSync restore minden PVC-re.
 3. DNS cutover (Cloudflare + k8s-gateway split-DNS belső VIP-ek).
@@ -90,7 +91,7 @@ A terv három repó best practice-eit követi, prioritás szerint:
 - Hungarian (informal tegező), de minden kód, fájlnév, parancs angolul.
 - Cross-link forma: `[doc-name](./XX-doc-name.md)`.
 - Konkrét fájlpath-ek a repó root-jához viszonyítva.
-- Kódblokkok nyelv taggel: ```yaml, ```bash, ```terraform stb.
+- Kódblokkok nyelv taggel: ```yaml,```bash, ```terraform stb.
 - Validation = konkrét parancs vagy megfigyelhető állapot, nem "looks good".
 
 ## Status — élő tracker

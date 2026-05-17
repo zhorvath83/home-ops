@@ -83,6 +83,7 @@ template file *args:
 Két helper recipe (`log`, `template`) — az összes mod használhatja.
 
 A `just -l` (vagy csak `just`) megmutatja a top-level mod-ok és group-ok listáját:
+
 ```
 Available recipes:
 
@@ -290,6 +291,7 @@ render-local-ks ns ks:
 ## `kubernetes/bootstrap/mod.just`
 
 A 04-es docban már részletezett. Itt referenciaként:
+
 - `just k8s-bootstrap cluster` — teljes lánc (talos → k8s → kubeconfig → namespaces → resources → crds → apps)
 - `just k8s-bootstrap apps` — csak a helmfile sync
 - `just k8s-bootstrap crds` — csak CRD apply
@@ -298,6 +300,7 @@ A 04-es docban már részletezett. Itt referenciaként:
 ## `kubernetes/talos/mod.just`
 
 A 02-es docban már részletezett. Itt referenciaként:
+
 - `just talos apply-node <ip>` — config apply egy node-ra
 - `just talos apply-cluster` — minden node-ra
 - `just talos gen-schematic-id` — schematic SHA
@@ -446,6 +449,7 @@ Hasonlóan `provision/ovh/mod.just`.
 A jelenlegi `task vs:restore-*` lánc 4 lépésből áll (suspend → wipe → restore → resume). Az új Just recipe ezt egyszerűsíti, mert **friss cluster esetén** csak a restore kell (nincs régi PVC tartalom, amit wipe-elni kellene).
 
 **Cutover során**:
+
 ```bash
 # Egy-egy app restore-ja:
 just k8s restore plex default
@@ -480,6 +484,7 @@ just cloudflare plan
 ## Migration runbook (Task → Just)
 
 A talos branch-en egyetlen commit-tal:
+
 1. `mkdir -p kubernetes/talos kubernetes/bootstrap provision/openmediavault`
 2. `.justfile` létrehozás (root)
 3. `.mise.toml` létrehozás

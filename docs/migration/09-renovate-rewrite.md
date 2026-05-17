@@ -87,6 +87,7 @@ A `.github/renovate.json5` és `.github/renovate/*.json` **TÖRÖLŐDIK**.
 ```
 
 **Új elemek**:
+
 - `.yaml.j2` pattern — Talos jinja2 template-eket Renovate követni tudja.
 - `helmfile` manager — a `kubernetes/bootstrap/helmfile.d/*.yaml` chart verziói automatikusan frissülnek.
 

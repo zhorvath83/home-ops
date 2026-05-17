@@ -19,6 +19,7 @@ A jelenlegi `kubernetes/apps/<ns>/<app>/` szerkezet **alapja már jó** (megegye
 ## Jelenlegi → új mapping (Kustomization név)
 
 A jelenlegi minta (példa Plex):
+
 ```yaml
 metadata:
   name: cluster-apps-plex                       # régi
@@ -29,6 +30,7 @@ spec:
 ```
 
 Új minta:
+
 ```yaml
 metadata:
   name: plex                                    # új — kustomization név
@@ -45,6 +47,7 @@ A `dependsOn:` listák is frissítendők (`cluster-apps-onepassword-store` → `
 ## Kötelező ks.yaml minta — referenciákhoz illeszkedő
 
 A bjw-s/onedr0p konvenció szerint:
+
 - **NINCS** `namespace: flux-system` a metadata-ban — a Kustomization erőforrás a parent Kustomization namespace-éből öröklődik (`cluster-apps` → flux-system).
 - **NINCS** YAML anchor (`&app`/`*app`) — a nevet kétszer ismételjük plain szöveggel (egyszer `metadata.name`, egyszer `commonMetadata.labels`).
 - **NINCS** `retryInterval` explicit (controller default ~30s elég).
@@ -294,6 +297,7 @@ spec:
 ```
 
 Változások:
+
 - `metadata.name`: `cluster-apps-plex` → `plex` (referencia konvenció)
 - `metadata.namespace`: törölve (parent öröklés)
 - `sourceRef.name`: `home-ops-kubernetes` → `flux-system` (FluxInstance default GitRepo név)
@@ -309,6 +313,7 @@ A Plex `helmrelease.yaml` **változatlan** — Hardware Transcoding most nem ker
 [Tuppr](https://github.com/bjw-s-labs/tuppr) — Talos-natív node frissítés. Lecseréli a `system-upgrade-controller` (SUC) app-ot.
 
 **Fájl-layout:**
+
 ```
 kubernetes/apps/system-upgrade/tuppr/
 ├── ks.yaml
@@ -319,6 +324,7 @@ kubernetes/apps/system-upgrade/tuppr/
 ```
 
 **bjw-s `tuppr/ks.yaml`** mint példa (átemelve):
+
 ```yaml
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -358,6 +364,7 @@ ls kubernetes/apps/kube-system/democratic-csi/ 2>/dev/null
 Ha nincs, akkor [bjw-s democratic-csi-local-hostpath mintát](https://github.com/bjw-s-labs/home-ops/tree/main/kubernetes/apps/kube-system/democratic-csi-local-hostpath) követve hozzá kell adni:
 
 **Fájl-layout:**
+
 ```
 kubernetes/apps/kube-system/democratic-csi-local-hostpath/
 ├── ks.yaml
@@ -372,6 +379,7 @@ A `helmrelease.yaml` értékek: `hostPathDir: /var/mnt/extra-disk` (Talos UserVo
 ## Namespace szervezés — bjw-s mintába illeszkedés
 
 A bjw-s repo finomabb namespace bontást használ (`media`, `home-automation`, `selfhosted`, `downloads` stb.). **Mi most NEM bontjuk szét** a `default`-ot, mert:
+
 - 18 app `default`-ban kezelhető.
 - A bontás cutover-rel egyszerre overkill — egy projekt, egy fókusz.
 - Később (cutover után) megfontolandó: `media` (Plex, Sonarr, Radarr, Bazarr, Prowlarr, Seerr, Maintainerr, qbittorrent, isponsorblocktv, calibre-web-automated, subsyncarr, home-gallery), `productivity` (Paperless, Mealie, Actual, Wallos, Homepage), `system` (resticprofile).
@@ -383,12 +391,14 @@ Most az új cluster-en **megtartjuk a `default`-ot** mint single bucket. Refacto
 A refaktort branch-en végezzük (`talos`), batch-ekben. Egy batch = egy commit:
 
 ### Batch 1: Új apps (előzetes)
+
 - `kubernetes/apps/flux-system/flux-operator/` + `flux-instance/`
 - `kubernetes/apps/kube-system/cilium/` + `coredns/`
 - `kubernetes/apps/kube-system/democratic-csi-local-hostpath/` (ha új)
 - `kubernetes/apps/system-upgrade/tuppr/`
 
 ### Batch 2: Megszűnő apps törlés
+
 - `kubernetes/apps/tigera-operator/` **teljes mappa törlés**
 - `kubernetes/apps/networking/metallb/` **teljes mappa törlés**
 - `kubernetes/apps/system-upgrade/system-upgrade-controller/` **mappa törlés** (ha külön mappa)
@@ -396,7 +406,9 @@ A refaktort branch-en végezzük (`talos`), batch-ekben. Egy batch = egy commit:
 - `kubernetes/apps/networking/kustomization.yaml` — `- ./metallb/ks.yaml` sor törlés
 
 ### Batch 3: Kustomization name refactor (script-tel)
+
 Script futtatás (lásd alább) ami minden `ks.yaml`-en végigmegy:
+
 ```bash
 # A folder név alapján rename-li a metadata.name-et
 just k8s refactor-ks-names
@@ -405,6 +417,7 @@ just k8s refactor-ks-names
 (A `just` recipe-t megírjuk — `find` + `yq` lánccal.)
 
 ### Batch 4: GitRepository név refactor
+
 ```bash
 # minden ks.yaml sourceRef.name: home-ops-kubernetes → flux-system
 find kubernetes/apps -name "ks.yaml" -exec yq -i '.spec.sourceRef.name = "flux-system"' {} \;
@@ -412,12 +425,15 @@ find kubernetes/apps -name "ks.yaml" -exec yq -i '.spec.sourceRef.namespace = "f
 ```
 
 ### Batch 5: dependsOn refactor
+
 Manuálisan — a `dependsOn:` listák `cluster-apps-X` referenciáit `X`-re átírni, és **felülvizsgálni**, hogy szükségesek-e még (sok kiesik, mert helmfile bootstrap kezeli).
 
 ### Batch 6: (SKIPPED — Plex iGPU passthrough most NEM kerül bevezetésre)
+
 Eddig sem volt a Plex-nek hardware transcode konfigurálva, ezért a migráció során sem adunk neki. Ha később bevezetjük: külön projekt, lásd phase 2 a [14-post-cutover.md](./14-post-cutover.md)-ben.
 
 ### Batch 7: cluster-settings.yaml frissítés
+
 - `kubernetes/flux/vars/cluster-settings.yaml`:
   - `CLUSTER_POD_CIDR`: `10.244.0.0/16` (változás: `10.42` → `10.244`)
   - `CLUSTER_SVC_CIDR`: `10.245.0.0/16` (változás: `10.43` → `10.245`)
@@ -472,6 +488,7 @@ Az új cluster-en `flux get kustomizations` után minden `Ready=True` kell legye
 ## Rollback
 
 A refactor lokálisan történik a `talos` branch-en — ha valami félresikerül:
+
 ```bash
 git checkout talos
 git diff main -- kubernetes/apps/

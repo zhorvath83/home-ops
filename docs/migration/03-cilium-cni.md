@@ -397,6 +397,7 @@ Később Envoy Gateway HTTPRoute-ot kap (`hubble.<INTERNAL_DOMAIN>`), `envoy-int
 ### Cilium nem indul
 
 Bootstrap helmfile hibázik:
+
 ```bash
 kubectl -n kube-system get pods
 # crashloop? logs:
@@ -404,6 +405,7 @@ kubectl -n kube-system logs ds/cilium
 ```
 
 Tipikus hibák:
+
 - **`devices: bond+` nem illeszkedik** → változtass explicit NIC-re vagy hagyd ki a devices mezőt.
 - **KubePrism port hibás** → ellenőrizd `machineconfig.yaml.j2` `kubePrism.port: 7445`.
 
@@ -416,6 +418,7 @@ kubectl -n kube-system describe ciliuml2announcementpolicy default
 ```
 
 Tipikus hibák:
+
 - **`interfaces` regex nem illeszkedik** → ellenőrizd `talosctl get links` névvel, javítsd a `^enp.*` mintát.
 - **NodeSelector nem talál node-ot** → `kubernetes.io/os: linux` standard label, mindig van.
 
