@@ -16,62 +16,39 @@ spec:
   matchConstraints:
     resourceRules:
       - apiGroups:
-          - batch
+          - "batch"
         apiVersions:
-          - v1
+          - "v1"
         operations:
-          - CREATE
-          - UPDATE
+          - "CREATE"
+          - "UPDATE"
         resources:
-          - jobs
+          - "jobs"
   matchConditions:
     - name: has-volsync-job-name-prefix
-      expression: object.metadata.name.startsWith("volsync-src-")
-    - name: has-no-jitter-init-container
       expression: >-
-        !has(object.spec.template.spec.initContainers) ||
-        !object.spec.template.spec.initContainers.exists(c, c.name == "jitter")
+        object.metadata.name.startsWith("volsync-src-")
+    - name: has-volsync-created-by-labels
+      expression: >-
+        object.metadata.?labels["app.kubernetes.io/created-by"].orValue("") == "volsync"
   failurePolicy: Fail
   reinvocationPolicy: IfNeeded
   mutations:
-    - patchType: JSONPatch
+    - patchType: "JSONPatch"
       jsonPatch:
         expression: >-
-          has(object.spec.template.spec.initContainers)
-          ? [
-              JSONPatch{
-                op: "add",
-                path: "/spec/template/spec/initContainers/-",
-                value: Object.spec.template.spec.initContainers{
-                  name: "jitter",
-                  image: "docker.io/library/busybox:latest",
-                  imagePullPolicy: "IfNotPresent",
-                  command: [
-                    "sh",
-                    "-c",
-                    "sleep $(shuf -i 0-300 -n 1)"
-                  ]
-                }
+          [
+            JSONPatch{
+              op: "add", path: "/spec/template/spec/initContainers",
+              value: []
+            },
+            JSONPatch{
+              op: "add", path: "/spec/template/spec/initContainers/-",
+              value: Object.spec.template.spec.initContainers{
+                name: "jitter",
+                image: "docker.io/library/busybox:latest",
+                imagePullPolicy: "IfNotPresent",
+                command: ["sh", "-c", "sleep $(shuf -i 0-30 -n 1)"]
               }
-            ]
-          : [
-              JSONPatch{
-                op: "add",
-                path: "/spec/template/spec/initContainers",
-                value: []
-              },
-              JSONPatch{
-                op: "add",
-                path: "/spec/template/spec/initContainers/-",
-                value: Object.spec.template.spec.initContainers{
-                  name: "jitter",
-                  image: "docker.io/library/busybox:latest",
-                  imagePullPolicy: "IfNotPresent",
-                  command: [
-                    "sh",
-                    "-c",
-                    "sleep $(shuf -i 0-300 -n 1)"
-                  ]
-                }
-              }
-            ]
+            }
+          ]
