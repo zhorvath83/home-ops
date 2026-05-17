@@ -123,10 +123,12 @@ minijinja-cli kubernetes/bootstrap/resources.yaml.j2 | op inject | kubectl apply
 ```
 
 Ez a **három Secret**:
+
 - `onepassword-connect-credentials-secret` + `onepassword-connect-vault-secret`: az 1Password Connect chart inicializálásához.
 - `sops-age`: a Flux Kustomization-ök `decryption.secretRef`-ben hivatkozzák, hogy a SOPS-titkosított fájlokat dekódolják reconcile időben.
 
 **1Password item path-ek** (a `op inject` ezt cseréli):
+
 - `op://Automation/1password connect/credentials` — Connect server credentials.json
 - `op://Automation/1password connect/token` — vault token
 - `op://HomeOps/homelab-age-key/keys.txt` — age private key (a jelenlegi K3s setup-ban is itt él)
@@ -134,6 +136,7 @@ Ez a **három Secret**:
 ## SOPS bootstrap
 
 A `cluster-secrets.sops.yaml` és minden további `*.sops.yaml` fájl (pl. `homepage/secret.sops.yaml`) Flux reconcile-on dekódolódik a `sops-age` Secret-tel. A bootstrap-nek **csak ennyit** kell tennie:
+
 1. `sops-age` Secret létrehozás (a fenti `resources.yaml.j2`).
 2. A Flux Kustomization-ök (`cluster-vars` és `cluster-apps`) `decryption: { provider: sops, secretRef: { name: sops-age } }`-et tartalmazzák — részletek a [05-flux-operator.md](./05-flux-operator.md)-ben.
 
@@ -450,6 +453,7 @@ helmfile -f kubernetes/bootstrap/helmfile.d/01-apps.yaml -l name=cilium sync
 ### Teljes lánc megakad valahol középen
 
 `needs:` miatt a függő release-ek várnak. Ha pl. ESO megakad:
+
 ```bash
 kubectl -n external-secrets get pods
 # crashloop?

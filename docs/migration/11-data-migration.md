@@ -76,6 +76,7 @@ Ezeknél a HelmRelease ugyanazt az image-et indítja, nincs adat-restore.
 ### Lépés 0 (cutover előtti héten): full snapshot lánc
 
 Régi clusteren minden RS-t manuálisan trigger-elsz, hogy egy friss snapshot menjen OVH-ra:
+
 ```bash
 # A régi cluster-en futtatva (KUBECONFIG=régi):
 for app in $(kubectl get rs -n default -o jsonpath='{.items[*].metadata.name}'); do
@@ -125,6 +126,7 @@ kubectl -n default wait --for=condition=Synchronizing=False --timeout=30m \
 ```
 
 A folyamat:
+
 1. RD pod indul (Kopia mover container).
 2. Lehúzza az OVH-ról a `plex@default:/data` snapshot-ot.
 3. Új PVC-t hoz létre (a `pvc.yaml` `dataSourceRef`-en keresztül).
@@ -163,16 +165,19 @@ Plex DB-je érzékeny. Ajánlott:
 ## Paperless-specifikus megfontolások
 
 Paperless három adatforrást használ:
+
 - **DB** (SQLite vagy PG) — PVC-n él.
 - **Documents** — PVC-n (`/usr/src/paperless/media`).
 - **Index** (whoosh) — PVC-n (regenerálható).
 
 A **VolSync** mindhárom-at egyetlen PVC-ből menti (jelenlegi setup). Restore után:
+
 - Documents fizikailag ott vannak.
 - DB konzisztens (cutover előtti utolsó snapshot).
 - Index esetleg újraindexel `paperless_document_renamer + paperless_document_archiver` task-okkal.
 
 **App-level export** (opcionális, defense-in-depth):
+
 ```bash
 # Régi cluster Paperless pod-ban:
 kubectl -n default exec -it deploy/paperless -- \
@@ -186,11 +191,13 @@ Az új cluster-en az `/usr/src/paperless/export` mappa visszaáll, és **vész e
 ## qBittorrent-specifikus megfontolások
 
 qBittorrent **aktív torrent-eket** futtat. Cutover-kor:
+
 1. Régi cluster: `flux suspend hr qbittorrent` → pod megáll → torrent-ek leállnak.
 2. Utolsó snapshot (a torrent state, `.torrent` fájlok, metaadat).
 3. Új cluster: restore → új pod indul → torrent-ek folytatódnak.
 
 A `qbittorrent_data` PVC tartalma:
+
 - `BT_backup/` — torrent metaadat
 - `BT_files/` — letöltött tartalom (ha ide állítva)
 
@@ -199,6 +206,7 @@ A **letöltött tartalom** néha NFS-en (a M93p OMV-n) van, nem PVC-n. Ezt **nem
 ## Mealie-specifikus megfontolások
 
 Mealie SQLite-ot használ a PVC-n. Hasonló DB-konzisztencia mint a Plex-nél:
+
 1. Pod megállítás cutover előtt.
 2. Utolsó snapshot.
 3. App-level export (opcionális): Mealie web UI-n „Backup" → ZIP letöltés egy NFS share-re.
@@ -208,6 +216,7 @@ Mealie SQLite-ot használ a PVC-n. Hasonló DB-konzisztencia mint a Plex-nél:
 A 6 app (mealie, paperless, plex, resticprofile, homepage, és onepassword-connect maga) `ExternalSecret`-eket használ. Ezek **nem migrálódnak** — minden új clusteren újragenerálódnak az 1Password ClusterSecretStore-ból.
 
 Validation:
+
 ```bash
 kubectl -n default get es
 # minden ES Ready=True az új clusteren
@@ -288,6 +297,7 @@ kubectl -n default edit replicationdestination plex-bootstrap
 ### Teljes restore-flow összeomlik
 
 Régi cluster **továbbra is fut** (1-2 hét fenntartás). Cutover visszavonható:
+
 1. DNS rekord vissza-mutat a régi cluster IP-jére.
 2. Új cluster reconcile suspend (`flux suspend ks cluster-apps`).
 3. Új cluster sense van mint development/testing branch.
