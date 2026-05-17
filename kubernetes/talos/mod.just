@@ -6,19 +6,11 @@ set shell := ['bash', '-euo', 'pipefail', '-c']
 
 talos_dir := justfile_dir() + '/kubernetes/talos'
 
-# controller_node: dynamically extracted from the active talosconfig endpoint
-# (set by `gen-talosconfig`). Falls back to the hardcoded 'k8s-cp0' when
-# talosconfig is absent (fresh repo clone, pre-bootstrap) or endpoints is
-# null/empty (between `gen config --force` and `config endpoint` inside
-# gen-talosconfig). Must match the filename under nodes/<NAME>.yaml.j2.
-# `set lazy` defers evaluation until a recipe actually uses it.
-# yq's `// "fallback"` keeps the output single-line; the outer `|| echo`
-# covers the case where talosctl itself fails (no file at all).
-# CHECK ON RENAME: if the primary control-plane node ever gets renamed (cf.
-# commits 8de1fa5cc / 19d5c9fe5 for the cp0-k8s -> k8s-cp0 precedent), update
-# the hardcoded fallback below AND the sibling fallback in
-# kubernetes/bootstrap/mod.just.
-controller_node := `talosctl config info -o yaml 2>/dev/null | yq '.endpoints[0] // "k8s-cp0"' 2>/dev/null || echo 'k8s-cp0'`
+# controller_node: resolved by ./_resolve-controller.sh (single source of
+# truth, shared with kubernetes/bootstrap/mod.just). `set lazy` defers
+# evaluation until a recipe actually uses it. Backticks run with cwd =
+# this mod's directory, so the relative path is stable.
+controller_node := `bash ./_resolve-controller.sh`
 
 # nodes: derive node *names* from kubernetes/talos/nodes/<name>.yaml.j2 — filesystem-based so it works pre-bootstrap.
 # Backticks run with cwd = this mod's directory (kubernetes/talos), so reach into the sibling nodes/ tree directly.
