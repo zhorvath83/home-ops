@@ -233,6 +233,7 @@ spec:
 ```
 
 **FONTOS — a `sync.ref`-ről**:
+
 - A `talos` branch fejlesztése alatt: `ref: refs/heads/talos`.
 - Cutover után (talos branch merge main-be): `ref: refs/heads/main`.
 - A FluxInstance HelmRelease ezt változtatja meg cutover idején — egyetlen érték.
@@ -368,6 +369,7 @@ spec:
 **Kulcs**: a `cluster-vars` Kustomization MIATT nem kell a bootstrap-ben kézzel apply-olni a `flux/vars/`-t. Flux kezeli, GitOps-natívan.
 
 **Magyarázat a patches-hez**:
+
 1. **Első patch** (SOPS + substituteFrom): minden gyermek Kustomization automatikusan örökli ezeket. Opt-out a `substitution.flux.home.arpa/disabled: "true"` label-lal.
 2. **Második patch** (HelmRelease defaults): minden HelmRelease automatikusan kap install/rollback/upgrade default-okat (CRD createReplace, retry, timeout, remediation).
 
@@ -498,6 +500,7 @@ kubectl -n flux-system describe fluxinstance flux
 ```
 
 Tipikus hibák:
+
 - **Git URL elérhetetlen**: `gitea` vagy github auth nem stimmel.
 - **Branch nem létezik**: ha `talos` branch még nincs push-olva, FluxInstance hibázik. **Fontos cutover-kor!**
 
@@ -506,6 +509,7 @@ Fix: módosítsd a `flux-instance` HelmRelease `sync.ref:` mezőjét, commit + p
 ### Patch syntax hiba
 
 A FluxInstance `kustomize.patches` szigorúan JSON patch syntax. Ha hibás patch:
+
 ```bash
 kubectl -n flux-system describe fluxinstance flux
 # Patch parse error
