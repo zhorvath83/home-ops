@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -75,20 +75,6 @@ spec:
             target:
               kind: Deployment
               name: kustomize-controller
-          # Helm repositories caching
-          - patch: |
-              - op: add
-                path: /spec/template/spec/containers/0/args/-
-                value: --helm-cache-max-size=10
-              - op: add
-                path: /spec/template/spec/containers/0/args/-
-                value: --helm-cache-ttl=60m
-              - op: add
-                path: /spec/template/spec/containers/0/args/-
-                value: --helm-cache-purge-interval=5m
-            target:
-              kind: Deployment
-              name: source-controller
           # Near-OOM detection for Helm
           - patch: |
               - op: add

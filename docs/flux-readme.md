@@ -8,12 +8,12 @@ The full bootstrap procedure is described in [`docs/migration/05-flux-operator.m
 
 - `kubernetes/apps/flux-system/flux-operator/` — operator HelmRelease + OCIRepository
 - `kubernetes/apps/flux-system/flux-instance/` — FluxInstance HelmRelease + OCIRepository; `sync.ref` points at the active branch (currently `talos`, becomes `main` at cutover)
-- `kubernetes/flux/cluster/ks.yaml` — root `cluster-vars` + `cluster-apps` Kustomizations that the FluxInstance reconciles
-- `kubernetes/flux/vars/` — `cluster-settings.yaml` (non-secret) + `cluster-secrets.sops.yaml` (SOPS-encrypted) cluster-wide substitutions
+- `kubernetes/flux/cluster/ks.yaml` — root `cluster-apps` Kustomization that the FluxInstance reconciles (single Kustomization, applies the HelmRelease defaults patch)
+- `kubernetes/components/flux-alerts/` — Kustomize component, per-namespace Alert+Provider+ExternalSecret for Pushover notifications
 
 ## Cheatsheet
 
-Force a full reconcile (refresh GitRepository, then reconcile both root Kustomizations):
+Force a full reconcile (refresh GitRepository, then reconcile the root `cluster-apps` Kustomization):
 
 ```sh
 just k8s flux-reconcile

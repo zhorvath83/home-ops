@@ -9,7 +9,7 @@ Read the touched files together:
 1. `ks.yaml`
 2. `app/kustomization.yaml`
 3. `helmrelease.yaml`
-4. any `externalsecret.yaml`, `secret.sops.yaml`, route, or extra manifest files
+4. any `externalsecret.yaml`, route, or extra manifest files
 
 ## Consistency Checks
 

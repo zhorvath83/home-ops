@@ -141,14 +141,14 @@ spec:
 
       nfs-tmp:
         type: nfs
-        server: ${CONF_NFS_SRV_IP}
+        server: 192.168.1.10
         path: /tmp
         globalMounts:
           - path: /mnt/nfs-tmp
 
       nfs-backups:
         type: nfs
-        server: ${CONF_NFS_SRV_IP}
+        server: 192.168.1.10
         path: /backups
         globalMounts:
           - path: /backups

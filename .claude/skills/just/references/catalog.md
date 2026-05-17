@@ -15,7 +15,6 @@ Use this reference to rebuild the current Just surface before editing.
 | `omv` | `provision/openmediavault/mod.just` |
 | `cloudflare` | `provision/cloudflare/mod.just` |
 | `ovh` | `provision/ovh/mod.just` |
-| `sops` | `provision/sops/mod.just` |
 | `openwrt` | `provision/openwrt/mod.just` |
 
 `just` (no args) prints the top-level group list. `just --list <group>` prints the recipes inside a group.
@@ -40,7 +39,6 @@ Use this reference to rebuild the current Just surface before editing.
 - Destructive Talos recipes (`apply-node`, `reset-node`, `shutdown-node`, `upgrade-node`, `upgrade-k8s`) carry a `[confirm(...)]` gate that prompts before execution. Bypass non-interactively with `just --yes talos <recipe> ...` — the bootstrap chain uses this internally so the automated `just cluster-bootstrap cluster` run is not blocked.
 - `volsync restore`, `volsync snapshot`, `volsync snapshot-all`, `volsync list-snapshots`, `volsync last-snapshots`, `volsync state`, `volsync kopia-maintenance` — backup plane operations.
 - `cloudflare init|plan|apply|unlock`, `ovh init|plan|apply|unlock` — Terraform per provider, credentials injected via `op run`.
-- `sops re-encrypt|fix-mac|encrypt-file|decrypt-file` — repo SOPS helpers.
 - `omv install|check|update|update-host`, `openwrt maintain|upgrade|reinstall-packages` — provisioning entry points.
 
 If a recipe needs renaming, removing, or splitting, inspect the root `.justfile` group label, the parent `mod.just`, and any inline `# renovate:` annotations together before editing.

@@ -9,3 +9,6 @@ resources:
   - ./external-dns/ks.yaml
   - ./envoy-gateway/ks.yaml
   - ./k8s-gateway/ks.yaml
+namespace: networking
+components:
+  - ../../components/flux-alerts

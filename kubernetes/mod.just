@@ -15,7 +15,7 @@ default:
 
 [group('sync')]
 [arg('resource', pattern='hr|ks|gitrepo|ocirepo|es')]
-[doc('Sync all resources of a Flux type cluster-wide (resource=hr|ks|gitrepo|ocirepo|es)')]
+[doc('Sync all resources of a Flux type cluster-wide (resource=hr|ks|gitrepo|ocirepo|es). Single-resource variants exist only for hr/ks/es; gitrepo/ocirepo are bulk-only by design (one or two per cluster).')]
 [script]
 sync resource:
     # Annotation set depends on resource type:

@@ -29,15 +29,15 @@ spec:
         data:
           config.yaml: |-
             ingress:
-              - hostname: "${PUBLIC_DOMAIN}"
+              - hostname: "horvathzoltan.me"
                 originRequest:
                   http2Origin: true
-                  originServerName: "${PUBLIC_DOMAIN}"
+                  originServerName: "horvathzoltan.me"
                 service: &envoy-external-svc "https://envoy-external.networking.svc.cluster.local"
-              - hostname: "*.${PUBLIC_DOMAIN}"
+              - hostname: "*.horvathzoltan.me"
                 originRequest:
                   http2Origin: true
-                  originServerName: "external.${PUBLIC_DOMAIN}"
+                  originServerName: "external.horvathzoltan.me"
                 service: *envoy-external-svc
               - service: http_status:404
 

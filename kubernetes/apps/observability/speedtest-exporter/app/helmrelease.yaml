@@ -102,7 +102,7 @@ spec:
           gethomepage.dev/group: Observability
           gethomepage.dev/icon: openspeedtest.svg
         hostnames:
-          - "speed.${PUBLIC_DOMAIN}"
+          - "speed.horvathzoltan.me"
         parentRefs:
           - name: envoy-external
             namespace: networking

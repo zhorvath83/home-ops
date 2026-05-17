@@ -64,9 +64,11 @@ spec:
               - |
                 echo "Creating directory /config/qBittorrent/" &&
                 mkdir -p /config/qBittorrent/ &&
-                echo "Directory created. Copying files from /tmp/configfiles/ to /config/qBittorrent/" &&
+                echo "Copying files from /tmp/configfiles/ to /config/qBittorrent/" &&
                 cp /tmp/configfiles/* /config/qBittorrent/ &&
-                echo "Files copied successfully."
+                echo "Appending WebUI password from secret..." &&
+                echo "WebUI\\Password_PBKDF2=$(cat /secrets/qbittorrent/password_pbkdf2)" >> /config/qBittorrent/qBittorrent.conf &&
+                echo "Init complete."
 
         containers:
           app:
@@ -136,7 +138,7 @@ spec:
           gethomepage.dev/group: Downloading
           gethomepage.dev/icon: qbittorrent.svg
         hostnames:
-          - "bt.${PUBLIC_DOMAIN}"
+          - "bt.horvathzoltan.me"
         parentRefs:
           - name: envoy-external
             namespace: networking
@@ -162,9 +164,16 @@ spec:
         globalMounts:
           - path: /tmp/configfiles
 
+      secret:
+        type: secret
+        name: qbittorrent-secret
+        globalMounts:
+          - path: /secrets/qbittorrent
+            readOnly: true
+
       nfs-nas-media:
         type: nfs
-        server: ${CONF_NFS_SRV_IP}
+        server: 192.168.1.10
         path: /media
         globalMounts:
           - path: /media

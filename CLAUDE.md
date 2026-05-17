@@ -6,10 +6,10 @@ This file is the operational guide for working in this repository. Treat it as t
 
 - Treat this repository as potentially public and durable. Do not introduce plaintext credentials or new sensitive external identifiers.
 - Do not commit plaintext secrets, API keys, tokens, passwords, or certificate material anywhere in the repo.
-- Do not hardcode public domains, public IP addresses, or email addresses in manifests, docs, operational wrappers, or examples when the value belongs in secret-backed configuration.
-- Private RFC1918 addresses, cluster-local hostnames, and other internal topology values are acceptable when they reflect the live repo model.
-- Sensitive cluster-wide substitutions belong in `kubernetes/flux/vars/cluster-secrets.sops.yaml`; non-secret cluster-wide values belong in `kubernetes/flux/vars/cluster-settings.yaml`.
-- For app-managed secrets, prefer External Secrets backed by the shared `ClusterSecretStore` named `onepassword-connect` when the target area already follows that pattern.
+- The public domain, public IPs **may be hardcoded** in manifests, docs, and operational wrappers — they are not secret, they are published via DNS/TLS/Cloudflare.
+- Private RFC1918 addresses, cluster-local hostnames, and other internal topology values may be hardcoded directly in manifests when they reflect the live repo model.
+- App-level secrets (tokens, passwords, hashes, multi-line config files) are delivered via External Secrets backed by the shared `ClusterSecretStore` named `onepassword-connect`. Values live either inline in manifests (when non-sensitive) or in per-app `ExternalSecret` resources. Multi-line config-as-secret content (e.g. homepage dashboard config) is stored in 1Password as multi-line text fields and rendered via ESO `template.data`.
+- Bootstrap-time secrets (1Password Connect creds, Talos machine config templating) are injected from 1Password via `op inject` during the `just cluster-bootstrap` chain.
 - Keep GitOps as the source of truth for steady-state cluster configuration. Avoid manual out-of-band `kubectl apply` changes except for documented bootstrap, recovery, or existing Just-driven workflows in the repo.
 
 ## Scope And Priorities
@@ -19,7 +19,7 @@ Use these sources in this order:
 1. The current files in the repository
 2. This `CLAUDE.md`
 3. More specific `CLAUDE.md` files in subdirectories
-4. `.justfile` (root) and `mod.just` files under `kubernetes/`, `kubernetes/bootstrap/`, `kubernetes/talos/`, `kubernetes/volsync/`, `provision/openmediavault/`, `provision/cloudflare/`, `provision/ovh/`, `provision/sops/`, `provision/openwrt/`
+4. `.justfile` (root) and `mod.just` files under `kubernetes/`, `kubernetes/bootstrap/`, `kubernetes/talos/`, `kubernetes/volsync/`, `provision/openmediavault/`, `provision/cloudflare/`, `provision/ovh/`, `provision/openwrt/`
 5. `.renovaterc.json5` (repo root) and the imported fragments under `.renovate/*.json5`
 6. repo-local skills under `.claude/skills/`
 7. Root `README.md` and `docs/*.md` for human-facing context
@@ -68,7 +68,7 @@ This repository currently manages a single-node home infrastructure stack with t
 ## Repo-Wide Anti-Patterns
 
 - Hardcoding public domains, public IPs, email addresses, credentials, or other sensitive external identifiers.
-- Introducing plaintext secrets outside SOPS-encrypted files or External Secrets.
+- Introducing plaintext secrets outside External Secrets.
 - Making imperative cluster changes that bypass Flux for normal steady-state configuration.
 - Treating local file edits as if they were already deployed by GitOps, or using `flux reconcile` as though it applied the local working tree.
 - Changing shared secret names, store names, or dependency wiring without tracing the related Flux and Just recipe references first.
@@ -84,7 +84,7 @@ This repository currently manages a single-node home infrastructure stack with t
   - cluster PVC backups use VolSync plus Kopia and are centralized through `kubernetes/components/volsync/`
   - user documents, media, and other file-level data under the shared backup tree use `resticprofile`, with Backrest as the snapshot browser
 - Some critical workloads keep an extra app-level export in addition to PVC snapshots so the exported data is also covered by the file-level backup plane. Current example: Paperless exports documents to `/backups/paperless`.
-- Secrets are split between SOPS-managed repo secrets and 1Password through External Secrets.
+- All runtime secrets are delivered through External Secrets from 1Password Connect (`onepassword-connect` ClusterSecretStore). Bootstrap-time secrets use `op inject`.
 - Cloudflare resources are managed from `provision/cloudflare/`.
 - OVH Cloud Project Storage buckets and the S3 user that backs both backup planes are managed from `provision/ovh/`.
 
@@ -98,16 +98,15 @@ This repository currently manages a single-node home infrastructure stack with t
   - `.claude/skills/security-review/`
   - `.claude/skills/sre/`
   - `.claude/skills/versions-renovate/`
-  - `.claude/skills/sops-secrets/`
   - `.claude/skills/flux-gitops/`
   - other domain skills under `.claude/skills/`
 
 ## Just And Renovate Model
 
 - The root `.justfile` is the command index; prefer existing Just modules over ad-hoc shell flows.
-- Current Just modules (groups) are: `cluster-bootstrap`, `k8s`, `talos`, `volsync`, `omv`, `cloudflare`, `ovh`, `sops`, `openwrt`.
-- Each module lives next to the area it operates on: `kubernetes/bootstrap/mod.just`, `kubernetes/mod.just`, `kubernetes/talos/mod.just`, `kubernetes/volsync/mod.just`, `provision/openmediavault/mod.just`, `provision/cloudflare/mod.just`, `provision/ovh/mod.just`, `provision/sops/mod.just`, `provision/openwrt/mod.just`.
-- Invoke recipes as `just <group> <recipe> [args]` (e.g. `just k8s sync-hr paperless default`, `just volsync list-snapshots actual`, `just sops re-encrypt`, `just talos apply-node k8s-cp0`).
+- Current Just modules (groups) are: `cluster-bootstrap`, `k8s`, `talos`, `volsync`, `omv`, `cloudflare`, `ovh`, `openwrt`.
+- Each module lives next to the area it operates on: `kubernetes/bootstrap/mod.just`, `kubernetes/mod.just`, `kubernetes/talos/mod.just`, `kubernetes/volsync/mod.just`, `provision/openmediavault/mod.just`, `provision/cloudflare/mod.just`, `provision/ovh/mod.just`, `provision/openwrt/mod.just`.
+- Invoke recipes as `just <group> <recipe> [args]` (e.g. `just k8s sync-hr paperless default`, `just volsync list-snapshots actual`, `just talos apply-node k8s-cp0`).
 - Recipe arguments are **positional only** — Just does not parse `key=value` named arguments the way the previous Task system did. Pass values in order, omitting trailing defaults.
 - Pre-commit is invoked directly via the `pre-commit` CLI (no Just wrapper); the hook list is in `.pre-commit-config.yaml`.
 - Renovate configuration starts in `.renovaterc.json5` at the repo root and imports the fragments under `.renovate/` (`allowedVersions`, `autoMerge`, `customManagers`, `disabledDatasources`, `groups`, `overrides`, `prBodyNotes`, `semanticCommits`, `talosFactory`).

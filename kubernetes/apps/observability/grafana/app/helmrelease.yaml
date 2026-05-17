@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -49,7 +49,7 @@ spec:
       GF_LOG_MODE: console
       GF_NEWS_NEWS_FEED_ENABLED: false
       GF_SECURITY_ALLOW_EMBEDDING: true
-      GF_SERVER_ROOT_URL: "https://grafana.${PUBLIC_DOMAIN}"
+      GF_SERVER_ROOT_URL: "https://grafana.horvathzoltan.me"
 
     route:
       main:
@@ -60,7 +60,7 @@ spec:
           gethomepage.dev/group: Observability
           gethomepage.dev/icon: grafana.svg
         hostnames:
-          - "grafana.${PUBLIC_DOMAIN}"
+          - "grafana.horvathzoltan.me"
         parentRefs:
           - name: envoy-external
             namespace: networking

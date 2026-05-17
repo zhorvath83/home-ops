@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/cilium.io/ciliumclusterwidenetworkpolicy_v2.json
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/cilium.io/ciliumclusterwidenetworkpolicy_v2.json
 #
 # Cluster-wide baseline egress policy (bjw-s-labs pattern).
 #

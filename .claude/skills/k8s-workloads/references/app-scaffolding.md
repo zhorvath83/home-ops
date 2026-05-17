@@ -23,7 +23,6 @@ kubernetes/apps/<group>/<app>/
     ├── ocirepository.yaml
     ├── helmrelease.yaml
     ├── externalsecret.yaml   # if app-managed secrets are needed
-    ├── secret.sops.yaml      # if repo-encrypted secret data is needed
     └── config/               # for non-secret static config only
 ```
 
@@ -57,9 +56,8 @@ Typical resource order:
 
 1. `ocirepository.yaml`
 2. `externalsecret.yaml` if present
-3. `secret.sops.yaml` if present
-4. `helmrelease.yaml`
-5. extra resources after that
+3. `helmrelease.yaml`
+4. extra resources after that
 
 ## `ocirepository.yaml`
 

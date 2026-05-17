@@ -146,7 +146,7 @@ spec:
           gethomepage.dev/group: Media
           gethomepage.dev/icon: calibre-web.svg
         hostnames:
-          - "books.${PUBLIC_DOMAIN}"
+          - "books.horvathzoltan.me"
         parentRefs:
           - name: envoy-external
             namespace: networking
@@ -174,7 +174,7 @@ spec:
 
       nfs-calibre-library:
         type: nfs
-        server: ${CONF_NFS_SRV_IP}
+        server: 192.168.1.10
         path: /backups/documents/personal/ebooks
         globalMounts:
           - path: /calibre-library

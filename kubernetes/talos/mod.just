@@ -354,7 +354,7 @@ upgrade-node node=controller_node:
       --timeout=10m
 
 [group('lifecycle')]
-[confirm('Upgrade Kubernetes control plane on ' + node + ' to ${KUBERNETES_VERSION} [y|N] ?')]
+[confirm('Upgrade Kubernetes control plane on ' + node + ' to ' + env_var('KUBERNETES_VERSION') + ' [y|N] ?')]
 [doc('Upgrade Kubernetes on a node to the version pinned in mise.toml (KUBERNETES_VERSION)')]
 [script]
 upgrade-k8s node=controller_node:

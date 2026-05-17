@@ -152,8 +152,8 @@ spec:
           gethomepage.dev/group: Selfhosted
           gethomepage.dev/icon: mdi-image-multiple
         hostnames:
-          - "photos.${PUBLIC_DOMAIN}"
-          - "fenykepek.${PUBLIC_DOMAIN}"
+          - "photos.horvathzoltan.me"
+          - "fenykepek.horvathzoltan.me"
         parentRefs:
           - name: envoy-external
             namespace: networking
@@ -178,7 +178,7 @@ spec:
       photos:
         type: nfs
         path: /backups/apple_photos_export
-        server: ${CONF_NFS_SRV_IP}
+        server: 192.168.1.10
         globalMounts:
           - path: /data/Pictures
             readOnly: true

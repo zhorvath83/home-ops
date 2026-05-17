@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -22,7 +22,7 @@ spec:
     keepHistory: false
 
   values:
-    domain: "${PUBLIC_DOMAIN}"
+    domain: "horvathzoltan.me"
     ttl: 300
     securityContext:
       runAsNonRoot: true
@@ -43,7 +43,7 @@ spec:
 
     service:
       type: LoadBalancer
-      loadBalancerIP: "${LB_K8S_GATEWAY_IP}"
+      loadBalancerIP: "192.168.1.19"
       externalTrafficPolicy: Local
       useTcp: true
 

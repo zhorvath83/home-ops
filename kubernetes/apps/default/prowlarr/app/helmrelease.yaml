@@ -93,7 +93,7 @@ spec:
           gethomepage.dev/group: Arr Stack
           gethomepage.dev/icon: prowlarr.svg
         hostnames:
-          - "indexers.${PUBLIC_DOMAIN}"
+          - "indexers.horvathzoltan.me"
         parentRefs:
           - name: envoy-external
             namespace: networking

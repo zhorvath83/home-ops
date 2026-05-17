@@ -1,36 +1,11 @@
 ---
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
-# Stage 1: cluster-vars — apply cluster-settings ConfigMap + cluster-secrets Secret (SOPS-decrypted)
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: cluster-vars
-  namespace: flux-system
-spec:
-  interval: 1h
-  path: ./kubernetes/flux/vars
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
-  decryption:
-    provider: sops
-    secretRef:
-      name: sops-age
-  wait: true
-  timeout: 5m
----
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
-# Stage 2: cluster-apps — reconcile ./kubernetes/apps, dependsOn cluster-vars
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: cluster-apps
   namespace: flux-system
 spec:
-  dependsOn:
-    - name: cluster-vars
   interval: 1h
   path: ./kubernetes/apps
   prune: true
@@ -38,38 +13,7 @@ spec:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  decryption:
-    provider: sops
-    secretRef:
-      name: sops-age
-  postBuild:
-    substituteFrom:
-      - kind: ConfigMap
-        name: cluster-settings
-      - kind: Secret
-        name: cluster-secrets
   patches:
-    - # Inject SOPS decryption + substituteFrom defaults into every child Kustomization
-      patch: |-
-        apiVersion: kustomize.toolkit.fluxcd.io/v1
-        kind: Kustomization
-        metadata:
-          name: _
-        spec:
-          decryption:
-            provider: sops
-            secretRef:
-              name: sops-age
-          postBuild:
-            substituteFrom:
-              - kind: ConfigMap
-                name: cluster-settings
-              - kind: Secret
-                name: cluster-secrets
-      target:
-        group: kustomize.toolkit.fluxcd.io
-        kind: Kustomization
-        labelSelector: substitution.flux.home.arpa/disabled notin (true)
     - # Inject HelmRelease defaults into every HelmRelease (via child Kustomization patch)
       patch: |-
         apiVersion: kustomize.toolkit.fluxcd.io/v1

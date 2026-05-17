@@ -95,7 +95,7 @@ spec:
           gethomepage.dev/group: Arr Stack
           gethomepage.dev/icon: sonarr.svg
         hostnames:
-          - "shows.${PUBLIC_DOMAIN}"
+          - "shows.horvathzoltan.me"
         parentRefs:
           - name: envoy-external
             namespace: networking
@@ -117,7 +117,7 @@ spec:
 
       nfs-nas-media:
         type: nfs
-        server: ${CONF_NFS_SRV_IP}
+        server: 192.168.1.10
         path: /media
         globalMounts:
           - path: /media

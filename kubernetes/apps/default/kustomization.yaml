@@ -28,3 +28,6 @@ resources:
   - ./paperless-gpt/ks.yaml
   - ./home-gallery/ks.yaml
   - ./isponsorblocktv/ks.yaml
+namespace: default
+components:
+  - ../../components/flux-alerts

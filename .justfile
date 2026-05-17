@@ -6,31 +6,28 @@ set quiet
 set script-interpreter := ['bash', '-euo', 'pipefail']
 set shell := ['bash', '-euo', 'pipefail', '-c']
 
-[group: 'cluster-bootstrap']
+[group('cluster-bootstrap')]
 mod cluster-bootstrap "kubernetes/bootstrap"
 
-[group: 'k8s']
+[group('k8s')]
 mod k8s "kubernetes"
 
-[group: 'talos']
+[group('talos')]
 mod talos "kubernetes/talos"
 
-[group: 'volsync']
+[group('volsync')]
 mod volsync "kubernetes/volsync"
 
-[group: 'omv']
+[group('omv')]
 mod omv "provision/openmediavault"
 
-[group: 'cloudflare']
+[group('cloudflare')]
 mod cloudflare "provision/cloudflare"
 
-[group: 'ovh']
+[group('ovh')]
 mod ovh "provision/ovh"
 
-[group: 'sops']
-mod sops "provision/sops"
-
-[group: 'openwrt']
+[group('openwrt')]
 mod openwrt "provision/openwrt"
 
 [private]

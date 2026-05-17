@@ -126,7 +126,7 @@ spec:
           gethomepage.dev/group: Arr Stack
           gethomepage.dev/icon: bazarr.svg
         hostnames:
-          - "subs.${PUBLIC_DOMAIN}"
+          - "subs.horvathzoltan.me"
         parentRefs:
           - name: envoy-external
             namespace: networking
@@ -147,7 +147,7 @@ spec:
           - path: /config
       nfs-nas-media:
         type: nfs
-        server: ${CONF_NFS_SRV_IP}
+        server: 192.168.1.10
         path: /media
         globalMounts:
           - path: /media

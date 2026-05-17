@@ -1,23 +1,23 @@
 ---
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: external-dns
-  namespace: flux-system
 spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: external-dns
   dependsOn:
     - name: onepassword-connect
+      namespace: external-secrets
+  interval: 1h
   path: ./kubernetes/apps/networking/external-dns/app
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  interval: 1h
   targetNamespace: networking
   timeout: 5m
   wait: false

@@ -6,7 +6,7 @@ metadata:
   namespace: flux-system
 spec:
   hostnames:
-    - "flux-webhook.${PUBLIC_DOMAIN}"
+    - "flux-webhook.horvathzoltan.me"
   parentRefs:
     - name: envoy-external
       namespace: networking

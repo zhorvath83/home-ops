@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/volsync.backube/replicationdestination_v1alpha1.json
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/volsync.backube/replicationdestination_v1alpha1.json
 # Bootstrap-only manifest for the next cluster recreate.
 # Keep this resource disabled until PVCs are re-created with the matching
 # dataSourceRef in pvc.yaml.

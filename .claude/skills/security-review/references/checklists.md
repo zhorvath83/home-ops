@@ -13,7 +13,7 @@ Use only the sections relevant to the current task.
 
 ## Secret Handling
 
-- does the secret belong in SOPS or External Secrets under the current repo model
+- does the secret flow through External Secrets (`onepassword-connect` ClusterSecretStore) under the current repo model
 - do generated Secret names match every consuming ref
 - are shared store names and bootstrap secret names kept stable
 - does the change accidentally widen secret distribution or duplicate sensitive data

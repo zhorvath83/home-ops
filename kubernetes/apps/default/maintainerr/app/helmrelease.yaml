@@ -96,7 +96,7 @@ spec:
           gethomepage.dev/group: Media
           gethomepage.dev/icon: maintainerr.png
         hostnames:
-          - "{{ .Release.Name }}.${PUBLIC_DOMAIN}"
+          - "{{ .Release.Name }}.horvathzoltan.me"
         parentRefs:
           - name: envoy-external
             namespace: networking

@@ -1,6 +1,6 @@
 ---
 name: external-secrets
-description: Work on shared secret delivery in the home-ops repository. Use when modifying the external-secrets platform, 1Password Connect, the `onepassword-connect` ClusterSecretStore, or non-routine app-level ExternalSecret wiring and validation patterns that depend on the shared secret delivery model. Do not use this skill for unrelated SOPS-only changes or routine app edits that merely consume an unchanged Secret.
+description: Work on shared secret delivery in the home-ops repository. Use when modifying the external-secrets platform, 1Password Connect, the `onepassword-connect` ClusterSecretStore, or non-routine app-level ExternalSecret wiring and validation patterns that depend on the shared secret delivery model. Do not use this skill for routine app edits that merely consume an unchanged Secret.
 ---
 
 # Home Ops External Secrets
@@ -19,11 +19,10 @@ Use this skill when the shared 1Password and External Secrets model is part of t
    - `references/platform-topology.md`
    - `references/app-wiring.md`
    - `references/validation.md`
-4. If the task also changes repo-encrypted secret material, use `sops-secrets` as well.
-5. If the task also changes workload routing or backup behavior, use the dedicated networking or VolSync skill as well.
+4. If the task also changes workload routing or backup behavior, use the dedicated networking or VolSync skill as well.
 
 ## Scope Boundaries
 
 - Use this skill when the shared 1Password and `ClusterSecretStore` delivery model matters.
-- Do not use this skill for SOPS-only app secrets, Flux bootstrap secret files, or other repo-encrypted secret material that does not involve External Secrets. Use `sops-secrets` for that work.
+- All runtime secrets are delivered through this model. Bootstrap-time secrets use `op inject` directly.
 - If the task is mainly about secret exposure, token scope, or hardening review, use `security-review` as well.

@@ -30,6 +30,5 @@ cluster-wide apply ordering.
 ## Scope Boundaries
 
 - Use `k8s-workloads` for ordinary app manifests under `kubernetes/apps/<group>/<app>/`.
-- Use this skill when the change touches shared Flux variables, bootstrap resources, `flux-system` add-ons, or dependency wiring that affects more than one app.
-- If the task also changes repo-encrypted secret material such as `cluster-secrets.sops.yaml`, use `sops-secrets` as well.
+- Use this skill when the change touches shared Flux bootstrap resources, `flux-system` add-ons, or dependency wiring that affects more than one app.
 - If the task is mainly about webhook exposure, provider secrets, or cluster-wide blast radius review, use `security-review` as well.

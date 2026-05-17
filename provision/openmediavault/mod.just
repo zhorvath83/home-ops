@@ -4,6 +4,8 @@ set script-interpreter := ['bash', '-euo', 'pipefail']
 set shell := ['bash', '-euo', 'pipefail', '-c']
 
 omv_dir := justfile_dir() + '/provision/openmediavault'
+omv_host := '192.168.1.10'
+omv_default_user := 'zhorvath83'
 # NAS_MOUNT_SCRIPT is defined in .mise.toml and resolves to the
 # personal helper script path (absolute, $HOME-expanded).
 nas_share_mount_script_on_mac := env_var('NAS_MOUNT_SCRIPT')
@@ -30,11 +32,11 @@ update:
 check:
     cd {{ omv_dir }} && \
     ansible -i inventory/hosts.yml omv -m ping && \
-    showmount -e 192.168.1.10
+    showmount -e {{ omv_host }}
 
 [doc('Run OMV package upgrade + apply changes over SSH, then re-mount NAS shares locally (pre-Phase-10 path)')]
 [script]
-update-host host="192.168.1.10" user="zhorvath83":
+update-host host=omv_host user=omv_default_user:
     set -eu
 
     LOCAL_NAS_SHARE_MOUNT_SCRIPT_ON_MAC="{{ nas_share_mount_script_on_mac }}"

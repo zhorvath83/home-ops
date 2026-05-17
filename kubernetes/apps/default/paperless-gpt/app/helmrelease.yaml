@@ -50,7 +50,7 @@ spec:
             env:
               # Paperless-ngx connection
               PAPERLESS_BASE_URL: "http://paperless.default.svc.cluster.local:8000"
-              PAPERLESS_PUBLIC_URL: "https://documents.${PUBLIC_DOMAIN}"
+              PAPERLESS_PUBLIC_URL: "https://documents.horvathzoltan.me"
 
               # Auto processing settings
               AUTO_GENERATE_TITLE: "true"
@@ -142,7 +142,7 @@ spec:
           gethomepage.dev/group: Selfhosted
           gethomepage.dev/icon: mistral-ai.svg
         hostnames:
-          - "paperless-gpt.${PUBLIC_DOMAIN}"
+          - "paperless-gpt.horvathzoltan.me"
         parentRefs:
           - name: envoy-external
             namespace: networking

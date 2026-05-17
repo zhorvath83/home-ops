@@ -96,7 +96,7 @@ spec:
           gethomepage.dev/group: PFM
           gethomepage.dev/icon: wallos
         hostnames:
-          - "subscriptions.${PUBLIC_DOMAIN}"
+          - "subscriptions.horvathzoltan.me"
         parentRefs:
           - name: envoy-external
             namespace: networking

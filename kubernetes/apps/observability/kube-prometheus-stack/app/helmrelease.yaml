@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
 # Minimal kube-prometheus-stack configuration optimized for single-node homelab
 # Based on: https://clux.dev/post/2024-09-07-prometheus-minified/
 apiVersion: helm.toolkit.fluxcd.io/v2

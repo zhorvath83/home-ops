@@ -133,7 +133,7 @@ spec:
           gethomepage.dev/group: Infrastructure
           gethomepage.dev/icon: https://raw.githubusercontent.com/zhorvath83/dashboard-icons/master/png/backup.png
         hostnames:
-          - "backup.${PUBLIC_DOMAIN}"
+          - "backup.horvathzoltan.me"
         parentRefs:
           - name: envoy-external
             namespace: networking
@@ -155,14 +155,14 @@ spec:
 
       nfs-tmp:
         type: nfs
-        server: ${CONF_NFS_SRV_IP}
+        server: 192.168.1.10
         path: /tmp/resticprofile-restore
         globalMounts:
           - path: /restore
 
       nfs-backups:
         type: nfs
-        server: ${CONF_NFS_SRV_IP}
+        server: 192.168.1.10
         path: /backups
         globalMounts:
           - path: /backups

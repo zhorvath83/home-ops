@@ -9,7 +9,7 @@ The full design rationale for each stage is in [`docs/migration/04-bootstrap-hel
 All tooling versions are pinned in `.mise.toml` at the repo root. Activate them with `mise install` (one-time per machine):
 
 - `talosctl`, `kubectl`, `helm`, `helmfile`, `flux2`, `just`
-- `sops`, `age`, `1password-cli` for secret decryption / `op inject`
+- `1password-cli` for `op inject` secret injection
 - `minijinja` (via `aqua:mitsuhiko/minijinja`) for templated bootstrap resources
 - `yq`, `jq`, `gum` for the recipe scripts
 
@@ -17,7 +17,6 @@ Additionally needed before running:
 
 - a working `talosconfig` (generate with `just talos gen-talosconfig` after `just talos gen-secrets`)
 - `op` signed in for `op inject` (1Password CLI)
-- `SOPS_AGE_KEY_FILE` resolvable to the cluster Age key (the recipe template handles 1Password lookup)
 
 ## Bootstrap the cluster
 
@@ -34,7 +33,7 @@ The composed stages (each can be inspected via `just --list cluster-bootstrap`):
 3. **`kubeconfig`** (lb=`node`) — fetch the kubeconfig from the controller, pinning the server to the node IP so the next stages can talk to the API before Cilium is up.
 4. **`wait`** — wait for the node to register with the API server (`Ready=False` is fine — the CNI is still missing).
 5. **`namespaces`** — create one namespace per directory under `kubernetes/apps/`.
-6. **`resources`** — render `resources.yaml.j2` through `minijinja-cli | op inject` and apply the bootstrap-time Secrets (`sops-age` in `flux-system`, `onepassword-secret` in `external-secrets`).
+6. **`resources`** — render `resources.yaml.j2` through `minijinja-cli | op inject` and apply the bootstrap-time Secrets (`onepassword-connect-credentials-secret` + `onepassword-connect-vault-secret` in `external-secrets`).
 7. **`crds`** — helmfile-render `helmfile.d/00-crds.yaml` and apply only `CustomResourceDefinition` objects (other kinds are filtered out by the `yq` pipeline; the Gateway API `ValidatingAdmissionPolicy` is intentionally excluded — see STATUS.md `safe-upgrades VAP` reminder).
 8. **`apps`** — `helmfile sync` the main chain in `helmfile.d/01-apps.yaml`: Cilium → CoreDNS → cert-manager → External Secrets → 1Password Connect → Flux Operator → FluxInstance.
 9. **`kubeconfig`** (lb=`cilium`, default) — re-fetch the kubeconfig so the server endpoint switches to the Cilium-L2-announced address.
@@ -46,7 +45,7 @@ After `apps` completes, Flux Operator reconciles `FluxInstance`, which creates t
 Once Flux is up, prefer regular reconcile commands instead of re-running the bootstrap:
 
 ```sh
-just k8s flux-reconcile      # full refresh: GitRepository + cluster-vars + cluster-apps
+just k8s flux-reconcile      # full refresh: GitRepository + cluster-apps
 just k8s flux-check          # flux check --pre
 ```
 

@@ -100,7 +100,7 @@ spec:
           gethomepage.dev/icon: actual-budget
           gethomepage.dev/siteMonitor: http://actual.default.svc.cluster.local:5006
         hostnames:
-          - "pfm.${PUBLIC_DOMAIN}"
+          - "pfm.horvathzoltan.me"
         parentRefs:
           - name: envoy-external
             namespace: networking

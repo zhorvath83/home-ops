@@ -55,7 +55,7 @@ spec:
               PUID: "10001"
               PGID: "10001"
               ALLOW_SIGNUP: "false"
-              BASE_URL: "https://mealie.${PUBLIC_DOMAIN}"
+              BASE_URL: "https://mealie.horvathzoltan.me"
               # SMTP Configuration
               SMTP_AUTH_STRATEGY: "NONE"
             envFrom:
@@ -106,7 +106,7 @@ spec:
           gethomepage.dev/group: Selfhosted
           gethomepage.dev/icon: mealie.svg
         hostnames:
-          - "recipes.${PUBLIC_DOMAIN}"
+          - "recipes.horvathzoltan.me"
         parentRefs:
           - name: envoy-external
             namespace: networking

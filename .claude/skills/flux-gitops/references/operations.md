@@ -8,7 +8,7 @@ The cluster runs Flux through the Flux Operator + `FluxInstance` pattern. There 
 
 For everyday Flux work, prefer the `just k8s` recipes (group `flux` and `sync`):
 
-- `just k8s flux-reconcile` — refresh the Git source and reconcile both root Kustomizations (`cluster-vars` + `cluster-apps`)
+- `just k8s flux-reconcile` — refresh the Git source and reconcile the root `cluster-apps` Kustomization
 - `just k8s flux-check` — `flux check --pre`
 - `just k8s sync-hr <name> <namespace>` — sync a single HelmRelease
 - `just k8s sync-ks <name> <namespace>` — sync a single Kustomization
@@ -28,11 +28,10 @@ Use the upstream CLI directly when no recipe wraps the operation:
 
 - `just k8s flux-reconcile` and `flux reconcile ...` only help with committed state that Flux can fetch.
 - Do not present reconcile as if it applied the local working tree.
-- Bootstrap-time concerns (Flux Operator install, `FluxInstance` config, `cluster-secrets.sops.yaml` substitutions) live in `kubernetes/bootstrap/` and `kubernetes/apps/flux-system/flux-instance/`; inspect those together when the change affects the control-plane install.
+- Bootstrap-time concerns (Flux Operator install, `FluxInstance` config) live in `kubernetes/bootstrap/` and `kubernetes/apps/flux-system/flux-instance/`; inspect those together when the change affects the control-plane install.
 
 ## Cross-Skill Routing
 
-- bootstrap or repo-encrypted secret changes: use `sops-secrets`
 - app-local workload changes: use `k8s-workloads`
 - webhook or provider secrets delivered by External Secrets: use `external-secrets`
 - recipe-wiring changes in the root `.justfile` or `kubernetes/mod.just`: use `just`

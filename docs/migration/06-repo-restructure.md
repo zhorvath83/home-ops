@@ -14,13 +14,23 @@
 | `kubernetes/apps/kube-system/cilium/` új subtree | ✅ kész — lásd Phase 3 |
 | `namespace.yaml` `prune: disabled` LABEL → ANNOTATION fix (8 fájl) | ✅ kész |
 | ks.yaml `spec` mezősorrend alfabetikus rendezés (45 fájl, `yq sort_keys`) | ✅ kész |
-| `metadata.namespace: flux-system` explicit megőrzése minden ks.yaml-ben (substituteFrom kompatibilitás) | ✅ kész — `cluster-apps` patch a substituteFrom-ot a flux-system-beli `cluster-settings`/`cluster-secrets`-re hivatkoztatja, ezért minden child Kustomization-nek a flux-system-ben kell léteznie |
+| `metadata.namespace: flux-system` explicit megőrzése minden ks.yaml-ben (átmeneti) | ✅ kész — később Step 9 keretében visszafordítva |
 | `flux-system/addons/ks.yaml` igazítása konvencióhoz (commonMetadata.labels, interval 30m→1h, timeout 3m→5m, retryInterval drop) | ✅ kész |
 | `kube-system/kustomization.yaml` resource ordering: namespace.yaml első helyre | ✅ kész |
+| **`cluster-settings` ConfigMap eltüntetése** — 4 halott változó törölve, 4 RFC1918 IP hardcodeolva (CONF_NFS_SRV_IP, LB_ENVOY_INTERNAL_IP, LB_K8S_GATEWAY_IP, LB_MEDIASERVER_IP) | ✅ kész |
+| **`PUBLIC_DOMAIN` hardcodeolása** (32 fájl) + CLAUDE.md policy módosítás (bjw-s/onedr0p/buroa minta — public domain nem secret, DNS/TLS/Cloudflare publikus) | ✅ kész |
+| **`SECRET_QBITTORRENT_PW` migráció** ExternalSecret-re — initContainer secret-mount + append pattern | ✅ kész — ⚠ 1Password item `qbittorrent` (vault: HomeOps, field: `password_pbkdf2`) bootstrap előtt létre kell hozni |
+| **`cluster-secrets.sops.yaml` törlése + `kubernetes/flux/vars/` mappa törlése** | ✅ kész |
+| **cluster-apps root egyszerűsítése** — `cluster-vars` Kustomization eltüntetve, substituteFrom patch teljesen eltávolítva, marad SOPS decryption + HelmRelease defaults patch | ✅ kész |
 | Megszűnő apps eltávolítása (`tigera-operator`, `metallb`, `metallb-config`, `system-upgrade-controller`, `system-upgrade-controller-plans`) | ✅ kész — egyik mappa sem létezik a `talos` branch-en |
-| Új `flux-operator` + `flux-instance` app-subtree-k létrehozása | ✅ kész — `kubernetes/apps/flux-system/{flux-operator,flux-instance}/` mindkettő él |
+| Új `flux-operator` + `flux-instance` app-subtree-k létrehozása | ✅ kész |
+| **Step 9** — Kustomization CR-ek kiköltöztetése `flux-system`-ből workload ns-ekbe: `namespace: <ns>` direktíva 8 apps/<ns>/kustomization.yaml-be, metadata.namespace strip 45 ks.yaml-ből, cross-ns dependsOn refek namespace mezővel | ✅ kész — bjw-s parity ELÉRVE: 52 KS elosztva 8 namespace-be (22 default, 8 kube-system, 7 networking, 5 flux-system, 3 volsync-system, 3 observability, 2 external-secrets, 2 cert-manager) |
+| **flux-alerts component bevezetése** — per-ns Alert+Provider+ExternalSecret a `kubernetes/components/flux-alerts/`-ből, minden apps/<ns>/kustomization.yaml `components: [../../components/flux-alerts]`-tel; régi apps/flux-system/addons/alerts/pushover/ törölve | ✅ kész |
+| **namespace.yaml `name: _` placeholder** átállítás (bjw-s/onedr0p minta) — kustomize directive helyettesíti a workload-ns nevével | ✅ kész |
+| **flux-instance HR Helm cache patch eltávolítása** — 0 HelmRepository CR (csak OCIRepo), NOOP volt | ✅ kész |
+| **Homepage `secret.sops.yaml` → ExternalSecret migráció** — 4 multi-line YAML mező a 1Password `homepage-config` item-ben, `externalsecret-config-files.yaml` template-szel renderel 9-mezős `homepage-config-files-secret`-et | ✅ kész — ⚠ 1Password item `homepage-config` (vault: HomeOps, mezők: `kubernetes_yaml`, `services_yaml`, `settings_yaml`, `widgets_yaml`) bootstrap előtt létre kell hozni |
+| **cluster-apps root SOPS-eltüntetés** — `decryption: sops` spec ÉS injektáló patch is törölve (utolsó SOPS runtime resource a homepage volt) | ✅ kész |
 | Egyéb új apps: `tuppr` (system upgrade Talos-ra) | ⏸ Phase 6 |
-| `cluster-settings` substitution inline-olása (bjw-s minta) | ⏭ scope-on kívül — megőrizzük a substitution pattern-t |
 
 Az aktuális 41 Flux Kustomization név (rövid alak): `actual, bazarr, calibre-web-automated, cert-manager, cert-manager-issuers, cilium, cilium-config, cloudflare-tunnel, democratic-csi, echo, envoy-gateway, envoy-gateway-certificate, envoy-gateway-config, external-dns, external-secrets, flux-alerts, flux-provider-pushover, flux-webhooks, grafana, home-gallery, homepage, isponsorblocktv, k8s-gateway, kopia, kube-prometheus-stack, maintainerr, mealie, metallb, metallb-config, metrics-server, onepassword-connect, onepassword-store, paperless, paperless-gpt, plex, plex-trakt-sync, prowlarr, qbittorrent, qbittorrent-upgrade-p2pblocklist, radarr, reloader, restic-gui, resticprofile, seerr, snapshot-controller, sonarr, speedtest-exporter, subsyncarr, system-upgrade-controller, system-upgrade-controller-plans, tigera-operator, volsync, volsync-maintenance, wallos`.
 
@@ -68,8 +78,15 @@ A `dependsOn:` listák is frissítendők (`cluster-apps-onepassword-store` → `
 
 ## Kötelező ks.yaml minta — referenciákhoz illeszkedő
 
-A bjw-s/onedr0p konvenció szerint:
-- **VAN** `metadata.namespace: flux-system` minden Flux Kustomization CR-en — a `cluster-apps` patch a `postBuild.substituteFrom: [cluster-settings, cluster-secrets]`-et minden child Kustomization-be injektálja, ezért a child-eknek a `flux-system` namespace-ben kell létezniük, hogy az ott élő ConfigMap/Secret resource-okat el tudják érni. bjw-s natív mintája (kustomize `namespace: <ns>` direktíva apps/<ns>/kustomization.yaml-ben + `name: _` placeholder a namespace.yaml-ben) **nálunk nem alkalmazható**, mert a child Kustomization-öket szétszórná több namespace-be, ami megtörné a substituteFrom resolver-t.
+A bjw-s konvenció szerint (Step 9 után ELÉRVE):
+- **NINCS** `metadata.namespace` a ks.yaml-ekben — a `kustomize` directive `namespace: <ns>` (apps/<ns>/kustomization.yaml-ben) injektálja workload-ns-be a Flux Kustomization CR-eket. A Namespace resource neve egyezik a direktíva értékével (`name: <ns>` matches `namespace: <ns>` → kustomize transformer no-op a Namespace-re).
+- **Cross-namespace dependsOn** esetén kötelező az explicit `namespace:` mező a dependsOn item-en:
+  ```yaml
+  dependsOn:
+    - name: onepassword-connect
+      namespace: external-secrets
+  ```
+  Same-ns dependsOn-nál nincs namespace mező.
 - **NINCS** YAML anchor (`&app`/`*app`) — a nevet kétszer ismételjük plain szöveggel (egyszer `metadata.name`, egyszer `commonMetadata.labels`).
 - **NINCS** `retryInterval` explicit (controller default ~30s elég).
 - `wait: false` default — csak akkor `true`, ha valami másik Kustomization explicit `dependsOn`-nal a Ready-re vár (pl. Cilium HR-jét).
@@ -86,7 +103,7 @@ apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: <APP_NAME>
-  namespace: flux-system
+  # metadata.namespace NINCS — apps/<ns>/kustomization.yaml `namespace: <ns>` direktívája injektálja
 spec:
   commonMetadata:
     labels:
@@ -111,7 +128,6 @@ apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: <APP_NAME>
-  namespace: flux-system
 spec:
   commonMetadata:
     labels:

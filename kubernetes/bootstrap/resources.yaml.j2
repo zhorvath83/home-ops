@@ -17,14 +17,3 @@ metadata:
   namespace: external-secrets
 stringData:
   token: op://HomeOps/1password-connect-kubernetes/token
----
-# SOPS age private key — Flux uses this to decrypt *.sops.yaml files (cluster-secrets,
-# any app-level secret.sops.yaml). Required by the cluster-vars Kustomization in
-# kubernetes/flux/cluster/ks.yaml.
-apiVersion: v1
-kind: Secret
-metadata:
-  name: sops-age
-  namespace: flux-system
-stringData:
-  age.agekey: op://HomeOps/homelab-age-key/privateKey

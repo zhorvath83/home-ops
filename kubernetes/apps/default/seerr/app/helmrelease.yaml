@@ -90,7 +90,7 @@ spec:
           gethomepage.dev/group: Arr Stack
           gethomepage.dev/icon: jellyseerr.svg
         hostnames:
-          - "reqs.${PUBLIC_DOMAIN}"
+          - "reqs.horvathzoltan.me"
         parentRefs:
           - name: envoy-external
             namespace: networking

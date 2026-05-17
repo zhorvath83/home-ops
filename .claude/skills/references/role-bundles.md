@@ -26,7 +26,7 @@ Expected output:
 Use for normal repository changes.
 
 - combine the domain skill for the touched area
-- add `just`, `versions-renovate`, or `sops-secrets` when those concerns are part of the change
+- add `just` or `versions-renovate` when those concerns are part of the change
 
 Expected output:
 
@@ -42,7 +42,7 @@ Use for debugging without jumping straight to mutation.
 - `flux-gitops` for GitOps or reconcile issues
 - `networking-platform` for ingress and edge failures
 - `volsync` for backup and restore issues
-- `external-secrets` or `sops-secrets` for secret-related failures
+- `external-secrets` for secret-related failures
 
 Expected output:
 

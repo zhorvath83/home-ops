@@ -55,7 +55,7 @@ spec:
               # Application settings
               TZ: &tz "Europe/Budapest"
               PAPERLESS_TIME_ZONE: *tz
-              PAPERLESS_URL: "https://docs.${PUBLIC_DOMAIN}"
+              PAPERLESS_URL: "https://docs.horvathzoltan.me"
               PAPERLESS_PORT: "8000"
               PAPERLESS_ENABLE_COMPRESSION: "false"
               PAPERLESS_TRUSTED_PROXIES: "10.42.0.0/16,192.168.1.0/24"
@@ -264,7 +264,7 @@ spec:
           gethomepage.dev/group: Selfhosted
           gethomepage.dev/icon: paperless-ngx.svg
         hostnames:
-          - "docs.${PUBLIC_DOMAIN}"
+          - "docs.horvathzoltan.me"
         parentRefs:
           - name: envoy-external
             namespace: networking
@@ -303,7 +303,7 @@ spec:
 
       nas-export:
         type: nfs
-        server: ${CONF_NFS_SRV_IP}
+        server: 192.168.1.10
         path: /backups/paperless
         advancedMounts:
           *app :
@@ -314,7 +314,7 @@ spec:
 
       nas-inbox:
         type: nfs
-        server: ${CONF_NFS_SRV_IP}
+        server: 192.168.1.10
         path: /scanner/paperless-inbox
         advancedMounts:
           *app :

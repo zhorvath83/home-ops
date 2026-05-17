@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/monitoring.coreos.com/podmonitor_v1.json
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/monitoring.coreos.com/podmonitor_v1.json
 # Flux controller metrics scraping
 # https://fluxcd.io/flux/monitoring/metrics/
 apiVersion: monitoring.coreos.com/v1

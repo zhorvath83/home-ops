@@ -1,31 +1,32 @@
 ---
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: seerr
-  namespace: flux-system
 spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: seerr
-  dependsOn:
-    - name: onepassword-connect
-    - name: democratic-csi
-  path: ./kubernetes/apps/default/seerr/app
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
-  interval: 1h
-  targetNamespace: default
-  timeout: 5m
-  wait: false
   components:
     - ../../../../components/volsync
+  dependsOn:
+    - name: onepassword-connect
+      namespace: external-secrets
+    - name: democratic-csi
+      namespace: kube-system
+  interval: 1h
+  path: ./kubernetes/apps/default/seerr/app
   postBuild:
     substitute:
       APP: seerr
       APP_UID: "1000"
       APP_GID: "1000"
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  targetNamespace: default
+  timeout: 5m
+  wait: false

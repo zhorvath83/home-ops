@@ -26,8 +26,6 @@ just = "1.51.0"
 
 # Templating + secrets
 "aqua:mitsuhiko/minijinja" = "2.19.0"
-sops = "3.13.0"
-age = "1.3.1"
 "1password-cli" = "2.34.0"
 
 # YAML/JSON tooling

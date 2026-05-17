@@ -1,31 +1,32 @@
 ---
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: plex
-  namespace: flux-system
 spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: plex
-  dependsOn:
-    - name: onepassword-connect
-    - name: democratic-csi
-  path: ./kubernetes/apps/default/plex/app
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
-  interval: 1h
-  targetNamespace: default
-  timeout: 5m
-  wait: false
   components:
     - ../../../../components/volsync
+  dependsOn:
+    - name: onepassword-connect
+      namespace: external-secrets
+    - name: democratic-csi
+      namespace: kube-system
+  interval: 1h
+  path: ./kubernetes/apps/default/plex/app
   postBuild:
     substitute:
       APP: plex
       VOLSYNC_CAPACITY: "5Gi"
       VOLSYNC_CACHE: "2Gi"
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  targetNamespace: default
+  timeout: 5m
+  wait: false

@@ -8,3 +8,6 @@ resources:
   - ./flux-instance/ks.yaml
   - ./addons/ks.yaml
   - ./flux-provider-pushover/ks.yaml
+namespace: flux-system
+components:
+  - ../../components/flux-alerts

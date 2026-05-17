@@ -1,5 +1,7 @@
 # 07 — Components és shared resources
 
+> **2026-05-17 — Frissítés**: a `cluster-settings` ConfigMap és `cluster-secrets` SOPS Secret **eltüntetve** (lásd doc 06 STATUS). A `kubernetes/flux/vars/` mappa törölve. A korábbi `${PUBLIC_DOMAIN}` substitution layer helyett a domain (`horvathzoltan.me`) **hardcoded** mindenhol (bjw-s/onedr0p/buroa minta). A `SECRET_QBITTORRENT_PW` ExternalSecret-re migrálva (1Password `qbittorrent` item, `password_pbkdf2` mező). A doc alábbi szekciói **historikus dokumentáció** — a tényleges futó állapot már nem substituteFrom-mintát követ.
+
 ## Cél
 
 A `kubernetes/components/` újrahasznosítható darabok strukturálása + a shared `cluster-secrets` / `cluster-settings` minta finomítása az új clusterre.
@@ -9,19 +11,24 @@ A `kubernetes/components/` újrahasznosítható darabok strukturálása + a shar
 - Flux Operator + FluxInstance működik, a `cluster-apps` Kustomization minden Flux Kustomization-be injektálja a SOPS dekripciót és substitueFrom-ot (lásd [05-flux-operator.md](./05-flux-operator.md)).
 - A jelenlegi `kubernetes/components/volsync/` 5 fájllal megvan (kustomization, externalsecret, pvc, replicationsource, replicationdestination).
 
-## Jelenlegi components — megőrzött
+## Jelenlegi components
 
 ```
 kubernetes/components/
+├── flux-alerts/                              # ÚJ — Step 9 után bevezetett, per-ns Alert+Provider+ExternalSecret
+│   ├── kustomization.yaml                    # kind: Component
+│   ├── externalsecret.yaml                   # 1Password "pushover" → flux-pushover-secret
+│   ├── provider.yaml                         # type: generic, name: pushover
+│   └── alert.yaml                            # eventSources GR/HR/HRepo/KS/OCIRepo "*"
 └── volsync/
     ├── kustomization.yaml
     ├── externalsecret.yaml
     ├── pvc.yaml
     ├── replicationsource.yaml
-    └── replicationdestination.yaml             # most kikommentelve, bootstrap restore-hoz
+    └── replicationdestination.yaml           # most kikommentelve, bootstrap restore-hoz
 ```
 
-Ez **változatlanul átkerül** az új clusterre. A komponens postBuild substitute változókkal paraméterezett, app-onként testreszabható.
+A `volsync` component **változatlanul** átkerül az új clusterre. A `flux-alerts` component pedig minden `apps/<ns>/kustomization.yaml`-ből hivatkozva van (`components: [../../components/flux-alerts]`), így a 8 workload namespace mindegyike kap saját Alert+Provider+ExternalSecret hármast — per-ns notification coverage (a Step 9 utáni szétszórt KS/HR-ekhez).
 
 ## Hogyan dolgozik a volsync component
 
@@ -103,7 +110,7 @@ Részletes kutatás alapján:
 |---|---|---|---|---|---|
 | **volsync** | ✅ | ✅ | ✅ | Per-app Kopia backup (ExternalSecret + PVC + RS + RD) | **MEGTARTÁS** — már megvan |
 | **zeroscaler** | ✅ | ✅ | ✅ | Scale-to-zero HPA blackbox NFS probe metric alapján — ha NAS offline, az NFS-függő pod-ok 0-ra skáláznak | **Phase 2** (NAS redundancia szempontból érdekes) |
-| **flux-alerts** | ✅ (`flux-alerts/`) | ✅ (`alerts/`) | ✅ (`namespace/alerts/`) | Per-app Flux Alert + Provider — app-szintű notification | **Phase 2** opcionálisan |
+| **flux-alerts** | ✅ (`flux-alerts/`) | ✅ (`alerts/`) | ✅ (`namespace/alerts/`) | Per-namespace Alert + Provider + ExternalSecret — workload-ns notification | **BEVEZETVE** — Step 9 után minden apps/<ns>/kustomization.yaml-ben `components: [../../components/flux-alerts]` |
 | **github-status** | ❌ | ✅ | ✅ | Flux Kustomization eredményt GitHub commit status-ként | **Nem szükséges** |
 | **gpu** (DRA) | ✅ | ❌ | ❌ | Intel iGPU ResourceClaimTemplate (K8s 1.32+ DRA) | **Nem most** (Plex iGPU egyelőre kihagyva) |
 | **anubis** | ✅ | ❌ | ❌ | Anti-bot challenge proxy | **Nem szükséges** |

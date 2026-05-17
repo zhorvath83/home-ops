@@ -109,7 +109,7 @@ spec:
           gethomepage.dev/group: Arr Stack
           gethomepage.dev/icon: mdi-subtitles
         hostnames:
-          - "subsync.${PUBLIC_DOMAIN}"
+          - "subsync.horvathzoltan.me"
         parentRefs:
           - name: envoy-external
             namespace: networking
@@ -129,7 +129,7 @@ spec:
           - path: /app/data
       media:
         type: nfs
-        server: ${CONF_NFS_SRV_IP}
+        server: 192.168.1.10
         path: /media/shows
         globalMounts:
           - path: /media
