@@ -6,7 +6,3 @@ namespace: default
 resources:
   - ./ocirepository.yaml
   - ./helmrelease.yaml
-
-labels:
-  - pairs:
-      app.kubernetes.io/name: seerr

@@ -9,10 +9,6 @@ resources:
   - ocirepository.yaml
   - externalsecret.yaml
   - helmrelease.yaml
-labels:
-  - pairs:
-      app.kubernetes.io/name: cloudflare-tunnel
-
 generatorOptions:
   disableNameSuffixHash: true
   annotations:

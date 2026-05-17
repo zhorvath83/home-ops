@@ -5,7 +5,3 @@ kind: Kustomization
 resources:
   - ./ocirepository.yaml
   - ./helmrelease.yaml
-
-labels:
-  - pairs:
-      app.kubernetes.io/name: snapshot-controller

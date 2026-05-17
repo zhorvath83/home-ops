@@ -6,7 +6,3 @@ namespace: networking
 resources:
   - ./ocirepository.yaml
   - ./helmrelease.yaml
-
-labels:
-  - pairs:
-      app.kubernetes.io/name: echo

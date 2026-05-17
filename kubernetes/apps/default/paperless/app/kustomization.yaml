@@ -8,16 +8,10 @@ resources:
   - ./externalsecret.yaml
   - ./helmrelease.yaml
   - ./ciliumnetworkpolicy.yaml
-
-commonLabels:
-  app.kubernetes.io/name: paperless-ngx
-  app.kubernetes.io/instance: paperless-ngx
-
 configMapGenerator:
   - name: paperless-scripts
     files:
       - config/pre-consume.sh
-
 generatorOptions:
   disableNameSuffixHash: true
   annotations:

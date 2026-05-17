@@ -7,7 +7,3 @@ resources:
   - ./ocirepository.yaml
   - ./helmrelease.yaml
   - ./externalsecret.yaml
-
-labels:
-  - pairs:
-      app.kubernetes.io/name: flux-provider-pushover

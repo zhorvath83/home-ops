@@ -7,18 +7,12 @@ resources:
   - ./ocirepository.yaml
   - ./pvc.yaml
   - ./helmrelease.yaml
-
 configMapGenerator:
   - name: home-gallery-configmap
     files:
       - config/gallery.config.yml
       - config/plugins/exifDatePriority.plugin.mjs
-
 generatorOptions:
   disableNameSuffixHash: true
   annotations:
     kustomize.toolkit.fluxcd.io/substitute: disabled
-
-labels:
-  - pairs:
-      app.kubernetes.io/name: home-gallery

@@ -7,7 +7,3 @@ resources:
   - ./externalsecret.yaml
   - ./ocirepository.yaml
   - ./helmrelease.yaml
-
-labels:
-  - pairs:
-      app.kubernetes.io/name: external-dns

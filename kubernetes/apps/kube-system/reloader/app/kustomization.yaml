@@ -6,7 +6,3 @@ namespace: kube-system
 resources:
   - ./ocirepository.yaml
   - ./helmrelease.yaml
-
-labels:
-  - pairs:
-      app.kubernetes.io/name: reloader

@@ -7,17 +7,11 @@ resources:
   - ./externalsecret.yaml
   - ./ocirepository.yaml
   - ./helmrelease.yaml
-
-labels:
-  - pairs:
-      app.kubernetes.io/name: qbittorrent
-
 configMapGenerator:
   - name: qbittorrent-configmap
     files:
       - config/qBittorrent.conf
       - config/watched_folders.json
       - config/categories.json
-
 generatorOptions:
   disableNameSuffixHash: true

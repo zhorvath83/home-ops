@@ -7,16 +7,10 @@ resources:
   - ./ocirepository.yaml
   - ./helmrelease.yaml
   - ./externalsecret.yaml
-
-labels:
-  - pairs:
-      app.kubernetes.io/name: resticprofile
-
 configMapGenerator:
   - name: resticprofile-configmap
     files:
       - ./config/profiles.yaml
-
 generatorOptions:
   disableNameSuffixHash: true
   annotations:

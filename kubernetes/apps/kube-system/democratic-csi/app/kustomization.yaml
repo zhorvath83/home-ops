@@ -7,7 +7,3 @@ resources:
   - ./ocirepository.yaml
   - ./helmrelease.yaml
   - ./volumesnapshotclass.yaml
-
-labels:
-  - pairs:
-      app.kubernetes.io/name: democratic-csi

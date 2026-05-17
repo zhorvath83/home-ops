@@ -7,11 +7,6 @@ resources:
   - ./ocirepository.yaml
   - ./helmrelease.yaml
   - ./externalsecret.yaml
-
-labels:
-  - pairs:
-      app.kubernetes.io/name: homepage
-
 configMapGenerator:
   - name: homepage-config-files
     files:
@@ -23,6 +18,5 @@ configMapGenerator:
       - config/proxmox.yaml
       - config/custom.css
       - config/custom.js
-
 generatorOptions:
   disableNameSuffixHash: true
