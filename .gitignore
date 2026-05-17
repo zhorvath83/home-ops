@@ -9,13 +9,8 @@ bin
 .temp*
 .private/
 .logs/
-.task/
 # Log files
 *.log
-# Ansible
-mrlesmithjr.zfs*
-geerlingguy.docker*
-geerlingguy.pip*
 # Terraform
 .terraform
 .terraform.tfstate*
@@ -34,7 +29,6 @@ talosconfig*
 # Folder Structure v3
 /root
 megalinter-reports/
--e
 # Python
 __pycache__/
 *.pyc
