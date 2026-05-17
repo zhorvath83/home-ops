@@ -77,7 +77,7 @@ flux-check:
     flux check --pre
 
 [group('flux')]
-[doc('Force a full Flux reconcile: refresh the Git source, then reconcile both root Kustomizations (cluster-vars + cluster-apps). Structured per-stage logging with duration.')]
+[doc('Force a full Flux reconcile: refresh the Git source, then reconcile the cluster-apps root Kustomization. Structured per-stage logging with duration.')]
 [script]
 flux-reconcile:
     t0=${SECONDS}
@@ -85,15 +85,11 @@ flux-reconcile:
     flux reconcile source git flux-system -n flux-system
     t1=${SECONDS}
     just log info "Reconciled Git source" duration "$((t1-t0))s"
-    just log info "Stage: reconcile cluster-vars"
-    flux reconcile kustomization cluster-vars -n flux-system
-    t2=${SECONDS}
-    just log info "Reconciled cluster-vars" duration "$((t2-t1))s"
     just log info "Stage: reconcile cluster-apps"
     flux reconcile kustomization cluster-apps -n flux-system
-    t3=${SECONDS}
-    just log info "Reconciled cluster-apps" duration "$((t3-t2))s"
-    just log info "flux-reconcile complete" total "$((t3-t0))s"
+    t2=${SECONDS}
+    just log info "Reconciled cluster-apps" duration "$((t2-t1))s"
+    just log info "flux-reconcile complete" total "$((t2-t0))s"
 
 [group('flux')]
 [doc('List failed/unknown HelmReleases — JSON-based detection on the Ready condition, immune to kubectl text-output drift')]

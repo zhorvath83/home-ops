@@ -91,7 +91,7 @@ namespaces:
 [doc('Stage: render resources.yaml.j2 (op inject) and apply bootstrap-time Secrets')]
 [script]
 resources:
-    just log info "Stage: bootstrap resources (1Password Connect + sops-age)"
+    just log info "Stage: bootstrap resources (1Password Connect)"
     just template "{{ bootstrap_dir }}/resources.yaml.j2" | kubectl apply --server-side -f -
 
 [private]
