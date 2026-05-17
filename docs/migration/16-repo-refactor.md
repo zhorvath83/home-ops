@@ -242,15 +242,55 @@ Az AOP **csak akkor érdemes** ha a fenti 3-lépéses architektúra-szintű véd
 - Hubble (`cilium hubble observe --verdict DENIED`) zéró tartós denial a normál cluster-forgalomban.
 - A `audit/app-inventory.md` (vagy session jegyzőkönyv) átfutva minden app-hoz egy kategória + Szint I/II döntés + indok van.
 
+## 16.d — qbittorrent config-handling refactor (follow-up)
+
+### Cél
+
+A homepage konfig-szétválasztás (2026-05, `talos` ág commit `2807e9d4b`) megmutatta, hogy a non-secret config + secret-key kombináció kezelhető **init container nélkül**, pusztán `configMap` + `secret` `subPath` mount-okkal. A qbittorrent ehhez képest máig `controllers.qbittorrent.initContainers.01-copy-config` busybox container-rel másolja a baseline-t és fűzi hozzá a PBKDF2 hash-t. Érdemes a mintát újragondolni — de Phase 16-ban nem implementáljuk, csak rögzítjük a döntési pontot.
+
+### Jelenlegi minta
+
+`kubernetes/apps/default/qbittorrent/app/helmrelease.yaml` init container minden pod-start-kor:
+
+1. `mkdir -p /config/qBittorrent/`
+2. `cp /tmp/configfiles/* /config/qBittorrent/` (a `qbittorrent-configmap` ConfigMap-ből: `qBittorrent.conf`, `watched_folders.json`, `categories.json`)
+3. `echo "WebUI\\Password_PBKDF2=$(cat /secrets/qbittorrent/password_pbkdf2)" >> /config/qBittorrent/qBittorrent.conf`
+
+A `/config` PVC, a `/tmp/configfiles` ConfigMap-mount, a `/secrets/qbittorrent` ESO Secret-mount.
+
+### Pain pointok
+
+1. **Runtime config overwrite**: a qBittorrent a `qBittorrent.conf`-ba ír runtime-ban (UI-tuning, plugin-state). Minden pod restart felülírja a configMap baseline-jal, a futó-állapotban hozzáadott setting-ek elvesznek. Ez **lehet szándékos** ("git = single source of truth, UI tuning ephemeral"), de explicit döntés helyett mellékhatás.
+2. **Init container privilege footprint**: a `01-copy-config` busybox `cp`-t futtat a config PVC-be — kicsi felület, de extra supply-chain belépő.
+3. **Két fájl-verzió ugyanarra a path-ra**: a `config/qBittorrent.conf` (git, baseline) és a PVC `/config/qBittorrent/qBittorrent.conf` (runtime) szétválik, és nincs visszaszinkron a git-be.
+
+### Lehetséges refaktor-irányok
+
+- **Opció A — ESO template assembly**: a 1P `qbittorrent` item kiegészül egy `qbittorrent_conf` text mezővel, ami a teljes `qBittorrent.conf`-ot tartalmazza a PBKDF2 sorral együtt. Az ExternalSecret `template.data`-val kirendereli a `qBittorrent.conf` Secret-kulcsot, a HR `subPath` mount-tal pakolja `/config/qBittorrent/qBittorrent.conf`-ra. Init container kiesik. Trade-off: a baseline a 1P-ben él, nem a git-ben — szerkesztés-élmény rosszabb.
+- **Opció B — Bootstrap-only init container**: az `01-copy-config`-ban `cp -n` vagy `[ ! -f /config/qBittorrent/qBittorrent.conf ]` guard, csak ELSŐ indításkor másol. Runtime tuning megmarad, de a baseline update-ek (chart-bump, új config) **soha nem futnak be** automatikusan — manuális `rm`-mel kell kikényszeríteni.
+- **Opció C — Status quo + explicit dokumentáció**: a jelenlegi viselkedés tudatos választás marad, és a `.claude/skills/k8s-workloads/` skill-be (vagy közvetlenül a qbittorrent CLAUDE.md-be ha indokolt) bekerül egy doc-szakasz, ami a "runtime tuning ephemeral" trade-off-ot explicit leírja. Refaktor nincs, csak doc.
+
+### Döntési pont
+
+A választás függ a qBittorrent runtime change-ek értékétől (van-e olyan UI tuning, amit nem akarunk minden pod-restartnál újra megcsinálni?). Phase 16-ban ezt **nem döntjük el**, csak rögzítjük a follow-up-ot.
+
+### 16.d verifikáció
+
+- Döntés rögzítve egy session jegyzőkönyvben (A/B/C opció + indok).
+- Ha A vagy B → implementáció külön commit-ban, helmrelease + (Opció A-nál) 1P item + ExternalSecret módosítva, kustomize build tiszta, pod restart ciklus után a qBittorrent UI elérhető és a WebUI jelszó működik.
+- Ha C → doc-szakasz hozzáadva, semmi cluster-szintű változás.
+
 ## Exit criteria
 
 - **16.a**: `flux get ks -A` ad 4 új top-level KS-t (paperless-gpt, plex-trakt-sync, qbittorrent-upgrade-p2pblocklist, backrest), `restic-gui` KS törölve, `kubectl get hr -A` mind Ready, RS/RD/PVC nevezéktan változatlan.
 - **16.b**: minden K3s/Task/MetalLB/Traefik/Calico referencia eltűnt a `docs/*.md` + `CLAUDE.md` + `.claude/skills/*` fájlokból (kivéve a `docs/migration/` történelmi narratíváját), és a doc-réteg a `talos` ág realitását tükrözi.
 - **16.c**: az app-inventory táblázat 100%-ban kitöltve, magas-érték app-okhoz konkrét per-app CNP, a `4f4b76eec` overengineered CNP-k vagy törölve vagy threat-model-alapra cserélve, Hubble denial-rate stabil.
+- **16.d**: A/B/C opció közül egy explicit döntés rögzítve; ha A vagy B, az implementáció külön commit-ban landolva és cluster-szinten verifikálva; ha C, doc-szakasz hozzáadva.
 
 ## Becsült munka
 
 - 16.a: ~30-45 perc
 - 16.b: ~4-6 óra, parallel-izálható (skill ↔ CLAUDE.md egymástól függetlenül)
 - 16.c: ~2-3 óra (inventory + kategorizálás + 5-8 per-app CNP + szimuláció)
-- Összesen: ~7-10 óra, célszerű Phase 9 (Renovate rewrite) után, Phase 12 (cutover) előtt
+- 16.d: ~30 perc döntés + ~1-2 óra implementáció (A vagy B opció esetén) / ~15 perc doc-szakasz (C opció)
+- Összesen: ~7-12 óra, célszerű Phase 9 (Renovate rewrite) után, Phase 12 (cutover) előtt
