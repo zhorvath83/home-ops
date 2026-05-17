@@ -1,7 +1,7 @@
 # Networking
 
 ```txt
-           "app.${PUBLIC_DOMAIN}"
+           "app.horvathzoltan.me"
 
        internal:                external:
 
@@ -10,7 +10,7 @@
              │              │   creates     │
              ▼              │ public record │
    split DNS on router      └──────┬────────┘
-   for ${PUBLIC_DOMAIN}            │
+   for horvathzoltan.me            │
              │                     ▼
              │                *dns lookup*
              │                     │
@@ -45,8 +45,8 @@ LAN clients should use split DNS instead of Cloudflare Tunnel.
 
 `k8s-gateway` watches HTTPRoutes attached to `envoy-internal` and returns the internal Envoy VIP. For this to work:
 
-- the router DNS must conditionally forward `${PUBLIC_DOMAIN}` to `${LB_K8S_GATEWAY_IP}`
-- the router DNS must allow DNS rebinding for `${PUBLIC_DOMAIN}`, otherwise RFC1918 answers such as `${LB_ENVOY_INTERNAL_IP}` may be dropped or rewritten
+- the router DNS must conditionally forward `horvathzoltan.me` to `192.168.1.19`
+- the router DNS must allow DNS rebinding for `horvathzoltan.me`, otherwise RFC1918 answers such as `192.168.1.18` may be dropped or rewritten
 - any app that should be reachable directly from the LAN must attach its HTTPRoute to `envoy-internal`
 
 ## Public Applications
@@ -54,7 +54,7 @@ LAN clients should use split DNS instead of Cloudflare Tunnel.
 Public traffic continues to use the Cloudflare-managed path.
 
 - ExternalDNS creates the public DNS records
-- Cloudflare Tunnel forwards `${PUBLIC_DOMAIN}` and `*.${PUBLIC_DOMAIN}` to `envoy-external.networking.svc.cluster.local`
+- Cloudflare Tunnel forwards `horvathzoltan.me` and `*.horvathzoltan.me` to `envoy-external.networking.svc.cluster.local`
 - any HTTPRoute attached to `envoy-external` is reachable from the public path, subject to any additional Cloudflare policy
 
 ## Route Model
@@ -86,4 +86,4 @@ Router or edge settings can still bypass this model. Check for:
 
 - port forwards or DMZ rules to the Envoy VIPs or node IPs
 - UPnP/NAT-PMP opening inbound ports automatically
-- router DNS rebinding protection blocking `${PUBLIC_DOMAIN}` from resolving to the internal VIP
+- router DNS rebinding protection blocking `horvathzoltan.me` from resolving to the internal VIP

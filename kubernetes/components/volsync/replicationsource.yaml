@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/volsync.backube/replicationsource_v1alpha1.json
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/volsync.backube/replicationsource_v1alpha1.json
 apiVersion: volsync.backube/v1alpha1
 kind: ReplicationSource
 metadata:
@@ -7,7 +7,7 @@ metadata:
 spec:
   sourcePVC: "${VOLSYNC_CLAIM:=${APP}}"
   trigger:
-    schedule: "${VOLSYNC_SCHEDULE:=0 2 * * *}"
+    schedule: "${VOLSYNC_SCHEDULE:=0 * * * *}"
   kopia:
     accessModes:
       - "${VOLSYNC_ACCESSMODES:=ReadWriteOnce}"
@@ -26,7 +26,7 @@ spec:
       runAsGroup: ${APP_GID:=10001}
       fsGroup: ${APP_GID:=10001}
     retain:
-      hourly: ${VOLSYNC_RETAIN_HOURLY:=0}
+      hourly: ${VOLSYNC_RETAIN_HOURLY:=24}
       daily: ${VOLSYNC_RETAIN_DAILY:=7}
       weekly: ${VOLSYNC_RETAIN_WEEKLY:=2}
       monthly: ${VOLSYNC_RETAIN_MONTHLY:=1}

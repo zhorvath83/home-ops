@@ -24,12 +24,11 @@ cluster-wide apply ordering.
    - `references/layout.md`
    - `references/operations.md`
    - `references/validation.md`
-4. Prefer the existing `fx:` task wrappers for inspection or reconcile steps when the environment is available.
+4. Prefer the existing `just k8s` recipes (`flux-reconcile`, `flux-check`, `sync-hr`, `sync-ks`, `sync-es`, `sync`, `list-failed-hrs`, `restart-failed-hrs`) for inspection or reconcile steps when the environment is available.
 5. Treat local edits as Git state only; do not imply live cluster change without commit, push, and reconcile.
 
 ## Scope Boundaries
 
 - Use `k8s-workloads` for ordinary app manifests under `kubernetes/apps/<group>/<app>/`.
-- Use this skill when the change touches shared Flux variables, bootstrap resources, `flux-system` add-ons, or dependency wiring that affects more than one app.
-- If the task also changes repo-encrypted secret material such as `cluster-secrets.sops.yaml`, use `sops-secrets` as well.
+- Use this skill when the change touches shared Flux bootstrap resources, `flux-system` add-ons, or dependency wiring that affects more than one app.
 - If the task is mainly about webhook exposure, provider secrets, or cluster-wide blast radius review, use `security-review` as well.

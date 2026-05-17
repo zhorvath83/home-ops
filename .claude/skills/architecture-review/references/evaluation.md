@@ -14,7 +14,7 @@ Use this reference when comparing architectural options.
 ## Preferred Biases In This Repo
 
 - declarative over imperative
-- existing task wrappers over ad-hoc shell flows
+- existing Just recipes over ad-hoc shell flows
 - existing secret model over parallel secret systems
 - established app or platform patterns over one-off layouts
 - narrow exceptions over broad platform changes

@@ -13,7 +13,7 @@ Ez a könyvtár tartalmazza a home-ops infrastruktúra teljes átalakításának
 | LoadBalancer | MetalLB | Cilium L2 announcement (`.15-.25` pool) |
 | GitOps | Klasszikus Flux install | Flux Operator + FluxInstance |
 | Cluster bootstrap | Ansible (xanmanning.k3s role) | Helmfile bootstrap chain + `op inject` resources |
-| Flux cluster root | Egyetlen `cluster-apps` Kustomization | `cluster-vars` + `cluster-apps` (dependsOn) |
+| Flux cluster root | Egyetlen `cluster-apps` Kustomization | Egyetlen `cluster-apps` Kustomization (bjw-s minta, csak HelmRelease default patch — a Phase 6.7-ben tervezett `cluster-vars` split visszafordítva) |
 | Task runner | Task (`.taskfiles/`) | Just (`.justfile` + `mod.just`) |
 | Tool versioning | nincs | mise (`.mise.toml`) |
 | Templating | nincs | minijinja-cli + `op inject` |
@@ -21,22 +21,23 @@ Ez a könyvtár tartalmazza a home-ops infrastruktúra teljes átalakításának
 | Renovate | `.github/renovate.json5` | `.renovaterc.json5` root + `.renovate/*.json5` fragmensek |
 | Provision | `provision/kubernetes` Ansible (K3s) | `provision/openmediavault` Ansible (OMV base only, NFS UI-ból) |
 | Storage | democratic-csi local-hostpath | democratic-csi local-hostpath (változatlan) |
-| NVMe szétosztás | n/a | P41 → OS + etcd, P31 → data PVC |
+| NVMe szétosztás | n/a | PC801 → OS + etcd, PC711 → data PVC |
 | Ingress | Envoy Gateway | Envoy Gateway (változatlan, `envoy-external` + `envoy-internal`) |
 | Split-DNS | k8s-gateway | k8s-gateway (változatlan) |
 | Backup | VolSync + Kopia + OVH S3 | VolSync + Kopia + OVH S3 (változatlan, 3-4 GB total) |
-| Secrets | SOPS + 1P Connect + ExternalSecrets | SOPS (cluster-secrets + homepage) + 1P Connect + ExternalSecrets |
+| Secrets | SOPS + 1P Connect + ExternalSecrets | 1P Connect + ExternalSecrets (runtime SOPS teljesen megszüntetve Phase 6.7-ben — `cluster-secrets.sops.yaml` és homepage SOPS Secret ESO-ra migrálva) |
 | Plex iGPU | nincs | nincs (i915 extension benne marad, mount NEM — phase 2) |
 
 ## Migráció modellje
 
 **Big-bang cutover**: az új cluster a `talos` branch-en teljesen kiépül és teszteltetik, mielőtt egyetlen forgalom is rákerül. A régi cluster a main branch-szel folyamatosan él. Cutover-kor:
-1. Régi clusteren utolsó VolSync snapshot OVH-ra.
-2. Új clusteren VolSync restore minden PVC-re.
-3. DNS cutover (Cloudflare + k8s-gateway split-DNS belső VIP-ek).
-4. `talos` branch merge `main`-be.
-5. Régi K3s cluster + Proxmox 1-2 hétig **standby** módban, mint biztonsági mentés.
-6. Megfigyelési ablak után: régi cluster decom, M93p Proxmox kikapcsolás és bare metal OMV install.
+1. Pre-cutover: a régi K3s cluster Flux GitRepository-ja átkapcsolva a `k3s` archív ágra (`d22fc20cd` HEAD), hogy a merge után se húzza le a Talos struktúrát.
+2. Régi clusteren utolsó VolSync snapshot OVH-ra.
+3. Új clusteren VolSync restore minden PVC-re.
+4. DNS cutover (Cloudflare + k8s-gateway split-DNS belső VIP-ek).
+5. `talos` branch merge `main`-be.
+6. Régi K3s cluster + Proxmox 1-2 hétig **standby** módban, mint biztonsági mentés.
+7. Megfigyelési ablak után: régi cluster decom, M93p Proxmox kikapcsolás és bare metal OMV install.
 
 ## Fázisok és időbecslés
 
@@ -54,9 +55,11 @@ Ez a könyvtár tartalmazza a home-ops infrastruktúra teljes átalakításának
 | 9 | Renovate rewrite | [09](./09-renovate-rewrite.md) | 1-2h |
 | 10 | OMV Ansible playbook | [10](./10-omv-ansible.md) | 4-6h (csak cutover után) |
 | 11 | Data migration runbook | [11](./11-data-migration.md) | — (refs only) |
-| 12 | Cutover runbook | [12](./12-cutover-runbook.md) | 4-8h éles cutover |
-| 13 | Rollback és decommission | [13](./13-rollback-and-decom.md) | — |
-| 14 | Post-cutover megfigyelés | [14](./14-post-cutover.md) | 1-2 hét observation |
+| 12 | Pre-cutover checklist | [12](./12-pre-cutover.md) | a cutover előtti hét |
+| 13 | Cutover runbook | [13](./13-cutover-runbook.md) | 4-8h éles cutover |
+| 14 | Rollback és decommission | [14](./14-rollback-and-decom.md) | — |
+| 15 | Post-cutover megfigyelés | [15](./15-post-cutover.md) | 1-2 hét observation |
+| 16 | Repo refactor (ks.yaml flatten + doc + AI-guide refresh) | [16](./16-repo-refactor.md) | 5-7h (cutover-előtt) |
 
 **Teljes munkaóra becslés (cutover-ig)**: ~25-40 óra effektív munka. Naptári időben ~2-4 hetes projekt, ha esténként és hétvégénként dolgozol.
 
@@ -69,11 +72,11 @@ A docok **lazán kapcsolódnak**, ezért nem kell szigorú sorrendben olvasni. A
                                               ↓
                   06 (repo refactor) ← 07 (components) ← 08 (just) ← 09 (renovate)
                                               ↓
-                                      11 (data migration) → 12 (cutover) → 14 (post-cutover)
-                                                                 ↓
-                                                        13 (rollback if needed)
+              11 (data migration) → 16 (repo refactor cleanup) → 12 (pre-cutover) → 13 (cutover) → 15 (post-cutover)
+                                                                                              ↓
+                                                                                     14 (rollback if needed)
 
-10 (OMV) — csak a cutover után, párhuzamosan a 14-essel
+10 (OMV) — csak a cutover után, párhuzamosan a 15-össel
 ```
 
 ## Referencia repók

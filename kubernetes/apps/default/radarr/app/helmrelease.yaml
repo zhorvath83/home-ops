@@ -4,25 +4,11 @@ apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: radarr
-  namespace: default
 spec:
   interval: 30m
   chartRef:
     kind: OCIRepository
     name: radarr
-
-  install:
-    createNamespace: true
-    remediation:
-      retries: -1
-  upgrade:
-    cleanupOnFail: true
-    remediation:
-      strategy: rollback
-      retries: 3
-  uninstall:
-    keepHistory: false
-
   values:
     defaultPodOptions:
       automountServiceAccountToken: false
@@ -35,22 +21,17 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
-
     controllers:
       radarr:
         annotations:
           reloader.stakater.com/auto: "true"
-
         containers:
           app:
             image:
               repository: ghcr.io/home-operations/radarr
               tag: 6.2.0.10390@sha256:be596a2f896fdf15077af027f44500f73e1f6fb7b450a6494b37dd25b7cc5927
-
-
             env:
               TZ: "Europe/Budapest"
-
             probes:
               liveness: &probes
                 enabled: true
@@ -66,27 +47,23 @@ spec:
               readiness: *probes
               startup:
                 enabled: false
-
             securityContext:
               privileged: false
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
-
+              capabilities: {drop: ["ALL"]}
             resources:
               requests:
                 cpu: 5m
                 memory: 200Mi
               limits:
                 memory: 1Gi
-
     service:
       app:
         controller: radarr
         ports:
           http:
             port: *port
-
     route:
       app:
         annotations:
@@ -95,7 +72,7 @@ spec:
           gethomepage.dev/group: Arr Stack
           gethomepage.dev/icon: radarr.svg
         hostnames:
-          - "movies.${PUBLIC_DOMAIN}"
+          - "movies.horvathzoltan.me"
         parentRefs:
           - name: envoy-external
             namespace: networking
@@ -107,20 +84,17 @@ spec:
           - backendRefs:
               - identifier: app
                 port: *port
-
     persistence:
       config:
         type: persistentVolumeClaim
         existingClaim: radarr
         globalMounts:
           - path: /config
-
       nfs-nas-media:
         type: nfs
-        server: ${CONF_NFS_SRV_IP}
+        server: 192.168.1.10
         path: /media
         globalMounts:
           - path: /media
-
       tmp:
         type: emptyDir

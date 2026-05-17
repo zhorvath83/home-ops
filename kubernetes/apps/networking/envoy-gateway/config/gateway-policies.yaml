@@ -1,10 +1,9 @@
 ---
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/gateway.envoyproxy.io/backendtrafficpolicy_v1alpha1.json
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/gateway.envoyproxy.io/backendtrafficpolicy_v1alpha1.json
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: BackendTrafficPolicy
 metadata:
   name: envoy
-  namespace: networking
 spec:
   compressor:
     - type: Zstd
@@ -26,7 +25,7 @@ spec:
     http:
       requestTimeout: 0s
 ---
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/gateway.envoyproxy.io/clienttrafficpolicy_v1alpha1.json
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/gateway.envoyproxy.io/clienttrafficpolicy_v1alpha1.json
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: ClientTrafficPolicy
 metadata:
@@ -56,12 +55,11 @@ spec:
       - h2
       - http/1.1
 ---
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/gateway.envoyproxy.io/envoypatchpolicy_v1alpha1.json
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/gateway.envoyproxy.io/envoypatchpolicy_v1alpha1.json
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: EnvoyPatchPolicy
 metadata:
   name: envoy-external
-  namespace: networking
 spec:
   jsonPatches:
     - type: type.googleapis.com/envoy.config.listener.v3.Listener
@@ -86,36 +84,42 @@ spec:
     kind: Gateway
     name: envoy-external
   type: JSONPatch
+# NOTE: rate-limit-external BackendTrafficPolicy disabled — upstream Envoy
+# Gateway v1.8.0 ships a CRD regression (PR envoyproxy/gateway#8798): the
+# `Requests` field is declared as uint32 but kubebuilder emits
+# `format: int32 + maximum: 4294967295`, which K8s 1.36 strict OpenAPI
+# validation rejects with "Maximum boundary value must be of type integer
+# with format int32". Re-enable once envoy-gateway v1.9.0 GA lands and the
+# OCIRepository tag is bumped accordingly. Cloudflare WAF covers external
+# rate limiting in the meantime.
+# ---
+# apiVersion: gateway.envoyproxy.io/v1alpha1
+# kind: BackendTrafficPolicy
+# metadata:
+#   name: rate-limit-external
+#   namespace: networking
+# spec:
+#   targetRefs:
+#     - group: gateway.networking.k8s.io
+#       kind: Gateway
+#       name: envoy-external
+#   rateLimit:
+#     type: Global
+#     global:
+#       rules:
+#         - clientSelectors:
+#             - sourceCIDR:
+#                 value: 0.0.0.0/0
+#                 type: Distinct
+#           limit:
+#             requests: 300
+#             unit: Minute
 ---
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/gateway.envoyproxy.io/backendtrafficpolicy_v1alpha1.json
-apiVersion: gateway.envoyproxy.io/v1alpha1
-kind: BackendTrafficPolicy
-metadata:
-  name: rate-limit-external
-  namespace: networking
-spec:
-  targetRefs:
-    - group: gateway.networking.k8s.io
-      kind: Gateway
-      name: envoy-external
-  rateLimit:
-    type: Global
-    global:
-      rules:
-        - clientSelectors:
-            - sourceCIDR:
-                value: 0.0.0.0/0
-                type: Distinct
-          limit:
-            requests: 300
-            unit: Minute
----
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/gateway.envoyproxy.io/securitypolicy_v1alpha1.json
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/gateway.envoyproxy.io/securitypolicy_v1alpha1.json
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: SecurityPolicy
 metadata:
   name: envoy-internal-rfc1918
-  namespace: networking
 spec:
   targetRefs:
     - group: gateway.networking.k8s.io
@@ -131,12 +135,11 @@ spec:
             - 172.16.0.0/12
             - 192.168.0.0/16
 ---
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/gateway.networking.k8s.io/httproute_v1.json
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/gateway.networking.k8s.io/httproute_v1.json
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: https-redirect
-  namespace: networking
   annotations:
     external-dns.alpha.kubernetes.io/controller: none
 spec:

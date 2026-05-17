@@ -4,25 +4,11 @@ apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: prowlarr
-  namespace: default
 spec:
   interval: 30m
   chartRef:
     kind: OCIRepository
     name: prowlarr
-
-  install:
-    createNamespace: true
-    remediation:
-      retries: -1
-  upgrade:
-    cleanupOnFail: true
-    remediation:
-      strategy: rollback
-      retries: 3
-  uninstall:
-    keepHistory: false
-
   values:
     defaultPodOptions:
       automountServiceAccountToken: false
@@ -35,22 +21,17 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
-
     controllers:
       prowlarr:
         annotations:
           reloader.stakater.com/auto: "true"
-
         containers:
           app:
             image:
               repository: ghcr.io/home-operations/prowlarr
               tag: 2.3.7.5365@sha256:b9557d772c974901aed9285189d904b613f1f07750fca930eecfe78544bd3d48
-
-
             env:
               TZ: "Europe/Budapest"
-
             probes:
               liveness: &probes
                 enabled: true
@@ -64,27 +45,23 @@ spec:
                   timeoutSeconds: 5
                   failureThreshold: 5
               readiness: *probes
-
             securityContext:
               privileged: false
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
-
+              capabilities: {drop: ["ALL"]}
             resources:
               requests:
                 cpu: 5m
                 memory: 180Mi
               limits:
                 memory: 512Mi
-
     service:
       app:
         controller: prowlarr
         ports:
           http:
             port: *port
-
     route:
       app:
         annotations:
@@ -93,7 +70,7 @@ spec:
           gethomepage.dev/group: Arr Stack
           gethomepage.dev/icon: prowlarr.svg
         hostnames:
-          - "indexers.${PUBLIC_DOMAIN}"
+          - "indexers.horvathzoltan.me"
         parentRefs:
           - name: envoy-external
             namespace: networking
@@ -105,13 +82,11 @@ spec:
           - backendRefs:
               - identifier: app
                 port: *port
-
     persistence:
       config:
         type: persistentVolumeClaim
         existingClaim: prowlarr
         globalMounts:
           - path: /config
-
       tmp:
         type: emptyDir

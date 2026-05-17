@@ -21,7 +21,6 @@ Use this skill for non-platform application work under `kubernetes/apps/`. Keep 
 4. If the change crosses into platform ownership, also use the dedicated skill:
    - `networking-platform`
    - `external-secrets`
-   - `sops-secrets`
    - `volsync`
    - `flux-gitops`
    - `security-review` when the task is mainly hardening or exposure review
@@ -31,6 +30,5 @@ Use this skill for non-platform application work under `kubernetes/apps/`. Keep 
 
 - Use this skill for app workloads, not for networking platform internals, the external-secrets platform, or the VolSync platform itself.
 - If app-level secret wiring is routine, this skill is enough. If the store, operator, or template model changes, switch to `external-secrets`.
-- If the task adds or changes repo-encrypted `secret.sops.yaml` material or shared Flux secret substitutions, use `sops-secrets` as well.
 - If app-level backup wiring is routine, this skill is enough. If schedule, jitter, restore flow, or VolSync platform resources change, switch to `volsync`.
 - If the task changes `kubernetes/flux/`, Flux bootstrap, webhook receivers, or shared GitOps wiring, switch to `flux-gitops`.

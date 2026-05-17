@@ -12,8 +12,6 @@ Default external publication uses the established Gateway API pattern:
 
 When the app should also be directly reachable from the LAN, attach the same route to `envoy-internal` as well. Leave technical or internet-only endpoints on `envoy-external` only.
 
-Do not copy old Traefik comments into new work unless the live manifests still depend on them.
-
 If the change requires listener, certificate, tunnel, or ExternalDNS work, switch to `networking-platform`.
 
 ## Homepage

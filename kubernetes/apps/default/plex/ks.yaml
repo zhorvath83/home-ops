@@ -1,58 +1,32 @@
 ---
-# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/kustomization-kustomize-v1.json
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: cluster-apps-plex
-  namespace: flux-system
+  name: plex
 spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: plex
-  dependsOn:
-    - name: cluster-apps-onepassword-store
-    - name: cluster-apps-democratic-csi
-  path: ./kubernetes/apps/default/plex/app
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: home-ops-kubernetes
-  interval: 1h
-  targetNamespace: default
-  timeout: 5m
-  wait: false
   components:
     - ../../../../components/volsync
+  dependsOn:
+    - name: onepassword-connect
+      namespace: external-secrets
+    - name: democratic-csi
+      namespace: kube-system
+  interval: 1h
+  path: ./kubernetes/apps/default/plex/app
   postBuild:
     substitute:
       APP: plex
       VOLSYNC_CAPACITY: "5Gi"
       VOLSYNC_CACHE: "2Gi"
----
-# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/kustomization-kustomize-v1.json
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: cluster-apps-plex-trakt-sync
-  namespace: flux-system
-spec:
-  commonMetadata:
-    labels:
-      app.kubernetes.io/name: plex-trakt-sync
-  dependsOn:
-    - name: cluster-apps-onepassword-store
-    - name: cluster-apps-democratic-csi
-  path: ./kubernetes/apps/default/plex/trakt-sync
   prune: true
   sourceRef:
     kind: GitRepository
-    name: home-ops-kubernetes
-  interval: 1h
+    name: flux-system
+    namespace: flux-system
   targetNamespace: default
   timeout: 5m
   wait: false
-  components:
-    - ../../../../components/volsync
-  postBuild:
-    substitute:
-      APP: plex-trakt-sync

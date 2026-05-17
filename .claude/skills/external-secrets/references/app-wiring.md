@@ -5,7 +5,7 @@ Use this reference when a change involves app-level `ExternalSecret` resources.
 ## Standard Pattern
 
 - `secretStoreRef.kind: ClusterSecretStore`
-- `secretStoreRef.name: onepassword`
+- `secretStoreRef.name: onepassword-connect`
 - deterministic target Secret name
 - `target.creationPolicy: Owner` for app-owned generated Secrets
 
@@ -16,6 +16,6 @@ Use this reference when a change involves app-level `ExternalSecret` resources.
 
 ## Dependency And Naming Checks
 
-- app Flux Kustomizations that rely on the shared store should depend on `cluster-apps-onepassword-store`
+- app Flux Kustomizations that rely on the shared store should declare `dependsOn: [{ name: onepassword-connect }]` (the `onepassword-connect` Flux Kustomization applies both the 1Password Connect Deployment and the `ClusterSecretStore/onepassword-connect`, with a `ClusterSecretStore` health check)
 - generated Secret names must match every mount, env var, or `envFrom` reference
-- task-backed sync or bootstrap flows must still refer to the same secret names after the change
+- recipe-backed sync or bootstrap flows (`just k8s sync-es <name> <namespace>`, `just cluster-bootstrap cluster`) must still refer to the same secret names after the change

@@ -1,34 +1,21 @@
 ---
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: reloader
-  namespace: &namespace kube-system
 spec:
   interval: 30m
   chartRef:
     kind: OCIRepository
     name: reloader
-
-  install:
-    createNamespace: true
-    remediation:
-      retries: -1
-  upgrade:
-    cleanupOnFail: true
-    remediation:
-      retries: 3
-  uninstall:
-    keepHistory: false
-
   values:
     # Chart defaults: pod=seccompProfile+runAsNonRoot, but containerSecurityContext is empty.
     # Adding container hardening explicitly below.
     reloader:
       podMonitor:
-        enabled: false
-        namespace: *namespace
+        enabled: true
+        namespace: kube-system
       deployment:
         containerSecurityContext:
           allowPrivilegeEscalation: false

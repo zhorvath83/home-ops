@@ -1,5 +1,39 @@
 # 06 — Repo restructure: apps + namespace refactor
 
+## Status — 2026-05-17
+
+| Részfeladat | Állapot |
+|---|---|
+| Kustomization név refactor: `cluster-apps-<X>` → `<X>` minden ks.yaml-ben (41 fájl) | ✅ kész |
+| `dependsOn` referenciák átvezetése (`cluster-apps-onepassword-store` → `onepassword-store`, stb.) | ✅ kész |
+| GitRepository név: `home-ops-kubernetes` → `flux-system` minden sourceRef-ben + `flux/config/cluster.yaml` GitRepository erőforrásban | ✅ kész |
+| `sourceRef.namespace: flux-system` mező explicit hozzáadása minden ks.yaml-be | ✅ kész |
+| Schema URL: `fluxcd-community/flux2-schemas` → `k8s-schemas.bjw-s.dev` | ✅ kész |
+| GitHub webhook receiver GitRepository ref update | ✅ kész |
+| `kubernetes/flux/` layout bjw-s-re átállítva (`apps.yaml` + `config/` törölve, `flux/cluster/ks.yaml` létrehozva) | ✅ kész — lásd Phase 5 |
+| `kubernetes/apps/kube-system/cilium/` új subtree | ✅ kész — lásd Phase 3 |
+| `namespace.yaml` `prune: disabled` LABEL → ANNOTATION fix (8 fájl) | ✅ kész |
+| ks.yaml `spec` mezősorrend alfabetikus rendezés (45 fájl, `yq sort_keys`) | ✅ kész |
+| `metadata.namespace: flux-system` explicit megőrzése minden ks.yaml-ben (átmeneti) | ✅ kész — később Step 9 keretében visszafordítva |
+| `flux-system/addons/ks.yaml` igazítása konvencióhoz (commonMetadata.labels, interval 30m→1h, timeout 3m→5m, retryInterval drop) | ✅ kész |
+| `kube-system/kustomization.yaml` resource ordering: namespace.yaml első helyre | ✅ kész |
+| **`cluster-settings` ConfigMap eltüntetése** — 4 halott változó törölve, 4 RFC1918 IP hardcodeolva (CONF_NFS_SRV_IP, LB_ENVOY_INTERNAL_IP, LB_K8S_GATEWAY_IP, LB_MEDIASERVER_IP) | ✅ kész |
+| **`PUBLIC_DOMAIN` hardcodeolása** (32 fájl) + CLAUDE.md policy módosítás (bjw-s/onedr0p/buroa minta — public domain nem secret, DNS/TLS/Cloudflare publikus) | ✅ kész |
+| **`SECRET_QBITTORRENT_PW` migráció** ExternalSecret-re — initContainer secret-mount + append pattern | ✅ kész — ⚠ 1Password item `qbittorrent` (vault: HomeOps, field: `password_pbkdf2`) bootstrap előtt létre kell hozni |
+| **`cluster-secrets.sops.yaml` törlése + `kubernetes/flux/vars/` mappa törlése** | ✅ kész |
+| **cluster-apps root egyszerűsítése** — `cluster-vars` Kustomization eltüntetve, substituteFrom patch teljesen eltávolítva, marad SOPS decryption + HelmRelease defaults patch | ✅ kész |
+| Megszűnő apps eltávolítása (`tigera-operator`, `metallb`, `metallb-config`, `system-upgrade-controller`, `system-upgrade-controller-plans`) | ✅ kész — egyik mappa sem létezik a `talos` branch-en |
+| Új `flux-operator` + `flux-instance` app-subtree-k létrehozása | ✅ kész |
+| **Step 9** — Kustomization CR-ek kiköltöztetése `flux-system`-ből workload ns-ekbe: `namespace: <ns>` direktíva 8 apps/<ns>/kustomization.yaml-be, metadata.namespace strip 45 ks.yaml-ből, cross-ns dependsOn refek namespace mezővel | ✅ kész — bjw-s parity ELÉRVE: 52 KS elosztva 8 namespace-be (22 default, 8 kube-system, 7 networking, 5 flux-system, 3 volsync-system, 3 observability, 2 external-secrets, 2 cert-manager) |
+| **flux-alerts component bevezetése** — per-ns Alert+Provider+ExternalSecret a `kubernetes/components/flux-alerts/`-ből, minden apps/<ns>/kustomization.yaml `components: [../../components/flux-alerts]`-tel; régi apps/flux-system/addons/alerts/pushover/ törölve | ✅ kész |
+| **namespace.yaml `name: _` placeholder** átállítás (bjw-s/onedr0p minta) — kustomize directive helyettesíti a workload-ns nevével | ✅ kész |
+| **flux-instance HR Helm cache patch eltávolítása** — 0 HelmRepository CR (csak OCIRepo), NOOP volt | ✅ kész |
+| **Homepage `secret.sops.yaml` → ExternalSecret migráció** — 4 multi-line YAML mező a 1Password `homepage-config` item-ben, `externalsecret-config-files.yaml` template-szel renderel 9-mezős `homepage-config-files-secret`-et | ✅ kész — ⚠ 1Password item `homepage-config` (vault: HomeOps, mezők: `kubernetes_yaml`, `services_yaml`, `settings_yaml`, `widgets_yaml`) bootstrap előtt létre kell hozni |
+| **cluster-apps root SOPS-eltüntetés** — `decryption: sops` spec ÉS injektáló patch is törölve (utolsó SOPS runtime resource a homepage volt) | ✅ kész |
+| Egyéb új apps: `tuppr` (system upgrade Talos-ra) | ⏸ Phase 6 |
+
+Az aktuális 41 Flux Kustomization név (rövid alak): `actual, bazarr, calibre-web-automated, cert-manager, cert-manager-issuers, cilium, cilium-config, cloudflare-tunnel, democratic-csi, echo, envoy-gateway, envoy-gateway-certificate, envoy-gateway-config, external-dns, external-secrets, flux-alerts, flux-provider-pushover, grafana, home-gallery, homepage, isponsorblocktv, k8s-gateway, kopia, kube-prometheus-stack, maintainerr, mealie, metallb, metallb-config, metrics-server, onepassword-connect, onepassword-store, paperless, paperless-gpt, plex, plex-trakt-sync, prowlarr, qbittorrent, qbittorrent-upgrade-p2pblocklist, radarr, reloader, restic-gui, resticprofile, seerr, snapshot-controller, sonarr, speedtest-exporter, subsyncarr, system-upgrade-controller, system-upgrade-controller-plans, tigera-operator, volsync, volsync-maintenance, wallos`. *(Megjegyzés: a `flux-webhooks` KS 2026-05-17-én megszűnt — a GitHub webhook stack a `flux-instance` KS-be lett konszolidálva `flux-instance/app/github/` alatt, bjw-s parity.)*
+
 ## Cél
 
 A jelenlegi `kubernetes/apps/<ns>/<app>/` szerkezet **alapja már jó** (megegyezik a bjw-s `ks.yaml + app/` mintával), de **két ponton refaktorálni kell**:
@@ -44,23 +78,32 @@ A `dependsOn:` listák is frissítendők (`cluster-apps-onepassword-store` → `
 
 ## Kötelező ks.yaml minta — referenciákhoz illeszkedő
 
-A bjw-s/onedr0p konvenció szerint:
-- **NINCS** `namespace: flux-system` a metadata-ban — a Kustomization erőforrás a parent Kustomization namespace-éből öröklődik (`cluster-apps` → flux-system).
+A bjw-s konvenció szerint (Step 9 után ELÉRVE):
+- **NINCS** `metadata.namespace` a ks.yaml-ekben — a `kustomize` directive `namespace: <ns>` (apps/<ns>/kustomization.yaml-ben) injektálja workload-ns-be a Flux Kustomization CR-eket. A Namespace resource neve egyezik a direktíva értékével (`name: <ns>` matches `namespace: <ns>` → kustomize transformer no-op a Namespace-re).
+- **Cross-namespace dependsOn** esetén kötelező az explicit `namespace:` mező a dependsOn item-en:
+  ```yaml
+  dependsOn:
+    - name: onepassword-connect
+      namespace: external-secrets
+  ```
+  Same-ns dependsOn-nál nincs namespace mező.
 - **NINCS** YAML anchor (`&app`/`*app`) — a nevet kétszer ismételjük plain szöveggel (egyszer `metadata.name`, egyszer `commonMetadata.labels`).
 - **NINCS** `retryInterval` explicit (controller default ~30s elég).
 - `wait: false` default — csak akkor `true`, ha valami másik Kustomization explicit `dependsOn`-nal a Ready-re vár (pl. Cilium HR-jét).
 - `prune: true` default — kivételek: Cilium app, cluster-secrets (substituteFrom függő erőforrások) ahol `prune: false` (CNI/Secret törlése veszélyes).
-- `dependsOn` általában **NEM kell** app-szinten: a root `cluster-apps` már `dependsOn: cluster-vars`-ra vár, és minden helmfile-bootstrap-szel telepített komponens (Cilium, CoreDNS, cert-manager, ESO, 1P Connect, Flux) már fut, mire a kustomization-ok reconcile-olnak.
+- `dependsOn` legitim, ha valós erőforrás-függőség áll mögötte (pl. `onepassword-connect` mielőtt egy ExternalSecret reconcile-ol, `cert-manager-issuers` mielőtt egy Certificate kiállítódik, `kube-prometheus-stack` mielőtt Grafana a datasource-t kéri).
+- Mezősorrend a `spec`-en belül **alfabetikus** (bjw-s konvenció, `kustomization_v1.json` schema szerint).
 
 **Single-stage app** (legtöbb):
 
 ```yaml
 ---
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: <APP_NAME>
+  # metadata.namespace NINCS — apps/<ns>/kustomization.yaml `namespace: <ns>` direktívája injektálja
 spec:
   commonMetadata:
     labels:
@@ -108,7 +151,7 @@ spec:
   wait: false
 ```
 
-A `dependsOn:` mezőre **legtöbb app-nak nincs szüksége** (a cluster default patch beilleszti a sops/substitueFrom-ot, és a Cilium/cert-manager/ESO mind helmfile bootstrap-ben jönnek létre, NEM Flux-ön keresztül). Csak akkor `dependsOn:`, ha valamilyen app-specifikus függőség van (pl. observability-ben Grafana → kube-prometheus-stack).
+A `dependsOn:` mezőt **csak valós futásidejű függőség** esetén tegyük be (pl. onepassword-connect ClusterSecretStore, kube-prometheus-stack Prometheus datasource, cert-manager-issuers Certificate kibocsátáshoz). A retry loop magától megoldja a "csak késés" típusú konfliktusokat, de bootstrap-kor az explicit ordering csökkenti az initial reconcile zajt.
 
 **Kétstage app** (HelmRelease + utána config CR, pl. cilium, envoy-gateway):
 
@@ -119,6 +162,7 @@ apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: cilium
+  namespace: flux-system
 spec:
   commonMetadata:
     labels:
@@ -139,6 +183,7 @@ apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: cilium-config
+  namespace: flux-system
 spec:
   commonMetadata:
     labels:
@@ -265,24 +310,28 @@ spec:
 
 ```yaml
 ---
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: plex
+  namespace: flux-system
 spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: plex
   components:
     - ../../../../components/volsync
+  dependsOn:
+    - name: onepassword-connect
+    - name: democratic-csi
   interval: 1h
   path: ./kubernetes/apps/default/plex/app
   postBuild:
     substitute:
       APP: plex
-      VOLSYNC_CAPACITY: 5Gi
-      VOLSYNC_CACHE: 2Gi
+      VOLSYNC_CAPACITY: "5Gi"
+      VOLSYNC_CACHE: "2Gi"
   prune: true
   sourceRef:
     kind: GitRepository
@@ -295,11 +344,12 @@ spec:
 
 Változások:
 - `metadata.name`: `cluster-apps-plex` → `plex` (referencia konvenció)
-- `metadata.namespace`: törölve (parent öröklés)
+- `metadata.namespace: flux-system` átmenetileg megőrizve, de **Step 9-ben visszafordítva**: a bjw-s "parent öröklés" minta (parent `kustomization.yaml` `namespace: <ns>` direktívája bélyegzi a workload-ns-t) kerül alkalmazásra a Step 9 keretében (lásd STATUS L27, `metadata.namespace` strip 45 ks.yaml-ből, KS-ek szétszórva 8 workload namespace-be).
 - `sourceRef.name`: `home-ops-kubernetes` → `flux-system` (FluxInstance default GitRepo név)
 - `sourceRef.namespace: flux-system` explicit
 - `commonMetadata.labels.app.kubernetes.io/name: plex` hozzáadva
-- `dependsOn` eltávolítva — `onepassword-connect` helmfile bootstrap-ben jön, nem Flux Kustomization. A `democratic-csi` storage class CRD szinten elérhető a node induláskor.
+- `dependsOn` **megtartva** — az `onepassword-connect` ClusterSecretStore és a `democratic-csi` StorageClass mindkettő Flux-szel reconcile-olódik (nem helmfile bootstrap-ből), ezért bootstrap idején tényleges resource-függőség. A retry loop kezelné a végén, de az explicit ordering csökkenti az initial reconcile zajt.
+- Mezősorrend alfabetikus a `spec`-en belül.
 - Mezősorrend alfabetikus (bjw-s konvenció kustomization_v1.json schema rendezést követ).
 
 A Plex `helmrelease.yaml` **változatlan** — Hardware Transcoding most nem kerül bevezetésre (eddig sem volt). A Talos `i915` extension a schematic-ban benn marad jövőbeni lehetőségként, de a Plex pod-spec nem kap `/dev/dri` mount-ot.
@@ -318,30 +368,31 @@ kubernetes/apps/system-upgrade/tuppr/
     └── ocirepository.yaml
 ```
 
-**bjw-s `tuppr/ks.yaml`** mint példa (átemelve):
+**`tuppr/ks.yaml`** példa (bjw-s minta szerint, anchor-mentes a repo-konvenciónak megfelelően — lásd `kubernetes/CLAUDE.md` "YAML anchor policy"):
 ```yaml
 ---
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app tuppr
-  namespace: &namespace flux-system
+  name: tuppr
 spec:
-  targetNamespace: system-upgrade
   commonMetadata:
     labels:
-      app.kubernetes.io/name: *app
+      app.kubernetes.io/name: tuppr
+  interval: 1h
   path: ./kubernetes/apps/system-upgrade/tuppr/app
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
-    namespace: *namespace
-  wait: false
-  interval: 1h
-  retryInterval: 2m
+    namespace: flux-system
+  targetNamespace: system-upgrade
   timeout: 5m
+  wait: false
 ```
+
+(Az eredeti terv `&app`/`&namespace` anchort használt; ezt a Phase 15 bjw-s parity audit szabványosította ki — az app-név két helyen plain szövegként szerepel, mert így pontosan grep-elhető és nem rejt indirekciót.)
 
 A `helmrelease.yaml` Tuppr Helm chart-ot install-ál és a Talos `Plan` resource-ot deklaratíve menedzseli.
 
@@ -367,7 +418,7 @@ kubernetes/apps/kube-system/democratic-csi-local-hostpath/
     └── ocirepository.yaml
 ```
 
-A `helmrelease.yaml` értékek: `hostPathDir: /var/mnt/extra-disk` (Talos UserVolume mount).
+A `helmrelease.yaml` értékek: `hostPathDir: /var/mnt/local-hostpath` (Talos UserVolume mount — a `local-hostpath` UserVolume nevéből származó path).
 
 ## Namespace szervezés — bjw-s mintába illeszkedés
 
@@ -415,16 +466,11 @@ find kubernetes/apps -name "ks.yaml" -exec yq -i '.spec.sourceRef.namespace = "f
 Manuálisan — a `dependsOn:` listák `cluster-apps-X` referenciáit `X`-re átírni, és **felülvizsgálni**, hogy szükségesek-e még (sok kiesik, mert helmfile bootstrap kezeli).
 
 ### Batch 6: (SKIPPED — Plex iGPU passthrough most NEM kerül bevezetésre)
-Eddig sem volt a Plex-nek hardware transcode konfigurálva, ezért a migráció során sem adunk neki. Ha később bevezetjük: külön projekt, lásd phase 2 a [14-post-cutover.md](./14-post-cutover.md)-ben.
+Eddig sem volt a Plex-nek hardware transcode konfigurálva, ezért a migráció során sem adunk neki. Ha később bevezetjük: külön projekt, lásd phase 2 a [15-post-cutover.md](./15-post-cutover.md)-ben.
 
-### Batch 7: cluster-settings.yaml frissítés
-- `kubernetes/flux/vars/cluster-settings.yaml`:
-  - `CLUSTER_POD_CIDR`: `10.244.0.0/16` (változás: `10.42` → `10.244`)
-  - `CLUSTER_SVC_CIDR`: `10.245.0.0/16` (változás: `10.43` → `10.245`)
-  - `CLUSTER_NODE_1_CIDR`: `192.168.1.11/32` (változás: `.6` → `.11`)
-  - `LB_ENVOY_INTERNAL_IP`: `192.168.1.18` (változatlan)
-  - `LB_K8S_GATEWAY_IP`: `192.168.1.19` (változatlan)
-  - `LB_MEDIASERVER_IP`: `192.168.1.20` (változatlan)
+### Batch 7: ~~cluster-settings.yaml frissítés~~ (visszafordítva Phase 6.7-ben)
+
+> **Phase 6.7 — törlés**: a `kubernetes/flux/vars/cluster-settings.yaml` ConfigMap és vele a teljes `kubernetes/flux/vars/` mappa törölve. A POD/SVC CIDR és RFC1918 IP-k hardcodeolva a manifesztekbe (CLAUDE.md policy: "private RFC1918 addresses... may be hardcoded directly in manifests"). Eredeti érték-tábla audit-trail-ként megmarad a Phase 6 átmeneti commit-ekben (lásd `1da3a84d9` környékén).
 
 ## Refactor helper script (just recipe)
 

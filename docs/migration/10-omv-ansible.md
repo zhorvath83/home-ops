@@ -52,7 +52,7 @@ A backup-ot 1Password Documents-be érdemes tárolni.
 
 ## Mikor készül el ez
 
-**Cutover UTÁN**, lásd [14-post-cutover.md](./14-post-cutover.md). A migráció során az M93p **megmarad Proxmox+OMV VM-ként**, hogy a NAS funkció ne álljon meg. Amikor a HP cluster stabil és az új workload-ok mennek (1-2 hét megfigyelés után), az M93p átalakul.
+**Cutover UTÁN**, lásd [15-post-cutover.md](./15-post-cutover.md). A migráció során az M93p **megmarad Proxmox+OMV VM-ként**, hogy a NAS funkció ne álljon meg. Amikor a HP cluster stabil és az új workload-ok mennek (1-2 hét megfigyelés után), az M93p átalakul.
 
 ## Tervezett fájl-layout
 
@@ -487,4 +487,4 @@ Ha a bare metal OMV nem indul → boot Proxmox install ISO-ról, vissza-restore-
 - **`omv-confdbadm` apply**: Ansible-ből futtatva subprocess hibákat dobhat, ha az OMV CLI változott. Manuálisan futtatva ezt az első install-kor megfigyeljük.
 - **SMB/CIFS share-ek**: ha van Windows-kliens, plusz role kell. Default tervben nincs benne.
 - **A jelenlegi `task hm:openmediavault` recipe**: a régi maintenance task (update packages, restart, reboot) **megmarad** az új `just omv update` recipe-ben — egyszerűsítve.
-- **`provision/kubernetes/` mappa törlése**: a régi Ansible K3s setup törölhető a talos branch-en, mert a HP cluster Talos-szal megy. Részletei a [12-cutover-runbook.md](./12-cutover-runbook.md)-ben.
+- **`provision/kubernetes/` mappa törlése**: a régi Ansible K3s setup törölhető a talos branch-en, mert a HP cluster Talos-szal megy. Részletei a [13-cutover-runbook.md](./13-cutover-runbook.md)-ben.

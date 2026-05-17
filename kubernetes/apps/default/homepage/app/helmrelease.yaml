@@ -3,26 +3,12 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app homepage
-  namespace: default
+  name: homepage
 spec:
   interval: 30m
   chartRef:
     kind: OCIRepository
     name: homepage
-
-  install:
-    createNamespace: true
-    remediation:
-      retries: -1
-  upgrade:
-    cleanupOnFail: true
-    remediation:
-      strategy: rollback
-      retries: 3
-  uninstall:
-    keepHistory: false
-
   values:
     defaultPodOptions:
       automountServiceAccountToken: true
@@ -35,9 +21,8 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
-
     controllers:
-      *app :
+      homepage:
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
@@ -45,17 +30,15 @@ spec:
             image:
               repository: ghcr.io/gethomepage/homepage
               tag: v1.13.1@sha256:d8d784e5090111b6e4c56dfd90e272d2953a2094e87349f647165df0fa6c4401
-
             env:
               TZ: "Europe/Budapest"
-              HOMEPAGE_ALLOWED_HOSTS: &host "dash.${PUBLIC_DOMAIN}"
+              HOMEPAGE_ALLOWED_HOSTS: &host "dash.horvathzoltan.me"
               LOG_TARGETS: stdout
               # PUID: "10001"
               # PGID: "10001"
             envFrom:
               - secretRef:
                   name: "{{ .Release.Name }}-secret"
-
             probes:
               startup:
                 enabled: true
@@ -75,23 +58,20 @@ spec:
                   periodSeconds: 30
                   timeoutSeconds: 5
                   failureThreshold: 5
-
             securityContext:
               privileged: false
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
-
+              capabilities: {drop: ["ALL"]}
             resources:
               requests:
                 cpu: 1m
                 memory: 128Mi
               limits:
                 memory: 256Mi
-
     rbac:
       roles:
-        *app :
+        homepage:
           type: ClusterRole
           rules:
             - apiGroups:
@@ -127,13 +107,6 @@ spec:
               verbs:
                 - get
                 - list
-            # - apiGroups:
-            #     - traefik.io
-            #   resources:
-            #     - ingressroutes
-            #   verbs:
-            #     - get
-            #     - list
             - apiGroups:
                 - gateway.networking.k8s.io
               resources:
@@ -156,32 +129,26 @@ spec:
                 - customresourcedefinitions/status
               verbs:
                 - get
-
       bindings:
-        *app :
+        homepage:
           type: ClusterRoleBinding
           roleRef:
-            identifier: *app
+            identifier: homepage
           subjects:
-            - identifier: *app
-
+            - identifier: homepage
     serviceAccount:
       # allow scraping of k8s resources for widget
-      *app : {}
-
+      homepage: {}
     service:
       app:
-        controller: *app
+        controller: homepage
         ports:
           http:
             port: &port 3000
-
     route:
       app:
-        # annotations:
-        #   traefik.ingress.kubernetes.io/router.middlewares: ""
         hostnames:
-          - "dash.${PUBLIC_DOMAIN}"
+          - "dash.horvathzoltan.me"
         parentRefs:
           - name: envoy-external
             namespace: networking
@@ -193,11 +160,12 @@ spec:
           - backendRefs:
               - identifier: app
                 port: *port
-
     persistence:
+      # Non-secret config files (kubernetes/settings/widgets + empty placeholders) live in git
+      # and are rendered into a ConfigMap by kustomize configMapGenerator.
       config-files:
-        type: secret
-        name: "{{ .Release.Name }}-config-files-secret"
+        type: configMap
+        name: homepage-config-files
         globalMounts:
           - path: /app/config/bookmarks.yaml
             subPath: bookmarks.yaml
@@ -207,8 +175,6 @@ spec:
             subPath: kubernetes.yaml
           - path: /app/config/proxmox.yaml
             subPath: proxmox.yaml
-          - path: /app/config/services.yaml
-            subPath: services.yaml
           - path: /app/config/settings.yaml
             subPath: settings.yaml
           - path: /app/config/widgets.yaml
@@ -217,3 +183,11 @@ spec:
             subPath: custom.css
           - path: /app/config/custom.js
             subPath: custom.js
+      # services.yaml stays in 1Password because it contains personal/financial URLs;
+      # delivered as a key in the shared homepage-secret (alongside the env var token).
+      config-services:
+        type: secret
+        name: homepage-secret
+        globalMounts:
+          - path: /app/config/services.yaml
+            subPath: services.yaml

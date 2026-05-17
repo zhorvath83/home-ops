@@ -4,25 +4,11 @@ apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: plex
-  namespace: default
 spec:
   interval: 30m
   chartRef:
     kind: OCIRepository
     name: plex
-
-  install:
-    createNamespace: true
-    remediation:
-      retries: -1
-  upgrade:
-    cleanupOnFail: true
-    remediation:
-      strategy: rollback
-      retries: 3
-  uninstall:
-    keepHistory: false
-
   values:
     defaultPodOptions:
       automountServiceAccountToken: false
@@ -35,32 +21,28 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
-
     controllers:
       plex:
+        annotations:
+          reloader.stakater.com/auto: "true"
         containers:
           app:
             image:
               repository: ghcr.io/home-operations/plex
               tag: 1.43.1.10611@sha256:a9c3723cb31cc9621df27cf5801184c290293adf1df2bfaea4b8b6fc01dbfd96
-
-
             env:
               TZ: "Europe/Budapest"
               HOSTNAME: PlexServer
-              PLEX_ADVERTISE_URL: "https://plex.${PUBLIC_DOMAIN},http://${LB_MEDIASERVER_IP}:32400"
+              PLEX_ADVERTISE_URL: "https://plex.horvathzoltan.me,http://192.168.1.20:32400"
               PLEX_NO_AUTH_NETWORKS: 192.168.1.0/24,192.168.2.0/24,10.42.0.0/16,10.43.0.0/16
-
             envFrom:
               - secretRef:
                   name: plex-secret
-
             securityContext:
               privileged: false
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
-
+              capabilities: {drop: ["ALL"]}
             probes:
               liveness: &probes
                 enabled: true
@@ -73,9 +55,7 @@ spec:
                   periodSeconds: 30
                   timeoutSeconds: 5
                   failureThreshold: 5
-
               readiness: *probes
-
               startup:
                 enabled: true
                 custom: true
@@ -85,21 +65,19 @@ spec:
                   failureThreshold: 5
                   tcpSocket:
                     port: *port
-
             resources:
               requests:
                 cpu: 25m
                 memory: 160Mi
               limits:
                 memory: 4096Mi
-
     service:
       app:
         controller: plex
         type: LoadBalancer
         externalTrafficPolicy: Local
         annotations:
-          metallb.io/loadBalancerIPs: "${LB_MEDIASERVER_IP}"
+          lbipam.cilium.io/ips: "192.168.1.20"
         ports:
           http:
             port: *port
@@ -125,14 +103,12 @@ spec:
           gdm-4-udp:
             port: 32414
             protocol: UDP
-
     persistence:
       config:
         type: persistentVolumeClaim
         existingClaim: plex
         globalMounts:
           - path: /config/Library/Application Support/Plex Media Server
-
       # Keep the small, stateful Plex core on the main PVC and mount
       # large, rebuildable directories from a separate PVC.
       # For existing installs, pre-populate these subPaths on
@@ -150,24 +126,20 @@ spec:
                 subPath: metadata
               - path: /config/Library/Application Support/Plex Media Server/Scanners
                 subPath: scanners
-
       logs:
         type: emptyDir
         globalMounts:
           - path: /config/Library/Application Support/Plex Media Server/Logs
-
       nfs-media:
         type: nfs
-        server: ${CONF_NFS_SRV_IP}
+        server: 192.168.1.10
         path: /media
         globalMounts:
           - path: /media
-
       transcode:
         type: emptyDir
         globalMounts:
           - path: /transcode
-
       tmp:
         type: emptyDir
         globalMounts:

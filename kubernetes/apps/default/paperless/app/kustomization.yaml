@@ -2,21 +2,15 @@
 # yaml-language-server: $schema=https://json.schemastore.org/kustomization
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-namespace: default
 resources:
   - ./ocirepository.yaml
   - ./externalsecret.yaml
   - ./helmrelease.yaml
-
-commonLabels:
-  app.kubernetes.io/name: paperless-ngx
-  app.kubernetes.io/instance: paperless-ngx
-
+  - ./ciliumnetworkpolicy.yaml
 configMapGenerator:
   - name: paperless-scripts
     files:
       - config/pre-consume.sh
-
 generatorOptions:
   disableNameSuffixHash: true
   annotations:

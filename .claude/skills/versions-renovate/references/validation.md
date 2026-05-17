@@ -6,15 +6,15 @@ Use this reference after editing Renovate config or inline annotations.
 
 Read together:
 
-1. `.github/renovate.json5`
-2. any touched file in `.github/renovate/`
+1. `.renovaterc.json5` (repo root)
+2. any touched fragment under `.renovate/*.json5`
 3. the manifest or config file whose dependency tracking changed
 
 ## Consistency Checks
 
 - verify the updated policy still matches the intended datasource, grouping, and auto-merge behavior
 - verify inline annotations still sit on the correct field or resource
-- verify imported fragment names in `.github/renovate.json5` still match the files on disk
+- verify the `extends` array in `.renovaterc.json5` still matches the fragments on disk under `.renovate/`
 - verify allowed-version and package-rule changes do not accidentally broaden scope beyond the intended packages
 
 ## Lightweight Validation

@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -9,16 +9,6 @@ spec:
     kind: OCIRepository
     name: onepassword-connect
   interval: 30m
-  install:
-    remediation:
-      retries: 4
-  upgrade:
-    cleanupOnFail: true
-    remediation:
-      strategy: rollback
-      retries: 4
-  uninstall:
-    keepHistory: false
   values:
     # Chart defaults handle security: seccompProfile=RuntimeDefault, runAsNonRoot,
     # readOnlyRootFilesystem, drop ALL caps, UID/GID 999.
@@ -44,4 +34,4 @@ spec:
             memory: 16M
           limits:
             memory: 128M
-      credentialsName: onepassword-connect-credentials
+      credentialsName: onepassword-connect-credentials-secret

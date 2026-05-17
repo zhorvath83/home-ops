@@ -1,0 +1,51 @@
+[env]
+JUST_UNSTABLE = "1"
+KUBECONFIG = '{{config_root}}/kubeconfig'
+TALOSCONFIG = '{{config_root}}/talosconfig'
+MINIJINJA_CONFIG_FILE = "{{config_root}}/.minijinja.toml"
+# Talos + Kubernetes versions consumed by kubernetes/talos templates and recipes.
+# renovate: datasource=github-releases depName=siderolabs/talos
+TALOS_VERSION = "v1.13.2"
+# renovate: datasource=github-releases depName=kubernetes/kubernetes
+KUBERNETES_VERSION = "v1.36.1"
+# Path to the NAS-share mount helper used by the openwrt/omv recipes.
+# Override per-environment if the personal scripts repo lives elsewhere.
+NAS_MOUNT_SCRIPT = '{{get_env(name="HOME")}}/Projects/personal/my-scripts-and-configs/macOS/btt-scripts/nas-share-mount.sh'
+
+[settings]
+pipx.uvx = true
+
+[tools]
+# Core CLI tooling
+talosctl = "1.13.2"
+kubectl = "1.36.1"
+helm = "3.21.0"
+helmfile = "1.5.1"
+flux2 = "2.8.7"
+just = "1.51.0"
+
+# Templating + secrets
+"aqua:mitsuhiko/minijinja" = "2.19.0"
+"1password-cli" = "2.34.0"
+
+# YAML/JSON tooling
+yq = "4.53.2"
+jq = "1.8.1"
+
+# UX
+gum = "0.17.0"
+
+# Hooks
+pre-commit = "4.6.0"
+
+# Terraform
+terraform = "1.15.3"
+
+# Linters / formatters (aqua backend, follows bjw-s pattern)
+"aqua:google/yamlfmt" = "latest"
+"aqua:rhysd/actionlint" = "latest"
+
+# Python tooling (pipx backend)
+"pipx:flux-local" = "latest"
+"pipx:ansible" = "latest"
+"pipx:ansible-core" = "latest"

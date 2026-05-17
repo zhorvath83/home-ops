@@ -1,27 +1,34 @@
 # 07 — Components és shared resources
 
+> **2026-05-17 — Frissítés**: a `cluster-settings` ConfigMap és `cluster-secrets` SOPS Secret **eltüntetve** (lásd doc 06 STATUS). A `kubernetes/flux/vars/` mappa törölve. A korábbi `${PUBLIC_DOMAIN}` substitution layer helyett a domain (`horvathzoltan.me`) **hardcoded** mindenhol (bjw-s/onedr0p/buroa minta). A `SECRET_QBITTORRENT_PW` ExternalSecret-re migrálva (1Password `qbittorrent` item, `password_pbkdf2` mező). A doc alábbi szekciói **historikus dokumentáció** — a tényleges futó állapot már nem substituteFrom-mintát követ.
+
 ## Cél
 
 A `kubernetes/components/` újrahasznosítható darabok strukturálása + a shared `cluster-secrets` / `cluster-settings` minta finomítása az új clusterre.
 
 ## Inputs
 
-- Flux Operator + FluxInstance működik, a `cluster-apps` Kustomization minden Flux Kustomization-be injektálja a SOPS dekripciót és substitueFrom-ot (lásd [05-flux-operator.md](./05-flux-operator.md)).
+- Flux Operator + FluxInstance működik, a `cluster-apps` Kustomization minden HelmRelease-be injektálja a default-okat (install/upgrade strategy, retries, timeout — lásd [05-flux-operator.md](./05-flux-operator.md)). Runtime SOPS és substituteFrom NINCS (Phase 6.7 után bjw-s parity).
 - A jelenlegi `kubernetes/components/volsync/` 5 fájllal megvan (kustomization, externalsecret, pvc, replicationsource, replicationdestination).
 
-## Jelenlegi components — megőrzött
+## Jelenlegi components
 
 ```
 kubernetes/components/
+├── flux-alerts/                              # ÚJ — Step 9 után bevezetett, per-ns Alert+Provider+ExternalSecret
+│   ├── kustomization.yaml                    # kind: Component
+│   ├── externalsecret.yaml                   # 1Password "pushover" → flux-pushover-secret
+│   ├── provider.yaml                         # type: generic, name: pushover
+│   └── alert.yaml                            # eventSources GR/HR/HRepo/KS/OCIRepo "*"
 └── volsync/
     ├── kustomization.yaml
     ├── externalsecret.yaml
     ├── pvc.yaml
     ├── replicationsource.yaml
-    └── replicationdestination.yaml             # most kikommentelve, bootstrap restore-hoz
+    └── replicationdestination.yaml           # bootstrap-only manifest, `ssa: IfNotPresent` címkével permanensen aktiválva (manual: restore-once trigger)
 ```
 
-Ez **változatlanul átkerül** az új clusterre. A komponens postBuild substitute változókkal paraméterezett, app-onként testreszabható.
+A `volsync` component **változatlanul** átkerül az új clusterre. A `flux-alerts` component pedig minden `apps/<ns>/kustomization.yaml`-ből hivatkozva van (`components: [../../components/flux-alerts]`), így a 8 workload namespace mindegyike kap saját Alert+Provider+ExternalSecret hármast — per-ns notification coverage (a Step 9 utáni szétszórt KS/HR-ekhez).
 
 ## Hogyan dolgozik a volsync component
 
@@ -103,7 +110,7 @@ Részletes kutatás alapján:
 |---|---|---|---|---|---|
 | **volsync** | ✅ | ✅ | ✅ | Per-app Kopia backup (ExternalSecret + PVC + RS + RD) | **MEGTARTÁS** — már megvan |
 | **zeroscaler** | ✅ | ✅ | ✅ | Scale-to-zero HPA blackbox NFS probe metric alapján — ha NAS offline, az NFS-függő pod-ok 0-ra skáláznak | **Phase 2** (NAS redundancia szempontból érdekes) |
-| **flux-alerts** | ✅ (`flux-alerts/`) | ✅ (`alerts/`) | ✅ (`namespace/alerts/`) | Per-app Flux Alert + Provider — app-szintű notification | **Phase 2** opcionálisan |
+| **flux-alerts** | ✅ (`flux-alerts/`) | ✅ (`alerts/`) | ✅ (`namespace/alerts/`) | Per-namespace Alert + Provider + ExternalSecret — workload-ns notification | **BEVEZETVE** — Step 9 után minden apps/<ns>/kustomization.yaml-ben `components: [../../components/flux-alerts]` |
 | **github-status** | ❌ | ✅ | ✅ | Flux Kustomization eredményt GitHub commit status-ként | **Nem szükséges** |
 | **gpu** (DRA) | ✅ | ❌ | ❌ | Intel iGPU ResourceClaimTemplate (K8s 1.32+ DRA) | **Nem most** (Plex iGPU egyelőre kihagyva) |
 | **anubis** | ✅ | ❌ | ❌ | Anti-bot challenge proxy | **Nem szükséges** |
@@ -114,42 +121,18 @@ A jelenlegi `kubernetes/components/volsync/` változatlanul használható (megfe
 
 ## Részletes elemzés a "miért nem ment" kérdésre
 
-A user korábban próbálta a components patterns-t bevezetni, de a "alapvető különbségek" megakasztották. A főbb akadályok lehetnek:
-
-### Akadály #1: bjw-s `kubernetes/flux/` minimalizmus vs jelenlegi `cluster-settings`/`cluster-secrets` minta
-
-**bjw-s tényleges állapota**: a `kubernetes/flux/` mappában **egyetlen fájl** van (`cluster/ks.yaml`), és **NINCS** `vars/` mappa. **NINCS** `cluster-settings.yaml` ConfigMap, **NINCS** `cluster-secrets.sops.yaml` Secret. A Helm values-ok közvetlenül az app `helmrelease.yaml`-ben élnek, és a bootstrap a `values.yaml.gotmpl` trükkkel olvas onnan.
-
-**Jelenlegi setup**: `kubernetes/flux/vars/cluster-settings.yaml` + `cluster-secrets.sops.yaml`, minden Kustomization `postBuild.substituteFrom: [cluster-settings, cluster-secrets]`-ot kap (cluster-apps root patch-ben injektálva).
-
-**Ez két INKOMPATIBILIS minta.** Ha tisztán bjw-s-stílusra váltunk, **eltűnik a substituteFrom**, és minden app HelmRelease-ben **közvetlenül** kell hivatkozni a domain-re, NFS IP-re stb. Ez major refaktor minden app-ban.
-
-**Javaslat**: a jelenlegi `cluster-settings`/`cluster-secrets` mintát **megőrizzük** — onedr0p és buroa is ezt használja. Csak a bjw-s minimalista. Az értékeket NEM kell elveszíteni.
-
-### Akadály #2: `cluster-secrets.sops.yaml` tartalmi különbség
-
-bjw-s NEM használ `cluster-secrets.sops.yaml`-t — minden runtime secret ExternalSecret-en keresztül jön 1Password-ből. A jelenlegi te repód viszont SOPS-titkosítva tárol cluster-szintű secret-eket (`PUBLIC_DOMAIN`, `SECRET_QBITTORRENT_PW`).
-
-**Ez OK**: a jelenlegi minta működik, és az ExternalSecret-en kívül egy másik tier-ben élnek a "build-time" secret-ek (substitueFrom-on át beépítve a manifesteknbe). Ez **nem rossz minta** — csak más, mint bjw-s.
-
-### Akadály #3: Component név-konvenció
-
-bjw-s a komponensekben `${APP}-volsync`, `${APP}-anubis`, `${APP}-dragonfly` formátumot használ — egy app több komponensre is feliratkozhat, és mindegyik komponens "saját nevű" resource-okat hoz létre.
-
-A jelenlegi `kubernetes/components/volsync/` ezt **már jól csinálja** (`${APP}` substitute, `${APP}-volsync-secret`, stb.). Tehát itt nincs eltérés.
+> **Phase 6.7 — törlés**: az eredeti dokumentum három akadályt (kustomize-flux minimalizmus, `cluster-secrets.sops.yaml`, component név-konvenció) sorolt fel, amelyek a bjw-s parity-t megakadályozták. Phase 6.7 audit során mindhárom akadály megoldódott: a `vars/` mappa törölve, a runtime SOPS megszűnt (`PUBLIC_DOMAIN` hardcoded, `SECRET_QBITTORRENT_PW` ESO-n), a component név-konvenció (`${APP}-volsync-secret`) bevezetve. **A részletes akadály-elemzés mostantól értelmét vesztette** — lásd [06-repo-restructure.md](./06-repo-restructure.md) STATUS L20-32.
 
 ## Mit érdemes átvenni — konkrét lista
 
-### Most (a cutover részeként)
+### Cutover részeként (elvégezve)
 
-1. ✅ **volsync** — már megvan, marad.
-2. ❌ **Semmi más új component** — a cutover scope ne bővüljön.
+1. ✅ **volsync** — már megvan, marad. `ssa: IfNotPresent` címkével permanensen aktiválva (bjw-s minta, Phase 6.7).
+2. ✅ **flux-alerts** komponens — per-namespace Alert+Provider+ExternalSecret, minden `apps/<ns>/kustomization.yaml`-ből hivatkozott (bevezetve Phase 6 Step 9).
 
 ### Phase 2 (cutover utáni 1-3 hónapban)
 
-1. **flux-alerts** komponens — per-app Flux Alert. A jelenlegi cluster-szintű alert (`flux-system/addons/alerts/`) durva: minden HR/KS hibára azonos notification. App-szintű alerts (groupName tag-elve) jobb diagnosztika.
-   - Hivatkozási pont: bjw-s `kubernetes/components/flux-alerts/`.
-2. **zeroscaler** komponens — érdekes a NAS-függő app-okhoz (Plex, Sonarr, Radarr stb.). Ha az M93p NFS share-e időszakosan offline (pl. update miatt), a függő pod-ok scale 0-ra → nincs CrashLoopBackOff log spam.
+1. **zeroscaler** komponens — érdekes a NAS-függő app-okhoz (Plex, Sonarr, Radarr stb.). Ha az M93p NFS share-e időszakosan offline (pl. update miatt), a függő pod-ok scale 0-ra → nincs CrashLoopBackOff log spam.
    - Feltétel: blackbox-exporter telepítve van (jelenleg lehet, hogy a `speedtest-exporter` mellett már fut, de érdemes ellenőrizni).
 
 ### NEM tervezve
@@ -158,87 +141,6 @@ A jelenlegi `kubernetes/components/volsync/` ezt **már jól csinálja** (`${APP
 - **anubis** — nincs bot-kockázat.
 - **dragonfly** — nincs cache igény.
 - **github-status** — overkill single-developer setup.
-
-## Shared resources: cluster-settings + cluster-secrets
-
-**Fontos megjegyzés**: a bjw-s repó **nem használja** ezt a mintát (csak egyetlen `cluster/ks.yaml` fájl a `flux/` alatt). Az onedr0p sem már (újabb átszervezés). A te setup-od ezt a `flux/vars/` mintát követi, és **változatlanul megőrizzük** mindkettőt — a SOPS-titkosított `cluster-secrets.sops.yaml` és a plain `cluster-settings.yaml` is. Egy későbbi projekt feladat eldönteni, hogy 1Password ExternalSecret-re migráljuk-e (ld. doc végén "Open issues").
-
-A `kubernetes/flux/vars/` tartalma az új clusteren:
-
-### `kubernetes/flux/vars/kustomization.yaml`
-
-```yaml
----
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-resources:
-  - ./cluster-settings.yaml
-  - ./cluster-secrets.sops.yaml
-```
-
-### `kubernetes/flux/vars/cluster-settings.yaml`
-
-```yaml
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  namespace: flux-system
-  name: cluster-settings
-data:
-  # Networking
-  CLUSTER_POD_CIDR: "10.244.0.0/16"
-  CLUSTER_SVC_CIDR: "10.245.0.0/16"
-  CLUSTER_NODE_1_CIDR: "192.168.1.11/32"
-
-  # LoadBalancer pool (Cilium L2)
-  LB_POOL_RANGE_START: "192.168.1.15"
-  LB_POOL_RANGE_END: "192.168.1.25"
-
-  # Service VIP-ek — változatlan (megegyezik a jelenlegi MetalLB allokációval)
-  LB_ENVOY_INTERNAL_IP: "192.168.1.18"
-  LB_K8S_GATEWAY_IP: "192.168.1.19"
-  LB_MEDIASERVER_IP: "192.168.1.20"
-
-  # NFS server
-  CONF_NFS_SRV_IP: "192.168.1.10"
-```
-
-A jelenlegihez képest **csak a node IP változik**: `.6` (régi K3s) → `.11` (új HP Talos). A LB IP-k a `.15-.25` tartományban kerülnek allokálásra, ezen belül a meglévő `.18/.19/.20` szolgáltatás IP-i változatlanok. Az `envoy-external` Gateway nem kap LAN LB IP-t (Cloudflare Tunnel ClusterIP-n keresztül megy ki).
-
-### `kubernetes/flux/vars/cluster-secrets.sops.yaml` — **megmarad SOPS-ban**
-
-A jelenlegi SOPS-titkosított Secret változatlanul átkerül az új clusterre. **Tartalma (két field)**:
-
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: cluster-secrets
-  namespace: flux-system
-stringData:
-  PUBLIC_DOMAIN: <encrypted>
-  SECRET_QBITTORRENT_PW: <encrypted>
-```
-
-- `PUBLIC_DOMAIN`: a publikus DNS zone név (Cloudflare-managelt domain), 25+ manifest-ben `${PUBLIC_DOMAIN}` substituteFrom-mal hivatkozott.
-- `SECRET_QBITTORRENT_PW`: a qBittorrent web UI admin PBKDF2 jelszava, a `qBittorrent.conf` ConfigMap-renderingben felhasznált.
-
-**Cutover-kor** ennek a fájlnak a tartalma **változatlan** marad. A `.sops.yaml` age recipient-je is változatlan, így a fájl decrypt-elhető az új clusteren ugyanazzal az age private key-jel.
-
-**1Password-re migráció**: külön projekt-feladat (post-cutover phase 2). Most a SOPS pattern működik, nem érintjük.
-
-### Bootstrap időben a SOPS dekripció elérhetősége
-
-Ahhoz, hogy a Flux a `cluster-secrets.sops.yaml`-t reconcile-on dekódolja, a `sops-age` Secret-nek léteznie kell a `flux-system` namespace-ben. Ezt a bootstrap **resources** stage hozza létre 1Password-ből `op inject`-tel — részletek a [04-bootstrap-helmfile.md](./04-bootstrap-helmfile.md) "SOPS bootstrap" szekcióban.
-
-### `kubernetes/flux/vars/cluster-settings.yaml` — **megmarad**
-
-## SOPS age key
-
-Cluster bootstrap-kor a `sops-age` Secret-et a `flux-system` namespace-be kell injektálni — `op://Automation/sops-age/keys.txt`-ből. Részletek a [05-flux-operator.md](./05-flux-operator.md)-ben.
-
-A `.sops.yaml` változatlan (`age1el7uu5gzqsdp8wz7y9mcpqsy08l894twxg0jm5cm0jps3hkp2veqdpn5az` continues).
 
 ## ClusterSecretStore (1Password) — runtime
 
@@ -249,14 +151,13 @@ A `kubernetes/apps/external-secrets/onepassword-connect/app/clustersecretstore.y
 apiVersion: external-secrets.io/v1
 kind: ClusterSecretStore
 metadata:
-  name: onepassword
+  name: onepassword-connect
 spec:
   provider:
     onepassword:
       connectHost: http://onepassword-connect.external-secrets.svc.cluster.local:8080
       vaults:
-        Kubernetes: 1                          # main vault
-        Automation: 2                          # bootstrap creds
+        HomeOps: 1                             # single source vault for runtime + bootstrap items
       auth:
         secretRef:
           connectTokenSecretRef:
@@ -265,7 +166,7 @@ spec:
             namespace: external-secrets
 ```
 
-A `vaults:` lista a 1Password vault neveket és prioritásokat. **A jelenlegi vault setup-ot** megőrizzük.
+A `vaults:` listában csak a `HomeOps` vault szerepel — a tényleges setupban minden 1Password item (bootstrap creds, runtime app secrets, talos secrets, age key) ebben él. A `Kubernetes`/`Automation` névcsoport elképzelés a doc korábbi verziójában megjelent, de a tényleges repo Taskfile-ja (`.taskfiles/Flux/Tasks.yaml`) is `HomeOps`-ra mutat — egy vault elég.
 
 ## Validation
 
@@ -295,7 +196,7 @@ A `replicationdestination.yaml` bekapcsolásakor (cutover idejére) az új clust
 
 ## Open issues
 
-- **Bootstrap RD vs runtime RS schedule overlap**: ha mind a bootstrap RD, mind a runtime RS megfut egyszerre, a Kopia repository egy időben olvas+ír. Hivatalosan oké (Kopia konkurens), de cutover napon **ne hagyd véletlenül futni az RS-t** a régi clusteren ÉS az RD-t az újon egyszerre. A részletes timing a [12-cutover-runbook.md](./12-cutover-runbook.md)-ban.
+- **Bootstrap RD vs runtime RS schedule overlap**: ha mind a bootstrap RD, mind a runtime RS megfut egyszerre, a Kopia repository egy időben olvas+ír. Hivatalosan oké (Kopia konkurens), de cutover napon **ne hagyd véletlenül futni az RS-t** a régi clusteren ÉS az RD-t az újon egyszerre. A részletes timing a [13-cutover-runbook.md](./13-cutover-runbook.md)-ban.
 - **`enableFileDeletion: true`** a RD-ben azt jelenti, hogy a snapshot tartalom **felülírja** a PVC tartalmat (törli a snapshot-ban nem szereplő fájlokat). Friss PVC esetén ez OK, de ha jövőben in-place restore kell, óvatosan.
 - **`runAsUser/runAsGroup: 10001`** default — sok app-nak más UID/GID kell (Plex: 568, Sonarr: 1000 stb.). Az app `ks.yaml`-ben felülírjuk a `APP_UID`/`APP_GID` substitute-tel.
 - **`volsync-template` 1Password item**: ennek kell tartalmaznia `KOPIA_S3_BUCKET` és `KOPIA_PASSWORD` mezőket. Jelenleg már megvan — változatlan.

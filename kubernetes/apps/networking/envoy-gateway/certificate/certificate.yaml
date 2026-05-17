@@ -1,13 +1,13 @@
 ---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/cert-manager.io/certificate_v1.json
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: "${PUBLIC_DOMAIN/./-}"
-  namespace: networking
+  name: "horvathzoltan-me"
 spec:
   dnsNames:
-    - "${PUBLIC_DOMAIN}"
-    - "*.${PUBLIC_DOMAIN}"
+    - "horvathzoltan.me"
+    - "*.horvathzoltan.me"
   duration: 160h
   issuerRef:
     kind: ClusterIssuer
@@ -16,6 +16,6 @@ spec:
     algorithm: ECDSA
     size: 256
     rotationPolicy: Always
-  secretName: "${PUBLIC_DOMAIN/./-}"
+  secretName: "horvathzoltan-me"
   usages:
     - digital signature

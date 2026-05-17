@@ -3,26 +3,12 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app speedtest-exporter
-  namespace: observability
+  name: speedtest-exporter
 spec:
   interval: 30m
   chartRef:
     kind: OCIRepository
     name: speedtest-exporter
-
-  install:
-    createNamespace: true
-    remediation:
-      retries: -1
-  upgrade:
-    cleanupOnFail: true
-    remediation:
-      strategy: rollback
-      retries: 3
-  uninstall:
-    keepHistory: false
-
   values:
     defaultPodOptions:
       automountServiceAccountToken: false
@@ -35,25 +21,20 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
-
     controllers:
       speedtest-exporter:
         type: deployment
         replicas: 1
-
         annotations:
           reloader.stakater.com/auto: "true"
-
         containers:
           app:
             image:
               repository: ghcr.io/miguelndecarvalho/speedtest-exporter
               tag: v3.5.4
-
             env:
               SPEEDTEST_PORT: &port 9798
               TZ: "Europe/Budapest"
-
             probes:
               liveness:
                 enabled: true
@@ -67,33 +48,28 @@ spec:
                   periodSeconds: 30
                   timeoutSeconds: 5
                   failureThreshold: 5
-
             securityContext:
               privileged: false
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
-
+              capabilities: {drop: ["ALL"]}
             resources:
               requests:
                 cpu: 100m
                 memory: 32Mi
               limits:
                 memory: 128Mi
-
     persistence:
       config:
         type: emptyDir
         globalMounts:
           - path: /.config
-
     service:
       app:
-        controller: *app
+        controller: speedtest-exporter
         ports:
           http:
             port: *port
-
     route:
       app:
         annotations:
@@ -102,7 +78,7 @@ spec:
           gethomepage.dev/group: Observability
           gethomepage.dev/icon: openspeedtest.svg
         hostnames:
-          - "speed.${PUBLIC_DOMAIN}"
+          - "speed.horvathzoltan.me"
         parentRefs:
           - name: envoy-external
             namespace: networking
@@ -114,10 +90,9 @@ spec:
           - backendRefs:
               - identifier: app
                 port: *port
-
     serviceMonitor:
       app:
-        serviceName: *app
+        serviceName: speedtest-exporter
         endpoints:
           - port: http
             scheme: http

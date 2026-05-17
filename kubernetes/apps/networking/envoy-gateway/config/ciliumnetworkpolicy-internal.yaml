@@ -1,0 +1,56 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/cilium.io/ciliumnetworkpolicy_v2.json
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: envoy-internal
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: envoy
+      gateway.envoyproxy.io/owning-gateway-name: envoy-internal
+  ingress:
+    # HTTP and HTTPS listener traffic. LAN clients arrive through the Cilium
+    # L2 announced LB IP and reach the pod with the original client IP
+    # preserved (externalTrafficPolicy: Local). LAN-only enforcement is
+    # delegated to SecurityPolicy/envoy-internal-rfc1918 at the listener level,
+    # so accept world + cluster here.
+    - fromEntities:
+        - world
+        - cluster
+        - host
+        - remote-node
+      toPorts:
+        - ports:
+            - port: "10080"
+              protocol: TCP
+            - port: "10443"
+              protocol: TCP
+        - ports:
+            - port: "10443"
+              protocol: UDP
+    # Prometheus scrape of the envoy admin metrics port.
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: observability
+            app.kubernetes.io/name: prometheus
+      toPorts:
+        - ports:
+            - port: "19001"
+              protocol: TCP
+    # Kubelet readiness probe (host network).
+    - fromEntities:
+        - host
+        - remote-node
+      toPorts:
+        - ports:
+            - port: "19003"
+              protocol: TCP
+  # No egress section: the cluster-wide CCNPs allow-cluster-egress and
+  # allow-dns-egress under kubernetes/apps/kube-system/cilium/netpols/ cover
+  # DNS (UDP+TCP/53 via L7 proxy), in-cluster traffic (xDS to envoy-gateway,
+  # HTTPRoute backends across namespaces), and outbound HTTPS to the public
+  # internet. envoy-internal is a traffic forwarder — a tight egress allowlist
+  # adds maintenance overhead without meaningful threat-model coverage on this
+  # workload. Reference repos (bjw-s-labs, onedr0p, buroa) also do not write
+  # egress restrictions on Envoy proxy pods.

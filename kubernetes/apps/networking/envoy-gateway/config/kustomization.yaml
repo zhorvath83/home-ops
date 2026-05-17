@@ -7,6 +7,6 @@ resources:
   - ./gateway-external.yaml
   - ./gateway-internal.yaml
   - ./gateway-policies.yaml
-  - ./networkpolicy-external.yaml
-  - ./networkpolicy-internal.yaml
+  - ./ciliumnetworkpolicy-external.yaml
+  - ./ciliumnetworkpolicy-internal.yaml
   - ./observability.yaml

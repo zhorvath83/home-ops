@@ -1,27 +1,14 @@
 ---
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: democratic-csi
-  namespace: kube-system
 spec:
   interval: 15m
   chartRef:
     kind: OCIRepository
     name: democratic-csi
-
-  install:
-    createNamespace: true
-    remediation:
-      retries: -1
-  upgrade:
-    cleanupOnFail: true
-    remediation:
-      retries: 3
-  uninstall:
-    keepHistory: false
-
   values:
     # NOTE: Chart sets NO securityContext by default. CSI drivers require
     # privileged access for volume operations — hardening not applicable here.
@@ -32,13 +19,11 @@ spec:
       enabled: true
       replicaCount: 1
       strategy: node
-
       driver:
         enabled: true
         image:
           registry: docker.io/democraticcsi/democratic-csi
           tag: v1.9.3
-
       externalProvisioner:
         enabled: true
         image:
@@ -58,13 +43,10 @@ spec:
             memory: 32Mi
           limits:
             memory: 256Mi
-
       externalAttacher:
         enabled: false
-
       externalResizer:
         enabled: false
-
       externalSnapshotter:
         enabled: true
         image:
@@ -79,14 +61,11 @@ spec:
             memory: 32Mi
           limits:
             memory: 256Mi
-
       externalHealthMonitorController:
         enabled: false
-
     node:
       # democratic-csi node
       enabled: true
-
       cleanup:
         image:
           registry: public.ecr.aws/docker/library/busybox
@@ -97,7 +76,6 @@ spec:
             memory: 5Mi
           limits:
             memory: 256Mi
-
       driver:
         image:
           registry: docker.io/democraticcsi/democratic-csi
@@ -108,18 +86,15 @@ spec:
             memory: 256Mi
           limits:
             memory: 1Gi
-
         extraVolumeMounts:
           - name: local-storage
-            mountPath: /var/lib/csi-local-hostpath
+            mountPath: /var/mnt/local-hostpath
             mountPropagation: Bidirectional
-
       extraVolumes:
         - name: local-storage
           hostPath:
-            path: /var/lib/csi-local-hostpath
+            path: /var/mnt/local-hostpath
             type: DirectoryOrCreate
-
       driverRegistrar:
         enabled: true
         image:
@@ -131,7 +106,6 @@ spec:
             memory: 32Mi
           limits:
             memory: 256Mi
-
     csiProxy:
       enabled: true
       image:
@@ -143,24 +117,21 @@ spec:
           memory: 16Mi
         limits:
           memory: 256Mi
-
     csiDriver:
       name: "org.democratic-csi.local-hostpath"
       attachRequired: false
       storageCapacity: true
       fsGroupPolicy: File
-
     driver:
       config:
         driver: local-hostpath
         instance_id:
         local-hostpath:
-          shareBasePath: "/var/lib/csi-local-hostpath"
-          controllerBasePath: "/var/lib/csi-local-hostpath"
+          shareBasePath: "/var/mnt/local-hostpath"
+          controllerBasePath: "/var/mnt/local-hostpath"
           dirPermissionsMode: "0777"
           dirPermissionsUser: 0
           dirPermissionsGroup: 0
-
     storageClasses:
       - name: democratic-csi-local-hostpath
         defaultClass: true

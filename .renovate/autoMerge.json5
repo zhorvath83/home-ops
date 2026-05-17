@@ -1,0 +1,50 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  // automergeType: "branch" pushes the update directly to the target branch when
+  // checks pass — no PR is opened. Reduces dependency-update PR noise on the dashboard
+  // while keeping the same CI guards. The `:automergeBranch` preset in .renovaterc.json5
+  // sets this globally; the rules below scope which packages are eligible.
+  packageRules: [
+    {
+      description: "Auto-merge container digests on trusted publishers",
+      matchDatasources: ["docker"],
+      automerge: true,
+      automergeType: "branch",
+      matchUpdateTypes: ["digest"],
+      matchPackagePrefixes: [
+        "ghcr.io/home-operations",
+        "ghcr.io/onedr0p",
+        "ghcr.io/bjw-s",
+        "ghcr.io/bjw-s-labs",
+      ],
+    },
+    {
+      description: "Auto-merge minor and patch updates on trusted container images",
+      matchDatasources: ["docker"],
+      automerge: true,
+      automergeType: "branch",
+      matchUpdateTypes: ["minor", "patch"],
+      matchPackagePrefixes: [
+        "ghcr.io/home-operations",
+        "ghcr.io/onedr0p",
+        "ghcr.io/bjw-s",
+        "ghcr.io/bjw-s-labs",
+        "ghcr.io/coredns",
+      ],
+    },
+    {
+      description: "Auto-merge minor and patch Helm chart updates",
+      matchDatasources: ["helm"],
+      automerge: true,
+      automergeType: "branch",
+      matchUpdateTypes: ["minor", "patch"],
+    },
+    {
+      description: "Auto-merge pre-commit hook updates",
+      matchManagers: ["pre-commit"],
+      automerge: true,
+      automergeType: "branch",
+      matchUpdateTypes: ["minor", "patch", "digest"],
+    },
+  ],
+}

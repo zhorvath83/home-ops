@@ -1,6 +1,6 @@
 ---
 name: networking-platform
-description: Modify shared networking platform resources in the home-ops repository. Use when changing Envoy Gateway, Gateway API resources, Cloudflare Tunnel, ExternalDNS, MetalLB, networking Flux ordering, or shared ingress behavior in kubernetes/apps/networking. Do not use this skill for routine application routes that do not alter the platform exposure chain.
+description: Modify shared networking platform resources in the home-ops repository. Use when changing Envoy Gateway, Gateway API resources, Cloudflare Tunnel, ExternalDNS, Cilium LB-IPAM / L2 announcement, cluster-wide CiliumNetworkPolicy baseline, networking Flux ordering, or shared ingress behavior in kubernetes/apps/networking. Do not use this skill for routine application routes that do not alter the platform exposure chain.
 ---
 
 # Home Ops Networking Platform

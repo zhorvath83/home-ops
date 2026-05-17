@@ -1,0 +1,19 @@
+---
+# 1Password Connect credentials — required by the onepassword-connect HelmRelease
+# during bootstrap (External Secrets cannot yet provide these, since it depends
+# on the Connect server itself).
+apiVersion: v1
+kind: Secret
+metadata:
+  name: onepassword-connect-credentials-secret
+  namespace: external-secrets
+stringData:
+  1password-credentials.json: 'op://HomeOps/1password-connect-kubernetes/credentials' # quoted to keep YAML happy
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: onepassword-connect-vault-secret
+  namespace: external-secrets
+stringData:
+  token: op://HomeOps/1password-connect-kubernetes/token

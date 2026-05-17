@@ -1,0 +1,101 @@
+---
+title: Dashboard
+
+background:
+  image: https://images.unsplash.com/photo-1502790671504-542ad42d5189?auto=format&fit=crop&w=2560&q=80
+  blur: none
+  saturate: 100
+  brightness: 80
+  opacity: 30
+
+favicon: https://horvathzoltan.me/favicon.ico
+
+target: _self
+headerStyle: underlined
+theme: dark
+color: slate
+
+fullWidth: true
+disableCollapse: true
+
+layout:
+  Selfhosted:
+    style: columns
+    columns: 3
+    tab: Cloud Services
+
+  eMail:
+    style: columns
+    columns: 3
+    tab: Cloud Services
+
+  Cloud Storage:
+    style: columns
+    columns: 3
+    tab: Cloud Services
+
+  PFM:
+    style: columns
+    columns: 5
+    tab: Finances
+
+  Bank:
+    style: columns
+    columns: 5
+    tab: Finances
+
+  Investment:
+    style: columns
+    columns: 5
+    tab: Finances
+
+  Funds:
+    style: columns
+    columns: 5
+    tab: Finances
+
+  Media:
+    style: columns
+    columns: 5
+    tab: Multimedia
+
+  Arr Stack:
+    style: columns
+    columns: 5
+    tab: Multimedia
+
+  Downloading:
+    style: columns
+    columns: 5
+    tab: Multimedia
+
+  Infrastructure:
+    style: columns
+    columns: 5
+    tab: Home infra
+
+  SaaS & PaaS:
+    style: columns
+    columns: 5
+    tab: Home infra
+
+  IoT:
+    style: columns
+    columns: 5
+    tab: Home infra
+
+  Observability:
+    style: columns
+    columns: 5
+    tab: Home infra
+
+quicklaunch:
+  searchDescriptions: true
+  showSearchSuggestions: true
+  provider: duckduckgo
+
+providers:
+  openweathermap: {{HOMEPAGE_VAR_OWM_API_TOKEN}}
+
+disableUpdateCheck: true
+statusStyle: basic

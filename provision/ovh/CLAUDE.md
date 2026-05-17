@@ -10,10 +10,10 @@ This guide applies to `provision/ovh/`.
 
 ## Operating Rules
 
-- Prefer `task tf:init:ovh`, `task tf:plan:ovh`, and `task tf:apply:ovh` over raw Terraform commands when documenting or validating changes.
-- Preserve the existing `op run --env-file=./.env -- terraform ...` pattern unless the entire credential flow is intentionally changing.
-- `task tf:apply:ovh` also syncs the freshly issued S3 credentials and metadata back into the `ovh` 1Password item; keep that side effect intact when touching the apply flow.
-- Use `task tf:unlock:ovh` for state unlock operations rather than calling `terraform force-unlock` directly.
+- Prefer `just ovh init`, `just ovh plan`, and `just ovh apply` over raw Terraform commands when documenting or validating changes.
+- Preserve the existing `op run --env-file=./.env -- terraform ...` pattern that the recipes wrap unless the entire credential flow is intentionally changing.
+- `just ovh apply` also syncs the freshly issued S3 credentials and metadata back into the `HomeOps/ovh` 1Password item; keep that side effect intact when touching the apply flow.
+- Use `just ovh unlock <id>` for state unlock operations rather than calling `terraform force-unlock` directly.
 - `.env`, `.terraform/`, `.terraform.lock.hcl`, and state files are operational artifacts; do not refactor them as if they were source configuration.
 - Treat the bucket name list (`S3_BUCKET_NAMES`) and the bound S3 policy as part of the cluster backup contract: renaming or removing a bucket affects live VolSync/Kopia and resticprofile consumers and must be coordinated with their ExternalSecret wiring.
 - Keep existing inline Renovate directives intact, including provider-version comments in `main.tf`.
@@ -23,5 +23,5 @@ This guide applies to `provision/ovh/`.
 - Prefer formatting, initialization, or planning within `provision/ovh/` when the environment is available.
 - If a change affects credentials, provider auth, the 1Password sync block, or remote state behavior, verify the surrounding workflow before changing command structure.
 - Use repo-local skills for detailed procedures:
-  - shared task wrapper conventions: `.claude/skills/taskfiles/`
+  - shared recipe-runner conventions: `.claude/skills/just/`
   - downstream backup contract impact: `.claude/skills/volsync/`

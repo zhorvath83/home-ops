@@ -1,50 +1,30 @@
 ---
-# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/kustomization-kustomize-v1.json
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: cluster-apps-qbittorrent
-  namespace: flux-system
+  name: qbittorrent
 spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: qbittorrent
-  dependsOn:
-    - name: cluster-apps-onepassword-store
-    - name: cluster-apps-democratic-csi
-  path: ./kubernetes/apps/default/qbittorrent/app
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: home-ops-kubernetes
-  interval: 1h
-  targetNamespace: default
-  timeout: 5m
-  wait: false
   components:
     - ../../../../components/volsync
+  dependsOn:
+    - name: onepassword-connect
+      namespace: external-secrets
+    - name: democratic-csi
+      namespace: kube-system
+  interval: 1h
+  path: ./kubernetes/apps/default/qbittorrent/app
   postBuild:
     substitute:
       APP: qbittorrent
----
-# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/kustomization-kustomize-v1.json
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: cluster-apps-qbittorrent-upgrade-p2pblocklist
-  namespace: flux-system
-spec:
-  commonMetadata:
-    labels:
-      app.kubernetes.io/name: qbittorrent-upgrade-p2pblocklist
-  dependsOn:
-    - name: cluster-apps-democratic-csi
-  path: ./kubernetes/apps/default/qbittorrent/upgrade-p2pblocklist
   prune: true
   sourceRef:
     kind: GitRepository
-    name: home-ops-kubernetes
-  interval: 1h
+    name: flux-system
+    namespace: flux-system
   targetNamespace: default
   timeout: 5m
   wait: false

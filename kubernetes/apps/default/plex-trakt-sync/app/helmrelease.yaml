@@ -1,0 +1,76 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: plex-trakt-sync
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: plex-trakt-sync
+  values:
+    defaultPodOptions:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+    controllers:
+      plex-trakt-sync:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/taxel/plextraktsync
+              tag: 0.35.5@sha256:12701476d109313a2f05961732533f4d26a98281c3b7587424605cad7c938c35
+            args:
+              - watch
+            env:
+              PLEX_BASEURL: http://plex.default.svc.cluster.local:32400
+              PLEX_LOCALURL: http://plex.default.svc.cluster.local:32400
+              PLEX_TOKEN:
+                valueFrom:
+                  secretKeyRef:
+                    name: plex-trakt-sync-secret
+                    key: PLEX_TOKEN
+              PLEX_USERNAME: zhorvath83
+              TRAKT_USERNAME: zhorvath83
+            securityContext:
+              privileged: false
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: {drop: ["ALL"]}
+            probes:
+              liveness:
+                enabled: false
+              readiness:
+                enabled: false
+              startup:
+                enabled: false
+            resources:
+              requests:
+                cpu: 5m
+                memory: 50Mi
+              limits:
+                memory: 100Mi
+    persistence:
+      config:
+        type: persistentVolumeClaim
+        existingClaim: "{{ .Release.Name }}"
+        globalMounts:
+          - path: /app/config
+      config-yml:
+        type: configMap
+        name: plex-tract-sync-configmap
+        defaultMode: 0775
+        globalMounts:
+          - path: /app/config/config.yml
+            subPath: config.yml
+            readOnly: true

@@ -1,0 +1,51 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/cilium.io/ciliumnetworkpolicy_v2.json
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: envoy-external
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: envoy
+      gateway.envoyproxy.io/owning-gateway-name: envoy-external
+  ingress:
+    # HTTP and HTTPS listener traffic. envoy-external is the Cloudflare tunnel
+    # target, but the source is the cloudflared pod inside the cluster, not the
+    # public internet directly. Allow only that pod plus generic cluster pods
+    # so the surface stays narrow.
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: networking
+            app.kubernetes.io/name: cloudflare-tunnel
+      toPorts:
+        - ports:
+            - port: "10080"
+              protocol: TCP
+            - port: "10443"
+              protocol: TCP
+    # Prometheus scrape of the envoy admin metrics port.
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: observability
+            app.kubernetes.io/name: prometheus
+      toPorts:
+        - ports:
+            - port: "19001"
+              protocol: TCP
+    # Kubelet readiness probe (host network).
+    - fromEntities:
+        - host
+        - remote-node
+      toPorts:
+        - ports:
+            - port: "19003"
+              protocol: TCP
+  # No egress section: the cluster-wide CCNPs allow-cluster-egress and
+  # allow-dns-egress under kubernetes/apps/kube-system/cilium/netpols/ cover
+  # DNS (UDP+TCP/53 via L7 proxy), in-cluster traffic (xDS to envoy-gateway,
+  # HTTPRoute backends across namespaces), and outbound HTTPS to the public
+  # internet. envoy-external is a traffic forwarder — a tight egress allowlist
+  # adds maintenance overhead without meaningful threat-model coverage on this
+  # workload. Reference repos (bjw-s-labs, onedr0p, buroa) also do not write
+  # egress restrictions on Envoy proxy pods.

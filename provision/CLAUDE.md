@@ -4,15 +4,14 @@ This guide applies to everything under `provision/`.
 
 ## Structure
 
-- `provision/kubernetes/`: Ansible-based host preparation and cluster lifecycle workflows
 - `provision/cloudflare/`: Terraform-managed Cloudflare resources
 - `provision/ovh/`: Terraform-managed OVH Cloud Project Storage (S3 backup buckets and the dedicated S3 user) used by the cluster backup planes
+- `provision/openmediavault/`: `mod.just` recipes for the bare-metal OMV host; Ansible playbooks land here during Phase 10
 
 ## Subtree Guides
 
 Use the more specific guide for the target area:
 
-- Kubernetes provisioning: [kubernetes/CLAUDE.md](kubernetes/CLAUDE.md)
 - Cloudflare Terraform: [cloudflare/CLAUDE.md](cloudflare/CLAUDE.md)
 - OVH Terraform: [ovh/CLAUDE.md](ovh/CLAUDE.md)
 
@@ -27,15 +26,14 @@ For any work under `provision/`, apply guides in this order:
 ## Operating Rules
 
 - Treat this directory as the imperative and provider-facing side of the repo.
-- Keep operational commands aligned with `Taskfile.yml` and `.taskfiles/*/Tasks.yaml` instead of inventing ad-hoc command flows.
+- Keep operational commands aligned with the root `.justfile` and the relevant `mod.just` (`provision/cloudflare/mod.just`, `provision/ovh/mod.just`, `provision/sops/mod.just`, `provision/openwrt/mod.just`, `provision/openmediavault/mod.just`) instead of inventing ad-hoc command flows.
 - Prefer editing source configuration over generated state or local cache directories.
-- If a task wrapper already exists, use that workflow as the canonical entry point.
+- If a Just recipe already exists, use that workflow as the canonical entry point.
 
 ## Validation
 
-- For provisioning changes, run the smallest relevant task-backed validation step available for the touched area.
+- For provisioning changes, run the smallest relevant Just-backed validation step available for the touched area (e.g. `just cloudflare plan`, `just ovh plan`).
 - If a change touches credentials or secret sourcing, inspect the existing `op run`, `.env`, or 1Password lookup flow before changing command structure.
 - Use repo-local skills for detailed procedures:
-  - Ansible cluster lifecycle: `.claude/skills/provision-kubernetes/`
   - Cloudflare Terraform: `.claude/skills/cloudflare-terraform/`
-  - shared task wrapper conventions: `.claude/skills/taskfiles/`
+  - shared recipe-runner conventions: `.claude/skills/just/`

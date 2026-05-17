@@ -1,0 +1,38 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  // Custom datasource: factory.talos.dev only lists versions for which the factory
+  // can build an installer image. github-releases lists every siderolabs/talos release,
+  // including ones the factory has not built yet — using github-releases can yield a
+  // PR that bumps to a version the factory rejects at image-pull time.
+  customDatasources: {
+    "talos-factory": {
+      defaultRegistryUrlTemplate: "https://factory.talos.dev/versions",
+      format: "json",
+      transformTemplates: ['{"releases": [$.{"version": $}]}'],
+    },
+  },
+  customManagers: [
+    {
+      customType: "regex",
+      description: "Process Talos system extensions referenced by factory.talos.dev image URLs (literal tags only)",
+      managerFilePatterns: [
+        "/^kubernetes/talos/.+\\.yaml(?:\\.j2)?$/",
+      ],
+      matchStrings: [
+        "factory\\.talos\\.dev/[^/]+/[a-f0-9]+:(?<currentValue>v\\d+\\.\\d+\\.\\d+)",
+      ],
+      datasourceTemplate: "custom.talos-factory",
+      versioningTemplate: "semver",
+      depNameTemplate: "siderolabs/talos",
+    },
+  ],
+  packageRules: [
+    {
+      description: "Labels and commit topic for Talos factory updates",
+      matchDatasources: ["custom.talos-factory"],
+      addLabels: ["renovate/talos"],
+      semanticCommitScope: "talos",
+      commitMessageTopic: "{{depName}}",
+    },
+  ],
+}

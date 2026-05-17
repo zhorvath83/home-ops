@@ -63,4 +63,4 @@ For skill edits:
 
 1. Ensure `SKILL.md` frontmatter contains only `name` and `description`.
 2. Verify the description is self-contained: it must describe both when to use the skill and when not to use it.
-3. Run repo-level lint: `task pc:run`.
+3. Run repo-level lint: `pre-commit run --all-files`.

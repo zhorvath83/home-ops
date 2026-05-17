@@ -3,26 +3,12 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app paperless
-  namespace: default
+  name: paperless
 spec:
   interval: 30m
   chartRef:
     kind: OCIRepository
     name: paperless
-
-  install:
-    createNamespace: true
-    remediation:
-      retries: -1
-  upgrade:
-    cleanupOnFail: true
-    remediation:
-      strategy: rollback
-      retries: 3
-  uninstall:
-    keepHistory: false
-
   values:
     defaultPodOptions:
       automountServiceAccountToken: false
@@ -35,12 +21,10 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
-
     controllers:
-      *app :
+      paperless:
         annotations:
           reloader.stakater.com/auto: "true"
-
         containers:
           # NOTE: Container-level security contexts are NOT used for paperless-ngx containers
           # because the s6-overlay init system requires privileges to fix /run permissions.
@@ -50,19 +34,16 @@ spec:
             image: &image
               repository: ghcr.io/paperless-ngx/paperless-ngx
               tag: 2.20.15@sha256:835974fc3368fc6714aa38542db7a1f0f542d03244e39b981e519aefc100f355
-
             env:
               # Application settings
               TZ: &tz "Europe/Budapest"
               PAPERLESS_TIME_ZONE: *tz
-              PAPERLESS_URL: "https://docs.${PUBLIC_DOMAIN}"
+              PAPERLESS_URL: "https://docs.horvathzoltan.me"
               PAPERLESS_PORT: "8000"
               PAPERLESS_ENABLE_COMPRESSION: "false"
               PAPERLESS_TRUSTED_PROXIES: "10.42.0.0/16,192.168.1.0/24"
-
               # Date parsing (Hungarian format: év.hónap.nap)
               PAPERLESS_DATE_ORDER: "YMD"
-
               # Paths
               PAPERLESS_CONSUMPTION_DIR: "/data/nas/inbox"
               PAPERLESS_EXPORT_DIR: &exportDir "/data/nas/export"
@@ -71,28 +52,22 @@ spec:
               PAPERLESS_LOGGING_DIR: "/data/local/logs"
               PAPERLESS_LOGROTATE_MAX_SIZE: "1048576"
               PAPERLESS_LOGROTATE_MAX_BACKUPS: "10"
-
               PAPERLESS_FILENAME_FORMAT: &filenameFormat "{{ `{{ created_year }}/{{ correspondent | default('uncategorized') | slugify }}/{{ created_year }}-{{ created_month }}-{{ created_day }}_{{ title | slugify }}_{{ doc_pk }}` }}"
-
               # Configure folder importer
               PAPERLESS_CONSUMER_IGNORE_PATTERNS: '[".DS_Store", ".DS_STORE", "._*", ".stfolder/*", ".stversions/*", ".localized/*", "desktop.ini", "@eaDir/*", "Thumbs.db"]'
               PAPERLESS_CONSUMER_DELETE_DUPLICATES: "true"
               PAPERLESS_CONSUMER_RECURSIVE: "true"
               PAPERLESS_CONSUMER_POLLING: "60"
-
               # Print a Patch-Code-T sheet as a separator page between different documents when scanning.
               # https://www.alliancegroup.co.uk/downloads/patch-code-t.pdf
               # PAPERLESS_CONSUMER_ENABLE_BARCODES: "true"
 
               # Pre-consume script for PDF processing (decrypt, blank removal, optimization)
               PAPERLESS_PRE_CONSUME_SCRIPT: "/usr/src/paperless/scripts/pre-consume.sh"
-
               # Database (SQLite)
               PAPERLESS_DBENGINE: &dbEngine "sqlite"
-
               # Redis/Valkey connection (sidecar)
               PAPERLESS_REDIS: "redis://localhost:6379"
-
               # OCR settings
               # PAPERLESS_OCR_LANGUAGE: "hun"
               # PAPERLESS_OCR_LANGUAGES: "hun"
@@ -102,34 +77,27 @@ spec:
               PAPERLESS_OCR_DESKEW: "false"
               PAPERLESS_OCR_ROTATE_PAGES: "false"
               PAPERLESS_OCR_PAGES: "1"
-
               # Worker settings - single-threaded processing to reduce memory usage
               PAPERLESS_TASK_WORKERS: "1"
               PAPERLESS_THREADS_PER_WORKER: "1"
               PAPERLESS_WEBSERVER_WORKERS: "1"
-
               # Disable optional features for reduced resource usage
               PAPERLESS_ENABLE_NLTK: "false"
               PAPERLESS_TRAIN_TASK_CRON: "disable"
               PAPERLESS_EMAIL_TASK_CRON: "disable"
               PAPERLESS_WORKFLOW_SCHEDULED_TASK_CRON: "disable"
-
               # Configure Remote User auth
               PAPERLESS_ACCOUNT_ALLOW_SIGNUPS: "false"
               PAPERLESS_SOCIALACCOUNT_ALLOW_SIGNUPS: "false"
               PAPERLESS_SOCIAL_AUTO_SIGNUP: "false"
-
               # Security
               USERMAP_UID: &uid "1000"
               USERMAP_GID: &gid "1000"
-
               S6_READ_ONLY_ROOT: 1
               S6_YES_I_WANT_A_WORLD_WRITABLE_RUN_BECAUSE_KUBERNETES: 1
-
             envFrom:
               - secretRef:
                   name: "{{ .Release.Name }}-secret"
-
             probes:
               startup:
                 enabled: true
@@ -149,20 +117,17 @@ spec:
                   periodSeconds: 30
                   timeoutSeconds: 5
                   failureThreshold: 5
-
             securityContext: &paperlessSecurityContext
               privileged: false
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
-
+              capabilities: {drop: ["ALL"]}
             resources: &resources
               requests:
                 memory: 800Mi
                 cpu: 10m
               limits:
                 memory: 5Gi
-
           valkey:
             image:
               repository: ghcr.io/valkey-io/valkey
@@ -178,7 +143,6 @@ spec:
               - ""
               - --appendonly
               - "no"
-
             securityContext:
               runAsNonRoot: true
               runAsUser: 1000
@@ -186,8 +150,7 @@ spec:
               privileged: false
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
-
+              capabilities: {drop: ["ALL"]}
             probes:
               liveness:
                 enabled: true
@@ -199,14 +162,12 @@ spec:
                   periodSeconds: 30
                   timeoutSeconds: 5
                   failureThreshold: 5
-
             resources:
               requests:
                 cpu: 5m
                 memory: 12Mi
               limits:
                 memory: 128Mi
-
       backup:
         type: cronjob
         cronjob:
@@ -215,13 +176,11 @@ spec:
           suspend: false
           successfulJobsHistory: 1
           failedJobsHistory: 3
-
         containers:
           app:
             image: *image
             resources: *resources
             securityContext: *paperlessSecurityContext
-
             env:
               TZ: *tz
               PAPERLESS_TIME_ZONE: *tz
@@ -232,7 +191,6 @@ spec:
               PAPERLESS_DBENGINE: *dbEngine
               USERMAP_UID: *uid
               USERMAP_GID: *gid
-
             command:
               - "/bin/sh"
               - "-c"
@@ -240,7 +198,6 @@ spec:
                 echo "Starting paperless-ngx document export..."
                 python3 /usr/src/paperless/src/manage.py document_exporter /data/nas/export --compare-checksums --delete --use-filename-format --use-folder-prefix
                 echo "Export completed successfully."
-
             probes:
               liveness:
                 enabled: false
@@ -248,14 +205,12 @@ spec:
                 enabled: false
               startup:
                 enabled: false
-
     service:
       app:
-        controller: *app
+        controller: paperless
         ports:
           http:
             port: &port 8000
-
     route:
       app:
         annotations:
@@ -264,7 +219,7 @@ spec:
           gethomepage.dev/group: Selfhosted
           gethomepage.dev/icon: paperless-ngx.svg
         hostnames:
-          - "docs.${PUBLIC_DOMAIN}"
+          - "docs.horvathzoltan.me"
         parentRefs:
           - name: envoy-external
             namespace: networking
@@ -276,7 +231,6 @@ spec:
           - backendRefs:
               - identifier: app
                 port: *port
-
     persistence:
       tmpfs:
         globalMounts:
@@ -284,49 +238,44 @@ spec:
             subPath: tmp
           - path: /run
         type: emptyDir
-
       valkey-data:
         type: emptyDir
         advancedMounts:
-          *app :
+          paperless:
             valkey:
               - path: /data
-
       data:
         existingClaim: paperless
         advancedMounts:
-          *app :
+          paperless:
             app: &dataMount
               - path: /data/local
           backup:
             app: *dataMount
-
       nas-export:
         type: nfs
-        server: ${CONF_NFS_SRV_IP}
+        server: 192.168.1.10
         path: /backups/paperless
         advancedMounts:
-          *app :
+          paperless:
             app: &exportMount
               - path: /data/nas/export
           backup:
             app: *exportMount
-
       nas-inbox:
         type: nfs
-        server: ${CONF_NFS_SRV_IP}
+        server: 192.168.1.10
         path: /scanner/paperless-inbox
         advancedMounts:
-          *app :
+          paperless:
             app:
               - path: /data/nas/inbox
-
       scripts:
         type: configMap
         name: paperless-scripts
         defaultMode: 0755
         advancedMounts:
-          *app :
+          paperless:
             app:
               - path: /usr/src/paperless/scripts/pre-consume.sh
                 subPath: pre-consume.sh

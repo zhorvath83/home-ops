@@ -1,0 +1,31 @@
+---
+# Node-specific patch for the single control plane node `k8s-cp0`
+# (192.168.1.11). Applied on top of machineconfig.yaml.j2 via
+# `talosctl machineconfig patch`.
+machine:
+  type: controlplane
+  install:
+    # PC801 NVMe (HP OEM, Gen4-capable, faster random IO) → Talos OS + etcd +
+    # EPHEMERAL volume. Pinned by disk model (bjw-s / onedr0p reference style).
+    # The other NVMe (PC711) is claimed by the UserVolumeConfig in
+    # machineconfig.yaml.j2 for the democratic-csi local-hostpath data volume.
+    diskSelector:
+      model: PC801 NVMe SK hynix 1TB
+---
+apiVersion: v1alpha1
+kind: HostnameConfig
+hostname: k8s-cp0
+---
+# Stabilize the on-board Intel I219-LM NIC under the alias `net0`, then let
+# the shared machineconfig wrap it in a single-member `bond0` so a real
+# kernel device exists with a stable name. The bond decouples Cilium, the L2
+# announcement policy, and the DHCPv4Config from the kernel-assigned link
+# name (eno1 / enp0s31f6 / similar). Same pattern as bjw-s and onedr0p.
+# Pinned by a 4-byte MAC prefix: HP OUI (50:81:40) plus one product-family
+# byte (80). Matches the on-board HP I219 NIC family but not unrelated HP
+# devices; the last 2 bytes (device identity) are kept out of git.
+apiVersion: v1alpha1
+kind: LinkAliasConfig
+name: net0
+selector:
+  match: mac(link.permanent_addr).startsWith("50:81:40:80:")

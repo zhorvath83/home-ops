@@ -1,0 +1,125 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: cilium
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: cilium
+  interval: 1h
+  values:
+    autoDirectNodeRoutes: true
+    bandwidthManager:
+      enabled: true
+      bbr: true
+    bgpControlPlane:
+      enabled: false
+    bpf:
+      datapathMode: netkit
+      masquerade: true
+      preallocateMaps: true
+    cgroup:
+      automount:
+        enabled: false
+      hostRoot: /sys/fs/cgroup
+    cni:
+      exclusive: false
+    dashboards:
+      enabled: true
+      annotations:
+        grafana_folder: Cilium
+    devices: bond+
+    enableIPv4BIGTCP: true
+    endpointRoutes:
+      enabled: true
+    envoy:
+      enabled: false
+    hubble:
+      enabled: true
+      relay:
+        enabled: true
+        rollOutPods: true
+      ui:
+        enabled: true
+        rollOutPods: true
+      metrics:
+        enabled:
+          - dns
+          - drop
+          - tcp
+          - flow
+          - port-distribution
+          - icmp
+          - httpV2
+    ipam:
+      mode: kubernetes
+    ipv4NativeRoutingCIDR: 10.244.0.0/16
+    k8sServiceHost: 127.0.0.1
+    k8sServicePort: 7445
+    kubeProxyReplacement: true
+    kubeProxyReplacementHealthzBindAddr: 0.0.0.0:10256
+    l2announcements:
+      enabled: true
+    loadBalancer:
+      algorithm: maglev
+      mode: dsr
+    localRedirectPolicies:
+      enabled: true
+    operator:
+      dashboards:
+        enabled: true
+        annotations:
+          grafana_folder: Cilium
+      prometheus:
+        enabled: true
+        serviceMonitor:
+          enabled: true
+      replicas: 1
+      rollOutPods: true
+    pmtuDiscovery:
+      enabled: true
+    prometheus:
+      enabled: true
+      serviceMonitor:
+        enabled: true
+        trustCRDsExist: true
+    rollOutCiliumPods: true
+    routingMode: native
+    securityContext:
+      capabilities:
+        ciliumAgent:
+          - CHOWN
+          - KILL
+          - NET_ADMIN
+          - NET_RAW
+          - IPC_LOCK
+          - SYS_ADMIN
+          - SYS_RESOURCE
+          - PERFMON
+          - BPF
+          - DAC_OVERRIDE
+          - FOWNER
+          - SETGID
+          - SETUID
+        cleanCiliumState:
+          - NET_ADMIN
+          - SYS_ADMIN
+          - SYS_RESOURCE
+          - PERFMON
+          - BPF
+    socketLB:
+      enabled: true
+      # hostNamespaceOnly: true was a copy from older Talos/Istio bootstrap templates.
+      # With bpf.datapathMode: netkit, that setting forces service IP translation to
+      # the per-packet tc-LB BPF program, which records the Service ClusterIP into
+      # the conntrack entry. When the SYN-ACK comes back from the backend pod, its
+      # source IP appears as the Service IP, the CT reply lookup fails, and the
+      # ingress policy on the originating pod drops the return flow (seen on the
+      # envoy-external -> envoy-gateway xDS stream after 4f4b76eec landed).
+      # The chart default (false) keeps service translation at connect() time via
+      # cgroup BPF, so the CT entry holds the real backend pod IP — the return
+      # flow matches stateful CT correctly. Istio compatibility is the only reason
+      # to flip it back to true, and we do not run Istio.
+      hostNamespaceOnly: false

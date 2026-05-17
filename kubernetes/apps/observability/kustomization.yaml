@@ -7,3 +7,6 @@ resources:
   - ./kube-prometheus-stack/ks.yaml
   - ./grafana/ks.yaml
   - ./speedtest-exporter/ks.yaml
+namespace: observability
+components:
+  - ../../components/flux-alerts

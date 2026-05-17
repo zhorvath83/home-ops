@@ -1,6 +1,6 @@
 ---
 name: architecture-review
-description: Review high-level design choices in the home-ops repository. Use when evaluating tradeoffs, compare implementation approaches, assess whether a proposed change fits existing repo principles, or recommend a direction before any manifests, Terraform, or task wrappers are edited. Do not use this skill for direct implementation work.
+description: Review high-level design choices in the home-ops repository. Use when evaluating tradeoffs, compare implementation approaches, assess whether a proposed change fits existing repo principles, or recommend a direction before any manifests, Terraform, or Just recipes are edited. Do not use this skill for direct implementation work.
 ---
 
 # Home Ops Architecture Review

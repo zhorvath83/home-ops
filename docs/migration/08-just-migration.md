@@ -46,8 +46,8 @@ set quiet
 set script-interpreter := ['bash', '-euo', 'pipefail']
 set shell := ['bash', '-euo', 'pipefail', '-c']
 
-[group: 'k8s-bootstrap']
-mod k8s-bootstrap "kubernetes/bootstrap"
+[group: 'cluster-bootstrap']
+mod cluster-bootstrap "kubernetes/bootstrap"
 
 [group: 'k8s']
 mod k8s "kubernetes"
@@ -86,8 +86,8 @@ A `just -l` (vagy csak `just`) megmutatja a top-level mod-ok és group-ok listá
 ```
 Available recipes:
 
-  [k8s-bootstrap]
-    just k8s-bootstrap <recipe>
+  [cluster-bootstrap]
+    just cluster-bootstrap <recipe>
 
   [k8s]
     just k8s <recipe>
@@ -113,42 +113,55 @@ pipx.uvx = true
 
 [tools]
 # Core CLI tooling
-talosctl = "1.10.6"
+talosctl = "1.13.2"
 kubectl = "1.36.1"
-helm = "3.18.2"
-helmfile = "1.1.0"
-flux = "2.7.2"
-just = "1.45.0"
-mise = "2025.1.0"
+helm = "3.21.0"                                 # staying on v3.x; v4 evaluation is a separate phase
+helmfile = "1.5.1"
+flux2 = "2.8.7"                                 # mise registry name; installed binary is `flux`
+just = "1.51.0"                                 # 1.48+ required for `set lazy`
 
 # Templating + secrets
-minijinja-cli = "2.13.0"
-sops = "3.10.2"
-age = "1.2.1"
-"1password-cli" = "2.32.0"                      # op
+"aqua:mitsuhiko/minijinja" = "2.19.0"           # installed binary is `minijinja-cli`
+sops = "3.13.0"
+age = "1.3.1"
+"1password-cli" = "2.34.0"                      # op
 
 # YAML/JSON tooling
-yq = "4.47.2"
-jq = "1.7.1"
+yq = "4.53.2"
+jq = "1.8.1"
 
 # UX
-gum = "0.16.0"
+gum = "0.17.0"
 
 # Hooks
-pre-commit = "4.0.1"
+pre-commit = "4.6.0"
 
 # Terraform
-terraform = "1.10.5"
+terraform = "1.15.3"
 
-# Ansible (OMV deploy)
-"pipx:ansible" = "latest"
+# Linters / formatters (aqua backend, bjw-s parity)
+"aqua:google/yamlfmt" = "latest"
+"aqua:rhysd/actionlint" = "latest"
+
+# Python tooling (pipx backend)
+"pipx:flux-local" = "latest"                    # used by `just k8s apply-ks` (render-local-ks recipe)
+"pipx:ansible" = "latest"                       # OMV deploy (10-omv-ansible.md)
 "pipx:ansible-core" = "latest"
 
 [hooks]
-postinstall = "ansible-galaxy install -r {{config_root}}/provision/openmediavault/requirements.yaml"
+# Enable only AFTER provision/openmediavault/requirements.yaml exists
+# (created in 10-omv-ansible.md phase). Until then keep the [hooks] block
+# commented out — otherwise every `mise install` will fail.
+# postinstall = "ansible-galaxy install -r {{config_root}}/provision/openmediavault/requirements.yaml"
 ```
 
 **Megjegyzés:** A `JUST_UNSTABLE=1` engedélyezi a `mod` keyword-öt (jelenleg unstable feature). A verziók a bjw-s repo aktuális verzióit követik — Renovate frissíteni fogja.
+
+**Mise registry nevek figyelmeztető lista** (nem mindig az, ami a binary neve):
+- `flux2` → installált binary: `flux` (a `flux` név foglalt a registry-ben más csomagra).
+- `aqua:mitsuhiko/minijinja` → installált binary: `minijinja-cli` (a `minijinja-cli` név nincs a registry-ben).
+- A többi tool (kubectl, talosctl, helm, helmfile, just, sops, age, yq, jq, gum, terraform, pre-commit, 1password-cli) registry- és binary-neve egyezik.
+- Ha `mise install` "not found in mise tool registry" hibát ad, először `mise registry | grep <name>` paranccsal nézz utána.
 
 ## `.minijinja.toml`
 
@@ -290,9 +303,9 @@ render-local-ks ns ks:
 ## `kubernetes/bootstrap/mod.just`
 
 A 04-es docban már részletezett. Itt referenciaként:
-- `just k8s-bootstrap cluster` — teljes lánc (talos → k8s → kubeconfig → namespaces → resources → crds → apps)
-- `just k8s-bootstrap apps` — csak a helmfile sync
-- `just k8s-bootstrap crds` — csak CRD apply
+- `just cluster-bootstrap cluster` — teljes lánc (talos → k8s → kubeconfig → namespaces → resources → crds → apps)
+- `just cluster-bootstrap apps` — csak a helmfile sync
+- `just cluster-bootstrap crds` — csak CRD apply
 - Privát stage recipe-ek
 
 ## `kubernetes/talos/mod.just`
@@ -394,7 +407,7 @@ Hasonlóan `provision/ovh/mod.just`.
 | `task an:list` | **TÖRÖL** | |
 | `task an:prepare` | **TÖRÖL** | |
 | `task an:install` | **TÖRÖL** | Talos saját maga telepedik |
-| `task an:nuke` | `just talos reset-cluster reboot` | Talos reset |
+| `task an:nuke` | `just talos reset-node k8s-cp0` | Talos reset |
 | `task an:ping` | `just omv check` | csak OMV-re (Talos: `talosctl health`) |
 | `task an:uptime` | `talosctl -n <ip> dmesg` | Talos-natív |
 | `task an:rollout-reboot` | `just talos reboot-node <ip>` | |
@@ -402,7 +415,7 @@ Hasonlóan `provision/ovh/mod.just`.
 | `task an:force-poweroff` | `talosctl -n <ip> shutdown` | |
 | `task es:sync` | `just k8s sync-es <ns> <name>` | egyszerűbb név |
 | `task fx:verify` | `flux check --pre` | natív flux parancs |
-| `task fx:install` | `just k8s-bootstrap cluster` | Talos bootstrap is benne |
+| `task fx:install` | `just cluster-bootstrap cluster` | Talos bootstrap is benne |
 | `task fx:reconcile` | `flux reconcile -n flux-system ks cluster-apps --with-source` | natív |
 | `task fx:hr-restart` | `just k8s restart-failed-hrs` | |
 | `task fx:nodes` | `kubectl get nodes` | natív |

@@ -3,26 +3,12 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app flux-provider-pushover
-  namespace: flux-system
+  name: flux-provider-pushover
 spec:
   interval: 30m
   chartRef:
     kind: OCIRepository
     name: flux-provider-pushover
-
-  install:
-    createNamespace: true
-    remediation:
-      retries: -1
-  upgrade:
-    cleanupOnFail: true
-    remediation:
-      strategy: rollback
-      retries: 3
-  uninstall:
-    keepHistory: false
-
   values:
     defaultPodOptions:
       automountServiceAccountToken: false
@@ -35,27 +21,21 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
-
     controllers:
       flux-provider-pushover:
         type: deployment
-
         annotations:
           reloader.stakater.com/auto: "true"
-
         containers:
           app:
             image:
               repository: ghcr.io/zhorvath83/flux-provider-pushover
               tag: latest@sha256:ff6011d86e7dcf0bf26861c5f4ecb6d2918686a298b26e08be632a8161e3ecba
-
             env:
               TZ: "Europe/Budapest"
-
             envFrom:
               - secretRef:
                   name: flux-provider-pushover-secret
-
             probes:
               liveness: &probes
                 enabled: true
@@ -75,22 +55,19 @@ spec:
                   periodSeconds: 30
                   timeoutSeconds: 5
                   failureThreshold: 5
-
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
-
+              capabilities: {drop: ["ALL"]}
             resources:
               requests:
                 cpu: 1m
                 memory: 16M
               limits:
                 memory: 256M
-
     service:
       app:
-        controller: *app
+        controller: flux-provider-pushover
         ports:
           http:
             port: *port

@@ -141,7 +141,7 @@ kubectl -n default port-forward svc/plex 32400:32400
 # open http://localhost:32400/web → működik, library látható
 ```
 
-Részletes smoke test app-onként a [12-cutover-runbook.md](./12-cutover-runbook.md)-ben.
+Részletes smoke test app-onként a [13-cutover-runbook.md](./13-cutover-runbook.md)-ben.
 
 ### Lépés 4 (cutover UTÁN, 1 nap múlva): bootstrap RD cleanup
 
@@ -222,7 +222,7 @@ kubectl -n default get es
 | Kopia decompression overhead | ~20% lassítás |
 | Teljes restore idő (mindenre) | **10-15 perc** |
 
-A 17 RD-t **párhuzamosan** indíthatjuk, mert mindegyik külön Kopia mover pod-ban fut. A bottleneck a hálózati sávszél (1 GbE), de 3-4 GB teljes méret mellett ez nem szűk keresztmetszet. A target PVC írási sebesség (P31 NVMe Gen3-on) bőven a hálózati throughput felett.
+A 17 RD-t **párhuzamosan** indíthatjuk, mert mindegyik külön Kopia mover pod-ban fut. A bottleneck a hálózati sávszél (1 GbE), de 3-4 GB teljes méret mellett ez nem szűk keresztmetszet. A target PVC írási sebesség (PC711 NVMe Gen3-on) bőven a hálózati throughput felett.
 
 **Megjegyzés**: a "3-4 GB" a Kopia repó teljes mérete az OVH-n (deduplikált). Egy-egy app PVC fizikai mérete nagyobb lehet, de a Kopia mover csak a snapshot blokkokat tölti le → restore-kor a target PVC csak a snapshot-ban szereplő fájlokat tartalmazza.
 
@@ -292,7 +292,7 @@ Régi cluster **továbbra is fut** (1-2 hét fenntartás). Cutover visszavonhat�
 2. Új cluster reconcile suspend (`flux suspend ks cluster-apps`).
 3. Új cluster sense van mint development/testing branch.
 
-Részletes rollback procedúra a [13-rollback-and-decom.md](./13-rollback-and-decom.md)-ben.
+Részletes rollback procedúra a [14-rollback-and-decom.md](./14-rollback-and-decom.md)-ben.
 
 ## Open issues
 

@@ -6,3 +6,6 @@ resources:
   - ./namespace.yaml
   - ./volsync/ks.yaml
   - ./kopia/ks.yaml
+namespace: volsync-system
+components:
+  - ../../components/flux-alerts

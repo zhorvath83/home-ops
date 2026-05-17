@@ -11,7 +11,8 @@ Main responsibilities in this subtree:
 - ingress and edge routing through Envoy Gateway
 - external exposure through Cloudflare Tunnel
 - DNS synchronization through ExternalDNS
-- L2 and service IP plumbing through MetalLB
+
+L2 and service IP allocation lives in `kubernetes/apps/kube-system/cilium/` (Cilium LB-IPAM + L2 announcement); this subtree consumes those VIPs but does not own them.
 
 ## Structural Patterns
 
@@ -20,8 +21,7 @@ Do not assume one app equals one Flux Kustomization here.
 Observed live patterns:
 
 - `envoy-gateway/` is split into certificate, controller, and config Kustomizations
-- `metallb/` separates app and config
-- apps may include explicit `networkpolicy.yaml`
+- apps may include explicit `CiliumNetworkPolicy` or `SecurityPolicy` manifests
 - config manifests often live outside `app/` in dedicated `config/` directories
 
 When editing this subtree:
@@ -42,8 +42,9 @@ Current live model:
 - HTTP and HTTPS listeners are defined on the Gateway
 - certificate material is handled separately and applied before the Gateway config
 - Envoy-specific behavior is expressed through Gateway API extension CRDs such as `EnvoyPatchPolicy`, `BackendTrafficPolicy`, `ClientTrafficPolicy`, and `SecurityPolicy`
-- `envoy-internal` is exposed through MetalLB on a fixed LAN VIP and protected with an RFC1918-only allowlist
-- `k8s-gateway` watches routes attached to `envoy-internal` and answers split-DNS queries for `${PUBLIC_DOMAIN}`
+- `envoy-internal` is exposed on a Cilium L2-announced VIP (allocated from `CiliumLoadBalancerIPPool/default`, pinned via the `lbipam.cilium.io/ips` annotation) and protected with an RFC1918-only `SecurityPolicy`
+- `envoy-external` is a ClusterIP-only Service; public access goes through the Cloudflare Tunnel, not a LAN VIP
+- `k8s-gateway` watches routes attached to `envoy-internal` and answers split-DNS queries for `horvathzoltan.me`
 
 Rules:
 
@@ -58,7 +59,7 @@ Cloudflare Tunnel and ExternalDNS are part of the same exposure chain.
 
 Current live model:
 
-- `cloudflare-tunnel` forwards `${PUBLIC_DOMAIN}` and `*.${PUBLIC_DOMAIN}` to `envoy-external.networking.svc.cluster.local`
+- `cloudflare-tunnel` forwards `horvathzoltan.me` and `*.horvathzoltan.me` to `envoy-external.networking.svc.cluster.local`
 - tunnel config is provided through a ConfigMap mounted into the chart
 - tunnel credentials come from an ExternalSecret-backed Secret
 - ExternalDNS watches Gateway and HTTPRoute sources and manages Cloudflare DNS records for the public path

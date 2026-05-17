@@ -1,5 +1,26 @@
 # 04 — Bootstrap helmfile chain
 
+## Status — 2026-05-16
+
+| Részfeladat | Állapot |
+|---|---|
+| Cilium app subtree (`kubernetes/apps/kube-system/cilium/{app,config}`) — bootstrap helmfile `values.yaml.gotmpl` forrása | ✅ Phase 3 |
+| `kubernetes/flux/cluster/ks.yaml` (FluxInstance `sync.path` célja) | ✅ Phase 5 részmunka |
+| bjw-s naming + GitRepository név egységesítve | ✅ Phase 6 részmunka |
+| `kubernetes/apps/external-secrets/onepassword-connect/app/clustersecretstore.yaml` (postsync hook által apply-olt) | ✅ kész — bjw-s/onedr0p mintára áthelyezve a `stores/` aldirból a `app/`-ba; CSS resource név `onepassword-connect`-re átnevezve; 1 Flux Kustomization (healthChecks + healthCheckExprs a HelmRelease + ClusterSecretStore Ready-re); 27 consumer ks.yaml `dependsOn` és 19 ExternalSecret `secretStoreRef` átírva |
+| `kubernetes/apps/kube-system/coredns/` subtree | ✅ kész — bjw-s referencia értékekkel (control-plane affinity + CriticalAddonsOnly toleration), `replicaCount: 1` single-node-ra |
+| `kubernetes/apps/flux-system/flux-operator/` subtree | ✅ kész |
+| `kubernetes/apps/flux-system/flux-instance/` subtree | ✅ kész — `sync.url` a `zhorvath83/home-ops` repo, `sync.ref: refs/heads/talos`, `sync.path: kubernetes/flux/cluster`; cutoverkor `refs/heads/main`-re kell állítani |
+| `kubernetes/bootstrap/helmfile.d/00-crds.yaml` (envoy-gateway, kube-prometheus-stack, grafana-operator) | ✅ kész |
+| `kubernetes/bootstrap/helmfile.d/01-apps.yaml` (Cilium → CoreDNS → cert-manager → ESO → 1P Connect → flux-operator → flux-instance, 7 release) | ✅ kész — `cert-manager-webhook-ovh` kihagyva (Cloudflare DNS-01 solver beépített) |
+| `kubernetes/bootstrap/helmfile.d/templates/values.yaml.gotmpl` (DRY: olvas `app/helmrelease.yaml`-ből) | ✅ kész |
+| `kubernetes/bootstrap/resources.yaml.j2` (2 db 1P Connect Secret, `op://` ref-ek — ~~`sops-age` Secret~~ kivéve Phase 6.7-ben) | ✅ kész |
+| `kubernetes/bootstrap/mod.just` recipe-ek (`cluster`, `talos`, `kubernetes`, `kubeconfig`, `wait`, `namespaces`, `resources`, `crds`, `apps`) | ✅ kész |
+| `kubernetes/bootstrap/flux/` k3s-éra legacy törlés | ✅ kész |
+| `1Password HomeOps/homelab-age-key` item létrehozva | ⏸ verifikálandó éles futtatás előtt |
+| `1Password HomeOps/1password-connect-kubernetes` item (credentials + token) | ⏸ verifikálandó éles futtatás előtt |
+| `just cluster-bootstrap cluster` éles futtatás | ⏸ pending — végrehajtás következő session |
+
 ## Cél
 
 A Talos cluster bootstrap után az alap Kubernetes platform (CNI, DNS, cert-manager, ESO, Flux) deklaratív helmfile chain-nel install-álódik. Ez váltja le a jelenlegi Ansible-alapú K3s bootstrap-et.
@@ -95,7 +116,7 @@ metadata:
   name: onepassword-connect-credentials-secret
   namespace: external-secrets
 stringData:
-  1password-credentials.json: 'op://Automation/1password connect/credentials'
+  1password-credentials.json: 'op://HomeOps/1password-connect-kubernetes/credentials'
 ---
 apiVersion: v1
 kind: Secret
@@ -103,18 +124,10 @@ metadata:
   name: onepassword-connect-vault-secret
   namespace: external-secrets
 stringData:
-  token: op://Automation/1password connect/token
----
-# SOPS age key — Flux ezzel decrypt-eli a *.sops.yaml fájlokat reconcile-on
-# (cluster-secrets.sops.yaml + homepage/secret.sops.yaml)
-apiVersion: v1
-kind: Secret
-metadata:
-  name: sops-age
-  namespace: flux-system
-stringData:
-  age.agekey: op://HomeOps/homelab-age-key/keys.txt
+  token: op://HomeOps/1password-connect-kubernetes/token
 ```
+
+> **Phase 6.7 — frissítés**: a fenti két Secret a teljes `resources.yaml.j2` tartalom. Az eredeti tervben szerepelt `sops-age` Secret kivéve, mert a runtime SOPS minta megszűnt (cluster-secrets.sops.yaml + homepage/secret.sops.yaml mind ExternalSecret-re migrálva).
 
 Apply (`mod.just` `resources` recipe):
 
@@ -122,22 +135,12 @@ Apply (`mod.just` `resources` recipe):
 minijinja-cli kubernetes/bootstrap/resources.yaml.j2 | op inject | kubectl apply --server-side -f -
 ```
 
-Ez a **három Secret**:
+Ez a **két Secret**:
 - `onepassword-connect-credentials-secret` + `onepassword-connect-vault-secret`: az 1Password Connect chart inicializálásához.
-- `sops-age`: a Flux Kustomization-ök `decryption.secretRef`-ben hivatkozzák, hogy a SOPS-titkosított fájlokat dekódolják reconcile időben.
 
 **1Password item path-ek** (a `op inject` ezt cseréli):
-- `op://Automation/1password connect/credentials` — Connect server credentials.json
-- `op://Automation/1password connect/token` — vault token
-- `op://HomeOps/homelab-age-key/keys.txt` — age private key (a jelenlegi K3s setup-ban is itt él)
-
-## SOPS bootstrap
-
-A `cluster-secrets.sops.yaml` és minden további `*.sops.yaml` fájl (pl. `homepage/secret.sops.yaml`) Flux reconcile-on dekódolódik a `sops-age` Secret-tel. A bootstrap-nek **csak ennyit** kell tennie:
-1. `sops-age` Secret létrehozás (a fenti `resources.yaml.j2`).
-2. A Flux Kustomization-ök (`cluster-vars` és `cluster-apps`) `decryption: { provider: sops, secretRef: { name: sops-age } }`-et tartalmazzák — részletek a [05-flux-operator.md](./05-flux-operator.md)-ben.
-
-A bootstrap-időben **NEM** dekódoljuk manuálisan a SOPS fájlokat — a Flux reconcile végzi minden alkalommal. A `sops` CLI csak lokális szerkesztéshez kell (`sops edit kubernetes/flux/vars/cluster-secrets.sops.yaml`).
+- `op://HomeOps/1password-connect-kubernetes/credentials` — Connect server credentials.json
+- `op://HomeOps/1password-connect-kubernetes/token` — vault token
 
 ## Main bootstrap chain (01-apps.yaml)
 
@@ -286,7 +289,7 @@ nodes := `talosctl config info -o yaml | yq -e '.nodes | join (" ")'`
 [private]
 [script]
 default:
-    just -l k8s-bootstrap
+    just -l cluster-bootstrap
 
 [doc('Bootstrap Cluster — teljes Talos+K8s lánc')]
 [script]
@@ -368,7 +371,7 @@ export TALOS_SCHEMATIC_ID="$(just talos gen-schematic-id)"
 export TALOS_VERSION="$(curl -s https://api.github.com/repos/siderolabs/talos/releases/latest | jq -r .tag_name)"
 export KUBERNETES_VERSION="$(curl -s https://api.github.com/repos/kubernetes/kubernetes/releases/latest | jq -r .tag_name)"
 
-just k8s-bootstrap cluster
+just cluster-bootstrap cluster
 ```
 
 Egyetlen parancs → teljes cluster (Talos config → bootstrap → kubeconfig → namespaces → resources → CRDs → 8 release helmfile chain).
@@ -399,8 +402,6 @@ kubectl -n external-secrets get secret onepassword-connect-credentials-secret
 # létezik
 kubectl -n external-secrets get secret onepassword-connect-vault-secret
 # létezik
-kubectl -n flux-system get secret sops-age
-# létezik (Flux SOPS decryption-höz)
 
 # Stage: crds
 kubectl get crd | grep -E "gateway|prometheus|grafana"
@@ -419,19 +420,9 @@ helm -n flux-system list
 kubectl -n flux-system get fluxinstance
 # flux-instance Ready
 
-# Stage: post-bootstrap — Flux reconcile (a FluxInstance hozza létre az auto Kustomization-t,
-#   ami létrehozza a cluster-vars + cluster-apps Kustomization-okat)
+# Stage: post-bootstrap — Flux reconcile (a FluxInstance hozza létre a cluster-apps Kustomization-t)
 kubectl -n flux-system get ks
-# cluster-vars Ready=True
-# cluster-apps Ready=True (vagy WaitingForDependency: cluster-vars rövid ideig)
-
-# cluster-secrets Secret létrejön (SOPS dekódolva a sops-age Secret-tel):
-kubectl -n flux-system get secret cluster-secrets
-# létezik, 2 data field (PUBLIC_DOMAIN, SECRET_QBITTORRENT_PW)
-
-# cluster-settings ConfigMap szintén:
-kubectl -n flux-system get cm cluster-settings -o jsonpath='{.data.CLUSTER_NODE_1_CIDR}'
-# 192.168.1.11/32
+# cluster-apps Ready=True
 ```
 
 ## Rollback
@@ -457,7 +448,7 @@ kubectl -n external-secrets logs deploy/external-secrets-webhook
 # diagnose
 
 # Fix → helmfile retry:
-just k8s-bootstrap apps
+just cluster-bootstrap apps
 ```
 
 A helmfile idempotens — már install-elt release-eket nem nyúlja, csak ami hiányzik vagy diff-ben van.
@@ -465,10 +456,10 @@ A helmfile idempotens — már install-elt release-eket nem nyúlja, csak ami hi
 ### Teljes cluster nuke + reinstall
 
 ```bash
-just talos reset-cluster reboot
+just talos reset-node k8s-cp0
 # minden disk wipe
 # majd újra:
-just k8s-bootstrap cluster
+just cluster-bootstrap cluster
 ```
 
 ## Open issues

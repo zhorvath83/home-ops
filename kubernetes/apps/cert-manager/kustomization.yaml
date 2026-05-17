@@ -7,3 +7,6 @@ resources:
   - ./namespace.yaml
   # Flux-Kustomizations
   - ./cert-manager/ks.yaml
+namespace: cert-manager
+components:
+  - ../../components/flux-alerts

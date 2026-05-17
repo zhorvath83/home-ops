@@ -1,5 +1,17 @@
 # 03 — Cilium CNI install + L2 announcement
 
+## Status — 2026-05-16
+
+| Részfeladat | Állapot |
+|---|---|
+| `kubernetes/apps/kube-system/cilium/` subtree (ks.yaml + app/ + config/) | ✅ kész — 7 fájl committed (HelmRelease + OCIRepository + L2 pool + L2 announcement policy) |
+| `kubernetes/apps/kube-system/kustomization.yaml` regisztráció | ✅ kész — `./cilium/ks.yaml` felvéve |
+| Manifestek validáció (`kustomize build`) | ✅ kész — `kube-system` namespace build zöld |
+| Cilium **runtime install** a clusterre | ⏸ Phase 4 — a bootstrap helmfile chain első release-e fogja telepíteni (CRD apply hook a `config/`-ra) |
+| Node `Ready=True` | ⏸ Phase 4 közben éleződik |
+
+A Cilium HelmRelease konfigurációja már a `helmrelease.yaml`-ben kész — Phase 4 bootstrap helmfile a `templates/values.yaml.gotmpl`-en keresztül onnan olvas. Drift nincs bootstrap és runtime között.
+
 ## Cél
 
 Calico (`tigera-operator`) lecserélése Cilium-ra, kube-proxy replacement módban. MetalLB lecserélése Cilium L2 announcement-tel. Hubble UI engedélyezve.
@@ -68,7 +80,7 @@ A bootstrap után Flux átveszi a Cilium kezelést — a `helmrelease.yaml` ugya
 
 ```yaml
 ---
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -236,7 +248,7 @@ metadata:
 spec:
   loadBalancerIPs: true                          # csak LB típusú service-eket
   interfaces:
-    - ^enp.*                                     # NIC interface pattern
+    - ^net0$                                     # Talos LinkAliasConfig stabil NIC alias
   nodeSelector:
     matchLabels:
       kubernetes.io/os: linux
@@ -245,7 +257,7 @@ spec:
       - { key: "policy.cilium.io/exclude", operator: NotIn, values: ["true"] }
 ```
 
-A `interfaces` regex a Talos NIC nevére illeszkedik (`enp0s31f6` vagy hasonló). Az ARP/GARP-ot ezen az interfészen küldi ki.
+A `interfaces` regex a Talos `LinkAliasConfig` által beállított `net0` stabil aliasra illeszkedik. Az ARP/GARP-ot ezen az interfészen küldi ki. (A kernel által adott név — `enp0s31f6` / `enp1s0` — irreleváns, mert a LinkAlias átnevezi kernel-szinten is.)
 
 A `serviceSelector` minden LB service-t bejelentés-ben hagy, kivéve ha a service-en `policy.cilium.io/exclude: "true"` label van (opt-out minta).
 
@@ -270,7 +282,7 @@ Két Kustomization (két stage), a bjw-s konvenció szerint:
 
 ```yaml
 ---
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -425,7 +437,7 @@ Tipikus hibák:
 helm -n kube-system uninstall cilium
 kubectl -n kube-system delete crd $(kubectl get crd -o name | grep cilium.io)
 # Most a node NotReady — gyors reinstall:
-just k8s-bootstrap apps         # helmfile sync
+just cluster-bootstrap apps         # helmfile sync
 ```
 
 A pod-ok újraindulnak, de a service IP-k újragenerálódnak L2-n.
@@ -435,5 +447,5 @@ A pod-ok újraindulnak, de a service IP-k újragenerálódnak L2-n.
 - **NIC interface név** L2 policy `interfaces` regex-ben: első Talos boot után `talosctl -n main get links`-szel ellenőrizni. Ha pl. `enp1s0` is van mellette (WiFi vagy más), érdemes szigorítani.
 - **Hubble UI authentikáció**: alapból nincs auth. HTTPRoute-ban érdemes Anubis vagy basic-auth filter elé tenni — `envoy-internal`-en LAN-on belül kevésbé kritikus, de javasolt.
 - **BGP migráció lehetőség**: ha jövőben több node lesz, L2 → BGP refaktor. OpenWRT-n FRR + BGP peer beállítása + Cilium `bgpControlPlane.enabled: true` + `CiliumBGPPeeringPolicy`. Külön doc lesz akkor.
-- **iGPU (i915) Cilium-mal**: Cilium nem érinti a `/dev/dri` device-okat. Most NEM konfiguráljuk a Plex HW transcode-ot — phase 2 feladat, lásd [14-post-cutover.md](./14-post-cutover.md).
+- **iGPU (i915) Cilium-mal**: Cilium nem érinti a `/dev/dri` device-okat. Most NEM konfiguráljuk a Plex HW transcode-ot — phase 2 feladat, lásd [15-post-cutover.md](./15-post-cutover.md).
 - **Cilium chart verzió**: `1.19.4` a bjw-s reference. Renovate frissíteni fogja, de ne automerge-eld CNI release-eket — manuálisan review-zd.
