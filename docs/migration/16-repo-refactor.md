@@ -186,6 +186,16 @@ A Phase 9 utáni hotfix-ben már bekerült:
 - **`bpf.datapathMode: netkit` + `socketLB.hostNamespaceOnly: false`** Cilium helmrelease fix — a netkit + tc-LB CT-mismatch okozta SYN-ACK drop-ot megszünteti a per-app strict ingress CNP-ken (a return flow CT-bejegyzése pod-IP-pel rögzül, nem Service IP-vel).
 - **`SecurityPolicy/envoy-external-cloudflare` törlés** — a `principal.clientCIDRs` CF-CIDR allowlist nem tud illeszteni a CF tunnel architektúrában (lásd a következő szekciót); helyén a CNP ingress allowlist + ClusterIP-only Service + CF tunnel mTLS adja a védelmet.
 
+### bjw-s parity audit (2026-05-17 — post-Phase 15 felmérés)
+
+A bjw-s referencia repo szerkezeti felmérése (`bjw-s-labs/home-ops@main` tree-szintű grep): **86 app / 16 CNP file = 19% coverage**, nem cluster-wide default-deny. A 16 CNP-ből 15 ingress-only (HTTPRoute-os apps `envoy-internal`-from), 1 egress-only (`forgejo/runner`). Nem-route-os apps (cronjob, sidecar, backup) **nem kapnak CNP-t** — a baseline védelem elég.
+
+Nálunk a jelenlegi állapot: 4 platform/per-app CNP (`paperless`, `cloudflare-tunnel`, `envoy-external`, `envoy-internal`) + 2 cluster-wide CCNP baseline + 1 CiliumCIDRGroup. **~4.5% per-app coverage**, ugyanabba az irányba mutat mint bjw-s, csak kisebb.
+
+**A felmérés megerősíti a 16.c eredeti scope-ját**: nem cél a 20+ HTTPRoute-os app mindegyikére CNP-t tenni. A **5-8 magas-érték per-app CNP** (paperless Szint II, magas-érték secret-szolgáltatók ingress allowlist, esetleg qbittorrent/plex egress-szigorítás) marad a 16.c valós scope-ja. A bjw-s 19% szándékos szelektivitás — mi is azt csináljuk.
+
+Korábbi parity-felmérési diff (T2.1) ezért **nem nyitott új scope-ot** — a 16.c minden továbblépést lefed.
+
 A 16.c döntési pont a paperless-re: marad Szint I, vagy felemeljük Szint II-re? A paperless threat-modelje (OCR/PDF parser CVE history Tesseract + Ghostscript + ImageMagick miatt; publikus dokumentum-upload endpoint `docs.${PUBLIC_DOMAIN}` route-on át; kompromittáció utáni érték = más app-ok adatainak elérése) **indokolja** a Szint II-t. Audit-szükségletek a Szint II-höz a paperless-re:
 
 - Postgres pod (a paperless saját PG sidecarja vagy külön deployment-je a `default` namespace-ben, az aktuális label-ek és port `5432`)
