@@ -26,6 +26,7 @@ Ez **változatlanul átkerül** az új clusterre. A komponens postBuild substitu
 ## Hogyan dolgozik a volsync component
 
 Egy app `ks.yaml`-ben:
+
 ```yaml
 components:
   - ../../../../components/volsync
@@ -39,6 +40,7 @@ postBuild:
 ```
 
 A komponens kibővíti az adott Flux Kustomization manifest-jét **3 új resource-szal**:
+
 1. **PVC** — `${APP}` névvel, `democratic-csi-local-hostpath` storage class-szal.
 2. **ExternalSecret** — `${APP}-volsync` névvel, Kopia + S3 creds-eket szállít.
 3. **ReplicationSource** — `${APP}` névvel, napi 2:00 schedule, Kopia mover, zstd-fastest compression, 7 daily/2 weekly/1 monthly retention.
@@ -63,6 +65,7 @@ resources:
 ```
 
 Ezzel egyszerre minden volsync-os app létrehozza:
+
 - A `${APP}-bootstrap` `ReplicationDestination`-t — manuálisan trigger-elhető (`manual: restore-once`).
 - A PVC-t (a kommentelt `dataSourceRef` is be lesz kapcsolva — lásd alább).
 
@@ -85,6 +88,7 @@ spec:
 A `dataSourceRef` azt jelenti, hogy az új PVC tartalma **a `${APP}-bootstrap` ReplicationDestination snapshot-ból kerül feltöltésre**.
 
 **Workflow**:
+
 1. Cutover ELŐTT: a két kommentet feloldjuk a komponens-ben — push a `talos` branch-re.
 2. Cluster reconcile: a Flux létrehozza minden volsync-os app-nak a `${APP}-bootstrap` RD-t (még nem fut).
 3. Régi clusteren utolsó snapshot OVH-ra (manual VolSync snapshot trigger).
@@ -288,6 +292,7 @@ kubectl -n default get es plex-volsync
 ## Rollback
 
 A components önmagukban nem törhetnek el — Flux Kustomization-ek hivatkoznak rájuk. Ha valami el van rontva:
+
 1. Lokálisan `flux build` paranccsal renderelhető.
 2. `git diff main -- kubernetes/components/` — milyen change ütött be.
 

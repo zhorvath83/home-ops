@@ -74,6 +74,7 @@ A `op://automation/talos/` alá az alábbi mezők kellenek (a `talosctl gen secr
 | `CLUSTER_SECRETBOXENCRYPTIONSECRET` | etcd encryption at rest |
 
 **Egyszeri generálás**:
+
 ```bash
 talosctl gen secrets -o /tmp/talos-secrets.yaml
 # Manuálisan átemeled 1Password-ba az "automation/talos" item-be field-enkén.
@@ -344,6 +345,7 @@ just talos apply-node 192.168.1.11 --insecure
 ```
 
 A `just talos apply-node` recipe (lásd bjw-s `kubernetes/talos/mod.just`):
+
 1. minijinja-cli rendereli a `machineconfig.yaml.j2`-t a `nodes/main.yaml.j2` patch-csel.
 2. `op inject`-tel kicseréli a `op://automation/talos/*` referenciákat valós értékekre.
 3. `talosctl apply-config -f /dev/stdin --insecure` betölti a node-ra.
@@ -396,6 +398,7 @@ A QuickSync passthrough Plex pod-ba külön device mount-tal történik (részle
 Minden Stage után:
 
 **Stage 1 után**:
+
 ```bash
 ping 192.168.1.11                       # DHCP-ből kapott IP működik
 talosctl -n 192.168.1.11 get disks --insecure
@@ -403,12 +406,14 @@ talosctl -n 192.168.1.11 get disks --insecure
 ```
 
 **Stage 2 után**:
+
 ```bash
 talosctl -n 192.168.1.11 get machineconfig
 # konfig betöltve, nincs error
 ```
 
 **Stage 3 után**:
+
 ```bash
 kubectl get nodes
 # main NotReady (CNI hiányzik még) — ez normális
@@ -417,6 +422,7 @@ talosctl -n 192.168.1.11 service
 ```
 
 **Stage 4 (Cilium) után** — lásd [03-cilium-cni.md](./03-cilium-cni.md):
+
 ```bash
 kubectl get nodes
 # main Ready
@@ -427,12 +433,14 @@ kubectl get nodes
 ### Apply config hiba
 
 Ha rosszul apply-eltél, két opció:
+
 1. **Online patch**: `talosctl -n 192.168.1.11 apply-config -f new-config.yaml` (újra, javított yaml-lel).
 2. **Reset**: `just talos reset-node 192.168.1.11` → wipe STATE + EPHEMERAL → újra Stage 1-től.
 
 ### Hibás install disk
 
 Ha rossz NVMe-re install-elt:
+
 1. Power off HP.
 2. Cseréld meg a két NVMe-t fizikailag.
 3. Vagy: a `nodes/main.yaml.j2`-ben javítsd a `disk:` mezőt, `just talos reset-node` + újra apply.
@@ -440,6 +448,7 @@ Ha rossz NVMe-re install-elt:
 ### Bootstrap hiba
 
 Ha `talosctl bootstrap` hibázik:
+
 1. `talosctl -n 192.168.1.11 logs etcd` — etcd hiba?
 2. `talosctl -n 192.168.1.11 reset --system-labels-to-wipe EPHEMERAL` — etcd state wipe, újra bootstrap.
 

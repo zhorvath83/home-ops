@@ -39,6 +39,7 @@ A kutatás eredménye:
 ### Reproducibility forrás
 
 A `/etc/openmediavault/config.xml` backup. Migráció előtt mentsd, után töltsd vissza:
+
 ```bash
 # Mentés a régi VM-ből:
 ssh nas.lan sudo cat /etc/openmediavault/config.xml > /tmp/omv-config-backup-$(date +%F).xml
@@ -430,6 +431,7 @@ A `kube-prometheus-stack` (a HP cluster-en) scrape config-ot kap egy ServiceMoni
 ## OMV-specifikus dolgok az Ansible-en
 
 A jelenlegi M93p OMV setup-ban valószínűleg:
+
 - **OMV web UI** felülről állítva: shares, users, plugins.
 - **SMB shares** (Windows kliensnek?) — nem említetted, de ha van, opcionális role.
 - **rsnapshot** vagy más backup tool — feltételezem, hogy resticprofile elég.
@@ -474,6 +476,7 @@ A **NFS share path változás kockázata**: lásd Open issues.
 ## Rollback
 
 A bare metal install előtt:
+
 - USB DAS-t **NE formázd újra** — ha valami félresikerül, vissza tudd dugni a régi Proxmox+OMV VM-be (visszahúzva backup-ból).
 - A Proxmox VM lemezét **NE töröld** — egy hétig őrizd meg, hogy szükség esetén vissza tudd indítani.
 
