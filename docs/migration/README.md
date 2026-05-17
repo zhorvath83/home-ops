@@ -54,10 +54,11 @@ Ez a könyvtár tartalmazza a home-ops infrastruktúra teljes átalakításának
 | 9 | Renovate rewrite | [09](./09-renovate-rewrite.md) | 1-2h |
 | 10 | OMV Ansible playbook | [10](./10-omv-ansible.md) | 4-6h (csak cutover után) |
 | 11 | Data migration runbook | [11](./11-data-migration.md) | — (refs only) |
-| 12 | Cutover runbook | [12](./12-cutover-runbook.md) | 4-8h éles cutover |
-| 13 | Rollback és decommission | [13](./13-rollback-and-decom.md) | — |
-| 14 | Post-cutover megfigyelés | [14](./14-post-cutover.md) | 1-2 hét observation |
-| 15 | Repo refactor (ks.yaml flatten + doc + AI-guide refresh) | [15](./15-repo-refactor.md) | 5-7h (cutover-előtt) |
+| 12 | Pre-cutover checklist | [12](./12-pre-cutover.md) | a cutover előtti hét |
+| 13 | Cutover runbook | [13](./13-cutover-runbook.md) | 4-8h éles cutover |
+| 14 | Rollback és decommission | [14](./14-rollback-and-decom.md) | — |
+| 15 | Post-cutover megfigyelés | [15](./15-post-cutover.md) | 1-2 hét observation |
+| 16 | Repo refactor (ks.yaml flatten + doc + AI-guide refresh) | [16](./16-repo-refactor.md) | 5-7h (cutover-előtt) |
 
 **Teljes munkaóra becslés (cutover-ig)**: ~25-40 óra effektív munka. Naptári időben ~2-4 hetes projekt, ha esténként és hétvégénként dolgozol.
 
@@ -70,11 +71,11 @@ A docok **lazán kapcsolódnak**, ezért nem kell szigorú sorrendben olvasni. A
                                               ↓
                   06 (repo refactor) ← 07 (components) ← 08 (just) ← 09 (renovate)
                                               ↓
-                                      11 (data migration) → 15 (repo refactor cleanup) → 12 (cutover) → 14 (post-cutover)
+              11 (data migration) → 16 (repo refactor cleanup) → 12 (pre-cutover) → 13 (cutover) → 15 (post-cutover)
                                                                                               ↓
-                                                                                     13 (rollback if needed)
+                                                                                     14 (rollback if needed)
 
-10 (OMV) — csak a cutover után, párhuzamosan a 14-essel
+10 (OMV) — csak a cutover után, párhuzamosan a 15-össel
 ```
 
 ## Referencia repók

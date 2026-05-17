@@ -294,7 +294,7 @@ A `replicationdestination.yaml` bekapcsolásakor (cutover idejére) az új clust
 
 ## Open issues
 
-- **Bootstrap RD vs runtime RS schedule overlap**: ha mind a bootstrap RD, mind a runtime RS megfut egyszerre, a Kopia repository egy időben olvas+ír. Hivatalosan oké (Kopia konkurens), de cutover napon **ne hagyd véletlenül futni az RS-t** a régi clusteren ÉS az RD-t az újon egyszerre. A részletes timing a [12-cutover-runbook.md](./12-cutover-runbook.md)-ban.
+- **Bootstrap RD vs runtime RS schedule overlap**: ha mind a bootstrap RD, mind a runtime RS megfut egyszerre, a Kopia repository egy időben olvas+ír. Hivatalosan oké (Kopia konkurens), de cutover napon **ne hagyd véletlenül futni az RS-t** a régi clusteren ÉS az RD-t az újon egyszerre. A részletes timing a [13-cutover-runbook.md](./13-cutover-runbook.md)-ban.
 - **`enableFileDeletion: true`** a RD-ben azt jelenti, hogy a snapshot tartalom **felülírja** a PVC tartalmat (törli a snapshot-ban nem szereplő fájlokat). Friss PVC esetén ez OK, de ha jövőben in-place restore kell, óvatosan.
 - **`runAsUser/runAsGroup: 10001`** default — sok app-nak más UID/GID kell (Plex: 568, Sonarr: 1000 stb.). Az app `ks.yaml`-ben felülírjuk a `APP_UID`/`APP_GID` substitute-tel.
 - **`volsync-template` 1Password item**: ennek kell tartalmaznia `KOPIA_S3_BUCKET` és `KOPIA_PASSWORD` mezőket. Jelenleg már megvan — változatlan.

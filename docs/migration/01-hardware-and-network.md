@@ -271,5 +271,5 @@ Ha a hardver setup problémás:
 ## Open issues
 
 - **NIC variáns** — **megerősítve: Intel I219-LM** (a BIOS-ban az `Advanced → Remote Management Options → Intel AMT` menüpont látszik és bekapcsolható; az I219-V-n ez nincs). Talos kernel `e1000e` driver kompatibilis. AMT-t **nem** használjuk, a BIOS-ban kikapcsoljuk (lásd `BIOS beállítások`).
-- **iGPU passthrough Plex pod-ba** — Talos `siderolabs/i915` extension benne marad a schematic-ban, de a Plex pod-spec NEM kapja meg a `/dev/dri` mount-ot a cutover részeként. Plex HW transcode bevezetése **post-cutover phase 2** feladat, részletek a [14-post-cutover.md](./14-post-cutover.md) "Phase 2" szekcióban.
+- **iGPU passthrough Plex pod-ba** — Talos `siderolabs/i915` extension benne marad a schematic-ban, de a Plex pod-spec NEM kapja meg a `/dev/dri` mount-ot a cutover részeként. Plex HW transcode bevezetése **post-cutover phase 2** feladat, részletek a [15-post-cutover.md](./15-post-cutover.md) "Phase 2 — opcionális fejlesztések" szekcióban.
 - **WLAN modul jelenléte** — **megerősítve: nincs M.2 2230 WLAN modul a gépben.** A BIOS-ban a `M.2 WLAN/BT` opció jelenleg ✓ Enabled, de mivel fizikailag nincs kártya, az opciót `Disabled`-re tesszük (lásd `BIOS beállítások` kötelező delta).

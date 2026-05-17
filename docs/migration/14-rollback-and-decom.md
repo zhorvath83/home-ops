@@ -1,4 +1,4 @@
-# 13 — Rollback és decommission
+# 14 — Rollback és decommission
 
 ## Cél
 
@@ -180,7 +180,7 @@ A régi K3s VM-et (Proxmox-on, `192.168.1.6`):
 # Ha valami más fut rajtuk (másik VM, fizikai hardver) — csak a K3s VM-et töröljük.
 ```
 
-**Megjegyzés**: Az M93p OMV VM **nem** itt törlődik — az [14-post-cutover.md](./14-post-cutover.md)-ben kerül átfedésre a bare metal OMV install-ra.
+**Megjegyzés**: Az M93p OMV VM **nem** itt törlődik — az [15-post-cutover.md](./15-post-cutover.md)-ben kerül átfedésre a bare metal OMV install-ra.
 
 ### Régi 1Password items törlése
 
@@ -236,7 +236,7 @@ kubectl -n volsync-system exec deploy/kopia -- \
 
 Decom után az aktív infra:
 - HP ProDesk 600 G6 DM (Talos node, IP `192.168.1.11`)
-- M93p (még Proxmox+OMV VM, az átalakítás külön projekt — [14](./14-post-cutover.md))
+- M93p (még Proxmox+OMV VM, az átalakítás külön projekt — [15](./15-post-cutover.md))
 - OpenWRT router (változatlan)
 - Cloudflare (változatlan)
 - OVH S3 (változatlan, csak az új cluster snapshot-jaival)
@@ -248,7 +248,7 @@ Cutover után, decom UTÁN:
 ```bash
 # A docs/migration/ mappa cutover utáni státusza:
 # - README.md: a státusz táblát "completed"-re frissítjük
-# - 13-rollback-and-decom.md: ide visszanézünk, hogy mi a teendő decom-kor
+# - 14-rollback-and-decom.md: ide visszanézünk, hogy mi a teendő decom-kor
 
 # A docs/migration/ MARAD a main branch-en mint historikus referencia.
 # Nem törlünk semmit — egy év múlva is hasznos lehet.

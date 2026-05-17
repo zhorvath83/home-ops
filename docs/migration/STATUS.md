@@ -1,14 +1,14 @@
 # Migration status
 
-Élő státusz a K3s → Talos migráció állapotáról. Ez a doc gyors pillanatkép — a részletes terv a [README.md](./README.md)-ben és a `00`–`14` doc-okban van.
+Élő státusz a K3s → Talos migráció állapotáról. Ez a doc gyors pillanatkép — a részletes terv a [README.md](./README.md)-ben és a `00`–`16` doc-okban van.
 
-**Utolsó frissítés:** 2026-05-17 — **Phase 8.6 Just hardening + confirm-gates** ✅: 4 destruktív Talos recipe-en `[confirm()]` attribútum (`apply-node`, `reset-node`, `shutdown-node`, `upgrade-node`) + szimmetriai bónusz `upgrade-k8s`-en is, 2 új cluster-wide wrapper (`apply-cluster`, `reset-cluster`), `browse-pvc` + `mount-pvc` egyetlen krew-mentes `browse-pvc claim ns mountpath` recipe-be konszolidálva (utolsó krew plugin dep — `kubectl-view-secret` — is kiváltva `kubectl get secret + jq`-val), `restart-failed-hrs` JSON-alapú detection-re átírva (immune a CLI output drift-re), `volsync state` `[arg]` pattern validation, `node-shell` cleanup trap-be (Ctrl-C-safe), `flux-reconcile` per-stage strukturált logging-gel (timing visibility), settings.json deny bővítve a cluster-wide wrapperekkel. — Korábban: Phase 1–9 + 11 + **15.a + 15.b** ✅, ingress stack stabil, CNP migráció kész, Task→Just teljes migráció lezárva, Renovate `.renovaterc.json5` + `.renovate/` fragmens-szerkezetre átírva, default ns ks.yaml lapítás kész (4 split + 2 KS rename), **K3s `system-upgrade-controller` orphan + `provision/kubernetes/` Ansible plane teljesen lebontva**, doc + AI-guide réteg (`docs/*.md` + 11 `CLAUDE.md` + 12 `.claude/skills/*` + `settings.json` + `README.md`) átírva a `talos`-éra realitásra, follow-up-ok rögzítve.
+**Utolsó frissítés:** 2026-05-17 — **Phase 8.6 Just hardening + confirm-gates** ✅: 4 destruktív Talos recipe-en `[confirm()]` attribútum (`apply-node`, `reset-node`, `shutdown-node`, `upgrade-node`) + szimmetriai bónusz `upgrade-k8s`-en is, 2 új cluster-wide wrapper (`apply-cluster`, `reset-cluster`), `browse-pvc` + `mount-pvc` egyetlen krew-mentes `browse-pvc claim ns mountpath` recipe-be konszolidálva (utolsó krew plugin dep — `kubectl-view-secret` — is kiváltva `kubectl get secret + jq`-val), `restart-failed-hrs` JSON-alapú detection-re átírva (immune a CLI output drift-re), `volsync state` `[arg]` pattern validation, `node-shell` cleanup trap-be (Ctrl-C-safe), `flux-reconcile` per-stage strukturált logging-gel (timing visibility), settings.json deny bővítve a cluster-wide wrapperekkel. — Korábban: Phase 1–9 + 11 + **16.a + 16.b** ✅, ingress stack stabil, CNP migráció kész, Task→Just teljes migráció lezárva, Renovate `.renovaterc.json5` + `.renovate/` fragmens-szerkezetre átírva, default ns ks.yaml lapítás kész (4 split + 2 KS rename), **K3s `system-upgrade-controller` orphan + `provision/kubernetes/` Ansible plane teljesen lebontva**, doc + AI-guide réteg (`docs/*.md` + 11 `CLAUDE.md` + 12 `.claude/skills/*` + `settings.json` + `README.md`) átírva a `talos`-éra realitásra, follow-up-ok rögzítve.
 
 ## TL;DR
 
 **Hol tartunk:** Teljes GitOps reconcile zöld (**0 Failing KS, 0 Failing HR**). 17 VolSync PVC restore-olt OVH Kopia snapshotokból, 18 default app pod 1/1 Running, `cloudflare-tunnel` 1/1 Running. A `replicationdestination + dataSourceRef` mostantól **always-on** pattern (bjw-s minta). Ingress stack él kívülről (Cloudflare tunnel) és belülről (envoy-internal `192.168.1.18`), Cilium L2 announce egyedüli LB-IPAM. Stateful ingress hardening visszahozva 3 `CiliumNetworkPolicy`-val + közös `CiliumCIDRGroup/cloudflare`-rel. A régi K3s cluster áll.
 
-**Ismert follow-up-ok** (egyik sem blocker): `envoy-gateway` v1.9.0 GA → BTP rate-limit visszakapcsolás, search domain `lan` cluster-szintű kezelés, **15.c** per-app CNP threat-model audit (15.a + 15.b kész).
+**Ismert follow-up-ok** (egyik sem blocker): `envoy-gateway` v1.9.0 GA → BTP rate-limit visszakapcsolás, search domain `lan` cluster-szintű kezelés, **16.c** per-app CNP threat-model audit (16.a + 16.b kész).
 
 ## Sessions — 2026-05-17
 
@@ -84,7 +84,7 @@ A Phase 8 foundation (mise + just + setup.sh + 6 mod) reggel kész volt, de a `T
 
 **Root `.justfile`** kapott `mod sops "provision/sops"` és `mod openwrt "provision/openwrt"` import-okat — most 8 mod-csoport listázódik (`k8s`, `cluster-bootstrap`, `talos`, `omv`, `cloudflare`, `ovh`, `sops`, `openwrt`). **Root `CLAUDE.md`** „Taskfile And Renovate Model" szekciója „Just And Renovate Model"-re cserélve, „Current Repository Shape" `.taskfiles/` hivatkozása `.justfile + **/mod.just`-ra. **Törölve**: `Taskfile.yml` + a teljes `.taskfiles/` (9 mappa, 13 fájl).
 
-**Verifikáció**: `just --list` 8 csoportot mutat, `just sops/openwrt/omv/k8s --list` mind parse-ol és listáz. Egy parse-hiba a Python f-string `{{:<{w}}}` format-spec miatt javítva `str.ljust()`-tal (Just `{{ ... }}` template-szintaxissal ütközött a literal Python escape). A subtree `CLAUDE.md`-k (`provision/CLAUDE.md`, `kubernetes/apps/*/CLAUDE.md` stb.) még tartalmaznak `Taskfile`/`.taskfiles` hivatkozást — ezek Phase 15 hatáskörébe esnek.
+**Verifikáció**: `just --list` 8 csoportot mutat, `just sops/openwrt/omv/k8s --list` mind parse-ol és listáz. Egy parse-hiba a Python f-string `{{:<{w}}}` format-spec miatt javítva `str.ljust()`-tal (Just `{{ ... }}` template-szintaxissal ütközött a literal Python escape). A subtree `CLAUDE.md`-k (`provision/CLAUDE.md`, `kubernetes/apps/*/CLAUDE.md` stb.) még tartalmaznak `Taskfile`/`.taskfiles` hivatkozást — ezek Phase 16 hatáskörébe esnek.
 
 ### Este — Phase 9 Renovate rewrite
 
@@ -99,9 +99,9 @@ Doc 09 terv végrehajtva: `.github/renovate.json5` + `.github/renovate/*.json` (
 
 **Verifikáció**: node-os JSON5 parse-check mind a 8 fájlon zöld, `pre-commit run --files` zöld. Renovate CLI validator npm cache-corruption miatt nem futott (npm cache `sudo chown` user-intervenciót igényel — nem blocker, a cloud Renovate megfogja a `talos` branch push után). `.claude/skills/versions-renovate/SKILL.md` + `references/config-files.md` frissítve az új layouttal.
 
-### Késő este — Phase 15.a lezárás (default ns ks.yaml flatten + 2 KS rename)
+### Késő este — Phase 16.a lezárás (default ns ks.yaml flatten + 2 KS rename)
 
-Doc 15 terv 15.a alfázisa végrehajtva, **a tervhez képest +1 scope-bővítés**: a `qbittorrent-upgrade-p2pblocklist` átnevezve `qbittorrent-p2pblocklist`-re (HR + OCIRepo + controllers/SA/RBAC ref-ek is — full bjw-s `app == KS == HR` parity, nem csak KS-rename). 4 split + 2 KS rename egyetlen commit-ban (`b6101942f`):
+Doc 16 terv 16.a alfázisa végrehajtva, **a tervhez képest +1 scope-bővítés**: a `qbittorrent-upgrade-p2pblocklist` átnevezve `qbittorrent-p2pblocklist`-re (HR + OCIRepo + controllers/SA/RBAC ref-ek is — full bjw-s `app == KS == HR` parity, nem csak KS-rename). 4 split + 2 KS rename egyetlen commit-ban (`b6101942f`):
 
 - **paperless-gpt** (path-only split, KS név változatlan): `paperless/gpt/` → `paperless-gpt/app/`
 - **plex-trakt-sync** (path-only split, KS név változatlan): `plex/trakt-sync/` → `plex-trakt-sync/app/`
@@ -118,13 +118,13 @@ Doc 15 terv 15.a alfázisa végrehajtva, **a tervhez képest +1 scope-bővítés
 
 **Tanulság — orphan cleanup szükséges HR-rename esetén**: A `backrest` rename **adoptálta** a meglévő HR-t (HR neve már `backrest` volt — csak a label cserélődött, Helm release v2 upgrade-re ment). A `qbittorrent-p2pblocklist` viszont **új HR neve**, így a Helm a régi `qbittorrent-upgrade-p2pblocklist` release-t orphan-ben hagyta: a HR + OCIRepository + helm-managed SA/Role/RoleBinding/CronJob mind élt a clusteren. Manuális cleanup: `kubectl delete hr qbittorrent-upgrade-p2pblocklist -n default` (cascade-eli a helm uninstall-t és minden chart-managed resource-t) + `kubectl delete ocirepository qbittorrent-upgrade-p2pblocklist -n default` (külön Flux source). **Tanulság**: ha a HR neve is változik, a Helm release nem adoptálódik át (Helm a `metadata.name`-mel azonosít), ezért manuális helm-uninstall kell a régi release-re. KS-rename HR-name-megőrzéssel (mint a backrest) viszont tisztán SSA-ownership-transfer.
 
-**Verifikáció**: a Plex pod uptime **változatlan** (5h28m a deploy előtt és után — SSA no-op, byte-identical HR spec). 8 érintett KS mind Ready=True az új revision-on (`b6101942`). HR labels megerősítve: `backrest` és `qbittorrent-p2pblocklist` HR-ek új `kustomize.toolkit.fluxcd.io/name` címkével. OVH Kopia repo binding változatlan (a `${APP}` substitution értékek nem cserélődtek), K3s-éra adatok továbbra is elérhetők. `just volsync restore-into` recipe doc-stringjéből a `ks=restic-gui` override-említés eltávolítva — `just volsync restore-into default backrest 0` mostantól override nélkül megy. A teljes `ks` paraméter is törölve (`6d0f390ef`), mert 15.a után nincs olyan app, ami divergens KS-szel jönne.
+**Verifikáció**: a Plex pod uptime **változatlan** (5h28m a deploy előtt és után — SSA no-op, byte-identical HR spec). 8 érintett KS mind Ready=True az új revision-on (`b6101942`). HR labels megerősítve: `backrest` és `qbittorrent-p2pblocklist` HR-ek új `kustomize.toolkit.fluxcd.io/name` címkével. OVH Kopia repo binding változatlan (a `${APP}` substitution értékek nem cserélődtek), K3s-éra adatok továbbra is elérhetők. `just volsync restore-into` recipe doc-stringjéből a `ks=restic-gui` override-említés eltávolítva — `just volsync restore-into default backrest 0` mostantól override nélkül megy. A teljes `ks` paraméter is törölve (`6d0f390ef`), mert 16.a után nincs olyan app, ami divergens KS-szel jönne.
 
 **Restore recipe egységesítés**: a régi két recipe (`restore` bootstrap-RD-triggerrel + `restore-into` Direct copyMethod-tal) ugyanazon szemantikai irányba mutatott, de fragmentáltan. Cseréltük egyetlen `restore` recipe-re a `kubernetes/volsync/mod.just`-ban — `wipe + Direct-restore` flow: suspend Flux/HR → scale 0 → apply egy `<app>-wipe` Job (Alpine, root, `find /data -mindepth 1 -delete`) → apply ad-hoc `<app>-manual` RD `copyMethod: Direct` + `previous: N`-szel → wait → cleanup → resume Flux + reconcile HR + wait pod ready. **A wipe-step a lényeg**: a Kopia Direct mover egyébként csak felülírja a snapshot-ban szereplő fájlokat, a leftover-fájlokat NEM törli — silent corruption-kockázat, ha a live PVC tartalma eltért a snapshot-ban szereplő fájl-szettől. A wipe előzetes futtatása garantálja, hogy a restore eredménye **pontosan** a választott snapshot. A megszüntetett `wait-rd` recipe sehol nem volt callolva ezután. `.claude/CLAUDE.md` Cluster Access Policy frissítve (csak `just volsync restore` szerepel a mutating-listán); `.claude/skills/volsync/references/operations.md` "Unified Restore Flow" szekcióval kicserélve a régi két-recipe-leírást.
 
 ### Hajnal — K3s system-upgrade-controller orphan cleanup
 
-15.a follow-up cluster-szintű takarítás: a Lens-ben két failed `apply-server-on-cp0-k8s-...` Job jelent meg a `system-upgrade` ns-ben. Diagnose: Phase 6 záró cleanup a `system-upgrade/system-upgrade-controller/` repo-subtree-t törölte, de a `system-upgrade` namespace-t **szándékosan megőrizte** `kustomize.toolkit.fluxcd.io/prune: disabled` címkével — feltehetően egy későbbi Tuppr migráció elővételezéseként. A `prune: disabled` viszont megakadályozta, hogy a Flux a HR-t és kapcsolódó child resource-okat is elvigye, így a Rancher `system-upgrade-controller` HR + Deployment + Plan-ek (`agent` completed, `server` fail-loop a `rancher/k3s-upgrade` image-zsel egy Talos host-on) az új clusterre is átöröklődtek. A `server` Plan minden ~30 másodpercben új Job-ot indított, ami `K3S_PID=` üres → `fatal 'No K3s pids found'` → exit 1-gyel halt meg. Ugyanaz a "Flux Kustomization suspend → repo subtree delete" örökség-minta, mint a Phase 6 esti `metallb` orphan tanulság (sor 37) — csak itt a `prune: disabled` címke explicit, nem suspend implicit.
+16.a follow-up cluster-szintű takarítás: a Lens-ben két failed `apply-server-on-cp0-k8s-...` Job jelent meg a `system-upgrade` ns-ben. Diagnose: Phase 6 záró cleanup a `system-upgrade/system-upgrade-controller/` repo-subtree-t törölte, de a `system-upgrade` namespace-t **szándékosan megőrizte** `kustomize.toolkit.fluxcd.io/prune: disabled` címkével — feltehetően egy későbbi Tuppr migráció elővételezéseként. A `prune: disabled` viszont megakadályozta, hogy a Flux a HR-t és kapcsolódó child resource-okat is elvigye, így a Rancher `system-upgrade-controller` HR + Deployment + Plan-ek (`agent` completed, `server` fail-loop a `rancher/k3s-upgrade` image-zsel egy Talos host-on) az új clusterre is átöröklődtek. A `server` Plan minden ~30 másodpercben új Job-ot indított, ami `K3S_PID=` üres → `fatal 'No K3s pids found'` → exit 1-gyel halt meg. Ugyanaz a "Flux Kustomization suspend → repo subtree delete" örökség-minta, mint a Phase 6 esti `metallb` orphan tanulság (sor 37) — csak itt a `prune: disabled` címke explicit, nem suspend implicit.
 
 A teljes K3s-éra Rancher SUC stack lebontva:
 
@@ -202,9 +202,9 @@ Cilium kutatás megerősítette: a fix `hostNamespaceOnly: false` (kommentár a 
 
 **Talos-quirk reminder élesedett**: a Cilium HelmRelease upgrade hook drain-elte a node-ot (`Ready,SchedulingDisabled`), a friss `envoy-external` és `cloudflare-tunnel` pod-ok FailedScheduling-ba kerültek (`0/1 nodes are available: 1 node(s) were unschedulable`). Mitigáció: `kubectl uncordon k8s-cp0` — a STATUS.md "Talos reboot reminder" pontja most már a **Cilium HR upgrade-re is érvényes**.
 
-**Phase 15.c plan-update** (`52c607120`): a per-app CNP audit szekció kibővítve a **B-csapdával** (opt-out label custom egress nélkül = csak DNS marad, pod indul fail). Két szint formalizálva: **Tier I** (ingress-only, no label, baseline egress — paperless minta) és **Tier II** (ingress + strict egress + opt-out label — pl. magas threat-modelű app-okhoz). A 4f4b76eec-ből megmaradó CNP-k Tier I-re átírva ma — a 3 érintett CNP közül `cloudflare-tunnel` még nem volt egyszerűsítve, az a következő session-re marad (15.c-ben).
+**Phase 16.c plan-update** (`52c607120`): a per-app CNP audit szekció kibővítve a **B-csapdával** (opt-out label custom egress nélkül = csak DNS marad, pod indul fail). Két szint formalizálva: **Tier I** (ingress-only, no label, baseline egress — paperless minta) és **Tier II** (ingress + strict egress + opt-out label — pl. magas threat-modelű app-okhoz). A 4f4b76eec-ből megmaradó CNP-k Tier I-re átírva ma — a 3 érintett CNP közül `cloudflare-tunnel` még nem volt egyszerűsítve, az a következő session-re marad (16.c-ben).
 
-### Phase 15.b — Doc + AI-guide refresh
+### Phase 16.b — Doc + AI-guide refresh
 
 Cutover-előtti repo-doksi és AI-guide tisztítás. 10-fázisú audit + szerkesztés sorozat: a `talos`-éra realitás (Talos + Cilium LB-IPAM + L2 announce + Envoy Gateway + Flux Operator + FluxInstance + always-on VolSync + Just + mise + bjw-s lapos layout + CCNP baseline) átvezetve a `docs/*.md` + `CLAUDE.md` lánc + `.claude/skills/*` + `.claude/settings.json` + `README.md` rétegeken.
 
@@ -214,7 +214,7 @@ Cutover-előtti repo-doksi és AI-guide tisztítás. 10-fázisú audit + szerkes
 
 **3. `docs/flux-readme.md` REWRITE + `docs/networking-readme.md` REWRITE**:
 - `flux-readme.md`: klasszikus `flux install/bootstrap` install rész lecserélve Flux Operator + `FluxInstance` topológiára (`kubernetes/apps/flux-system/flux-{operator,instance}/` + `kubernetes/flux/cluster/ks.yaml`). Cheatsheet rész `just k8s flux-reconcile/flux-check/sync-hr/sync-ks/sync-es/sync`, `list-failed-hrs/restart-failed-hrs`, `apply-ks/delete-ks`, `browse-pvc/mount-pvc/node-shell/prune-pods/view-secret`. Direkt `flux get/events/logs` upstream CLI említve.
-- `networking-readme.md`: MetalLB → Cilium L2 announcement / LB-IPAM. `envoy-internal` `lbipam.cilium.io/ips` annotáció, `CiliumLoadBalancerIPPool/default` (`192.168.1.15-25`), `LB_ENVOY_INTERNAL_IP` / `LB_K8S_GATEWAY_IP` `cluster-settings.yaml`-ből. Új szekció: cluster-wide CCNP baseline (`allow-cluster-egress` + `allow-dns-egress` L7 DNS proxy) + per-app Tier I / Tier II döntésmodell utalás Phase 15.c-re.
+- `networking-readme.md`: MetalLB → Cilium L2 announcement / LB-IPAM. `envoy-internal` `lbipam.cilium.io/ips` annotáció, `CiliumLoadBalancerIPPool/default` (`192.168.1.15-25`), `LB_ENVOY_INTERNAL_IP` / `LB_K8S_GATEWAY_IP` `cluster-settings.yaml`-ből. Új szekció: cluster-wide CCNP baseline (`allow-cluster-egress` + `allow-dns-egress` L7 DNS proxy) + per-app Tier I / Tier II döntésmodell utalás Phase 16.c-re.
 
 **4. `kubernetes/bootstrap/readme.md` REWRITE**: prerequisite-okból Task drop, `mise install` add (`.mise.toml` pinneli a `talosctl`/`kubectl`/`helm`/`helmfile`/`flux2`/`just`/`sops`/`age`/`1password-cli`/`minijinja`/`yq`/`jq`/`gum`-ot). A 9-stage bootstrap chain részletesen: `talos → kubernetes → kubeconfig(node) → wait → namespaces → resources → crds → apps → kubeconfig(cilium)`. Recovery utal a STATUS.md Phase 6 `helm uninstall + flux reconcile hr --force` és `safe-upgrades VAP` mintákra.
 
@@ -232,7 +232,7 @@ Cutover-előtti repo-doksi és AI-guide tisztítás. 10-fázisú audit + szerkes
 - `external-secrets/references/validation.md` `task es:sync` → `just k8s sync-es <ns> <name>`.
 - `flux-gitops/SKILL.md` + `references/operations.md` (rewrite) + `references/validation.md`: 7× `task fx:*` → `just k8s flux-{reconcile,check}/sync-{hr,ks,es}/sync`; `flux/config/` → `flux/cluster/`; `task fx:install` → `just cluster-bootstrap cluster`.
 - `k8s-workloads/references/{validation,publication-and-jobs}.md`: `Taskfile.yml` → `.justfile + mod.just`; Traefik warning sor törölve (user: "minden nginx és traefik szar mehet").
-- `networking-platform/SKILL.md` + `references/topology.md` rewrite: frontmatter MetalLB → "Cilium LB-IPAM / L2 announcement, cluster-wide CiliumNetworkPolicy baseline"; topology szekció új CCNP baseline blokk Phase 15.c utalással.
+- `networking-platform/SKILL.md` + `references/topology.md` rewrite: frontmatter MetalLB → "Cilium LB-IPAM / L2 announcement, cluster-wide CiliumNetworkPolicy baseline"; topology szekció új CCNP baseline blokk Phase 16.c utalással.
 - `sops-secrets/references/{validation,bootstrap-and-app-secrets}.md`: `task fx:install` → `just cluster-bootstrap cluster` + `resources.yaml.j2` magyarázat; 4× `task so:*` → `just sops re-encrypt/fix-mac/encrypt-file/decrypt-file`.
 - `sre/references/investigation.md` `vs:` task → `just volsync` recipes.
 - `versions-renovate/references/annotations.md` `v1.35.2+k3s1` deprecated példa → `.mise.toml` `TALOS_VERSION` / `KUBERNETES_VERSION` annotációk + `.renovate/{customManagers,talosFactory}.json5` jelenlegi struktúra.
@@ -249,7 +249,7 @@ Cutover-előtti repo-doksi és AI-guide tisztítás. 10-fázisú audit + szerkes
 - `.gitignore:16` `xanmanning.k3s*` orphan ignore-bejegyzés törölve (`provision/kubernetes/` Ansible plane már Phase 6-ban törölve volt, `582ddda8e`). Az általános Ansible role ignore-ok (`mrlesmithjr.zfs`, `geerlingguy.docker`, `geerlingguy.pip`) megmaradnak — esetlegesen használhatók a Phase 10 OMV Ansible-ben.
 - Root `CLAUDE.md:79` `"Envoy Gateway with Gateway API, not Traefik"` → `"Envoy Gateway with Gateway API"` (negation törlése — Traefik már nem létezett a `talos` branchen).
 
-**9. Root `README.md` rewrite**: Phase 9 — user-facing human doc, angolul (nyelvi átírást a 15.b nem érintette).
+**9. Root `README.md` rewrite**: Phase 9 — user-facing human doc, angolul (nyelvi átírást a 16.b nem érintette).
 - Hardware section: K3s VM sor törölve; HP ProDesk 600 G6 DM (Talos, NVMe PC801 OS + PC711 data, 64GB) hozzáadva; Lenovo M93p szerepe "Proxmox + OMV VM (transitional)"-re átírva azzal a megjegyzéssel, hogy Phase 10-ben bare-metal OMV váltja.
 - Tooling lead bővítve: Talos Linux, Helmfile, Just, mise.
 - GitOps Workflow / Flux: FluxInstance pattern leírás (`kubernetes/flux/cluster/` + `cluster-vars` + `cluster-apps`); `just cluster-bootstrap cluster` reference.
@@ -262,7 +262,7 @@ Cutover-előtti repo-doksi és AI-guide tisztítás. 10-fázisú audit + szerkes
 - `git grep` ellenőrzés `K3s|MetalLB|Traefik|nginx|Calico|tigera|Taskfile|.taskfiles|task fx:/vs:/...` mintákra a `docs/migration/` historikus narratívát kivéve: csak 3 szándékos historizáló ref maradt (`README.md:9` "K3s → Talos migration" transitional note, `.claude/skills/just/SKILL.md:10` "no Task / Taskfile is present", `.claude/skills/just/references/catalog.md:32` "Replaces the historical task fx:install flow").
 - `pre-commit run --all-files` zöld (yamllint, trim trailing whitespace, fix end of files, mixed line ending, CRLF/Tabs/smartquote remover, Kubernetes secret check, hardcoded secret detect mind PASS).
 
-**Phase 15.b exit criteria teljesítve**: a `docs/*.md` + `CLAUDE.md` lánc + `.claude/skills/*` réteg konzisztens a `talos`-éra realitással. A `taskfiles` skill helyét az új `just` skill veszi át. A `provision/openmediavault/CLAUDE.md` stub szándékosan Phase 10-re halasztva (user 8. döntés).
+**Phase 16.b exit criteria teljesítve**: a `docs/*.md` + `CLAUDE.md` lánc + `.claude/skills/*` réteg konzisztens a `talos`-éra realitással. A `taskfiles` skill helyét az új `just` skill veszi át. A `provision/openmediavault/CLAUDE.md` stub szándékosan Phase 10-re halasztva (user 8. döntés).
 
 ## Fázis tracker
 
@@ -281,10 +281,11 @@ Cutover-előtti repo-doksi és AI-guide tisztítás. 10-fázisú audit + szerkes
 | 9 | Renovate rewrite | [09](./09-renovate-rewrite.md) | ✅ done | `.renovaterc.json5` + 9 fragmens a `.renovate/` alatt; `.github/renovate*` törölve; `mise.toml` annotáció-fedés, K8s pin `1.36.x`, `mirror.gcr.io → docker.io` alias, `custom.talos-factory` datasource, `:automergeBranch`, külön `semanticCommits.json5` |
 | 10 | OMV Ansible | [10](./10-omv-ansible.md) | ⏸ pending | Csak cutover után |
 | 11 | Data migration | [11](./11-data-migration.md) | ✅ done | 17 PVC restore-olt (always-on RD) |
-| 12 | Cutover runbook | [12](./12-cutover-runbook.md) | 🟡 in-progress | `talos`→`main` merge + FluxInstance ref switch |
-| 13 | Rollback / decom | [13](./13-rollback-and-decom.md) | ⏸ pending | |
-| 14 | Post-cutover | [14](./14-post-cutover.md) | ⏸ pending | 1-2 hét observation |
-| 15 | Repo refactor (ks.yaml flatten + doc + AI-guide refresh) | [15](./15-repo-refactor.md) | 🟡 in-progress | **15.a + 15.b kész** (15.a: 4 split + 2 KS rename; 15.b: 8 doc delete + új `just` skill + flux/networking-readme rewrite + bootstrap readme rewrite + CLAUDE.md lánc + 10 skill refresh + settings.json permissions + code comments + README.md); 15.c per-app CNP threat-model audit hátra |
+| 12 | Pre-cutover checklist | [12](./12-pre-cutover.md) | ⏸ pending | K3s Flux source pin `k3s` branch-re + T-7/T-5/T-3/T-1 nap pipalista |
+| 13 | Cutover runbook | [13](./13-cutover-runbook.md) | 🟡 in-progress | `talos`→`main` merge + FluxInstance ref switch |
+| 14 | Rollback / decom | [14](./14-rollback-and-decom.md) | ⏸ pending | |
+| 15 | Post-cutover | [15](./15-post-cutover.md) | ⏸ pending | 1-2 hét observation |
+| 16 | Repo refactor (ks.yaml flatten + doc + AI-guide refresh) | [16](./16-repo-refactor.md) | 🟡 in-progress | **16.a + 16.b kész** (16.a: 4 split + 2 KS rename; 16.b: 8 doc delete + új `just` skill + flux/networking-readme rewrite + bootstrap readme rewrite + CLAUDE.md lánc + 10 skill refresh + settings.json permissions + code comments + README.md); 16.c per-app CNP threat-model audit hátra |
 
 Legend: ✅ done · 🟡 in-progress · ⏸ pending · ❌ blocked · ⏭ skipped
 
@@ -307,9 +308,9 @@ A teljes GitOps reconcile zöld (0 failing KS, 0 failing HR).
 - **Search domain `lan` cluster-szintű kezelés**: A Talos node `ResolverStatus SEARCH DOMAINS: []` üres. FQDN-szintű `.lan` resolve cluster-en át jelenleg működik (CoreDNS `forward . /etc/resolv.conf`). Akkor szükséges, ha valaha rövid host neveket (`nas`) hivatkoznánk app config-ban — jelenleg minden manifest FQDN-t vagy IP-t használ. Megoldás (csak együtt): Talos machineconfig `machine.network.searchDomains: [lan]` + kubelet `--resolv-conf=/etc/resolv.conf`. Egyik referencia repó sem foglalkozik vele.
 
 
-- **Phase 15 — Repo refactor: ks.yaml flatten + doc + AI-guide refresh** (cutover előtti zárás): két, szorosan kapcsolódó repo-szintű refactor egyetlen fázisba sűrítve.
+- **Phase 16 — Repo refactor: ks.yaml flatten + doc + AI-guide refresh** (cutover előtti zárás): két, szorosan kapcsolódó repo-szintű refactor egyetlen fázisba sűrítve.
 
-  **15.a — App-szintű nested `ks.yaml` flatten** (4 split + 1 KS rename). 4 multi-KS `ks.yaml` a `default` ns-ben jelenleg szülő-gyermek mappastruktúrában tart funkcionálisan független KS-eket. A bjw-s/onedr0p/buroa lapos `apps/<ns>/<app>/` mintára kilapítva minden Kustomization egy önálló top-level mappát kap — repo-átláthatóság + `restore-into <app>` ks-override nélkül megy.
+  **16.a — App-szintű nested `ks.yaml` flatten** (4 split + 1 KS rename). 4 multi-KS `ks.yaml` a `default` ns-ben jelenleg szülő-gyermek mappastruktúrában tart funkcionálisan független KS-eket. A bjw-s/onedr0p/buroa lapos `apps/<ns>/<app>/` mintára kilapítva minden Kustomization egy önálló top-level mappát kap — repo-átláthatóság + `restore-into <app>` ks-override nélkül megy.
 
   | Jelenlegi | Cél | Megjegyzés |
   |---|---|---|
@@ -322,23 +323,23 @@ A teljes GitOps reconcile zöld (0 failing KS, 0 failing HR).
 
   Kockázat: 3 path-only split alacsony (Flux a `kustomize.toolkit.fluxcd.io/name` label alapján észleli a path-váltást, nincs ownership transfer). **A `restic-gui` → `backrest` KS rename** valós prune-kockázattal jár: a régi KS prune-ja megpróbálná törölni a HR-t a régi labellel. Mitigáció: előbb a régi KS-t `prune: false`-ra vagy `flux suspend`-be, csak utána a forrás-fájlokat törölni. Becsült munka: ~30-45 perc.
 
-  **Hol feltételezünk `app == KS == HR` egyezőséget a repo-ban** (audit eredménye — mindegyik a 15.a után stimmelni fog automatikusan):
+  **Hol feltételezünk `app == KS == HR` egyezőséget a repo-ban** (audit eredménye — mindegyik a 16.a után stimmelni fog automatikusan):
 
-  - **`kubernetes/components/volsync/*.yaml` `${APP}` substitution**: a `replicationsource.yaml` (`name: ${APP}`, `sourcePVC: ${VOLSYNC_CLAIM:=${APP}}`, `repository: ${APP}-volsync-secret`), `replicationdestination.yaml` (`name: ${APP}-bootstrap`, `repository: ${APP}-volsync-secret`, `sourceIdentity.sourceName: ${APP}`), `pvc.yaml` (`name: ${VOLSYNC_CLAIM:=${APP}}`, `dataSourceRef.name: ${APP}-bootstrap`), `externalsecret.yaml` (`name: ${APP}-volsync`, `target.name: ${APP}-volsync-secret`). Az `APP` érték a `ks.yaml` `postBuild.substitute`-jából jön — ma a `restic-gui` KS-ben `APP: backrest`, ezért a generált RS/RD/PVC/ES nevek `backrest`-ek, **csak a Flux Kustomization neve és `commonMetadata` címkéje (`restic-gui`) divergál**. A 15.a után a KS is `backrest` lesz, minden réteg azonos nevet kap.
-  - **`just volsync restore-into ns app [previous] [ks]`**: a `ks` paraméter default `app`, de a backrest-hez ma `ks=restic-gui` override kell. 15.a után az override **fölöslegessé válik**, lehet törölni a recipe doc-stringjéből és a STATUS.md példáiból.
+  - **`kubernetes/components/volsync/*.yaml` `${APP}` substitution**: a `replicationsource.yaml` (`name: ${APP}`, `sourcePVC: ${VOLSYNC_CLAIM:=${APP}}`, `repository: ${APP}-volsync-secret`), `replicationdestination.yaml` (`name: ${APP}-bootstrap`, `repository: ${APP}-volsync-secret`, `sourceIdentity.sourceName: ${APP}`), `pvc.yaml` (`name: ${VOLSYNC_CLAIM:=${APP}}`, `dataSourceRef.name: ${APP}-bootstrap`), `externalsecret.yaml` (`name: ${APP}-volsync`, `target.name: ${APP}-volsync-secret`). Az `APP` érték a `ks.yaml` `postBuild.substitute`-jából jön — ma a `restic-gui` KS-ben `APP: backrest`, ezért a generált RS/RD/PVC/ES nevek `backrest`-ek, **csak a Flux Kustomization neve és `commonMetadata` címkéje (`restic-gui`) divergál**. A 16.a után a KS is `backrest` lesz, minden réteg azonos nevet kap.
+  - **`just volsync restore-into ns app [previous] [ks]`**: a `ks` paraméter default `app`, de a backrest-hez ma `ks=restic-gui` override kell. 16.a után az override **fölöslegessé válik**, lehet törölni a recipe doc-stringjéből és a STATUS.md példáiból.
   - **`just volsync restore app`**: az `${app}-bootstrap` RD-t patcheli — a név a `${APP}` substitutionból jön, a flatten után is `backrest-bootstrap` marad, **változás nincs**.
   - **`just volsync list-snapshots/rs-status/snapshot/wait-rd`**: ezek nyersen pozicionálisan veszik a RS/RD nevét, **nem feltételeznek KS-egyezőséget** — változás nincs.
   - **`dependsOn` referenciák**: `git grep -E "name:\s+(restic-gui|paperless-gpt|plex-trakt-sync|qbittorrent-upgrade-p2pblocklist)" -- 'kubernetes/**/ks.yaml'` jelenleg **nem ad találatot a `dependsOn`-on belül** (csak a saját `metadata.name`-ben). Tehát a rename nem lánc-tör.
   - **`kubernetes/apps/default/kustomization.yaml`**: 4 új `./<app>/ks.yaml` referencia kell. A flatten lépés része.
-  - **Path-szintű `CLAUDE.md`-k és `.claude/skills/*`**: a 15.b-ben átírjuk mind a `paperless/gpt`, `plex/trakt-sync`, `qbittorrent/upgrade-p2pblocklist`, `resticprofile/gui` hivatkozást a lapos szerkezetre — egyúttal a `taskfiles` skill törlés/átírás mellett.
+  - **Path-szintű `CLAUDE.md`-k és `.claude/skills/*`**: a 16.b-ben átírjuk mind a `paperless/gpt`, `plex/trakt-sync`, `qbittorrent/upgrade-p2pblocklist`, `resticprofile/gui` hivatkozást a lapos szerkezetre — egyúttal a `taskfiles` skill törlés/átírás mellett.
 
-  Ezért is **15.a előbb** sorrend: utána a 15.b dokumentáció-átírások már a lapos struktúrára hivatkozhatnak, nem kell „flatten előtt / után" verziókat tartani.
+  Ezért is **16.a előbb** sorrend: utána a 16.b dokumentáció-átírások már a lapos struktúrára hivatkozhatnak, nem kell „flatten előtt / után" verziókat tartani.
 
-  **15.b — Doc + AI-guide refresh**. A migráció átszabta a stacket (K3s → Talos, Task → Just, Calico → Cilium, MetalLB → Cilium LB-IPAM, Traefik → Envoy Gateway, bjw-s layout, always-on VolSync). A `docs/migration/00–14` doc-ok ezt tükrözik, de a többi repo-doksi és AI-guide nagyrészt még a K3s-éra valóságot írja le.
+  **16.b — Doc + AI-guide refresh**. A migráció átszabta a stacket (K3s → Talos, Task → Just, Calico → Cilium, MetalLB → Cilium LB-IPAM, Traefik → Envoy Gateway, bjw-s layout, always-on VolSync). A `docs/migration/00–16` doc-ok ezt tükrözik, de a többi repo-doksi és AI-guide nagyrészt még a K3s-éra valóságot írja le.
 
   Hatáskör: 13 `docs/*.md` (több törlendő — `k3s-readme.md`, `k3s-system-upgrade.md` — vagy átírandó — `networking-readme.md`, `kubernetes-readme.md`, `flux-readme.md`, `host-configuration.md`), 11 path-szintű `CLAUDE.md` (root task-domain lista Just-ra, „Current Repository Shape" + „State To Assume Today" frissítés), 12 `.claude/skills/*` (`taskfiles/` „just" skillé, `versions-renovate/` Phase 9 után fragmens-struktúrára, `networking-platform/` Cilium LB-IPAM + CNP megerősítés, többi kisebb update). Root `README.md` csak explicit ASK után. Becsült munka: ~4-6h, parallel-izálható.
 
-  **Sorrend**: 15.a előbb — a flatten után a CLAUDE.md / skill leírások már lapos szerkezetre hivatkozhatnak, nem kell kétszer írni.
+  **Sorrend**: 16.a előbb — a flatten után a CLAUDE.md / skill leírások már lapos szerkezetre hivatkozhatnak, nem kell kétszer írni.
 
 ## Tudnivalók / üzemeltetési reminderek
 

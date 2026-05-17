@@ -16,7 +16,7 @@ The available recipes group into:
 
 ## Naming Contract
 
-After Phase 15.a, every PVC-backed app in this repo satisfies `app == Flux Kustomization == HelmRelease` parity. The `just volsync` recipes rely on this contract: `restore` suspends a Kustomization with the same name as the app, and the shared component derives every Kopia, RS, RD, PVC, and ExternalSecret name from the `${APP}` substitution in the app's `ks.yaml`. Do not reintroduce KS / HR divergence without also revisiting these recipes.
+After Phase 16.a, every PVC-backed app in this repo satisfies `app == Flux Kustomization == HelmRelease` parity. The `just volsync` recipes rely on this contract: `restore` suspends a Kustomization with the same name as the app, and the shared component derives every Kopia, RS, RD, PVC, and ExternalSecret name from the `${APP}` substitution in the app's `ks.yaml`. Do not reintroduce KS / HR divergence without also revisiting these recipes.
 
 ## Fresh-Cluster Bootstrap (no recipe needed)
 

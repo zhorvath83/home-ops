@@ -141,7 +141,7 @@ kubectl -n default port-forward svc/plex 32400:32400
 # open http://localhost:32400/web → működik, library látható
 ```
 
-Részletes smoke test app-onként a [12-cutover-runbook.md](./12-cutover-runbook.md)-ben.
+Részletes smoke test app-onként a [13-cutover-runbook.md](./13-cutover-runbook.md)-ben.
 
 ### Lépés 4 (cutover UTÁN, 1 nap múlva): bootstrap RD cleanup
 
@@ -292,7 +292,7 @@ Régi cluster **továbbra is fut** (1-2 hét fenntartás). Cutover visszavonhat�
 2. Új cluster reconcile suspend (`flux suspend ks cluster-apps`).
 3. Új cluster sense van mint development/testing branch.
 
-Részletes rollback procedúra a [13-rollback-and-decom.md](./13-rollback-and-decom.md)-ben.
+Részletes rollback procedúra a [14-rollback-and-decom.md](./14-rollback-and-decom.md)-ben.
 
 ## Open issues
 

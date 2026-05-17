@@ -34,7 +34,7 @@ Minden architekturális döntés egy helyen, indoklással. Ez az "ADR-ek lite" �
 - M93p Proxmox tear-down + bare metal OMV install **plusz cutover lépés**.
 - Az USB DAS passthrough konfig kiesik (jelenleg működik, de bare metalon nincs is szükség rá — direkt USB hozzáférés).
 
-**Kapcsolódó:** [10-omv-ansible.md](./10-omv-ansible.md), [14-post-cutover.md](./14-post-cutover.md)
+**Kapcsolódó:** [10-omv-ansible.md](./10-omv-ansible.md), [15-post-cutover.md](./15-post-cutover.md)
 
 ## AD-003: Cilium CNI kube-proxy replacement módban
 
@@ -254,7 +254,7 @@ Minden architekturális döntés egy helyen, indoklással. Ez az "ADR-ek lite" �
 - A két cluster nem futhat egyszerre LAN-on (IP-ütközés). Ezt a "shut down K3s during testing" workflow megoldja.
 - Cloudflare tunnel **NEM tud** mindkét clusterhez egyszerre csatlakozni a tunnel-token egyetlen pod-ja miatt — de mivel a régi cluster shutdown, ez nem probléma.
 
-**Kapcsolódó:** [01-hardware-and-network.md](./01-hardware-and-network.md), [03-cilium-cni.md](./03-cilium-cni.md), [12-cutover-runbook.md](./12-cutover-runbook.md)
+**Kapcsolódó:** [01-hardware-and-network.md](./01-hardware-and-network.md), [03-cilium-cni.md](./03-cilium-cni.md), [13-cutover-runbook.md](./13-cutover-runbook.md)
 
 ## AD-017: Big-bang cutover, "shut down K3s during testing"
 
@@ -269,7 +269,7 @@ Minden architekturális döntés egy helyen, indoklással. Ez az "ADR-ek lite" �
 - A NAS NFS share változatlan (M93p marad fenn), de az app-ok 1-3 órán át nem elérhetők a switchover alatt.
 - Rollback = HP powerdown + K3s VM power on (~5-10 perc).
 
-**Kapcsolódó:** [12-cutover-runbook.md](./12-cutover-runbook.md), [13-rollback-and-decom.md](./13-rollback-and-decom.md)
+**Kapcsolódó:** [13-cutover-runbook.md](./13-cutover-runbook.md), [14-rollback-and-decom.md](./14-rollback-and-decom.md)
 
 ## AD-018: VolSync OVH S3 round-trip minden PVC-re
 

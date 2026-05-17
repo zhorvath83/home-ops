@@ -1,13 +1,13 @@
-# 15 — Repo refactor: ks.yaml flatten + doc + AI-guide refresh
+# 16 — Repo refactor: ks.yaml flatten + doc + AI-guide refresh
 
 ## Cél
 
 Cutover-előtti repo-tisztítás két szorosan kapcsolódó alfázisban:
 
-- **15.a** — a `default` ns 4 multi-KS `ks.yaml`-jét kilapítjuk a bjw-s/onedr0p/buroa `apps/<ns>/<app>/` mintára (minden Kustomization önálló top-level mappát kap). Egy KS rename (`restic-gui` → `backrest`) ezzel együtt full bjw-s parity-t ad: a `<app> == KS == HR` egyezőség minden réteggben teljesül.
-- **15.b** — a migráció eredménye (K3s → Talos, Task → Just, Calico → Cilium, MetalLB → Cilium LB-IPAM, Traefik → Envoy Gateway, bjw-s layout, always-on VolSync) átvezetése a `docs/*.md`, a `CLAUDE.md` lánc és a `.claude/skills/*` audit/átírás során. A `main` branch a hosszú távú forrás; ha a doksi nem tükrözi az új repo-modellt, minden új AI-session félreértésre épül.
+- **16.a** — a `default` ns 4 multi-KS `ks.yaml`-jét kilapítjuk a bjw-s/onedr0p/buroa `apps/<ns>/<app>/` mintára (minden Kustomization önálló top-level mappát kap). Egy KS rename (`restic-gui` → `backrest`) ezzel együtt full bjw-s parity-t ad: a `<app> == KS == HR` egyezőség minden réteggben teljesül.
+- **16.b** — a migráció eredménye (K3s → Talos, Task → Just, Calico → Cilium, MetalLB → Cilium LB-IPAM, Traefik → Envoy Gateway, bjw-s layout, always-on VolSync) átvezetése a `docs/*.md`, a `CLAUDE.md` lánc és a `.claude/skills/*` audit/átírás során. A `main` branch a hosszú távú forrás; ha a doksi nem tükrözi az új repo-modellt, minden új AI-session félreértésre épül.
 
-A 15.a → 15.b sorrend kötött: a doc-átírás a lapos szerkezetre hivatkozhat, nem kell „flatten előtt / után" verziókat fenntartani.
+A 16.a → 16.b sorrend kötött: a doc-átírás a lapos szerkezetre hivatkozhat, nem kell „flatten előtt / után" verziókat fenntartani.
 
 ## Inputs
 
@@ -15,7 +15,7 @@ A 15.a → 15.b sorrend kötött: a doc-átírás a lapos szerkezetre hivatkozha
 - `kubernetes/components/volsync/` `${APP}` substitution-réteg változatlan — a flatten **nem** érinti az RS/RD/PVC/ES nevezéktanát, csak a Flux Kustomization és a hozzá tartozó mappa nevét.
 - `git grep` audit megerősítette: a 4 érintett KS-név (`restic-gui`, `paperless-gpt`, `plex-trakt-sync`, `qbittorrent-upgrade-p2pblocklist`) egyikére sem mutat `dependsOn:` referencia más KS-ből, tehát a rename nem lánc-tör.
 
-## 15.a — App-szintű ks.yaml flatten
+## 16.a — App-szintű ks.yaml flatten
 
 ### Hatáskör (4 split + 1 KS rename)
 
@@ -59,7 +59,7 @@ A `restic-gui` → `backrest` rename viszont valós prune-kockázattal jár: a r
 5. `kubectl delete kustomization restic-gui -n flux-system` → a régi KS objekt törlődik, **prune nem fut le** mert suspended (de a `kubectl delete` magát az erőforrást nem prune-olja, csak a manifestet veszi le).
 6. Régi `restic-gui` mappát és ks.yaml-t kommit-olni törölve a repo-ba.
 
-### 15.a verifikáció
+### 16.a verifikáció
 
 - `flux get ks -n flux-system | grep -E 'paperless-gpt|plex-trakt-sync|qbittorrent-upgrade-p2pblocklist|backrest'` → mind a 4 új KS Ready=True.
 - `flux get ks -n flux-system | grep restic-gui` → üres (törölve).
@@ -67,7 +67,7 @@ A `restic-gui` → `backrest` rename viszont valós prune-kockázattal jár: a r
 - `kubectl get replicationdestination -n default backrest-bootstrap` → változatlan.
 - `just volsync restore-into default backrest 0` — `ks=` override nélkül **működnie kell** (a recipe `ks` default-ja `app`, ami most `backrest` és a KS neve is `backrest`).
 
-## 15.b — Doc + AI-guide refresh
+## 16.b — Doc + AI-guide refresh
 
 ### Hatáskör
 
@@ -79,7 +79,7 @@ A `restic-gui` → `backrest` rename viszont valós prune-kockázattal jár: a r
 
 **Path-szintű `CLAUDE.md`-k (11 fájl, worktree-másolatok kihagyva)**:
 
-- `CLAUDE.md` (root) — már Phase 8-ban átírva Just-ra, de a 15.a után a `Current Repository Shape` és példák frissítendők
+- `CLAUDE.md` (root) — már Phase 8-ban átírva Just-ra, de a 16.a után a `Current Repository Shape` és példák frissítendők
 - `kubernetes/CLAUDE.md`, `kubernetes/apps/{default,external-secrets,networking,volsync-system}/CLAUDE.md` — bjw-s lapos layout, új namespace, always-on VolSync minta
 - `provision/CLAUDE.md`, `provision/kubernetes/CLAUDE.md`, `provision/cloudflare/CLAUDE.md`, `provision/ovh/CLAUDE.md` — Talos Ansible scope szűkítés (csak host-prep marad), Cloudflare/OVH változatlan
 - `.claude/CLAUDE.md` — Cluster Access Policy a `task fx:*` / `task vs:*` helyett Just receptekre (`just k8s ...`, `just volsync ...`)
@@ -96,17 +96,17 @@ A `restic-gui` → `backrest` rename viszont valós prune-kockázattal jár: a r
 
 **Root `README.md`** — a globális szabály szerint **csak explicit ASK után** módosítható.
 
-### Hol feltételezünk `app == KS == HR` egyezőséget — a 15.a után automatikusan stimmel
+### Hol feltételezünk `app == KS == HR` egyezőséget — a 16.a után automatikusan stimmel
 
-Audit (`git grep` + recipe-átfutás) eredménye, kivetítve a 15.a utáni állapotra:
+Audit (`git grep` + recipe-átfutás) eredménye, kivetítve a 16.a utáni állapotra:
 
-- **`kubernetes/components/volsync/*.yaml` `${APP}` substitution**: a `replicationsource.yaml` (`name: ${APP}`, `sourcePVC: ${VOLSYNC_CLAIM:=${APP}}`, `repository: ${APP}-volsync-secret`), `replicationdestination.yaml` (`name: ${APP}-bootstrap`, `repository: ${APP}-volsync-secret`, `sourceIdentity.sourceName: ${APP}`), `pvc.yaml` (`name: ${VOLSYNC_CLAIM:=${APP}}`, `dataSourceRef.name: ${APP}-bootstrap`), `externalsecret.yaml` (`name: ${APP}-volsync`, `target.name: ${APP}-volsync-secret`). Az `APP` érték a `ks.yaml` `postBuild.substitute`-jából jön — ma a `restic-gui` KS-ben `APP: backrest`, ezért a generált RS/RD/PVC/ES nevek `backrest`-ek, **csak a Flux Kustomization neve és `commonMetadata` címkéje (`restic-gui`) divergál**. A 15.a után a KS is `backrest` lesz, minden réteg azonos nevet kap.
-- **`just volsync restore-into ns app [previous] [ks]`**: a `ks` paraméter default `app`, de a backrest-hez ma `ks=restic-gui` override kell. 15.a után az override **fölöslegessé válik**, lehet törölni a recipe doc-stringjéből és a STATUS.md példáiból.
+- **`kubernetes/components/volsync/*.yaml` `${APP}` substitution**: a `replicationsource.yaml` (`name: ${APP}`, `sourcePVC: ${VOLSYNC_CLAIM:=${APP}}`, `repository: ${APP}-volsync-secret`), `replicationdestination.yaml` (`name: ${APP}-bootstrap`, `repository: ${APP}-volsync-secret`, `sourceIdentity.sourceName: ${APP}`), `pvc.yaml` (`name: ${VOLSYNC_CLAIM:=${APP}}`, `dataSourceRef.name: ${APP}-bootstrap`), `externalsecret.yaml` (`name: ${APP}-volsync`, `target.name: ${APP}-volsync-secret`). Az `APP` érték a `ks.yaml` `postBuild.substitute`-jából jön — ma a `restic-gui` KS-ben `APP: backrest`, ezért a generált RS/RD/PVC/ES nevek `backrest`-ek, **csak a Flux Kustomization neve és `commonMetadata` címkéje (`restic-gui`) divergál**. A 16.a után a KS is `backrest` lesz, minden réteg azonos nevet kap.
+- **`just volsync restore-into ns app [previous] [ks]`**: a `ks` paraméter default `app`, de a backrest-hez ma `ks=restic-gui` override kell. 16.a után az override **fölöslegessé válik**, lehet törölni a recipe doc-stringjéből és a STATUS.md példáiból.
 - **`just volsync restore app`**: az `${app}-bootstrap` RD-t patcheli — a név a `${APP}` substitutionból jön, a flatten után is `backrest-bootstrap` marad, **változás nincs**.
 - **`just volsync list-snapshots / rs-status / snapshot / wait-rd`**: ezek nyersen pozicionálisan veszik a RS/RD nevét, **nem feltételeznek KS-egyezőséget** — változás nincs.
 - **`dependsOn` lánc**: `git grep -E "name:\s+(restic-gui|paperless-gpt|plex-trakt-sync|qbittorrent-upgrade-p2pblocklist)" -- 'kubernetes/**/ks.yaml'` jelenleg **nem ad találatot a `dependsOn` blokkban**. A rename nem lánc-tör.
 - **`kubernetes/apps/default/kustomization.yaml`** — 4 új `./<app>/ks.yaml` referencia.
-- **Path-szintű `CLAUDE.md`-k és `.claude/skills/*`** — a 15.b-ben átírjuk mind a `paperless/gpt`, `plex/trakt-sync`, `qbittorrent/upgrade-p2pblocklist`, `resticprofile/gui` hivatkozást a lapos szerkezetre.
+- **Path-szintű `CLAUDE.md`-k és `.claude/skills/*`** — a 16.b-ben átírjuk mind a `paperless/gpt`, `plex/trakt-sync`, `qbittorrent/upgrade-p2pblocklist`, `resticprofile/gui` hivatkozást a lapos szerkezetre.
 
 ### Megközelítés
 
@@ -115,14 +115,14 @@ Audit (`git grep` + recipe-átfutás) eredménye, kivetítve a 15.a utáni álla
 3. **Skill refresh** (~1-2h): a 12 skill `SKILL.md` + `references/*.md` átfutása; `taskfiles/` skill sorsa Phase 8 lezárása után már most is „törlendő vagy átírandó".
 4. **README.md** (~30 min, opcionális ASK után): a Hungarian human-facing változat.
 
-### 15.b verifikáció
+### 16.b verifikáció
 
 - `git grep -lE 'Taskfile|\.taskfiles'` repo-szerte → üres (a `docs/migration/00-14` és `STATUS.md` történelmi említései elfogadhatók).
 - `git grep -lE 'metallb\.io/loadBalancerIPs|traefik|k3s-system-upgrade'` → üres.
 - A root `CLAUDE.md` „Current Repository Shape" + „State To Assume Today" frissítve a Talos-éra realitásra.
 - Az érintett 12 skill leírása konzisztens a `.claude/skills/CLAUDE.md` szabályaival.
 
-## 15.c — Per-app CiliumNetworkPolicy threat-model audit
+## 16.c — Per-app CiliumNetworkPolicy threat-model audit
 
 A `4f4b76eec` commit (CNP migration) tanulsága: a per-app default-deny minden poddal mindenre overengineering single-tenant single-node home-lab-on, és valós konnektivitási regressziót okozott (UDP CT, stateful reply bizonytalanság). A bjw-s-labs minta cluster-wide baseline CCNP-it Phase 9 utáni hotfix-ben bevezettük (`kubernetes/apps/kube-system/cilium/netpols/{allow-cluster-egress,allow-dns-egress}.yaml` + új `cilium-netpols` Flux Kustomization).
 
@@ -165,7 +165,7 @@ A per-app CNP-ket **két szigorúsági szintre** osztjuk. A választás threat-m
 
 ### Lépések
 
-1. **App-inventory**: `kubectl get hr -A -o name | wc -l` + `find kubernetes/apps -name ks.yaml | wc -l` egyezősége. Lista exportja egy ideiglenes `audit/app-inventory.md`-be (vagy közvetlenül a Phase 15.c session jegyzőkönyvbe).
+1. **App-inventory**: `kubectl get hr -A -o name | wc -l` + `find kubernetes/apps -name ks.yaml | wc -l` egyezősége. Lista exportja egy ideiglenes `audit/app-inventory.md`-be (vagy közvetlenül a Phase 16.c session jegyzőkönyvbe).
 2. **Kategorizálás**: minden app-hoz egy sor a fenti táblázat-szerű besorolással + 1-2 mondatos indok.
 3. **Threat-model rögzítés**: a magas-érték kategóriákba sorolt app-okhoz konkrét fenyegetési modell (mi a támadási felület, mit nyer egy támadó a kompromittációval, milyen lateral move-okat akarhat).
 4. **Szint-választás per app**: a fenti **Szint I** vagy **Szint II** explicit döntés a kategória + threat-model alapján. Default Szint I. A Szint II-re lépés csak akkor, ha a threat-model **konkrét** lateral-move / C2 / exfil vektort azonosít, amit a baseline nem fed.
@@ -176,7 +176,7 @@ A per-app CNP-ket **két szigorúsági szintre** osztjuk. A választás threat-m
    - `CiliumCIDRGroup/cloudflare` — **megmarad** önállóan (a `SecurityPolicy/envoy-external-cloudflare` inline tükrözi a CIDR-listát, a daily workflow mindkettőt szinkronban tartja).
 7. **Verifikáció**: per-app, kompromittáció-szimuláció (`kubectl exec` a kérdéses pod-ba, próba-egress nem-engedett cél felé, megfigyelni a Hubble drop event-et). Hubble flow log példák a per-app threat-model jegyzőkönyvbe.
 
-### Aktuális állapot a 15.c szempontjából (Phase 9 utáni hotfix)
+### Aktuális állapot a 16.c szempontjából (Phase 9 utáni hotfix)
 
 A Phase 9 utáni hotfix-ben már bekerült:
 
@@ -186,7 +186,7 @@ A Phase 9 utáni hotfix-ben már bekerült:
 - **`bpf.datapathMode: netkit` + `socketLB.hostNamespaceOnly: false`** Cilium helmrelease fix — a netkit + tc-LB CT-mismatch okozta SYN-ACK drop-ot megszünteti a per-app strict ingress CNP-ken (a return flow CT-bejegyzése pod-IP-pel rögzül, nem Service IP-vel).
 - **`SecurityPolicy/envoy-external-cloudflare` törlés** — a `principal.clientCIDRs` CF-CIDR allowlist nem tud illeszteni a CF tunnel architektúrában (lásd a következő szekciót); helyén a CNP ingress allowlist + ClusterIP-only Service + CF tunnel mTLS adja a védelmet.
 
-A 15.c döntési pont a paperless-re: marad Szint I, vagy felemeljük Szint II-re? A paperless threat-modelje (OCR/PDF parser CVE history Tesseract + Ghostscript + ImageMagick miatt; publikus dokumentum-upload endpoint `docs.${PUBLIC_DOMAIN}` route-on át; kompromittáció utáni érték = más app-ok adatainak elérése) **indokolja** a Szint II-t. Audit-szükségletek a Szint II-höz a paperless-re:
+A 16.c döntési pont a paperless-re: marad Szint I, vagy felemeljük Szint II-re? A paperless threat-modelje (OCR/PDF parser CVE history Tesseract + Ghostscript + ImageMagick miatt; publikus dokumentum-upload endpoint `docs.${PUBLIC_DOMAIN}` route-on át; kompromittáció utáni érték = más app-ok adatainak elérése) **indokolja** a Szint II-t. Audit-szükségletek a Szint II-höz a paperless-re:
 
 - Postgres pod (a paperless saját PG sidecarja vagy külön deployment-je a `default` namespace-ben, az aktuális label-ek és port `5432`)
 - Redis pod (paperless task queue, port `6379`)
@@ -194,7 +194,7 @@ A 15.c döntési pont a paperless-re: marad Szint I, vagy felemeljük Szint II-r
 - Esetleges upstream FQDN-ek (paperless update check, ha aktív)
 - Esetleges Tika / Gotenberg sidecar (ha külön pod-ban fut)
 
-Ez a Szint II-felmérés a 15.c session jegyzőkönyv egyik konkrét tételes munkája.
+Ez a Szint II-felmérés a 16.c session jegyzőkönyv egyik konkrét tételes munkája.
 
 ### Tanulság — `SecurityPolicy.principal.clientCIDRs` nem fog menni az `envoy-external`-en
 
@@ -212,7 +212,7 @@ internet client (88.x.x.x)
 
 A `cloudflared` agent **overwrite-olja** az `X-Forwarded-For`-t a valós kliens IP-re (88.x.x.x). A `ClientTrafficPolicy/envoy` `numTrustedHops: 1` setting alapján envoy a (1+1) = 2. entry-t keresi jobbról az XFF-ben; csak 1 entry van, így fallback-el a remote address-re (cloudflared pod IP, `10.244.0.x`), ami **nem** illeszti egyik CF CIDR-t sem → `defaultAction: Deny` érvénybe lép.
 
-Mit ad ez a tanulság a 15.c-nek:
+Mit ad ez a tanulság a 16.c-nek:
 
 1. **Az `envoy-internal-rfc1918` SecurityPolicy működik** — más architektúrában, LAN kliensből közvetlenül a Cilium-L2-announce VIP-jére (`192.168.1.18`), így a `clientCIDRs` valós LAN forrás-IP-t illeszti.
 2. **Az `envoy-external`-en nincs analóg lehetőség** `clientCIDRs`-szel. A védelmet **architektúra-szinten** kell garantálni:
@@ -228,15 +228,15 @@ Az AOP **csak akkor érdemes** ha a fenti 3-lépéses architektúra-szintű véd
 
 ### Kockázat
 
-- **B-csapda — opt-out label custom egress nélkül**: a `egress.home.arpa/custom-egress: ""` label önmagában (Szint II egress szekció nélkül) a pod-ot **csak DNS-szel** engedi kifelé, mert a `allow-dns-egress` továbbra is hat, de a `allow-cluster-egress` már nem. Postgres/Redis/upstream HTTPS → DROP, app indulás közben megfekszik. Mitigáció: a label és az egress szekció **mindig ugyanabban a commit-ban** kerül be; pre-commit hook ötlet a `git grep -l 'egress.home.arpa/custom-egress' kubernetes/apps/ | xargs -I{} ...` ellenőrzéshez, hogy ha label-t lát, akkor a hozzátartozó CNP-ben legyen `egress:` szekció (ezt majd a 15.c session ötletként felvetheti).
+- **B-csapda — opt-out label custom egress nélkül**: a `egress.home.arpa/custom-egress: ""` label önmagában (Szint II egress szekció nélkül) a pod-ot **csak DNS-szel** engedi kifelé, mert a `allow-dns-egress` továbbra is hat, de a `allow-cluster-egress` már nem. Postgres/Redis/upstream HTTPS → DROP, app indulás közben megfekszik. Mitigáció: a label és az egress szekció **mindig ugyanabban a commit-ban** kerül be; pre-commit hook ötlet a `git grep -l 'egress.home.arpa/custom-egress' kubernetes/apps/ | xargs -I{} ...` ellenőrzéshez, hogy ha label-t lát, akkor a hozzátartozó CNP-ben legyen `egress:` szekció (ezt majd a 16.c session ötletként felvetheti).
 - **Túl szigorú egress** új app-ok deploy-jánál (Szint II-n): minden új app-nak első deploy-kor verifikálni kell, hogy az egress szekciója lefedi-e a tényleges szükségleteket. Hubble drop-event monitor + chart-doc átolvasás kötelező.
 - **Hubble flow-log volume**: cluster-wide DNS proxy (`allow-dns-egress`) minden DNS query-ről event-et generál. Single-node home-lab-on várhatóan elhanyagolható, de érdemes a `cilium-agent` resource-okat monitorozni az első hét után.
 - **`envoy-internal`/`envoy-external` config Kustomization** törlése — a config KS `dependsOn` lánc tagja, érdemes a Flux Kustomization-listát is felülvizsgálni (lásd 8.5/8.6 alatti `restore-into <app>` follow-up).
 
-### 15.c verifikáció
+### 16.c verifikáció
 
 - `kubectl get ccnp` ad 2-t: `allow-cluster-egress`, `allow-dns-egress` (már most teljesül, Phase 9 utáni hotfix-ben bevezetve).
-- `kubectl get cnp -A` per-app szám a 15.c döntés alapján — várhatóan 5-8 közötti, nem 3.
+- `kubectl get cnp -A` per-app szám a 16.c döntés alapján — várhatóan 5-8 közötti, nem 3.
 - `kubectl get cnp -n networking` cloudflare-tunnel CNP eltűnik.
 - Minden `egress.home.arpa/custom-egress: ""` label-lel jelölt workload-hoz tartozik CNP `egress:` szekcióval (B-csapda nem fordul elő). Ellenőrzés: `kubectl get pods -A -l egress.home.arpa/custom-egress` listát ad, mindegyikre a saját namespace-ben CNP-vel `spec.egress` szekcióval.
 - Hubble (`cilium hubble observe --verdict DENIED`) zéró tartós denial a normál cluster-forgalomban.
@@ -244,13 +244,13 @@ Az AOP **csak akkor érdemes** ha a fenti 3-lépéses architektúra-szintű véd
 
 ## Exit criteria
 
-- **15.a**: `flux get ks -A` ad 4 új top-level KS-t (paperless-gpt, plex-trakt-sync, qbittorrent-upgrade-p2pblocklist, backrest), `restic-gui` KS törölve, `kubectl get hr -A` mind Ready, RS/RD/PVC nevezéktan változatlan.
-- **15.b**: minden K3s/Task/MetalLB/Traefik/Calico referencia eltűnt a `docs/*.md` + `CLAUDE.md` + `.claude/skills/*` fájlokból (kivéve a `docs/migration/` történelmi narratíváját), és a doc-réteg a `talos` ág realitását tükrözi.
-- **15.c**: az app-inventory táblázat 100%-ban kitöltve, magas-érték app-okhoz konkrét per-app CNP, a `4f4b76eec` overengineered CNP-k vagy törölve vagy threat-model-alapra cserélve, Hubble denial-rate stabil.
+- **16.a**: `flux get ks -A` ad 4 új top-level KS-t (paperless-gpt, plex-trakt-sync, qbittorrent-upgrade-p2pblocklist, backrest), `restic-gui` KS törölve, `kubectl get hr -A` mind Ready, RS/RD/PVC nevezéktan változatlan.
+- **16.b**: minden K3s/Task/MetalLB/Traefik/Calico referencia eltűnt a `docs/*.md` + `CLAUDE.md` + `.claude/skills/*` fájlokból (kivéve a `docs/migration/` történelmi narratíváját), és a doc-réteg a `talos` ág realitását tükrözi.
+- **16.c**: az app-inventory táblázat 100%-ban kitöltve, magas-érték app-okhoz konkrét per-app CNP, a `4f4b76eec` overengineered CNP-k vagy törölve vagy threat-model-alapra cserélve, Hubble denial-rate stabil.
 
 ## Becsült munka
 
-- 15.a: ~30-45 perc
-- 15.b: ~4-6 óra, parallel-izálható (skill ↔ CLAUDE.md egymástól függetlenül)
-- 15.c: ~2-3 óra (inventory + kategorizálás + 5-8 per-app CNP + szimuláció)
+- 16.a: ~30-45 perc
+- 16.b: ~4-6 óra, parallel-izálható (skill ↔ CLAUDE.md egymástól függetlenül)
+- 16.c: ~2-3 óra (inventory + kategorizálás + 5-8 per-app CNP + szimuláció)
 - Összesen: ~7-10 óra, célszerű Phase 9 (Renovate rewrite) után, Phase 12 (cutover) előtt

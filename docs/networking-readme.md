@@ -109,7 +109,7 @@ Cilium `CiliumClusterwideNetworkPolicy` resources under `kubernetes/apps/kube-sy
 - `allow-cluster-egress` — broad egress for every pod that does not carry the opt-out label `egress.home.arpa/custom-egress`
 - `allow-dns-egress` — UDP/TCP 53 to kube-dns with L7 DNS proxy (`rules.dns.matchPattern: "*"`)
 
-Per-app `CiliumNetworkPolicy` is added on top of this baseline when an application's threat model justifies tighter ingress or egress controls. The choice between **Tier I** (ingress-only, no opt-out label) and **Tier II** (ingress + strict egress + opt-out label) is documented in `docs/migration/15-repo-refactor.md` (Phase 15.c).
+Per-app `CiliumNetworkPolicy` is added on top of this baseline when an application's threat model justifies tighter ingress or egress controls. The choice between **Tier I** (ingress-only, no opt-out label) and **Tier II** (ingress + strict egress + opt-out label) is documented in `docs/migration/16-repo-refactor.md` (Phase 16.c).
 
 ## Operational Notes
 

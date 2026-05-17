@@ -1,42 +1,12 @@
-# 12 — Cutover runbook (big-bang)
+# 13 — Cutover runbook (big-bang)
 
 ## Cél
 
 Egyetlen cutover ablakban átkapcsolni a teljes éles stack-et a régi K3s clusterről az új Talos clusterre. Idő-becslés: **4-8 óra**, egy szombat este vagy vasárnap reggel.
 
-## Pre-cutover kontroll (cutover előtti hét)
+## Pre-cutover kontroll
 
-### T-7 nap: tervek véglegesítve
-
-- [ ] Minden migráció doc (`docs/migration/00-14`) lezárva.
-- [ ] `talos` branch létrehozva (`git checkout -b talos`).
-- [ ] Új HP node fizikailag installálva ([01-hardware-and-network.md](./01-hardware-and-network.md)).
-- [ ] BIOS beállítások ellenőrizve.
-
-### T-5 nap: új cluster build a talos branch-en
-
-- [ ] Talos schematic + ISO + USB elkészítve ([02-talos-bootstrap.md](./02-talos-bootstrap.md)).
-- [ ] `just cluster-bootstrap cluster` lefutott, új cluster `Ready`.
-- [ ] Cilium L2 announcement működik (test LoadBalancer service kap IP-t).
-- [ ] Flux Operator + FluxInstance reconcile-olja a `talos` branch-et.
-- [ ] **MINDEN PVC NÉLKÜLI app fut** (cert-manager, ESO, k8s-gateway, envoy-gateway, observability stack, etc.).
-
-### T-3 nap: új cluster validation app-okkal
-
-- [ ] Volsync component-ben `replicationdestination.yaml` és `pvc.yaml dataSourceRef` **be-kommentelve** a `talos` branch-en.
-- [ ] Minden ks.yaml új formátumban (lásd [06-repo-restructure.md](./06-repo-restructure.md)).
-- [ ] Új clusteren minden Flux Kustomization `Ready`, de PVC-s app-ok **HelmRelease-i pending** (mert PVC nem létezik még).
-- [ ] **Egy próba-app restore** — egy alacsony rizikójú app-on (pl. wallos vagy actual) full lánc validation.
-
-### T-1 nap (cutover előtti este): final preparations
-
-- [ ] **App-level export-ok futtatva** a régi clusteren:
-  - [ ] Paperless: `document_exporter` → mentés.
-  - [ ] Mealie: web UI Backup → ZIP letöltés.
-  - [ ] Plex: automatikus backup ellenőrzés (`Plex Media Server/Plug-in Support/Databases/com.plexapp.plugins.library.db` létezik).
-- [ ] **Régi cluster full VolSync snapshot lánc** (`just k8s snapshot-all` régi clusteren).
-- [ ] Várj, amíg minden RS `lastSyncTime` ≤ 2 órás.
-- [ ] **Bejelentés a háztartásnak**: nincs Plex, Paperless, *arr stack ma este 21:00-23:00 között.
+A cutover előtti hét teendőlistája külön doc-ban: [12-pre-cutover.md](./12-pre-cutover.md). Mielőtt a Stage 1-be belekezdesz, az ott szereplő minden checkbox legyen kipipálva — különös tekintettel a régi K3s cluster Flux source-ának `k3s` branch-re pin-elésére, amitől függ, hogy a régi cluster a `talos` → `main` merge után is izolált marad-e.
 
 ## Cutover napja — T+0
 
@@ -277,11 +247,11 @@ T+3:30 — "Új clusterre átálltunk. Ha valami furcsa: szólj." Plex, Paperles
 - [ ] **Cutover utáni snapshot az ÚJ clusteren** — első RS-trigger, hogy a Kopia repository-ban legyen friss snapshot az új cluster identity-vel is.
 - [ ] **Monitoring dashboards check** — Prometheus, Grafana, alerts.
 - [ ] **Backup verify** — egy random app PVC restore-test egy másik (test) namespace-be.
-- [ ] **Üzem 1-2 hét** ([14-post-cutover.md](./14-post-cutover.md)).
+- [ ] **Üzem 1-2 hét** ([15-post-cutover.md](./15-post-cutover.md)).
 
 ## Rollback (ha valami ELROMLIK)
 
-Lásd [13-rollback-and-decom.md](./13-rollback-and-decom.md). Rövid forma:
+Lásd [14-rollback-and-decom.md](./14-rollback-and-decom.md). Rövid forma:
 
 1. **DNS visszafordítás** — Cloudflare tunnel + dnsmasq config vissza a régi cluster IP-jére.
 2. **Régi cluster resume** — `flux resume hr -A` régi clusteren.
@@ -294,7 +264,7 @@ Időigény: ~30 perc.
 - **Cloudflare tunnel double-connector overlap**: a régi és új cloudflared egy időben fut a tunnel mögött. Cloudflare load balancing valószínűleg OK-é, de **érdemes ezt T-1 napon tesztelni** — régi clusteren `flux resume` az új cluster cloudflare-tunnel-jét manuálisan, és látni, hogy mindketten csatlakoznak.
 - **DNS TTL**: a Cloudflare DNS recordok TTL-je (jelenlegi 300s vagy default), az LAN dnsmasq cache (300s default). Cutover után **5-10 perc** lehet, mire minden kliens átáll.
 - **App-level export PVC-n**: a Paperless export és a Mealie ZIP a régi cluster PVC-n él. A VolSync snapshot együtt menti, restore után az új cluster PVC-n elérhető — egyébként nem.
-- **Cutover utáni régi cluster ne reconcile-oljon**: a régi cluster Flux-ja a régi `home-ops-kubernetes` GitRepository-ra mutat (main branch régi struktúrával). Ha valaki véletlen commit-ol main-re a cutover NAPJÁN, a régi cluster reconcile-ol — de minden HR suspended, így nem aktívvá válik. Mégis: cutover napon **NE commit-olj main-re** semmit, csak `talos` branch-re.
+- **Cutover utáni régi cluster ne reconcile-oljon**: rendezve a [12-pre-cutover.md](./12-pre-cutover.md) "K3s Flux source pin a `k3s` branch-re" lépésével — a régi cluster GitRepository-ja a `k3s` ágra mutat, így a `main`-re kerülő Talos struktúra nem éri el. A pin elvégzése a cutover indítása előtt kötelező.
 - **Régi cluster k8s-gateway DNS válaszol-e még?**: a `k8s-gateway` régi clusteren még fut (suspend csak HR-en — a Service és Deployment él). A LAN dnsmasq már nem oda mutat, de ha valaki direct query-zi a régi IP-t, válaszolna. Ártalmatlan.
 - **Régi NFS mountok app pod-okból**: az NFS share a M93p-n változatlan. Új cluster app pod-jai ugyanazt a `192.168.1.10:/<path>`-t mountolják. Nincs migrációs lépés ehhez.
 - **Renovate aktivitás cutover napon**: capacities, hogy ne nyisson PR-t épp a cutover ablakban — Renovate `schedule: ["after 10pm on Sunday"]` opcionálisan beállítható erre a napra. **Nem kötelező**, de jó ötlet.

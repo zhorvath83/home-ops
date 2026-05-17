@@ -38,6 +38,6 @@ Common live patterns:
 - `allow-cluster-egress` — broad egress for every pod that does not carry the opt-out label `egress.home.arpa/custom-egress`
 - `allow-dns-egress` — UDP/TCP 53 to kube-dns with L7 DNS proxy (`rules.dns.matchPattern: "*"`)
 
-Per-app hardening is layered on top of this baseline. The Tier I / Tier II decision model and the SecurityPolicy boundaries (e.g. why `clientCIDRs` cannot guard `envoy-external`) are documented in `docs/migration/15-repo-refactor.md` (Phase 15.c) — read that before adding new per-app CNP / SecurityPolicy resources.
+Per-app hardening is layered on top of this baseline. The Tier I / Tier II decision model and the SecurityPolicy boundaries (e.g. why `clientCIDRs` cannot guard `envoy-external`) are documented in `docs/migration/16-repo-refactor.md` (Phase 16.c) — read that before adding new per-app CNP / SecurityPolicy resources.
 
 If a change alters public hostnames, listener behavior, the tunnel target, or the LAN VIP allocation, reason about the entire chain rather than one resource in isolation.

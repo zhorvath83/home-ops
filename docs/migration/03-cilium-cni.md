@@ -80,7 +80,7 @@ A bootstrap után Flux átveszi a Cilium kezelést — a `helmrelease.yaml` ugya
 
 ```yaml
 ---
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -282,7 +282,7 @@ Két Kustomization (két stage), a bjw-s konvenció szerint:
 
 ```yaml
 ---
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -447,5 +447,5 @@ A pod-ok újraindulnak, de a service IP-k újragenerálódnak L2-n.
 - **NIC interface név** L2 policy `interfaces` regex-ben: első Talos boot után `talosctl -n main get links`-szel ellenőrizni. Ha pl. `enp1s0` is van mellette (WiFi vagy más), érdemes szigorítani.
 - **Hubble UI authentikáció**: alapból nincs auth. HTTPRoute-ban érdemes Anubis vagy basic-auth filter elé tenni — `envoy-internal`-en LAN-on belül kevésbé kritikus, de javasolt.
 - **BGP migráció lehetőség**: ha jövőben több node lesz, L2 → BGP refaktor. OpenWRT-n FRR + BGP peer beállítása + Cilium `bgpControlPlane.enabled: true` + `CiliumBGPPeeringPolicy`. Külön doc lesz akkor.
-- **iGPU (i915) Cilium-mal**: Cilium nem érinti a `/dev/dri` device-okat. Most NEM konfiguráljuk a Plex HW transcode-ot — phase 2 feladat, lásd [14-post-cutover.md](./14-post-cutover.md).
+- **iGPU (i915) Cilium-mal**: Cilium nem érinti a `/dev/dri` device-okat. Most NEM konfiguráljuk a Plex HW transcode-ot — phase 2 feladat, lásd [15-post-cutover.md](./15-post-cutover.md).
 - **Cilium chart verzió**: `1.19.4` a bjw-s reference. Renovate frissíteni fogja, de ne automerge-eld CNI release-eket — manuálisan review-zd.
