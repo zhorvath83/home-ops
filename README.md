@@ -11,9 +11,8 @@ The cluster runs on a single bare-metal Talos node. A second machine handles fil
 | Device                              | Quantity | CPU                       | OS Disk            | Data Disk                    | RAM  | OS                | Function                                  |
 |-------------------------------------|----------|---------------------------|--------------------|------------------------------|------|-------------------|-------------------------------------------|
 | HP ProDesk 600 G6 Desktop Mini      | 1        | Intel i7-10700T @ 2.0 GHz | NVMe (PC801)       | NVMe (PC711)                 | 64GB | Talos Linux       | Single-node Kubernetes control plane + workloads |
-| Lenovo M93p tiny USFF               | 1        | Intel i5-4570T @ 2.90GHz  | 512GB SSD          | USB3 DAS 16TB EXT4 (host)    | 16GB | Debian 13 + Proxmox | NAS host; OpenMediaVault VM (transitional) |
+| Lenovo M93p tiny USFF               | 1        | Intel i5-4570T @ 2.90GHz  | 512GB SSD          | USB3 DAS 16TB EXT4 (host)    | 16GB | Debian 13 + Proxmox | NAS host; OpenMediaVault VM  |
 
-The Lenovo M93p will become a bare-metal OpenMediaVault host in Phase 10 (post-Talos-cutover follow-up); the current Proxmox + OMV VM model is intentionally temporary.
 
 ## 🔄 GitOps Workflow
 
@@ -21,11 +20,11 @@ The Lenovo M93p will become a bare-metal OpenMediaVault host in Phase 10 (post-T
 
 The cluster runs Flux through the [Flux Operator](https://fluxcd.control-plane.io/) pattern: a single `FluxInstance` CR declares the controllers, GitRepository, and root Kustomization. There is no classic `flux bootstrap` step.
 
-- The `FluxInstance` resource points at `kubernetes/flux/cluster/`, which holds a single root `cluster-apps` Kustomization (the earlier `cluster-vars` split with `kubernetes/flux/vars/` substitution was retired in Phase 6.7 for bjw-s parity).
+- The `FluxInstance` resource points at `kubernetes/flux/cluster/`, which holds a single root `cluster-apps` Kustomization.
 - `cluster-apps` recursively walks `kubernetes/apps/` and applies every `ks.yaml`, with a kustomize patch that injects the shared HelmRelease defaults (`install`, `rollback`, `timeout`, `upgrade`) into every HR.
 - Each app folder generally contains a `ks.yaml`, the actual manifests under `app/`, and optionally extra directories such as `config/`, `certificate/`, or `netpols/`.
 
-The full bootstrap procedure is described in [docs/migration/05-flux-operator.md](docs/migration/05-flux-operator.md) and triggered by `just cluster-bootstrap cluster`.
+The full bootstrap procedure can be triggered by `just cluster-bootstrap cluster`.
 
 ### Renovate
 
@@ -80,13 +79,13 @@ The cluster uses a dual-Gateway Envoy model:
 
 Public DNS and public traffic stay on the external path:
 
-- Cloudflare Tunnel forwards `${PUBLIC_DOMAIN}` and `*.${PUBLIC_DOMAIN}` to `envoy-external`
+- Cloudflare Tunnel forwards requests to `envoy-external`
 - ExternalDNS manages public DNS records for externally published routes
 
 Internal clients use split DNS instead of the tunnel path:
 
 - `k8s-gateway` listens on its own Cilium L2-announced LAN VIP and watches HTTPRoutes attached to `envoy-internal`
-- the home router DNS conditionally forwards `${PUBLIC_DOMAIN}` lookups to `k8s-gateway`
+- the home router DNS conditionally forwards lookups to `k8s-gateway`
 - internal clients therefore resolve app hostnames to the `envoy-internal` VIP and reach services directly on the LAN
 
 Most user-facing HTTPRoutes attach to both `envoy-external` and `envoy-internal`.
@@ -127,7 +126,7 @@ All Cloudflare resources are managed using Terraform with the Cloudflare provide
 
 ## 🔐 Secrets Management
 
-The cluster uses a 1Password-centric model for secrets management; the earlier SOPS layer was fully retired in Phase 6.7 for bjw-s parity:
+The cluster uses a 1Password-centric model for secrets management:
 
 - **Bootstrap-time secrets**: Two 1Password Connect Secrets (`onepassword-connect-credentials-secret` and `onepassword-connect-vault-secret`) are rendered by `minijinja-cli` + `op inject` during `just cluster-bootstrap cluster`. The Talos `machineconfig` is templated through the same `op inject` flow.
 - **Application secrets**: Every runtime secret is delivered through External Secrets against the shared `onepassword-connect` `ClusterSecretStore`. Multi-line config-as-secret content (for example the Homepage dashboard config) is stored as multi-line 1Password text fields and rendered via ESO `template.data`.
