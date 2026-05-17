@@ -68,6 +68,7 @@ kubectl delete ns restore-test
 ### Monitoring dashboards
 
 A Grafana-n nézz rá:
+
 - **Cluster overview** — Node CPU/RAM/Disk
 - **Cilium dashboard** — flow rate, drops
 - **Hubble** — service-service forgalom (`hubble.<INTERNAL_DOMAIN>` UI)
@@ -78,6 +79,7 @@ A Grafana-n nézz rá:
 ### Alert validation
 
 A cluster Pushover alerts-eket küld a `flux-system/addons/alerts/`-en keresztül. Próba:
+
 ```bash
 # Manuálisan trigger-elj egy hibát (pl. broken HR):
 kubectl -n default edit hr plex
@@ -179,6 +181,7 @@ just omv install
 ```
 
 A playbook végigfut:
+
 1. Base hardening (UFW, packages).
 2. OMV BASE install (apt repo, omv-confdbadm populate).
 3. USB DAS bedugás után fstab mount.
@@ -228,6 +231,7 @@ showmount -e 192.168.1.10
 A HP cluster app-jainak NFS mountja megszakadt az M93p shutdown alatt. Az új OMV bekapcsolása után **automatikusan visszakapcsolódnak** (NFS hard mount default).
 
 Ellenőrzés:
+
 ```bash
 KUBECONFIG=~/.kube/config-new
 kubectl -n default get pods | grep -i "ContainerCreating\|Error"
@@ -260,6 +264,7 @@ curl -s http://192.168.1.10:9100/metrics | head -20
 ```
 
 **MOST** mindkét Proxmox host (`192.168.1.4`, `.5`) **dekomisszionálható**, ha más VM nem fut rajtuk:
+
 ```bash
 # Proxmox host SSH:
 ssh proxmox-host
@@ -299,6 +304,7 @@ kubectl -n default get pods                    # minden Running
 ## Doc updates a cutover után
 
 A `docs/migration/README.md` státusz táblát frissíteni:
+
 ```markdown
 | Fázis | Status | Megjegyzés |
 |---|---|---|
