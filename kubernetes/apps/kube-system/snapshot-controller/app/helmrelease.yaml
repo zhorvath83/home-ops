@@ -10,20 +10,6 @@ spec:
   chartRef:
     kind: OCIRepository
     name: snapshot-controller
-
-  install:
-    createNamespace: true
-    crds: CreateReplace
-    remediation:
-      retries: -1
-  upgrade:
-    cleanupOnFail: true
-    crds: CreateReplace
-    remediation:
-      retries: 3
-  uninstall:
-    keepHistory: false
-
   values:
     # Chart defaults: container=runAsNonRoot+readOnlyRootFS+drop ALL, but NO seccompProfile.
     # Adding seccompProfile via podSecurityContext on the controller.
@@ -39,13 +25,11 @@ spec:
           memory: 128Mi
       serviceMonitor:
         create: true
-
     # Disable the validating admission webhook — single-node cluster, the
     # extra deployment + cert lifecycle is unnecessary overhead. bjw-s,
     # onedr0p, and buroa all set this to false.
     webhook:
       enabled: false
-
-    # VolumeSnapshotClass definitions live with the CSI driver that owns them
-    # — see kubernetes/apps/kube-system/democratic-csi/app/volumesnapshotclass.yaml.
-    # Defining them here would race against the CRDs this chart installs.
+# VolumeSnapshotClass definitions live with the CSI driver that owns them
+# — see kubernetes/apps/kube-system/democratic-csi/app/volumesnapshotclass.yaml.
+# Defining them here would race against the CRDs this chart installs.

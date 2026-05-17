@@ -10,19 +10,6 @@ spec:
   chartRef:
     kind: OCIRepository
     name: seerr
-
-  install:
-    createNamespace: true
-    remediation:
-      retries: -1
-  upgrade:
-    cleanupOnFail: true
-    remediation:
-      strategy: rollback
-      retries: 3
-  uninstall:
-    keepHistory: false
-
   values:
     defaultPodOptions:
       automountServiceAccountToken: false
@@ -35,7 +22,6 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
-
     controllers:
       seerr:
         containers:
@@ -43,11 +29,9 @@ spec:
             image:
               repository: ghcr.io/seerr-team/seerr
               tag: v3.2.0@sha256:c4cbd5121236ac2f70a843a0b920b68a27976be57917555f1c45b08a1e6b2aad
-
             env:
               TZ: "Europe/Budapest"
               PORT: &port 5055
-
             probes:
               liveness: &probes
                 enabled: true
@@ -61,27 +45,23 @@ spec:
                   timeoutSeconds: 5
                   failureThreshold: 5
               readiness: *probes
-
             securityContext:
               privileged: false
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
-
+              capabilities: {drop: ["ALL"]}
             resources:
               requests:
                 cpu: 10m
                 memory: 230Mi
               limits:
                 memory: 1Gi
-
     service:
       app:
         controller: seerr
         ports:
           http:
             port: *port
-
     route:
       app:
         annotations:
@@ -102,7 +82,6 @@ spec:
           - backendRefs:
               - identifier: app
                 port: *port
-
     persistence:
       config:
         type: persistentVolumeClaim

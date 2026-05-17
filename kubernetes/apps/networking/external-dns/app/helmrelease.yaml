@@ -10,19 +10,6 @@ spec:
   chartRef:
     kind: OCIRepository
     name: external-dns
-
-  install:
-    createNamespace: true
-    crds: CreateReplace
-    remediation:
-      retries: -1
-  upgrade:
-    crds: CreateReplace
-    cleanupOnFail: true
-    remediation:
-      retries: 3
-  uninstall:
-    keepHistory: false
   values:
     # Chart defaults: seccompProfile=RuntimeDefault, runAsNonRoot, readOnlyRootFS, drop ALL.
     interval: 2m

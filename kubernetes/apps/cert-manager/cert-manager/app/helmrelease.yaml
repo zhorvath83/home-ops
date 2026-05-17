@@ -10,17 +10,6 @@ spec:
   chartRef:
     kind: OCIRepository
     name: cert-manager
-
-  install:
-    createNamespace: true
-    crds: CreateReplace
-    remediation:
-      retries: -1
-  upgrade:
-    crds: CreateReplace
-    remediation:
-      retries: 3
-
   values:
     # Chart defaults: seccompProfile=RuntimeDefault, runAsNonRoot, drop ALL, noPrivEsc.
     crds:

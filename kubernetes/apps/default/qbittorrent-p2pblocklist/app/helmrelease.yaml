@@ -9,18 +9,6 @@ spec:
   chartRef:
     kind: OCIRepository
     name: qbittorrent-p2pblocklist
-  maxHistory: 2
-  install:
-    createNamespace: true
-    remediation:
-      retries: -1
-  upgrade:
-    cleanupOnFail: true
-    remediation:
-      retries: 3
-  uninstall:
-    keepHistory: false
-
   values:
     defaultPodOptions:
       automountServiceAccountToken: true
@@ -31,7 +19,6 @@ spec:
         runAsGroup: 10001
         seccompProfile:
           type: RuntimeDefault
-
     controllers:
       qbittorrent-p2pblocklist:
         type: cronjob
@@ -63,23 +50,19 @@ spec:
                   echo "qbittorrent deployment not found!"
                   exit 1
                 fi
-
             securityContext:
               privileged: false
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
-
+              capabilities: {drop: ["ALL"]}
             resources:
               requests:
                 cpu: 10m
                 memory: 30Mi
               limits:
                 memory: 128Mi
-
     serviceAccount:
       qbittorrent-p2pblocklist: {}
-
     rbac:
       roles:
         qbittorrent-role:
@@ -105,13 +88,11 @@ spec:
             - kind: ServiceAccount
               name: qbittorrent-p2pblocklist
               namespace: "{{ .Release.Namespace }}"
-
     persistence:
       tmp:
         type: emptyDir
         globalMounts:
           - path: /tmp
-
     service:
       app:
         controller: qbittorrent-p2pblocklist

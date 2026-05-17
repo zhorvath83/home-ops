@@ -10,17 +10,6 @@ spec:
   chartRef:
     kind: OCIRepository
     name: k8s-gateway
-
-  install:
-    remediation:
-      retries: -1
-  upgrade:
-    cleanupOnFail: true
-    remediation:
-      retries: 3
-  uninstall:
-    keepHistory: false
-
   values:
     domain: "horvathzoltan.me"
     ttl: 300
@@ -29,7 +18,7 @@ spec:
       runAsUser: 1000
       allowPrivilegeEscalation: false
       readOnlyRootFilesystem: true
-      capabilities: { drop: ["ALL"] }
+      capabilities: {drop: ["ALL"]}
       seccompProfile:
         type: RuntimeDefault
     watchedResources:
@@ -37,18 +26,14 @@ spec:
     filters:
       gatewayClasses:
         - envoy-internal
-
     podAnnotations:
       reloader.stakater.com/auto: "true"
-
     service:
       type: LoadBalancer
       loadBalancerIP: "192.168.1.19"
       externalTrafficPolicy: Local
       useTcp: true
-
     replicaCount: 1
-
     resources:
       requests:
         cpu: 5m

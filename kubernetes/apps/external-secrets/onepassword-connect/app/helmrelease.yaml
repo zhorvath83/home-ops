@@ -9,16 +9,6 @@ spec:
     kind: OCIRepository
     name: onepassword-connect
   interval: 30m
-  install:
-    remediation:
-      retries: 4
-  upgrade:
-    cleanupOnFail: true
-    remediation:
-      strategy: rollback
-      retries: 4
-  uninstall:
-    keepHistory: false
   values:
     # Chart defaults handle security: seccompProfile=RuntimeDefault, runAsNonRoot,
     # readOnlyRootFilesystem, drop ALL caps, UID/GID 999.

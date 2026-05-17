@@ -10,18 +10,6 @@ spec:
   chartRef:
     kind: OCIRepository
     name: metrics-server
-
-  install:
-    createNamespace: true
-    remediation:
-      retries: -1
-  upgrade:
-    cleanupOnFail: true
-    remediation:
-      retries: 3
-  uninstall:
-    keepHistory: false
-
   values:
     # Chart defaults: seccompProfile=RuntimeDefault, runAsNonRoot, readOnlyRootFS, drop ALL.
     env:

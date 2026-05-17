@@ -10,19 +10,6 @@ spec:
   chartRef:
     kind: OCIRepository
     name: qbittorrent
-
-  install:
-    createNamespace: true
-    remediation:
-      retries: -1
-  upgrade:
-    cleanupOnFail: true
-    remediation:
-      strategy: rollback
-      retries: 3
-  uninstall:
-    keepHistory: false
-
   values:
     defaultPodOptions:
       hostname: qbittorrent
@@ -36,12 +23,10 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
-
     controllers:
       qbittorrent:
         annotations:
           reloader.stakater.com/auto: "true"
-
         initContainers:
           01-copy-config:
             image:
@@ -51,12 +36,10 @@ spec:
               privileged: false
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
-
+              capabilities: {drop: ["ALL"]}
             resources:
               limits:
                 memory: 64Mi
-
             command:
               - "/bin/sh"
               - -c
@@ -69,21 +52,16 @@ spec:
                 echo "Appending WebUI password from secret..." &&
                 echo "WebUI\\Password_PBKDF2=$(cat /secrets/qbittorrent/password_pbkdf2)" >> /config/qBittorrent/qBittorrent.conf &&
                 echo "Init complete."
-
         containers:
           app:
             image:
               repository: ghcr.io/home-operations/qbittorrent
               tag: 5.2.0@sha256:788796013c3da75f2dba568c5319975a5c41f555586dfd13987be4631181e00e
-
-
             env:
               TZ: "Europe/Budapest"
               QBT_WEBUI_PORT: &port 8080
               QBT_TORRENTING_PORT: &torrentPort 62418
-
             nameOverride: qbittorrent
-
             probes:
               liveness:
                 enabled: true
@@ -103,20 +81,17 @@ spec:
                   periodSeconds: 30
                   timeoutSeconds: 5
                   failureThreshold: 5
-
             securityContext:
               privileged: false
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
-
+              capabilities: {drop: ["ALL"]}
             resources:
               requests:
                 cpu: 50m
                 memory: 300Mi
               limits:
                 memory: 3000Mi
-
     service:
       app:
         controller: qbittorrent
@@ -129,7 +104,6 @@ spec:
           bittorrent-udp:
             port: *torrentPort
             protocol: UDP
-
     route:
       app:
         annotations:
@@ -150,27 +124,23 @@ spec:
           - backendRefs:
               - identifier: app
                 port: *port
-
     persistence:
       config:
         type: persistentVolumeClaim
         existingClaim: qbittorrent
         globalMounts:
           - path: /config
-
       configfiles:
         type: configMap
         name: qbittorrent-configmap
         globalMounts:
           - path: /tmp/configfiles
-
       secret:
         type: secret
         name: qbittorrent-secret
         globalMounts:
           - path: /secrets/qbittorrent
             readOnly: true
-
       nfs-nas-media:
         type: nfs
         server: 192.168.1.10

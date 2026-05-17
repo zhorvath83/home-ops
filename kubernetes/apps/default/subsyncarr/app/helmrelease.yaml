@@ -10,19 +10,6 @@ spec:
   chartRef:
     kind: OCIRepository
     name: subsyncarr
-
-  install:
-    createNamespace: true
-    remediation:
-      retries: -1
-  upgrade:
-    cleanupOnFail: true
-    remediation:
-      strategy: rollback
-      retries: 3
-  uninstall:
-    keepHistory: false
-
   values:
     defaultPodOptions:
       automountServiceAccountToken: false
@@ -35,18 +22,15 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
-
     controllers:
       subsyncarr:
         type: deployment
-
         containers:
           app:
             image:
               # https://github.com/tomtomwillis/subsyncarr_plus
               repository: tomtomw123/subsyncarr-plus
               tag: 1.3.0@sha256:8b3645c4d1237c81f06d2db4a707a5d1a5de29f3f2730f8a749663e7abdc14b9
-
             env:
               TZ: "Europe/Budapest"
               PUID: "1000"
@@ -57,7 +41,6 @@ spec:
               INCLUDE_ENGINES: "ffsubsync,autosubsync"
               WEB_HOST: "0.0.0.0"
               WEB_PORT: "3000"
-
             probes:
               liveness: &probes
                 enabled: true
@@ -80,27 +63,23 @@ spec:
                   failureThreshold: 5
                   tcpSocket:
                     port: *port
-
             securityContext:
               privileged: false
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
-
+              capabilities: {drop: ["ALL"]}
             resources:
               requests:
                 cpu: 1m
                 memory: 32Mi
               limits:
                 memory: 256Mi
-
     service:
       app:
         controller: subsyncarr
         ports:
           http:
             port: *port
-
     route:
       app:
         annotations:
@@ -121,7 +100,6 @@ spec:
           - backendRefs:
               - identifier: app
                 port: *port
-
     persistence:
       data:
         type: emptyDir

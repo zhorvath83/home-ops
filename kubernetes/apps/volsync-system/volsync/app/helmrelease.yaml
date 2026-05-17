@@ -9,18 +9,6 @@ spec:
     kind: OCIRepository
     name: volsync
   interval: 30m
-  install:
-    createNamespace: true
-    crds: CreateReplace
-    remediation:
-      retries: -1
-  upgrade:
-    crds: CreateReplace
-    cleanupOnFail: true
-    remediation:
-      retries: 3
-  uninstall:
-    keepHistory: false
   values:
     fullnameOverride: volsync # Required for volsync-perfectra1n fork
     image: &image

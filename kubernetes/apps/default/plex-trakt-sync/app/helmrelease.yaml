@@ -10,19 +10,6 @@ spec:
   chartRef:
     kind: OCIRepository
     name: plex-trakt-sync
-
-  install:
-    createNamespace: true
-    remediation:
-      retries: -1
-  upgrade:
-    cleanupOnFail: true
-    remediation:
-      strategy: rollback
-      retries: 3
-  uninstall:
-    keepHistory: false
-
   values:
     defaultPodOptions:
       automountServiceAccountToken: false
@@ -35,21 +22,17 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
-
     controllers:
       plex-trakt-sync:
         annotations:
           reloader.stakater.com/auto: "true"
-
         containers:
           app:
             image:
               repository: ghcr.io/taxel/plextraktsync
               tag: 0.35.5@sha256:12701476d109313a2f05961732533f4d26a98281c3b7587424605cad7c938c35
-
             args:
               - watch
-
             env:
               PLEX_BASEURL: http://plex.default.svc.cluster.local:32400
               PLEX_LOCALURL: http://plex.default.svc.cluster.local:32400
@@ -60,13 +43,11 @@ spec:
                     key: PLEX_TOKEN
               PLEX_USERNAME: zhorvath83
               TRAKT_USERNAME: zhorvath83
-
             securityContext:
               privileged: false
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
-
+              capabilities: {drop: ["ALL"]}
             probes:
               liveness:
                 enabled: false
@@ -74,21 +55,18 @@ spec:
                 enabled: false
               startup:
                 enabled: false
-
             resources:
               requests:
                 cpu: 5m
                 memory: 50Mi
               limits:
                 memory: 100Mi
-
     persistence:
       config:
         type: persistentVolumeClaim
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
           - path: /app/config
-
       config-yml:
         type: configMap
         name: plex-tract-sync-configmap

@@ -10,18 +10,6 @@ spec:
   chartRef:
     kind: OCIRepository
     name: democratic-csi
-
-  install:
-    createNamespace: true
-    remediation:
-      retries: -1
-  upgrade:
-    cleanupOnFail: true
-    remediation:
-      retries: 3
-  uninstall:
-    keepHistory: false
-
   values:
     # NOTE: Chart sets NO securityContext by default. CSI drivers require
     # privileged access for volume operations — hardening not applicable here.
@@ -32,13 +20,11 @@ spec:
       enabled: true
       replicaCount: 1
       strategy: node
-
       driver:
         enabled: true
         image:
           registry: docker.io/democraticcsi/democratic-csi
           tag: v1.9.3
-
       externalProvisioner:
         enabled: true
         image:
@@ -58,13 +44,10 @@ spec:
             memory: 32Mi
           limits:
             memory: 256Mi
-
       externalAttacher:
         enabled: false
-
       externalResizer:
         enabled: false
-
       externalSnapshotter:
         enabled: true
         image:
@@ -79,14 +62,11 @@ spec:
             memory: 32Mi
           limits:
             memory: 256Mi
-
       externalHealthMonitorController:
         enabled: false
-
     node:
       # democratic-csi node
       enabled: true
-
       cleanup:
         image:
           registry: public.ecr.aws/docker/library/busybox
@@ -97,7 +77,6 @@ spec:
             memory: 5Mi
           limits:
             memory: 256Mi
-
       driver:
         image:
           registry: docker.io/democraticcsi/democratic-csi
@@ -108,18 +87,15 @@ spec:
             memory: 256Mi
           limits:
             memory: 1Gi
-
         extraVolumeMounts:
           - name: local-storage
             mountPath: /var/mnt/local-hostpath
             mountPropagation: Bidirectional
-
       extraVolumes:
         - name: local-storage
           hostPath:
             path: /var/mnt/local-hostpath
             type: DirectoryOrCreate
-
       driverRegistrar:
         enabled: true
         image:
@@ -131,7 +107,6 @@ spec:
             memory: 32Mi
           limits:
             memory: 256Mi
-
     csiProxy:
       enabled: true
       image:
@@ -143,13 +118,11 @@ spec:
           memory: 16Mi
         limits:
           memory: 256Mi
-
     csiDriver:
       name: "org.democratic-csi.local-hostpath"
       attachRequired: false
       storageCapacity: true
       fsGroupPolicy: File
-
     driver:
       config:
         driver: local-hostpath
@@ -160,7 +133,6 @@ spec:
           dirPermissionsMode: "0777"
           dirPermissionsUser: 0
           dirPermissionsGroup: 0
-
     storageClasses:
       - name: democratic-csi-local-hostpath
         defaultClass: true

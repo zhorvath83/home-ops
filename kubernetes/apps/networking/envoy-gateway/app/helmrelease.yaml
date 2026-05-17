@@ -10,25 +10,10 @@ spec:
     kind: OCIRepository
     name: envoy-gateway
   interval: 15m
-
-  install:
-    crds: CreateReplace
-    remediation:
-      retries: -1
-  upgrade:
-    cleanupOnFail: true
-    crds: CreateReplace
-    remediation:
-      strategy: rollback
-      retries: 3
-  uninstall:
-    keepHistory: false
-
   values:
     # Chart defaults: seccompProfile, runAsNonRoot, drop ALL, noPrivEscalation
     global:
       imageRegistry: mirror.gcr.io
-
     config:
       envoyGateway:
         extensionApis:
@@ -38,12 +23,11 @@ spec:
           kubernetes:
             deploy:
               type: GatewayNamespace
-
     deployment:
       envoyGateway:
         securityContext:
           allowPrivilegeEscalation: false
-          capabilities: { drop: ["ALL"] }
+          capabilities: {drop: ["ALL"]}
           privileged: false
           readOnlyRootFilesystem: true
           runAsNonRoot: true

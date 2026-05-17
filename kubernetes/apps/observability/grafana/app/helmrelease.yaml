@@ -10,27 +10,13 @@ spec:
   chartRef:
     kind: OCIRepository
     name: grafana
-
-  install:
-    crds: CreateReplace
-    remediation:
-      retries: -1
-  upgrade:
-    cleanupOnFail: true
-    crds: CreateReplace
-    remediation:
-      strategy: rollback
-      retries: 3
-  uninstall:
-    keepHistory: false
-
   values:
     # Chart defaults: seccompProfile=RuntimeDefault, runAsNonRoot, drop ALL, noPrivEsc.
     admin:
       existingSecret: grafana-secret
     containerSecurityContext:
       allowPrivilegeEscalation: false
-      capabilities: { drop: ["ALL"] }
+      capabilities: {drop: ["ALL"]}
       privileged: false
       readOnlyRootFilesystem: true
       seccompProfile:
@@ -50,7 +36,6 @@ spec:
       GF_NEWS_NEWS_FEED_ENABLED: false
       GF_SECURITY_ALLOW_EMBEDDING: true
       GF_SERVER_ROOT_URL: "https://grafana.horvathzoltan.me"
-
     route:
       main:
         enabled: true
@@ -68,7 +53,6 @@ spec:
           - name: envoy-internal
             namespace: networking
             sectionName: https
-
     serviceMonitor:
       enabled: true
       metricRelabelings:
@@ -80,21 +64,18 @@ spec:
         - sourceLabels: [__name__]
           regex: "^go_.*"
           action: drop
-
     persistence:
       enabled: false
-
     resources:
       requests:
         cpu: 10m
         memory: 180Mi
       limits:
         memory: 1Gi
-
     downloadDashboards:
       securityContext:
         allowPrivilegeEscalation: false
-        capabilities: { drop: ["ALL"] }
+        capabilities: {drop: ["ALL"]}
         readOnlyRootFilesystem: true
         seccompProfile:
           type: RuntimeDefault
@@ -104,10 +85,8 @@ spec:
           memory: 16Mi
         limits:
           memory: 64Mi
-
     testFramework:
       enabled: false
-
     # ============================================================================
     # Datasources
     # ============================================================================
@@ -125,14 +104,13 @@ spec:
             isDefault: true
             jsonData:
               timeInterval: "60s"
-
     # ============================================================================
     # Sidecar for ConfigMap dashboards
     # ============================================================================
     sidecar:
       securityContext:
         allowPrivilegeEscalation: false
-        capabilities: { drop: ["ALL"] }
+        capabilities: {drop: ["ALL"]}
         readOnlyRootFilesystem: true
         seccompProfile:
           type: RuntimeDefault
@@ -154,7 +132,6 @@ spec:
         enabled: true
         searchNamespace: ALL
         labelValue: ""
-
     # ============================================================================
     # Dashboard Providers
     # ============================================================================
@@ -202,7 +179,6 @@ spec:
             editable: true
             options:
               path: /var/lib/grafana/dashboards/system
-
     # ============================================================================
     # Dashboards
     # ============================================================================
@@ -250,7 +226,6 @@ spec:
           url: https://raw.githubusercontent.com/controlplaneio-fluxcd/flux-operator/refs/heads/main/config/monitoring/dashboards/flux-k8s-api-performance.json
           datasource:
             - {name: DS_PROMETHEUS, value: Prometheus}
-
       # -------------------------------------------------------------------------
       # Networking - Ingress, DNS, traffic
       # -------------------------------------------------------------------------
@@ -286,7 +261,6 @@ spec:
           revision: 2
           datasource:
             - {name: DS_PROMETHEUS, value: Prometheus}
-
       # -------------------------------------------------------------------------
       # Storage - Backups and persistence
       # -------------------------------------------------------------------------
@@ -298,7 +272,6 @@ spec:
           datasource:
             - {name: DS_PROMETHEUS, value: Prometheus}
             - {name: VAR_REPLICATIONDESTNAME, value: ".*-rdst"}
-
       # -------------------------------------------------------------------------
       # System - Node-level monitoring
       # -------------------------------------------------------------------------
@@ -309,7 +282,6 @@ spec:
           revision: 42
           datasource:
             - {name: DS_PROMETHEUS, value: Prometheus}
-
     grafana.ini:
       analytics:
         check_for_updates: false

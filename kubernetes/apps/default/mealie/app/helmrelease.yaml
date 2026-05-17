@@ -10,19 +10,6 @@ spec:
   chartRef:
     kind: OCIRepository
     name: mealie
-
-  install:
-    createNamespace: true
-    remediation:
-      retries: -1
-  upgrade:
-    cleanupOnFail: true
-    remediation:
-      strategy: rollback
-      retries: 3
-  uninstall:
-    keepHistory: false
-
   values:
     defaultPodOptions:
       automountServiceAccountToken: false
@@ -35,19 +22,15 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
-
     controllers:
       mealie:
         annotations:
           reloader.stakater.com/auto: "true"
-
         containers:
           app:
             image:
               repository: ghcr.io/mealie-recipes/mealie
               tag: v3.17.0@sha256:d570139f1891346131d02f8e4d1853100ae4846474958ca6c68cfe1648058467
-
-
             env:
               TZ: "Europe/Budapest"
               API_DOCS: "false"
@@ -61,7 +44,6 @@ spec:
             envFrom:
               - secretRef:
                   name: mealie-secret
-
             probes:
               liveness: &probes
                 custom: true
@@ -77,27 +59,23 @@ spec:
               readiness: *probes
               startup:
                 enabled: false
-
             securityContext:
               privileged: false
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
-
+              capabilities: {drop: ["ALL"]}
             resources:
               requests:
                 cpu: 10m
                 memory: 320Mi
               limits:
                 memory: 1000Mi
-
     service:
       app:
         controller: mealie
         ports:
           http:
             port: &port 9000
-
     route:
       app:
         annotations:
@@ -118,12 +96,10 @@ spec:
           - backendRefs:
               - identifier: app
                 port: *port
-
     persistence:
       config:
         existingClaim: mealie
         globalMounts:
           - path: /app/data
-
       tmp:
         type: emptyDir

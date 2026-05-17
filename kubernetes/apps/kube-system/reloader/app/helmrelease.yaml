@@ -10,18 +10,6 @@ spec:
   chartRef:
     kind: OCIRepository
     name: reloader
-
-  install:
-    createNamespace: true
-    remediation:
-      retries: -1
-  upgrade:
-    cleanupOnFail: true
-    remediation:
-      retries: 3
-  uninstall:
-    keepHistory: false
-
   values:
     # Chart defaults: pod=seccompProfile+runAsNonRoot, but containerSecurityContext is empty.
     # Adding container hardening explicitly below.

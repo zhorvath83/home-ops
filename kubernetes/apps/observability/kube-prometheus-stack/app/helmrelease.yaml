@@ -12,27 +12,12 @@ spec:
   chartRef:
     kind: OCIRepository
     name: kube-prometheus-stack
-
-  install:
-    crds: CreateReplace
-    remediation:
-      retries: -1
-  upgrade:
-    cleanupOnFail: true
-    crds: CreateReplace
-    remediation:
-      strategy: rollback
-      retries: 3
-  uninstall:
-    keepHistory: false
-
   values:
     # Chart defaults: seccompProfile=RuntimeDefault across all components (operator, prometheus, kube-state-metrics).
     # ============================================================================
     # Global settings
     # ============================================================================
     cleanPrometheusOperatorObjectNames: true
-
     # ============================================================================
     # Default rules - minimal set for homelab
     # ============================================================================
@@ -68,19 +53,16 @@ spec:
         prometheus: true
         prometheusOperator: true
         windows: false
-
     # ============================================================================
     # AlertManager - DISABLED
     # ============================================================================
     alertmanager:
       enabled: false
-
     # ============================================================================
     # Grafana - DISABLED (deployed separately)
     # ============================================================================
     grafana:
       enabled: false
-
     # ============================================================================
     # Kubelet - only cAdvisor metrics
     # ============================================================================
@@ -148,7 +130,6 @@ spec:
           - sourceLabels: [__name__]
             regex: "(watch_cache_capacity|volume_operation_).*"
             action: drop
-
     # ============================================================================
     # Disabled components (not needed for single-node Talos)
     # ============================================================================
@@ -166,13 +147,11 @@ spec:
       enabled: false
     kubeDns:
       enabled: false
-
     # ============================================================================
     # kube-state-metrics with Flux CRD support
     # ============================================================================
     kubeStateMetrics:
       enabled: true
-
     kube-state-metrics:
       resources:
         requests:
@@ -278,13 +257,11 @@ spec:
             - sourceLabels: [__name__]
               regex: "kube_replicaset_(status|spec|metadata|created).*"
               action: drop
-
     # ============================================================================
     # Node Exporter
     # ============================================================================
     nodeExporter:
       enabled: true
-
     prometheus-node-exporter:
       resources:
         requests:
@@ -313,7 +290,6 @@ spec:
             - sourceLabels: [__name__]
               regex: "^node_(cooling|schedstat|cpu_scaling).*"
               action: drop
-
     # ============================================================================
     # Prometheus Operator
     # ============================================================================
@@ -334,7 +310,6 @@ spec:
           - sourceLabels: [__name__]
             regex: "go_sched_.*_bucket"
             action: drop
-
     # ============================================================================
     # Prometheus
     # ============================================================================

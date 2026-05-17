@@ -10,19 +10,6 @@ spec:
   chartRef:
     kind: OCIRepository
     name: calibre-web-automated
-
-  install:
-    createNamespace: true
-    remediation:
-      retries: -1
-  upgrade:
-    cleanupOnFail: true
-    remediation:
-      strategy: rollback
-      retries: 3
-  uninstall:
-    keepHistory: false
-
   values:
     defaultPodOptions:
       automountServiceAccountToken: false
@@ -34,12 +21,10 @@ spec:
         seccompProfile:
           type: RuntimeDefault
         fsGroupChangePolicy: OnRootMismatch
-
     controllers:
       calibre-web-automated:
         annotations:
           reloader.stakater.com/auto: "true"
-
         initContainers:
           01-clone-molyhu:
             image:
@@ -55,7 +40,6 @@ spec:
             resources:
               limits:
                 memory: 128Mi
-
           02-copy-molyhu-provider:
             image:
               repository: public.ecr.aws/docker/library/busybox
@@ -75,19 +59,16 @@ spec:
                 memory: 10Mi
               limits:
                 memory: 64Mi
-
         containers:
           app:
             image:
               repository: ghcr.io/crocodilestick/calibre-web-automated
               tag: v4.0.6@sha256:c31a738b6d5ec6982c050063dd3f063b6943eb1051fc81144789f840d9093a8d
-
             env:
               CACHE_DIR: /cache
               TZ: "Europe/Budapest"
               PUID: 1000
               PGID: 100
-
             probes:
               liveness:
                 enabled: true
@@ -107,7 +88,6 @@ spec:
                   initialDelaySeconds: 60
                   failureThreshold: 45
                   periodSeconds: 5
-
             securityContext:
               allowPrivilegeEscalation: true # because S6 overlay
               readOnlyRootFilesystem: false # because S6 overlay
@@ -121,14 +101,12 @@ spec:
                   - SETGID
                   - FOWNER
                   - DAC_OVERRIDE
-
             resources:
               requests:
                 cpu: 10m
                 memory: 256Mi
               limits:
                 memory: 768Mi
-
     service:
       app:
         controller: calibre-web-automated
@@ -136,7 +114,6 @@ spec:
           http:
             port: &port 80
             targetPort: 8083
-
     route:
       app:
         annotations:
@@ -158,27 +135,22 @@ spec:
           - backendRefs:
               - identifier: app
                 port: *port
-
-
     persistence:
       cache:
         type: emptyDir
         globalMounts:
           - path: /cache
-
       config:
         type: persistentVolumeClaim
         existingClaim: calibre-web-automated
         globalMounts:
           - path: /config
-
       nfs-calibre-library:
         type: nfs
         server: 192.168.1.10
         path: /backups/documents/personal/ebooks
         globalMounts:
           - path: /calibre-library
-
       # git-sync clone target for crash5/calibre-molyhu repo
       molyhu-repo:
         type: emptyDir
@@ -189,7 +161,6 @@ spec:
             02-copy-molyhu-provider:
               - path: /tmp/molyhu-repo
                 readOnly: true
-
       # Moly.hu metadata provider files for calibre-web
       molyhu-provider:
         type: emptyDir
