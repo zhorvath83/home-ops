@@ -186,9 +186,11 @@ spec:
                 port: *port
 
     persistence:
+      # Non-secret config files (kubernetes/settings/widgets + empty placeholders) live in git
+      # and are rendered into a ConfigMap by kustomize configMapGenerator.
       config-files:
-        type: secret
-        name: "{{ .Release.Name }}-config-files-secret"
+        type: configMap
+        name: homepage-config-files
         globalMounts:
           - path: /app/config/bookmarks.yaml
             subPath: bookmarks.yaml
@@ -198,8 +200,6 @@ spec:
             subPath: kubernetes.yaml
           - path: /app/config/proxmox.yaml
             subPath: proxmox.yaml
-          - path: /app/config/services.yaml
-            subPath: services.yaml
           - path: /app/config/settings.yaml
             subPath: settings.yaml
           - path: /app/config/widgets.yaml
@@ -208,3 +208,12 @@ spec:
             subPath: custom.css
           - path: /app/config/custom.js
             subPath: custom.js
+
+      # services.yaml stays in 1Password because it contains personal/financial URLs;
+      # delivered as a key in the shared homepage-secret (alongside the env var token).
+      config-services:
+        type: secret
+        name: homepage-secret
+        globalMounts:
+          - path: /app/config/services.yaml
+            subPath: services.yaml

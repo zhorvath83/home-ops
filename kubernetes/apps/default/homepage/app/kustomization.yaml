@@ -7,8 +7,22 @@ resources:
   - ./ocirepository.yaml
   - ./helmrelease.yaml
   - ./externalsecret.yaml
-  - ./externalsecret-config-files.yaml
 
 labels:
   - pairs:
       app.kubernetes.io/name: homepage
+
+configMapGenerator:
+  - name: homepage-config-files
+    files:
+      - config/kubernetes.yaml
+      - config/settings.yaml
+      - config/widgets.yaml
+      - config/bookmarks.yaml
+      - config/docker.yaml
+      - config/proxmox.yaml
+      - config/custom.css
+      - config/custom.js
+
+generatorOptions:
+  disableNameSuffixHash: true
