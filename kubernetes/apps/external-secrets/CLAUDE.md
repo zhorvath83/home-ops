@@ -46,9 +46,11 @@ When editing OnePassword Connect:
 
 Common live pattern across app trees:
 
+- `spec.refreshInterval: 12h` on every ExternalSecret (bjw-s parity, repo-wide default applied 2026-05-17). The ESO chart default is `1h`; the 12h cadence reduces load on 1Password Connect for secrets that rotate slowly, while the Reloader annotation on consumer pods still triggers restarts on the actual Secret rewrite.
 - `secretStoreRef.kind: ClusterSecretStore`
 - `secretStoreRef.name: onepassword-connect`
 - `target.creationPolicy: Owner` for app-owned generated Secrets
+- No `metadata.namespace` — the owning Flux Kustomization `spec.targetNamespace` places the ES into the workload namespace at apply time.
 
 When editing this platform area:
 
