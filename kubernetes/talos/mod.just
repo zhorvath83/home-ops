@@ -200,8 +200,9 @@ burn-image device="" iso="":
     fi
     case "$(uname -s)" in
         Darwin)
-            location=$(diskutil info "${target}" | awk -F: '/Device Location/ {sub(/^[ \t]+/, "", $2); print $2; exit}')
-            protocol=$(diskutil info "${target}" | awk -F: '/Protocol/ {sub(/^[ \t]+/, "", $2); print $2; exit}')
+            info=$(diskutil info "${target}")
+            location=$(printf '%s\n' "${info}" | awk -F: '/Device Location/ {sub(/^[ \t]+/, "", $2); print $2; exit}')
+            protocol=$(printf '%s\n' "${info}" | awk -F: '/Protocol/ {sub(/^[ \t]+/, "", $2); print $2; exit}')
             if [ "${location}" != "External" ]; then
                 just log error "Refusing — not an external disk" device "${target}" location "${location}"
                 exit 1
