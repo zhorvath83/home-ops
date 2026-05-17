@@ -4,7 +4,6 @@ apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
   name: cloudflare-tunnel
-  namespace: networking
 spec:
   endpointSelector:
     matchLabels:

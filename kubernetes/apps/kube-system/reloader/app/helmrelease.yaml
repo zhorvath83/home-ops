@@ -4,7 +4,6 @@ apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: reloader
-  namespace: &namespace kube-system
 spec:
   interval: 30m
   chartRef:
@@ -16,7 +15,7 @@ spec:
     reloader:
       podMonitor:
         enabled: false
-        namespace: *namespace
+        namespace: kube-system
       deployment:
         containerSecurityContext:
           allowPrivilegeEscalation: false
