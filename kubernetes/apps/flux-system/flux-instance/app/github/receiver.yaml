@@ -4,7 +4,6 @@ apiVersion: notification.toolkit.fluxcd.io/v1
 kind: Receiver
 metadata:
   name: github-webhook
-  namespace: flux-system
 spec:
   type: github
   events:
@@ -16,10 +15,6 @@ spec:
     - apiVersion: source.toolkit.fluxcd.io/v1
       kind: GitRepository
       name: flux-system
-      namespace: flux-system
-    - apiVersion: kustomize.toolkit.fluxcd.io/v1
-      kind: Kustomization
-      name: cluster
       namespace: flux-system
     - apiVersion: kustomize.toolkit.fluxcd.io/v1
       kind: Kustomization
