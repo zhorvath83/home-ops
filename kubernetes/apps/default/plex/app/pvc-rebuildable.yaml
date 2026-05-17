@@ -1,4 +1,5 @@
 ---
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/_/persistentvolumeclaim_v1.json
 # Shared PVC for Plex rebuildable data:
 # cache, metadata artwork, and scanner assets.
 apiVersion: v1
