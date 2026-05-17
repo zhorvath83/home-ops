@@ -4,6 +4,9 @@ set script-interpreter := ['bash', '-euo', 'pipefail']
 set shell := ['bash', '-euo', 'pipefail', '-c']
 
 omv_dir := justfile_dir() + '/provision/openmediavault'
+# NAS_MOUNT_SCRIPT is defined in .mise.toml and resolves to the
+# personal helper script path (absolute, $HOME-expanded).
+nas_share_mount_script_on_mac := env_var('NAS_MOUNT_SCRIPT')
 
 [private]
 [script]
@@ -31,10 +34,10 @@ check:
 
 [doc('Run OMV package upgrade + apply changes over SSH, then re-mount NAS shares locally (pre-Phase-10 path)')]
 [script]
-update-host host="192.168.1.10" user="zhorvath83" nas_share_mount_script_on_mac="~/Projects/personal/my-scripts-and-configs/macOS/btt-scripts/nas-share-mount.sh":
+update-host host="192.168.1.10" user="zhorvath83":
     set -eu
 
-    LOCAL_NAS_SHARE_MOUNT_SCRIPT_ON_MAC="$(eval printf '%s' "{{ nas_share_mount_script_on_mac }}")"
+    LOCAL_NAS_SHARE_MOUNT_SCRIPT_ON_MAC="{{ nas_share_mount_script_on_mac }}"
 
     echo "Running OpenMediaVault maintenance on {{ host }}"
     ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=ask {{ user }}@{{ host }} '

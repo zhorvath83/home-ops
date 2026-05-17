@@ -9,7 +9,10 @@ openwrt_local_backup_dir := '/mnt/sda1/backups'
 openwrt_local_backup_script := '/etc/luci-uploads/openwrt-backup-local.sh'
 openwrt_local_package_list_script := '/etc/luci-uploads/list-installed-user-packages-apk.sh'
 openwrt_local_reinstall_script := '/etc/luci-uploads/reinstall-user-packages-apk.sh'
-nas_share_mount_script_on_mac := '~/Projects/personal/my-scripts-and-configs/macOS/btt-scripts/nas-share-mount.sh'
+# NAS_MOUNT_SCRIPT is defined in .mise.toml and resolves to the
+# personal helper script path (absolute, $HOME-expanded). Override the
+# env var if the personal scripts repo lives elsewhere.
+nas_share_mount_script_on_mac := env_var('NAS_MOUNT_SCRIPT')
 openwrt_backup_dir_on_mac := '/Volumes/backups/openwrt'
 
 # Shared SSH/scp prefixes — recipes are separate scripts, so a bash function
@@ -28,7 +31,7 @@ default:
 maintain force="false":
     set -eu
 
-    LOCAL_NAS_SHARE_MOUNT_SCRIPT_ON_MAC="$(eval printf '%s' "{{ nas_share_mount_script_on_mac }}")"
+    LOCAL_NAS_SHARE_MOUNT_SCRIPT_ON_MAC="{{ nas_share_mount_script_on_mac }}"
     BACKUP_PARENT_DIR="$(dirname "{{ openwrt_backup_dir_on_mac }}")"
     if [ ! -d "${BACKUP_PARENT_DIR}" ]; then
       if [ ! -x "${LOCAL_NAS_SHARE_MOUNT_SCRIPT_ON_MAC}" ]; then
