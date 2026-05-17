@@ -1,5 +1,1 @@
-{
-    "sops.creationEnabled": true,
-    "sops.configPath": "./.sops.yaml",
-    "sops.defaults.ageKeyFile": "/Users/zhorvath83/.config/sops/age/keys.txt"
-}
+{}
