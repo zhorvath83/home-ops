@@ -24,6 +24,8 @@ spec:
           type: RuntimeDefault
     controllers:
       plex:
+        annotations:
+          reloader.stakater.com/auto: "true"
         containers:
           app:
             image:
