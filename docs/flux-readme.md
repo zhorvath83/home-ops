@@ -72,9 +72,8 @@ Use this only when intentionally working outside the normal GitOps flow — by d
 ## Debug Helpers
 
 ```sh
-just k8s browse-pvc <claim> [<namespace>]
-just k8s mount-pvc <claim> [<namespace>]
+just k8s browse-pvc <claim> [<namespace>] [<mountpath>]   # ephemeral Alpine pod, default mountpath=/mnt
 just k8s node-shell <node>
 just k8s prune-pods
-just k8s view-secret <secret> <namespace>     # requires kubectl-view-secret krew plugin
+just k8s view-secret <secret> <namespace>                 # decoded KEY=value lines (built-in kubectl + jq)
 ```

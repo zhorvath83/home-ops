@@ -2,13 +2,43 @@
 
 Élő státusz a K3s → Talos migráció állapotáról. Ez a doc gyors pillanatkép — a részletes terv a [README.md](./README.md)-ben és a `00`–`14` doc-okban van.
 
-**Utolsó frissítés:** 2026-05-16 — Phase 1–9 + 11 + **15.a + 15.b** ✅, ingress stack stabil, CNP migráció kész, Task→Just teljes migráció lezárva, Renovate `.renovaterc.json5` + `.renovate/` fragmens-szerkezetre átírva, default ns ks.yaml lapítás kész (4 split + 2 KS rename), **K3s `system-upgrade-controller` orphan + `provision/kubernetes/` Ansible plane teljesen lebontva**, doc + AI-guide réteg (`docs/*.md` + 11 `CLAUDE.md` + 12 `.claude/skills/*` + `settings.json` + `README.md`) átírva a `talos`-éra realitásra, follow-up-ok rögzítve.
+**Utolsó frissítés:** 2026-05-17 — **Phase 8.6 Just hardening + confirm-gates** ✅: 4 destruktív Talos recipe-en `[confirm()]` attribútum (`apply-node`, `reset-node`, `shutdown-node`, `upgrade-node`) + szimmetriai bónusz `upgrade-k8s`-en is, 2 új cluster-wide wrapper (`apply-cluster`, `reset-cluster`), `browse-pvc` + `mount-pvc` egyetlen krew-mentes `browse-pvc claim ns mountpath` recipe-be konszolidálva (utolsó krew plugin dep — `kubectl-view-secret` — is kiváltva `kubectl get secret + jq`-val), `restart-failed-hrs` JSON-alapú detection-re átírva (immune a CLI output drift-re), `volsync state` `[arg]` pattern validation, `node-shell` cleanup trap-be (Ctrl-C-safe), `flux-reconcile` per-stage strukturált logging-gel (timing visibility), settings.json deny bővítve a cluster-wide wrapperekkel. — Korábban: Phase 1–9 + 11 + **15.a + 15.b** ✅, ingress stack stabil, CNP migráció kész, Task→Just teljes migráció lezárva, Renovate `.renovaterc.json5` + `.renovate/` fragmens-szerkezetre átírva, default ns ks.yaml lapítás kész (4 split + 2 KS rename), **K3s `system-upgrade-controller` orphan + `provision/kubernetes/` Ansible plane teljesen lebontva**, doc + AI-guide réteg (`docs/*.md` + 11 `CLAUDE.md` + 12 `.claude/skills/*` + `settings.json` + `README.md`) átírva a `talos`-éra realitásra, follow-up-ok rögzítve.
 
 ## TL;DR
 
 **Hol tartunk:** Teljes GitOps reconcile zöld (**0 Failing KS, 0 Failing HR**). 17 VolSync PVC restore-olt OVH Kopia snapshotokból, 18 default app pod 1/1 Running, `cloudflare-tunnel` 1/1 Running. A `replicationdestination + dataSourceRef` mostantól **always-on** pattern (bjw-s minta). Ingress stack él kívülről (Cloudflare tunnel) és belülről (envoy-internal `192.168.1.18`), Cilium L2 announce egyedüli LB-IPAM. Stateful ingress hardening visszahozva 3 `CiliumNetworkPolicy`-val + közös `CiliumCIDRGroup/cloudflare`-rel. A régi K3s cluster áll.
 
 **Ismert follow-up-ok** (egyik sem blocker): `envoy-gateway` v1.9.0 GA → BTP rate-limit visszakapcsolás, search domain `lan` cluster-szintű kezelés, **15.c** per-app CNP threat-model audit (15.a + 15.b kész).
+
+## Sessions — 2026-05-17
+
+### Phase 8.6 — Just hardening + confirm-gates (referencia repó parity-finomítás)
+
+A `bjw-s-labs/home-ops`, `onedr0p/home-ops`, `buroa/k8s-gitops` Just-fájljainak részletes re-auditja után 10 érdemi finomítás. Egyik sem új feature — **kockázat-csökkentés**, **discoverability**, **konvenció-parity** és **operator observability**.
+
+**1. `[confirm()]` attribútum 5 destruktív Talos recipe-en** (`kubernetes/talos/mod.just`). Az `apply-node`, `reset-node`, `shutdown-node`, `upgrade-node` recipe-ek onedr0p/buroa mintájára `[confirm('... [y|N] ?')]` gate-tel — interaktív futtatáskor prompt-ol, `just --yes ...`-szel bypass-olható. Szimmetriai bónusz: `upgrade-k8s`-en is felkerült (control-plane upgrade-state-mutáló). A `kubernetes/bootstrap/mod.just` `talos:` stage `just talos apply-node` hívása `just --yes talos apply-node`-re bővítve, hogy az automatizált `just cluster-bootstrap cluster` chain ne álljon meg a confirm-on. **Live verifikálva**: `echo n | just talos shutdown-node fakenode` → `error: recipe 'shutdown-node' was not confirmed` (a body nem fut), `just --yes ...` → bypass működik.
+
+**2. 2 új cluster-wide wrapper recipe** (`talos apply-cluster`, `talos reset-cluster`). bjw-s minta szerint loopolnak a `kubernetes/talos/nodes/*.yaml.j2` fájlokon keresztül és delegálnak a per-node recipe-re (= per-node confirm prompt). Új `nodes := \`find ./nodes -maxdepth 1 -name '*.yaml.j2' -exec basename {} .yaml.j2 \\;\`` változó, filesystem-alapú (pre-bootstrap-ready). Single-node-on most no-op, multi-node-jövőre future-proof.
+
+**3. `.claude/settings.json` deny bővítés** — a 2 új wrapperrel egyidőben `Bash(just talos apply-cluster:*)` és `Bash(just talos reset-cluster:*)` is a deny listára került, közvetlenül az `apply-node` / `reset-node` mellé. Az agent-permission gate most egységes a per-node és cluster-wide variánsok közt.
+
+**4. `browse-pvc` + `mount-pvc` konszolidálás → 1 általános recipe** (`kubernetes/mod.just`). A `browse-pvc` korábban `kubectl-browse-pvc` krew plugin függőséggel ment, a `mount-pvc` bjw-s-specifikus hardcode-olt `/data/config` mount path-szal. Új unified `browse-pvc claim ns="default" mountpath="/mnt"` recipe: onedr0p `kubectl run --overrides` inline-pod minta (krew-mentes), paraméterezett mount path (default `/mnt` unix konvenció szerint, ráhívható `/data/config`-gal app-template-style debugra), `mirror.gcr.io/alpine:latest` image (`registryAliases` Renovate-trackelt). `mount-pvc` recipe törölve, doc-hivatkozások (`docs/flux-readme.md`, `.claude/skills/just/references/catalog.md`) átvezetve.
+
+**5. `view-secret` krew-mentesítés** (`kubernetes/mod.just`). Az utolsó kubectl krew plugin függőségünk (`kubectl-view-secret`) kiváltva `kubectl get secret -o json | jq -r '.data // {} | to_entries[] | "\(.key)=\(.value | @base64d)"'`-mal. Output-formátum változatlan (`KEY=value` soronként). **Külső kubectl plugin dep-ünk most már nulla** — egy `mise install` után fresh gépen minden Just recipe futtatható, semmilyen krew plugin nem kell. Settings.json policy-neutral: a `kubectl get secret` továbbra is deny-en van a felső szinten, a Just recipe belső shell-ben fut.
+
+**6. `restart-failed-hrs` JSON-alapú detection** (`kubernetes/mod.just`). A régi `kubectl get hr -A | grep False | awk '{print $2, $1}'` text-output parser törékeny volt (oszlop-pozíció drift). Átírva `kubectl get hr -A -o json | jq -r '.items[] | select(.status.conditions[]? | select(.type=="Ready" and .status=="False")) | "\(.metadata.namespace) \(.metadata.name)"' | while read -r ns name; do ...`-ra. Típushelyes, immune a flux/kubectl CLI output formátum-változásokra.
+
+**7. `volsync state` arg pattern validation** (`kubernetes/volsync/mod.just`). onedr0p/buroa mintára `[arg('action', pattern='suspend|resume')]` attribútum felvéve. Élesben tesztelve: `just --dry-run volsync state pause` → `error: argument 'pause' passed to recipe 'state' parameter 'action' does not match pattern 'suspend|resume'`. Elgépelt értékre fail-fast hibát ad, többé nincs csendes no-op viselkedés.
+
+**8. `node-shell` cleanup trap-be** (`kubernetes/mod.just`). A régi `kubectl debug` után-futtatott cleanup (`kubectl delete pod -l ...`) Ctrl-C esetén nem futott le, orphan debug pod-ot hagyva. onedr0p/buroa `trap '...' EXIT` minta átvéve, plusz `--field-selector spec.nodeName={{ node }}` szűkítéssel (nem írunk át más session debug pod-ját) és `--wait=false`-szal (background delete). Ctrl-C-safe.
+
+**9. `controller_node` rename-figyelmeztető komment** (`kubernetes/talos/mod.just` + `kubernetes/bootstrap/mod.just`). Mindkét `controller`/`controller_node` változó-definíción `// "k8s-cp0"` hardcode-olt fallback szerepel. A recent `cp0-k8s → k8s-cp0` rename (8de1fa5cc / 19d5c9fe5) precedens miatt `# CHECK ON RENAME:` komment hozzáadva mindkét helyre — a fallback-okat szinkronban kell tartani jövőbeli rename esetén.
+
+**10. `flux-reconcile` strukturált per-stage logging** (`kubernetes/mod.just`). A korábbi 3-soros recipe (source → cluster-vars → cluster-apps) bash-`SECONDS`-alapú per-stage timing-gel kibővítve, `just log info "Stage: ..." duration "Ns"` mintával, ami konzisztens a `kubernetes/bootstrap/mod.just` stage-szintű logging-jával. Fail-fast viselkedés változatlan (`[script]` + `bash -euo pipefail`): bármelyik stage rc=1-je → script abort, a következő stage NEM indul. Session-debug során most látható melyik stage húzza el az időt (tipikusan a cluster-apps a child KS-ek miatt).
+
+**Verifikáció**: `just --list k8s`, `just --list talos`, `just --list volsync` parse zöld; `just --dry-run volsync state suspend` és `pause` runtime arg-pattern viselkedést mutat; `just --yes --dry-run talos shutdown-node fakenode` és `echo n | just --dry-run talos shutdown-node fakenode` a confirm-gate két útvonalát mutatja; `just --dry-run k8s flux-reconcile` a strukturált script-body-t mutatja `t0…t3` változókkal. `pre-commit run --all-files` zöld (13/13 hook Passed).
+
+**Followup nélkül**: nincs blocker. F1 (sync recipe `ns name` param-sorrend cseréje) tudatos halasztás — a 3 referencia parity-rés, de behavioral-equivalent, későbbi session-re hagyható.
 
 ## Sessions — 2026-05-16
 

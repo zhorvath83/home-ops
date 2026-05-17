@@ -190,6 +190,7 @@ last-snapshots date=`date +%Y-%m-%d`:
         print(fmt_row(r))
     PY
 
+[arg('action', pattern='suspend|resume')]
 [doc('Suspend or resume the global VolSync stack (action=suspend|resume) — pauses backup jobs cluster-wide')]
 [script]
 state action:

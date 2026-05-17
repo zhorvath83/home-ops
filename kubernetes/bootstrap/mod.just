@@ -8,6 +8,7 @@ kubernetes_dir := justfile_dir() + '/kubernetes'
 bootstrap_dir := kubernetes_dir + '/bootstrap'
 
 # controller: the first endpoint from the active talosconfig (hostname or IP, whatever was set via `talosctl config endpoint`). Falls back to 'k8s-cp0' when talosconfig is missing or endpoints is null/empty (single-line output is critical — multi-line would break downstream template substitution).
+# CHECK ON RENAME: see kubernetes/talos/mod.just `controller_node` — keep both fallbacks in sync.
 controller := `talosctl config info -o json 2>/dev/null | jq -r '.endpoints[0] // "k8s-cp0"' 2>/dev/null || echo 'k8s-cp0'`
 
 # nodes: derive node *names* from kubernetes/talos/nodes/<name>.yaml.j2 — the talos apply-node recipe is name-based, not IP-based.
@@ -36,7 +37,7 @@ talosconfig:
 talos:
     just log info "Stage: talos config apply"
     for n in {{ nodes }}; do
-      if ! op=$(just talos apply-node "$n" --insecure 2>&1); then
+      if ! op=$(just --yes talos apply-node "$n" --insecure 2>&1); then
         if [[ "$op" == *"certificate required"* ]]; then
           just log info "Talos already configured, skipping" "node" "$n"
           continue

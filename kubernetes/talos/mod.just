@@ -14,7 +14,16 @@ talos_dir := justfile_dir() + '/kubernetes/talos'
 # `set lazy` defers evaluation until a recipe actually uses it.
 # yq's `// "fallback"` keeps the output single-line; the outer `|| echo`
 # covers the case where talosctl itself fails (no file at all).
+# CHECK ON RENAME: if the primary control-plane node ever gets renamed (cf.
+# commits 8de1fa5cc / 19d5c9fe5 for the cp0-k8s -> k8s-cp0 precedent), update
+# the hardcoded fallback below AND the sibling fallback in
+# kubernetes/bootstrap/mod.just.
 controller_node := `talosctl config info -o yaml 2>/dev/null | yq '.endpoints[0] // "k8s-cp0"' 2>/dev/null || echo 'k8s-cp0'`
+
+# nodes: derive node *names* from kubernetes/talos/nodes/<name>.yaml.j2 — filesystem-based so it works pre-bootstrap.
+# Backticks run with cwd = this mod's directory (kubernetes/talos), so reach into the sibling nodes/ tree directly.
+# Single-line output is critical; `tr` flattens newlines to spaces for shell `for` consumption.
+nodes := `find ./nodes -maxdepth 1 -name '*.yaml.j2' -exec basename {} .yaml.j2 \; 2>/dev/null | tr '\n' ' '`
 
 [private]
 [script]
@@ -249,10 +258,19 @@ render-config node:
     talosctl machineconfig patch "${base}" --patch "@${patch}"
 
 [group('config')]
-[doc('Apply Talos config to a node (pass extra talosctl flags as args, e.g. --insecure)')]
+[confirm('Apply Talos config to ' + node + ' [y|N] ?')]
+[doc('Apply Talos config to a node (pass extra talosctl flags as args, e.g. --insecure). Bypass prompt via `just --yes talos apply-node ...` (used internally by the bootstrap chain).')]
 [script]
 apply-node node *args:
     just talos render-config {{ node }} | talosctl -n {{ node }} apply-config -f /dev/stdin {{ args }}
+
+[group('config')]
+[doc('Apply Talos config to every node defined under nodes/*.yaml.j2 (per-node confirm prompt via apply-node)')]
+[script]
+apply-cluster *args:
+    for n in {{ nodes }}; do
+      just talos apply-node "$n" {{ args }}
+    done
 
 [group('config')]
 [doc('Print whether a node is a controlplane (from its rendered machineconfig)')]
@@ -267,6 +285,7 @@ machine-image node=controller_node:
     just talos render-config "{{ node }}" | yq -e 'select(.machine) | .machine.install.image'
 
 [group('recovery')]
+[confirm('Reset node ' + node + ' (wipes STATE + EPHEMERAL + u-local-hostpath) [y|N] ?')]
 [doc('Reset a Talos node (wipe STATE + EPHEMERAL + u-local-hostpath, reboot to installer)')]
 [script]
 reset-node node:
@@ -277,6 +296,14 @@ reset-node node:
       --graceful=false \
       --reboot
 
+[group('recovery')]
+[doc('Reset every node defined under nodes/*.yaml.j2 (per-node confirm prompt via reset-node)')]
+[script]
+reset-cluster:
+    for n in {{ nodes }}; do
+      just talos reset-node "$n"
+    done
+
 [group('lifecycle')]
 [doc('Reboot a Talos node (powercycle mode = full hardware reset)')]
 [script]
@@ -284,6 +311,7 @@ reboot-node node:
     talosctl -n {{ node }} reboot -m powercycle
 
 [group('lifecycle')]
+[confirm('Shutdown node ' + node + ' [y|N] ?')]
 [doc('Shutdown a Talos node (force). Pass extra talosctl flags as additional args.')]
 [script]
 shutdown-node node *args:
@@ -302,6 +330,7 @@ get-kubeconfig node=controller_node:
     talosctl -n {{ node }} kubeconfig -f --force-context-name main {{ justfile_dir() }}/kubeconfig
 
 [group('lifecycle')]
+[confirm('Upgrade Talos OS on ' + node + ' [y|N] ?')]
 [doc('Upgrade Talos OS on a node (uses TALOS_VERSION + current schematic, powercycle reboot, 10m timeout)')]
 [script]
 upgrade-node node=controller_node:
@@ -313,6 +342,7 @@ upgrade-node node=controller_node:
       --timeout=10m
 
 [group('lifecycle')]
+[confirm('Upgrade Kubernetes control plane on ' + node + ' to ${KUBERNETES_VERSION} [y|N] ?')]
 [doc('Upgrade Kubernetes on a node to the version pinned in mise.toml (KUBERNETES_VERSION)')]
 [script]
 upgrade-k8s node=controller_node:

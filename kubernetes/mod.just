@@ -69,12 +69,23 @@ flux-check:
     flux check --pre
 
 [group('flux')]
-[doc('Force a full Flux reconcile: refresh the Git source, then reconcile both root Kustomizations (cluster-vars + cluster-apps)')]
+[doc('Force a full Flux reconcile: refresh the Git source, then reconcile both root Kustomizations (cluster-vars + cluster-apps). Structured per-stage logging with duration.')]
 [script]
 flux-reconcile:
+    t0=${SECONDS}
+    just log info "Stage: reconcile Git source"
     flux reconcile source git flux-system -n flux-system
+    t1=${SECONDS}
+    just log info "Reconciled Git source" duration "$((t1-t0))s"
+    just log info "Stage: reconcile cluster-vars"
     flux reconcile kustomization cluster-vars -n flux-system
+    t2=${SECONDS}
+    just log info "Reconciled cluster-vars" duration "$((t2-t1))s"
+    just log info "Stage: reconcile cluster-apps"
     flux reconcile kustomization cluster-apps -n flux-system
+    t3=${SECONDS}
+    just log info "Reconciled cluster-apps" duration "$((t3-t2))s"
+    just log info "flux-reconcile complete" total "$((t3-t0))s"
 
 [group('flux')]
 [doc('List failed Helm Releases')]
@@ -83,47 +94,47 @@ list-failed-hrs:
     kubectl get hr --all-namespaces | grep -E "False|Unknown" || echo "All HRs healthy"
 
 [group('flux')]
-[doc('Restart all failed HelmReleases (suspend + resume)')]
+[doc('Restart all failed HelmReleases (suspend + resume) — JSON-based detection on the Ready=False condition, immune to flux/kubectl text-output drift')]
 [script]
 restart-failed-hrs:
-    kubectl get hr --all-namespaces | grep False | awk '{print $2, $1}' | xargs -L 1 bash -c 'flux suspend hr $0 -n $1'
-    kubectl get hr --all-namespaces | grep False | awk '{print $2, $1}' | xargs -L 1 bash -c 'flux resume hr $0 -n $1'
+    kubectl get hr -A -o json \
+      | jq -r '.items[] | select(.status.conditions[]? | select(.type=="Ready" and .status=="False")) | "\(.metadata.namespace) \(.metadata.name)"' \
+      | while read -r ns name; do
+          flux suspend hr "$name" -n "$ns"
+          flux resume hr "$name" -n "$ns"
+        done
 
 # === debug ===
 
 [group('debug')]
-[doc('Browse a PVC')]
+[doc('Open a debug Alpine shell with a PVC mounted (default mountpath=/mnt; pod auto-removes on exit)')]
 [script]
-browse-pvc claim ns="default":
-    kubectl browse-pvc -n {{ ns }} -i mirror.gcr.io/alpine:latest {{ claim }}
+browse-pvc claim ns="default" mountpath="/mnt":
+    kubectl run -n "{{ ns }}" "debug-{{ claim }}" -it --rm --restart=Never \
+      --image=mirror.gcr.io/alpine:latest \
+      --overrides='{
+        "apiVersion": "v1",
+        "spec": {
+          "containers": [{
+            "name": "debug",
+            "image": "mirror.gcr.io/alpine:latest",
+            "command": ["/bin/sh"],
+            "stdin": true,
+            "tty": true,
+            "workingDir": "{{ mountpath }}",
+            "volumeMounts": [{"name": "data", "mountPath": "{{ mountpath }}"}]
+          }],
+          "volumes": [{"name": "data", "persistentVolumeClaim": {"claimName": "{{ claim }}"}}],
+          "restartPolicy": "Never"
+        }
+      }'
 
 [group('debug')]
-[doc('Run a debug Alpine pod with a PVC mounted at /data/config (Ctrl-D to clean up)')]
-[script]
-mount-pvc claim ns="default":
-    kubectl run -n "{{ ns }}" "debug-{{ claim }}" -i --tty --rm --image=null --privileged --overrides='{
-      "apiVersion": "v1",
-      "spec": {
-        "containers": [{
-          "name": "debug",
-          "image": "docker.io/library/alpine:latest",
-          "command": ["/bin/sh"],
-          "stdin": true,
-          "stdinOnce": true,
-          "tty": true,
-          "volumeMounts": [{"name": "config", "mountPath": "/data/config"}]
-        }],
-        "volumes": [{"name": "config", "persistentVolumeClaim": {"claimName": "{{ claim }}"}}],
-        "restartPolicy": "Never"
-      }
-    }'
-
-[group('debug')]
-[doc('Open a shell on a node')]
+[doc('Open a shell on a node (Alpine, sysadmin profile; debug pod is cleaned up on EXIT — even on Ctrl-C)')]
 [script]
 node-shell node:
+    trap 'kubectl delete pod -n default -l app.kubernetes.io/managed-by=kubectl-debug --field-selector spec.nodeName={{ node }} --ignore-not-found --wait=false' EXIT
     kubectl debug node/{{ node }} -n default -it --image='mirror.gcr.io/alpine:latest' --profile sysadmin
-    kubectl delete pod -n default -l app.kubernetes.io/managed-by=kubectl-debug
 
 [group('debug')]
 [doc('Prune pods in Failed, Pending, or Succeeded state')]
@@ -134,10 +145,11 @@ prune-pods:
     done
 
 [group('debug')]
-[doc('Decode and print a Kubernetes Secret (requires kubectl-view-secret krew plugin)')]
+[doc('Decode and print a Kubernetes Secret (all data keys, base64-decoded; KEY=value lines — no krew plugin needed)')]
 [script]
 view-secret secret ns:
-    kubectl view-secret -n {{ ns }} {{ secret }}
+    kubectl get secret -n "{{ ns }}" "{{ secret }}" -o json \
+      | jq -r '.data // {} | to_entries[] | "\(.key)=\(.value | @base64d)"'
 
 [private]
 [script]
