@@ -12,6 +12,12 @@ openwrt_local_reinstall_script := '/etc/luci-uploads/reinstall-user-packages-apk
 nas_share_mount_script_on_mac := '~/Projects/personal/my-scripts-and-configs/macOS/btt-scripts/nas-share-mount.sh'
 openwrt_backup_dir_on_mac := '/Volumes/backups/openwrt'
 
+# Shared SSH/scp prefixes — recipes are separate scripts, so a bash function
+# would not survive across them; a justfile-level string variable does.
+ssh_opts := "-o ConnectTimeout=10 -o StrictHostKeyChecking=ask"
+ssh_router := "ssh " + ssh_opts + " root@" + openwrt_host
+scp_router := "scp -q " + ssh_opts + " -p root@" + openwrt_host
+
 [private]
 [script]
 default:
@@ -44,14 +50,14 @@ maintain force="false":
 
     mkdir -p "{{ openwrt_backup_dir_on_mac }}"
     echo "Running OpenWrt maintenance on {{ openwrt_host }}"
-    ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=ask root@{{ openwrt_host }} '
+    {{ ssh_router }} '
       set -eu
       {{ openwrt_local_package_list_script }} >/dev/null
       {{ openwrt_local_backup_script }}
     '
 
     BACKUP_FILE="$(
-      ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=ask root@{{ openwrt_host }} \
+      {{ ssh_router }} \
         "ls -1t {{ openwrt_local_backup_dir }}/backup-*.tar.gz | head -n 1"
     )"
 
@@ -61,7 +67,7 @@ maintain force="false":
     fi
 
     echo "Copying ${BACKUP_FILE} to {{ openwrt_backup_dir_on_mac }}"
-    scp -q -o ConnectTimeout=10 -o StrictHostKeyChecking=ask -p root@{{ openwrt_host }}:${BACKUP_FILE} "{{ openwrt_backup_dir_on_mac }}/"
+    {{ scp_router }}:${BACKUP_FILE} "{{ openwrt_backup_dir_on_mac }}/"
     echo "Latest OpenWrt backup copied successfully."
 
     echo
@@ -73,57 +79,43 @@ maintain force="false":
 reinstall-packages:
     set -eu
 
-    wait_for_router() {
-      label="$1"
-      attempts="$2"
-      delay_seconds="$3"
-      attempt=1
-
+    # wait_for <label> <attempts> <delay_seconds> <ready_msg> <wait_msg> <check_cmd…>
+    # Polls until <check_cmd> exits 0 or attempts are exhausted.
+    wait_for() {
+      local label="$1" attempts="$2" delay_seconds="$3" ready_msg="$4" wait_msg="$5"
+      shift 5
+      local attempt=1
       while [ "${attempt}" -le "${attempts}" ]; do
-        if ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=ask root@{{ openwrt_host }} 'ubus call system board >/dev/null' >/dev/null 2>&1; then
-          echo "${label}: router is reachable again."
+        if "$@" >/dev/null 2>&1; then
+          echo "${label}: ${ready_msg}"
           return 0
         fi
-
-        echo "${label}: waiting for router (${attempt}/${attempts})..."
+        echo "${label}: ${wait_msg} (${attempt}/${attempts})..."
         sleep "${delay_seconds}"
         attempt=$((attempt + 1))
       done
-
-      echo "${label}: router did not come back in time."
+      echo "${label}: did not become ready in time."
       return 1
     }
 
-    wait_for_package_repos() {
-      label="$1"
-      attempts="$2"
-      delay_seconds="$3"
-      attempt=1
-
-      while [ "${attempt}" -le "${attempts}" ]; do
-        if ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=ask root@{{ openwrt_host }} '
-          set -eu
-          command -v apk >/dev/null 2>&1
-          apk update >/dev/null 2>&1
-        ' >/dev/null 2>&1; then
-          echo "${label}: package repositories are reachable."
-          return 0
-        fi
-
-        echo "${label}: waiting for WAN and package repositories (${attempt}/${attempts})..."
-        sleep "${delay_seconds}"
-        attempt=$((attempt + 1))
-      done
-
-      echo "${label}: package repositories did not become reachable in time."
-      return 1
+    check_router() {
+      {{ ssh_router }} 'ubus call system board >/dev/null'
+    }
+    check_package_repos() {
+      {{ ssh_router }} '
+        set -eu
+        command -v apk >/dev/null 2>&1
+        apk update >/dev/null 2>&1
+      '
     }
 
-    wait_for_router "Router availability check" 60 5
-    wait_for_package_repos "Package repository check" 60 5
+    wait_for "Router availability check" 60 5 \
+      "router is reachable again." "waiting for router" check_router
+    wait_for "Package repository check" 60 5 \
+      "package repositories are reachable." "waiting for WAN and package repositories" check_package_repos
 
     echo "Running OpenWrt reinstall script"
-    ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=ask root@{{ openwrt_host }} "
+    {{ ssh_router }} "
       set -eu
       if [ ! -x '{{ openwrt_local_reinstall_script }}' ]; then
         echo 'Reinstall script is missing or not executable: {{ openwrt_local_reinstall_script }}'
@@ -137,36 +129,26 @@ reinstall-packages:
 upgrade force="false":
     set -eu
 
-    run_owut_check() {
-      version_to="$1"
-
-      ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=ask root@{{ openwrt_host }} "
+    # run_owut <subcmd> <version_to>
+    # `check` is invoked with `2>&1` by the caller so awk can scan
+    # WARNING:/ERROR: lines on stdout; `blob` keeps stderr separate so the
+    # JSON body stays clean for the curl POST.
+    run_owut() {
+      local subcmd="$1" version_to="$2"
+      {{ ssh_router }} "
         set -eu
         if ! command -v owut >/dev/null 2>&1; then
           echo 'owut is not installed on the router'
           exit 1
         fi
-        owut check --version-to '${version_to}' 2>&1
-      "
-    }
-
-    run_owut_blob() {
-      version_to="$1"
-
-      ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=ask root@{{ openwrt_host }} "
-        set -eu
-        if ! command -v owut >/dev/null 2>&1; then
-          echo 'owut is not installed on the router'
-          exit 1
-        fi
-        owut blob --version-to '${version_to}'
+        owut ${subcmd} --version-to '${version_to}'
       "
     }
 
     asu_request_preflight() {
       version_to="$1"
       response_file="$(mktemp "${TMPDIR:-/tmp}/home-ops-openwrt-asu-response.XXXXXX")"
-      build_blob="$(run_owut_blob "${version_to}")"
+      build_blob="$(run_owut blob "${version_to}")"
 
       http_status="$(
         curl -sS \
@@ -204,8 +186,7 @@ upgrade force="false":
     }
 
     BOARD_JSON="$(
-      ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=ask root@{{ openwrt_host }} \
-        'ubus call system board'
+      {{ ssh_router }} 'ubus call system board'
     )"
     CURRENT_VERSION="$(printf '%s' "${BOARD_JSON}" | jq -r '.release.version')"
 
@@ -355,7 +336,7 @@ upgrade force="false":
       echo "WARNING: Major upgrades are riskier than current-branch upgrades."
     fi
 
-    CHECK_OUTPUT="$(run_owut_check "${TARGET_VERSION}")"
+    CHECK_OUTPUT="$(run_owut check "${TARGET_VERSION}" 2>&1)"
 
     SAFETY_LINE="$(
       printf '%s\n' "${CHECK_OUTPUT}" \
@@ -435,7 +416,7 @@ upgrade force="false":
 
     echo "Starting attended sysupgrade to ${TARGET_VERSION}"
     set +e
-    ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=ask root@{{ openwrt_host }} \
+    {{ ssh_router }} \
       "owut upgrade --verbose ${FORCE_FLAG} --version-to '${TARGET_VERSION}'"
     OWUT_SSH_STATUS=$?
     set -e
@@ -453,6 +434,5 @@ upgrade force="false":
     just openwrt reinstall-packages
 
     echo "Final router version:"
-    ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=ask root@{{ openwrt_host }} \
-      'ubus call system board' \
+    {{ ssh_router }} 'ubus call system board' \
       | jq -r '"Version: \(.release.version)", "Revision: \(.release.revision)"'
