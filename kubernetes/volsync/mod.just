@@ -30,7 +30,7 @@ restore rsrc previous="0" ns="default":
     kubectl -n "{{ ns }}" get deploy,sts -l "app.kubernetes.io/name={{ rsrc }}" -o name \
       | xargs -r -I{} kubectl -n "{{ ns }}" scale {} --replicas=0
     kubectl -n "{{ ns }}" wait pod --for=delete --selector="app.kubernetes.io/name={{ rsrc }}" --timeout=5m || true
-    cat <<EOF | kubectl apply --server-side -f -
+    cat <<EOF | kubectl apply --server-side --field-manager just-volsync-restore -f -
     apiVersion: batch/v1
     kind: Job
     metadata:
@@ -60,7 +60,7 @@ restore rsrc previous="0" ns="default":
     EOF
     kubectl -n "{{ ns }}" wait "job/{{ rsrc }}-wipe" --for=condition=complete --timeout=10m
     kubectl -n "{{ ns }}" delete job "{{ rsrc }}-wipe"
-    cat <<EOF | kubectl apply --server-side -f -
+    cat <<EOF | kubectl apply --server-side --field-manager just-volsync-restore -f -
     apiVersion: volsync.backube/v1alpha1
     kind: ReplicationDestination
     metadata:
