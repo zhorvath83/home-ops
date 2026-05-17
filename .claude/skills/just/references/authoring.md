@@ -13,7 +13,7 @@ Use this reference when adding or modifying Just recipes.
 - always include a one-line doc comment immediately above the recipe header — `just --list` renders it as the description
 - arguments are positional only; document positional defaults in the doc comment when the recipe has more than 2 args
 - prefer `[script]` recipes when the body needs multi-line bash; plain recipes are fine for single-command wrappers
-- read env values from `.mise.toml` rather than redefining them inside the recipe (e.g. `TALOS_VERSION`, `KUBERNETES_VERSION`, `KUBECONFIG`)
+- read env values from `.mise.toml` rather than redefining them inside the recipe (e.g. `TALOS_VERSION`, `KUBERNETES_VERSION`, `KUBECONFIG`, `NAS_MOUNT_SCRIPT`); inside `mod.just` use `env_var('NAME')` to surface them as justfile variables
 - group related recipes in the same `mod.just` with `[group: 'name']` labels for `--list` ordering
 
 ## Adding A New Mod Group
@@ -27,5 +27,5 @@ Use this reference when adding or modifying Just recipes.
 
 - do not introduce `key=value` named-argument syntax — it does not work in Just
 - do not chain shell commands across recipe boundaries; if two steps belong together, put them in one recipe and call it from elsewhere
-- do not duplicate logic across mods; factor shared scripts into the helper recipes or a dedicated `scripts/` file invoked from a recipe
+- do not duplicate logic across mods; factor shared scripts into a dedicated `_<purpose>.sh` file next to the primary mod and invoke it from each consumer (precedent: `kubernetes/talos/_resolve-controller.sh` shared by `kubernetes/talos/mod.just` and `kubernetes/bootstrap/mod.just`)
 - do not bypass `op run` / `op inject` for credentials when the existing recipe already uses them

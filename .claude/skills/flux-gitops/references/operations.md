@@ -14,7 +14,7 @@ For everyday Flux work, prefer the `just k8s` recipes (group `flux` and `sync`):
 - `just k8s sync-ks <name> <namespace>` — sync a single Kustomization
 - `just k8s sync-es <name> <namespace>` — sync a single ExternalSecret
 - `just k8s sync <resource>` — polymorphic cluster-wide sync (`hr|ks|gitrepo|ocirepo|es`)
-- `just k8s list-failed-hrs` / `just k8s restart-failed-hrs`
+- `just k8s list-failed-hrs` / `just k8s restart-failed-hrs` — both use JSON detection on the HelmRelease `Ready` condition (immune to kubectl/flux column-output drift); `list-failed-hrs` prints `NAMESPACE/NAME`, `READY`, and the Ready reason column-aligned
 - `just k8s apply-ks <name> <namespace>` / `just k8s delete-ks <name> <namespace>` — local-only Kustomization apply/delete
 
 Use the upstream CLI directly when no recipe wraps the operation:

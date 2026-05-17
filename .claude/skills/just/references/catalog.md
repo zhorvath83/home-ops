@@ -25,7 +25,8 @@ Use this reference to rebuild the current Just surface before editing.
 - Recipe arguments are **positional only** (`set positional-arguments`). Defaults shown in `--list` like `restore app ns="default"` are positional defaults, not named arguments.
 - Shared globals at the top of `.justfile`: `set lazy`, `set quiet`, `set positional-arguments`, bash interpreter with `-euo pipefail`.
 - Two private helpers (`log`, `template`) are reusable across mods via the `log` and `template` recipes.
-- Env values come from `.mise.toml` (`TALOS_VERSION`, `KUBERNETES_VERSION`, `KUBECONFIG`, `TALOSCONFIG`, etc.) — recipes read them, do not redefine them.
+- Env values come from `.mise.toml` (`TALOS_VERSION`, `KUBERNETES_VERSION`, `KUBECONFIG`, `TALOSCONFIG`, `NAS_MOUNT_SCRIPT`, etc.) — recipes read them, do not redefine them.
+- Cross-mod shared shell logic lives in dedicated scripts next to its primary mod (e.g. `kubernetes/talos/_resolve-controller.sh` is the single source of truth for the `controller`/`controller_node` fallback, called from both `kubernetes/talos/mod.just` and `kubernetes/bootstrap/mod.just`). Prefer this pattern over duplicating shell expressions across `mod.just` files.
 
 ## Domain Surface To Preserve Unless Intentional
 
