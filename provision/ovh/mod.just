@@ -4,6 +4,9 @@ set script-interpreter := ['bash', '-euo', 'pipefail']
 set shell := ['bash', '-euo', 'pipefail', '-c']
 
 tf_dir := justfile_dir() + '/provision/ovh'
+# Shared `op run + terraform` prefix — every recipe wraps a single
+# terraform subcommand with the same 1Password env injection.
+tf := "op run --no-masking --env-file=./.env -- terraform"
 
 [private]
 [script]
@@ -13,21 +16,21 @@ default:
 [doc('terraform init -upgrade (TF_VAR_* injected from ./.env via op run)')]
 [script]
 init:
-    cd {{ tf_dir }} && op run --no-masking --env-file=./.env -- terraform init -upgrade
+    cd {{ tf_dir }} && {{ tf }} init -upgrade
 
 [doc('terraform plan (TF_VAR_* injected from ./.env via op run)')]
 [script]
 plan:
-    cd {{ tf_dir }} && op run --no-masking --env-file=./.env -- terraform plan
+    cd {{ tf_dir }} && {{ tf }} plan
 
 [doc('terraform apply (TF_VAR_* injected from ./.env via op run) + sync S3 outputs back to HomeOps/ovh 1Password item')]
 [script]
 apply:
     cd {{ tf_dir }}
-    op run --no-masking --env-file=./.env -- terraform apply
+    {{ tf }} apply
     # Pull all outputs in one shot — replaces six separate
     # `op run -- terraform output -raw <name>` invocations.
-    outputs="$(op run --no-masking --env-file=./.env -- terraform output -json)"
+    outputs="$({{ tf }} output -json)"
     # Pre-fetch into variables so jq's non-zero exit (missing/null value)
     # aborts the recipe instead of being swallowed by `$(…)` substitution
     # inside the `op item edit` argument list.
@@ -49,4 +52,4 @@ apply:
 [doc('terraform force-unlock <id> (TF_VAR_* injected from ./.env via op run)')]
 [script]
 unlock id:
-    cd {{ tf_dir }} && op run --no-masking --env-file=./.env -- terraform force-unlock {{ id }}
+    cd {{ tf_dir }} && {{ tf }} force-unlock {{ id }}
