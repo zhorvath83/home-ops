@@ -344,7 +344,7 @@ spec:
 
 Változások:
 - `metadata.name`: `cluster-apps-plex` → `plex` (referencia konvenció)
-- `metadata.namespace: flux-system` **megőrizve** — a substituteFrom (`cluster-settings`/`cluster-secrets`) a flux-system namespace-beli resource-okat kéri, ezért minden child Kustomization-nek ott kell léteznie. A bjw-s "parent öröklés" minta nem kompatibilis ezzel.
+- `metadata.namespace: flux-system` átmenetileg megőrizve, de **Step 9-ben visszafordítva**: a bjw-s "parent öröklés" minta (parent `kustomization.yaml` `namespace: <ns>` direktívája bélyegzi a workload-ns-t) kerül alkalmazásra a Step 9 keretében (lásd STATUS L27, `metadata.namespace` strip 45 ks.yaml-ből, KS-ek szétszórva 8 workload namespace-be).
 - `sourceRef.name`: `home-ops-kubernetes` → `flux-system` (FluxInstance default GitRepo név)
 - `sourceRef.namespace: flux-system` explicit
 - `commonMetadata.labels.app.kubernetes.io/name: plex` hozzáadva
@@ -467,14 +467,9 @@ Manuálisan — a `dependsOn:` listák `cluster-apps-X` referenciáit `X`-re át
 ### Batch 6: (SKIPPED — Plex iGPU passthrough most NEM kerül bevezetésre)
 Eddig sem volt a Plex-nek hardware transcode konfigurálva, ezért a migráció során sem adunk neki. Ha később bevezetjük: külön projekt, lásd phase 2 a [15-post-cutover.md](./15-post-cutover.md)-ben.
 
-### Batch 7: cluster-settings.yaml frissítés
-- `kubernetes/flux/vars/cluster-settings.yaml`:
-  - `CLUSTER_POD_CIDR`: `10.244.0.0/16` (változás: `10.42` → `10.244`)
-  - `CLUSTER_SVC_CIDR`: `10.245.0.0/16` (változás: `10.43` → `10.245`)
-  - `CLUSTER_NODE_1_CIDR`: `192.168.1.11/32` (változás: `.6` → `.11`)
-  - `LB_ENVOY_INTERNAL_IP`: `192.168.1.18` (változatlan)
-  - `LB_K8S_GATEWAY_IP`: `192.168.1.19` (változatlan)
-  - `LB_MEDIASERVER_IP`: `192.168.1.20` (változatlan)
+### Batch 7: ~~cluster-settings.yaml frissítés~~ (visszafordítva Phase 6.7-ben)
+
+> **Phase 6.7 — törlés**: a `kubernetes/flux/vars/cluster-settings.yaml` ConfigMap és vele a teljes `kubernetes/flux/vars/` mappa törölve. A POD/SVC CIDR és RFC1918 IP-k hardcodeolva a manifesztekbe (CLAUDE.md policy: "private RFC1918 addresses... may be hardcoded directly in manifests"). Eredeti érték-tábla audit-trail-ként megmarad a Phase 6 átmeneti commit-ekben (lásd `1da3a84d9` környékén).
 
 ## Refactor helper script (just recipe)
 

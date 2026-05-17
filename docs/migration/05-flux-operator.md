@@ -4,16 +4,16 @@
 
 | Részfeladat | Állapot |
 |---|---|
-| `kubernetes/flux/cluster/ks.yaml` (cluster-vars + cluster-apps Kustomization-ök, SOPS + substituteFrom + HelmRelease default patches) | ✅ kész — bjw-s mintára |
+| `kubernetes/flux/cluster/ks.yaml` (egyetlen `cluster-apps` Kustomization, csak HelmRelease default patch — Phase 6.7 után visszaegyszerűsítve) | ✅ kész — bjw-s parity |
 | Legacy bootstrap fájlok törlése (`flux/apps.yaml`, `flux/config/cluster.yaml`, `flux/config/flux.yaml`, `flux/config/kustomization.yaml`, `flux/config/crds/.gitkeep`) | ✅ kész — FluxInstance fogja a GitRepository-t generálni, manuális Flux install megszűnik |
-| `kubernetes/flux/vars/` megőrizve (cluster-settings + cluster-secrets) | ✅ kész |
+| ~~`kubernetes/flux/vars/` megőrizve (cluster-settings + cluster-secrets)~~ | ❌ visszafordítva Phase 6.7-ben — a `vars/` mappa törölve, runtime SOPS megszüntetve, `PUBLIC_DOMAIN` hardcoded, `SECRET_QBITTORRENT_PW` ESO-ra migrálva |
 | `kubernetes/apps/flux-system/flux-operator/` subtree (HelmRelease + OCIRepo + ks.yaml) | ✅ kész |
 | `kubernetes/apps/flux-system/flux-instance/` subtree (HelmRelease a FluxInstance CR-rel + OCIRepo + ks.yaml; `sync.ref: refs/heads/talos`, cutover-kor `main`) | ✅ kész |
-| `sops-age` Secret bootstrap-idős apply (`resources.yaml.j2`-ben, `op://HomeOps/homelab-age-key/keys.txt`) | ✅ kész |
+| ~~`sops-age` Secret bootstrap-idős apply~~ | ❌ Phase 6.7-ben kivéve a `resources.yaml.j2`-ből — runtime SOPS megszűnt |
 | Flux Operator + FluxInstance **runtime install** | ⏸ Phase 4 éles futtatás (`just cluster-bootstrap cluster`) |
 | FluxInstance reconcile → GitRepository + bootstrap Kustomization auto-create | ⏸ Phase 4 éles futtatás után |
 
-A `flux/cluster/ks.yaml` már jelen van — a FluxInstance `sync.path: kubernetes/flux/cluster` rákapcsolódik amint a Flux Operator install fut. A `cluster-vars` Kustomization elsőnek apply-olja a `flux/vars/`-t, majd `cluster-apps` reconcile-ol a teljes `./kubernetes/apps`-on.
+A `flux/cluster/ks.yaml` már jelen van — a FluxInstance `sync.path: kubernetes/flux/cluster` rákapcsolódik amint a Flux Operator install fut. A `cluster-apps` Kustomization közvetlenül reconcile-ol a teljes `./kubernetes/apps`-on (a Phase 6.7 előtti tervekben szereplő `cluster-vars` köztes lépés megszűnt).
 
 ## Cél
 
@@ -48,15 +48,11 @@ kubernetes/apps/flux-system/
     └── webhooks/                               # GitHub webhook receiver (megőrzött)
 
 kubernetes/flux/
-├── cluster/
-│   └── ks.yaml                                 # root Kustomization → ./kubernetes/apps
-└── vars/
-    ├── kustomization.yaml
-    ├── cluster-settings.yaml                   # MEGŐRZÖTT (onedr0p-stílus)
-    └── cluster-secrets.sops.yaml               # MEGŐRZÖTT (PUBLIC_DOMAIN, SECRET_QBITTORRENT_PW)
+└── cluster/
+    └── ks.yaml                                 # root Kustomization → ./kubernetes/apps (csak HelmRelease default patch)
 ```
 
-**Megjegyzés**: a bjw-s **nem** használja a `vars/` mappát — minden Helm value az app `helmrelease.yaml`-ben közvetlenül él. A te jelenlegi setup-od (és onedr0p / buroa) `cluster-settings` ConfigMap-ot és `cluster-secrets` Secret-et használ `substituteFrom`-mal. **Megőrizzük ezt a mintát** — a bjw-s-szintű minimalizmus külön major refaktor lenne, és nem cél a cutover részeként.
+**Megjegyzés**: a bjw-s **nem** használja a `vars/` mappát — minden Helm value az app `helmrelease.yaml`-ben közvetlenül él. Az eredeti terv a `cluster-settings` ConfigMap + `cluster-secrets` SOPS Secret + `substituteFrom` minta megőrzése volt (onedr0p / buroa stílus), de a Phase 6.7 audit során ez visszafordult: a `vars/` mappa törölve, `PUBLIC_DOMAIN` hardcoded, `SECRET_QBITTORRENT_PW` ExternalSecret-en. **A live állapot bjw-s parity-ben van.**
 
 ## Flux Operator HelmRelease
 
@@ -252,44 +248,22 @@ spec:
 - Cutover után (talos branch merge main-be): `ref: refs/heads/main`.
 - A FluxInstance HelmRelease ezt változtatja meg cutover idején — egyetlen érték.
 
-## Cluster root Kustomization-ök — kétszintű flow
+## Cluster root Kustomization — egy lépcsős flow
 
-A `FluxInstance` `sync.path: kubernetes/flux/cluster`-re mutat. Ott **két Kustomization** él egy fájlban: `cluster-vars` (cluster-settings + cluster-secrets a `flux/vars/` mappából) és `cluster-apps` (a `./kubernetes/apps`-t reconcile-álja). A `cluster-apps` `dependsOn` a `cluster-vars`-ra, hogy a substituteFrom forrásai garantáltan léteznek a reconcile előtt.
+> **Phase 6.7 frissítés**: az eredeti terv két Kustomization-t használt (`cluster-vars` SOPS-decryptel + `cluster-apps` substituteFrom-mal). A Phase 6.7 audit során ez bjw-s parity-re egyszerűsödött: a `vars/` mappa törölve, a runtime SOPS megszűnt, a `cluster-secrets`/`cluster-settings` substituteFrom kivéve. **Egyetlen `cluster-apps` Kustomization él**, csak a HelmRelease default-okat injektálja child KS-eken keresztül.
+
+A `FluxInstance` `sync.path: kubernetes/flux/cluster`-re mutat. Ott **egyetlen Kustomization** él (`cluster-apps`), amely a `./kubernetes/apps` tree-t reconcile-álja és HelmRelease default-okat injektál minden HelmRelease-be.
 
 **Fájl:** `kubernetes/flux/cluster/ks.yaml`
 
 ```yaml
 ---
-# Stage 1: cluster-vars — cluster-settings ConfigMap + cluster-secrets Secret (SOPS)
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: cluster-vars
-  namespace: flux-system
-spec:
-  interval: 1h
-  path: ./kubernetes/flux/vars
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
-  decryption:
-    provider: sops
-    secretRef:
-      name: sops-age
-  wait: true
-  timeout: 5m
----
-# Stage 2: cluster-apps — a teljes ./kubernetes/apps tree, dependsOn cluster-vars
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: cluster-apps
   namespace: flux-system
 spec:
-  dependsOn:
-    - name: cluster-vars
   interval: 1h
   path: ./kubernetes/apps
   prune: true
@@ -297,38 +271,7 @@ spec:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  decryption:
-    provider: sops
-    secretRef:
-      name: sops-age
-  postBuild:
-    substituteFrom:
-      - kind: ConfigMap
-        name: cluster-settings
-      - kind: Secret
-        name: cluster-secrets
   patches:
-    - # Inject SOPS decryption + substituteFrom defaults into every child Kustomization
-      patch: |-
-        apiVersion: kustomize.toolkit.fluxcd.io/v1
-        kind: Kustomization
-        metadata:
-          name: _
-        spec:
-          decryption:
-            provider: sops
-            secretRef:
-              name: sops-age
-          postBuild:
-            substituteFrom:
-              - kind: ConfigMap
-                name: cluster-settings
-              - kind: Secret
-                name: cluster-secrets
-      target:
-        group: kustomize.toolkit.fluxcd.io
-        kind: Kustomization
-        labelSelector: substitution.flux.home.arpa/disabled notin (true)
     - # Inject HelmRelease defaults into every HelmRelease (via child Kustomization patch)
       patch: |-
         apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -366,38 +309,13 @@ spec:
         kind: Kustomization
 ```
 
-**Bootstrap flow ezzel a struktúrával**:
+**Bootstrap flow**:
 
-1. A bootstrap helmfile végén a `flux-instance` release fut → a Flux Instance létrejön és reconcile-ol.
-2. A `FluxInstance.spec.sync.path: kubernetes/flux/cluster` egy implicit Kustomization-t hoz létre `flux-system` névvel, amely apply-olja a `ks.yaml` tartalmát → két új Kustomization létrejön: `cluster-vars` és `cluster-apps`.
-3. **`cluster-vars`** reconcile-ol elsőként:
-   - Olvassa a `kubernetes/flux/vars/`-t (kustomization.yaml → cluster-settings.yaml + cluster-secrets.sops.yaml).
-   - A `cluster-secrets.sops.yaml`-t a `sops-age` Secret-tel dekódolja.
-   - Létrehozza a `cluster-settings` ConfigMap-et és a `cluster-secrets` Secret-et a `flux-system` namespace-ben.
-   - `wait: true` → várja, hogy mindkét resource Ready.
-4. **`cluster-apps`** elindul (mert `dependsOn: cluster-vars` Ready):
-   - Reconcile-ol a `./kubernetes/apps`-on.
-   - A `substituteFrom: cluster-settings + cluster-secrets` mostantól működik (mindkettő létezik).
-   - A két patch beépíti a SOPS dekripciót és a substituteFrom-ot minden child Kustomization-be is, és a HelmRelease default-okat minden HelmRelease-be.
+1. A bootstrap helmfile végén a `flux-instance` release fut → a FluxInstance létrejön és reconcile-ol.
+2. A `FluxInstance.spec.sync.path: kubernetes/flux/cluster` egy implicit Kustomization-t hoz létre `flux-system` névvel, amely apply-olja a `ks.yaml` tartalmát → a `cluster-apps` Kustomization létrejön.
+3. **`cluster-apps`** közvetlenül reconcile-ol a `./kubernetes/apps`-on. A patch beépíti a HelmRelease default-okat minden HelmRelease-be (CRD createReplace, retry, timeout, remediation).
 
-**Kulcs**: a `cluster-vars` Kustomization MIATT nem kell a bootstrap-ben kézzel apply-olni a `flux/vars/`-t. Flux kezeli, GitOps-natívan.
-
-**Magyarázat a patches-hez**:
-1. **Első patch** (SOPS + substituteFrom): minden gyermek Kustomization automatikusan örökli ezeket. Opt-out a `substitution.flux.home.arpa/disabled: "true"` label-lal.
-2. **Második patch** (HelmRelease defaults): minden HelmRelease automatikusan kap install/rollback/upgrade default-okat (CRD createReplace, retry, timeout, remediation).
-
-## `kubernetes/flux/vars/kustomization.yaml`
-
-Változatlan a jelenlegi:
-
-```yaml
----
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-resources:
-  - cluster-settings.yaml
-  - cluster-secrets.sops.yaml
-```
+**Patch magyarázat**: a kustomize patch a child Kustomization-ökön keresztül érvényesül — minden child KS örökli a saját HelmRelease default-okat. Külön opt-out nem szükséges; a default-ok minden HR-re ártalmatlanul érvényesülnek.
 
 ## GitRepository — Flux Operator által generált
 
@@ -425,34 +343,6 @@ sourceRef:
   name: flux-system
   namespace: flux-system
 ```
-
-## sops-age Secret bootstrap
-
-A SOPS decryption-höz szükséges az `sops-age` Secret a `flux-system` namespace-ben. Ezt **a bootstrap időben** kell beilleszteni (a Flux még nem tudja maga magát feloldani).
-
-**Recipe:** kubernetes/bootstrap/mod.just `resources` stage-be hozzáadjuk:
-
-```bash
-# A resources.yaml.j2 mellett a sops-age Secret kézi apply:
-kubectl create secret generic sops-age -n flux-system \
-  --from-file=age.agekey="$HOME/.config/sops/age/keys.txt" \
-  --dry-run=client -o yaml | kubectl apply --server-side -f -
-```
-
-VAGY a `resources.yaml.j2`-ben:
-
-```yaml
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: sops-age
-  namespace: flux-system
-stringData:
-  age.agekey: op://HomeOps/homelab-age-key/keys.txt
-```
-
-A `1Password HomeOps/homelab-age-key` item-ben tárolt age private key-t injektálja `op inject`-tel.
 
 ## Validation
 
@@ -543,7 +433,6 @@ Aztán a bootstrap helmfile újrafutása újra hoz mindent (az apps már a clust
 
 ## Open issues
 
-- **`sops-age` Secret életciklusa**: jelenleg az `~/.config/sops/age/keys.txt`-t használjuk. 1Password-ba beemelni és `op inject`-tel kezelni — már az tervezés része, csak a 1Password item-et létre kell hozni.
 - **GitOps source private vs public repo**: a `home-ops` repo public. Ha jövőben private lenne, a `GitRepository.spec.secretRef`-et kell konfigurálni (SSH key vagy PAT 1Password-ből).
 - **Notification controller — Pushover provider**: a jelenlegi `flux-provider-pushover` megőrzött (lásd [06-repo-restructure.md](./06-repo-restructure.md)). FluxInstance `components`-be `notification-controller` benn van.
 - **Flux Instance verzió drift**: a `flux-instance` chart verzió és a `distribution.artifact` `flux-operator-manifests:v0.49.0` verzió eltérhet. Renovate ezt egyben frissíti (group: flux-operator).

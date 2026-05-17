@@ -13,7 +13,7 @@ Ez a könyvtár tartalmazza a home-ops infrastruktúra teljes átalakításának
 | LoadBalancer | MetalLB | Cilium L2 announcement (`.15-.25` pool) |
 | GitOps | Klasszikus Flux install | Flux Operator + FluxInstance |
 | Cluster bootstrap | Ansible (xanmanning.k3s role) | Helmfile bootstrap chain + `op inject` resources |
-| Flux cluster root | Egyetlen `cluster-apps` Kustomization | `cluster-vars` + `cluster-apps` (dependsOn) |
+| Flux cluster root | Egyetlen `cluster-apps` Kustomization | Egyetlen `cluster-apps` Kustomization (bjw-s minta, csak HelmRelease default patch — a Phase 6.7-ben tervezett `cluster-vars` split visszafordítva) |
 | Task runner | Task (`.taskfiles/`) | Just (`.justfile` + `mod.just`) |
 | Tool versioning | nincs | mise (`.mise.toml`) |
 | Templating | nincs | minijinja-cli + `op inject` |
@@ -25,7 +25,7 @@ Ez a könyvtár tartalmazza a home-ops infrastruktúra teljes átalakításának
 | Ingress | Envoy Gateway | Envoy Gateway (változatlan, `envoy-external` + `envoy-internal`) |
 | Split-DNS | k8s-gateway | k8s-gateway (változatlan) |
 | Backup | VolSync + Kopia + OVH S3 | VolSync + Kopia + OVH S3 (változatlan, 3-4 GB total) |
-| Secrets | SOPS + 1P Connect + ExternalSecrets | SOPS (cluster-secrets + homepage) + 1P Connect + ExternalSecrets |
+| Secrets | SOPS + 1P Connect + ExternalSecrets | 1P Connect + ExternalSecrets (runtime SOPS teljesen megszüntetve Phase 6.7-ben — `cluster-secrets.sops.yaml` és homepage SOPS Secret ESO-ra migrálva) |
 | Plex iGPU | nincs | nincs (i915 extension benne marad, mount NEM — phase 2) |
 
 ## Migráció modellje

@@ -90,7 +90,7 @@ A `restic-gui` → `backrest` rename viszont valós prune-kockázattal jár: a r
 - `versions-renovate/` skill — Phase 9 után átírás az új `.renovaterc.json5` + `.renovate/` fragmens-struktúrára
 - `provision-kubernetes/` skill — Talos-fókusz, K3s referenciák kivétele
 - `networking-platform/` skill — Envoy Gateway + Cilium LB-IPAM minta megerősítése, MetalLB referenciák ki; CiliumNetworkPolicy migráció után stateful CNP minta hozzáadása
-- `flux-gitops/` skill — Flux Operator + FluxInstance pattern + cluster-vars/cluster-apps aktualizálás
+- `flux-gitops/` skill — Flux Operator + FluxInstance pattern + egyszerűsített `cluster-apps` root KS (Phase 6.7 után bjw-s parity, `cluster-vars` split visszafordítva)
 - `external-secrets/`, `sops-secrets/`, `volsync/`, `cloudflare-terraform/` — kisebb frissítések (always-on RD minta a `volsync/` skill-be, `restore-into` recipe doc)
 - `sre/`, `architecture-review/`, `security-review/`, `k8s-workloads/` — sample-ek frissítése Talos/Cilium kontextusra
 
