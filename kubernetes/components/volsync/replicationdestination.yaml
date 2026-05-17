@@ -1,8 +1,11 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/volsync.backube/replicationdestination_v1alpha1.json
-# Bootstrap-only manifest for the next cluster recreate.
-# Keep this resource disabled until PVCs are re-created with the matching
-# dataSourceRef in pvc.yaml.
+# Bootstrap-only restore manifest. Permanently rendered, but inert by default:
+# - `kustomize.toolkit.fluxcd.io/ssa: IfNotPresent` makes Flux apply it ONCE per cluster
+#   (subsequent reconciles will NOT overwrite manual edits made by `just volsync restore`).
+# - `spec.trigger.manual: restore-once` means VolSync only acts when the trigger value
+#   is updated, so the RD is created Idle and waits for a manual cutover trigger.
+# Matching `dataSourceRef` lives in pvc.yaml.
 apiVersion: volsync.backube/v1alpha1
 kind: ReplicationDestination
 metadata:
