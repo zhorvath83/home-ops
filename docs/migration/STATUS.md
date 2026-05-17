@@ -291,9 +291,13 @@ Legend: ✅ done · 🟡 in-progress · ⏸ pending · ❌ blocked · ⏭ skippe
 
 ## Branch model
 
-- **`main`** — a régi K3s cluster GitOps forrása (a K3s VM jelenleg lekapcsolva).
+- **`main`** — a régi K3s cluster GitOps forrása **a pre-cutover Flux-pin elvégzéséig** (a K3s VM jelenleg lekapcsolva).
 - **`talos`** — az új Talos cluster aktív GitOps forrása (FluxInstance `sync.ref: refs/heads/talos`).
-- **Cutover-kor**: `talos` → merge `main`, FluxInstance `sync.ref` átáll `refs/heads/main`-re, a régi K3s VM nem indul újra (1-2 hét standby után decom).
+- **`k3s`** — a `main` HEAD-jéről (`d22fc20cd`) készített archív ág a Talos merge előtt. Szerepe: a régi K3s cluster GitRepository-ja erre pin-elve marad, így a `talos` → `main` merge után is izoláltan tartja a régi cluster utolsó konzisztens állapotát. Renovate kihagyja (`baseBranches: ["main"]`).
+- **Cutover lépések**:
+  1. Pre-cutover ([12-pre-cutover.md](./12-pre-cutover.md)): a régi K3s clusteren a `flux-system` GitRepository `spec.ref.branch` → `k3s`.
+  2. Cutover ([13-cutover-runbook.md](./13-cutover-runbook.md) Stage 7): `talos` → merge `main`, FluxInstance `sync.ref` átáll `refs/heads/main`-re.
+  3. A régi K3s VM 1-2 hét standby után decom — ha közben kell, a `k3s` ágra pin-elt Flux miatt biztonságosan újraindítható.
 
 ## Open items / blocker
 

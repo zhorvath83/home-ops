@@ -31,12 +31,13 @@ Ez a könyvtár tartalmazza a home-ops infrastruktúra teljes átalakításának
 ## Migráció modellje
 
 **Big-bang cutover**: az új cluster a `talos` branch-en teljesen kiépül és teszteltetik, mielőtt egyetlen forgalom is rákerül. A régi cluster a main branch-szel folyamatosan él. Cutover-kor:
-1. Régi clusteren utolsó VolSync snapshot OVH-ra.
-2. Új clusteren VolSync restore minden PVC-re.
-3. DNS cutover (Cloudflare + k8s-gateway split-DNS belső VIP-ek).
-4. `talos` branch merge `main`-be.
-5. Régi K3s cluster + Proxmox 1-2 hétig **standby** módban, mint biztonsági mentés.
-6. Megfigyelési ablak után: régi cluster decom, M93p Proxmox kikapcsolás és bare metal OMV install.
+1. Pre-cutover: a régi K3s cluster Flux GitRepository-ja átkapcsolva a `k3s` archív ágra (`d22fc20cd` HEAD), hogy a merge után se húzza le a Talos struktúrát.
+2. Régi clusteren utolsó VolSync snapshot OVH-ra.
+3. Új clusteren VolSync restore minden PVC-re.
+4. DNS cutover (Cloudflare + k8s-gateway split-DNS belső VIP-ek).
+5. `talos` branch merge `main`-be.
+6. Régi K3s cluster + Proxmox 1-2 hétig **standby** módban, mint biztonsági mentés.
+7. Megfigyelési ablak után: régi cluster decom, M93p Proxmox kikapcsolás és bare metal OMV install.
 
 ## Fázisok és időbecslés
 

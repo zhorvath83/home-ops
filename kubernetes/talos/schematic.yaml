@@ -21,7 +21,7 @@ customization:
       # Intel iGPU driver. Together with the i915.enable_guc=3 kernel arg
       # above, prepares the node for a future Plex hardware transcode setup.
       # The device mount into the Plex pod is NOT enabled today (see
-      # docs/migration/14-post-cutover.md, Phase 2).
+      # docs/migration/15-post-cutover.md, Phase 2).
       - siderolabs/i915
       # Intel CPU microcode — security and stability updates.
       - siderolabs/intel-ucode
