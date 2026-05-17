@@ -25,7 +25,7 @@ spec:
       sync:
         kind: GitRepository
         url: https://github.com/zhorvath83/home-ops.git
-        ref: refs/heads/talos
+        ref: refs/heads/main
         path: kubernetes/flux/cluster
         interval: 1h
       commonMetadata:
