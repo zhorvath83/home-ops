@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app wallos
+  name: wallos
   namespace: default
 spec:
   interval: 30m
@@ -83,7 +83,7 @@ spec:
 
     service:
       app:
-        controller: *app
+        controller: wallos
         ports:
           http:
             port: *port
@@ -111,7 +111,7 @@ spec:
 
     persistence:
       data:
-        existingClaim: *app
+        existingClaim: wallos
         advancedMounts:
           wallos:
             app:

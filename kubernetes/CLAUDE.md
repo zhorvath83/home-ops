@@ -66,7 +66,10 @@ Treat everything under `kubernetes/` as desired state for Flux, not as an impera
 - Start Kubernetes YAML files with `---`, use 2-space indentation, and keep formatting close to neighboring manifests.
 - Conventional top-level field order is `apiVersion → kind → metadata → spec`; within `metadata`, the order is `name → namespace → annotations → labels`. Match the existing sibling order when it diverges from this default; do not reorder sibling manifests as a side effect of an unrelated change.
 - Include `yaml-language-server` schema comments when the live sibling files already do so or when a stable schema URL is known.
-- Prefer short, stable anchors only when the same value is reused several times in one manifest. Do not use YAML anchors for scalar app names, resource names, or `controllers` keys.
+- YAML anchor policy follows the bjw-s-labs reference repo:
+  - **Allowed**: anchors for **scalar values** reused several times in the same manifest — typical examples are port numbers (`&port 8080`, `&httpPort 3000`), hostnames (`&host dash.horvathzoltan.me`), env-derived paths (`&exportDir "/data/nas/export"`), timezone (`&tz "Europe/Budapest"`), shared resource blocks (`&resources`, `&probes`, `&image`). Naming follows **lowerCamelCase**.
+  - **Forbidden**: anchors for **scalar app names** (`name: &app paperless`) or for `controllers`, `persistence`, `serviceAccount`, `bindings` map **keys** (`*app :`). These collapse to literals that future readers (and grep) can follow without indirection. bjw-s never uses this pattern, and earlier such uses in this repo were a maintenance trap.
+  - Rule of thumb: an anchor must save at least 2 reuses **and** name a value the chart values themselves understand. Anchors that exist only to deduplicate the app name are removed.
 - Keep YAML formatting close to neighboring files rather than reformatting entire manifests.
 - Preserve existing inline `# renovate:` annotations when touching versioned manifests.
 - Use repo-local skills for detailed procedures:

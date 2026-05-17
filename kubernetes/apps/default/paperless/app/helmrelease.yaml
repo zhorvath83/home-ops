@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app paperless
+  name: paperless
   namespace: default
 spec:
   interval: 30m
@@ -37,7 +37,7 @@ spec:
           type: RuntimeDefault
 
     controllers:
-      *app :
+      paperless:
         annotations:
           reloader.stakater.com/auto: "true"
 
@@ -251,7 +251,7 @@ spec:
 
     service:
       app:
-        controller: *app
+        controller: paperless
         ports:
           http:
             port: &port 8000
@@ -288,14 +288,14 @@ spec:
       valkey-data:
         type: emptyDir
         advancedMounts:
-          *app :
+          paperless:
             valkey:
               - path: /data
 
       data:
         existingClaim: paperless
         advancedMounts:
-          *app :
+          paperless:
             app: &dataMount
               - path: /data/local
           backup:
@@ -306,7 +306,7 @@ spec:
         server: 192.168.1.10
         path: /backups/paperless
         advancedMounts:
-          *app :
+          paperless:
             app: &exportMount
               - path: /data/nas/export
           backup:
@@ -317,7 +317,7 @@ spec:
         server: 192.168.1.10
         path: /scanner/paperless-inbox
         advancedMounts:
-          *app :
+          paperless:
             app:
               - path: /data/nas/inbox
 
@@ -326,7 +326,7 @@ spec:
         name: paperless-scripts
         defaultMode: 0755
         advancedMounts:
-          *app :
+          paperless:
             app:
               - path: /usr/src/paperless/scripts/pre-consume.sh
                 subPath: pre-consume.sh

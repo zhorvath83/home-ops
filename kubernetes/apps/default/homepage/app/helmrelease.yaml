@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app homepage
+  name: homepage
   namespace: default
 spec:
   interval: 30m
@@ -37,7 +37,7 @@ spec:
           type: RuntimeDefault
 
     controllers:
-      *app :
+      homepage:
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
@@ -91,7 +91,7 @@ spec:
 
     rbac:
       roles:
-        *app :
+        homepage:
           type: ClusterRole
           rules:
             - apiGroups:
@@ -151,20 +151,20 @@ spec:
                 - get
 
       bindings:
-        *app :
+        homepage:
           type: ClusterRoleBinding
           roleRef:
-            identifier: *app
+            identifier: homepage
           subjects:
-            - identifier: *app
+            - identifier: homepage
 
     serviceAccount:
       # allow scraping of k8s resources for widget
-      *app : {}
+      homepage: {}
 
     service:
       app:
-        controller: *app
+        controller: homepage
         ports:
           http:
             port: &port 3000
