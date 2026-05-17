@@ -88,10 +88,16 @@ flux-reconcile:
     just log info "flux-reconcile complete" total "$((t3-t0))s"
 
 [group('flux')]
-[doc('List failed Helm Releases')]
+[doc('List failed/unknown HelmReleases — JSON-based detection on the Ready condition, immune to kubectl text-output drift')]
 [script]
 list-failed-hrs:
-    kubectl get hr --all-namespaces | grep -E "False|Unknown" || echo "All HRs healthy"
+    failed="$(kubectl get hr -A -o json \
+      | jq -r '.items[] | select(.status.conditions[]? | select(.type=="Ready" and .status!="True")) | "\(.metadata.namespace)/\(.metadata.name)\t\(.status.conditions[] | select(.type=="Ready") | .status)\t\(.status.conditions[] | select(.type=="Ready") | .reason // "-")"')"
+    if [ -z "${failed}" ]; then
+      echo "All HRs healthy"
+    else
+      printf 'NAMESPACE/NAME\tREADY\tREASON\n%s\n' "${failed}" | column -t -s $'\t'
+    fi
 
 [group('flux')]
 [doc('Restart all failed HelmReleases (suspend + resume) — JSON-based detection on the Ready=False condition, immune to flux/kubectl text-output drift')]
