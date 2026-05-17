@@ -25,6 +25,7 @@
   ],
 
   dependencyDashboardTitle: "Renovate Dashboard 🤖",
+  baseBranches: ["main"],
   suppressNotifications: ["prIgnoreNotification"],
   rebaseWhen: "conflicted",
   assignees: ["@zhorvath83"],
