@@ -18,7 +18,6 @@ apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
   name: paperless
-  namespace: default
 spec:
   endpointSelector:
     matchLabels:

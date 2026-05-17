@@ -4,7 +4,6 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: "horvathzoltan-me"
-  namespace: networking
 spec:
   dnsNames:
     - "horvathzoltan.me"

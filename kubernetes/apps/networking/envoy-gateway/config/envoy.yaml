@@ -4,7 +4,6 @@ apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: EnvoyProxy
 metadata:
   name: envoy-external
-  namespace: networking
 spec:
   logging:
     level:
@@ -54,7 +53,6 @@ apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: EnvoyProxy
 metadata:
   name: envoy-internal
-  namespace: networking
 spec:
   logging:
     level:
