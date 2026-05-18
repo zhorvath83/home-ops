@@ -15,6 +15,7 @@ spec:
       namespace: external-secrets
     - name: democratic-csi
       namespace: kube-system
+    - name: plex
   interval: 1h
   path: ./kubernetes/apps/default/plex-trakt-sync/app
   postBuild:
