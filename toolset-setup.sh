@@ -50,17 +50,20 @@ case "$SHELL_NAME" in
     zsh)
         RC_INTERACTIVE="$HOME/.zshrc"
         RC_ENV="$HOME/.zshenv"
+        # shellcheck disable=SC2016 # written verbatim to rc file; expansion happens at source time
         ACTIVATE_LINE='eval "$(mise activate zsh)"'
         ;;
     bash)
         RC_INTERACTIVE="$HOME/.bashrc"
         RC_ENV="$HOME/.bash_profile"
+        # shellcheck disable=SC2016 # written verbatim to rc file; expansion happens at source time
         ACTIVATE_LINE='eval "$(mise activate bash)"'
         ;;
     *)
         die "Unsupported shell: $SHELL_NAME. Configure mise activation manually per https://mise.jdx.dev/getting-started.html#activate-mise"
         ;;
 esac
+# shellcheck disable=SC2016 # written verbatim to rc file; expansion happens at source time
 SHIMS_LINE='export PATH="$HOME/.local/share/mise/shims:$PATH"'
 
 # --- 1. mise CLI --------------------------------------------------------------

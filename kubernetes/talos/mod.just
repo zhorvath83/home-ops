@@ -271,7 +271,7 @@ render-config node:
 
 [group('config')]
 [confirm('Apply Talos config to ' + node + ' [y|N] ?')]
-[doc('Apply Talos config to a node (pass extra talosctl flags as args, e.g. --insecure). Bypass prompt via `just --yes talos apply-node ...` (used internally by the bootstrap chain).')]
+[doc('Apply Talos config to a node (pass extra talosctl flags as args, e.g. --insecure). Bypass prompt via `just --yes talos apply-node ...`')]
 [script]
 apply-node node *args:
     just talos render-config {{ node }} | talosctl -n {{ node }} apply-config -f /dev/stdin {{ args }}
