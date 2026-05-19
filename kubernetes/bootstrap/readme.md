@@ -2,7 +2,7 @@
 
 This directory holds the Talos + Kubernetes platform bootstrap chain — everything needed to bring an empty Talos node up to a Flux-reconciled cluster.
 
-The full design rationale for each stage is in [`docs/migration/04-bootstrap-helmfile.md`](../../docs/migration/04-bootstrap-helmfile.md) and [`docs/migration/05-flux-operator.md`](../../docs/migration/05-flux-operator.md). This readme is the operational entry-point.
+The full design rationale lives in the Basic Memory area-references [`docs/areas/flux-gitops`](../../basic-memory/docs/areas/flux-gitops.md) (Flux Operator + FluxInstance pattern, helmfile-driven bootstrap) and [`docs/areas/talos-cluster`](../../basic-memory/docs/areas/talos-cluster.md) (Talos bootstrap chain, op-inject flow). This readme is the operational entry-point.
 
 ## Prerequisites
 
@@ -51,4 +51,4 @@ just k8s flux-check          # flux check --pre
 
 ## Recovery
 
-If a single helmfile stage fails (e.g. a hung HelmRelease, `MissingRollbackTarget`), the `cluster` recipe is safe to re-run — every stage is idempotent. For HR-level recovery patterns (`helm uninstall` + `flux reconcile hr --force`, `kubectl delete vap/vapb safe-upgrades.gateway.networking.k8s.io`), see `docs/migration/STATUS.md` Phase 6 zárás notes.
+If a single helmfile stage fails (e.g. a hung HelmRelease, `MissingRollbackTarget`), the `cluster` recipe is safe to re-run — every stage is idempotent. For HR-level recovery patterns (`helm uninstall` + `flux reconcile hr --force`, `kubectl delete vap/vapb safe-upgrades.gateway.networking.k8s.io`, or the `helm history` + `helm rollback REVISION` path for HRs stuck mid-operation), see the BM area-reference [`docs/areas/flux-gitops`](../../basic-memory/docs/areas/flux-gitops.md) Claims section.

@@ -90,7 +90,7 @@ Internal clients use split DNS instead of the tunnel path:
 
 Most user-facing HTTPRoutes attach to both `envoy-external` and `envoy-internal`.
 
-See [docs/networking-readme.md](docs/networking-readme.md) for the current routing and split-DNS model.
+See [basic-memory/docs/areas/networking.md](basic-memory/docs/areas/networking.md) for the current routing and split-DNS model.
 
 ### DNS & External Integration
 
