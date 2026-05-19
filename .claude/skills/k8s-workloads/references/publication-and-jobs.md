@@ -6,7 +6,7 @@ Use this reference for routes, Homepage metadata, media-app decisions, and sched
 
 Default external publication uses the established Gateway API pattern:
 
-- hostname under `${PUBLIC_DOMAIN}`
+- hostname under `PublicDomain`
 - `parentRefs` targeting `envoy-external` in namespace `networking`
 - backend pointing to the app service identifier
 

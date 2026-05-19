@@ -28,7 +28,7 @@ Common live patterns:
 - `envoy-external` is the shared external Gateway for Cloudflare-published traffic; ClusterIP-only Service inside the cluster
 - `envoy-internal` is the shared LAN Gateway, exposed on a Cilium L2-announced VIP (pinned via `lbipam.cilium.io/ips`)
 - Cloudflare Tunnel forwards the public domain and wildcard traffic to `envoy-external.networking.svc.cluster.local`
-- `k8s-gateway` resolves `${PUBLIC_DOMAIN}` hostnames for LAN clients by watching HTTPRoutes attached to `envoy-internal`
+- `k8s-gateway` resolves `PublicDomain` hostnames for LAN clients by watching HTTPRoutes attached to `envoy-internal`
 - ExternalDNS watches Gateway and HTTPRoute resources and manages public DNS records for the external path
 
 ## Cluster-Wide Network Policy Baseline
