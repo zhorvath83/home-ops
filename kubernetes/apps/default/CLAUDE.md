@@ -1,35 +1,28 @@
 # Default Apps Guide
 
-This guide applies to `kubernetes/apps/default/`.
+This guide applies to `kubernetes/apps/default/`. It captures durable guardrails for user-facing application workloads; for current-state detail (app inventory by Homepage group, cross-cutting patterns, exposure model, storage strategy, claims, drift risk) read the Basic Memory area-reference `docs/areas/k8s-workloads` via the `basic-memory` MCP.
 
-## What Is Special Here
+## Scope
 
-This subtree contains user-facing application workloads rather than shared platform plumbing.
-
-Common live patterns here:
-
-- one app per directory with a `ks.yaml` entry point
-- main manifests under `app/`
-- optional extra directories such as `backup/` for scheduled jobs or sidecar workloads
-- a mix of app-template Helm releases and upstream charts
+User-facing application workloads — one app per directory with a `ks.yaml` entry point and main manifests under `app/`. Optional sibling directories such as `backup/` for scheduled jobs are acceptable when the repo already uses that pattern. A mix of app-template Helm releases and upstream charts is normal.
 
 ## Guardrails
 
-- Inspect 2-3 sibling apps with similar exposure, storage, and auth needs before changing structure.
-- Prefer official charts first, then bjw-s `app-template`, then custom manifests only when needed.
-- Routes for published apps usually target `envoy-external` in namespace `networking`, and should also target `envoy-internal` when the app is meant to be reachable directly from the LAN.
-- Technical endpoints that do not need LAN publication can remain `envoy-external`-only.
-- User-facing apps that should appear on the dashboard usually carry Homepage annotations.
-- App-managed secrets usually come from an `ExternalSecret` backed by the `onepassword-connect` ClusterSecretStore.
-- Backed-up apps should use the shared VolSync component in `ks.yaml` rather than app-local backup manifests.
-- Do not assume VolSync is the only backup layer for an app. Some workloads also write a curated export into the shared `/backups/...` tree so `resticprofile` can capture a second copy in OVH Object Storage.
-- Preserve app-specific export jobs, NFS backup mounts, and export paths when they already exist for a critical workload. Paperless is the reference pattern.
-- For storage, compare against sibling apps first; several media-oriented apps combine PVC, NFS, and `emptyDir` mounts.
-- User-facing app resource baseline:
-  - set explicit `resources.requests.cpu`, `resources.requests.memory`, and `resources.limits.memory`
-  - do not add CPU limits by default; use them only when a specific app needs throttling protection
-  - size requests from live usage or close sibling apps instead of copying large generic values
+- Inspect 2-3 sibling apps with similar exposure, storage, and auth before changing structure.
+- Chart preference order: official chart → bjw-s `app-template` → custom manifests only when needed.
+- Routes for published apps target `envoy-external` in namespace `networking`; add `envoy-internal` as a second parent when the app should also be reachable directly from the LAN. Technical endpoints can stay `envoy-external`-only.
+- Dashboard apps carry Homepage annotations; match group and icon conventions of nearby siblings.
+- App-managed secrets come from an `ExternalSecret` backed by the `onepassword-connect` ClusterSecretStore (see the canonical pattern in `kubernetes/apps/external-secrets/CLAUDE.md`).
+- Backed-up apps use the shared VolSync component via `ks.yaml`, not app-local backup manifests.
+- VolSync is not the only backup layer for every app. Critical workloads may also write a curated export into the shared `/backups/<app>` NFS tree so `resticprofile` captures a second copy in OVH Object Storage; Paperless is the canonical dual-coverage pattern. Preserve those export jobs and NFS mounts when they already exist.
+- For storage, compare against sibling apps first — several media-oriented apps combine PVC, NFS, and `emptyDir` mounts.
+
+## Resource Baseline
+
+- Set explicit `resources.requests.cpu`, `resources.requests.memory`, and `resources.limits.memory`.
+- Do not add CPU limits by default; use them only when a specific app needs throttling protection.
+- Size requests from live usage or close sibling apps instead of copying large generic values.
 
 ## Validation
 
-See `.claude/skills/k8s-workloads/references/validation.md` for the validation procedure.
+See `.claude/skills/k8s-workloads/references/validation.md`.

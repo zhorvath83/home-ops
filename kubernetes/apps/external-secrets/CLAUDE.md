@@ -1,63 +1,48 @@
 # External Secrets Platform Guide
 
-This guide applies to `kubernetes/apps/external-secrets/`.
+This guide applies to `kubernetes/apps/external-secrets/`. It captures durable guardrails for the secret-delivery platform; for current-state detail (components, claims, drift risk, gaps) read the Basic Memory area-reference `docs/areas/external-secrets` via the `basic-memory` MCP.
 
-## What Is Special Here
+## Scope
 
-This subtree provides the secret delivery platform used by many other applications.
-
-Current live layers:
-
-- `external-secrets/` deploys the operator itself
-- `onepassword-connect/` deploys the 1Password Connect service AND its `ClusterSecretStore/onepassword-connect` in the same Flux Kustomization (manifest at `onepassword-connect/app/clustersecretstore.yaml`); the Kustomization carries a `ClusterSecretStore` health check so dependents only proceed once the store reports `Ready=True`
+This subtree provides the secret delivery platform used by every other application — the External Secrets operator and 1Password Connect with the cluster-wide `ClusterSecretStore/onepassword-connect`. It is platform, not app workload.
 
 ## Sequencing Rules
 
-Order matters here.
-
-Current dependency chain:
+Order matters here. Dependency chain:
 
 1. External Secrets operator (`external-secrets`)
 2. 1Password Connect (`onepassword-connect`)
-3. OnePassword-backed ClusterSecretStore (`onepassword-connect`, applied as part of the `onepassword-connect` Flux Kustomization with a `ClusterSecretStore` health check)
+3. OnePassword-backed `ClusterSecretStore` (applied as part of the `onepassword-connect` Flux Kustomization with a `ClusterSecretStore` health check)
 4. Application `ExternalSecret` resources in other subtrees
 
-Implication:
+Implications:
 
-- if an app uses `ClusterSecretStore` `onepassword-connect`, its Flux Kustomization should depend on `onepassword-connect`
-- do not collapse the store into random app trees
+- If an app uses the `onepassword-connect` ClusterSecretStore, its Flux Kustomization should depend on `onepassword-connect`.
+- Do not collapse the store into random app trees — it is intentionally co-located with the Connect Kustomization.
 
 ## OnePassword Connect Rules
 
-Observed live behavior:
+- Runs in namespace `external-secrets` with upstream-specific UID/GID `999`, working data on `emptyDir`, credentials from `onepassword-secret`.
+- Preserve UID/GID assumptions unless upstream changes require otherwise.
+- Keep bootstrap secret names aligned across four places: `kubernetes/bootstrap/resources.yaml.j2`, the Connect HelmRelease `credentialsName`, the ClusterSecretStore `connectTokenSecretRef`, and the runtime ExternalSecrets. Renaming any one silently breaks the bootstrap chain.
+- Verify both `api` and `sync` containers when changing ports, probes, or env vars.
 
-- runs in namespace `external-secrets`
-- uses upstream-specific UID/GID `999`
-- stores working data in an `emptyDir`
-- reads credentials from the `onepassword-secret`
+## Canonical ExternalSecret Pattern
 
-When editing OnePassword Connect:
+Every app `ExternalSecret` in this repo uses:
 
-- preserve the UID/GID assumptions unless upstream changes require otherwise
-- keep secret key names aligned with `kubernetes/bootstrap/resources.yaml.j2` — the `just cluster-bootstrap cluster` chain renders that template through `op inject` to create the `onepassword-secret` Secret consumed by this Deployment
-- verify both `api` and `sync` containers if changing ports, probes, or env vars
+- `spec.refreshInterval: 12h` (ESO chart default is `1h`; the 12h cadence reduces load on 1Password Connect for slowly-rotated secrets — Reloader on consumer Pods still triggers restarts on actual Secret rewrites)
+- `spec.secretStoreRef.kind: ClusterSecretStore`
+- `spec.secretStoreRef.name: onepassword-connect`
+- `spec.target.creationPolicy: Owner` for app-owned generated Secrets
+- no `metadata.namespace` — the owning Flux Kustomization `spec.targetNamespace` places the ES at apply time
 
-## ExternalSecret Rules For The Repo
+## Guardrails For Edits Here
 
-Common live pattern across app trees:
-
-- `spec.refreshInterval: 12h` on every ExternalSecret. The ESO chart default is `1h`; the 12h cadence reduces load on 1Password Connect for secrets that rotate slowly, while the Reloader annotation on consumer pods still triggers restarts on the actual Secret rewrite.
-- `secretStoreRef.kind: ClusterSecretStore`
-- `secretStoreRef.name: onepassword-connect`
-- `target.creationPolicy: Owner` for app-owned generated Secrets
-- No `metadata.namespace` — the owning Flux Kustomization `spec.targetNamespace` places the ES into the workload namespace at apply time.
-
-When editing this platform area:
-
-- distinguish operator configuration from app-level `ExternalSecret` usage
-- preserve the shared store name `onepassword-connect` unless the entire repo is being migrated
-- check whether `just k8s sync-es` and any other recipe-backed secret syncing behavior still matches the resource names
+- Distinguish operator configuration from app-level `ExternalSecret` usage.
+- Preserve the shared store name `onepassword-connect` unless the entire repo is being migrated.
+- Check whether `just k8s sync-es` and any other recipe-backed flows still match the resource names after a rename.
 
 ## Validation
 
-See `.claude/skills/external-secrets/references/validation.md` for the validation procedure.
+See `.claude/skills/external-secrets/references/validation.md`.

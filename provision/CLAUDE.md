@@ -1,17 +1,15 @@
 # Provisioning Agent Guide
 
-This guide applies to everything under `provision/`.
+This guide applies to everything under `provision/`. It is the routing layer for the imperative, provider-facing side of the repo; for current-state detail per area read the matching Basic Memory area-reference via the `basic-memory` MCP.
 
 ## Structure
 
-- `provision/cloudflare/`: Terraform-managed Cloudflare resources
-- `provision/ovh/`: Terraform-managed OVH Cloud Project Storage (S3 backup buckets and the dedicated S3 user) used by the cluster backup planes
-- `provision/openmediavault/`: `mod.just` recipes for the bare-metal OMV host; reserved for Phase 10 OMV Ansible playbooks (post-cutover, not yet present in repo)
-- `provision/openwrt/`: `mod.just` recipes for OpenWrt router-side maintenance (NAS mount helper, DNS forwarding sanity checks)
+- `provision/cloudflare/` — Terraform-managed Cloudflare resources. See `docs/areas/cloudflare` in BM.
+- `provision/ovh/` — Terraform-managed OVH Cloud Project Storage (S3 backup buckets and the dedicated S3 user) used by the cluster backup planes. See `docs/areas/ovh-storage` in BM.
+- `provision/openmediavault/` — `mod.just` recipes for the bare-metal OMV host; reserved for Phase 10 OMV Ansible playbooks (post-cutover, not yet present in repo).
+- `provision/openwrt/` — `mod.just` recipes for OpenWrt router-side maintenance (NAS mount helper, DNS forwarding sanity checks).
 
 ## Subtree Guides
-
-Use the more specific guide for the target area:
 
 - Cloudflare Terraform: [cloudflare/CLAUDE.md](cloudflare/CLAUDE.md)
 - OVH Terraform: [ovh/CLAUDE.md](ovh/CLAUDE.md)

@@ -1,27 +1,26 @@
 # VolSync Platform Guide
 
-This guide applies to `kubernetes/apps/volsync-system/`.
+This guide applies to `kubernetes/apps/volsync-system/`. It captures durable guardrails for the PVC backup platform; for current-state detail (operator fork, jitter policy, KopiaMaintenance, alerts, claims, drift risk) read the Basic Memory area-reference `docs/areas/volsync-backup` via the `basic-memory` MCP.
 
-## What Is Special Here
+## Scope
 
-This subtree defines the backup platform itself, not ordinary application workloads.
+This subtree defines the backup platform itself, not ordinary application workloads. Layers:
 
-Current live layers:
+- `volsync/` — the operator + cluster-wide policy resources
+- `volsync/maintenance/` — `KopiaMaintenance` CR
+- `kopia/` — the Kopia repository-server browser UI
 
-- `kopia/`: the Kopia service and supporting secret wiring
-- `volsync/`: the VolSync operator and cluster-wide policy resources
-- `volsync/maintenance/`: Kopia maintenance resources
+VolSync + Kopia here protects cluster PVCs. It is **not** the browse or restore surface for the separate `resticprofile` + Backrest file-level backup plane.
 
 ## Guardrails
 
-- Treat schedule, retention, and jitter behavior here as cluster-wide policy, not app-local tuning.
+- Schedule, retention, and jitter behavior here are cluster-wide policy — do not tune as if they were app-local.
 - Inspect this subtree together with `kubernetes/components/volsync/` before changing backup behavior.
-- VolSync and Kopia in this subtree protect cluster PVCs. They are not the browse or restore surface for the separate `resticprofile` plus Backrest file-level backup plane.
+- Preserve the per-app contract `<app>` / `<app>-bootstrap` / `<app>-volsync-secret` — the `just volsync` recipes and app-level Flux Kustomizations both depend on these names.
+- The shared component is **always-on**: every app PVC populates from a `<app>-bootstrap` ReplicationDestination via `dataSourceRef`. Fresh fetches from Kopia require deleting **both** the PVC AND the bootstrap RD (the `kustomize.toolkit.fluxcd.io/ssa: IfNotPresent` label freezes the RD after first apply).
+- If jitter policy changes, reason about app-level schedules and restore timing together, not in isolation.
 - Do not add per-app assumptions here unless the platform is intentionally being changed for the whole fleet.
-- Preserve resource names and secret wiring that the `just volsync` recipes depend on (`<app>`, `<app>-bootstrap`, `<app>-volsync-secret`) unless the task explicitly changes those workflows.
-- The component is **always-on**: every app PVC populates from a `<app>-bootstrap` ReplicationDestination via `dataSourceRef`. Fresh fetches from Kopia require deleting both the PVC **and** the bootstrap RD (the `IfNotPresent` SSA label freezes the RD after the first `restore-once` trigger).
-- If you change the jitter policy, reason about app-level schedules and restore timing together, not in isolation.
 
 ## Validation
 
-See `.claude/skills/volsync/references/validation.md` for the validation procedure.
+See `.claude/skills/volsync/references/validation.md`.

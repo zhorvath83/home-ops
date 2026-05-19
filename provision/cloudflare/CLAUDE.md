@@ -1,18 +1,18 @@
 # Cloudflare Terraform Guide
 
-This guide applies to `provision/cloudflare/`.
+This guide applies to `provision/cloudflare/`. It captures durable guardrails for the Cloudflare Terraform area; for current-state detail (zone, tunnel, Access apps, Workers, R2, mail-stack DNS, WAF, zone settings, notifications, claims, drift risk) read the Basic Memory area-reference `docs/areas/cloudflare` via the `basic-memory` MCP.
 
-## What Lives Here
+## Scope
 
-- Terraform files in this directory are the source of truth for Cloudflare resources.
-- File splits such as `dns_records.tf`, `tunnel.tf`, `workers.tf`, and related files reflect the current repository organization and should stay stable unless there is a clear reason to reshape them.
+Terraform files here are the source of truth for Cloudflare resources. State lives in Terraform Cloud (org `zhorvath83`, workspace `cloudflare`). File splits (`dns_records.tf`, `tunnel.tf`, `access.tf`, `workers.tf`, `firewall_rules.tf`, `zone_settings.tf`, `notification.tf`, `r2_bucket.tf`, `managed_transforms.tf`) reflect the current organization and should stay stable unless there is a clear reason to reshape them.
 
 ## Operating Rules
 
-- Prefer `just cloudflare init`, `just cloudflare plan`, and `just cloudflare apply` over raw Terraform commands when documenting or validating changes. Use `just cloudflare unlock <id>` for state-lock recovery.
-- Preserve the existing `op run --env-file=./.env -- terraform ...` pattern that the recipes wrap unless the entire credential flow is intentionally changing.
-- `.env`, `.terraform/`, `.terraform.lock.hcl`, and state files are operational artifacts; do not refactor them as if they were source configuration.
-- Keep existing inline Renovate directives intact, including provider-specific comments in `main.tf`.
+- Prefer `just cloudflare init|plan|apply` over raw Terraform commands; use `just cloudflare unlock <id>` for state-lock recovery.
+- Preserve the existing `op run --no-masking --env-file=./.env -- terraform ...` pattern that the recipes wrap unless the entire credential flow is intentionally changing.
+- `.env`, `.terraform/`, `.terraform.lock.hcl`, and state files are operational artifacts — do not refactor them as source configuration.
+- Keep existing inline Renovate directives intact, including the provider-specific `# renovate:disablePlugin terraform cloudflare/cloudflare` annotation in `main.tf`.
+- Two `null_resource` blocks (tunnel + Access service token) write secrets back to 1Password item `cloudflare` via `op item edit` as a post-create side effect — the in-cluster consumers read those fields via ExternalSecret. Keep the field names aligned across Terraform, 1Password, and the consumer ExternalSecrets when changing either side.
 
 ## Validation
 
