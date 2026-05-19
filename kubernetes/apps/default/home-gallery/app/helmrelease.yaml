@@ -54,7 +54,7 @@ spec:
           app:
             image:
               repository: xemle/home-gallery
-              tag: latest@sha256:d3142be6090562ba564dfbaa24efcfaaef21a4d370328b16cac2b789aa99c47d
+              tag: latest@sha256:c1123d6228b0124e47b2c04772d1d8f6be0fa22c499c001ed40fee20b9789015
             env:
               - name: TZ
                 value: "Europe/Budapest"
