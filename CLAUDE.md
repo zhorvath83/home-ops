@@ -49,7 +49,8 @@ This repository currently manages a single-node home infrastructure stack with t
 - `.claude/skills/`: repo-local skill sources for reusable workflow knowledge
 - `.justfile` + `**/mod.just`: operational entry points (Just-based, replaces the previous Task system)
 - `.renovaterc.json5` + `.renovate/*.json5`: Renovate policy and package rule definitions (root config + per-topic fragments)
-- `docs/`: human-facing runbooks and reference notes
+- `basic-memory/`: Basic Memory knowledge graph (project name `home-ops`); area references, schemas, decisions, and runbooks for human-facing documentation, authored via Basic Memory MCP and committed to git
+- `docs/`: human-facing runbooks and reference notes (being migrated into `basic-memory/`)
 
 ## Working Rules
 
