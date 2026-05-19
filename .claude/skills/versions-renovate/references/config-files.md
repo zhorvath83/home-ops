@@ -23,7 +23,7 @@ Use this reference when changing Renovate policy.
 - dependency dashboard enabled
 - semantic commits enabled, refined per update type and per datasource in `semanticCommits.json5` (`feat`/`fix`/`chore` × `container`/`helm`/`github-action`/`github-release`/`talos` scopes)
 - `:automergeBranch` preset extended at the root — auto-merges push directly to the target branch (`automergeType: "branch"`) instead of opening a PR
-- patch and digest updates auto-merge on trusted publishers (`home-operations`, `onedr0p`, `bjw-s`, `bjw-s-labs`, `coredns`)
+- patch and digest updates auto-merge on trusted publishers
 - minor and patch Helm chart updates auto-merge
 - pre-commit hook updates auto-merge
 - minimum release age is 3 days with `timestamp-optional` behaviour

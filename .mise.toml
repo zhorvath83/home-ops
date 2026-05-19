@@ -41,7 +41,7 @@ pre-commit = "4.6.0"
 # Terraform
 terraform = "1.15.3"
 
-# Linters / formatters (aqua backend, follows bjw-s pattern)
+# Linters / formatters
 "aqua:google/yamlfmt" = "latest"
 "aqua:rhysd/actionlint" = "latest"
 

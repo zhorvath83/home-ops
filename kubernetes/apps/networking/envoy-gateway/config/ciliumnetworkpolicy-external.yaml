@@ -47,5 +47,4 @@ spec:
   # HTTPRoute backends across namespaces), and outbound HTTPS to the public
   # internet. envoy-external is a traffic forwarder — a tight egress allowlist
   # adds maintenance overhead without meaningful threat-model coverage on this
-  # workload. Reference repos (bjw-s-labs, onedr0p, buroa) also do not write
-  # egress restrictions on Envoy proxy pods.
+  # workload.

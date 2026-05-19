@@ -172,7 +172,6 @@ cluster:
 # kernel creates a real `bond0` device (not just an alias). Cilium, the L2
 # announcement policy, and DHCP all target this stable bond name, decoupling
 # the cluster network config from the underlying NIC driver / enumeration.
-# Same idiom as bjw-s-labs and onedr0p reference repos.
 apiVersion: v1alpha1
 kind: BondConfig
 name: bond0
@@ -190,25 +189,3 @@ apiVersion: v1alpha1
 kind: WatchdogTimerConfig
 device: /dev/watchdog0
 timeout: 5m
----
-# EPHEMERAL volume on the Talos OS disk (= install.disk, the PC801 NVMe).
-apiVersion: v1alpha1
-kind: VolumeConfig
-name: EPHEMERAL
-provisioning:
-  diskSelector:
-    match: system_disk
-  maxSize: 256GiB
----
-# UserVolume on the PC711 NVMe (democratic-csi data disk).
-# Mounted by Talos at /var/mnt/local-hostpath (UserVolume name → mount path);
-# democratic-csi local-hostpath driver uses that path for PVC provisioning.
-# Pinned by disk model. Talos defaults the filesystem to XFS for UserVolume —
-# no need to set it explicitly.
-apiVersion: v1alpha1
-kind: UserVolumeConfig
-name: local-hostpath
-provisioning:
-  diskSelector:
-    match: disk.model == "PC711 NVMe SK hynix 1TB"
-  maxSize: 1000GiB

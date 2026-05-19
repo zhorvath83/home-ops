@@ -320,7 +320,7 @@ Egyetlen node, controlplane szerep. A `HostnameConfig` és `LinkAliasConfig` res
 machine:
   type: controlplane
   install:
-    # PC801 NVMe (HP OEM Gen4-capable) → Talos OS + etcd + EPHEMERAL.
+    # PC801 NVMe (SK hynix Gen4-capable) → Talos OS + etcd + EPHEMERAL.
     # Disk model alapján pinelve.
     diskSelector:
       model: PC801 NVMe SK hynix 1TB

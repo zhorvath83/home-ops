@@ -25,8 +25,7 @@ spec:
       serviceMonitor:
         create: true
     # Disable the validating admission webhook — single-node cluster, the
-    # extra deployment + cert lifecycle is unnecessary overhead. bjw-s,
-    # onedr0p, and buroa all set this to false.
+    # extra deployment + cert lifecycle is unnecessary overhead.
     webhook:
       enabled: false
 # VolumeSnapshotClass definitions live with the CSI driver that owns them

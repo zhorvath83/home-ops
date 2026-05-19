@@ -21,7 +21,7 @@ The routing chain currently depends on these components:
 - ExternalDNS for public DNS management
 - `k8s-gateway` for LAN split DNS based on Gateway API routes
 
-LAN IPs are allocated from the `CiliumLoadBalancerIPPool/default` pool (`192.168.1.15-25`). The `envoy-internal` Gateway pins its IP to `192.168.1.18` through the `lbipam.cilium.io/ips` annotation; `k8s-gateway` pins its IP to `192.168.1.19` through the chart's `loadBalancerIP` value. Both IPs are hardcoded directly in their manifests (bjw-s parity, no `cluster-settings` substitution layer).
+LAN IPs are allocated from the `CiliumLoadBalancerIPPool/default` pool (`192.168.1.15-25`). The `envoy-internal` Gateway pins its IP to `192.168.1.18` through the `lbipam.cilium.io/ips` annotation; `k8s-gateway` pins its IP to `192.168.1.19` through the chart's `loadBalancerIP` value. Both IPs are hardcoded directly in their manifests.
 
 ## Public Path
 

@@ -1,7 +1,7 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/cilium.io/ciliumclusterwidenetworkpolicy_v2.json
 #
-# Cluster-wide DNS egress with L7 proxy (bjw-s-labs pattern).
+# Cluster-wide DNS egress with L7 proxy.
 #
 # Applies to EVERY pod (including those opted out of `allow-cluster-egress`).
 # Allows DNS resolution against the in-cluster kube-dns Service on both UDP/53

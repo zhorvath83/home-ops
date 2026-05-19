@@ -6,7 +6,7 @@ Use this reference to rebuild the Flux and GitOps control-plane layout before ed
 
 - `kubernetes/bootstrap/`: Talos + Kubernetes platform bootstrap chain (`resources.yaml.j2`, `helmfile.d/00-crds.yaml`, `helmfile.d/01-apps.yaml`, `mod.just`). Installs Flux Operator + `FluxInstance` among the other bootstrap-time releases.
 - `kubernetes/apps/flux-system/flux-operator/`: HelmRelease + OCIRepository for the operator
-- `kubernetes/apps/flux-system/flux-instance/`: HelmRelease that creates the `FluxInstance` CR (Flux controllers, distribution, `sync.ref`, performance patches). The GitHub webhook stack (`Receiver`, `HTTPRoute`, `ExternalSecret`) co-locates under `flux-instance/app/github/` and reconciles with the FluxInstance Kustomization (bjw-s parity). Per-namespace Pushover Alerts come from the `kubernetes/components/flux-alerts/` Kustomize component.
+- `kubernetes/apps/flux-system/flux-instance/`: HelmRelease that creates the `FluxInstance` CR (Flux controllers, distribution, `sync.ref`, performance patches). The GitHub webhook stack (`Receiver`, `HTTPRoute`, `ExternalSecret`) co-locates under `flux-instance/app/github/` and reconciles with the FluxInstance Kustomization. Per-namespace Pushover Alerts come from the `kubernetes/components/flux-alerts/` Kustomize component.
 - `kubernetes/apps/flux-system/flux-provider-pushover/`: shared Pushover Notification relay used by the per-namespace Alerts
 - `kubernetes/components/flux-alerts/`: Kustomize component included by each `apps/<ns>/kustomization.yaml`, instantiates an Alert + Provider + ExternalSecret per workload namespace
 - `kubernetes/flux/cluster/ks.yaml`: the single root `cluster-apps` Kustomization. The `FluxInstance` `sync.path` points here.

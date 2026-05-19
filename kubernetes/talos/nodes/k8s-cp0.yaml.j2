@@ -5,25 +5,42 @@
 machine:
   type: controlplane
   install:
-    # PC801 NVMe (HP OEM, Gen4-capable, faster random IO) → Talos OS + etcd +
-    # EPHEMERAL volume. Pinned by disk model (bjw-s / onedr0p reference style).
-    # The other NVMe (PC711) is claimed by the UserVolumeConfig in
-    # machineconfig.yaml.j2 for the democratic-csi local-hostpath data volume.
+    # PC801 NVMe (SK hynix, Gen4-capable, faster random IO) → Talos OS + etcd +
+    # EPHEMERAL volume. Pinned by disk model.
     diskSelector:
       model: PC801 NVMe SK hynix 1TB
+---
+# EPHEMERAL volume on the Talos OS disk (= install.disk, the PC801 NVMe).
+# maxSize is set to the nominal disk size.
+apiVersion: v1alpha1
+kind: VolumeConfig
+name: EPHEMERAL
+provisioning:
+  diskSelector:
+    match: system_disk
+  maxSize: 1000GiB
+---
+# UserVolume on the PC711 NVMe (democratic-csi data disk).
+# Mounted by Talos at /var/mnt/local-hostpath (UserVolume name → mount path);
+# democratic-csi local-hostpath driver uses that path for PVC provisioning.
+# Pinned by disk model.
+apiVersion: v1alpha1
+kind: UserVolumeConfig
+name: local-hostpath
+provisioning:
+  diskSelector:
+    match: disk.model == "PC711 NVMe SK hynix 1TB"
+  maxSize: 1000GiB
 ---
 apiVersion: v1alpha1
 kind: HostnameConfig
 hostname: k8s-cp0
 ---
 # Stabilize the on-board Intel I219-LM NIC under the alias `net0`, then let
-# the shared machineconfig wrap it in a single-member `bond0` so a real
-# kernel device exists with a stable name. The bond decouples Cilium, the L2
-# announcement policy, and the DHCPv4Config from the kernel-assigned link
-# name (eno1 / enp0s31f6 / similar). Same pattern as bjw-s and onedr0p.
+# the shared machineconfig BondConfig wrap it in a single-member `bond0` so a
+# real kernel device exists with a stable name.
 # Pinned by a 4-byte MAC prefix: HP OUI (50:81:40) plus one product-family
-# byte (80). Matches the on-board HP I219 NIC family but not unrelated HP
-# devices; the last 2 bytes (device identity) are kept out of git.
+# byte (80).
 apiVersion: v1alpha1
 kind: LinkAliasConfig
 name: net0
