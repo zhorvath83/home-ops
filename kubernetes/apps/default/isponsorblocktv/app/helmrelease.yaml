@@ -18,12 +18,8 @@ spec:
         nameservers:
           - 127.0.0.1
           - 10.245.0.10
-        searches:
-          - default.svc.cluster.local
-          - svc.cluster.local
-          - cluster.local
         options:
-          - {name: ndots, value: "5"}
+          - {name: ndots, value: "1"}
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
