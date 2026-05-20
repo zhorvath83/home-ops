@@ -15,7 +15,7 @@ default:
 
 [group('sync')]
 [arg('resource', pattern='hr|ks|gitrepo|ocirepo|es')]
-[doc('Sync all resources of a Flux type cluster-wide (resource=hr|ks|gitrepo|ocirepo|es). Single-resource variants exist only for hr/ks/es; gitrepo/ocirepo are bulk-only by design (one or two per cluster).')]
+[doc('Sync all resources of a Flux type cluster-wide (resource=hr|ks|gitrepo|ocirepo|es).')]
 [script]
 sync resource:
     # Annotation set depends on resource type:
@@ -77,7 +77,7 @@ flux-check:
     flux check --pre
 
 [group('flux')]
-[doc('Force a full Flux reconcile: refresh the Git source, then reconcile the cluster-apps root Kustomization. Structured per-stage logging with duration.')]
+[doc('Force a full Flux reconcile: refresh the Git source, then reconcile the cluster-apps root Kustomization.')]
 [script]
 flux-reconcile:
     t0=${SECONDS}
@@ -92,7 +92,7 @@ flux-reconcile:
     just log info "flux-reconcile complete" total "$((t2-t0))s"
 
 [group('flux')]
-[doc('List failed/unknown HelmReleases — JSON-based detection on the Ready condition, immune to kubectl text-output drift')]
+[doc('List failed/unknown HelmReleases — JSON-based detection on the Ready condition.')]
 [script]
 list-failed-hrs:
     failed="$(kubectl get hr -A -o json \
@@ -104,7 +104,7 @@ list-failed-hrs:
     fi
 
 [group('flux')]
-[doc('Restart all failed HelmReleases (suspend + resume) — JSON-based detection on the Ready=False condition, immune to flux/kubectl text-output drift')]
+[doc('Restart all failed HelmReleases (suspend + resume) — JSON-based detection on the Ready=False condition.')]
 [script]
 restart-failed-hrs:
     kubectl get hr -A -o json \
