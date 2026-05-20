@@ -67,6 +67,8 @@ spec:
             args:
               - --cd
               - $(CTRLD_RESOLVER_ID)
+              - --config
+              - /etc/controld/ctrld.toml
             env:
               CTRLD_RESOLVER_ID:
                 valueFrom:
