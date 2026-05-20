@@ -79,7 +79,7 @@ with an opt-out via `labelSelector: substitution.flux.home.arpa/disabled notin (
 | `alerts/github/` | **Adopt and adapt** | Posts Flux Kustomization status back to GitHub as commit-status checks — high value for visible MR feedback. Needs 1P item `flux` (or equivalent) with a GitHub PAT, plumbed via ExternalSecret backed by our `onepassword-connect` ClusterSecretStore (not the heavybullets8 `onepassword` name) |
 | `repos/app-template/` | **Adopt** | Removes per-app duplication of the bjw-s `app-template` OCIRepository. Inventory the app subtrees that currently declare their own and migrate to the shared one |
 | `sops/` | **Skip** | Phase 6.7 (2026-05-17) collapsed the runtime SOPS layer entirely (`AD-009` superseded). We do not want to reintroduce SOPS at the substitution layer |
-| `vars/cluster-settings.yaml` (ConfigMap, non-sensitive) | **Adopt with home-ops content** | Centralizes timezone, public domain, internal IPs that today are hardcoded across manifests. Candidate vars: `TIMEZONE`, `CLUSTER_NAME`, `PUBLIC_DOMAIN`, `NAS_IP=192.168.1.10`, `K8S_CP0_IP=192.168.1.11`, `ENVOY_INTERNAL_IP=…`, `ENVOY_EXTERNAL_IP=…`, `K8S_GATEWAY_IP=…` |
+| `vars/cluster-settings.yaml` (ConfigMap, non-sensitive) | **Adopt with home-ops content** | Centralizes timezone, public domain, internal IPs that today are hardcoded across manifests. Candidate vars: `TIMEZONE`, `CLUSTER_NAME`, `PUBLIC_DOMAIN`, `NAS_IP=192.168.1.10`, `K8S_CP0_IP=192.168.1.11`, `ENVOY_INTERNAL_IP=…`, `ENVOY_EXTERNAL_IP=…`, `K8S_GATEWAY_IP=…`, `CLUSTER_DNS_IP=10.245.0.10` |
 | `vars/cluster-secrets.secret.sops.yaml` | **Replace with ExternalSecret-backed Secret OR skip** | If any cluster-wide *sensitive* substitution vars are needed, deliver them via ExternalSecret reading from 1Password, producing a `Secret/cluster-secrets` consumed by the same `substituteFrom` block. Skip entirely if no current need (most candidates are non-sensitive per repo policy — public domain and internal RFC1918 IPs are not secret) |
 
 ### Cluster `ks.yaml` changes required
@@ -128,3 +128,7 @@ Today our `kubernetes/flux/cluster/ks.yaml` already has a patch that injects Hel
 - relates_to [[pushover-provider-model-unify]]
 - relates_to [[alertmanager-enable]]
 - relates_to [[volsync-backup]]
+
+## Identified consumers
+
+- 2026-05-20 — `kubernetes/apps/default/isponsorblocktv`: the `ctrld` DoH sidecar's pod `dnsConfig.nameservers` lists `10.245.0.10` as a second nameserver so `ctrld`'s OS-upstream fallback resolves via cluster DNS (CoreDNS pins `clusterIP: 10.245.0.10` in `kubernetes/apps/kube-system/coredns/app/helmrelease.yaml`). The IP is now duplicated across these two manifests — first concrete case for `${CLUSTER_DNS_IP}` substitution. Only changes if the CoreDNS `clusterIP` or the Talos `serviceSubnets` (`10.245.0.0/16`) changes.
