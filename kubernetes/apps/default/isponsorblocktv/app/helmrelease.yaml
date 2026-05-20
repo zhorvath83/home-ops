@@ -13,6 +13,16 @@ spec:
     defaultPodOptions:
       automountServiceAccountToken: false
       enableServiceLinks: false
+      dnsPolicy: None
+      dnsConfig:
+        nameservers:
+          - 127.0.0.1
+        searches:
+          - default.svc.cluster.local
+          - svc.cluster.local
+          - cluster.local
+        options:
+          - {name: ndots, value: "5"}
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
@@ -21,9 +31,13 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
+        sysctls:
+          - {name: net.ipv4.ip_unprivileged_port_start, value: "53"}
     controllers:
       isponsorblocktv:
         type: deployment
+        annotations:
+          reloader.stakater.com/auto: "true"
         containers:
           app:
             image:
@@ -46,8 +60,53 @@ spec:
                 memory: 50Mi
               limits:
                 memory: 128Mi
+          ctrld:
+            image:
+              repository: docker.io/controldns/ctrld
+              tag: 1.5.0@sha256:0fa146d1952cad23c5db7d703c0b4c8fa276f6eae9f50f50adcbc3306dd1ff65
+            args:
+              - run
+              - --cd
+              - $(CTRLD_RESOLVER_ID)
+              - --listen
+              - 127.0.0.1:53
+            env:
+              CTRLD_RESOLVER_ID:
+                valueFrom:
+                  secretKeyRef:
+                    name: isponsorblocktv-secret
+                    key: CTRLD_RESOLVER_ID
+            probes:
+              liveness: {enabled: false}
+              readiness: {enabled: false}
+              startup: {enabled: false}
+            securityContext:
+              privileged: false
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: {drop: ["ALL"]}
+            resources:
+              requests:
+                cpu: 5m
+                memory: 32Mi
+              limits:
+                memory: 64Mi
     persistence:
       data:
         existingClaim: "{{ .Release.Name }}"
-        globalMounts:
-          - path: /app/data
+        advancedMounts:
+          isponsorblocktv:
+            app:
+              - path: /app/data
+      ctrld-etc:
+        type: emptyDir
+        advancedMounts:
+          isponsorblocktv:
+            ctrld:
+              - path: /etc/controld
+      ctrld-tmp:
+        type: emptyDir
+        advancedMounts:
+          isponsorblocktv:
+            ctrld:
+              - path: /tmp
