@@ -131,3 +131,6 @@ Homepage dashboard metadata uses a stable set of groups: `Arr Stack`, `Media`, `
 - relates_to [[volsync-backup]]
 - relates_to [[resticprofile-backup]]
 - part_of [[home-ops-platform]]
+
+## Standalone PVC pattern (no VolSync)
+- [pattern] When an app's PVC stores only **regenerable derived data** (caches, thumbnails, local indexes) and the source-of-truth lives elsewhere (NFS covered by resticprofile), the app uses a **standalone `app/pvc.yaml`** instead of the `components/volsync` component, and the `ks.yaml` omits the volsync `components:` wiring. Canonical example: `kubernetes/apps/default/home-gallery` (thumbnails + local DB; source photos on NFS). The PVC manifest must carry an inline comment stating *why* it is excluded from VolSync, so the intent survives review. (verified: 2026-05-21, ref: kubernetes/apps/default/home-gallery/app/pvc.yaml)
