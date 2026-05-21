@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/volsync.backube/replicationdestination_v1alpha1.json
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/volsync.backube/replicationdestination_v1alpha1.json
 # Bootstrap-only restore manifest. Permanently rendered, but inert by default:
 # - `kustomize.toolkit.fluxcd.io/ssa: IfNotPresent` makes Flux apply it ONCE per cluster
 #   (subsequent reconciles will NOT overwrite manual edits made by `just volsync restore`).

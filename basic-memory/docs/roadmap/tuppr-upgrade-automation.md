@@ -81,7 +81,7 @@ AD-019 already fixed the controller choice (Tuppr over k3s-flavoured system-upgr
 Create the following files under `kubernetes/apps/system-upgrade/`:
 - `namespace.yaml` — bare `v1 Namespace` named `system-upgrade` with the repo's standard labels (mirror an existing namespace.yaml, e.g. `kubernetes/apps/external-secrets/namespace.yaml`).
 - `kustomization.yaml` — top-level: `namespace: system-upgrade`, `resources: [./namespace.yaml, ./tuppr/ks.yaml]`, `components: [<flux-alerts component path used by sibling areas>]` (look up the exact relative path used by `kubernetes/apps/kube-system/kustomization.yaml:components` and copy).
-- `tuppr/ks.yaml` — two Flux Kustomizations `tuppr` and `tuppr-upgrades` per the onedr0p layout described above. Use the schema URL header already standard in this repo (`yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json`). Add a `healthCheckExprs` block on the `tuppr` Kustomization keying off the HelmRelease Ready condition (pattern as in `kubernetes/apps/external-secrets/onepassword-connect/ks.yaml`).
+- `tuppr/ks.yaml` — two Flux Kustomizations `tuppr` and `tuppr-upgrades` per the onedr0p layout described above. Use the schema URL header already standard in this repo (`yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json`). Add a `healthCheckExprs` block on the `tuppr` Kustomization keying off the HelmRelease Ready condition (pattern as in `kubernetes/apps/external-secrets/onepassword-connect/ks.yaml`).
 
 ### Phase 2 — Controller install
 Under `tuppr/app/`:
