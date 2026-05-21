@@ -4,8 +4,9 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: home-gallery
-# Intentionally excluded from VolSync backups: this PVC only stores generated
-# thumbnails and the local app database, while the source photos live on NFS.
+# Standalone PVC (not components/volsync) — intentionally excluded from VolSync
+# backups: this PVC only stores regenerable thumbnails and the local app
+# database, while the source photos live on NFS (covered by resticprofile).
 spec:
   accessModes:
     - ReadWriteOnce
