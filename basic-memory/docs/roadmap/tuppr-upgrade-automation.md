@@ -154,12 +154,11 @@ And `upgrades/kustomization.yaml` — `resources: [./talosupgrade.yaml, ./kubern
 - **`registry.k8s.io` overrides**: KubernetesUpgrade.spec.kubernetes.imageRepository is unset, so component images are pulled from `registry.k8s.io`. Ensure firewall / Cloudflare Tunnel egress allows this.
 
 ## Explicit scope-bounds (NOT in this roadmap)
-- Multi-node behaviour and `spec.parallelism > 1` — see `l2-to-bgp-refactor` roadmap.
+- Multi-node behaviour and `spec.parallelism > 1` — out of scope for single-node; no longer tracked as a roadmap item.
 - Custom CEL health checks per application (app-level decision; e.g. Paperless DB consistency before upgrade) — out of platform scope.
 - Replacing the entire `just talos` recipe surface with tuppr — only `upgrade-node` and `upgrade-k8s` migrate. Bootstrap, reset, reboot, apply-config stay Just-driven.
 - AlertmanagerConfig CR for upgrade failure routing — depends on `alertmanager-enable` roadmap landing first.
 - Cluster-wide namespace reshuffle — see `namespace-split` roadmap.
-
 ## Reference implementations surveyed
 - **onedr0p/home-ops** (multi-node Talos+Flux): `kubernetes/apps/system-upgrade/tuppr/{app,upgrades}` layout, `replicaCount: 2`, full `monitoring.*` opt-in including `grafanaOperator.enabled: true`, `chartRef: { kind: OCIRepository, name: tuppr }`, two Flux Kustomizations split as `tuppr` + `tuppr-upgrades` (`dependsOn`, `wait: false`). Adopted as the layout template; single-node deviations are documented inline in each Phase above (`replicaCount: 1`, `parallelism: 1`, `policy.placement: soft`, `monitoring.dashboards.grafanaOperator.enabled: false`).
 - **heavybullets8/heavy-ops** (single-node Talos+Flux+SOPS): does NOT use tuppr at time of writing. Upgrades are handled out-of-band — no comparable reference for single-node tuppr config.

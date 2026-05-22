@@ -110,7 +110,7 @@ The whole reassembly path on already-installed hardware is the `just cluster-boo
 ## Open Questions / Gaps
 - [gap] No verification was run against the live Talos node or factory.talos.dev in this pass — claims are repo-evidence only. `just talos status` from a credentialed shell is the live-state validation path; `just talos diag` produces a node-side diagnostics dump.
 - [gap] The exact Talos and Kubernetes versions in use are not pinned in the repo — they come from `TALOS_VERSION` and `KUBERNETES_VERSION` env vars (likely set by `.mise.toml`, not inspected here). Cross-checking that those vars are Renovate-tracked is left to the versions-renovate area.
-- [gap] The single-node-cluster assumption is hardcoded throughout (one `nodes/*.yaml.j2`, fixed CP IP, fixed endpoint, single bond on `net0`). The roadmap for multi-node / BGP migration (`docs/roadmap/l2-to-bgp-refactor`) was not cross-referenced in this pass.
+- [gap] The single-node-cluster assumption is hardcoded throughout (one `nodes/*.yaml.j2`, fixed CP IP, fixed endpoint, single bond on `net0`). Multi-node / BGP migration is no longer tracked as a roadmap item (L2 announcement is sufficient for single-node).
 - [gap] No documented disaster-recovery procedure for the case where the 1Password `HomeOps/talos` item is lost — regenerating secrets effectively requires re-installing the cluster.
 
 ## Relations
