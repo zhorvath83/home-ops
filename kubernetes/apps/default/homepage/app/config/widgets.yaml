@@ -18,7 +18,7 @@
       timeStyle: short
       hourCycle: h23
 - openweathermap:
-    # Budapest city center (rounded — not a precise residence/office location)
+    # Budapest city center
     latitude: 47.50
     longitude: 19.05
     provider: openweathermap
