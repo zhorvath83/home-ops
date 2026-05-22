@@ -32,7 +32,7 @@ spec:
               repository: ghcr.io/zhorvath83/flux-provider-pushover
               tag: latest@sha256:6b6e2e19f3ae0c8698c11cffd6017cb9b16b69419ea86b46d7497bc9e4fb3903
             env:
-              TZ: "Europe/Budapest"
+              TZ: "${TIMEZONE}"
             envFrom:
               - secretRef:
                   name: flux-provider-pushover-secret

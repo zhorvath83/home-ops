@@ -31,7 +31,7 @@ spec:
               repository: ghcr.io/home-operations/radarr
               tag: 6.2.0.10390@sha256:be596a2f896fdf15077af027f44500f73e1f6fb7b450a6494b37dd25b7cc5927
             env:
-              TZ: "Europe/Budapest"
+              TZ: "${TIMEZONE}"
             probes:
               liveness: &probes
                 enabled: true
@@ -72,7 +72,7 @@ spec:
           gethomepage.dev/group: Arr Stack
           gethomepage.dev/icon: radarr.svg
         hostnames:
-          - "movies.horvathzoltan.me"
+          - "movies.${PUBLIC_DOMAIN}"
         parentRefs:
           - name: envoy-external
             namespace: networking
@@ -92,7 +92,7 @@ spec:
           - path: /config
       nfs-nas-media:
         type: nfs
-        server: 192.168.1.10
+        server: ${NAS_IP}
         path: /media
         globalMounts:
           - path: /media

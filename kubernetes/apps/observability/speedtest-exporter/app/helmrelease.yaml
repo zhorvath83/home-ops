@@ -34,7 +34,7 @@ spec:
               tag: v3.5.4
             env:
               SPEEDTEST_PORT: &port 9798
-              TZ: "Europe/Budapest"
+              TZ: "${TIMEZONE}"
             probes:
               liveness:
                 enabled: true
@@ -78,7 +78,7 @@ spec:
           gethomepage.dev/group: Observability
           gethomepage.dev/icon: openspeedtest.svg
         hostnames:
-          - "speed.horvathzoltan.me"
+          - "speed.${PUBLIC_DOMAIN}"
         parentRefs:
           - name: envoy-external
             namespace: networking

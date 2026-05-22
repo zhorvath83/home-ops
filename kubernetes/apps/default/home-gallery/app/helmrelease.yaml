@@ -57,7 +57,7 @@ spec:
               tag: latest@sha256:c1123d6228b0124e47b2c04772d1d8f6be0fa22c499c001ed40fee20b9789015
             env:
               - name: TZ
-                value: "Europe/Budapest"
+                value: "${TIMEZONE}"
               # Disable browser opening (not needed in container)
               - name: GALLERY_OPEN_BROWSER
                 value: "false"
@@ -128,8 +128,8 @@ spec:
           gethomepage.dev/group: Selfhosted
           gethomepage.dev/icon: mdi-image-multiple
         hostnames:
-          - "photos.horvathzoltan.me"
-          - "fenykepek.horvathzoltan.me"
+          - "photos.${PUBLIC_DOMAIN}"
+          - "fenykepek.${PUBLIC_DOMAIN}"
         parentRefs:
           - name: envoy-external
             namespace: networking
@@ -152,7 +152,7 @@ spec:
       photos:
         type: nfs
         path: /backups/apple_photos_export
-        server: 192.168.1.10
+        server: ${NAS_IP}
         globalMounts:
           - path: /data/Pictures
             readOnly: true

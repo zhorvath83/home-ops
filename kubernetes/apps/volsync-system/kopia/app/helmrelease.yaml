@@ -83,7 +83,7 @@ spec:
           gethomepage.dev/group: Infrastructure
           gethomepage.dev/icon: kopia.svg
         hostnames:
-          - "pvbackup.horvathzoltan.me"
+          - "pvbackup.${PUBLIC_DOMAIN}"
         parentRefs:
           - name: envoy-external
             namespace: networking

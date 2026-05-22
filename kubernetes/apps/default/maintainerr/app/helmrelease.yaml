@@ -29,7 +29,7 @@ spec:
               repository: ghcr.io/maintainerr/maintainerr
               tag: 3.11.2@sha256:8f123ed7eec28654b5a570e5cf494dc48ea7796e1d0b9b59a5d1e36a561d2ca2
             env:
-              TZ: "Europe/Budapest"
+              TZ: "${TIMEZONE}"
               UI_PORT: &port 6246
             probes:
               liveness:
@@ -75,7 +75,7 @@ spec:
           gethomepage.dev/group: Media
           gethomepage.dev/icon: maintainerr.png
         hostnames:
-          - "{{ .Release.Name }}.horvathzoltan.me"
+          - "{{ .Release.Name }}.${PUBLIC_DOMAIN}"
         parentRefs:
           - name: envoy-external
             namespace: networking

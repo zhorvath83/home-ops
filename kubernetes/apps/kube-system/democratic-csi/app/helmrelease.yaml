@@ -13,7 +13,7 @@ spec:
     # NOTE: Chart sets NO securityContext by default. CSI drivers require
     # privileged access for volume operations — hardening not applicable here.
     env:
-      TZ: "Europe/Budapest"
+      TZ: "${TIMEZONE}"
     controller:
       # democratic-csi controller
       enabled: true

@@ -37,7 +37,7 @@ spec:
               - /usr/bin/resticprofile schedule --all && exec /usr/bin/supercronic /resticprofile/crontab
             env:
               - name: TZ
-                value: "Europe/Budapest"
+                value: "${TIMEZONE}"
               - name: RESTIC_CACHE_DIR
                 value: "/tmp/resticprofile-cache"
               - name: RESTIC_PASSWORD
@@ -109,13 +109,13 @@ spec:
                 readOnly: true
       nfs-tmp:
         type: nfs
-        server: 192.168.1.10
+        server: ${NAS_IP}
         path: /tmp
         globalMounts:
           - path: /mnt/nfs-tmp
       nfs-backups:
         type: nfs
-        server: 192.168.1.10
+        server: ${NAS_IP}
         path: /backups
         globalMounts:
           - path: /backups

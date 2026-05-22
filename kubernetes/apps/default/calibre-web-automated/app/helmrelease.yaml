@@ -65,7 +65,7 @@ spec:
               tag: v4.0.6@sha256:c31a738b6d5ec6982c050063dd3f063b6943eb1051fc81144789f840d9093a8d
             env:
               CACHE_DIR: /cache
-              TZ: "Europe/Budapest"
+              TZ: "${TIMEZONE}"
               PUID: 1000
               PGID: 100
             probes:
@@ -122,7 +122,7 @@ spec:
           gethomepage.dev/group: Media
           gethomepage.dev/icon: calibre-web.svg
         hostnames:
-          - "books.horvathzoltan.me"
+          - "books.${PUBLIC_DOMAIN}"
         parentRefs:
           - name: envoy-external
             namespace: networking
@@ -146,7 +146,7 @@ spec:
           - path: /config
       nfs-calibre-library:
         type: nfs
-        server: 192.168.1.10
+        server: ${NAS_IP}
         path: /backups/documents/personal/ebooks
         globalMounts:
           - path: /calibre-library

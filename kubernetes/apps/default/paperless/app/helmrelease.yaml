@@ -36,12 +36,12 @@ spec:
               tag: 2.20.15@sha256:835974fc3368fc6714aa38542db7a1f0f542d03244e39b981e519aefc100f355
             env:
               # Application settings
-              TZ: &tz "Europe/Budapest"
+              TZ: &tz "${TIMEZONE}"
               PAPERLESS_TIME_ZONE: *tz
-              PAPERLESS_URL: "https://docs.horvathzoltan.me"
+              PAPERLESS_URL: "https://docs.${PUBLIC_DOMAIN}"
               PAPERLESS_PORT: "8000"
               PAPERLESS_ENABLE_COMPRESSION: "false"
-              PAPERLESS_TRUSTED_PROXIES: "10.42.0.0/16,192.168.1.0/24"
+              PAPERLESS_TRUSTED_PROXIES: "${POD_CIDR},${LAN_SUBNET}"
               # Date parsing (Hungarian format: év.hónap.nap)
               PAPERLESS_DATE_ORDER: "YMD"
               # Paths
@@ -219,7 +219,7 @@ spec:
           gethomepage.dev/group: Selfhosted
           gethomepage.dev/icon: paperless-ngx.svg
         hostnames:
-          - "docs.horvathzoltan.me"
+          - "docs.${PUBLIC_DOMAIN}"
         parentRefs:
           - name: envoy-external
             namespace: networking
@@ -254,7 +254,7 @@ spec:
             app: *dataMount
       nas-export:
         type: nfs
-        server: 192.168.1.10
+        server: ${NAS_IP}
         path: /backups/paperless
         advancedMounts:
           paperless:
@@ -264,7 +264,7 @@ spec:
             app: *exportMount
       nas-inbox:
         type: nfs
-        server: 192.168.1.10
+        server: ${NAS_IP}
         path: /scanner/paperless-inbox
         advancedMounts:
           paperless:

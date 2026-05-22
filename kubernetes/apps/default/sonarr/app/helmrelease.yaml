@@ -31,7 +31,7 @@ spec:
               repository: ghcr.io/home-operations/sonarr
               tag: 4.0.17.2967@sha256:4ff5667a371e08b098858fa2457a99a5fef5f6a32640eb8567efe979d13ac9fc
             env:
-              TZ: "Europe/Budapest"
+              TZ: "${TIMEZONE}"
             probes:
               liveness: &probes
                 enabled: true
@@ -72,7 +72,7 @@ spec:
           gethomepage.dev/group: Arr Stack
           gethomepage.dev/icon: sonarr.svg
         hostnames:
-          - "shows.horvathzoltan.me"
+          - "shows.${PUBLIC_DOMAIN}"
         parentRefs:
           - name: envoy-external
             namespace: networking
@@ -92,7 +92,7 @@ spec:
           - path: /config
       nfs-nas-media:
         type: nfs
-        server: 192.168.1.10
+        server: ${NAS_IP}
         path: /media
         globalMounts:
           - path: /media

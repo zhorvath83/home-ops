@@ -17,7 +17,7 @@ spec:
       dnsConfig:
         nameservers:
           - 127.0.0.1
-          - 10.245.0.10
+          - ${CLUSTER_DNS_IP}
         options:
           - {name: ndots, value: "1"}
       securityContext:
@@ -41,7 +41,7 @@ spec:
               repository: ghcr.io/dmunozv04/isponsorblocktv
               tag: v2.9.0@sha256:5b8cfa805cb60b99a9e83a2df62d41c63865a315f7ee7cfed1a78052d93650b6
             env:
-              TZ: "Europe/Budapest"
+              TZ: "${TIMEZONE}"
             probes:
               liveness: {enabled: false}
               readiness: {enabled: false}

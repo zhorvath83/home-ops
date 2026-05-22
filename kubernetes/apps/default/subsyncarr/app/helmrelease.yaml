@@ -31,7 +31,7 @@ spec:
               repository: tomtomw123/subsyncarr-plus
               tag: 1.3.0@sha256:8b3645c4d1237c81f06d2db4a707a5d1a5de29f3f2730f8a749663e7abdc14b9
             env:
-              TZ: "Europe/Budapest"
+              TZ: "${TIMEZONE}"
               PUID: "1000"
               PGID: "1000"
               CRON_SCHEDULE: "disabled"
@@ -87,7 +87,7 @@ spec:
           gethomepage.dev/group: Arr Stack
           gethomepage.dev/icon: mdi-subtitles
         hostnames:
-          - "subsync.horvathzoltan.me"
+          - "subsync.${PUBLIC_DOMAIN}"
         parentRefs:
           - name: envoy-external
             namespace: networking
@@ -106,7 +106,7 @@ spec:
           - path: /app/data
       media:
         type: nfs
-        server: 192.168.1.10
+        server: ${NAS_IP}
         path: /media/shows
         globalMounts:
           - path: /media

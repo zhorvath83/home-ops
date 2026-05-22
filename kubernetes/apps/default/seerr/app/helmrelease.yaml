@@ -29,7 +29,7 @@ spec:
               repository: ghcr.io/seerr-team/seerr
               tag: v3.2.0@sha256:c4cbd5121236ac2f70a843a0b920b68a27976be57917555f1c45b08a1e6b2aad
             env:
-              TZ: "Europe/Budapest"
+              TZ: "${TIMEZONE}"
               PORT: &port 5055
             probes:
               liveness: &probes
@@ -69,7 +69,7 @@ spec:
           gethomepage.dev/group: Arr Stack
           gethomepage.dev/icon: jellyseerr.svg
         hostnames:
-          - "reqs.horvathzoltan.me"
+          - "reqs.${PUBLIC_DOMAIN}"
         parentRefs:
           - name: envoy-external
             namespace: networking

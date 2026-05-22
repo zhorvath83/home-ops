@@ -6,8 +6,8 @@ metadata:
   name: "horvathzoltan-me"
 spec:
   dnsNames:
-    - "horvathzoltan.me"
-    - "*.horvathzoltan.me"
+    - "${PUBLIC_DOMAIN}"
+    - "*.${PUBLIC_DOMAIN}"
   duration: 160h
   issuerRef:
     kind: ClusterIssuer

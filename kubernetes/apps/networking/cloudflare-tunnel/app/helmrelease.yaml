@@ -15,15 +15,15 @@ spec:
         data:
           config.yaml: |-
             ingress:
-              - hostname: "horvathzoltan.me"
+              - hostname: "${PUBLIC_DOMAIN}"
                 originRequest:
                   http2Origin: true
-                  originServerName: "horvathzoltan.me"
+                  originServerName: "${PUBLIC_DOMAIN}"
                 service: &envoy-external-svc "https://envoy-external.networking.svc.cluster.local"
-              - hostname: "*.horvathzoltan.me"
+              - hostname: "*.${PUBLIC_DOMAIN}"
                 originRequest:
                   http2Origin: true
-                  originServerName: "external.horvathzoltan.me"
+                  originServerName: "external.${PUBLIC_DOMAIN}"
                 service: *envoy-external-svc
               - service: http_status:404
     defaultPodOptions:
@@ -50,7 +50,7 @@ spec:
               repository: docker.io/cloudflare/cloudflared
               tag: 2026.5.0
             env:
-              TZ: "Europe/Budapest"
+              TZ: "${TIMEZONE}"
               NO_AUTOUPDATE: true
               TUNNEL_METRICS: 0.0.0.0:8080
               TUNNEL_ORIGIN_ENABLE_HTTP2: true

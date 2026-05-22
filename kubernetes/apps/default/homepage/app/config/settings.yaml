@@ -8,7 +8,7 @@ background:
   brightness: 80
   opacity: 30
 
-favicon: https://horvathzoltan.me/favicon.ico
+favicon: https://${PUBLIC_DOMAIN}/favicon.ico
 
 target: _self
 headerStyle: underlined

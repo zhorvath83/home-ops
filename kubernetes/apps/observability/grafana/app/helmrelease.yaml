@@ -34,7 +34,7 @@ spec:
       GF_LOG_MODE: console
       GF_NEWS_NEWS_FEED_ENABLED: false
       GF_SECURITY_ALLOW_EMBEDDING: true
-      GF_SERVER_ROOT_URL: "https://grafana.horvathzoltan.me"
+      GF_SERVER_ROOT_URL: "https://grafana.${PUBLIC_DOMAIN}"
     route:
       main:
         enabled: true
@@ -44,7 +44,7 @@ spec:
           gethomepage.dev/group: Observability
           gethomepage.dev/icon: grafana.svg
         hostnames:
-          - "grafana.horvathzoltan.me"
+          - "grafana.${PUBLIC_DOMAIN}"
         parentRefs:
           - name: envoy-external
             namespace: networking

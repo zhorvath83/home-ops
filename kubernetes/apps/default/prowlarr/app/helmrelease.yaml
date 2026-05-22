@@ -31,7 +31,7 @@ spec:
               repository: ghcr.io/home-operations/prowlarr
               tag: 2.3.7.5365@sha256:b9557d772c974901aed9285189d904b613f1f07750fca930eecfe78544bd3d48
             env:
-              TZ: "Europe/Budapest"
+              TZ: "${TIMEZONE}"
             probes:
               liveness: &probes
                 enabled: true
@@ -70,7 +70,7 @@ spec:
           gethomepage.dev/group: Arr Stack
           gethomepage.dev/icon: prowlarr.svg
         hostnames:
-          - "indexers.horvathzoltan.me"
+          - "indexers.${PUBLIC_DOMAIN}"
         parentRefs:
           - name: envoy-external
             namespace: networking

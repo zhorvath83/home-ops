@@ -31,7 +31,7 @@ spec:
               repository: ghcr.io/ellite/wallos
               tag: 4.9.0@sha256:f226b0ccb9f726f0389653357a692a684afbb7a6cca705099a1d826e8f47a772
             env:
-              TZ: "Europe/Budapest"
+              TZ: "${TIMEZONE}"
               PUID: 1000
               PGID: 1000
             probes:
@@ -73,7 +73,7 @@ spec:
           gethomepage.dev/group: PFM
           gethomepage.dev/icon: wallos
         hostnames:
-          - "subscriptions.horvathzoltan.me"
+          - "subscriptions.${PUBLIC_DOMAIN}"
         parentRefs:
           - name: envoy-external
             namespace: networking

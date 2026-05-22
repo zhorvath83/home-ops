@@ -363,7 +363,7 @@ spec:
         additionalScrapeConfigs:
           - job_name: openwrt
             static_configs:
-              - targets: ["192.168.1.1:9100"]
+              - targets: ["${ROUTER_IP}:9100"]
             metric_relabel_configs:
               - source_labels: [__name__]
                 regex: "^go_.*"

@@ -57,7 +57,7 @@ spec:
               repository: ghcr.io/home-operations/qbittorrent
               tag: 5.2.0@sha256:788796013c3da75f2dba568c5319975a5c41f555586dfd13987be4631181e00e
             env:
-              TZ: "Europe/Budapest"
+              TZ: "${TIMEZONE}"
               QBT_WEBUI_PORT: &port 8080
               QBT_TORRENTING_PORT: &torrentPort 62418
             nameOverride: qbittorrent
@@ -111,7 +111,7 @@ spec:
           gethomepage.dev/group: Downloading
           gethomepage.dev/icon: qbittorrent.svg
         hostnames:
-          - "bt.horvathzoltan.me"
+          - "bt.${PUBLIC_DOMAIN}"
         parentRefs:
           - name: envoy-external
             namespace: networking
@@ -142,7 +142,7 @@ spec:
             readOnly: true
       nfs-nas-media:
         type: nfs
-        server: 192.168.1.10
+        server: ${NAS_IP}
         path: /media
         globalMounts:
           - path: /media

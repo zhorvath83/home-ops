@@ -19,4 +19,4 @@ spec:
               key: api-token
         selector:
           dnsZones:
-            - "horvathzoltan.me"
+            - "${PUBLIC_DOMAIN}"
