@@ -40,4 +40,4 @@ spec:
       tls:
         certificateRefs:
           - kind: Secret
-            name: "horvathzoltan-me"
+            name: "${PUBLIC_DOMAIN/./-}"
