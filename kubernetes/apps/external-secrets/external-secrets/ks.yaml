@@ -22,4 +22,3 @@ spec:
     namespace: flux-system
   targetNamespace: external-secrets
   timeout: 5m
-  wait: false

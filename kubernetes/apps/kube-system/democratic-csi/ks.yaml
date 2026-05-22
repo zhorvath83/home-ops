@@ -11,6 +11,11 @@ spec:
   dependsOn:
     - name: volsync
       namespace: volsync-system
+  healthChecks:
+    - apiVersion: helm.toolkit.fluxcd.io/v2
+      kind: HelmRelease
+      name: democratic-csi
+      namespace: kube-system
   interval: 1h
   path: ./kubernetes/apps/kube-system/democratic-csi/app
   prune: true
@@ -20,4 +25,3 @@ spec:
     namespace: flux-system
   targetNamespace: kube-system
   timeout: 5m
-  wait: false
