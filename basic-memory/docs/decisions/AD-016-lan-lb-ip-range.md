@@ -29,11 +29,11 @@ related_areas:
 - [topic] LAN LoadBalancer IP range `192.168.1.15-25`
 
 ## Decision
-The new cluster L2 announcement IP pool is `192.168.1.15-25` (11 IPs). The current MetalLB service IPs (`.18`, `.19`, `.20`) fall in this range and are preserved unchanged.
+The new cluster L2 announcement IP pool is `${d}{LB_IP_POOL_START}–${d}{LB_IP_POOL_STOP}` (11 IPs). The current MetalLB service IPs (`.18`, `.19`, `.20`) fall in this range and are preserved unchanged. These values are now defined in the `cluster-settings` ConfigMap.
 
 ## Rationale
 - During testing the old K3s cluster is shut down — no IP conflict
-- DNS records and router/dnsmasq configs remain untouched (`LB_K8S_GATEWAY_IP=192.168.1.19` etc.)
+- DNS records and router/dnsmasq configs remain untouched (`K8S_GATEWAY_IP` now from `cluster-settings`)
 - Rollback path: HP power-down → K3s VM power-on → IPs automatically restore
 
 ## Tradeoffs

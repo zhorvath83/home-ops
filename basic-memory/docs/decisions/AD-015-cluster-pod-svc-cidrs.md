@@ -28,7 +28,7 @@ related_areas:
 - [topic] Pod CIDR `10.244.0.0/16`, service CIDR `10.245.0.0/16`
 
 ## Decision
-Pod CIDR is `10.244.0.0/16`, service CIDR is `10.245.0.0/16`. Both differ from the current cluster (`10.42`/`10.43`).
+Pod CIDR is `${d}{POD_CIDR}`, service CIDR is `${d}{SVC_CIDR}`. Both differ from the current cluster (`10.42`/`10.43`). These values are now defined in the `cluster-settings` ConfigMap.
 
 ## Rationale
 - The new cluster IP plan must not collide with the old one during the cutover window when both are visible on the router
@@ -36,7 +36,7 @@ Pod CIDR is `10.244.0.0/16`, service CIDR is `10.245.0.0/16`. Both differ from t
 - `10.245` for services makes the `pod=244, svc=245` mnemonic
 
 ## Tradeoffs
-- The `cluster-settings.yaml` variables `CLUSTER_POD_CIDR` and `CLUSTER_SVC_CIDR` need updating — small chore
+- The `cluster-settings.yaml` variables `POD_CIDR` and `SVC_CIDR` are now defined and used via Flux substitution
 
 ## Related
 - relates_to [[networking]]

@@ -5,7 +5,7 @@ permalink: home-ops/docs/areas/flux-gitops
 area: flux-gitops
 status: current
 confidence: high
-verified_at: '2026-05-19'
+verified_at: '2026-05-22'
 summary: Flux runs via the Flux Operator pattern with a single FluxInstance CR declaring
   controllers, GitRepository sync, and root Kustomization. The cluster-apps Kustomization
   at kubernetes/flux/cluster/ks.yaml is the reconciliation root and injects shared
@@ -49,6 +49,8 @@ The reconciliation root is `kubernetes/flux/cluster/ks.yaml` — a single `clust
 - [component] Pluto deprecated-API scanning — weekly cron (Fri 00:00 UTC) + workflow_dispatch, `pluto detect-files -d kubernetes`, on-failure auto-creates GitHub issue assigned to repo owner (.github/workflows/scanning-deprecated-kube-resources.yaml)
 
 ## Claims (verified against repo)
+- [claim] "Cluster-wide substitution variables are defined in the `cluster-settings` ConfigMap (`kubernetes/components/common/vars/cluster-settings.yaml`) and injected into every child Kustomization via a `postBuild.substituteFrom` patch on the root `cluster-apps` Kustomization — variables include ${PUBLIC_DOMAIN}, ${TIMEZONE}, ${NAS_IP}, ${ENVOY_INTERNAL_IP}, ${K8S_GATEWAY_IP}, ${PLEX_IP}, ${LAN_SUBNET}, ${POD_CIDR}, ${SVC_CIDR}, ${CLUSTER_DNS_IP}, and ${ROUTER_IP}" (evidence: repo, ref: kubernetes/components/common/vars/cluster-settings.yaml + kubernetes/flux/cluster/ks.yaml, verified: 2026-05-22)
+
 - [claim] "Flux runs four controllers: source-controller, kustomize-controller, helm-controller, notification-controller — declared in FluxInstance.spec.values.instance.components" (evidence: repo, ref: flux-instance/app/helmrelease.yaml:20-24, verified: 2026-05-19)
 - [claim] "GitRepository sync points at https://github.com/zhorvath83/home-ops.git, ref refs/heads/main, path kubernetes/flux/cluster, 1h interval" (evidence: repo, ref: flux-instance/app/helmrelease.yaml:25-30, verified: 2026-05-19)
 - [claim] "Flux Operator manifests pinned to v0.49.0 with version constraint 2.x; Renovate-tracked via inline annotation" (evidence: repo, ref: flux-instance/app/helmrelease.yaml:15-17, verified: 2026-05-19)
