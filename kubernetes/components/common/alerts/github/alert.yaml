@@ -11,4 +11,4 @@ spec:
   eventSources:
     - kind: Kustomization
       name: "*"
-  suspend: true
+  suspend: false
