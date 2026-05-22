@@ -8,7 +8,7 @@ spec:
   interval: 30m
   chartRef:
     kind: OCIRepository
-    name: cloudflare-tunnel
+    name: app-template
   values:
     configMaps:
       config:

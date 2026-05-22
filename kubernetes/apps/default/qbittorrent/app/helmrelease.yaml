@@ -8,7 +8,7 @@ spec:
   interval: 30m
   chartRef:
     kind: OCIRepository
-    name: qbittorrent
+    name: app-template
   values:
     defaultPodOptions:
       hostname: qbittorrent

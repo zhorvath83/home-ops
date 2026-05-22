@@ -8,7 +8,7 @@ spec:
   interval: 30m
   chartRef:
     kind: OCIRepository
-    name: home-gallery
+    name: app-template
   values:
     defaultPodOptions:
       automountServiceAccountToken: false
