@@ -14,6 +14,3 @@ customization:
       - siderolabs/i915
       # Intel CPU microcode — security and stability updates.
       - siderolabs/intel-ucode
-      # Intel Management Engine Interface — exposes hardware sensors and
-      # management bus to userspace (companion to i915 on Intel platforms).
-      - siderolabs/mei
