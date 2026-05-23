@@ -45,6 +45,7 @@ tags:
 Removed wait:false from every health-gated Kustomization, matching the bjw-s pattern where health-gated ks use the default wait:true and non-health-gated leaf ks retain wait:false.
 
 Files where wait:false was removed:
+
 - cert-manager/cert-manager/ks.yaml (both documents)
 - envoy-gateway/ks.yaml (all three documents)
 - democratic-csi/ks.yaml
@@ -83,6 +84,7 @@ These match bjw-s parity. No action needed unless an incident motivates them.
 ## Phase 4 - Documentation (pending)
 
 The following documentation updates are still needed:
+
 - Update BM docs/areas/flux-gitops with a healthChecks convention section
 - Add a brief note to kubernetes/CLAUDE.md about the healthChecks convention
 
@@ -121,11 +123,11 @@ healthCheckExprs:
 - 86bb49c62 - feat(flux): add healthChecks to dependsOn targets, adopt bjw-s wait pattern
 
 ## Related
+
 - implements [[flux-gitops]]
 - relates_to [[networking]]
 - relates_to [[external-secrets]]
 - relates_to [[k8s-workloads]]
-
 
 ## Follow-up: eso-dependency-audit (completed, no code change)
 

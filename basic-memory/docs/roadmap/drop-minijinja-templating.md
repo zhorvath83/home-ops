@@ -20,23 +20,28 @@ related_areas:
 ---
 
 ## Metadata (observation-form, schema validation)
+
 - [topic] Drop minijinja templating — replace with envsubst + op inject
 - [status] proposed
 - [priority] low
 
 ## Scope
+
 Eliminate all `.yaml.j2` files and the `minijinja-cli` dependency from the repository. Replace the only meaningful Jinja constructs (env var substitution + a single `{% if IS_CONTROLPLANE %}` block) with `envsubst` and an inlined controlplane body. `op inject` keeps its current role for 1Password secret refs. The two `.j2` files that contain zero Jinja directives are simply renamed to `.yaml`.
 
 ## Rationale
+
 Audit of the three in-tree `.yaml.j2` files and the inline `gen-talosconfig` heredoc shows that today no Jinja construct is strictly required to support current behavior: variable substitution is shell-replaceable, the `{% if %}` branch is dead code (cluster is single-node controlplane, `IS_CONTROLPLANE` always `true`), and two files carry zero directives at all. Removing minijinja shrinks the toolchain by one CLI, removes `.minijinja.toml`, removes the `(?:\.j2)?` regex suffix from Renovate path filters, and makes file extensions truthful (`.yaml` means YAML, no render step needed beyond `op inject`).
 
 ## Current Jinja inventory
+
 - [file] `kubernetes/talos/machineconfig.yaml.j2` — only true Jinja user. Uses `{{ ENV.TALOS_VERSION }}`, `{{ ENV.KUBERNETES_VERSION }}`, `{{ ENV.TALOS_SCHEMATIC_ID }}` for version pinning and `{% if ENV.IS_CONTROLPLANE == "true" %}` blocks around CP-only fields (apiServer, controllerManager, scheduler, etcd, aggregatorCA, secretboxEncryptionSecret, serviceAccount, CA private keys).
 - [file] `kubernetes/talos/nodes/k8s-cp0.yaml.j2` — zero Jinja directives, zero `op://` refs. `.j2` extension is convention only.
 - [file] `kubernetes/bootstrap/resources.yaml.j2` — zero Jinja directives, only `op://` refs. `.j2` extension is misleading.
 - [file] `kubernetes/talos/mod.just` lines 106-131 (`gen-talosconfig`) — inline heredoc named `secrets.yaml.j2`, processed only by `op inject`. Misleading name.
 
 ## Callers and references
+
 - [recipe] `.justfile:45-46` — `just template` helper: `minijinja-cli {{ file }} {{ args }} | op inject`
 - [recipe] `kubernetes/bootstrap/mod.just:91-95` — `stage-resources` calls `just template resources.yaml.j2 | kubectl apply --server-side -f -`
 - [recipe] `kubernetes/talos/mod.just:256-270` — `render-config` runs `minijinja-cli --env machineconfig.yaml.j2 | op inject` and `minijinja-cli --env nodes/<node>.yaml.j2`
@@ -49,12 +54,14 @@ Audit of the three in-tree `.yaml.j2` files and the inline `gen-talosconfig` her
 ## Migration plan
 
 ### Phase 1 — low-risk renames (no Jinja inside, safe to start)
+
 - [step] Rename `kubernetes/bootstrap/resources.yaml.j2` → `resources.yaml`. Update `bootstrap/mod.just:95` to skip `just template`: `op inject -i kubernetes/bootstrap/resources.yaml | kubectl apply --server-side -f -`.
 - [step] Rename `kubernetes/talos/nodes/k8s-cp0.yaml.j2` → `k8s-cp0.yaml`. Update discovery globs in `kubernetes/talos/mod.just:18` and `kubernetes/bootstrap/mod.just:17` from `'*.yaml.j2'` to `'*.yaml'`. Update `talos/mod.just:269` to read the patch file without minijinja (`cat` or direct path arg to `talosctl machineconfig patch`).
 - [step] Rename the inline heredoc target in `talos/mod.just` `gen-talosconfig` recipe from `secrets.yaml.j2` to `secrets.yaml`.
 - [verification] `just talos render-config k8s-cp0` produces byte-identical output to pre-rename run.
 
 ### Phase 2 — the actual Jinja removal in machineconfig.yaml.j2
+
 - [step] Pin `envsubst` as a tool dependency. Options: `aqua:a8m/envsubst` (Go reimplementation, easiest mise pin) OR rely on system `gettext`. Recommendation: aqua pin for reproducibility across dev machines.
 - [step] Edit `machineconfig.yaml.j2`:
   - replace `{{ ENV.TALOS_VERSION }}` → `${TALOS_VERSION}`, `{{ ENV.KUBERNETES_VERSION }}` → `${KUBERNETES_VERSION}`, `{{ ENV.TALOS_SCHEMATIC_ID }}` → `${TALOS_SCHEMATIC_ID}`
@@ -64,6 +71,7 @@ Audit of the three in-tree `.yaml.j2` files and the inline `gen-talosconfig` her
 - [verification] Diff rendered output between old (`minijinja-cli`) and new (`envsubst`) pipeline — must be byte-identical aside from Jinja whitespace artifacts (`trim-blocks`/`lstrip-blocks`). Use `talosctl machineconfig patch` to also verify final merge with the node patch.
 
 ### Phase 3 — cleanup
+
 - [step] Remove `just template` helper recipe from `.justfile` if no remaining callers.
 - [step] Drop `aqua:mitsuhiko/minijinja` from `.mise.toml [tools]` and delete the `MINIJINJA_CONFIG_FILE` line under `[env]`. Add `envsubst` pin if Phase 2 chose mise/aqua.
 - [step] Delete `.minijinja.toml` from repo root.
@@ -72,6 +80,7 @@ Audit of the three in-tree `.yaml.j2` files and the inline `gen-talosconfig` her
 - [verification] `git grep -i 'minijinja\|\.yaml\.j2'` returns no matches outside the BM roadmap note itself and the (now stale) basic-memory worktree if any.
 
 ## Risks and design decisions
+
 - [decision] Phase 2 renames the (now CP-only) base file directly to `machineconfig-controlplane.yaml` instead of a generic `machineconfig.yaml`. Truthful naming today (file IS controlplane-only after the `{% if %}` inlining), and if a worker node is ever added the path forward is simply adding `machineconfig-worker.yaml` alongside — no second rename, no Jinja conditionals reintroduced. The minor speculation cost (one extra word in the filename even if a worker never materialises) is accepted as the trade for avoiding a rename under live conditions later.
 - [risk] `envsubst` from GNU `gettext` and `a8m/envsubst` (Go) differ in default behavior around undefined variables. Use the strict mode equivalent and verify both versions produce identical output for the machineconfig before committing.
 - [risk] Renaming Talos config files mid-migration could break `just talos apply-node` if a node operation is in flight. Schedule Phases 1 and 2 during a quiet window (no upgrade/reset planned), or commit each phase separately so rollback is single-commit revert.
@@ -79,6 +88,7 @@ Audit of the three in-tree `.yaml.j2` files and the inline `gen-talosconfig` her
 - [decision] Do NOT migrate to a different templating tool (yq eval-all, gomplate, etc.). The minimum-tools direction is the whole point.
 
 ## Related
+
 - relates_to [[talos-cluster]]
 - relates_to [[flux-gitops]]
 - relates_to [[external-secrets]]
