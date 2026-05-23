@@ -30,11 +30,13 @@ blocked_by: prometheus-adapter
 # Adopt zeroscaler component for NFS-dependency scale-to-zero gating
 
 ## Metadata (observation-form, schema validation)
+
 - [topic] Adopt zeroscaler component for NFS-dependency scale-to-zero gating
 - [status] proposed
 - [priority] low
 
 ## Scope
+
 Mirror the bjw-s reusable `components/zeroscaler/` pattern into our `kubernetes/components/zeroscaler/` and wire it into apps that depend on the OMV NAS (`192.168.1.10`) NFS exports.
 
 The component itself is a **single `HorizontalPodAutoscaler` (autoscaling/v2) manifest** templated via postBuild substitution — no operator, no CRD, no separate install. The bjw-s manifest verbatim:
@@ -99,16 +101,19 @@ spec:
 Candidate apps for adoption (NFS-dependent, single-replica appropriate): the ~11 apps the k8s-workloads drift note flags as NFS-mount consumers. Exact list to be enumerated during implementation — paperless (NFS export consumer), media stack (radarr/sonarr/plex/bazarr if NFS-mounted), backrest if reading `/backups` over NFS.
 
 ## Rationale
+
 The k8s-workloads area-reference explicitly calls out the NFS SPOF: **"The NFS server 192.168.1.10 is a single point of failure for /backups exports and media mounts across at least 11 apps."** Today when the NAS is offline, those pods CrashLoopBackOff on mount or hang stateful operations — alert noise, restart counters incrementing, log churn. With the zeroscaler pattern, affected apps cleanly scale to 0 until the probe reports recovery; no fake-alarm noise, automatic restoration when NFS comes back.
 
 The pattern is **native HPA** (no operator added to the cluster) and identical between bjw-s and onedr0p, so it is mature and low-maintenance.
 
 ## Options
+
 1. **NFS-only (bjw-s default)** — single Probe + single zeroscaler metric job; covers the actual SPOF
 2. **Extended dependency gating** — additional probes for other shared dependencies (e.g. external DB, OVH S3 reachability); no current driver, defer
 3. **Skip entirely** — accept CrashLoopBackOff during NAS-down as today's status quo; viable if alert noise is tolerable
 
 ## Related
+
 - relates_to [[k8s-workloads]]
 - relates_to [[observability]]
 - relates_to [[observability-probes-and-disk-health]]

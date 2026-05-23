@@ -39,7 +39,7 @@ gum = "0.17.0"
 pre-commit = "4.6.0"
 
 # Terraform
-terraform = "1.15.3"
+terraform = "1.15.4"
 
 # Linters / formatters
 "aqua:google/yamlfmt" = "latest"
