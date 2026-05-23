@@ -90,8 +90,7 @@ spec:
     # Datasources
     # ============================================================================
     plugins:
-      - name: victoriametrics-logs-datasource
-        version: 0.26.3
+      - victoriametrics-logs-datasource 0.26.3
     datasources:
       datasources.yaml:
         apiVersion: 1
