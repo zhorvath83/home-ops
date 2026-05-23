@@ -19,9 +19,9 @@ customization:
   systemExtensions:
     officialExtensions:
       # Intel iGPU driver. Together with the i915.enable_guc=3 kernel arg
-      # above, prepares the node for a future Plex hardware transcode setup.
-      # The device mount into the Plex pod is NOT enabled today (see BM
-      # docs/areas/talos-cluster drift_risk notes).
+      # above, enables hardware video decode/encode on the node. The iGPU is
+      # exposed to pods via the Intel GPU Resource Driver (DRA/CDI) — see
+      # kubernetes/apps/kube-system/intel-gpu-resource-driver/.
       - siderolabs/i915
       # Intel CPU microcode — security and stability updates.
       - siderolabs/intel-ucode
