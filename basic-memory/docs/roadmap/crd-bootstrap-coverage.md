@@ -122,6 +122,7 @@ Audit every CustomResource kind declared in kubernetes/apps/ against the CRD del
 - Changing the Flux reconciliation model (install.crds policy is cluster-wide and works for steady-state)
 - Replacing the helmfile bootstrap chain with a different tool
 - Adding helmfile postsync hooks for CRD waiting (onedr0p pattern) — separate concern from pre-installing CRDs
+
 ## Research Session (2026-05-23)
 
 Four reference implementations audited for CRD bootstrap strategy:
@@ -144,6 +145,7 @@ Four reference implementations audited for CRD bootstrap strategy:
 ### Cross-cutting observation
 
 Every reference repo uses the same cluster-wide HelmRelease patch injecting install.crds: CreateReplace. The difference is entirely in the bootstrap phase: how CRDs are guaranteed to exist before Flux starts reconciling CRs. The two strategies are (a) pre-install more CRDs in 00-crds.yaml or (b) add postsync hooks to the helmfile apps phase. onedr0p/bjw-s/szinn use (b) for cilium and external-secrets; billimek uses (a) for everything.
+
 ## Implementation (2026-05-23)
 
 ### Audit findings
