@@ -30,7 +30,7 @@ spec:
           01-copy-config:
             image:
               repository: public.ecr.aws/docker/library/busybox
-              tag: 1.37.0
+              tag: 1.38.0
             securityContext:
               privileged: false
               allowPrivilegeEscalation: false
