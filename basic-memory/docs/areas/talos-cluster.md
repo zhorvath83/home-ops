@@ -41,12 +41,14 @@ tags:
 # talos-cluster — current state
 
 ## Metadata (observation-form, schema validation)
+
 - [area] talos-cluster
 - [status] current
 - [confidence] high
 - [verified_at] 2026-05-19
 
 ## Summary
+
 The cluster is a single Talos Linux control-plane node, `k8s-cp0`, cluster name `main`. Control-plane scheduling is enabled (`allowSchedulingOnControlPlanes: true`) so workloads run on the same node. Kubernetes runs without kube-proxy (Cilium replaces it) and without CoreDNS (Cilium provides DNS). Cluster-wide substitution variables (`${LAN_SUBNET}`, `${POD_CIDR}`, `${SVC_CIDR}`, etc.) are defined in the `cluster-settings` ConfigMap and injected via Flux `postBuild.substituteFrom`; the Talos machineconfig template uses minijinja env vars rather than Flux substitution; Talos hostDNS is enabled with `forwardKubeDNSToHost` and `resolveMemberNames`. KubePrism listens on port 7445 for the kubelet/etcd loopback API.
 
 The machine configuration lives in `kubernetes/talos/machineconfig.yaml.j2` as a single shared base (minijinja template), per-node patches in `kubernetes/talos/nodes/<name>.yaml.j2`, and a factory schematic in `kubernetes/talos/schematic.yaml`. Every sensitive value (CA crts/keys, cluster id/secret/token, etcd CA, machine token, secretbox key, service-account key) is encoded as `op://HomeOps/talos/<FIELD>` and resolved by `op inject` at apply time, never persisted as plaintext in the repo. The Talos secrets bundle itself is generated once via `just talos gen-secrets` and stored as a single 1Password API Credential item (`HomeOps/talos`).
@@ -56,6 +58,7 @@ Operational flows are `just talos` recipes grouped into `image` (schematic, ISO 
 The whole reassembly path on already-installed hardware is the `just cluster-bootstrap cluster` chain in `kubernetes/bootstrap/mod.just` — it sequences talosconfig regen, per-node `talos apply-config`, `talosctl bootstrap`, kubeconfig fetch, namespace creation, bootstrap resources (1Password Connect Secrets via `op inject`), CRD pre-apply, and the helmfile-driven apps phase.
 
 ## Components
+
 - [component] Single control-plane node — `k8s-cp0`, type `controlplane`, scheduling allowed (kubernetes/talos/nodes/k8s-cp0.yaml.j2:5-6 + machineconfig.yaml.j2:98-99)
 - [component] Cluster identity — name `main`, endpoint `https://${CONTROLPLANE_IP}:6443`, cert SANs include `127.0.0.1`, `${CONTROLPLANE_IP}`, `k8s.lan` (machineconfig.yaml.j2:110-114,149-151)
 - [component] Talos factory schematic — `schematic.yaml` with i915 + intel-ucode system extensions (no custom kernel args, no MEI) (kubernetes/talos/schematic.yaml)
@@ -81,6 +84,7 @@ The whole reassembly path on already-installed hardware is the `just cluster-boo
 - [component] Bootstrap chain — `just cluster-bootstrap cluster` (kubernetes/bootstrap/mod.just) sequences talosconfig → talos apply-config → talosctl bootstrap → kubeconfig (server temporarily rewritten to controller IP before Cilium L2 is up) → wait → namespaces → bootstrap resources (`op inject` on `resources.yaml.j2` for the 1Password Connect Secrets) → CRDs → apps (helmfile) → kubeconfig (final, Cilium L2 endpoint)
 
 ## Claims (verified against repo)
+
 - [claim] "The cluster is a single control-plane node `k8s-cp0` with cluster name `main` and Kubernetes API endpoint `https://${CONTROLPLANE_IP}:6443`" (evidence: repo, ref: machineconfig.yaml.j2:110-114,149-151 + nodes/k8s-cp0.yaml.j2:5-6, verified: 2026-05-19)
 - [claim] "Control-plane scheduling is enabled (`allowSchedulingOnControlPlanes: true`) — workloads run on the same node as etcd/api-server" (evidence: repo, ref: machineconfig.yaml.j2:98, verified: 2026-05-19)
 - [claim] "kube-proxy and CoreDNS are both disabled in Talos (`proxy.disabled: true`, `coreDNS.disabled: true`); the cluster uses Cilium for both" (evidence: repo, ref: machineconfig.yaml.j2:119-120,129-131, verified: 2026-05-19)
@@ -100,27 +104,31 @@ The whole reassembly path on already-installed hardware is the `just cluster-boo
 - [claim] "Lifecycle recipes (`reset-node`, `shutdown-node`, `upgrade-node`, `upgrade-k8s`) carry `[confirm]` prompts; `reset-node` wipes STATE + EPHEMERAL + u-local-hostpath labels and reboots to the installer" (evidence: repo, ref: kubernetes/talos/mod.just:299-309,322-330,344-362, verified: 2026-05-19)
 
 ## Drift Risk
+
 - [drift] The control-plane node name `k8s-cp0` and its IP are duplicated across the machineconfig (`certSANs`, `controlPlane.endpoint`), the resolver script's `FALLBACK` value, the `nodes/k8s-cp0.yaml.j2` filename, and OpenWRT DHCP reservations. The resolver script's header explicitly references rename precedents (commits `8de1fa5cc`, `19d5c9fe5`) — any future rename must keep all five locations in sync.
 - [drift] Disk pinning by exact model string (`PC801 NVMe SK hynix 1TB`, `PC711 NVMe SK hynix 1TB`) breaks silently on hardware replacement with a different model. The local-hostpath UserVolume in particular is the storage that backs democratic-csi and therefore most app PVCs.
 - [drift] The Talos installer image is rebuilt every time from a live POST to `factory.talos.dev` plus `TALOS_VERSION` — there is no stored schematic ID in the repo. If the factory's schematic-ID derivation ever changes for the same input, image URLs would drift. `just talos download-image` writes the resolved ISO out to `talos-<version>-<sid_prefix>.iso` for the burn flow only.
 - [drift] LinkAlias matching depends on a 4-byte MAC prefix (`50:81:40:80:`) — HP OUI plus one product-family byte. If the on-board NIC is replaced with a different family, the alias does not match and `bond0` never comes up. There is no fallback selector.
 - [drift] The i915 + intel-ucode extensions in the schematic are consumed by the Intel GPU Resource Driver (DRA/CDI). Plex accesses the iGPU via ResourceClaimTemplate (`components/gpu/`) — no hostPath mount or supplementalGroups needed. The DRA driver deploys as a privileged DaemonSet in kube-system. MEI was removed (Comet Lake lacks GSC/HDCP hardware — unlike Meteor Lake).
 - [drift] The talosconfig the operator's shell points at is rebuilt from 1Password via `gen-talosconfig` — if the operator runs `talosctl config ...` commands that mutate the config locally (e.g. add an extra endpoint) those edits are lost on the next regen.
+
 ## Open Questions / Gaps
+
 - [gap] No verification was run against the live Talos node or factory.talos.dev in this pass — claims are repo-evidence only. `just talos status` from a credentialed shell is the live-state validation path; `just talos diag` produces a node-side diagnostics dump.
 - [gap] The exact Talos and Kubernetes versions in use are not pinned in the repo — they come from `TALOS_VERSION` and `KUBERNETES_VERSION` env vars (likely set by `.mise.toml`, not inspected here). Cross-checking that those vars are Renovate-tracked is left to the versions-renovate area.
 - [gap] The single-node-cluster assumption is hardcoded throughout (one `nodes/*.yaml.j2`, fixed CP IP, fixed endpoint, single bond on `net0`). Multi-node / BGP migration is no longer tracked as a roadmap item (L2 announcement is sufficient for single-node).
 - [gap] No documented disaster-recovery procedure for the case where the 1Password `HomeOps/talos` item is lost — regenerating secrets effectively requires re-installing the cluster.
 
 ## Relations
+
 - relates_to [[external-secrets]]
 - relates_to [[networking]]
 - relates_to [[flux-gitops]]
 - relates_to [[k8s-workloads]]
 - part_of [[home-ops-platform]]
 
-
 ## Tuppr upgrade automation
+
 - [component] Tuppr controller — GitOps-managed Talos OS and Kubernetes upgrade controller in `system-upgrade` namespace (kubernetes/apps/system-upgrade/tuppr/). Replaces manual `just talos upgrade-node` / `just talos upgrade-k8s` for steady-state upgrades. Just recipes remain as documented manual fallback.
 - [component] TalosUpgrade CR — `talos` resource in `system-upgrade` namespace; single-node config with `placement: soft`, `rebootMode: powercycle`, `parallelism: 1`, drain settings, and health checks gating on Flux Kustomization + HelmRelease readiness + cilium + cloudflare-tunnel (kubernetes/apps/system-upgrade/tuppr/upgrades/talosupgrade.yaml)
 - [component] KubernetesUpgrade CR — `kubernetes` resource in `system-upgrade` namespace; pins talosctl image tag to TALOS_VERSION, health checks identical to TalosUpgrade (kubernetes/apps/system-upgrade/tuppr/upgrades/kubernetesupgrade.yaml)
