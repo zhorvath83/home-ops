@@ -32,6 +32,7 @@ related_areas:
 # Adopt a flux `components/common` pattern — cluster-wide vars + shared OCIRepository + GitHub commit-status
 
 ## Metadata (observation-form, schema validation)
+
 - [topic] Adopt a flux components/common pattern — cluster-wide vars + shared OCIRepository + GitHub commit-status
 - [status] proposed
 - [priority] medium
@@ -95,10 +96,10 @@ Today our `kubernetes/flux/cluster/ks.yaml` already has a patch that injects Hel
 
 1. ~~Land `kubernetes/components/common/namespace.yaml`~~ — **SUPERSEDED (2026-05-23)**: per-namespace `apps/*/namespace.yaml` files instead of shared component
 2. Land `vars/cluster-settings.yaml` + the cluster `ks.yaml` substituteFrom patch — minimal viable footprint, no behavior change unless apps start referencing the new vars
-2. Migrate hardcoded values to `${VAR}` substitution one subtree at a time, validating reconciliation between each batch
-3. Land `repos/app-template/` and migrate apps' `chartRef` to the shared OCIRepository
-4. Add `alerts/github/` once the 1P `flux` item is provisioned with a scoped PAT (Repo-status write only)
-5. Defer `alerts/alertmanager/` until [[alertmanager-enable]] is decided and implemented
+3. Migrate hardcoded values to `${VAR}` substitution one subtree at a time, validating reconciliation between each batch
+4. Land `repos/app-template/` and migrate apps' `chartRef` to the shared OCIRepository
+5. Add `alerts/github/` once the 1P `flux` item is provisioned with a scoped PAT (Repo-status write only)
+6. Defer `alerts/alertmanager/` until [[alertmanager-enable]] is decided and implemented
 
 ## Rationale
 
@@ -123,6 +124,7 @@ Today our `kubernetes/flux/cluster/ks.yaml` already has a patch that injects Hel
 3. **Substitution-only adoption** — just the `vars/cluster-settings` ConfigMap and the `ks.yaml` substituteFrom patch. Skip the components/common Kustomize Component shape entirely. Minimum surface, but loses the shared OCIRepository and GitHub-alert benefits.
 
 ## Related
+
 - relates_to [[flux-gitops]]
 - relates_to [[k8s-workloads]]
 - relates_to [[external-secrets]]
@@ -132,13 +134,13 @@ Today our `kubernetes/flux/cluster/ks.yaml` already has a patch that injects Hel
 
 ## Identified consumers
 
-- 2026-05-20 — `kubernetes/apps/default/isponsorblocktv`: the `ctrld` DoH sidecar's pod `dnsConfig.nameservers` lists ${CLUSTER_DNS_IP} as a second nameserver so `ctrld`'s OS-upstream fallback resolves via cluster DNS (CoreDNS pins `clusterIP: 10.245.0.10` in `kubernetes/apps/kube-system/coredns/app/helmrelease.yaml`). The IP is now duplicated across these two manifests — first concrete case for `${CLUSTER_DNS_IP}` substitution. Only changes if the CoreDNS `clusterIP` or the Talos `serviceSubnets` (`10.245.0.0/16`) changes.
-
+- 2026-05-20 — `kubernetes/apps/default/isponsorblocktv`: the `ctrld` DoH sidecar's pod `dnsConfig.nameservers` lists ${CLUSTER_DNS_IP} as a second nameserver so `ctrld`'s OS-upstream fallback resolves via cluster DNS (CoreDNS pins `clusterIP: 10.245.0.10` in `kubernetes/apps/kube-system/coredns/app/helmrelease.yaml`). The IP is now duplicated across these two manifests — first concrete case for `${CLUSTER_DNS_IP}` substitution. Only changes if the CoreDNS `clusterIP` or the Talos `serviceSubnets`(`10.245.0.0/16`) changes.
 
 ## Implementation (2026-05-22)
 
 Implemented via commit 925b3cfd4 and 4da7cc2a5. The cluster-settings ConfigMap now defines ${PUBLIC_DOMAIN}, ${TIMEZONE}, ${NAS_IP}, ${ENVOY_INTERNAL_IP}, ${K8S_GATEWAY_IP}, ${PLEX_IP}, ${LAN_SUBNET}, ${ROUTER_IP}, ${LB_IP_POOL_START}, ${LB_IP_POOL_STOP}, ${IOT_SUBNET}, ${POD_CIDR}, ${SVC_CIDR}, and ${CLUSTER_DNS_IP}. The root cluster-apps Kustomization injects postBuild.substituteFrom referencing both cluster-settings and cluster-secrets. Hardcoded domain, timezone, and IP references across app manifests have been migrated to use these variables. The GitHub commit-status alert (alerts/github/) was also landed as part of the components/common Kustomize Component.
 
 Deferred items:
+
 - Shared OCIRepository for bjw-s app-template (repos/app-template/) — deferred to a follow-up
 - Alertmanager integration — deferred pending alertmanager-enable roadmap item

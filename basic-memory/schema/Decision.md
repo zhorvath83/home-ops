@@ -28,6 +28,7 @@ settings:
 Schema for architectural decision records (ADRs) in home-ops.
 
 ## Observations
+
 - [convention] One Decision note per ADR, lives in `docs/decisions/AD-NNN-{slug}.md`
 - [convention] Title format is `AD-NNN-{slug}` (id + lowercased slug from the topic) so filename, permalink, and identifier align
 - [convention] `decision_id` in frontmatter holds the canonical `AD-NNN` form (the slug-free identifier)

@@ -21,21 +21,26 @@ related_areas:
 # AD-013 — Single-node, no VIP for the control plane
 
 ## Metadata (observation-form, schema validation)
+
 - [decision_id] AD-013
 - [status] active
 - [decided_at] 2025-10-01
 - [topic] Single-node, no VIP for the control plane
 
 ## Decision
+
 The Talos `controlPlane.endpoint` points directly at the node IP (`https://${d}{CONTROLPLANE_IP}:6443`). No VIP.
 
 ## Rationale
+
 - Single control plane → VIP overhead with no benefit
 - Talos built-in VIP (Equinix-style) only delivers value at 2+ nodes
 - Future-proofing is not a reason: adding a worker node keeps the control plane single. Scaling to 3 control-plane nodes can re-introduce a VIP via a `machineconfig` patch later
 
 ## Tradeoffs
+
 - If the node IP changes (network reorganization), kubeconfig + Talos config need updating. The IP is now defined in `cluster-settings` as `${d}{CONTROLPLANE_IP}` (Talos templates use minijinja env vars, not Flux substitution). Static IP on the router mitigates this
 
 ## Related
+
 - relates_to [[talos-cluster]]
