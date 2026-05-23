@@ -21,7 +21,7 @@ talosctl = "1.13.2"
 kubectl = "1.36.1"
 helm = "4.2.0"
 helmfile = "1.5.1"
-flux2 = "2.8.7"
+flux2 = "2.8.8"
 just = "1.51.0"
 
 # Templating + secrets
