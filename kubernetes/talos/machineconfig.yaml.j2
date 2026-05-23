@@ -29,6 +29,17 @@ machine:
     kubePrism:
       enabled: true
       port: 7445
+    # kubernetesTalosAPIAccess required by Tuppr: the Helm chart creates a Talos ServiceAccount
+    # (talos.dev/v1alpha1) which is only recognised when this feature is
+    # enabled. Talos then installs the serviceaccounts.talos.dev CRD and runs
+    # a controller that generates a talosconfig Secret for each ServiceAccount
+    # resource — Tuppr mounts that secret at /var/run/secrets/talos.dev.
+    kubernetesTalosAPIAccess:
+      enabled: true
+      allowedRoles:
+        - os:admin
+      allowedKubernetesNamespaces:
+        - system-upgrade
   files:
     - op: create
       path: /etc/cri/conf.d/20-customization.part

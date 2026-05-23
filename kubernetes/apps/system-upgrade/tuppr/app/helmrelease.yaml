@@ -9,6 +9,14 @@ spec:
   chartRef:
     kind: OCIRepository
     name: tuppr
+  # The chart creates a Talos ServiceAccount (talos.dev/v1alpha1, kind:
+  # ServiceAccount, spec.roles: [os:admin]) whose CRD is only installed when
+  # the Talos machine config enables kubernetesTalosAPIAccess. See
+  # kubernetes/talos/machineconfig.yaml.j2 — machine.features.kubernetesTalosAPIAccess
+  # must be enabled with allowedRoles:[os:admin] and
+  # allowedKubernetesNamespaces:[system-upgrade] before this HelmRelease can
+  # reconcile. Without it the install fails with "no matches for kind
+  # ServiceAccount in version talos.dev/v1alpha1".
   values:
     replicaCount: 1
     monitoring:
