@@ -10,6 +10,7 @@
     },
     {
       description: "Reminder for Talos upgrades",
+      matchDatasources: ["custom.talos-factory", "docker", "github-releases"],
       matchPackageNames: ["siderolabs/talos", "/installer/", "/talosctl/"],
       prBodyNotes: [
         "ℹ️ Talos upgrade — also update `mise.toml` (`TALOS_VERSION`, `talosctl`) and rerun `just talos gen-schematic-id` if the schematic changed.",

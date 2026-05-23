@@ -343,7 +343,7 @@ get-kubeconfig node=controller_node:
 
 [group('lifecycle')]
 [confirm('Upgrade Talos OS on ' + node + ' [y|N] ?')]
-[doc('Upgrade Talos OS on a node (uses TALOS_VERSION + current schematic, powercycle reboot, 10m timeout)')]
+[doc('Manual fallback. Steady-state: see TalosUpgrade CR in system-upgrade/tuppr')]
 [script]
 upgrade-node node=controller_node:
     : "${TALOS_VERSION:?env TALOS_VERSION required}"
@@ -355,7 +355,7 @@ upgrade-node node=controller_node:
 
 [group('lifecycle')]
 [confirm('Upgrade Kubernetes control plane on ' + node + ' to ' + env_var('KUBERNETES_VERSION') + ' [y|N] ?')]
-[doc('Upgrade Kubernetes on a node to the version pinned in mise.toml (KUBERNETES_VERSION)')]
+[doc('Manual fallback. Steady-state: see KubernetesUpgrade CR in system-upgrade/tuppr')]
 [script]
 upgrade-k8s node=controller_node:
     : "${KUBERNETES_VERSION:?env KUBERNETES_VERSION required}"

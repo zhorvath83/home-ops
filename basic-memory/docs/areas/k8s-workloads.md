@@ -137,3 +137,5 @@ Homepage dashboard metadata uses a stable set of groups: `Arr Stack`, `Media`, `
 
 ## Standalone PVC pattern (no VolSync)
 - [pattern] When an app's PVC stores only **regenerable derived data** (caches, thumbnails, local indexes) and the source-of-truth lives elsewhere (NFS covered by resticprofile), the app uses a **standalone `app/pvc.yaml`** instead of the `components/volsync` component, and the `ks.yaml` omits the volsync `components:` wiring. Canonical example: `kubernetes/apps/default/home-gallery` (thumbnails + local DB; source photos on NFS). The PVC manifest must carry an inline comment stating *why* it is excluded from VolSync, so the intent survives review. (verified: 2026-05-21, ref: kubernetes/apps/default/home-gallery/app/pvc.yaml)
+
+- [component] System Upgrade — `tuppr` controller (Tuppr v0.1.35) in `system-upgrade` namespace; declarative TalosUpgrade and KubernetesUpgrade CRs for GitOps-managed OS and K8s version upgrades. Namespace: `system-upgrade`, path: `kubernetes/apps/system-upgrade/tuppr/`

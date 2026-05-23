@@ -1,0 +1,48 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/tuppr.home-operations.com_talosupgrades_v1.json
+apiVersion: tuppr.home-operations.com/v1
+kind: TalosUpgrade
+metadata:
+  name: talos
+spec:
+  talos:
+    # renovate: datasource=custom.talos-factory depName=siderolabs/talos
+    version: "v1.13.2"
+  parallelism: 1
+  policy:
+    placement: soft
+    rebootMode: powercycle
+    stage: false
+    timeout: 30m
+    force: false
+    debug: false
+  drain:
+    ignoreDaemonSets: true
+    force: true
+    deleteLocalData: true
+    disableEviction: false
+  healthChecks:
+    - apiVersion: kustomize.toolkit.fluxcd.io/v1
+      kind: Kustomization
+      name: ALL
+      expr: object.status.conditions.filter(c, c.type == 'Ready').all(c, c.status == 'True')
+      timeout: 5m
+    - apiVersion: helm.toolkit.fluxcd.io/v2
+      kind: HelmRelease
+      name: ALL
+      expr: object.status.conditions.filter(c, c.type == 'Ready').all(c, c.status == 'True')
+      timeout: 5m
+    - apiVersion: helm.toolkit.fluxcd.io/v2
+      kind: HelmRelease
+      name: cilium
+      namespace: kube-system
+      expr: object.status.conditions.filter(c, c.type == 'Ready').all(c, c.status == 'True')
+      timeout: 5m
+    - apiVersion: helm.toolkit.fluxcd.io/v2
+      kind: HelmRelease
+      name: cloudflare-tunnel
+      namespace: networking
+      expr: object.status.conditions.filter(c, c.type == 'Ready').all(c, c.status == 'True')
+      timeout: 5m
+  nodeSelector:
+    matchLabels: {}

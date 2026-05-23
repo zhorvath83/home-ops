@@ -118,3 +118,14 @@ The whole reassembly path on already-installed hardware is the `just cluster-boo
 - relates_to [[flux-gitops]]
 - relates_to [[k8s-workloads]]
 - part_of [[home-ops-platform]]
+
+
+## Tuppr upgrade automation
+- [component] Tuppr controller — GitOps-managed Talos OS and Kubernetes upgrade controller in `system-upgrade` namespace (kubernetes/apps/system-upgrade/tuppr/). Replaces manual `just talos upgrade-node` / `just talos upgrade-k8s` for steady-state upgrades. Just recipes remain as documented manual fallback.
+- [component] TalosUpgrade CR — `talos` resource in `system-upgrade` namespace; single-node config with `placement: soft`, `rebootMode: powercycle`, `parallelism: 1`, drain settings, and health checks gating on Flux Kustomization + HelmRelease readiness + cilium + cloudflare-tunnel (kubernetes/apps/system-upgrade/tuppr/upgrades/talosupgrade.yaml)
+- [component] KubernetesUpgrade CR — `kubernetes` resource in `system-upgrade` namespace; pins talosctl image tag to TALOS_VERSION, health checks identical to TalosUpgrade (kubernetes/apps/system-upgrade/tuppr/upgrades/kubernetesupgrade.yaml)
+- [claim] "Steady-state Talos and Kubernetes upgrades are GitOps-driven via Tuppr TalosUpgrade and KubernetesUpgrade CRs; manual Just recipes (`upgrade-node`, `upgrade-k8s`) are documented as fallback only" (evidence: repo, ref: kubernetes/apps/system-upgrade/tuppr/ + kubernetes/talos/mod.just:346-362, verified: 2026-05-23)
+- [claim] "Tuppr uses `placement: soft` because `hard` would make the upgrade job unschedulable on a single-node cluster (only node cannot avoid itself)" (evidence: tuppr CRD enum semantics, ref: kubernetes/apps/system-upgrade/tuppr/upgrades/talosupgrade.yaml, verified: 2026-05-23)
+- [claim] "Tuppr preserves the factory schematic automatically — the controller reads the node's running `machine.install.image` to determine the schematic ID, so i915 + intel-ucode + mei extensions are retained across upgrades" (evidence: tuppr docs, verified: 2026-05-23)
+
+- [claim] "Talos and Kubernetes version pins are tracked by Renovate via custom datasources: TALOS_VERSION uses custom.talos-factory (factory.talos.dev/versions API, only lists versions with available installer images); KUBERNETES_VERSION uses docker depName=ghcr.io/siderolabs/kubelet (Sidero Labs kubelet image tags, aligned with Talos compatibility); both are grouped in the Talos Renovate group with the TalosUpgrade and KubernetesUpgrade CR annotations" (evidence: repo, ref: .mise.toml + .renovate/groups.json5 + kubernetes/apps/system-upgrade/tuppr/upgrades/*.yaml, verified: 2026-05-23)

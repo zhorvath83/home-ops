@@ -40,9 +40,9 @@
       minimumGroupSize: 4,
     },
     {
-      description: "Talos group (installer + talosctl)",
+      description: "Talos group (installer + talosctl + factory-verified versions)",
       groupName: "Talos",
-      matchDatasources: ["docker", "github-releases"],
+      matchDatasources: ["custom.talos-factory", "docker", "github-releases"],
       matchPackageNames: ["siderolabs/talos", "/installer/", "/talosctl/"],
       group: { commitMessageTopic: "{{{groupName}}} group" },
       minimumGroupSize: 1,

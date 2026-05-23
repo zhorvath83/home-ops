@@ -3,7 +3,7 @@ title: tuppr-upgrade-automation
 type: roadmap
 permalink: home-ops/docs/roadmap/tuppr-upgrade-automation
 topic: Tuppr-based Talos + Kubernetes upgrade automation (single-node)
-status: proposed
+status: implemented
 priority: medium
 scope: Implement AD-019 by introducing home-operations/tuppr under kubernetes/apps/system-upgrade/tuppr/
   (mirroring upstream onedr0p layout) to GitOps-manage Talos OS and Kubernetes upgrades

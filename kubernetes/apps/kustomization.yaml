@@ -9,5 +9,6 @@ resources:
   - ./kube-system
   - ./networking
   - ./observability
+  - ./system-upgrade
   - ./volsync-system
   - ./default
