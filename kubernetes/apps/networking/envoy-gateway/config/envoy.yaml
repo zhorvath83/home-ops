@@ -41,7 +41,7 @@ spec:
       envoyService:
         type: ClusterIP
   shutdown:
-    drainTimeout: 90s
+    drainTimeout: 30s
   telemetry:
     metrics:
       prometheus:
@@ -91,7 +91,7 @@ spec:
         type: LoadBalancer
         externalTrafficPolicy: Local
   shutdown:
-    drainTimeout: 90s
+    drainTimeout: 30s
   telemetry:
     metrics:
       prometheus:
