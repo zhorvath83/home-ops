@@ -89,6 +89,9 @@ spec:
     # ============================================================================
     # Datasources
     # ============================================================================
+    plugins:
+      - name: victoriametrics-logs-datasource
+        version: 0.26.3
     datasources:
       datasources.yaml:
         apiVersion: 1
@@ -103,6 +106,10 @@ spec:
             isDefault: true
             jsonData:
               timeInterval: "60s"
+          - name: VictoriaLogs
+            type: victoriametrics-logs-datasource
+            access: proxy
+            url: http://victoria-logs-server.observability.svc.cluster.local:9428
     # ============================================================================
     # Sidecar for ConfigMap dashboards
     # ============================================================================
