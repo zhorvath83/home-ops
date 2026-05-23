@@ -31,12 +31,14 @@ drift_risk: LAN VIPs (ENVOY_INTERNAL_IP, K8S_GATEWAY_IP) are now centralized in
 # networking — current state
 
 ## Metadata (observation-form, schema validation)
+
 - [area] networking
 - [status] current
 - [confidence] high
 - [verified_at] 2026-05-19
 
 ## Summary
+
 Gateway API with Envoy Gateway provides cluster ingress, split across two shared entrypoints:
 `envoy-external` for Cloudflare Tunnel public traffic (ClusterIP-only Service) and
 `envoy-internal` for LAN traffic (Cilium L2-announced LoadBalancer VIP, RFC1918-restricted).
@@ -48,6 +50,7 @@ Cluster-wide substitution variables (`${PUBLIC_DOMAIN}`, `${TIMEZONE}`, `${ENVOY
 Kustomization via Flux `postBuild.substituteFrom`.
 
 ## Components
+
 - [component] Envoy Gateway controller — GatewayClasses `envoy-external` and `envoy-internal` (kubernetes/apps/networking/envoy-gateway/app/)
 - [component] EnvoyProxy/envoy-external — ClusterIP Service, replicas=1, envoy v1.38.0 (envoy-gateway/config/envoy.yaml:1-49)
 - [component] EnvoyProxy/envoy-internal — LoadBalancer Service with externalTrafficPolicy: Local (envoy-gateway/config/envoy.yaml:51-99)
@@ -66,6 +69,7 @@ Kustomization via Flux `postBuild.substituteFrom`.
 - [component] CiliumClusterwideNetworkPolicy baseline — allow-cluster-egress + allow-dns-egress (kube-system/cilium/netpols/)
 
 ## Claims (verified against repo)
+
 - [claim] "envoy-internal Gateway is pinned to LAN VIP `${ENVOY_INTERNAL_IP}` via lbipam.cilium.io/ips annotation" (evidence: repo, ref: gateway-internal.yaml:23-24, verified: 2026-05-19)
 - [claim] "k8s-gateway Service is pinned to LAN VIP `${K8S_GATEWAY_IP}` via loadBalancerIP chart value" (evidence: repo, ref: k8s-gateway/app/helmrelease.yaml:32, verified: 2026-05-19)
 - [claim] "LAN VIPs allocated from CiliumLoadBalancerIPPool/default with range `${LB_IP_POOL_START}`–`${LB_IP_POOL_STOP}` inclusive" (evidence: repo, ref: cilium/config/pool.yaml:7-11, verified: 2026-05-19)
@@ -80,16 +84,19 @@ Kustomization via Flux `postBuild.substituteFrom`.
 - [claim] "envoy-gateway is split into three Kustomizations: certificate, app (controller), config" (evidence: repo, ref: kubernetes/apps/networking/envoy-gateway/{certificate,app,config}/, verified: 2026-05-19)
 
 ## Drift Risk
+
 - [drift] EnvoyPatchPolicy/envoy-external is a workaround for missing native Zstd compression support on listeners — remove when EnvoyProxy CRD gains native support (ref: gateway-policies.yaml:57-86)
 - [drift] rate-limit-external BackendTrafficPolicy intentionally disabled (commented out) due to envoy-gateway v1.8.0 CRD regression (envoyproxy/gateway#8798: uint32 Requests field emits format: int32 + maximum: 4294967295, rejected by K8s 1.36 strict OpenAPI validation). Re-enable when v1.9.0 GA lands and OCIRepository tag is bumped. Cloudflare WAF covers external rate limiting in the meantime. (ref: gateway-policies.yaml:87-116)
 - [drift] envoy container image tag (envoy:v1.38.0) is hardcoded in EnvoyProxy spec rather than chart-managed — track manually via inline `# renovate:` annotation if not already
 
 ## Open Questions / Gaps
+
 - [gap] Public path verification — Cloudflare Tunnel target assertion was inherited from area CLAUDE.md but not re-verified against cloudflare-tunnel ConfigMap in this pass; will be checked when migrating cloudflare area-reference
 - [gap] Router-side requirements (conditional forward `${PUBLIC_DOMAIN}` → `${K8S_GATEWAY_IP}`, DNS rebind allowance) live outside repo — operationally documented in source readme but not reproducible from manifests alone; intent-class claim
 - [gap] Live cluster verification not performed in this pass — all claims are repo (desired state) evidence; for live-state drift check, walk through `networking-platform/references/validation.md`
 
 ## Relations
+
 - depends_on [[cilium-lb-ipam]]
 - depends_on [[cloudflare]]
 - relates_to [[external-secrets]]
