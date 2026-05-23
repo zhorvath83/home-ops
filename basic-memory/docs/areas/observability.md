@@ -63,7 +63,7 @@ The namespace is `observability`. The shared `flux-alerts` component is attached
 - [component] kube-prometheus-stack — operator, Prometheus, Alertmanager, kube-state-metrics, node-exporter; minimal homelab tuning (kubernetes/apps/observability/kube-prometheus-stack/app/helmrelease.yaml)
 - [component] grafana — standalone HelmRelease, admin password from `grafana-secret` (1Password-backed ExternalSecret), depends on kube-prometheus-stack + onepassword-connect (kubernetes/apps/observability/grafana/)
 - [component] speedtest-exporter — WAN throughput metrics for Prometheus (kubernetes/apps/observability/speedtest-exporter/)
-- [component] Namespace marker — `kubernetes/apps/observability/namespace.yaml` (placeholder; actual name from Flux `spec.targetNamespace`)
+- [component] Namespace marker — `kubernetes/apps/observability/namespace.yaml` defines `metadata.name: _` with `kustomize.toolkit.fluxcd.io/prune: disabled`; the actual namespace name comes from the Flux Kustomization `spec.targetNamespace`. All namespaces use the `_` placeholder pattern (2026-05-23)
 - [component] flux-alerts component — pulled in via `kubernetes/apps/observability/kustomization.yaml` (Pushover alerting on this namespace)
 - [component] Distributed PrometheusRules — published per platform (notably `kubernetes/apps/volsync-system/volsync/app/prometheusrule.yaml`); no central rules directory under `observability/` itself
 - [component] Distributed ServiceMonitors — enabled chart-side by individual platform apps (external-secrets, volsync, kopia browser); discovered by the kube-prometheus-stack operator
