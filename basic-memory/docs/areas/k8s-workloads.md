@@ -44,12 +44,14 @@ tags:
 # k8s-workloads — current state
 
 ## Metadata (observation-form, schema validation)
+
 - [area] k8s-workloads
 - [status] current
 - [confidence] high
 - [verified_at] 2026-05-19
 
 ## Summary
+
 This area covers non-platform application workloads under `kubernetes/apps/` — anything that is **not** the networking, external-secrets, flux-system, volsync-system, talos, or observability subtree. The largest group is `kubernetes/apps/default/` (22 apps in one namespace); the only other non-platform subtree is `kubernetes/apps/cert-manager/`.
 
 Apps follow a canonical shape per the k8s-workloads skill: each app lives in `kubernetes/apps/<group>/<app>/` with a `ks.yaml` Flux entry point and an `app/` directory holding `kustomization.yaml`, `ocirepository.yaml`, `helmrelease.yaml`, optional `externalsecret.yaml`, and optional `ciliumnetworkpolicy.yaml` or `config/` static files. App manifests carry **no** `metadata.namespace` and **no** redundant `labels:` blocks — the Flux Kustomization `spec.targetNamespace` + `spec.commonMetadata.labels` are the single source of placement and labeling. HelmRelease `spec` is intentionally minimal (`chartRef`, `interval`, `values`, very rarely `postRenderers`) — the cluster-root `kubernetes/flux/cluster/ks.yaml` injects install/upgrade/rollback defaults into every HelmRelease through a kustomize patch.
@@ -65,6 +67,7 @@ Homepage dashboard metadata uses a stable set of groups: `Arr Stack`, `Media`, `
 ## Components
 
 ### App inventory (kubernetes/apps/default/, 22 apps)
+
 - [component] Arr Stack — `bazarr`, `prowlarr`, `radarr`, `seerr`, `sonarr`, `subsyncarr` (Homepage group: `Arr Stack`)
 - [component] Media — `calibre-web-automated`, `maintainerr` (Homepage group: `Media`); `plex`, `plex-trakt-sync`, `isponsorblocktv` (Plex companions, mixed Homepage state)
 - [component] Selfhosted — `paperless`, `paperless-gpt`, `mealie`, `home-gallery` (Homepage group: `Selfhosted`)
@@ -74,6 +77,7 @@ Homepage dashboard metadata uses a stable set of groups: `Arr Stack`, `Media`, `
 - [component] cert-manager — only non-default non-platform subtree under `kubernetes/apps/cert-manager/`
 
 ### Cross-cutting patterns
+
 - [component] Shared GPU component — `kubernetes/components/gpu/` provides a ResourceClaimTemplate (${"${APP}"}-gpu, deviceClassName: gpu.intel.com, allocationMode: All) for any app needing iGPU access via DRA/CDI; no adminAccess, no namespace label needed (onedr0p pattern)
 - [component] Plex GPU wiring — `ks.yaml` attaches `components/gpu`, HelmRelease declares `resourceClaims` + `resources.claims`; CDI injects the device without hostPath mounts or supplementalGroups; Plex UI must enable "Use hardware acceleration when available" → Intel Quick Sync (QSV) manually
 
@@ -94,6 +98,7 @@ Homepage dashboard metadata uses a stable set of groups: `Arr Stack`, `Media`, `
 - [component] YAML anchor policy — anchors allowed for repeated scalar values (`&port`, `&host`, `&exportDir`, `&tz` (now sourcing `${TIMEZONE}` from cluster-settings), `&resources`, `&probes`, `&image`) using lowerCamelCase; forbidden as map keys (`controllers`, `persistence`, `serviceAccount`, `bindings`) or on scalar app names (kubernetes/CLAUDE.md "YAML anchor policy")
 
 ## Claims (verified against repo)
+
 - [claim] "The default namespace under `kubernetes/apps/default/` hosts 22 application workloads spanning six Homepage groups: Arr Stack (6 apps), Media (5 apps including the Plex companions), Selfhosted (4 apps), PFM (2 apps), Downloading (2 apps), Infrastructure (3 apps)" (evidence: repo, ref: `ls kubernetes/apps/default/` + `grep gethomepage.dev/group` across helmrelease.yaml files, verified: 2026-05-19)
 - [claim] "Apps follow a strict canonical shape: `ks.yaml` at the app root + an `app/` subdirectory holding kustomization.yaml, ocirepository.yaml, helmrelease.yaml, optional externalsecret.yaml. `metadata.namespace` is forbidden on app manifests — Flux `spec.targetNamespace` is the only source of placement" (evidence: repo, ref: kubernetes/CLAUDE.md "Editing And Validation" + .claude/skills/k8s-workloads/references/app-scaffolding.md:64-67, verified: 2026-05-19)
 - [claim] "HelmRelease `spec` is minimal — only `chartRef`, `interval`, `values` and rare `postRenderers`. Install/upgrade/rollback defaults are injected globally via a kustomize patch on the cluster-root Kustomization at `kubernetes/flux/cluster/ks.yaml`. Per-HR overrides of those fields are repo-wide anti-pattern" (evidence: repo, ref: kubernetes/CLAUDE.md "HelmRelease minimal-spec policy" + kubernetes/flux/cluster/ks.yaml:16-51, verified: 2026-05-19)
@@ -112,6 +117,7 @@ Homepage dashboard metadata uses a stable set of groups: `Arr Stack`, `Media`, `
 - [claim] "YAML anchor policy: anchors are allowed only for repeated scalar values (`&port`, `&host`, `&exportDir`, `&tz`, `&resources`, `&probes`, `&image`) in lowerCamelCase, and forbidden as map keys for controllers/persistence/serviceAccount/bindings or on scalar app names" (evidence: repo, ref: kubernetes/CLAUDE.md "YAML anchor policy", verified: 2026-05-19)
 
 ## Drift Risk
+
 - [drift] HelmRelease minimal-spec is enforced **only by code review**. There is no automated lint that rejects `install.createNamespace`, `upgrade.remediation.retries`, `uninstall.keepHistory`, etc. on app HRs. Past K3s-era noise has been cleaned but can return with any new app.
 - [drift] The 22 default-namespace apps share one namespace and a coarse cluster-wide Cilium baseline (`allow-cluster-egress` + `allow-dns-egress`). Per-app CiliumNetworkPolicies are added only where an app explicitly needs tighter rules (paperless has its own, cloudflare-tunnel has its own). A compromised default-namespace pod has cluster-wide egress.
 - [drift] The NFS server (at `${NAS_IP}` from cluster-settings) is a single point of failure for /backups exports and media mounts across at least 11 apps. If the NAS is offline, scheduled exports silently produce stale data and writes block — Restic/Backrest health checks only catch the backup-side failure 24h later.
@@ -121,6 +127,7 @@ Homepage dashboard metadata uses a stable set of groups: `Arr Stack`, `Media`, `
 - [drift] HTTPRoute parentRefs to `envoy-external` and `envoy-internal` are added per-route — there is no central template. Apps that need both routes but forget the `envoy-internal` parentRef become public-only with no LAN exposure (the operator may not notice if Cloudflare Access is the gate).
 
 ## Open Questions / Gaps
+
 - [gap] No verification was run against the live cluster in this pass — claims are repo-evidence only. Each app has its own validation step under `.claude/skills/k8s-workloads/references/validation.md`.
 - [gap] Per-app detailed metadata (chart name, image, version, exposure model, NFS mounts, storage class) is **not** enumerated here. Each app deserves its own follow-up note if the area corpus needs deeper coverage; the current inventory is at the group/pattern level only.
 - [gap] The exact list of apps with /backups/<app> NFS exports for dual coverage (paperless + ???) was not exhaustively enumerated. The CLAUDE.md mentions "critical apps may intentionally use both layers" but the canonical set is fuzzy beyond Paperless.
@@ -128,6 +135,7 @@ Homepage dashboard metadata uses a stable set of groups: `Arr Stack`, `Media`, `
 - [gap] The Pluto deprecated-API scan (referenced in the flux-gitops area) covers all manifests under `kubernetes/`, but the relationship between Pluto findings and the app inventory was not traced.
 
 ## Relations
+
 - depends_on [[external-secrets]]
 - depends_on [[flux-gitops]]
 - depends_on [[networking]]
@@ -136,6 +144,7 @@ Homepage dashboard metadata uses a stable set of groups: `Arr Stack`, `Media`, `
 - part_of [[home-ops-platform]]
 
 ## Standalone PVC pattern (no VolSync)
+
 - [pattern] When an app's PVC stores only **regenerable derived data** (caches, thumbnails, local indexes) and the source-of-truth lives elsewhere (NFS covered by resticprofile), the app uses a **standalone `app/pvc.yaml`** instead of the `components/volsync` component, and the `ks.yaml` omits the volsync `components:` wiring. Canonical example: `kubernetes/apps/default/home-gallery` (thumbnails + local DB; source photos on NFS). The PVC manifest must carry an inline comment stating *why* it is excluded from VolSync, so the intent survives review. (verified: 2026-05-21, ref: kubernetes/apps/default/home-gallery/app/pvc.yaml)
 
 - [component] System Upgrade — `tuppr` controller (Tuppr v0.1.35) in `system-upgrade` namespace; declarative TalosUpgrade and KubernetesUpgrade CRs for GitOps-managed OS and K8s version upgrades. Namespace: `system-upgrade`, path: `kubernetes/apps/system-upgrade/tuppr/`

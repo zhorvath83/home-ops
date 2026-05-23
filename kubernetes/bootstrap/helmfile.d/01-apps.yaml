@@ -82,6 +82,16 @@ releases:
     needs:
       - external-secrets/external-secrets
     hooks:
+      - # Wait for the ESO CRD to become available before applying ClusterSecretStore
+        command: kubectl
+        args:
+          - wait
+          - --for=create
+          - crd/clustersecretstores.external-secrets.io
+          - --timeout=2m
+        events:
+          - postsync
+        showlogs: true
       - # Apply ClusterSecretStore once the Connect deployment is up
         command: kubectl
         args:
