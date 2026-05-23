@@ -49,12 +49,14 @@ tags:
 # cloudflare — current state
 
 ## Metadata (observation-form, schema validation)
+
 - [area] cloudflare
 - [status] current
 - [confidence] high
 - [verified_at] 2026-05-19
 
 ## Summary
+
 All Cloudflare-side resources for the public domain are declared as Terraform under `provision/cloudflare/`. The configuration covers one zone (the Terraform variable `CF_DOMAIN_NAME`, set to the same value as the cluster `${PUBLIC_DOMAIN}`), one Cloudflared tunnel (`CF_TUNNEL_NAME`), Zero Trust Access apps with Google OAuth + service token, a Workers script serving MTA-STS policy with Workers KV backing, R2 bucket for downloads with custom domain, mail-stack DNS (MX/SPF/DKIM/DMARC/MTA-STS/TLSRPT/SMTP2GO), Cloudflare-managed transforms, WAF rules for the Flux webhook (GitHub CIDR allowlist), zone hardening (SSL strict, TLS 1.2 floor, TLS 1.3 + 0-RTT, HTTP/3, DNSSEC, Bot Management), and Pushover-email-gateway notification policies.
 
 Terraform state is held in **Terraform Cloud** (organization `zhorvath83`, workspace `cloudflare`). All Cloudflare credentials and Pushover gateway email come in as `TF_VAR_*` environment variables, injected from 1Password through `op run --no-masking --env-file=./.env -- terraform ...`. The four operational entry points are `just cloudflare init|plan|apply|unlock`.
@@ -62,6 +64,7 @@ Terraform state is held in **Terraform Cloud** (organization `zhorvath83`, works
 A single Kubernetes consumer of the tunnel lives at `kubernetes/apps/networking/cloudflare-tunnel/`; it does not provision Cloudflare resources, it only runs the `cloudflared` daemon and consumes the tunnel credentials from 1Password via ExternalSecret. Tunnel creation/ID/secret remain Terraform-owned here.
 
 ## Components
+
 - [component] Terraform Cloud workspace — org `zhorvath83`, workspace `cloudflare`, `required_version = "~> 1.0"` (provision/cloudflare/main.tf:1-44)
 - [component] Cloudflare provider — `cloudflare/cloudflare` pinned at `5.19.1` with `# renovate:disablePlugin terraform cloudflare/cloudflare` inline directive (provision/cloudflare/main.tf:18-22)
 - [component] Other providers — `integrations/github` 6.12.1, `hashicorp/http` 3.6.0, `hashicorp/external` 2.4.0, `hashicorp/random` 3.9.0, `hashicorp/null` 3.3.0 (provision/cloudflare/main.tf:13-43)
@@ -82,6 +85,7 @@ A single Kubernetes consumer of the tunnel lives at `kubernetes/apps/networking/
 - [component] GitHub IP source — `data "http" "github_ip_ranges"` fetches `https://api.github.com/meta` once per plan; reused by `access.tf` (GitHub-CIDR bypass policy) and `firewall_rules.tf` (WAF list) (provision/cloudflare/main.tf:59-64)
 
 ## Claims (verified against repo)
+
 - [claim] "Terraform state lives in Terraform Cloud, org `zhorvath83`, workspace `cloudflare`" (evidence: repo, ref: provision/cloudflare/main.tf:5-10, verified: 2026-05-19)
 - [claim] "Cloudflare provider is pinned at version 5.19.1 with an inline `# renovate:disablePlugin terraform cloudflare/cloudflare` directive — Renovate is intentionally not bumping this provider automatically" (evidence: repo, ref: provision/cloudflare/main.tf:18-22, verified: 2026-05-19)
 - [claim] "Cloudflare provider authentication uses Global API Key (`var.CF_GLOBAL_APIKEY`) + account email (`var.CF_USERNAME`), not an API Token" (evidence: repo, ref: provision/cloudflare/main.tf:46-49 + variables.tf:131-139, verified: 2026-05-19)
@@ -98,6 +102,7 @@ A single Kubernetes consumer of the tunnel lives at `kubernetes/apps/networking/
 - [claim] "The Kubernetes cloudflare-tunnel workload (kubernetes/apps/networking/cloudflare-tunnel/) consumes tunnel credentials only — it does not create or mutate Cloudflare resources; the source of truth for tunnel name/ID/secret remains this Terraform stack" (evidence: repo, ref: kubernetes/apps/networking/cloudflare-tunnel/app/externalsecret.yaml + provision/cloudflare/tunnel.tf, verified: 2026-05-19)
 
 ## Drift Risk
+
 - [drift] Cloudflare provider version is pinned at 5.19.1 with a Renovate disable annotation — major-version bumps must be done manually. The provider cache under `.terraform/providers/` contains many older versions (4.26.0 → 5.18.0) showing past upgrades were done by hand.
 - [drift] The two `null_resource` blocks (tunnel + service token) write secrets back to 1Password via `op item edit` as a one-shot `local-exec` after create. Terraform does not track the 1Password side — if the 1Password item is renamed, deleted, or its fields differ, the Kubernetes consumers silently break. There is no automated reconciliation.
 - [drift] Mail-stack DNS uses Zoho as the primary mailbox provider plus SMTP2GO for the `.msg` subdomain. Provider switches require coordinated edits to MX/SPF/DKIM/DMARC plus the MTA-STS Worker template.
@@ -105,12 +110,14 @@ A single Kubernetes consumer of the tunnel lives at `kubernetes/apps/networking/
 - [drift] Access uses Cloudflare's **Global API Key** (`CF_GLOBAL_APIKEY`) for the Terraform provider rather than a scoped API Token. Wider blast radius if compromised — flagged as a hardening follow-up rather than current blocker.
 
 ## Open Questions / Gaps
+
 - [gap] No verification was run against the live Cloudflare API or Terraform Cloud workspace in this pass — claims are repo-evidence only. `just cloudflare plan` from a credentialed shell is the live-state validation path.
 - [gap] The relationship between this stack and the in-cluster cloudflare-tunnel deployment was traced only at the contract level (1Password item shape). Detailed cluster wiring is documented in the networking area-reference.
 - [gap] Several Access apps (`Private Cloud` and `Private Cloud Photos` in particular) rely on Google OAuth + user-email allowlists that are themselves Terraform-managed — but the actual `CF_ACCESS_*_USERS` lists come from `TF_VAR_*` env vars not visible in the repo. The note treats those as black-box inputs.
 - [gap] No formal disaster-recovery procedure is captured for the case where Terraform Cloud state is lost. Re-importing would require manual coordination with the live Cloudflare account.
 
 ## Relations
+
 - relates_to [[networking]]
 - relates_to [[ovh-storage]]
 - part_of [[home-ops-platform]]
