@@ -1,9 +1,9 @@
 ---
 title: tuppr-upgrade-automation
-type: roadmap
-permalink: home-ops/docs/roadmap/tuppr-upgrade-automation
+type: progress
+permalink: home-ops/docs/progress/tuppr-upgrade-automation
 topic: Tuppr-based Talos + Kubernetes upgrade automation (single-node)
-status: implemented
+status: completed
 priority: medium
 scope: Implement AD-019 by introducing home-operations/tuppr under kubernetes/apps/system-upgrade/tuppr/
   (mirroring upstream onedr0p layout) to GitOps-manage Talos OS and Kubernetes upgrades
@@ -25,7 +25,7 @@ related_areas:
 - volsync-backup
 - observability
 tags:
-- roadmap
+- progress
 - tuppr
 - talos
 - kubernetes
@@ -34,13 +34,36 @@ tags:
 - gitops
 ---
 
+## Completed — 2026-05-23
+
+All 8 phases of the implementation plan have been executed and committed (52d02de43). Summary:
+
+- **Namespace + Kustomization**: `system-upgrade` namespace with prune:disabled annotation, top-level kustomization wiring into cluster-apps root Flux Kustomization.
+- **Controller**: Tuppr v0.1.35 HelmRelease + OCIRepository under `tuppr/app/`, single-node values (`replicaCount: 1`, monitoring opt-in, `grafanaOperator.enabled: false` for sidecar-discovery).
+- **TalosUpgrade CR**: `tuppr/upgrades/talosupgrade.yaml` with `policy.placement: soft`, `rebootMode: powercycle`, health checks gating on Flux Kustomization/HelmRelease Ready + cilium + cloudflare-tunnel.
+- **KubernetesUpgrade CR**: `tuppr/upgrades/kubernetesupgrade.yaml` with explicit `spec.talosctl.image.tag` pin (required for single-node — controller defaults to K8s version tag which is invalid for talosctl).
+- **Flux wiring**: Two Kustomizations (`tuppr` wait:true, `tuppr-upgrades` dependsOn + wait:false) in `tuppr/ks.yaml` with healthCheckExprs.
+- **Renovate refactor**: Talos datasource migrated from `github-releases` to `custom.talos-factory`; Kubernetes datasource migrated from `github-releases` to `docker depName=ghcr.io/siderolabs/kubelet`. Groups and prBodyNotes updated to match.
+- **Just recipes**: `upgrade-node` and `upgrade-k8s` doc annotations updated to reference Tuppr CRs as steady-state.
+- **CRD bootstrap audit**: Tuppr CRDs NOT pre-bootstrapped (follows onedr0p/szinn pattern — dependsOn + healthCheckExprs is sufficient). Follow-up roadmap item `crd-bootstrap-coverage` created for a broader audit.
+
+### Renovate datasource changes
+| Location | Old | New |
+|---|---|---|
+| `kubernetes/apps/system-upgrade/tuppr/upgrades/talosupgrade.yaml` spec.talos.version | N/A (new file) | `custom.talos-factory depName=siderolabs/talos` |
+| `kubernetes/apps/system-upgrade/tuppr/upgrades/kubernetesupgrade.yaml` spec.kubernetes.version | N/A (new file) | `docker depName=ghcr.io/siderolabs/kubelet` |
+| `kubernetes/apps/system-upgrade/tuppr/upgrades/kubernetesupgrade.yaml` spec.talosctl.image.tag | N/A (new file) | `custom.talos-factory depName=siderolabs/talos` |
+| `.mise.toml` TALOS_VERSION | `github-releases depName=siderolabs/talos` | `custom.talos-factory depName=siderolabs/talos` |
+| `.mise.toml` KUBERNETES_VERSION | `github-releases depName=kubernetes/kubernetes` | `docker depName=ghcr.io/siderolabs/kubelet` |
+| `.renovate/groups.json5` Talos group | `github-releases` only | `custom.talos-factory, docker, github-releases` |
+| `.renovate/prBodyNotes.json5` Talos reminder | `matchDatasources` missing | Added `custom.talos-factory, docker` |
+| `kubernetes/apps/system-upgrade/tuppr/app/ocirepository.yaml` | N/A (new file) | `registryUrl=https://ghcr.io/home-operations/charts chart=tuppr` |
 # Tuppr-based Talos + Kubernetes upgrade automation (single-node)
 
 ## Metadata (observation-form, schema validation)
 - [topic] Tuppr-based Talos + Kubernetes upgrade automation (single-node)
-- [status] proposed
+- [status] completed
 - [priority] medium
-
 ## Scope
 Implement AD-019 (`docs/decisions/ad-019-tuppr-system-upgrade`, decided 2025-10-01) by introducing the `home-operations/tuppr` controller into the cluster under a new `system-upgrade` namespace, mirroring the upstream onedr0p layout (`kubernetes/apps/system-upgrade/tuppr/{app,upgrades}`). Declarative `TalosUpgrade` and `KubernetesUpgrade` CRs replace the operator-driven `just talos upgrade-node` / `just talos upgrade-k8s` recipes (kubernetes/talos/mod.just:348-362) for steady-state upgrades on the single Talos control-plane node `k8s-cp0`. Target versions track the Renovate-pinned `TALOS_VERSION` (v1.13.2, .mise.toml:6) and `KUBERNETES_VERSION` (v1.36.1, .mise.toml:8). The Just recipes stay as documented emergency-manual fallback.
 
