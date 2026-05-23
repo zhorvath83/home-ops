@@ -39,6 +39,7 @@ spec:
           gethomepage.dev/name: Victoria Logs
           gethomepage.dev/group: Observability
           gethomepage.dev/icon: sh-victoriametrics
+          gethomepage.dev/pod-selector: app.kubernetes.io/name=victoria-logs-single
         hostnames:
           - "logs.${PUBLIC_DOMAIN}"
         parentRefs:
