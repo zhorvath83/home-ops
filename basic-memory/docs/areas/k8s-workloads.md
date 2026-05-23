@@ -74,6 +74,9 @@ Homepage dashboard metadata uses a stable set of groups: `Arr Stack`, `Media`, `
 - [component] cert-manager — only non-default non-platform subtree under `kubernetes/apps/cert-manager/`
 
 ### Cross-cutting patterns
+- [component] Shared GPU component — `kubernetes/components/gpu/` provides a ResourceClaimTemplate (${"${APP}"}-gpu, deviceClassName: gpu.intel.com, allocationMode: All) for any app needing iGPU access via DRA/CDI; no adminAccess, no namespace label needed (onedr0p pattern)
+- [component] Plex GPU wiring — `ks.yaml` attaches `components/gpu`, HelmRelease declares `resourceClaims` + `resources.claims`; CDI injects the device without hostPath mounts or supplementalGroups; Plex UI must enable "Use hardware acceleration when available" → Intel Quick Sync (QSV) manually
+
 - [component] Canonical app shape — `ks.yaml` + `app/{helmrelease,externalsecret,kustomization}.yaml` plus optional `ocirepository.yaml` (only for non-app-template charts; app-template OCIRepository comes from the shared component) and optional `ciliumnetworkpolicy.yaml` and `config/` directory (.claude/skills/k8s-workloads/references/app-scaffolding.md)
 - [component] HelmRelease minimal-spec — `spec` carries only `chartRef`, `interval`, `values` (and rare `postRenderers`); install/upgrade/rollback defaults come from the cluster-root patch (kubernetes/flux/cluster/ks.yaml:16-51)
 - [component] Shared OCIRepository component — bjw-s `app-template` OCIRepository is provided by `kubernetes/components/common/repos/app-template/` and consumed via Kustomize component; new apps using `app-template` no longer need a per-app `ocirepository.yaml`. Apps using other charts still carry their own OCIRepository pairing in the app directory

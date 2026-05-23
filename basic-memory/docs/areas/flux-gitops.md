@@ -41,6 +41,8 @@ The cluster runs Flux via the Flux Operator pattern: a single `FluxInstance` CR 
 The reconciliation root is `kubernetes/flux/cluster/ks.yaml` — a single `cluster-apps` Kustomization that scans `./kubernetes/apps` with `prune=true` and injects shared HelmRelease defaults into every HelmRelease via a child-Kustomization patch. Notifications are delivered to Pushover via a per-namespace Alert+Provider+ExternalSecret bundle from the `flux-alerts` Kustomize component, plus a global Pushover provider deployment.
 
 ## Components
+- [component] intel-gpu-resource-driver — DRA driver DaemonSet in kube-system (OCI chart v0.10.1 from ghcr.io/intel), CDI paths at /run/cdi matching Talos defaults; apps reference GPU via shared components/gpu/ ResourceClaimTemplate
+
 - [component] flux-operator — manages the FluxInstance lifecycle (kubernetes/apps/flux-system/flux-operator/)
 - [component] flux-instance — declares controllers, sync target, and performance patches (kubernetes/apps/flux-system/flux-instance/app/helmrelease.yaml)
 - [component] cluster-apps Kustomization — single root reconciler, `prune=true`, injects HelmRelease defaults via child-Kustomization patch (kubernetes/flux/cluster/ks.yaml)
