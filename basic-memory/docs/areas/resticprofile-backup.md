@@ -43,12 +43,14 @@ tags:
 # resticprofile-backup — current state
 
 ## Metadata (observation-form, schema validation)
+
 - [area] resticprofile-backup
 - [status] current
 - [confidence] high
 - [verified_at] 2026-05-19
 
 ## Summary
+
 The cluster runs a **second** backup plane in parallel with VolSync. While VolSync handles PVC-level snapshots per app, `resticprofile` covers **file-level** backups of the shared NAS `/backups` tree on the OMV NFS server (`${NAS_IP}`). The same Restic repo is browseable and restorable through **Backrest**, a separate workload that shares the credentials Secret with resticprofile.
 
 `resticprofile` is one HelmRelease in `default` (chart `resticprofile` via OCIRepository), running a single replicated Deployment that bootstraps with `resticprofile schedule --all` then `exec`s into `supercronic /resticprofile/crontab`. The schedule is hardcoded in the embedded `profiles.yaml`:
@@ -67,6 +69,7 @@ The repo is reached as `RESTIC_REPOSITORY=s3:https://<ovh_s3_endpoint>/<RESTIC_S
 App-level export jobs into `/backups/<app>` are out of scope for this area — they live in the per-app subtrees (Paperless is the canonical example referenced in `kubernetes/CLAUDE.md` and `kubernetes/apps/default/CLAUDE.md`). Their snapshots end up here because resticprofile picks up everything under `/backups` at backup time.
 
 ## Components
+
 - [component] resticprofile workload — HelmRelease in `default`, chart `resticprofile` via OCIRepository, bjw-s app-template, image `ghcr.io/zhorvath83/resticprofile:0.32.0` (digest-pinned), runs as UID/GID 65532 with RuntimeDefault seccomp, `readOnlyRootFilesystem: true`, drops ALL caps, no service or route (kubernetes/apps/default/resticprofile/app/helmrelease.yaml)
 - [component] resticprofile Flux Kustomization — depends on `onepassword-connect` + `democratic-csi`, passes `APP_UID=0`/`APP_GID=0` via `postBuild.substitute` (no consumer in the chart values — substitution is cosmetic) (kubernetes/apps/default/resticprofile/ks.yaml)
 - [component] resticprofile ExternalSecret — emits Secret `resticprofile-secret` with `RESTIC_PASSWORD`, `RESTIC_REPOSITORY=s3:https://<ovh_s3_endpoint>/<RESTIC_S3_BUCKET>`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, plus the two Healthchecks.io webhooks; pulls from 1P items `resticprofile` and `ovh`, refresh 12h (kubernetes/apps/default/resticprofile/app/externalsecret.yaml)
@@ -80,6 +83,7 @@ App-level export jobs into `/backups/<app>` are out of scope for this area — t
 - [component] Healthchecks.io reporting — `send-before` HEAD `{URL}/start`, `send-after` HEAD `{URL}`, `send-after-fail` POST `{URL}/fail` with the failing command's stderr; one webhook per profile (backups, backups-check)
 
 ## Claims (verified against repo)
+
 - [claim] "Resticprofile and Backrest are two separate apps in namespace `default`; resticprofile generates the backups, Backrest is the read-only browse + restore UI; they share the credential Secret `resticprofile-secret`" (evidence: repo, ref: kubernetes/apps/default/resticprofile/app/externalsecret.yaml + kubernetes/apps/default/backrest/app/helmrelease.yaml:38-66, verified: 2026-05-19)
 - [claim] "The backup source is the OMV NFS export `${NAS_IP}:/backups`, mounted **read-only** in resticprofile. The restore target is `${NAS_IP}:/tmp/resticprofile-restore/backups`, a writable NFS share also used by Backrest at `/restore`" (evidence: repo, ref: kubernetes/apps/default/resticprofile/app/helmrelease.yaml:110-122 + config/profiles.yaml:77-78 + backrest/app/helmrelease.yaml:122-128, verified: 2026-05-19)
 - [claim] "The Restic repository URL is `s3:https://<ovh_s3_endpoint>/<RESTIC_S3_BUCKET>` — the OVH S3 endpoint comes from the same `HomeOps/ovh` 1Password item used by VolSync; `RESTIC_S3_BUCKET` comes from the per-app `HomeOps/resticprofile` 1Password item" (evidence: repo, ref: kubernetes/apps/default/resticprofile/app/externalsecret.yaml:18-23, verified: 2026-05-19)
@@ -96,6 +100,7 @@ App-level export jobs into `/backups/<app>` are out of scope for this area — t
 - [claim] "Restoring a snapshot is documented as the resticprofile CLI inside the Pod: `resticprofile profiles` (list), `resticprofile <profile>.snapshots`, `resticprofile <profile>.restore <snapshot_ID>` — no just recipe wraps this" (evidence: repo, ref: kubernetes/apps/default/resticprofile/readme.md, verified: 2026-05-19)
 
 ## Drift Risk
+
 - [drift] The whole file-level backup plane is one workload — no app-by-app segmentation. If one app misbehaves and dumps junk into `/backups`, the next nightly snapshot grows accordingly and Restic dedup may or may not help. The retention sweep (keep-hourly=1) is aggressive for hourly granularity; an accidentally-deleted file is recoverable only if you notice within 24h.
 - [drift] If the OMV NAS (at `${NAS_IP}`) is offline at `01:00`, the daily backup still **runs**, but the source `/backups` mount will be stale or empty. Restic itself does not detect this and a successful run will be reported to Healthchecks.io. There is no health gate on NFS availability before the cron fires.
 - [drift] `RESTIC_PASSWORD` and the OVH credentials are shared globals — rotating either invalidates ALL apps reading from `resticprofile-secret` (resticprofile + Backrest) and locks out historical access to the repository if the password is lost. No per-snapshot password isolation is possible with Restic.
@@ -105,6 +110,7 @@ App-level export jobs into `/backups/<app>` are out of scope for this area — t
 - [drift] Restic OCIRepository tags and image digests (`ghcr.io/zhorvath83/resticprofile:0.32.0` plus the digest; `garethgeorge/backrest:v1.13.0` plus the digest) are Renovate-tracked through digest pinning, but a Renovate bump that updates only the tag without re-pulling the digest would break image resolution.
 
 ## Open Questions / Gaps
+
 - [gap] No verification was run against the live cluster, NFS server, or OVH bucket in this pass — claims are repo-evidence only.
 - [gap] The bucket that backs this plane is not named in the repo — `RESTIC_S3_BUCKET` is supplied from 1P. Confirming the OVH-side bucket name and that it appears in `provision/ovh` `S3_BUCKET_NAMES` is left to the ovh-storage cross-check.
 - [gap] No restore SLO is captured — the only documented restore path is the resticprofile CLI inside the Pod, with no time-bound. Backrest is the suggested human path but its restore flow is not described in repo.
@@ -112,6 +118,7 @@ App-level export jobs into `/backups/<app>` are out of scope for this area — t
 - [gap] The relationship between Healthchecks.io project, the two webhooks, and the on-call alerting channel was not traced; only the in-cluster wiring is documented.
 
 ## Relations
+
 - depends_on [[external-secrets]]
 - depends_on [[ovh-storage]]
 - relates_to [[volsync-backup]]
