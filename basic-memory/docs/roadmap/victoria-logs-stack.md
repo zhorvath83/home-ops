@@ -26,11 +26,13 @@ related_areas:
 # Adopt VictoriaLogs as the cluster log-aggregation stack
 
 ## Metadata (observation-form, schema validation)
+
 - [topic] Adopt VictoriaLogs as the cluster log-aggregation stack
 - [status] proposed
 - [priority] medium
 
 ## Scope
+
 Add a log-aggregation layer to the observability namespace. Today the home-ops cluster has **no log platform at all** — diagnostics rely on `kubectl logs` per pod and on `flux events` for reconciliation traces. Once a Pod restarts or is rescheduled, logs from previous runs are lost.
 
 VictoriaLogs is the choice common to all three reference clusters (bjw-s, onedr0p, buroa) under their observability namespace. The adoption work:
@@ -42,14 +44,17 @@ VictoriaLogs is the choice common to all three reference clusters (bjw-s, onedr0
 5. Exposure model — internal-only HTTPRoute via `envoy-internal` if a UI is desired, or kubectl port-forward only
 
 ## Rationale
+
 Log loss across Pod restarts is the largest current observability blind spot. `kube-prometheus-stack` covers metrics + Flux Alerts covers reconciliation events, but neither persists application logs. VictoriaLogs is lightweight (single binary, low memory, no Elastic/Loki operator overhead) and is the homelab consensus pick in the three reference clusters.
 
 This roadmap item is also a prerequisite for any future alerting that needs log-pattern matching (e.g. "alert on X log messages per minute in app Y").
 
 ## Options
+
 1. **VictoriaLogs + vector** — single-binary log store + universal collector; matches the bjw-s/onedr0p/buroa pattern
 2. **VictoriaLogs + fluent-bit** — same store, lower-footprint collector; alternative if vector resource use proves too high on the single node
 3. **Loki + Promtail** — Grafana-native alternative; more components, heavier; rejected in advance unless a specific Loki-only feature is needed
 
 ## Related
+
 - relates_to [[observability]]

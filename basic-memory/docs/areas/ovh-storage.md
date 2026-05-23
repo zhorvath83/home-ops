@@ -42,12 +42,14 @@ tags:
 # ovh-storage — current state
 
 ## Metadata (observation-form, schema validation)
+
 - [area] ovh-storage
 - [status] current
 - [confidence] high
 - [verified_at] 2026-05-19
 
 ## Summary
+
 `provision/ovh/` is the Terraform source of truth for the OVH Cloud Project Object Storage assets that back the cluster's two backup planes. It declares:
 
 - a set of buckets generated from the `S3_BUCKET_NAMES` variable (comma-and-space-separated list), all in OVH region `DE`, exposed via the endpoint `s3.de.io.cloud.ovh.net`
@@ -60,6 +62,7 @@ Terraform state lives in Terraform Cloud (org `zhorvath83`, workspace `ovh`). Al
 The `just ovh apply` recipe is the single supported apply path: after `terraform apply` it reads six outputs (`s3_user_id`, `s3_username`, `s3_user_description`, `s3_access_key`, `s3_secret_key`, `s3_endpoint`) as JSON and pushes them back into the 1Password item `HomeOps/ovh` via `op item edit`. That item is the contract surface for the in-cluster consumers — VolSync/Kopia (`kubernetes/components/volsync/` + `kubernetes/apps/volsync-system/`) and the file-level resticprofile workload (`kubernetes/apps/default/resticprofile/`) — which fetch the values via External Secrets.
 
 ## Components
+
 - [component] Terraform Cloud workspace — org `zhorvath83`, workspace `ovh`, `required_version = "~> 1.0"` (provision/ovh/main.tf:1-23)
 - [component] OVH provider — `ovh/ovh` pinned at `2.13.1` (provision/ovh/main.tf:12-16)
 - [component] null provider — `hashicorp/null` 3.3.0 (provision/ovh/main.tf:18-21)
@@ -74,6 +77,7 @@ The `just ovh apply` recipe is the single supported apply path: after `terraform
 - [component] Post-apply 1Password sync — `just ovh apply` reads `terraform output -json` and runs a single `op item edit ovh --vault HomeOps` updating six fields (`ovh_s3_user_id`, `ovh_s3_username`, `ovh_s3_user_description`, `ovh_s3_access_key`, `ovh_s3_secret_key`, `ovh_s3_endpoint`) (provision/ovh/mod.just:26-50)
 
 ## Claims (verified against repo)
+
 - [claim] "Terraform state lives in Terraform Cloud, org `zhorvath83`, workspace `ovh`" (evidence: repo, ref: provision/ovh/main.tf:5-10, verified: 2026-05-19)
 - [claim] "OVH provider `ovh/ovh` is pinned at version 2.13.1 (no Renovate disable annotation observed)" (evidence: repo, ref: provision/ovh/main.tf:12-16, verified: 2026-05-19)
 - [claim] "OVH provider authenticates with the long-lived application_key + application_secret + consumer_key triple plus an endpoint (`ovh-eu` per the in-repo tfvars) — no API token model" (evidence: repo, ref: provision/ovh/main.tf:25-30 + terraform.tfvars:1, verified: 2026-05-19)
@@ -87,6 +91,7 @@ The `just ovh apply` recipe is the single supported apply path: after `terraform
 - [claim] "Four operational entry points exist: `just ovh init|plan|apply|unlock`; `unlock` wraps `terraform force-unlock` for state recovery" (evidence: repo, ref: provision/ovh/mod.just:16-55, verified: 2026-05-19)
 
 ## Drift Risk
+
 - [drift] The bucket name set (`S3_BUCKET_NAMES`) and the policy ARNs are the cluster backup contract. Renaming or removing a bucket silently breaks live VolSync/Kopia ReplicationSources and the resticprofile repo whose URLs and ExternalSecret keys reference those names. There is no automated rename or migration helper.
 - [drift] The post-apply 1Password sync is a Just-recipe-side concern, not a Terraform output sink — running `terraform apply` outside `just ovh apply` skips the sync and leaves the in-cluster consumers stale with the old credentials. Worse, on credential rotation the old credential is revoked at OVH side, so the cluster breaks until 1Password is re-synced. The recipe-only contract is documented in `provision/ovh/CLAUDE.md` but not enforced.
 - [drift] The OVH provider uses long-lived `application_key` / `application_secret` / `consumer_key` credentials. There is no equivalent of the Cloudflare API Token model — rotation has wide blast radius.
@@ -94,12 +99,14 @@ The `just ovh apply` recipe is the single supported apply path: after `terraform
 - [drift] No bucket-level versioning, object-lock, or lifecycle rules are declared in Terraform; if any are set on the OVH side via Console or CLI they will not be tracked here. Renovate or upstream provider bumps that add new fields could silently propose drift.
 
 ## Open Questions / Gaps
+
 - [gap] No verification was run against the live OVH API or Terraform Cloud workspace in this pass — claims are repo-evidence only. `just ovh plan` from a credentialed shell is the live-state validation path.
 - [gap] The actual bucket name list is supplied through `TF_VAR_S3_BUCKET_NAMES` (1Password-backed `.env`) and is not visible in the repo. Cross-checking that the in-cluster ReplicationSources, repository templates, and resticprofile config all reference exactly the same bucket names is left to a downstream contract review under volsync-backup and resticprofile-backup.
 - [gap] No formal disaster-recovery procedure is captured for the case where Terraform Cloud state is lost. Re-importing the buckets and user would require manual coordination with the live OVH account.
 - [gap] No backup of the 1Password `HomeOps/ovh` item itself is captured here — if that item is lost, the only way to restore the in-cluster credentials is to re-run `just ovh apply` (which rotates the S3 credential) and re-sync.
 
 ## Relations
+
 - relates_to [[volsync-backup]]
 - relates_to [[resticprofile-backup]]
 - relates_to [[external-secrets]]
