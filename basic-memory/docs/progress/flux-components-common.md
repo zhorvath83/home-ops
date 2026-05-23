@@ -74,7 +74,7 @@ with an opt-out via `labelSelector: substitution.flux.home.arpa/disabled notin (
 
 | Reference piece | Action | Why |
 |---|---|---|
-| `namespace.yaml` (`not-used` dummy namespace) | **Adopt verbatim** | Required by Kustomize Component shape; annotations document VolSync privileged-mover default and prune-disabled status |
+| `namespace.yaml` (`not-used` dummy namespace) | **Rejected — per-namespace files instead** | Initial implementation used a shared `_` namespace, but each namespace needs different labels/annotations. Moved to per-namespace `apps/*/namespace.yaml` files (2026-05-23). |
 | `alerts/alertmanager/` | **Defer / skip** | We have no Alertmanager today; depends on [[alertmanager-enable]]. Until then, the existing per-namespace Pushover `components/flux-alerts/` covers this path |
 | `alerts/github/` | **Adopt and adapt** | Posts Flux Kustomization status back to GitHub as commit-status checks — high value for visible MR feedback. Needs 1P item `flux` (or equivalent) with a GitHub PAT, plumbed via ExternalSecret backed by our `onepassword-connect` ClusterSecretStore (not the heavybullets8 `onepassword` name) |
 | `repos/app-template/` | **Adopt** | Removes per-app duplication of the bjw-s `app-template` OCIRepository. Inventory the app subtrees that currently declare their own and migrate to the shared one |
@@ -93,7 +93,8 @@ Today our `kubernetes/flux/cluster/ks.yaml` already has a patch that injects Hel
 
 ### Migration order
 
-1. Land `kubernetes/components/common/namespace.yaml` + `vars/cluster-settings.yaml` + the cluster `ks.yaml` substituteFrom patch — minimal viable footprint, no behavior change unless apps start referencing the new vars
+1. ~~Land `kubernetes/components/common/namespace.yaml`~~ — **SUPERSEDED (2026-05-23)**: per-namespace `apps/*/namespace.yaml` files instead of shared component
+2. Land `vars/cluster-settings.yaml` + the cluster `ks.yaml` substituteFrom patch — minimal viable footprint, no behavior change unless apps start referencing the new vars
 2. Migrate hardcoded values to `${VAR}` substitution one subtree at a time, validating reconciliation between each batch
 3. Land `repos/app-template/` and migrate apps' `chartRef` to the shared OCIRepository
 4. Add `alerts/github/` once the 1P `flux` item is provisioned with a scoped PAT (Repo-status write only)
