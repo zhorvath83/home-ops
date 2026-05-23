@@ -25,12 +25,14 @@ related_areas:
 # AD-023 — Per-app CiliumNetworkPolicy threat-model audit, two-tier severity
 
 ## Metadata (observation-form, schema validation)
+
 - [decision_id] AD-023
 - [status] active
 - [decided_at] 2026-05-17
 - [topic] Per-app CiliumNetworkPolicy threat-model audit, two-tier severity
 
 ## Decision
+
 Use a targeted, threat-model-based approach to per-app CiliumNetworkPolicies (CNPs) — target 5-8 high-value apps with explicit CNPs, NOT cluster-wide default-deny.
 
 Default to **Szint I** (ingress-only, no opt-out label) for routed apps. Promote to **Szint II** (ingress + strict egress + opt-out label `egress.home.arpa/custom-egress: ""`) only when the threat-model identifies concrete lateral-move, C2, or exfiltration vectors that the cluster-wide baseline does not cover.
@@ -38,6 +40,7 @@ Default to **Szint I** (ingress-only, no opt-out label) for routed apps. Promote
 The cluster-wide baseline (CCNPs `allow-cluster-egress` + `allow-dns-egress` L7 DNS proxy under `kubernetes/apps/kube-system/cilium/netpols/`) covers all pods that do NOT carry the opt-out label. Gateway-level L7 `SecurityPolicy` (`envoy-internal-rfc1918`) handles ingress restriction for LAN traffic.
 
 ## Rationale
+
 - Default-deny everywhere is overengineering for a single-tenant single-node home-lab
 - The earlier `4f4b76eec` CNP migration (per-app default-deny with everything) caused real connectivity regressions (UDP CT mismatch, stateful reply uncertainty)
 - bjw-s reference: 86 apps / 16 CNP files = 19% per-app coverage, intentionally selective — confirms the targeted approach
@@ -45,6 +48,7 @@ The cluster-wide baseline (CCNPs `allow-cluster-egress` + `allow-dns-egress` L7 
 - Two-tier model gives a low-cost default (Szint I) and a high-rigor escalation path (Szint II) with explicit threat-model justification
 
 ## Tradeoffs
+
 - Szint II carries higher maintenance cost: every egress need (DB pod, Redis pod, NFS host-mount, upstream FQDN, image registry) must be enumerated; chart upgrades may require re-audit
 - **B-csapda**: applying the `egress.home.arpa/custom-egress: ""` label without a paired CNP `egress:` section breaks the pod — only DNS works because `allow-dns-egress` still applies but `allow-cluster-egress` no longer covers it. Mitigation: label and egress section MUST land in the same commit
 - Targeted scope means most apps stay on the baseline only — reviewers must understand the threat-model rationale per app, not assume CNP is default-deploy
@@ -66,6 +70,7 @@ internet client (88.x.x.x)
 The `cloudflared` agent overwrites `X-Forwarded-For` with the real client IP (88.x.x.x). Envoy's `ClientTrafficPolicy.numTrustedHops: 1` setting makes it look at the (1+1)=2nd entry from the right of XFF; only one entry exists, so it falls back to remote_address (cloudflared pod IP, 10.244.0.x), which matches no CF CIDR → `defaultAction: Deny` triggers.
 
 **Architectural implication for `envoy-external`**: defense must come from the architecture, not from `clientCIDRs`:
+
 1. ClusterIP-only Service (no LB IP / NodePort)
 2. CNP ingress allowlist (only `cloudflare-tunnel` pod, plus Prometheus scrape and kubelet readiness probe)
 3. CF Tunnel mTLS between edge and `cloudflared` agent
@@ -73,6 +78,7 @@ The `cloudflared` agent overwrites `X-Forwarded-For` with the real client IP (88
 **Optional future defense-in-depth — Cloudflare Authenticated Origin Pull (AOP)**: cert-based mTLS between CF edge and the envoy origin. Immune to the XFF-translation problem because it authenticates with a client cert, not an IP. Configuration: AOP cert on the CF zone, `ClientTrafficPolicy.tls.verify.caCertificateRefs` + `requireClientCertificate: true` on envoy. Single-node home-lab benefit is marginal but the option is documented; the `clientCIDRs` workaround will never work.
 
 ## Current implementation state (2026-05-17)
+
 - `kubernetes/apps/kube-system/cilium/netpols/` — 2 cluster-wide baseline CCNPs + dedicated Flux `Kustomization` `cilium-netpols` with `dependsOn: cilium`
 - `kubernetes/apps/default/paperless/app/ciliumnetworkpolicy.yaml` — first per-app CNP at Szint I (ingress-only, allows TCP/8000 from both Gateways; egress baseline)
 - `envoy-external` / `envoy-internal` CNPs — egress sections deleted, baseline takes over; ingress allowlists preserved
@@ -82,5 +88,6 @@ The `cloudflared` agent overwrites `X-Forwarded-For` with the real client IP (88
 The remaining 5-8 high-value per-app CNPs (paperless Szint II, high-value secret providers as ingress-only, optional qbittorrent/plex egress hardening) are an ongoing audit tracked separately (roadmap item).
 
 ## Related
+
 - relates_to [[networking]]
 - relates_to [[k8s-workloads]]

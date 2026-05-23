@@ -24,6 +24,7 @@ settings:
 Schema for planned/proposed work items in home-ops.
 
 ## Observations
+
 - [convention] One Roadmap note per item, lives in `docs/roadmap/{slug}.md`
 - [convention] Lifecycle: `proposed` (surfaced, not committed) → `accepted` (decided to do) → `in-progress` → `done` OR `dropped`
 - [convention] When a roadmap item closes with an architectural choice, link the resulting ADR via `decision_link`; the roadmap item moves to `done` (or stays `in-progress` while the ADR is being implemented)
