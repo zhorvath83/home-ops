@@ -37,6 +37,7 @@ tags:
 # Audit ExternalSecret consumer dependsOn chains — depend on CSS-Ready gate, not just ESO controller
 
 ## Metadata (observation-form, schema validation)
+
 - [topic] Audit ExternalSecret consumer dependsOn chains
 - [status] proposed
 - [priority] medium
@@ -102,12 +103,12 @@ The `onepassword-connect` ks creates two ExternalSecrets — `onepassword-connec
 
 ### Phase 2 — Document the rule
 
-2. Update `docs/areas/external-secrets` BM area-reference with the convention: "Any Kustomization that contains an ExternalSecret manifest MUST declare `dependsOn` on the ks that gates on the referenced ClusterSecretStore Ready. For our cluster today, that ks is `onepassword-connect` in namespace `external-secrets`. The one exception is `onepassword-connect` itself, which uses bootstrap-time `op inject` to break the chicken-and-egg cycle."
-3. Add a pre-commit / CI check (optional) that greps `kubernetes/apps/**/externalsecret.yaml` and verifies the owning ks's `dependsOn` chain reaches `onepassword-connect`. Out of scope for the manual fix; flag as a follow-up only if violations recur.
+1. Update `docs/areas/external-secrets` BM area-reference with the convention: "Any Kustomization that contains an ExternalSecret manifest MUST declare `dependsOn` on the ks that gates on the referenced ClusterSecretStore Ready. For our cluster today, that ks is `onepassword-connect` in namespace `external-secrets`. The one exception is `onepassword-connect` itself, which uses bootstrap-time `op inject` to break the chicken-and-egg cycle."
+2. Add a pre-commit / CI check (optional) that greps `kubernetes/apps/**/externalsecret.yaml` and verifies the owning ks's `dependsOn` chain reaches `onepassword-connect`. Out of scope for the manual fix; flag as a follow-up only if violations recur.
 
 ### Phase 3 — Generalize for future CSSes
 
-4. If the cluster ever introduces a second ClusterSecretStore (e.g. a Vault-backed CSS, an additional 1P Connect tenant), the rule generalizes: each ExternalSecret-bearing ks transitively depends on the ks that gates on the specific CSS it references. The audit table above becomes per-CSS in that world.
+1. If the cluster ever introduces a second ClusterSecretStore (e.g. a Vault-backed CSS, an additional 1P Connect tenant), the rule generalizes: each ExternalSecret-bearing ks transitively depends on the ks that gates on the specific CSS it references. The audit table above becomes per-CSS in that world.
 
 ## Tradeoffs and risks
 
@@ -122,6 +123,7 @@ The `onepassword-connect` ks creates two ExternalSecrets — `onepassword-connec
 3. **Status quo** — accept retry-loop convergence on cold boot. The github-webhook ExternalSecret will eventually resolve; the cost is some reconciliation noise and a window of broken webhook delivery during cluster startup.
 
 ## Related
+
 - continues [[ks-healthchecks-rollout]]
 - relates_to [[external-secrets]]
 - relates_to [[flux-gitops]]

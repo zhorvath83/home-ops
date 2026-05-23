@@ -54,12 +54,14 @@ tags:
 # volsync-backup — current state
 
 ## Metadata (observation-form, schema validation)
+
 - [area] volsync-backup
 - [status] current
 - [confidence] high
 - [verified_at] 2026-05-19
 
 ## Summary
+
 PVC-level cluster backups are handled by VolSync + Kopia + OVH Object Storage. The platform side under `kubernetes/apps/volsync-system/` provides three sub-Kustomizations — `volsync` (the operator, depends on `snapshot-controller`), `volsync-maintenance` (the KopiaMaintenance CR + its ExternalSecret, depends on `onepassword-connect` + `volsync`), and `kopia` (the Kopia repository-server browser UI, depends on `onepassword-connect` + `volsync`). Operator and movers all use the **perfectra1n fork** image `ghcr.io/perfectra1n/volsync:v0.17.11` across kopia/restic/rsync/rsync-tls/syncthing variants; `fullnameOverride: volsync` keeps upstream resource names so app components keep working.
 
 A cluster-wide MutatingAdmissionPolicy (`volsync-mover-jitter`) injects a `busybox` initContainer that sleeps 0-300s into every Job whose name starts with `volsync-src-` and whose `app.kubernetes.io/created-by` label is `volsync`, smoothing the herd-effect of the hourly schedules. PrometheusRules fire `VolSyncComponentAbsent` (target down 15m, critical) and `VolSyncVolumeOutOfSync` (any volume out of sync 15m, critical).
@@ -69,6 +71,7 @@ Per-app wiring is a Kustomize **component** at `kubernetes/components/volsync/`,
 Operational flows are wrapped by `just volsync` recipes: `snapshot` and `snapshot-all` (manual trigger), `restore` (full app teardown + wipe Job + Direct-method RD + Flux resume), `list-snapshots` (Kopia CLI inside the kopia Deployment), `kopia-maintenance` (manual trigger of `kopia-daily-maintenance` CR with status polling), `last-snapshots` (Python report on all RSes for a given date with Budapest-local times), and `state suspend|resume` (cluster-wide pause of the operator + HelmRelease + scale-to-zero of the Deployment).
 
 ## Components
+
 - [component] VolSync operator — HelmRelease in `volsync-system`, chart from `OCIRepository/volsync`, `fullnameOverride: volsync` (perfectra1n fork wiring), all mover images shared via the `*image` YAML anchor (`ghcr.io/perfectra1n/volsync:v0.17.11` for kopia/restic/rclone/rsync/rsync-tls/syncthing), `manageCRDs: true`, `metrics.disableAuth: true`, runs as UID/GID 1000 with RuntimeDefault seccomp (kubernetes/apps/volsync-system/volsync/app/helmrelease.yaml)
 - [component] volsync Kustomization — depends on `snapshot-controller` in `kube-system` (kubernetes/apps/volsync-system/volsync/ks.yaml:11-13)
 - [component] volsync-maintenance Kustomization — depends on `onepassword-connect` + `volsync`; deploys `KopiaMaintenance/kopia-daily-maintenance` running at `0 12 * * *` against repository alias `volsync-secret` + its ExternalSecret (volsync/maintenance/kopiamaintenance.yaml + externalsecret.yaml)
@@ -85,6 +88,7 @@ Operational flows are wrapped by `just volsync` recipes: `snapshot` and `snapsho
 - [component] flux-alerts component — pulled in via `kubernetes/apps/volsync-system/kustomization.yaml` (Pushover alerting on this namespace)
 
 ## Claims (verified against repo)
+
 - [claim] "VolSync runs the `perfectra1n/volsync` fork pinned to `v0.17.11` across all mover variants (kopia/restic/rclone/rsync/rsync-tls/syncthing), with `fullnameOverride: volsync` to keep upstream resource names" (evidence: repo, ref: kubernetes/apps/volsync-system/volsync/app/helmrelease.yaml:13-22, verified: 2026-05-19)
 - [claim] "The VolSync platform is split into three sub-Kustomizations under `kubernetes/apps/volsync-system/kustomization.yaml`: `volsync` (operator, depends on snapshot-controller), `kopia` (browser UI, depends on onepassword-connect + volsync), and `volsync-maintenance` (depends on onepassword-connect + volsync)" (evidence: repo, ref: kubernetes/apps/volsync-system/kustomization.yaml + volsync/ks.yaml + kopia/ks.yaml, verified: 2026-05-19)
 - [claim] "A cluster-wide `MutatingAdmissionPolicy/volsync-mover-jitter` injects a busybox initContainer running `sleep \$(shuf -i 0-300 -n 1)` into every `batch/v1` Job whose name starts with `volsync-src-` and label `app.kubernetes.io/created-by == volsync`. `failurePolicy: Fail`, `reinvocationPolicy: IfNeeded`" (evidence: repo, ref: kubernetes/apps/volsync-system/volsync/app/mutatingadmissionpolicy.yaml, verified: 2026-05-19)
@@ -104,6 +108,7 @@ Operational flows are wrapped by `just volsync` recipes: `snapshot` and `snapsho
 - [claim] "`just volsync state suspend|resume` suspends/resumes both the operator Kustomization and HelmRelease and scales the volsync Deployment between 0 and 1 — pauses backup activity cluster-wide" (evidence: repo, ref: kubernetes/volsync/mod.just:227-233, verified: 2026-05-19)
 
 ## Drift Risk
+
 - [drift] The VolSync operator and movers come from the **perfectra1n fork** (`ghcr.io/perfectra1n/volsync`), not upstream — versions and CVE coverage track that fork, not the upstream repo. `fullnameOverride: volsync` is what keeps the chart's resource names compatible. If the fork is abandoned, migrating to upstream requires re-validating manifests.
 - [drift] The Kopia repository's S3 path and password come from 1Password item `volsync-template` — only the `KOPIA_S3_BUCKET` and `KOPIA_PASSWORD` fields are referenced. If that item is renamed, ALL apps lose their backups in one shot until the ExternalSecret picks up a fresh extract.
 - [drift] Per-app contract is `${APP}` / `${APP}-bootstrap` / `${APP}-volsync-secret` — `just volsync` recipes hardcode this naming. Apps that diverge from `${APP} = HelmRelease name = PVC name` (or override `VOLSYNC_CLAIM`) will silently break the restore recipe in particular.
@@ -113,12 +118,14 @@ Operational flows are wrapped by `just volsync` recipes: `snapshot` and `snapsho
 - [drift] Kopia browser UI is exposed publicly (via `envoy-external`) on a `${PUBLIC_DOMAIN}`-prefixed hostname — protected by Cloudflare Access (per the cloudflare area note's `Private Cloud` app with `*.<domain>`) but the Kopia binary itself does not authenticate (`--without-password`).
 
 ## Open Questions / Gaps
+
 - [gap] No verification was run against the live cluster in this pass — claims are repo-evidence only. `.claude/skills/volsync/references/validation.md` is the live-state validation path.
 - [gap] The exact list of apps wired into the component (which app `ks.yaml` files declare the `postBuild.substitute` block for volsync) was not enumerated here — that is a contract sweep best done as part of the k8s-workloads area-reference.
 - [gap] The Kopia browser UI's authentication delegation to Cloudflare Access vs. its own `--without-password` config is a security-relevant cross-cutting claim; final exposure model belongs in security-review.
 - [gap] No formal restore-time SLO is captured (data ingress from OVH `DE` region, sequential mover Jobs, single-node cluster). The restore recipe sets a 120m timeout on the mover Job as the only documented upper bound.
 
 ## Relations
+
 - depends_on [[external-secrets]]
 - depends_on [[ovh-storage]]
 - relates_to [[k8s-workloads]]
