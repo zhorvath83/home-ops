@@ -22,22 +22,27 @@ related_areas:
 # AD-011 — Storage unchanged — democratic-csi local-hostpath
 
 ## Metadata (observation-form, schema validation)
+
 - [decision_id] AD-011
 - [status] active
 - [decided_at] 2025-10-01
 - [topic] Storage unchanged — democratic-csi local-hostpath
 
 ## Decision
+
 The existing `democratic-csi-local-hostpath` storage class carries over unchanged to the new cluster.
 
 ## Rationale
+
 - On a single-node setup, Longhorn replication is pointless (max 1 replica) and Rook-Ceph is anti-pattern
 - democratic-csi local-hostpath driver is established and works with Talos `extraMounts`
 - The existing VolSync + Kopia + OVH S3 backup pipeline is storage-class-agnostic
 
 ## Tradeoffs
+
 - Single point of disk failure — the backup pipeline is critical (this is already the case today)
 
 ## Related
+
 - relates_to [[volsync-backup]]
 - relates_to [[talos-cluster]]
