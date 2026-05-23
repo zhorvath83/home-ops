@@ -11,9 +11,9 @@ summary: Single-node Talos Linux control plane (`k8s-cp0`, cluster
   template rendered per-node and patched on top of a shared base, with all sensitive
   fields delivered as `op://HomeOps/talos/*` references resolved at apply time via
   `op inject`. Talos schematic is built on `factory.talos.dev` with i915 + intel-ucode
-  + mei + custom kernel args. Kubernetes runs without kube-proxy (Cilium replacement)
-  and without CoreDNS (Cilium DNS). All operational flows are wrapped by `just talos`
-  recipes; the bootstrap chain is `just cluster-bootstrap cluster`.
+  + mei system extensions (no custom kernel args). Kubernetes runs without kube-proxy
+  (Cilium replacement) and without CoreDNS (Cilium DNS). All operational flows are
+  wrapped by `just talos` recipes; the bootstrap chain is `just cluster-bootstrap cluster`.
 verified_against:
 - kubernetes/talos/machineconfig.yaml.j2
 - kubernetes/talos/nodes/k8s-cp0.yaml.j2
@@ -58,7 +58,7 @@ The whole reassembly path on already-installed hardware is the `just cluster-boo
 ## Components
 - [component] Single control-plane node — `k8s-cp0`, type `controlplane`, scheduling allowed (kubernetes/talos/nodes/k8s-cp0.yaml.j2:5-6 + machineconfig.yaml.j2:98-99)
 - [component] Cluster identity — name `main`, endpoint `https://${CONTROLPLANE_IP}:6443`, cert SANs include `127.0.0.1`, `${CONTROLPLANE_IP}`, `k8s.lan` (machineconfig.yaml.j2:110-114,149-151)
-- [component] Talos factory schematic — `schematic.yaml` with i915 + intel-ucode + mei system extensions, kernel args `initcall_blacklist=algif_aead_init`, `i915.enable_guc=3`, `sysctl.kernel.kexec_load_disabled=1` (kubernetes/talos/schematic.yaml)
+- [component] Talos factory schematic — `schematic.yaml` with i915 + intel-ucode + mei system extensions (no custom kernel args) (kubernetes/talos/schematic.yaml)
 - [component] Schematic ID regen — `just talos gen-schematic-id` POSTs schematic.yaml to factory.talos.dev and returns the .id; called transitively by `render-config`, `download-image`, `upgrade-node` (kubernetes/talos/mod.just:26-31)
 - [component] Machine config base — `machineconfig.yaml.j2` minijinja template, rendered with `TALOS_VERSION`, `TALOS_SCHEMATIC_ID`, `KUBERNETES_VERSION`, `IS_CONTROLPLANE` env vars (kubernetes/talos/machineconfig.yaml.j2)
 - [component] Per-node patch — `nodes/k8s-cp0.yaml.j2` pins install disk (`PC801 NVMe SK hynix 1TB`), EPHEMERAL on system disk, UserVolume `local-hostpath` on PC711 NVMe at `/var/mnt/local-hostpath` (for democratic-csi local-hostpath driver), hostname `k8s-cp0`, LinkAlias `net0` matched by MAC prefix `50:81:40:80:`, BondConfig wrapping `net0` into `bond0` (active-backup, MTU 1500), DHCPv4Config on `bond0` (clientIdentifier=mac), WatchdogTimerConfig on `/dev/watchdog0` with 5m timeout (nodes/k8s-cp0.yaml.j2 + machineconfig.yaml.j2:171-191)
@@ -86,7 +86,7 @@ The whole reassembly path on already-installed hardware is the `just cluster-boo
 - [claim] "kube-proxy and CoreDNS are both disabled in Talos (`proxy.disabled: true`, `coreDNS.disabled: true`); the cluster uses Cilium for both" (evidence: repo, ref: machineconfig.yaml.j2:119-120,129-131, verified: 2026-05-19)
 - [claim] "Talos hostDNS is enabled with both `forwardKubeDNSToHost` and `resolveMemberNames`, and KubePrism listens on port 7445" (evidence: repo, ref: machineconfig.yaml.j2:24-31, verified: 2026-05-19)
 - [claim] "API server cert SANs include `127.0.0.1`, `${CONTROLPLANE_IP}`, and `k8s.lan` — the `k8s.lan` name is kept as a forward-compatibility hook for a future LAN DNS record" (evidence: repo, ref: machineconfig.yaml.j2:110-114, verified: 2026-05-19)
-- [claim] "The Talos installer image is rebuilt from `schematic.yaml` (POSTed live to factory.talos.dev) and the `TALOS_VERSION` env var; the schematic includes i915 + intel-ucode + mei system extensions and the kernel args `i915.enable_guc=3` and `sysctl.kernel.kexec_load_disabled=1`" (evidence: repo, ref: kubernetes/talos/schematic.yaml + mod.just:26-31, verified: 2026-05-19)
+- [claim] "The Talos installer image is rebuilt from `schematic.yaml` (POSTed live to factory.talos.dev) and the `TALOS_VERSION` env var; the schematic includes i915 + intel-ucode + mei system extensions with no custom kernel args" (evidence: repo, ref: kubernetes/talos/schematic.yaml + mod.just:26-31, verified: 2026-05-23)
 - [claim] "All 14 Talos secrets (machine + cluster CAs and keys, machine + cluster + bootstrap tokens, cluster id, cluster secret, etcd CA, service-account key, secretbox encryption key) live in a single 1Password item `HomeOps/talos` (API Credential category) and are referenced from `machineconfig.yaml.j2` as `op://HomeOps/talos/<FIELD>`" (evidence: repo, ref: kubernetes/talos/mod.just:77-94 + machineconfig.yaml.j2:18-20,92,96-97,125-126,136,141-143,168-169, verified: 2026-05-19)
 - [claim] "`just talos gen-secrets` refuses to overwrite an existing 1Password item — explicit `op item delete` is required first, with a destructive-action warning printed" (evidence: repo, ref: kubernetes/talos/mod.just:37-42, verified: 2026-05-19)
 - [claim] "`just talos gen-talosconfig` reconstructs the Talos secrets bundle from 1Password using an inline jinja template and `op inject`, then runs `talosctl gen config` with `--force` against the rebuilt secrets file" (evidence: repo, ref: kubernetes/talos/mod.just:99-141, verified: 2026-05-19)

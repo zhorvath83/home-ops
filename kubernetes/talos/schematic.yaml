@@ -6,22 +6,11 @@
 #
 # Regenerate the ID via: `just talos gen-schematic-id`
 customization:
-  extraKernelArgs:
-    # works around a slow boot path on some Intel platforms.
-    - initcall_blacklist=algif_aead_init
-    # Intel iGPU GuC (Graphics microcontroller) firmware load — required for
-    # hardware video decode/encode (Plex HW transcode, Phase 2 enablement).
-    # Value 3 = enable GuC submission + HuC firmware authentication.
-    - i915.enable_guc=3
-    # Hardens against kexec-based attacks on the kernel image. Recommended
-    # alongside i915.enable_guc per Talos community guidance.
-    - sysctl.kernel.kexec_load_disabled=1
   systemExtensions:
     officialExtensions:
-      # Intel iGPU driver. Together with the i915.enable_guc=3 kernel arg
-      # above, enables hardware video decode/encode on the node. The iGPU is
-      # exposed to pods via the Intel GPU Resource Driver (DRA/CDI) — see
-      # kubernetes/apps/kube-system/intel-gpu-resource-driver/.
+      # Intel iGPU driver — enables hardware video decode/encode on the node.
+      # The iGPU is exposed to pods via the Intel GPU Resource Driver (DRA/CDI) —
+      # see kubernetes/apps/kube-system/intel-gpu-resource-driver/.
       - siderolabs/i915
       # Intel CPU microcode — security and stability updates.
       - siderolabs/intel-ucode
