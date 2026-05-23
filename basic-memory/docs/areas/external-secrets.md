@@ -5,7 +5,7 @@ permalink: home-ops/docs/areas/external-secrets
 area: external-secrets
 status: current
 confidence: high
-verified_at: '2026-05-19'
+verified_at: '2026-05-23'
 summary: External Secrets Operator (ESO) plus 1Password Connect delivers all app-level
   runtime secrets. Two Flux Kustomizations under `kubernetes/apps/external-secrets/`
   layer the platform — `external-secrets` (operator) and `onepassword-connect` (Connect
@@ -101,3 +101,17 @@ Bootstrap-time secrets that ESO itself depends on (Connect credentials + access 
 - relates_to [[volsync-backup]]
 - relates_to [[k8s-workloads]]
 - part_of [[home-ops-platform]]
+## dependsOn Convention for ExternalSecret-bearing Kustomizations
+Any Flux Kustomization that contains an ExternalSecret manifest MUST declare `dependsOn` on the ks that gates on the referenced ClusterSecretStore Ready. Today every ExternalSecret in the cluster references `ClusterSecretStore/onepassword-connect`, so the rule simplifies to: every ExternalSecret-bearing ks must transitively dependsOn the `onepassword-connect` ks in namespace `external-secrets`.
+
+Two intentional exceptions:
+
+1. **`onepassword-connect` itself** — it creates the ClusterSecretStore and its own ExternalSecrets (credentials + token) use bootstrap-time `op inject` to break the chicken-and-egg cycle. Adding a dependsOn back to itself would deadlock.
+
+2. **`flux-instance`** — contains a GitHub webhook ExternalSecret referencing ClusterSecretStore/onepassword-connect, but deliberately does NOT declare dependsOn onepassword-connect. This matches the bjw-s reference cluster pattern. Rationale: adding the dependency couples FluxInstance reconciliation to CSS availability, removing flux-instance as a fallback early-boot path. The ESO retry-loop on the github-webhook-token ExternalSecret is benign — it converges once the CSS becomes Ready. Bootstrap already sequences ESO + 1Password Connect before Flux Instance (see helmfile.d/01-apps.yaml).
+
+Additionally, 2 component-level ExternalSecrets (pushover and github alerts in `components/common/alerts/`) reference ClusterSecretStore/onepassword-connect but are applied at the cluster-apps Kustomization level, not as individual ks resources. They are implicitly sequenced by the Flux boot chain.
+
+Audit result (2026-05-23): 18 app-level + 2 component-level ExternalSecret manifests surveyed (20 total). 16 ks-es declare dependsOn onepassword-connect. `onepassword-connect` is the bootstrap exception (N/A). `flux-instance` is intentionally exempt (bjw-s parity, retry-loop convergence is acceptable). Component-level ExternalSecrets are implicitly covered by the Flux boot chain. No gaps remain.
+
+- [claim] "Every Flux Kustomization that contains an ExternalSecret manifest must transitively dependsOn the ks that gates on the referenced ClusterSecretStore Ready — for the current cluster, that ks is onepassword-connect in namespace external-secrets — with two intentional exceptions: onepassword-connect itself (bootstrap chicken-and-egg) and flux-instance (bjw-s parity, retry-loop convergence is acceptable for the github-webhook-token ExternalSecret)." (evidence: repo audit of 20 ExternalSecret manifests, ref: kubernetes/apps/flux-system/flux-instance/ks.yaml + bjw-s reference cluster, verified: 2026-05-23)

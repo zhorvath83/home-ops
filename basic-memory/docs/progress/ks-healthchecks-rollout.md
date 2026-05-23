@@ -125,3 +125,8 @@ healthCheckExprs:
 - relates_to [[networking]]
 - relates_to [[external-secrets]]
 - relates_to [[k8s-workloads]]
+
+
+## Follow-up: eso-dependency-audit (completed, no code change)
+
+The companion roadmap [[eso-dependency-audit]] was closed as a progress note. Full audit of 20 ExternalSecret manifests confirmed the dependsOn convention is correct. The original suspected gap (`flux-instance` missing `dependsOn: onepassword-connect`) was analyzed and deliberately kept at bjw-s parity — `flux-instance` intentionally does NOT depend on the CSS because (1) the ESO retry-loop is benign, (2) coupling would block FluxInstance reconciliation on CSS failure, and (3) bootstrap already sequences ESO + 1Password Connect before Flux Instance. See [[eso-dependency-audit]] for full conclusion.
