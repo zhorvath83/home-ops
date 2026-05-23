@@ -26,6 +26,7 @@ settings:
 Schema for current-state reference notes per home-ops area.
 
 ## Observations
+
 - [convention] One AreaReference note per area, lives in `docs/areas/{area-name}`
 - [convention] Both frontmatter values AND observation-form duplicates required: `[area]`, `[status]`, `[confidence]`, `[verified_at]` (frontmatter for metadata search, observations for schema validation)
 - [convention] `verified_against` lists exact file paths or read-only commands — never vague references
