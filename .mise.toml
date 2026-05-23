@@ -25,7 +25,7 @@ flux2 = "2.8.7"
 just = "1.51.0"
 
 # Templating + secrets
-"aqua:mitsuhiko/minijinja" = "2.19.0"
+"aqua:mitsuhiko/minijinja" = "2.20.0"
 "1password-cli" = "2.34.0"
 
 # YAML/JSON tooling
