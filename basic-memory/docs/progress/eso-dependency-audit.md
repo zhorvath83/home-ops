@@ -1,6 +1,6 @@
 ---
 title: eso-dependency-audit
-type: note
+type: progress
 permalink: home-ops/progress/eso-dependency-audit
 tags:
 - progress

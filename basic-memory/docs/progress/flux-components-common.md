@@ -1,6 +1,6 @@
 ---
 title: flux-components-common
-type: roadmap
+type: progress
 permalink: home-ops/docs/roadmap/flux-components-common
 topic: Adopt a flux components/common pattern — cluster-wide vars + shared OCIRepository
   + GitHub commit-status
