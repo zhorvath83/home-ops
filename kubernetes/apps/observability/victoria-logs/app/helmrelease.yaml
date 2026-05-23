@@ -21,6 +21,19 @@ spec:
       retentionPeriod: 14d
       route:
         enabled: true
+        extraRules:
+          - matches:
+              - path:
+                  type: Exact
+                  value: /
+            filters:
+              - type: RequestRedirect
+                requestRedirect:
+                  scheme: https
+                  statusCode: 302
+                  path:
+                    type: ReplaceFullPath
+                    replaceFullPath: /select/vmui/
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: Victoria Logs
