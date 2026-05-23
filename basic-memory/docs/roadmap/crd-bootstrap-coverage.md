@@ -36,7 +36,7 @@ tags:
 
 ## Metadata (observation-form, schema validation)
 - [topic] Audit CRD bootstrap coverage — ensure all CR kinds used in the repo have their CRDs available before Flux reconciles the CRs that reference them
-- [status] proposed
+- [status] done — continues [[crd-bootstrap-coverage]] (progress)
 - [priority] medium
 
 ## Scope
@@ -111,3 +111,52 @@ Audit every CustomResource kind declared in kubernetes/apps/ against the CRD del
 - Changing the Flux reconciliation model (install.crds policy is cluster-wide and works for steady-state)
 - Replacing the helmfile bootstrap chain with a different tool
 - Adding helmfile postsync hooks for CRD waiting (onedr0p pattern) — separate concern from pre-installing CRDs
+## Research Session (2026-05-23)
+
+Four reference implementations audited for CRD bootstrap strategy:
+
+| Repo | 00-crds.yaml charts | Postsync hooks | Key pattern |
+|------|-----|------|------|
+| onedr0p | 3 (envoy-gateway, kube-prometheus-stack, grafana-operator) | cilium CRD wait + network config apply; onepassword-connect CRD wait + ClusterSecretStore apply | Minimal CRD pre-install, postsync hooks bridge the gaps |
+| bjw-s | 3 (same as onedr0p) | cilium CRD wait + config apply; onepassword-connect ClusterSecretStore apply | Same as onedr0p, no tuppr, no system-upgrade |
+| billimek | 12 (envoy-gateway, kube-prometheus-stack, grafana-operator, external-secrets, volsync, rook-ceph, cloudnative-pg, emqx-operator, node-feature-discovery, silence-operator, snapshot-controller, **tuppr**) | None found (comprehensive CRD pre-install makes hooks unnecessary) | Aggressive CRD pre-install, maximum safety, maximum maintenance burden |
+| szinn | 3 (envoy-gateway, kube-prometheus-stack, grafana-operator) | cilium CRD wait + config apply | Same 3-chart baseline, postsync hook for cilium only |
+
+### Confirmed gaps in home-ops
+
+1. **ClusterSecretStore in resources.yaml.j2 without ESO CRDs** — highest risk. onedr0p/bjw-s solve this with a postsync hook that waits for the ESO CRD then applies ClusterSecretStore. home-ops applies it before ESO CRDs exist.
+2. **No cilium postsync hook** — medium risk. onedr0p/bjw-s/szinn all wait for cilium CRDs before applying network config. home-ops relies on Flux dependsOn only.
+3. **No postsync hook mechanism at all** — the helmfile bootstrap has no hooks for CRD waiting. Every other reference repo uses them.
+4. **cert-manager CRDs not pre-installed** — low risk, consistent with all reference repos (handled by needs chain ordering).
+5. **tuppr CRDs not pre-installed** — low risk, only billimek pre-installs them. onedr0p/szinn use dependsOn + healthCheckExprs, same as home-ops.
+
+### Cross-cutting observation
+
+Every reference repo uses the same cluster-wide HelmRelease patch injecting install.crds: CreateReplace. The difference is entirely in the bootstrap phase: how CRDs are guaranteed to exist before Flux starts reconciling CRs. The two strategies are (a) pre-install more CRDs in 00-crds.yaml or (b) add postsync hooks to the helmfile apps phase. onedr0p/bjw-s/szinn use (b) for cilium and external-secrets; billimek uses (a) for everything.
+## Implementation (2026-05-23)
+
+### Audit findings
+
+After detailed research and code review, the existing bootstrap is **much closer to the consensus pattern than the roadmap assumed**:
+
+1. **Cilium postsync hook** — ALREADY EXISTS (CRD wait + config apply via kustomize). Matches onedr0p/bjw-s/szinn pattern.
+2. **Onepassword-connect postsync hook** — ALREADY EXISTS (ClusterSecretStore apply). Missing only the ESO CRD wait step.
+3. **ClusterSecretStore in resources.yaml.j2** — NOT PRESENT. Only 1PW Connect secrets are in resources.yaml.j2. The ClusterSecretStore is applied by the postsync hook.
+4. **Bootstrap sequence** — `namespaces → resources → crds → apps`. Correct order: resources only contains Secrets (no CRD-dependent objects).
+5. **00-crds.yaml** — 3 charts (envoy-gateway, kube-prometheus-stack, grafana-operator). Matches the 3/4 consensus.
+
+### Change made
+
+**01-apps.yaml**: Added `kubectl wait --for=create crd/clustersecretstores.external-secrets.io --timeout=2m` before the ClusterSecretStore apply in the onepassword-connect postsync hook. This is the only gap — the consensus pattern (onedr0p, bjw-s) explicitly waits for the ESO CRD before applying ClusterSecretStore.
+
+### No changes needed
+
+- 00-crds.yaml — stays at 3 charts
+- resources.yaml.j2 — ClusterSecretStore not present, no change
+- Bootstrap sequence — correct as-is
+- Cilium postsync hook — already matches consensus
+- cert-manager, tuppr, volsync — handled by needs chain and Flux dependsOn
+
+### Status: DONE
+
+The CRD bootstrap coverage audit identified one gap (ESO CRD wait in 1PW hook) and closed it. All other aspects already match the upstream consensus pattern.
