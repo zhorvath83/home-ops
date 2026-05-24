@@ -22,16 +22,16 @@ nodes := `find ./nodes -maxdepth 1 -name '*.yaml.j2' -exec basename {} .yaml.j2 
 default:
     just -l talos
 
-[group('image')]
 [doc('Generate Talos factory schematic ID by POSTing schematic.yaml to factory.talos.dev')]
+[group('image')]
 [script]
 gen-schematic-id:
     curl -fsSL -X POST --data-binary @{{ talos_dir }}/schematic.yaml \
       https://factory.talos.dev/schematics \
       | jq -r .id
 
-[group('setup')]
 [doc('Generate Talos cluster secrets and store them as a 1Password API Credential item (one-time per cluster)')]
+[group('setup')]
 [script]
 gen-secrets vault="HomeOps" item="talos":
     if op item get "{{ item }}" --vault "{{ vault }}" >/dev/null 2>&1; then
@@ -93,8 +93,8 @@ gen-secrets vault="HomeOps" item="talos":
         "CLUSTER_TOKEN[password]=${cluster_token}" \
         "CLUSTER_SECRETBOXENCRYPTIONSECRET[password]=${cluster_secretboxencryptionsecret}"
 
-[group('setup')]
 [doc('Generate talosconfig from 1Password secrets (one-time, after gen-secrets)')]
+[group('setup')]
 [script]
 gen-talosconfig endpoint="https://192.168.1.11:6443" cluster="main" node=controller_node:
     : "${TALOSCONFIG:?env TALOSCONFIG required (set by .mise.toml)}"
@@ -140,8 +140,8 @@ gen-talosconfig endpoint="https://192.168.1.11:6443" cluster="main" node=control
     talosctl config node "{{ node }}"
     just log info "Talosconfig written" file "${TALOSCONFIG}"
 
-[group('image')]
 [doc('Download Talos metal-amd64 installer ISO (uses TALOS_VERSION env)')]
+[group('image')]
 [script]
 download-image:
     : "${TALOS_VERSION:?env TALOS_VERSION required (e.g. v1.13.2)}"
@@ -151,8 +151,8 @@ download-image:
     curl -fsSL -o "${out}" \
       "https://factory.talos.dev/image/${sid}/${TALOS_VERSION}/metal-amd64.iso"
 
-[group('image')]
 [doc('Burn Talos installer ISO to USB (interactive picker if no device given)')]
+[group('image')]
 [script]
 burn-image device="" iso="":
     # 1. Resolve ISO
@@ -250,8 +250,8 @@ burn-image device="" iso="":
     esac
     just log info "Done — USB ready, can be removed safely"
 
-[group('config')]
 [doc('Render Talos config for a node (base + node patch merged). Useful for dry-run before apply.')]
+[group('config')]
 [script]
 render-config node:
     : "${TALOS_VERSION:?env TALOS_VERSION required}"
@@ -269,36 +269,36 @@ render-config node:
     minijinja-cli --env "{{ talos_dir }}/nodes/{{ node }}.yaml.j2" > "${patch}"
     talosctl machineconfig patch "${base}" --patch "@${patch}"
 
-[group('config')]
 [confirm('Apply Talos config to ' + node + ' [y|N] ?')]
 [doc('Apply Talos config to a node (pass extra talosctl flags as args, e.g. --insecure). Bypass prompt via `just --yes talos apply-node ...`')]
+[group('config')]
 [script]
 apply-node node *args:
     just talos render-config {{ node }} | talosctl -n {{ node }} apply-config -f /dev/stdin {{ args }}
 
-[group('config')]
 [doc('Apply Talos config to every node defined under nodes/*.yaml.j2 (per-node confirm prompt via apply-node)')]
+[group('config')]
 [script]
 apply-cluster *args:
     for n in {{ nodes }}; do
       just talos apply-node "$n" {{ args }}
     done
 
-[group('config')]
 [doc('Print whether a node is a controlplane (from its rendered machineconfig)')]
+[group('config')]
 [script]
 machine-controller node=controller_node:
     just talos render-config "{{ node }}" | yq -e 'select(.machine) | (.machine.type == "controlplane") // ""'
 
-[group('config')]
 [doc('Print the Talos install image used by a node (from its rendered machineconfig)')]
+[group('config')]
 [script]
 machine-image node=controller_node:
     just talos render-config "{{ node }}" | yq -e 'select(.machine) | .machine.install.image'
 
-[group('recovery')]
 [confirm('Reset node ' + node + ' (wipes STATE + EPHEMERAL + u-local-hostpath) [y|N] ?')]
 [doc('Reset a Talos node (wipe STATE + EPHEMERAL + u-local-hostpath, reboot to installer)')]
+[group('recovery')]
 [script]
 reset-node node:
     talosctl -n {{ node }} reset \
@@ -308,42 +308,42 @@ reset-node node:
       --graceful=false \
       --reboot
 
-[group('recovery')]
 [doc('Reset every node defined under nodes/*.yaml.j2 (per-node confirm prompt via reset-node)')]
+[group('recovery')]
 [script]
 reset-cluster:
     for n in {{ nodes }}; do
       just talos reset-node "$n"
     done
 
-[group('lifecycle')]
 [doc('Reboot a Talos node (powercycle mode = full hardware reset)')]
+[group('lifecycle')]
 [script]
 reboot-node node:
     talosctl -n {{ node }} reboot -m powercycle
 
-[group('lifecycle')]
 [confirm('Shutdown node ' + node + ' [y|N] ?')]
 [doc('Shutdown a Talos node (force). Pass extra talosctl flags as additional args.')]
+[group('lifecycle')]
 [script]
 shutdown-node node *args:
     talosctl -n {{ node }} shutdown --force {{ args }}
 
-[group('setup')]
 [doc('Bootstrap etcd on a fresh control plane (one-time, after first apply)')]
+[group('setup')]
 [script]
 bootstrap node=controller_node:
     talosctl -n {{ node }} bootstrap
 
-[group('setup')]
 [doc('Fetch kubeconfig from the cluster (writes to ./kubeconfig)')]
+[group('setup')]
 [script]
 get-kubeconfig node=controller_node:
     talosctl -n {{ node }} kubeconfig -f --force-context-name main {{ justfile_dir() }}/kubeconfig
 
-[group('lifecycle')]
 [confirm('Upgrade Talos OS on ' + node + ' [y|N] ?')]
 [doc('Manual fallback. Steady-state: see TalosUpgrade CR in system-upgrade/tuppr')]
+[group('lifecycle')]
 [script]
 upgrade-node node=controller_node:
     : "${TALOS_VERSION:?env TALOS_VERSION required}"
@@ -353,16 +353,16 @@ upgrade-node node=controller_node:
       -m powercycle \
       --timeout=10m
 
-[group('lifecycle')]
 [confirm('Upgrade Kubernetes control plane on ' + node + ' to ' + env_var('KUBERNETES_VERSION') + ' [y|N] ?')]
 [doc('Manual fallback. Steady-state: see KubernetesUpgrade CR in system-upgrade/tuppr')]
+[group('lifecycle')]
 [script]
 upgrade-k8s node=controller_node:
     : "${KUBERNETES_VERSION:?env KUBERNETES_VERSION required}"
     talosctl --nodes {{ node }} upgrade-k8s --to "${KUBERNETES_VERSION}"
 
-[group('lifecycle')]
 [doc('Show node health, version, NIC links and disk inventory')]
+[group('lifecycle')]
 [script]
 status node=controller_node:
     talosctl -n {{ node }} health
@@ -370,8 +370,8 @@ status node=controller_node:
     talosctl -n {{ node }} get links
     talosctl -n {{ node }} get disks
 
-[group('lifecycle')]
 [doc('Dump Talos diagnostics to a log file (services, events, logs, dmesg, resources)')]
+[group('lifecycle')]
 [script]
 diag node=controller_node:
     out="talos-diag.log"

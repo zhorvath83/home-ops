@@ -34,6 +34,24 @@ repos:
         language: system
         entry: gitleaks protect --staged
         pass_filenames: false
+      - id: just-fmt
+        name: just-fmt
+        language: system
+        entry: bash -c 'just --fmt && find . -name "mod.just" -not -path "./.git/*" -not -path "./.claude/*" -exec just --justfile {} --fmt \;'
+        pass_filenames: false
+        always_run: true
+      - id: mise-fmt
+        name: mise-fmt
+        language: system
+        entry: mise fmt
+        pass_filenames: false
+        files: '\.mise\.toml$'
+      - id: mise-lock
+        name: mise-lock
+        language: system
+        entry: mise lock
+        pass_filenames: false
+        files: '\.mise\.toml$'
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:

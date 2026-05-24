@@ -13,9 +13,9 @@ default:
 
 # === sync ===
 
-[group('sync')]
 [arg('resource', pattern='hr|ks|gitrepo|ocirepo|es')]
 [doc('Sync all resources of a Flux type cluster-wide (resource=hr|ks|gitrepo|ocirepo|es).')]
+[group('sync')]
 [script]
 sync resource:
     # Annotation set depends on resource type:
@@ -33,23 +33,23 @@ sync resource:
       kubectl -n "$ns" annotate --field-manager flux-client-side-apply --overwrite {{ resource }} "$name" "${anns[@]}"
     done
 
-[group('sync')]
 [doc('Sync single ExternalSecret')]
+[group('sync')]
 [script]
 sync-es name ns:
     kubectl -n "{{ ns }}" annotate --field-manager flux-client-side-apply --overwrite es "{{ name }}" \
       force-sync="$(date +%s)"
 
-[group('sync')]
 [doc('Sync single Flux HelmRelease')]
+[group('sync')]
 [script]
 sync-hr name ns:
     kubectl -n "{{ ns }}" annotate --field-manager flux-client-side-apply --overwrite hr "{{ name }}" \
       reconcile.fluxcd.io/requestedAt="$(date +%s)" \
       reconcile.fluxcd.io/forceAt="$(date +%s)"
 
-[group('sync')]
 [doc('Sync single Flux Kustomization')]
+[group('sync')]
 [script]
 sync-ks name ns:
     kubectl -n "{{ ns }}" annotate --field-manager flux-client-side-apply --overwrite ks "{{ name }}" \
@@ -57,27 +57,27 @@ sync-ks name ns:
 
 # === flux ===
 
-[group('flux')]
 [doc('Apply local Flux Kustomization')]
+[group('flux')]
 [script]
 apply-ks name ns:
     just k8s render-local-ks "{{ name }}" "{{ ns }}" \
       | kubectl apply --server-side --force-conflicts --field-manager=kustomize-controller -f -
 
-[group('flux')]
 [doc('Delete local Flux Kustomization')]
+[group('flux')]
 [script]
 delete-ks name ns:
     just k8s render-local-ks "{{ name }}" "{{ ns }}" | kubectl delete -f -
 
-[group('flux')]
 [doc('Verify Flux prerequisites (flux check --pre)')]
+[group('flux')]
 [script]
 flux-check:
     flux check --pre
 
-[group('flux')]
 [doc('Force a full Flux reconcile: refresh the Git source, then reconcile the cluster-apps root Kustomization.')]
+[group('flux')]
 [script]
 flux-reconcile:
     t0=${SECONDS}
@@ -91,8 +91,8 @@ flux-reconcile:
     just log info "Reconciled cluster-apps" duration "$((t2-t1))s"
     just log info "flux-reconcile complete" total "$((t2-t0))s"
 
-[group('flux')]
 [doc('List failed/unknown HelmReleases — JSON-based detection on the Ready condition.')]
+[group('flux')]
 [script]
 list-failed-hrs:
     failed="$(kubectl get hr -A -o json \
@@ -103,8 +103,8 @@ list-failed-hrs:
       printf 'NAMESPACE/NAME\tREADY\tREASON\n%s\n' "${failed}" | column -t -s $'\t'
     fi
 
-[group('flux')]
 [doc('Restart all failed HelmReleases (suspend + resume) — JSON-based detection on the Ready=False condition.')]
+[group('flux')]
 [script]
 restart-failed-hrs:
     kubectl get hr -A -o json \
@@ -116,8 +116,8 @@ restart-failed-hrs:
 
 # === debug ===
 
-[group('debug')]
 [doc('Open a debug Alpine shell with a PVC mounted (default mountpath=/mnt; pod auto-removes on exit)')]
+[group('debug')]
 [script]
 browse-pvc claim ns="default" mountpath="/mnt":
     kubectl run -n "{{ ns }}" "debug-{{ claim }}" -it --rm --restart=Never \
@@ -139,23 +139,23 @@ browse-pvc claim ns="default" mountpath="/mnt":
         }
       }'
 
-[group('debug')]
 [doc('Open a shell on a node (Alpine, sysadmin profile; debug pod is cleaned up on EXIT — even on Ctrl-C)')]
+[group('debug')]
 [script]
 node-shell node:
     trap 'kubectl delete pod -n default -l app.kubernetes.io/managed-by=kubectl-debug --field-selector spec.nodeName={{ node }} --ignore-not-found --wait=false' EXIT
     kubectl debug node/{{ node }} -n default -it --image='mirror.gcr.io/alpine:latest' --profile sysadmin
 
-[group('debug')]
 [doc('Prune pods in Failed, Pending, or Succeeded state')]
+[group('debug')]
 [script]
 prune-pods:
     for phase in Failed Pending Succeeded; do
       kubectl delete pods -A --field-selector status.phase="$phase" --ignore-not-found=true
     done
 
-[group('debug')]
 [doc('Decode and print a Kubernetes Secret (all data keys, base64-decoded; KEY=value lines — no krew plugin needed)')]
+[group('debug')]
 [script]
 view-secret secret ns:
     kubectl get secret -n "{{ ns }}" "{{ secret }}" -o json \
