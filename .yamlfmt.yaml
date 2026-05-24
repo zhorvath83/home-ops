@@ -5,6 +5,7 @@ excludes:
   - "gotk-components.yaml"
   - ".git"
   - ".claude"
+  - "kubernetes/apps/default/homepage/app/config/settings.yaml"
 formatter:
   type: basic
   disable_alias_key_correction: true

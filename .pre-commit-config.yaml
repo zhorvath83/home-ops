@@ -5,6 +5,7 @@ repos:
     rev: v0.17.2
     hooks:
       - id: yamlfmt
+        exclude: kubernetes/apps/default/homepage/app/config/settings\.yaml
   - repo: https://github.com/adrienverge/yamllint
     rev: v1.38.0
     hooks:
