@@ -22,6 +22,7 @@ machine:
   features:
     apidCheckExtKeyUsage: true
     diskQuotaSupport: true
+    rbac: true
     hostDNS:
       enabled: true
       forwardKubeDNSToHost: true
@@ -59,12 +60,13 @@ machine:
         [ NFSMount_Global_Options ]
         nfsvers=4.2
         hard=True
-        nconnect=8
+        nconnect=16
         noatime=True
         rsize=1048576
         wsize=1048576
   install:
     image: factory.talos.dev/metal-installer/{{ ENV.TALOS_SCHEMATIC_ID }}:{{ ENV.TALOS_VERSION }}
+    wipe: false
     # install.disk is set per-node in nodes/<node>.yaml.j2
   kernel:
     modules: []
@@ -72,6 +74,8 @@ machine:
     defaultRuntimeSeccompProfileEnabled: true
     disableManifestsDirectory: true
     extraConfig:
+      imageGCHighThresholdPercent: 70
+      imageGCLowThresholdPercent: 50
       maxPods: 150
       serializeImagePulls: false
     image: ghcr.io/siderolabs/kubelet:{{ ENV.KUBERNETES_VERSION }}
@@ -111,6 +115,7 @@ cluster:
     image: registry.k8s.io/kube-apiserver:{{ ENV.KUBERNETES_VERSION }}
     extraArgs:
       enable-aggregator-routing: "true"
+      feature-gates: HPAScaleToZero=true
     # Metadata-level audit log — request/response body NOT recorded, only
     # request metadata (who, what, when). Low overhead, useful for forensics.
     auditPolicy:
@@ -127,6 +132,7 @@ cluster:
     image: registry.k8s.io/kube-controller-manager:{{ ENV.KUBERNETES_VERSION }}
     extraArgs:
       bind-address: 0.0.0.0
+      feature-gates: HPAScaleToZero=true
   coreDNS:
     disabled: true
   etcd:
@@ -136,6 +142,8 @@ cluster:
       crt: op://HomeOps/talos/CLUSTER_ETCD_CA_CRT
       key: op://HomeOps/talos/CLUSTER_ETCD_CA_KEY
     extraArgs:
+      auto-compaction-mode: periodic
+      auto-compaction-retention: "1h"
       listen-metrics-urls: http://0.0.0.0:2381
   proxy:
     disabled: true

@@ -6,6 +6,8 @@
 #
 # Regenerate the ID via: `just talos gen-schematic-id`
 customization:
+  extraKernelArgs:
+    - sysctl.kernel.kexec_load_disabled=1
   systemExtensions:
     officialExtensions:
       # Intel iGPU driver — enables hardware video decode/encode on the node.
