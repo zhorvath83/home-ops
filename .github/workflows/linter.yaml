@@ -40,12 +40,10 @@ jobs:
           VALIDATE_ALL_CODEBASE: true
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
           ENABLE_LINTERS: GIT_GIT_DIFF,KUBERNETES_KUBECONFORM,MARKDOWN_MARKDOWNLINT,MARKDOWN_MARKDOWN_LINK_CHECK,TERRAFORM_TFLINT
-          DISABLE_LINTERS: ANSIBLE_ANSIBLE_LINT
           KUBERNETES_DIRECTORY: kubernetes
           KUBERNETES_KUBECONFORM_ARGUMENTS: --ignore-missing-schemas --skip Secret
           MARKDOWN_MARKDOWNLINT_CONFIG_FILE: .markdownlint.yaml
           TERRAFORM_TFLINT_CONFIG_FILE: .tflint.hcl
-          YAML_YAMLLINT_CONFIG_FILE: .yamllint.yaml
 
       - name: Archive production artifacts
         if: success() || failure()
