@@ -28,6 +28,7 @@ spec:
     deploymentStrategy:
       type: Recreate
     env:
+      GF_PLUGINS_PREINSTALL_SYNC: victoriametrics-logs-datasource@0.26.3
       GF_ANALYTICS_CHECK_FOR_UPDATES: false
       GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: false
       GF_ANALYTICS_REPORTING_ENABLED: false
@@ -94,8 +95,7 @@ spec:
     # ============================================================================
     # Datasources
     # ============================================================================
-    plugins:
-      - victoriametrics-logs-datasource 0.26.3
+    plugins: []
     datasources:
       datasources.yaml:
         apiVersion: 1
