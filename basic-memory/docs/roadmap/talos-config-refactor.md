@@ -3,7 +3,7 @@ title: talos-config-refactor
 type: note
 permalink: home-ops/docs/roadmap/talos-config-refactor
 topic: Talos machine config — consensus-driven refactor from community comparison
-status: proposed
+status: implemented
 priority: medium
 scope: 'Adopt Talos machine config settings supported by community consensus (billimek,
   bjw-s, buroa, onedr0p, szinn). Settings are assessed on two axes: community consensus
@@ -279,3 +279,25 @@ Talos v1.5+ default is true — already active in practice. But explicit declara
 
 - relates_to [[talos-cluster]]
 - relates_to [[drop-minijinja-templating]]
+## Implementation — 2025-05-24
+
+All 7 consensus-driven settings adopted and verified live on k8s-cp0.
+
+### Changes committed
+
+- `kubernetes/talos/machineconfig.yaml.j2`: etcd auto-compaction, kubelet imageGC, HPAScaleToZero (api-server + controller-manager), nconnect=16, install.wipe=false, rbac=true
+- `kubernetes/talos/schematic.yaml`: extraKernelArgs sysctl.kernel.kexec_load_disabled=1
+
+### Verification results
+
+| # | Setting | Live status |
+|---|---------|-------------|
+| 1 | etcd auto-compaction (periodic / 1h) | ✅ active |
+| 2 | kubelet imageGC 70/50 | ✅ active |
+| 3 | HPAScaleToZero (api-server + controller-manager) | ✅ active |
+| 4 | NFS nconnect=16 | ✅ active |
+| 5 | install.wipe=false | ✅ in config (takes effect on next upgrade/install) |
+| 6 | kexec_load_disabled=1 | ✅ /proc/sys/kernel/kexec_load_disabled = 1 |
+| 7 | rbac=true | ✅ talosctl version shows RBAC: Enabled |
+
+Applied via `just talos apply-node k8s-cp0` — node rebooted and came back healthy.
