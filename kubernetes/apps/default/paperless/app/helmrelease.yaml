@@ -30,7 +30,8 @@ spec:
           # because the s6-overlay init system requires privileges to fix /run permissions.
           # Adding allowPrivilegeEscalation: false and dropping ALL capabilities breaks startup.
           app:
-            dependsOn: [valkey]
+            dependsOn:
+              - valkey
             image: &image
               repository: ghcr.io/paperless-ngx/paperless-ngx
               tag: 2.20.15@sha256:835974fc3368fc6714aa38542db7a1f0f542d03244e39b981e519aefc100f355

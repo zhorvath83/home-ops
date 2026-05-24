@@ -95,7 +95,7 @@ quicklaunch:
   provider: duckduckgo
 
 providers:
-  openweathermap: {{HOMEPAGE_VAR_OWM_API_TOKEN}}
+  openweathermap: {? {HOMEPAGE_VAR_OWM_API_TOKEN: ''} : ''}
 
 disableUpdateCheck: true
 statusStyle: basic

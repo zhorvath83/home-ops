@@ -34,7 +34,13 @@ sources:
 extractor:
   # Preview image settings
   image:
-    previewSizes: [1024, 800, 640, 480, 320, 128]
+    previewSizes:
+      - 1024
+      - 800
+      - 640
+      - 480
+      - 320
+      - 128
     previewQuality: 92
   # Video settings
   video:
@@ -43,7 +49,9 @@ extractor:
   # Geo reverse lookup for map view (uses OpenStreetMap Nominatim)
   geoReverse:
     url: https://nominatim.openstreetmap.org
-    addressLanguage: [hu, en]
+    addressLanguage:
+      - hu
+      - en
   # Disable AI features (no API server)
   apiServer:
     disable:

@@ -46,10 +46,10 @@ spec:
         - ports:
             - port: "19003"
               protocol: TCP
-  # No egress section: the cluster-wide CCNPs allow-cluster-egress and
-  # allow-dns-egress under kubernetes/apps/kube-system/cilium/netpols/ cover
-  # DNS (UDP+TCP/53 via L7 proxy), in-cluster traffic (xDS to envoy-gateway,
-  # HTTPRoute backends across namespaces), and outbound HTTPS to the public
-  # internet. envoy-internal is a traffic forwarder — a tight egress allowlist
-  # adds maintenance overhead without meaningful threat-model coverage on this
-  # workload.
+          # No egress section: the cluster-wide CCNPs allow-cluster-egress and
+          # allow-dns-egress under kubernetes/apps/kube-system/cilium/netpols/ cover
+          # DNS (UDP+TCP/53 via L7 proxy), in-cluster traffic (xDS to envoy-gateway,
+          # HTTPRoute backends across namespaces), and outbound HTTPS to the public
+          # internet. envoy-internal is a traffic forwarder — a tight egress allowlist
+          # adds maintenance overhead without meaningful threat-model coverage on this
+          # workload.

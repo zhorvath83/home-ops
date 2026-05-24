@@ -15,4 +15,5 @@ spec:
     matchExpressions:
       - key: policy.cilium.io/exclude
         operator: NotIn
-        values: ["true"]
+        values:
+          - "true"

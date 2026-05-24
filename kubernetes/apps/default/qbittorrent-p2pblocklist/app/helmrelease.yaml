@@ -69,15 +69,26 @@ spec:
           enabled: true
           type: Role
           rules:
-            - apiGroups: [""]
-              resources: ["pods"]
-              verbs: ["get", "list"]
-            - apiGroups: [""]
-              resources: ["pods/exec"]
-              verbs: ["create"]
-            - apiGroups: ["apps"]
-              resources: ["deployments"]
-              verbs: ["get", "patch"]
+            - apiGroups:
+                - ""
+              resources:
+                - "pods"
+              verbs:
+                - "get"
+                - "list"
+            - apiGroups:
+                - ""
+              resources:
+                - "pods/exec"
+              verbs:
+                - "create"
+            - apiGroups:
+                - "apps"
+              resources:
+                - "deployments"
+              verbs:
+                - "get"
+                - "patch"
       bindings:
         qbittorrent-binding:
           enabled: true

@@ -28,6 +28,6 @@ spec:
     # extra deployment + cert lifecycle is unnecessary overhead.
     webhook:
       enabled: false
-# VolumeSnapshotClass definitions live with the CSI driver that owns them
-# — see kubernetes/apps/kube-system/democratic-csi/app/volumesnapshotclass.yaml.
-# Defining them here would race against the CRDs this chart installs.
+      # VolumeSnapshotClass definitions live with the CSI driver that owns them
+      # — see kubernetes/apps/kube-system/democratic-csi/app/volumesnapshotclass.yaml.
+      # Defining them here would race against the CRDs this chart installs.

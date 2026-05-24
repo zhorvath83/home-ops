@@ -1,5 +1,10 @@
 ---
 doublestar: true
+excludes:
+  - "*.sops.*"
+  - "gotk-components.yaml"
+  - ".git"
+  - ".claude"
 formatter:
   type: basic
   disable_alias_key_correction: true
