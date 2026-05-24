@@ -13,9 +13,13 @@ tags:
 # Roadmap: MegaLinter v9.5.0 Security Hardening
 
 ## Status: completed
+
 ## Priority: high
+
 ## Area: ci-security
+
 ## Created: 2026-05-23
+
 ## Completed: 2026-05-23
 
 ## Context
