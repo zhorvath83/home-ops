@@ -1,18 +1,39 @@
 ---
 fail_fast: false
 repos:
-  - repo: https://github.com/google/yamlfmt
-    rev: v0.17.2
+  - repo: local
     hooks:
       - id: yamlfmt
+        name: yamlfmt
+        language: system
+        entry: yamlfmt
+        types:
+          - yaml
         exclude: kubernetes/apps/default/homepage/app/config/settings\.yaml
-  - repo: https://github.com/adrienverge/yamllint
-    rev: v1.38.0
-    hooks:
-      - args:
-          - --config-file
-          - .yamllint.yaml
-        id: yamllint
+      - id: yamllint
+        name: yamllint
+        language: system
+        entry: yamllint --config-file .yamllint.yaml
+        types:
+          - yaml
+      - id: shellcheck
+        name: shellcheck
+        language: system
+        entry: shellcheck
+        types:
+          - shell
+      - id: actionlint
+        name: actionlint
+        language: system
+        entry: actionlint
+        files: \.github/workflows/
+        types:
+          - yaml
+      - id: gitleaks
+        name: gitleaks
+        language: system
+        entry: gitleaks protect --staged
+        pass_filenames: false
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
@@ -37,15 +58,3 @@ repos:
     rev: v2.1.1
     hooks:
       - id: forbid-secrets
-  - repo: https://github.com/zricethezav/gitleaks
-    rev: v8.30.1
-    hooks:
-      - id: gitleaks
-  - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.10.0.1
-    hooks:
-      - id: shellcheck
-  - repo: https://github.com/rhysd/actionlint
-    rev: v1.7.7
-    hooks:
-      - id: actionlint
