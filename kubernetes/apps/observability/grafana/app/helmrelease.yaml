@@ -22,6 +22,9 @@ spec:
         type: RuntimeDefault
     rbac:
       pspEnabled: false
+    extraEmptyDirMounts:
+      - name: tmp
+        mountPath: /tmp
     deploymentStrategy:
       type: Recreate
     env:
