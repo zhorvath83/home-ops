@@ -248,19 +248,25 @@ Talos v1.5+ default is true — already active in practice. But explicit declara
 ## Implementation
 
 1. Add etcd auto-compaction to `machineconfig.yaml.j2` under `cluster.etcd.extraArgs`:
+
    ```yaml
    auto-compaction-mode: periodic
    auto-compaction-retention: "1h"
    ```
+
 2. Add kubelet imageGC thresholds to `machineconfig.yaml.j2` under `machine.kubelet.extraConfig`:
+
    ```yaml
    imageGCHighThresholdPercent: 70
    imageGCLowThresholdPercent: 50
    ```
+
 3. Add HPAScaleToZero feature gate to api-server and controller-manager `extraArgs` in `machineconfig.yaml.j2`:
+
    ```yaml
    feature-gates: HPAScaleToZero=true
    ```
+
 4. Bump NFS nconnect from 8 to 16 in the `/etc/nfsmount.conf` file injection.
 5. Add `install.wipe: false` to `machineconfig.yaml.j2` under `machine.install`.
 6. Add `sysctl.kernel.kexec_load_disabled=1` to `schematic.yaml` under `customization.extraKernelArgs`.
