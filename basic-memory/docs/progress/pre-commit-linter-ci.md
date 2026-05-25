@@ -71,7 +71,7 @@ permalink: home-ops/docs/progress/pre-commit-linter-ci
 - Added zizmor v1.25.2 to mise
 - Added zizmor pre-commit hook (language: system, --offline, .github/workflows/ scope)
 - Matches onedr0p/home-ops pattern (no config file, default rules, --offline)
-- 7 findings in existing workflows (to be addressed separately)
+- 7 findings identified — all remediated (see [[progress/zizmor-gh-actions-security-audit]])
 
 ### Bug fixes along the way ✅
 - Excluded Homepage settings.yaml from yamlfmt (YAML complex syntax conflict)

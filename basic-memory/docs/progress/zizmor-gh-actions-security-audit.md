@@ -1,22 +1,29 @@
 ---
 title: zizmor-gh-actions-security-audit
 type: note
-permalink: home-ops/docs/roadmap/zizmor-gh-actions-security-audit
+permalink: home-ops/docs/progress/zizmor-gh-actions-security-audit
 tags:
 - security
 - zizmor
 - github-actions
 - ci
 - audit
+- completed
 ---
 
-# Zizmor GitHub Actions Security Audit Findings
+# Zizmor GitHub Actions Security Audit — Remediation Complete
 
-> Initial zizmor scan results (v1.25.2) captured for remediation.
-> 25 total findings: 7 active, 18 suppressed, 4 unsafe fixes skipped.
-> **All 7 active findings remediated.** Rescan confirms 0 active, 20 suppressed.
+> zizmor v1.25.2 scan identified 7 active findings across 3 workflow files.
+> All 7 findings remediated. Rescan confirms 0 active, 20 suppressed.
 
-## Status: done
+## Status: completed
+
+## Metadata
+
+- [topic] zizmor GitHub Actions security audit and remediation
+- [created_at] 2026-05-25
+- [completed_at] 2026-05-25
+- [scope] .github/workflows, pre-commit, CI security
 
 ## Findings Summary
 
@@ -79,5 +86,5 @@ Added workflow-level `permissions: { contents: write, pull-requests: write }` bl
 
 ## Relations
 
-- implements [[roadmap/pre-commit-linter-ci-survey-consensus]]
+- implements [[progress/pre-commit-linter-ci]]
 - relates_to [[zizmor]]

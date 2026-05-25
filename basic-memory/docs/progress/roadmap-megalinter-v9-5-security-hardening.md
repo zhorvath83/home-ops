@@ -44,7 +44,7 @@ Phase 2 (zizmor + osv-scanner) and Phase 3 (Checkov) were assessed as low practi
 | Docker Hub to ghcr.io | Already on v9.5.0 SHA; action.yml pulls ghcr.io internally | No change needed |
 | PAT removal | secrets.PAT was supply-chain risk | Removed |
 | persist-credentials | Was missing, credential leak risk | Added false |
-| zizmor (Phase 2) | 3 simple workflows, PAT removed = low blast radius | Dropped |
+| zizmor (Phase 2) | Added as pre-commit hook; 7 findings remediated in separate effort | Completed (see [[progress/zizmor-gh-actions-security-audit]]) |
 | osv-scanner (Phase 2) | Renovate already handles version updates; CVE alerts add little | Dropped |
 | Checkov (Phase 3) | 90% noise for home-lab; more skip-list work than value | Dropped |
 
