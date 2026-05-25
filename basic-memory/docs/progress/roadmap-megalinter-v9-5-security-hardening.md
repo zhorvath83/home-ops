@@ -26,7 +26,7 @@ tags:
 
 MegaLinter v9.5.0 announced supply-chain security hardening (zizmor, osv-scanner) and breaking changes (Docker Hub deprecation, PAT discouragement). Assessment found the repo was already on v9.5.0 (SHA matched the tag) and the action.yml already pulls from ghcr.io internally — no image migration needed. The actionable change was PAT removal and credential hardening.
 
-Phase 2 (zizmor + osv-scanner) and Phase 3 (Checkov) were assessed as low practical value for this home-lab repo and dropped.
+Phase 2 (zizmor) was subsequently added as a pre-commit hook and all 7 findings remediated (see [[progress/zizmor-gh-actions-security-audit]]). Phase 2 (osv-scanner) and Phase 3 (Checkov) were assessed as low practical value and dropped.
 
 ## Changes Made (Phase 1)
 
@@ -60,4 +60,4 @@ Using GITHUB_TOKEN means auto-fix PRs will not trigger other workflows (e.g., CI
 ## Observations
 
 - The repo was already running v9.5.0 — Renovate had pinned the latest v9 tag SHA. The only real migration work was PAT removal and credential hardening.
-- Phase 2-3 assessment: home-lab repos have different security calculus than enterprise. zizmor adds value when workflows are complex; osv-scanner adds value when you can act on CVEs faster than Renovate; Checkov adds value when compliance matters. None apply here.
+- Phase 2-3 reassessment: zizmor proved valuable for this repo — 7 findings (2 excessive-permissions, 2 artipacked, 2 template-injection, 1 superfluous-actions) were identified and remediated, hardening 3 of 6 workflows. osv-scanner adds value when you can act on CVEs faster than Renovate; Checkov adds value when compliance matters. Both remain dropped for this home-lab.
