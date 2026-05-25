@@ -23,11 +23,18 @@ Use this reference when changing Renovate policy.
 - dependency dashboard enabled
 - semantic commits enabled, refined per update type and per datasource in `semanticCommits.json5` (`feat`/`fix`/`chore` × `container`/`helm`/`github-action`/`github-release`/`talos` scopes)
 - `:automergeBranch` preset extended at the root — auto-merges push directly to the target branch (`automergeType: "branch"`) instead of opening a PR
-- patch and digest updates auto-merge on trusted publishers
-- minor and patch Helm chart updates auto-merge
+- digest, minor, and patch updates auto-merge on trusted container publishers (ghcr.io/home-operations, ghcr.io/onedr0p, ghcr.io/bjw-s); coredns minor/patch separately
+- only kube-prometheus-stack Helm chart minor/patch updates auto-merge (not all Helm charts)
 - pre-commit hook updates auto-merge
-- minimum release age is 3 days with `timestamp-optional` behaviour
+- GitHub Actions minor/patch auto-merge with 3-day cooldown; trusted actions (actions/*) fast-tracked at 1 minute
+- no global minimumReleaseAge — per-rule cooldowns on GitHub Actions only
+- `rebaseWhen: "auto"` — Renovate rebases when the base branch updates
+- `commitBodyTable: true` — dependency comparison table in commit body
 - `registryAliases` maps `mirror.gcr.io` → `docker.io` so version lookups hit the source of truth
+- labels follow a composable pattern: `type/*` labels (major/minor/patch/digest)
+  via `labels:`, datasource/manager labels (`renovate/container`, `renovate/helm`,
+  `renovate/github-action`, `renovate/github-release`) via `addLabels:`;
+  Talos gets `renovate/talos` from talosFactory.json5
 - Kubernetes YAML and Talos Jinja templates under `kubernetes/` are scanned by the Flux, Helm values, Kubernetes, and custom managers (`.yaml` and `.yaml.j2`)
 - `kubernetes/bootstrap/helmfile.d/*.yaml` is scanned by the helmfile manager
 - Flux controller images are explicitly disabled in `disabledDatasources.json5` (managed by FluxInstance)
@@ -37,5 +44,6 @@ Use this reference when changing Renovate policy.
 - inline `# renovate: datasource=X depName=Y` annotations are tracked in `kubernetes/**/*.yaml(.j2)` and `mise.toml`
 - Talos installer images referenced by literal `factory.talos.dev/...:vX.Y.Z` URLs are tracked against the `custom.talos-factory` datasource (`https://factory.talos.dev/versions` — factory-buildable versions only, narrower than github-releases)
 - `registry.k8s.io/<image>:vX.Y.Z` tags are tracked against the docker datasource
+- Helm chart minor and patch updates produce separate PRs (`separateMinorPatch: true` in overrides.json5); Docker and other datasources do not
 
 If update behavior changes, inspect both the root config and the impacted fragment together before editing.
