@@ -146,6 +146,38 @@ url = "https://github.com/rhysd/actionlint/releases/download/v1.7.7/actionlint_1
 checksum = "sha256:7f12f1801bca3d480d67aaf7774f4c2a6359a3ca8eebe382c95c10c9704aa731"
 url = "https://github.com/rhysd/actionlint/releases/download/v1.7.7/actionlint_1.7.7_windows_amd64.zip"
 
+[[tools."aqua:terraform-linters/tflint"]]
+version = "0.62.1"
+backend = "aqua:terraform-linters/tflint"
+
+[tools."aqua:terraform-linters/tflint"."platforms.linux-arm64"]
+checksum = "sha256:9f3bce43f7f58f05ddcf193f0bf1f7e7a9c7a79d7f46f72dd38e97f96fcaf14c"
+url = "https://github.com/terraform-linters/tflint/releases/download/v0.62.1/tflint_linux_arm64.zip"
+
+[tools."aqua:terraform-linters/tflint"."platforms.linux-arm64-musl"]
+checksum = "sha256:9f3bce43f7f58f05ddcf193f0bf1f7e7a9c7a79d7f46f72dd38e97f96fcaf14c"
+url = "https://github.com/terraform-linters/tflint/releases/download/v0.62.1/tflint_linux_arm64.zip"
+
+[tools."aqua:terraform-linters/tflint"."platforms.linux-x64"]
+checksum = "sha256:c004ec45ade3caf87cd4089feb1d2af9f7df57b13140a36df8a63c0a8cc69f14"
+url = "https://github.com/terraform-linters/tflint/releases/download/v0.62.1/tflint_linux_amd64.zip"
+
+[tools."aqua:terraform-linters/tflint"."platforms.linux-x64-musl"]
+checksum = "sha256:c004ec45ade3caf87cd4089feb1d2af9f7df57b13140a36df8a63c0a8cc69f14"
+url = "https://github.com/terraform-linters/tflint/releases/download/v0.62.1/tflint_linux_amd64.zip"
+
+[tools."aqua:terraform-linters/tflint"."platforms.macos-arm64"]
+checksum = "sha256:927866fef68382138b8fed038721a03c0928ce9486e1616b18bd3dd11e7cdacb"
+url = "https://github.com/terraform-linters/tflint/releases/download/v0.62.1/tflint_darwin_arm64.zip"
+
+[tools."aqua:terraform-linters/tflint"."platforms.macos-x64"]
+checksum = "sha256:7f55df3a25deb610c267f600eb4247657e3ff776d0322916ceecd7b58142a73a"
+url = "https://github.com/terraform-linters/tflint/releases/download/v0.62.1/tflint_darwin_amd64.zip"
+
+[tools."aqua:terraform-linters/tflint"."platforms.windows-x64"]
+checksum = "sha256:bef472fd62dcbdb616bbdf67800f1bcf8db64598529c09610154686555180edd"
+url = "https://github.com/terraform-linters/tflint/releases/download/v0.62.1/tflint_windows_amd64.zip"
+
 [[tools."aqua:zricethezav/gitleaks"]]
 version = "8.30.1"
 backend = "aqua:zricethezav/gitleaks"
@@ -429,6 +461,10 @@ url = "https://dl.k8s.io/v1.36.1/bin/darwin/amd64/kubectl"
 [tools.kubectl."platforms.windows-x64"]
 checksum = "sha256:538f4229eee91a17b34724da7daade7687393d6988e33b723c6c306572c13900"
 url = "https://dl.k8s.io/v1.36.1/bin/windows/amd64/kubectl.exe"
+
+[[tools."npm:markdownlint-cli2"]]
+version = "0.22.1"
+backend = "npm:markdownlint-cli2"
 
 [[tools."pipx:ansible"]]
 version = "13.6.0"

@@ -57,7 +57,21 @@ repos:
         language: system
         entry: zizmor --offline
         files: \.github/workflows/
-        types: [yaml]
+        types:
+          - yaml
+      - id: markdownlint
+        name: markdownlint
+        language: system
+        entry: markdownlint-cli2
+        types:
+          - markdown
+      - id: tflint
+        name: tflint
+        language: system
+        entry: bash -c 'tflint --init >/dev/null 2>&1; tflint --recursive'
+        pass_filenames: false
+        types:
+          - terraform
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
