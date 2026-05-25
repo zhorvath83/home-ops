@@ -1,7 +1,7 @@
 ---
-title: pre-commit-linter-ci-survey-consensus
+title: pre-commit-linter-ci
 type: note
-permalink: home-ops/docs/progress/pre-commit-linter-ci-survey-consensus
+permalink: home-ops/docs/progress/pre-commit-linter-ci
 ---
 
 # Pre-commit / Linter / CI Pipeline — Consensus Parity COMPLETE
