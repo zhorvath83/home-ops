@@ -106,3 +106,31 @@ permalink: home-ops/docs/progress/pre-commit-linter-ci
 
 relates_to [[docs/areas/flux-gitops]]
 relates_to [[docs/areas/k8s-workloads]]
+
+
+### Phase 7 — Pre-commit/CI parity: markdownlint + tflint ✅
+
+- Added markdownlint-cli2 (0.22.1) and tflint (0.62.1) to mise and pre-commit hooks
+- Closed the gap where markdownlint and tflint were CI-only (MegaLinter) but not local
+- markdownlint pre-commit hook: language system, types: markdown, uses .markdownlint.yaml config
+- tflint pre-commit hook: language system, types: terraform, runs tflint --init (idempotent) then --recursive
+- Both tools pinned to match MegaLinter CI versions
+
+### Phase 8 — MegaLinter removal ✅
+
+- Deleted .github/workflows/linter.yaml (MegaLinter workflow)
+- Rationale: markdownlint and tflint now in pre-commit, kubeconform redundant with flux-local test, markdown-link-check dropped
+- MegaLinter VALIDATE_ALL_CODEBASE: true caused 857 markdown errors on every PR regardless of scope
+- Pre-commit hooks validate full codebase locally; CI validates changed files via flux-local
+
+### Phase 9 — flux-local CI Python 3.13 fix ✅
+
+- Added actions/setup-python with python-version "3.13" to flux-local workflow (test + diff jobs)
+- Root cause: flux-local>=8.0.0 requires Python >=3.13, but ubuntu-latest ships Python 3.12
+- mise pipx backend now has Python 3.13 available for pipx:flux-local installation
+
+## Updated Deliberate Decisions
+
+- **MegaLinter removed** — pre-commit covers markdownlint/tflint locally, flux-local covers K8s manifest validation in CI, kubeconform was redundant with flux-local test
+- **markdown-link-check dropped** — low signal-to-noise ratio, not worth CI time
+- **Pre-commit parity** — all linters that run anywhere now also run locally before commit

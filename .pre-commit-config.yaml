@@ -65,6 +65,7 @@ repos:
         entry: markdownlint-cli2
         types:
           - markdown
+        exclude: ^basic-memory/
       - id: tflint
         name: tflint
         language: system
