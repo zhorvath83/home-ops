@@ -7,7 +7,7 @@ Use this reference to rebuild the current Just surface before editing.
 `.justfile` at the repo root is the command index. It imports mod-groups from sibling directories:
 
 | Group | Module file |
-|---|---|
+| ----- | ------------ |
 | `k8s` | `kubernetes/mod.just` |
 | `cluster-bootstrap` | `kubernetes/bootstrap/mod.just` |
 | `talos` | `kubernetes/talos/mod.just` |

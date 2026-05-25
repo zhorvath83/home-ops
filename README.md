@@ -1,17 +1,24 @@
 # Home Infrastructure & Kubernetes Cluster
 
-This is a mono repository for my home infrastructure and Kubernetes cluster. I try to adhere to Infrastructure as Code (IaC) and GitOps practices using tools like Talos Linux, Kubernetes, Flux, Helmfile, Just, mise, Renovate, and Terraform.
+This is a mono repository for my home infrastructure and Kubernetes cluster. I try to
+adhere to Infrastructure as Code (IaC) and GitOps practices using tools like Talos
+Linux, Kubernetes, Flux, Helmfile, Just, mise, Renovate, and Terraform.
 
-Agent note: this README remains human-facing. Tooling and AI assistants should use the repository guidance files as the operational guide, starting at [CLAUDE.md](CLAUDE.md) and then following any more specific `CLAUDE.md` files in subdirectories.
+Agent note: this README remains human-facing. Tooling and AI assistants should use the repository guidance
+files as the operational guide, starting at [CLAUDE.md](CLAUDE.md) and then following any more specific
+`CLAUDE.md` files in subdirectories.
 
 ## 🏠 Hardware Infrastructure
 
-The cluster runs on a single bare-metal Talos node. A second machine handles file-level storage (NAS) and still hosts the OpenMediaVault VM under Proxmox; the Phase 10 bare-metal OMV retirement of that hypervisor layer is a planned post-cutover follow-up.
+The cluster runs on a single bare-metal Talos node. A second machine handles
+file-level storage (NAS) and still hosts the OpenMediaVault VM under Proxmox;
+the Phase 10 bare-metal OMV retirement of that hypervisor layer is a planned
+post-cutover follow-up.
 
-| Device                              | Quantity | CPU                       | OS Disk            | Data Disk                    | RAM  | OS                | Function                                  |
-|-------------------------------------|----------|---------------------------|--------------------|------------------------------|------|-------------------|-------------------------------------------|
-| HP ProDesk 600 G6 Desktop Mini      | 1        | Intel i7-10700T @ 2.0 GHz (Comet Lake) | NVMe (SK hynix PC801)       | NVMe (SK hynix PC711)                 | 64GB | Talos Linux       | Single-node Kubernetes control plane + workloads |
-| Lenovo M93p tiny USFF               | 1        | Intel i5-4570T @ 2.90GHz (Haswell) | 512GB SSD          | USB3 DAS 16TB EXT4 (host)    | 16GB | Debian 13 + Proxmox | NAS host; OpenMediaVault VM  |
+| Device | Qty | CPU | OS Disk | Data Disk | RAM | OS | Function |
+| ------ | --- | --- | ------- | --------- | --- | -- | -------- |
+| HP ProDesk 600 G6 Desktop Mini | 1 | Intel i7-10700T @ 2.0 GHz (Comet Lake) | NVMe (SK hynix PC801) | NVMe (SK hynix PC711) | 64 GB | Talos Linux | Single-node K8s control plane + workloads |
+| Lenovo M93p tiny USFF | 1 | Intel i5-4570T @ 2.90 GHz (Haswell) | 512 GB SSD | USB3 DAS 16 TB EXT4 (host) | 16 GB | Debian 13 + Proxmox | NAS host; OpenMediaVault VM |
 
 ## 🔄 GitOps Workflow
 
@@ -27,10 +34,14 @@ The full bootstrap procedure can be triggered by `just cluster-bootstrap cluster
 
 ### Renovate
 
-Renovate watches the entire repository for dependency updates. When updates are found, a PR is automatically created. When PRs are merged, Flux applies the changes to the cluster. The root config lives in `.renovaterc.json5`, with topic-scoped fragments under `.renovate/`.
+Renovate watches the entire repository for dependency updates. When updates are found,
+a PR is automatically created. When PRs are merged, Flux applies the changes to the
+cluster. The root config lives in `.renovaterc.json5`, with topic-scoped fragments under
+`.renovate/`.
 
 ## 📁 Repository Structure
 
+<!-- markdownlint-disable MD013 -->
 ```text
 📁 kubernetes
 ├── 📁 apps         # applications grouped by namespace
@@ -45,6 +56,7 @@ Renovate watches the entire repository for dependency updates. When updates are 
 ├── 📁 openmediavault   # OMV recipes (Phase 10 Ansible reserved, post-cutover)
 └── 📁 openwrt          # OpenWrt maintenance recipes
 ```
+<!-- markdownlint-enable MD013 -->
 
 ## 🔧 Application Deployment Strategy
 
@@ -99,7 +111,9 @@ See [basic-memory/docs/areas/networking.md](basic-memory/docs/areas/networking.m
 ### Storage & Backup
 
 - **[democratic-csi](https://github.com/democratic-csi/democratic-csi)**: CSI driver supporting local-hostpath, NFS, iSCSI and ZFS storage backends
-- **[volsync](https://github.com/perfectra1n/volsync)**: PVC backup and recovery using Kopia to OVH Cloud Project Storage (S3-compatible). Always-on `ReplicationDestination` + `dataSourceRef` populates every PVC from its bootstrap snapshot on first apply.
+- **[volsync](https://github.com/perfectra1n/volsync)**: PVC backup and recovery using Kopia to OVH Cloud Project Storage
+  (S3-compatible). Always-on `ReplicationDestination` + `dataSourceRef` populates every PVC
+  from its bootstrap snapshot on first apply.
 - **[resticprofile](https://github.com/creativeprojects/resticprofile)** + **[Backrest](https://github.com/garethgeorge/backrest)**: File-level backup of the shared NAS tree to the same OVH bucket; Backrest is the snapshot browser
 
 ### Configuration Management
@@ -127,10 +141,19 @@ All Cloudflare resources are managed using Terraform with the Cloudflare provide
 
 The cluster uses a 1Password-centric model for secrets management:
 
-- **Bootstrap-time secrets**: Two 1Password Connect Secrets (`onepassword-connect-credentials-secret` and `onepassword-connect-vault-secret`) are rendered by `minijinja-cli` + `op inject` during `just cluster-bootstrap cluster`. The Talos `machineconfig` is templated through the same `op inject` flow.
-- **Application secrets**: Every runtime secret is delivered through External Secrets against the shared `onepassword-connect` `ClusterSecretStore`. Multi-line config-as-secret content (for example the Homepage dashboard config) is stored as multi-line 1Password text fields and rendered via ESO `template.data`.
+- **Bootstrap-time secrets**: Two 1Password Connect Secrets
+  (`onepassword-connect-credentials-secret` and `onepassword-connect-vault-secret`) are
+  rendered by `minijinja-cli` + `op inject` during `just cluster-bootstrap cluster`. The
+  Talos `machineconfig` is templated through the same `op inject` flow.
+- **Application secrets**: Every runtime secret is delivered through External Secrets
+  against the shared `onepassword-connect` `ClusterSecretStore`. Multi-line
+  config-as-secret content (for example the Homepage dashboard config) is stored as
+  multi-line 1Password text fields and rendered via ESO `template.data`.
 
-No SOPS-encrypted secret files exist in the repository: there is no `.sops.yaml`, no `cluster-secrets.sops.yaml`, no per-app `secret.sops.yaml`, and `sops` is not pinned in `.mise.toml`. This keeps the chicken-and-egg surface narrow to the two 1Password Connect bootstrap Secrets.
+No SOPS-encrypted secret files exist in the repository: there is no `.sops.yaml`, no
+`cluster-secrets.sops.yaml`, no per-app `secret.sops.yaml`, and `sops` is not pinned in
+`.mise.toml`. This keeps the chicken-and-egg surface narrow to the two 1Password Connect
+bootstrap Secrets.
 
 ## 🚀 Deployment Dependencies
 

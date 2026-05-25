@@ -2,7 +2,11 @@
 
 This directory holds the Talos + Kubernetes platform bootstrap chain — everything needed to bring an empty Talos node up to a Flux-reconciled cluster.
 
-The full design rationale lives in the Basic Memory area-references [`docs/areas/flux-gitops`](../../basic-memory/docs/areas/flux-gitops.md) (Flux Operator + FluxInstance pattern, helmfile-driven bootstrap) and [`docs/areas/talos-cluster`](../../basic-memory/docs/areas/talos-cluster.md) (Talos bootstrap chain, op-inject flow). This readme is the operational entry-point.
+The full design rationale lives in the Basic Memory area-references
+[`docs/areas/flux-gitops`](../../basic-memory/docs/areas/flux-gitops.md)
+(Flux Operator + FluxInstance pattern, helmfile-driven bootstrap) and
+[`docs/areas/talos-cluster`](../../basic-memory/docs/areas/talos-cluster.md)
+(Talos bootstrap chain, op-inject flow). This readme is the operational entry-point.
 
 ## Prerequisites
 
@@ -34,7 +38,10 @@ The composed stages (each can be inspected via `just --list cluster-bootstrap`):
 4. **`wait`** — wait for the node to register with the API server (`Ready=False` is fine — the CNI is still missing).
 5. **`namespaces`** — create one namespace per directory under `kubernetes/apps/`.
 6. **`resources`** — render `resources.yaml.j2` through `minijinja-cli | op inject` and apply the bootstrap-time Secrets (`onepassword-connect-credentials-secret` + `onepassword-connect-vault-secret` in `external-secrets`).
-7. **`crds`** — helmfile-render `helmfile.d/00-crds.yaml` and apply only `CustomResourceDefinition` objects (other kinds are filtered out by the `yq` pipeline; the Gateway API `ValidatingAdmissionPolicy` is intentionally excluded — see STATUS.md `safe-upgrades VAP` reminder).
+7. **`crds`** — helmfile-render `helmfile.d/00-crds.yaml` and apply only
+   `CustomResourceDefinition` objects (other kinds are filtered out by the `yq`
+   pipeline; the Gateway API `ValidatingAdmissionPolicy` is intentionally excluded —
+   see STATUS.md `safe-upgrades VAP` reminder).
 8. **`apps`** — `helmfile sync` the main chain in `helmfile.d/01-apps.yaml`: Cilium → CoreDNS → cert-manager → External Secrets → 1Password Connect → Flux Operator → FluxInstance.
 9. **`kubeconfig`** (lb=`cilium`, default) — re-fetch the kubeconfig so the server endpoint switches to the Cilium-L2-announced address.
 
@@ -51,4 +58,10 @@ just k8s flux-check          # flux check --pre
 
 ## Recovery
 
-If a single helmfile stage fails (e.g. a hung HelmRelease, `MissingRollbackTarget`), the `cluster` recipe is safe to re-run — every stage is idempotent. For HR-level recovery patterns (`helm uninstall` + `flux reconcile hr --force`, `kubectl delete vap/vapb safe-upgrades.gateway.networking.k8s.io`, or the `helm history` + `helm rollback REVISION` path for HRs stuck mid-operation), see the BM area-reference [`docs/areas/flux-gitops`](../../basic-memory/docs/areas/flux-gitops.md) Claims section.
+If a single helmfile stage fails (e.g. a hung HelmRelease, `MissingRollbackTarget`),
+the `cluster` recipe is safe to re-run — every stage is idempotent. For HR-level
+recovery patterns (`helm uninstall` + `flux reconcile hr --force`,
+`kubectl delete vap/vapb safe-upgrades.gateway.networking.k8s.io`, or the
+`helm history` + `helm rollback REVISION` path for HRs stuck mid-operation), see the
+BM area-reference [`docs/areas/flux-gitops`](../../basic-memory/docs/areas/flux-gitops.md)
+Claims section.

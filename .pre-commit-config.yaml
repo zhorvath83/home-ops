@@ -65,7 +65,7 @@ repos:
         entry: markdownlint-cli2
         types:
           - markdown
-        exclude: ^basic-memory/
+        exclude: ^(basic-memory/|\.claude/|.*CLAUDE\.md$)
       - id: tflint
         name: tflint
         language: system
