@@ -52,6 +52,12 @@ repos:
         entry: mise lock
         pass_filenames: false
         files: '\.mise\.toml$'
+      - id: zizmor
+        name: zizmor
+        language: system
+        entry: zizmor --offline
+        files: \.github/workflows/
+        types: [yaml]
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
