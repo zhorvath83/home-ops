@@ -4,27 +4,22 @@
   // in .renovaterc.json5. The rules below scope which packages are eligible.
   packageRules: [
     {
-      description: "Auto-merge container digests on trusted publishers",
+      description: "Auto-merge trusted container updates (digest, minor, patch)",
       matchDatasources: ["docker"],
       automerge: true,
-      matchUpdateTypes: ["digest"],
+      matchUpdateTypes: ["digest", "minor", "patch"],
       matchPackagePrefixes: [
         "ghcr.io/home-operations",
         "ghcr.io/onedr0p",
         "ghcr.io/bjw-s",
-        "ghcr.io/bjw-s-labs",
       ],
     },
     {
-      description: "Auto-merge minor and patch updates on trusted container images",
+      description: "Auto-merge coredns minor and patch updates",
       matchDatasources: ["docker"],
       automerge: true,
       matchUpdateTypes: ["minor", "patch"],
       matchPackagePrefixes: [
-        "ghcr.io/home-operations",
-        "ghcr.io/onedr0p",
-        "ghcr.io/bjw-s",
-        "ghcr.io/bjw-s-labs",
         "ghcr.io/coredns",
       ],
     },
@@ -46,13 +41,15 @@
       matchManagers: ["github-actions"],
       automerge: true,
       matchUpdateTypes: ["minor", "patch"],
+      excludePackagePrefixes: ["actions/"],
       minimumReleaseAge: "3 days",
       ignoreTests: true,
     },
     {
+      // Effectively no cooldown; 1 minute is the minimum Renovate accepts.
       description: "Auto-merge trusted GitHub Actions fast-track",
       matchManagers: ["github-actions"],
-      matchPackageNames: ["actions/*"],
+      matchPackagePrefixes: ["actions/"],
       automerge: true,
       matchUpdateTypes: ["minor", "patch", "digest"],
       minimumReleaseAge: "1 minute",

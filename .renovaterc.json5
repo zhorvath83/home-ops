@@ -37,7 +37,7 @@
     "mirror.gcr.io": "docker.io",
   },
 
-  // Flux / Helm-values / Kubernetes managers scan kubernetes/ YAML and Talos Jinja templates.
+  // Manager file patterns must stay in sync across flux, helm-values, and kubernetes.
   flux: {
     managerFilePatterns: [
       "/^kubernetes/.+\\.yaml(?:\\.j2)?$/",
