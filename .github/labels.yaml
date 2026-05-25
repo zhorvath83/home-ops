@@ -22,3 +22,14 @@
 # Uncategorized
 - name: hold
   color: "ee0701"
+# Renovate
+- name: renovate/container
+  color: "0e8a16"
+- name: renovate/helm
+  color: "0e8a16"
+- name: renovate/github-action
+  color: "0e8a16"
+- name: renovate/github-release
+  color: "0e8a16"
+- name: renovate/talos
+  color: "0e8a16"

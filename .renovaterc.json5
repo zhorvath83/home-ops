@@ -6,7 +6,6 @@
     ":disableRateLimiting",
     ":dependencyDashboard",
     ":semanticCommits",
-    ":separatePatchReleases",
     ":automergeBranch",
     "docker:enableMajor",
     ":enablePreCommit",
@@ -26,12 +25,11 @@
 
   dependencyDashboardTitle: "Renovate Dashboard 🤖",
   baseBranches: ["main"],
-  suppressNotifications: ["prIgnoreNotification"],
-  rebaseWhen: "conflicted",
+  commitBodyTable: true,
+  suppressNotifications: ["prIgnoreNotification", "prEditedNotification"],
+  rebaseWhen: "auto",
   assignees: ["@zhorvath83"],
   timezone: "Europe/Budapest",
-  minimumReleaseAge: "3 days",
-  minimumReleaseAgeBehaviour: "timestamp-optional",
 
   // mirror.gcr.io is a read-only Docker Hub proxy; the source of truth is docker.io.
   // This alias makes Renovate look up versions against docker.io for mirror.gcr.io packages.

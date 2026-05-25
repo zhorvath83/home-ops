@@ -1,15 +1,12 @@
 {
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
-  // automergeType: "branch" pushes the update directly to the target branch when
-  // checks pass — no PR is opened. Reduces dependency-update PR noise on the dashboard
-  // while keeping the same CI guards. The `:automergeBranch` preset in .renovaterc.json5
-  // sets this globally; the rules below scope which packages are eligible.
+  // automergeType: "branch" is set globally via the :automergeBranch preset
+  // in .renovaterc.json5. The rules below scope which packages are eligible.
   packageRules: [
     {
       description: "Auto-merge container digests on trusted publishers",
       matchDatasources: ["docker"],
       automerge: true,
-      automergeType: "branch",
       matchUpdateTypes: ["digest"],
       matchPackagePrefixes: [
         "ghcr.io/home-operations",
@@ -22,7 +19,6 @@
       description: "Auto-merge minor and patch updates on trusted container images",
       matchDatasources: ["docker"],
       automerge: true,
-      automergeType: "branch",
       matchUpdateTypes: ["minor", "patch"],
       matchPackagePrefixes: [
         "ghcr.io/home-operations",
@@ -33,18 +29,34 @@
       ],
     },
     {
-      description: "Auto-merge minor and patch Helm chart updates",
-      matchDatasources: ["helm"],
+      description: "Auto-merge kube-prometheus-stack minor and patch updates",
+      matchDatasources: ["docker", "helm"],
       automerge: true,
-      automergeType: "branch",
       matchUpdateTypes: ["minor", "patch"],
+      matchPackageNames: ["/kube-prometheus-stack/"],
     },
     {
       description: "Auto-merge pre-commit hook updates",
       matchManagers: ["pre-commit"],
       automerge: true,
-      automergeType: "branch",
       matchUpdateTypes: ["minor", "patch", "digest"],
+    },
+    {
+      description: "Auto-merge GitHub Actions minor/patch updates (3-day cooldown)",
+      matchManagers: ["github-actions"],
+      automerge: true,
+      matchUpdateTypes: ["minor", "patch"],
+      minimumReleaseAge: "3 days",
+      ignoreTests: true,
+    },
+    {
+      description: "Auto-merge trusted GitHub Actions fast-track",
+      matchManagers: ["github-actions"],
+      matchPackageNames: ["actions/*"],
+      automerge: true,
+      matchUpdateTypes: ["minor", "patch", "digest"],
+      minimumReleaseAge: "1 minute",
+      ignoreTests: true,
     },
   ],
 }
