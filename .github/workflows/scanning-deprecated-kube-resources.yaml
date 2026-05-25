@@ -6,6 +6,10 @@ on: # yamllint disable-line rule:truthy
   schedule:
     - cron: "0 0 * * 5"
 
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   scan-deprecated-kube-resources:
     name: Scanning deprecated Kubernetes resources
@@ -16,6 +20,7 @@ jobs:
         with:
           token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Download Pluto
         uses: FairwindsOps/pluto/github-action@dd5ec8cccce5e42dfe8054b8250baa35546056a0 # master
@@ -25,16 +30,17 @@ jobs:
           pluto detect-files -d kubernetes --output wide
 
       - name: Create Issue on Failed workflow
-        if: ${{ failure() }}
-        uses: dacbd/create-issue-action@fec641442c0897e734fad173cfe83ae21a2284a3 # main
-        with:
-          token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
-          title: Action workflow failed.
-          body: |
-            ### Context
-            [Failed Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            [Codebase](https://github.com/${{ github.repository }}/tree/${{ github.sha }})
-            Workflow name - `${{ github.workflow }}`
-            Job -           `${{ github.job }}`
-            status -        `${{ job.status }}`
-          assignees: zhorvath83
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_TITLE: "Action workflow failed."
+          FAILED_RUN_URL: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          CODEBASE_URL: "https://github.com/${{ github.repository }}/tree/${{ github.sha }}"
+          WORKFLOW_NAME: ${{ github.workflow }}
+          JOB_NAME: ${{ github.job }}
+          JOB_STATUS: ${{ job.status }}
+        run: |-
+          # shellcheck disable=SC2016
+          BODY=$(printf '### Context\n[Failed Run](%s)\n[Codebase](%s)\nWorkflow name - `%s`\nJob -           `%s`\nstatus -        `%s`' \
+            "$FAILED_RUN_URL" "$CODEBASE_URL" "$WORKFLOW_NAME" "$JOB_NAME" "$JOB_STATUS")
+          gh issue create --title "$ISSUE_TITLE" --body "$BODY" --assignee zhorvath83

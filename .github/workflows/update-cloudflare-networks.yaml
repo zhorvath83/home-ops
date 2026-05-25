@@ -6,6 +6,11 @@ on:
     - cron: "0 0 * * *"
 env:
   CIDRGROUP_FILE: kubernetes/apps/networking/cloudflare-tunnel/app/ciliumcidrgroup.yaml
+
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   update-cloudflare-networks:
     name: Update Cloudflare Networks
@@ -16,6 +21,7 @@ jobs:
         with:
           token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
