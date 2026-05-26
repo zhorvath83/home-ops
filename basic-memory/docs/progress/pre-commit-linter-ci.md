@@ -85,7 +85,7 @@ permalink: home-ops/docs/progress/pre-commit-linter-ci
 ## Deliberate Decisions (NOT gaps)
 
 - **pre-commit over Lefthook** — utility hooks (trailing-whitespace, etc.) need custom shell scripts in Lefthook; pre-commit repos provide battle-tested implementations
-- **flux-local over flate** — flux-local is mature (v8.2.0), already in mise; flate is newer but less mature
+- **flux-local Docker image in CI** — uses `ghcr.io/allenporter/flux-local:v8.2.0` container action (no Python/pipx dependency); local dev still uses `pipx:flux-local` via mise
 - **No Image Pull workflow** — requires self-hosted runner, operational scope
 - **No monthly tagging** — release automation, not linter/CI
 - **No 1Password CI tokens** — using GITHUB_TOKEN instead (simpler, fork PR limitation accepted)
@@ -123,11 +123,13 @@ relates_to [[docs/areas/k8s-workloads]]
 - MegaLinter VALIDATE_ALL_CODEBASE: true caused 857 markdown errors on every PR regardless of scope
 - Pre-commit hooks validate full codebase locally; CI validates changed files via flux-local
 
-### Phase 9 — flux-local CI Python 3.13 fix ✅
+### Phase 9 — flux-local CI Python 3.13 fix ✅ → Phase 11 — Docker image migration ✅
 
-- Added actions/setup-python with python-version "3.13" to flux-local workflow (test + diff jobs)
+- Phase 9: Added actions/setup-python with python-version "3.13" to flux-local workflow (test + diff jobs)
 - Root cause: flux-local>=8.0.0 requires Python >=3.13, but ubuntu-latest ships Python 3.12
-- mise pipx backend now has Python 3.13 available for pipx:flux-local installation
+- Phase 11: Replaced setup-python + mise-action with Docker image `ghcr.io/allenporter/flux-local:v8.2.0`
+- Docker approach eliminates Python dependency entirely — no Python setup, no pipx, no mise in CI
+- Local dev still uses `pipx:flux-local` via mise (Python 3.14 on macOS)
 
 ## Updated Deliberate Decisions
 
