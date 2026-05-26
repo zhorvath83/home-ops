@@ -11,7 +11,7 @@ spec:
   talosctl:
     image:
       # renovate: datasource=custom.talos-factory depName=siderolabs/talos
-      tag: "v1.13.2"
+      tag: "v1.13.3"
   healthChecks:
     - apiVersion: kustomize.toolkit.fluxcd.io/v1
       kind: Kustomization
