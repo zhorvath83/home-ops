@@ -3,6 +3,7 @@ JUST_UNSTABLE = "1"
 KUBECONFIG = '{{config_root}}/kubeconfig'
 TALOSCONFIG = '{{config_root}}/talosconfig'
 MINIJINJA_CONFIG_FILE = "{{config_root}}/.minijinja.toml"
+GITHUB_TOKEN = "{{ exec(command='gh auth token') | trim }}"
 # Talos + Kubernetes versions consumed by kubernetes/talos templates and recipes.
 # renovate: datasource=custom.talos-factory depName=siderolabs/talos
 TALOS_VERSION = "v1.13.2"
@@ -17,29 +18,30 @@ pipx.uvx = true
 
 [tools]
 # Core CLI tooling
-talosctl = "1.13.2"
+"aqua:siderolabs/talos" = "1.13.2"
+"aqua:helm/helm" = "4.2.0"
+"aqua:helmfile/helmfile" = "1.5.2"
+"aqua:fluxcd/flux2" = "2.8.8"
+"aqua:casey/just" = "1.51.0"
+
+# Kubernetes — bare name kept: aqua 3-part path (kubernetes/kubernetes/kubectl) breaks Renovate
 kubectl = "1.36.1"
-helm = "4.2.0"
-helmfile = "1.5.2"
-flux2 = "2.8.8"
-just = "1.51.0"
 
 # Templating + secrets
 "aqua:mitsuhiko/minijinja" = "2.20.0"
-"1password-cli" = "2.34.0"
 
 # YAML/JSON tooling
-yq = "4.53.2"
-jq = "1.8.1"
+"aqua:mikefarah/yq" = "4.53.2"
+"aqua:jqlang/jq" = "1.8.1"
 
 # UX
-gum = "0.17.0"
+"aqua:charmbracelet/gum" = "0.17.0"
 
 # Hooks
-pre-commit = "4.6.0"
+"aqua:pre-commit/pre-commit" = "4.6.0"
 
 # Terraform
-terraform = "1.15.4"
+"aqua:hashicorp/terraform" = "1.15.4"
 
 # Linters / formatters / auditors
 "aqua:google/yamlfmt" = "0.17.2"
@@ -49,9 +51,9 @@ terraform = "1.15.4"
 "aqua:terraform-linters/tflint" = "0.62.1"
 "npm:markdownlint-cli2" = "0.22.1"
 "pipx:yamllint" = "1.38.0"
-zizmor = "1.25.2"
+"aqua:zizmorcore/zizmor" = "1.25.2"
 
 # Python tooling (pipx backend)
-"pipx:flux-local" = "latest"
-"pipx:ansible" = "latest"
-"pipx:ansible-core" = "latest"
+"pipx:flux-local" = "8.2.0"
+"pipx:ansible" = "13.7.0"
+"pipx:ansible-core" = "2.21.0"

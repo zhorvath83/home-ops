@@ -42,7 +42,7 @@
     {
       description: "Talos group (installer + talosctl + factory-verified versions)",
       groupName: "Talos",
-      matchDatasources: ["custom.talos-factory", "docker", "github-releases"],
+      matchDatasources: ["custom.talos-factory", "docker", "github-releases", "github-tags"],
       matchPackageNames: ["siderolabs/talos", "/installer/", "/talosctl/"],
       group: { commitMessageTopic: "{{{groupName}}} group" },
       minimumGroupSize: 1,

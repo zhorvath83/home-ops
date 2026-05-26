@@ -65,5 +65,11 @@
       matchDatasources: ["github-releases", "github-tags"],
       addLabels: ["renovate/github-release"],
     },
+    {
+      description: "Override packageName for kubectl in mise (aqua 3-part path breaks github-tags owner/repo)",
+      matchManagers: ["mise"],
+      matchDepNames: ["kubectl"],
+      overridePackageName: "kubernetes/kubernetes",
+    },
   ],
 }

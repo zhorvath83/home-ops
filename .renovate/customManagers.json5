@@ -17,7 +17,7 @@
       description: "Process inline `# renovate: datasource=X depName=Y` annotations in YAML and mise.toml",
       managerFilePatterns: [
         "/^kubernetes/.+\\.yaml(?:\\.j2)?$/",
-        "/(^|/)mise\\.toml$/",
+        "/(^|/)\\.?mise\\.toml$/",
       ],
       matchStrings: [
         "datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)( versioning=(?<versioning>\\S+))?\\n.+?[\"'](?<currentValue>[^\"']+)[\"']",
