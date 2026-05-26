@@ -46,7 +46,7 @@ kubectl = "1.36.1"
 # Linters / formatters / auditors
 "aqua:google/yamlfmt" = "0.17.2"
 "aqua:rhysd/actionlint" = "1.7.12"
-"aqua:koalaman/shellcheck" = "0.10.0"
+"aqua:koalaman/shellcheck" = "0.11.0"
 "aqua:zricethezav/gitleaks" = "8.30.1"
 "aqua:terraform-linters/tflint" = "0.62.1"
 "npm:markdownlint-cli2" = "0.22.1"
