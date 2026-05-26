@@ -44,7 +44,7 @@ kubectl = "1.36.1"
 "aqua:hashicorp/terraform" = "1.15.4"
 
 # Linters / formatters / auditors
-"aqua:google/yamlfmt" = "0.17.2"
+"aqua:google/yamlfmt" = "0.21.0"
 "aqua:rhysd/actionlint" = "1.7.12"
 "aqua:koalaman/shellcheck" = "0.10.0"
 "aqua:zricethezav/gitleaks" = "8.30.1"
