@@ -9,21 +9,6 @@
       ],
     },
     {
-      description: "Reminder for Talos upgrades",
-      matchDatasources: ["custom.talos-factory", "docker", "github-releases"],
-      matchPackageNames: ["siderolabs/talos", "/installer/", "/talosctl/"],
-      prBodyNotes: [
-        "ℹ️ Talos upgrade — also update `mise.toml` (`TALOS_VERSION`, `talosctl`) and rerun `just talos gen-schematic-id` if the schematic changed.",
-      ],
-    },
-    {
-      description: "Reminder for Cilium upgrades",
-      matchPackageNames: ["/cilium/"],
-      prBodyNotes: [
-        "ℹ️ Cilium upgrade — also update `kubernetes/bootstrap/helmfile.d/01-apps.yaml`. Do not auto-merge.",
-      ],
-    },
-    {
       description: "Changelog link for Plex",
       matchDatasources: ["docker"],
       matchPackageNames: ["ghcr.io/home-operations/plex"],
