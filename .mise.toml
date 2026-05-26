@@ -17,7 +17,7 @@ pipx.uvx = true
 
 [tools]
 # Core CLI tooling
-talosctl = "1.13.2"
+talosctl = "1.13.3"
 kubectl = "1.36.1"
 helm = "4.2.0"
 helmfile = "1.5.2"
