@@ -9,7 +9,7 @@
     ":automergeBranch",
     "docker:enableMajor",
     ":enablePreCommit",
-    "helpers:pinGitHubActionDigests",
+    "helpers:pinGitHubActionDigestsToSemver",
 
     // Local fragments
     "github>zhorvath83/home-ops//.renovate/allowedVersions.json5",

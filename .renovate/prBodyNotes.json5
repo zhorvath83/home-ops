@@ -24,14 +24,6 @@
       ],
     },
     {
-      description: "Changelog link for Cloudflared",
-      matchDatasources: ["docker"],
-      matchPackageNames: ["cloudflare/cloudflared"],
-      prBodyNotes: [
-        "[Release notes](https://github.com/cloudflare/cloudflared/blob/master/RELEASE_NOTES)",
-      ],
-    },
-    {
       description: "Changelog link for Plex",
       matchDatasources: ["docker"],
       matchPackageNames: ["ghcr.io/home-operations/plex"],

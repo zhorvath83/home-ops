@@ -66,6 +66,17 @@
       addLabels: ["renovate/github-release"],
     },
     {
+      description: "Changelog URL for Cloudflared",
+      matchDatasources: ["docker"],
+      matchPackageNames: ["cloudflare/cloudflared"],
+      changelogUrl: "https://github.com/cloudflare/cloudflared/blob/master/RELEASE_NOTES",
+    },
+    {
+      description: "Changelog URL for 1Password Connect",
+      matchPackageNames: ["/1password/"],
+      changelogUrl: "https://github.com/1Password/connect/blob/main/CHANGELOG.md",
+    },
+    {
       description: "Override packageName for kubectl in mise (aqua 3-part path breaks github-tags owner/repo)",
       matchManagers: ["mise"],
       matchDepNames: ["kubectl"],
