@@ -134,3 +134,13 @@ relates_to [[docs/areas/k8s-workloads]]
 - **MegaLinter removed** — pre-commit covers markdownlint/tflint locally, flux-local covers K8s manifest validation in CI, kubeconform was redundant with flux-local test
 - **markdown-link-check dropped** — low signal-to-noise ratio, not worth CI time
 - **Pre-commit parity** — all linters that run anywhere now also run locally before commit
+
+
+### Phase 10 — markdownlint scope tuning ✅
+
+- Excluded `.claude/` and all `CLAUDE.md` files from markdownlint (pre-commit exclude pattern extended)
+- Rationale: these files are consumed by AI (Claude Code), which does not benefit from line-length limits; wrapped lines actively hurt semantic parsing by breaking coherent sentences and paths across continuation lines
+- Structural markdownlint rules (headings, blank lines, table style) are also excluded for these files — the AI can parse any valid markdown, and the maintenance burden of keeping AI-authored files lint-clean outweighs the value
+- Raised `code_block_line_length` from 80 to 240 in `.markdownlint.yaml` — tree diagrams, file paths, and Kubernetes resource references routinely exceed 80 chars and cannot be meaningfully wrapped
+- Full `pre-commit run --all-files` pass completed successfully for the first time
+- Fixed missing trailing newlines in `.renovate/*.json5` files, MD013/MD060 in README.md and `kubernetes/bootstrap/readme.md`
