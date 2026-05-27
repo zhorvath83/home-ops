@@ -27,10 +27,13 @@ spec:
         annotations:
           reloader.stakater.com/auto: "true"
         initContainers:
-          01-copy-config:
+          01-init:
             image:
-              repository: public.ecr.aws/docker/library/busybox
-              tag: 1.38.0
+              repository: ghcr.io/home-operations/qbittorrent
+              tag: 5.2.1@sha256:8d58d9ad18a1fb5e556e68bde7ac06046847cc97069257f01d2e1ec0d27ff019
+            command:
+              - "/bin/bash"
+              - "/scripts/qbt-init.sh"
             securityContext:
               privileged: false
               allowPrivilegeEscalation: false
@@ -38,19 +41,7 @@ spec:
               capabilities: {drop: ["ALL"]}
             resources:
               limits:
-                memory: 64Mi
-            command:
-              - "/bin/sh"
-              - -c
-            args:
-              - |
-                echo "Creating directory /config/qBittorrent/" &&
-                mkdir -p /config/qBittorrent/ &&
-                echo "Copying files from /tmp/configfiles/ to /config/qBittorrent/" &&
-                cp /tmp/configfiles/* /config/qBittorrent/ &&
-                echo "Appending WebUI password from secret..." &&
-                echo "WebUI\\Password_PBKDF2=$(cat /secrets/qbittorrent/password_pbkdf2)" >> /config/qBittorrent/qBittorrent.conf &&
-                echo "Init complete."
+                memory: 128Mi
         containers:
           app:
             image:
@@ -61,6 +52,12 @@ spec:
               QBT_WEBUI_PORT: &port 8080
               QBT_TORRENTING_PORT: &torrentPort 62418
             nameOverride: qbittorrent
+            lifecycle:
+              postStart:
+                exec:
+                  command:
+                    - "/bin/bash"
+                    - "/scripts/qbt-poststart.sh"
             probes:
               liveness:
                 enabled: true
@@ -129,16 +126,11 @@ spec:
         existingClaim: qbittorrent
         globalMounts:
           - path: /config
-      configfiles:
+      scripts:
         type: configMap
-        name: qbittorrent-configmap
+        name: qbittorrent-scripts
         globalMounts:
-          - path: /tmp/configfiles
-      secret:
-        type: secret
-        name: qbittorrent-secret
-        globalMounts:
-          - path: /secrets/qbittorrent
+          - path: /scripts
             readOnly: true
       nfs-nas-media:
         type: nfs

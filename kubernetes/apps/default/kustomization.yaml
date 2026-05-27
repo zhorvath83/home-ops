@@ -13,7 +13,6 @@ resources:
   - ./plex/ks.yaml
   - ./plex-trakt-sync/ks.yaml
   - ./qbittorrent/ks.yaml
-  - ./qbittorrent-p2pblocklist/ks.yaml
   - ./homepage/ks.yaml
   - ./prowlarr/ks.yaml
   - ./radarr/ks.yaml
