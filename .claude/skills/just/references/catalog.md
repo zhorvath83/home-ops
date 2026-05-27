@@ -39,6 +39,6 @@ Use this reference to rebuild the current Just surface before editing.
 - Destructive Talos recipes (`apply-node`, `reset-node`, `shutdown-node`, `upgrade-node`, `upgrade-k8s`) carry a `[confirm(...)]` gate that prompts before execution. Bypass non-interactively with `just --yes talos <recipe> ...` — the bootstrap chain uses this internally so the automated `just cluster-bootstrap cluster` run is not blocked.
 - `volsync restore`, `volsync snapshot`, `volsync snapshot-all`, `volsync list-snapshots`, `volsync last-snapshots`, `volsync state`, `volsync kopia-maintenance` — backup plane operations.
 - `cloudflare init|plan|apply|unlock`, `ovh init|plan|apply|unlock` — Terraform per provider, credentials injected via `op run`.
-- `omv install|check|update|update-host`, `openwrt maintain|upgrade|reinstall-packages` — provisioning entry points.
+- `omv install|check|update|update-host`, `openwrt upgrade` — provisioning entry points. `openwrt upgrade` chains a router backup, owut attended sysupgrade, and post-reboot user package reinstall; the `backup` and `reinstall-packages` steps are `[private]` helpers invoked only by `upgrade`.
 
 If a recipe needs renaming, removing, or splitting, inspect the root `.justfile` group label, the parent `mod.just`, and any inline `# renovate:` annotations together before editing.
