@@ -85,30 +85,5 @@
     "endpoint": "/api/v2/torrents/createCategory",
     "method": "form",
     "payload": {"category": "manual-downloads", "savePath": "/media/downloads/complete/manual-downloads"}
-  },
-  {
-    "endpoint": "/api/v2/torrents/editCategory",
-    "method": "form",
-    "payload": {"category": "movies", "savePath": "/media/downloads/complete/movies"}
-  },
-  {
-    "endpoint": "/api/v2/torrents/editCategory",
-    "method": "form",
-    "payload": {"category": "shows", "savePath": "/media/downloads/complete/shows"}
-  },
-  {
-    "endpoint": "/api/v2/torrents/editCategory",
-    "method": "form",
-    "payload": {"category": "documentaries", "savePath": "/media/downloads/complete/documentaries"}
-  },
-  {
-    "endpoint": "/api/v2/torrents/editCategory",
-    "method": "form",
-    "payload": {"category": "ebooks", "savePath": "/media/downloads/complete/ebooks"}
-  },
-  {
-    "endpoint": "/api/v2/torrents/editCategory",
-    "method": "form",
-    "payload": {"category": "manual-downloads", "savePath": "/media/downloads/complete/manual-downloads"}
   }
 ]
