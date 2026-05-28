@@ -32,6 +32,21 @@ for ((i=0; i<CALL_COUNT; i++)); do
 
   if [[ "${method}" == "json" ]]; then
     payload=$(jq -c ".[${i}].payload" "${CONFIG_FILE}")
+
+    # Merge envVars into payload
+    env_count=$(jq -r ".[${i}].envVars // {} | length" "${CONFIG_FILE}")
+    if [[ "${env_count}" -gt 0 ]]; then
+      while IFS=$'\t' read -r key env_var; do
+        value="${!env_var:-}"
+        if [[ -z "${value}" ]]; then
+          echo "WARNING: ${env_var} is not set, skipping ${key}"
+          payload=$(echo "${payload}" | jq -c --arg k "${key}" 'del(.[$k])')
+        else
+          payload=$(echo "${payload}" | jq -c --arg k "${key}" --arg v "${value}" '. + {($k): $v}')
+        fi
+      done < <(jq -r ".[${i}].envVars | to_entries[] | [.key, .value] | @tsv" "${CONFIG_FILE}")
+    fi
+
     echo "Calling ${endpoint} (json)..."
     http_code=$(curl --silent --output /dev/null --write-out '%{http_code}' \
       --request POST \
@@ -44,6 +59,20 @@ for ((i=0; i<CALL_COUNT; i++)); do
     while IFS=$'\t' read -r key value; do
       curl_args+=("--data-urlencode" "${key}=${value}")
     done < <(jq -r ".[${i}].payload | to_entries[] | [.key, .value] | @tsv" "${CONFIG_FILE}")
+
+    # Merge envVars into form args
+    env_count=$(jq -r ".[${i}].envVars // {} | length" "${CONFIG_FILE}")
+    if [[ "${env_count}" -gt 0 ]]; then
+      while IFS=$'\t' read -r key env_var; do
+        value="${!env_var:-}"
+        if [[ -z "${value}" ]]; then
+          echo "WARNING: ${env_var} is not set, skipping ${key}"
+        else
+          curl_args+=("--data-urlencode" "${key}=${value}")
+        fi
+      done < <(jq -r ".[${i}].envVars | to_entries[] | [.key, .value] | @tsv" "${CONFIG_FILE}")
+    fi
+
     http_code=$(curl --silent --output /dev/null --write-out '%{http_code}' \
       --request POST \
       --header "Referer: ${QBT_URL}" \

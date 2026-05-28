@@ -2,6 +2,9 @@
   {
     "endpoint": "/api/v2/app/setPreferences",
     "method": "json",
+    "envVars": {
+      "web_ui_password": "QBT_WEBUI_PASSWORD"
+    },
     "payload": {
       "listen_port": 62418,
       "save_path": "/media/downloads/complete/",
