@@ -51,6 +51,11 @@ spec:
               TZ: "${TIMEZONE}"
               QBT_WEBUI_PORT: &port 8080
               QBT_TORRENTING_PORT: &torrentPort 62418
+              QBT_WEBUI_USERNAME:
+                valueFrom:
+                  secretKeyRef:
+                    name: qbittorrent-secret
+                    key: webui-username
               QBT_WEBUI_PASSWORD:
                 valueFrom:
                   secretKeyRef:

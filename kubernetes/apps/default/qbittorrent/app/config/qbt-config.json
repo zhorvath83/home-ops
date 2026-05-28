@@ -3,6 +3,7 @@
     "endpoint": "/api/v2/app/setPreferences",
     "method": "json",
     "envVars": {
+      "web_ui_username": "QBT_WEBUI_USERNAME",
       "web_ui_password": "QBT_WEBUI_PASSWORD"
     },
     "payload": {
@@ -59,7 +60,6 @@
       "web_ui_session_timeout": 3600,
       "web_ui_max_auth_fail_count": 5,
       "web_ui_ban_duration": 3600,
-      "web_ui_username": "zhorvath83",
       "web_ui_port": 8080,
       "locale": "en"
     }
