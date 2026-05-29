@@ -21,7 +21,7 @@
     "slow_torrent_dl_rate_threshold": 10,
     "slow_torrent_ul_rate_threshold": 10,
     "slow_torrent_inactive_timer": 600,
-    "alt_dl_limit": 500000,
+    "alt_dl_limit": 60000,
     "alt_up_limit": 100000,
     "scheduler_enabled": true,
     "schedule_from_hour": 8,
@@ -51,7 +51,7 @@
     "merge_trackers": true,
     "recheck_completed_torrents": true,
     "limit_lan_peers": false,
-    "ip_filter_trackers": true,
+    "ip_filter_trackers": false,
     "max_active_checking_torrents": 2,
     "performance_warning": true,
     "reannounce_when_address_changed": true,
@@ -72,7 +72,7 @@
     "file_log_age_type": 1,
     "file_log_backup_enabled": true,
     "file_log_delete_old": true,
-    "file_log_max_size": 65,
+    "file_log_max_size": 10240,
     "locale": "en"
   },
   "categories": ["movies", "shows", "documentaries", "ebooks", "misc"]
