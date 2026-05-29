@@ -67,26 +67,29 @@ spec:
                 exec:
                   command:
                     - "/bin/bash"
-                    - "/scripts/qbt-poststart.sh"
+                    - "-c"
+                    - "exec /scripts/qbt-poststart.sh > /proc/1/fd/1 2>/proc/1/fd/2"
             probes:
-              liveness:
+              liveness: &probes
                 enabled: true
+                custom: true
                 spec:
+                  httpGet:
+                    path: /api/v2/app/version
+                    port: *port
                   periodSeconds: 30
                   timeoutSeconds: 5
                   failureThreshold: 5
-              readiness:
-                enabled: true
-                spec:
-                  periodSeconds: 30
-                  timeoutSeconds: 5
-                  failureThreshold: 5
+              readiness: *probes
               startup:
                 enabled: true
+                custom: true
                 spec:
-                  periodSeconds: 30
-                  timeoutSeconds: 5
-                  failureThreshold: 5
+                  httpGet:
+                    path: /api/v2/app/version
+                    port: *port
+                  periodSeconds: 10
+                  failureThreshold: 30
             securityContext:
               privileged: false
               allowPrivilegeEscalation: false

@@ -22,6 +22,11 @@ fi
 # --- Remove stale config files now managed via API ---
 rm -f "${CONFIG_DIR}/categories.json" "${CONFIG_DIR}/watched_folders.json"
 
+# --- Ensure per-category watchdir directories exist ---
+for dir in misc movies shows documentaries ebooks; do
+  mkdir -p "/media/downloads/watchdir/${dir}"
+done
+
 # --- Download ipfilter ---
 echo "Downloading ipfilter.dat..."
 if curl --silent --location --fail "${IPFILTER_URL}" | gunzip > "${IPFILTER_FILE}" 2>/dev/null; then
