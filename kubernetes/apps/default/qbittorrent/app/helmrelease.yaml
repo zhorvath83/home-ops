@@ -151,3 +151,7 @@ spec:
         path: /media
         globalMounts:
           - path: /media
+      ipfilter:
+        type: emptyDir
+        globalMounts:
+          - path: /ipfilter

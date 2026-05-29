@@ -19,7 +19,7 @@
       "pex": false,
       "upnp": false,
       "ip_filter_enabled": true,
-      "ip_filter_path": "/config/qBittorrent/ipfilter.dat",
+      "ip_filter_path": "/ipfilter/ipfilter.dat",
       "max_active_downloads": 5,
       "max_active_torrents": 100,
       "max_active_uploads": 90,

@@ -6,7 +6,7 @@ set -o pipefail
 CONFIG_DIR="/config/qBittorrent"
 CONFIG_FILE="${CONFIG_DIR}/qBittorrent.conf"
 DEFAULT_CONFIG="/defaults/qBittorrent.conf"
-IPFILTER_FILE="${CONFIG_DIR}/ipfilter.dat"
+IPFILTER_FILE="/ipfilter/ipfilter.dat"
 IPFILTER_URL="https://github.com/DavidMoore/ipfilter/releases/download/lists/ipfilter.dat.gz"
 
 # --- Overwrite config with image default ---
