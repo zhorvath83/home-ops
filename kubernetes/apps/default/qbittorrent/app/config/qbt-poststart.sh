@@ -8,102 +8,76 @@ CONFIG_FILE="/scripts/qbt-config.json"
 RETRY_INTERVAL=2
 MAX_RETRIES=60
 
-# Colors
-C_GREEN='\e[32m'
-C_YELLOW='\e[33m'
-C_RED='\e[31m'
-C_BOLD='\e[1m'
-C_DIM='\e[2m'
-C_RESET='\e[0m'
+log() {
+  local level="$1"; shift
+  local ts
+  ts="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+  if [[ "${level}" == "INFO" ]]; then
+    printf '%s %s %s\n' "${ts}" "${level}" "$*"
+  else
+    printf '%s %s %s\n' "${ts}" "${level}" "$*" >&2
+  fi
+}
 
-tag() { echo -e "${C_DIM}[qbt-poststart]${C_RESET} $*"; }
-ok() { echo -e "${C_DIM}[qbt-poststart]${C_RESET} ${C_GREEN}$*${C_RESET}"; }
-warn() { echo -e "${C_DIM}[qbt-poststart]${C_RESET} ${C_YELLOW}$*${C_RESET}"; }
-fail() { echo -e "${C_DIM}[qbt-poststart]${C_RESET} ${C_RED}$*${C_RESET}"; }
-
-# --- Wait for qBittorrent API ---
-tag "Waiting for API..."
-for i in $(seq 1 "${MAX_RETRIES}"); do
-  if curl --silent --fail "${QBT_URL}/api/v2/app/version" > /dev/null 2>&1; then
-    ok "API ready (attempt ${i}/${MAX_RETRIES})"
+log INFO "waiting for API at ${QBT_URL}"
+for attempt in $(seq 1 "${MAX_RETRIES}"); do
+  if curl --silent --fail "${QBT_URL}/api/v2/app/version" >/dev/null 2>&1; then
+    log INFO "API ready (attempt ${attempt}/${MAX_RETRIES})"
     break
   fi
-  if [[ "${i}" -eq "${MAX_RETRIES}" ]]; then
-    fail "API not ready after $((MAX_RETRIES * RETRY_INTERVAL))s"
+  if [[ "${attempt}" -eq "${MAX_RETRIES}" ]]; then
+    log ERROR "API not ready after $((MAX_RETRIES * RETRY_INTERVAL))s"
     exit 1
   fi
   sleep "${RETRY_INTERVAL}"
 done
 
-# --- Apply API calls from config ---
-CALL_COUNT=$(jq 'length' "${CONFIG_FILE}")
-tag "${C_BOLD}Applying ${CALL_COUNT} calls...${C_RESET}"
+# Accepts 2xx and 409 (idempotent "already exists").
+qbt_call() {
+  local label="$1"; shift
+  local endpoint="$1"; shift
+  local http_code
+  http_code="$(curl --silent --output /dev/null --write-out '%{http_code}' \
+    --request POST \
+    --header "Referer: ${QBT_URL}" \
+    "$@" \
+    "${QBT_URL}${endpoint}")"
 
-for ((i=0; i<CALL_COUNT; i++)); do
-  endpoint=$(jq -r ".[${i}].endpoint" "${CONFIG_FILE}")
-  method=$(jq -r ".[${i}].method" "${CONFIG_FILE}")
-  label=$(jq -r ".[${i}].label // \"${endpoint##*/}\"" "${CONFIG_FILE}")
-  seq_num=$((i + 1))
-
-  if [[ "${method}" == "json" ]]; then
-    payload=$(jq -c ".[${i}].payload" "${CONFIG_FILE}")
-
-    # Merge envVars into payload
-    env_count=$(jq -r ".[${i}].envVars // {} | length" "${CONFIG_FILE}")
-    if [[ "${env_count}" -gt 0 ]]; then
-      while IFS=$'\t' read -r key env_var; do
-        value="${!env_var:-}"
-        if [[ -z "${value}" ]]; then
-          warn "  ${env_var} unset, skipping ${key}"
-          payload=$(echo "${payload}" | jq -c --arg k "${key}" 'del(.[$k])')
-        else
-          payload=$(echo "${payload}" | jq -c --arg k "${key}" --arg v "${value}" '. + {($k): $v}')
-        fi
-      done < <(jq -r ".[${i}].envVars | to_entries[] | [.key, .value] | @tsv" "${CONFIG_FILE}")
-    fi
-
-    http_code=$(curl --silent --output /dev/null --write-out '%{http_code}' \
-      --request POST \
-      --header "Referer: ${QBT_URL}" \
-      --data-urlencode "json=${payload}" \
-      "${QBT_URL}${endpoint}")
+  if (( http_code < 200 )) || (( http_code >= 400 && http_code != 409 )); then
+    log ERROR "${label} http=${http_code}"
+    return 1
+  fi
+  if (( http_code == 409 )); then
+    log WARN "${label} http=${http_code} exists"
   else
-    curl_args=()
-    while IFS=$'\t' read -r key value; do
-      curl_args+=("--data-urlencode" "${key}=${value}")
-    done < <(jq -r ".[${i}].payload | to_entries[] | [.key, .value] | @tsv" "${CONFIG_FILE}")
-
-    # Merge envVars into form args
-    env_count=$(jq -r ".[${i}].envVars // {} | length" "${CONFIG_FILE}")
-    if [[ "${env_count}" -gt 0 ]]; then
-      while IFS=$'\t' read -r key env_var; do
-        value="${!env_var:-}"
-        if [[ -z "${value}" ]]; then
-          warn "  ${env_var} unset, skipping ${key}"
-        else
-          curl_args+=("--data-urlencode" "${key}=${value}")
-        fi
-      done < <(jq -r ".[${i}].envVars | to_entries[] | [.key, .value] | @tsv" "${CONFIG_FILE}")
-    fi
-
-    http_code=$(curl --silent --output /dev/null --write-out '%{http_code}' \
-      --request POST \
-      --header "Referer: ${QBT_URL}" \
-      "${curl_args[@]}" \
-      "${QBT_URL}${endpoint}")
+    log INFO "${label} http=${http_code}"
   fi
+}
 
-  # Accept 2xx and 409 (Conflict = idempotent success); reject everything else
-  if [[ "${http_code}" -lt 200 || ("${http_code}" -ge 400 && "${http_code}" -ne 409) ]]; then
-    fail "[${seq_num}/${CALL_COUNT}] ${label} → HTTP ${http_code} FAILED"
-    exit 1
-  fi
+[[ -z "${QBT_WEBUI_USERNAME:-}" ]] && log WARN "QBT_WEBUI_USERNAME unset, web_ui_username will not be set"
+[[ -z "${QBT_WEBUI_PASSWORD:-}" ]] && log WARN "QBT_WEBUI_PASSWORD unset, web_ui_password will not be set"
 
-  if [[ "${http_code}" -eq 409 ]]; then
-    warn "[${seq_num}/${CALL_COUNT}] ${label} → ${http_code} (exists)"
-  else
-    ok "[${seq_num}/${CALL_COUNT}] ${label} → ${http_code}"
-  fi
+preferences="$(jq -c \
+  --arg user "${QBT_WEBUI_USERNAME:-}" \
+  --arg pass "${QBT_WEBUI_PASSWORD:-}" \
+  '.preferences
+   + (if $user != "" then {web_ui_username: $user} else {} end)
+   + (if $pass != "" then {web_ui_password: $pass} else {} end)' \
+  "${CONFIG_FILE}")"
+
+log INFO "applying preferences"
+qbt_call "setPreferences" "/api/v2/app/setPreferences" \
+  --data-urlencode "json=${preferences}"
+
+save_path="$(jq -r '.preferences.save_path' "${CONFIG_FILE}")"
+save_path="${save_path%/}"
+mapfile -t categories < <(jq -r '.categories[]' "${CONFIG_FILE}")
+
+log INFO "creating ${#categories[@]} categories under ${save_path}"
+for category in "${categories[@]}"; do
+  qbt_call "createCategory/${category}" "/api/v2/torrents/createCategory" \
+    --data-urlencode "category=${category}" \
+    --data-urlencode "savePath=${save_path}/${category}"
 done
 
-ok "${C_BOLD}Done.${C_RESET}"
+log INFO "done"
