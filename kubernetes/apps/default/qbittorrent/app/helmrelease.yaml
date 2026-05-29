@@ -74,8 +74,7 @@ spec:
                 enabled: true
                 custom: true
                 spec:
-                  httpGet:
-                    path: /api/v2/app/version
+                  tcpSocket:
                     port: *port
                   periodSeconds: 30
                   timeoutSeconds: 5
@@ -85,8 +84,7 @@ spec:
                 enabled: true
                 custom: true
                 spec:
-                  httpGet:
-                    path: /api/v2/app/version
+                  tcpSocket:
                     port: *port
                   periodSeconds: 10
                   failureThreshold: 30
