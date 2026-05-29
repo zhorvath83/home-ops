@@ -68,7 +68,7 @@ spec:
                   command:
                     - "/bin/bash"
                     - "-c"
-                    - "exec /scripts/qbt-poststart.sh > /proc/1/fd/1 2>/proc/1/fd/2"
+                    - "exec /bin/bash /scripts/qbt-poststart.sh > /proc/1/fd/1 2>/proc/1/fd/2"
             probes:
               liveness: &probes
                 enabled: true
