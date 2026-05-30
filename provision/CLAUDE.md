@@ -7,7 +7,7 @@ This guide applies to everything under `provision/`. It is the routing layer for
 - `provision/cloudflare/` — Terraform-managed Cloudflare resources. See `docs/areas/cloudflare` in BM.
 - `provision/ovh/` — Terraform-managed OVH Cloud Project Storage (S3 backup buckets and the dedicated S3 user) used by the cluster backup planes. See `docs/areas/ovh-storage` in BM.
 - `provision/openmediavault/` — `mod.just` recipes for the bare-metal OMV host; reserved for Phase 10 OMV Ansible playbooks (post-cutover, not yet present in repo).
-- `provision/openwrt/` — `mod.just` recipes for OpenWrt router-side maintenance (NAS mount helper, DNS forwarding sanity checks).
+- OpenWRT router provisioning lives in the private `my-scripts-and-configs` repo (`OpenWRT/provision/`). The `just openwrt *` entry points still work from this repo via a shim in the root `.justfile`.
 
 ## Subtree Guides
 
@@ -25,7 +25,7 @@ For any work under `provision/`, apply guides in this order:
 ## Operating Rules
 
 - Treat this directory as the imperative and provider-facing side of the repo.
-- Keep operational commands aligned with the root `.justfile` and the relevant `mod.just` (`provision/cloudflare/mod.just`, `provision/ovh/mod.just`, `provision/openwrt/mod.just`, `provision/openmediavault/mod.just`) instead of inventing ad-hoc command flows.
+- Keep operational commands aligned with the root `.justfile` and the relevant `mod.just` (`provision/cloudflare/mod.just`, `provision/ovh/mod.just`, `provision/openmediavault/mod.just`) instead of inventing ad-hoc command flows. The OpenWRT workflow lives in the private `my-scripts-and-configs` repo and is invoked here via the `openwrt` shim in the root `.justfile`.
 - Prefer editing source configuration over generated state or local cache directories.
 - If a Just recipe already exists, use that workflow as the canonical entry point.
 

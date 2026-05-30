@@ -9,7 +9,7 @@ permalink: home-ops/docs/roadmap/openwrt-ansible-provisioning
 ## Metadata (observation-form, schema validation)
 
 - [topic] Declarative OpenWRT provisioning via Ansible community.openwrt
-- [status] proposed
+- [status] in_progress
 - [priority] medium
 
 ## Scope
@@ -140,3 +140,68 @@ Key integration considerations:
 - relates_to [[talos-cluster]]
 - depends_on [[AD-004-cilium-l2-not-bgp]]
 - depends_on [[AD-016-lan-lb-ip-range]]
+
+
+## Implementation status (2026-05-30)
+
+
+### Repository relocation (2026-05-30, post-implementation)
+
+The entire `provision/openwrt/` directory was moved out of the public `home-ops` repo into the private `github.com/zhorvath83/my-scripts-and-configs` repo under `OpenWRT/provision/`. The move was triggered by the realisation that `home-ops` is a public repository while the OpenWRT material contains a non-trivial amount of secret-adjacent topology:
+
+- 38 static DHCP leases including family device hostnames + MACs + IPs
+- 8 family device MACs in the LAN WiFi allowlist
+- Router HW MAC repeated across all `network.j2` device entries
+- WiFi SSIDs (`LordOfThePings*`)
+- ULA prefix
+- The public domain reference in `dhcp` UCI (`rebind_domain`)
+- The SSH public key in `files/authorized_keys`
+
+What changed in this repo:
+
+- `provision/openwrt/` directory deleted.
+- `.justfile`: `mod openwrt "provision/openwrt"` replaced by a shim recipe `openwrt *args` that forwards to `~/Projects/personal/my-scripts-and-configs/openwrt` — operator-facing surface `just openwrt <recipe> [args]` stays identical.
+- `provision/CLAUDE.md` and root `CLAUDE.md` updated to point at the private repo and document the shim.
+
+The "Done", "Design deviations", "Open / deferred" and "Validation checklist" sections below describe the implementation as it now lives in `my-scripts-and-configs/OpenWRT/provision/` — substitute that path mentally wherever an older `provision/openwrt/` path is referenced.
+
+### Done (this session)
+
+- **Phase 1 — foundation**: `ansible.cfg` (TOFU SSH via `StrictHostKeyChecking=accept-new`, ControlMaster/ControlPersist, pipelining), `requirements.yml` (`community.openwrt >=1.5.0,<2.0.0`), `inventory/hosts.yml` + `inventory/host_vars/router.yml` (root, SSH key-only, `ansible_python_interpreter: /usr/bin/python3`), `group_vars/all.yml`, `playbooks/site.yml`, `playbooks/ping.yml` (raw uname connectivity test).
+- **Phase 2 — packages + ControlD**: `playbooks/packages.yml` with 5-minute WAN-ready wait loop + `community.openwrt.apk` declarative state (72 packages including `python3-light`) + idempotent ControlD installer (resolver ID env-injected from 1Password via `op run`).
+- **Phase 3 — network + dhcp**: `playbooks/network.yml` deploys `templates/uci/network.j2` (PPPoE creds Jinja-injected); `playbooks/dhcp.yml` deploys the full `files/uci/dhcp` including 38 static lease entries (drift risk from AD-016 / talos-cluster addressed).
+- **Phase 4 — firewall + DNS**: `playbooks/firewall.yml` deploys `files/uci/firewall` (zones, forwarding, DNS interception rules, NAT). DNS forwarding lives inside the `dhcp` UCI (dnsmasq) — no separate `dns.yml`.
+- **Phase 5 — system + wireless**: `playbooks/system.yml` (hostname, TZ, NTP, log dest); `playbooks/wireless.yml` with `templates/uci/wireless.j2` (PSKs + country code + MAC allowlist all sourced from `group_vars` / env).
+- **Phase E — non-UCI files-and-scripts**: `playbooks/files-and-scripts.yml` deploys `rc.local`, `/etc/dropbear/authorized_keys`, `/etc/avahi/avahi-daemon.conf` (reflector + `allow-interfaces=br-iot.20,br-lan.10`), `/etc/crontabs/root` (template, only `/etc/init.d/acme renew` survives).
+- **Service UCIs**: `playbooks/services.yml` deploys 13 service-layer UCIs (`dropbear`, `uhttpd`, `luci`, `fstab` (templated, UUID env-injected), `rpcd`, `attendedsysupgrade`, `socat`, `irqbalance`, `sqm`, `vnstat`, `ucitrack`, `ubihealthd`, `prometheus-node-exporter-lua`) with per-file mode tracking and a loop-driven restart task.
+- **NextDNS deprecation cleanup**: `playbooks/cleanup.yml` removes the deprecated `nextdns` APK package + the `/etc/config/nextdns{,.bckup,.ori}` cruft (deprecated, ControlD replaced it; user-confirmed).
+- **Backup playbook**: `playbooks/backup.yml` replaces both router-side scripts (`openwrt-backup-local.sh` + `openwrt-backup-from-mac.sh`) — `sysupgrade --create-backup` via `raw`, then `scp` via `delegate_to: localhost` to `/Volumes/backups/openwrt`. Setup-free (`gather_facts: false`), works on a fresh router without Python.
+- **`mod.just` integration**: new recipes `galaxy`, `ping`, `plan`, `apply`, `converge <playbook>`; legacy `backup` recipe now wraps `ansible-playbook backup.yml` after the NAS mount preflight; `reinstall-packages` now wraps `just openwrt converge packages`; `upgrade` flow unchanged but its inner `backup` / `reinstall-packages` hops are now Ansible-driven.
+- **1Password integration**: `.env.sample` with 7 op:// references (`CONTROLD_RESOLVER_ID`, `PPPOE_{USERNAME,PASSWORD}`, `WIFI_PSK_{LAN,IOT,GUEST}`, `OPENWRT_USB_UUID`), `plan`/`apply`/`converge` recipes wrap `op run --no-masking --env-file=./.env --` (mirror of `provision/cloudflare/mod.just` pattern).
+- **Phase 6 doc-step partial**: `provision/CLAUDE.md` updated to reflect the Ansible flow.
+
+### Design deviations from the roadmap
+
+- **`python3-light` on the router** instead of strictly shell-based `community.openwrt.uci section`-per-section tasks. Trade-off: ~4 MB Python footprint on the router; gain: `ansible.builtin.copy`/`template`/`file` available, so non-UCI files (`rc.local`, `authorized_keys`, `avahi-daemon.conf`, `/etc/crontabs/root`) can be deployed cleanly without ad-hoc `scp + raw chmod` workarounds. Reversible: deleting `python3-light` from `apk_packages` and rewriting the UCI playbooks to use `community.openwrt.uci` section-by-section is a contained refactor.
+- **Full-file UCI template/copy approach** instead of `community.openwrt.uci section` per logical section. Pragmatic for cold-start rebuild (complete-state overwrite, single deploy task per UCI file). Loses per-section idempotent diffs — every UCI deploy triggers the full service restart even on a no-op change. Same reversibility note as above.
+- **Cold-start playbook order**: `ping → network → packages → cleanup → system → files → services → dhcp → firewall → wireless` — diverges from the roadmap's phase numbering because `network.yml` must run *before* `packages.yml` so the PPPoE WAN comes up before `apk update`.
+
+### Open / deferred
+
+- **ACME flow**: `/etc/config/acme` in the backup contained only placeholder values; `services.yml` deliberately skips it so a real cert configuration on the router is not clobbered. A real ACME flow (account email, FreeDNS / DNS-validation creds, cert list) is a follow-up — would land as `templates/uci/acme.j2` + new env vars.
+- **`ansible-lint` pre-commit hook**: not wired up yet — would add `pipx:ansible-lint` to `.mise.toml` and a hook entry to `.pre-commit-config.yaml`.
+- **Family hostname anonymisation in `files/uci/dhcp`**: 38 static leases include personal-name hostnames (`eszter-iphone`, `aliz-ipad`, …). CLAUDE.md permits private LAN hostnames in-repo; revisit only if the repository is ever made public.
+- **Connectivity validation on the live router**: operator-driven smoke test (`just openwrt galaxy && just openwrt ping && just openwrt plan`) — not exercised in this session because the implementation was done locally from the 2026-05-27 backup tarball.
+- **Cluster wakeup verification**: after a real apply, confirm that the cluster (`pve-0`, `k8s-cp0`, `nas`) gets its expected static lease and that `192.168.1.20` (Plex/Emby target referenced from `files/uci/firewall`) is consistent with the current LAN reality.
+
+### Validation checklist (next step for the operator)
+
+1. `ssh 192.168.1.1` once to populate `~/.ssh/known_hosts` (TOFU is accept-new only, so this is one-time).
+2. Create the 1Password `HomeOps/router` item with the 7 fields referenced by `.env.sample`.
+3. `cd ~/Projects/personal/my-scripts-and-configs && cp OpenWRT/provision/.env.sample OpenWRT/provision/.env` and adjust op:// references if vault layout differs.
+4. `just openwrt galaxy` — install the `community.openwrt` collection into `./collections`.
+5. `just openwrt ping` — Python-free raw `uname` connectivity test.
+6. `just openwrt plan` — full `--check --diff` site dry-run (note: `raw` tasks skip in check mode, so several diffs will not show).
+7. `just openwrt converge packages` — bootstrap `python3-light` + ControlD on a fresh router before the full `apply`.
+8. `just openwrt apply` — full convergence.
+9. `just openwrt backup` — verify the new Ansible-driven backup path lands a fresh `.tar.gz` in `/Volumes/backups/openwrt`.
