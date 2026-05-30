@@ -30,7 +30,7 @@ spec:
           app:
             image:
               repository: ghcr.io/zhorvath83/flux-provider-pushover
-              tag: latest@sha256:bafac4db1db20f85f4c87634b701bf7fa4b2f936deb0785a16e3863a1fdde0e1
+              tag: latest@sha256:e6764842034b6db444cfe800139370ba992e7e59dc59992c6c98e62ee044fc57
             env:
               TZ: "${TIMEZONE}"
             envFrom:
