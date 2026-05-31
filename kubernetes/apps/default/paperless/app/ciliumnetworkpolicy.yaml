@@ -38,3 +38,11 @@ spec:
         - ports:
             - port: "8000"
               protocol: TCP
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: default
+            app.kubernetes.io/name: paperless-gpt
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP
