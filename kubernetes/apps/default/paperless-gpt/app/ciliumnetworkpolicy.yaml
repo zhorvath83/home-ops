@@ -3,13 +3,13 @@
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
-  name: paperless
+  name: paperless-gpt
 spec:
   endpointSelector:
     matchLabels:
-      app.kubernetes.io/name: paperless
-      app.kubernetes.io/instance: paperless
-      app.kubernetes.io/controller: paperless
+      app.kubernetes.io/name: paperless-gpt
+      app.kubernetes.io/instance: paperless-gpt
+      app.kubernetes.io/controller: paperless-gpt
   ingress:
     - fromEndpoints:
         - matchLabels:
@@ -22,13 +22,5 @@ spec:
                 - envoy-internal
       toPorts:
         - ports:
-            - port: "8000"
-              protocol: TCP
-    - fromEndpoints:
-        - matchLabels:
-            k8s:io.kubernetes.pod.namespace: default
-            app.kubernetes.io/name: paperless-gpt
-      toPorts:
-        - ports:
-            - port: "8000"
+            - port: "8080"
               protocol: TCP
