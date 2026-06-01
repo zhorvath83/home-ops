@@ -1,61 +1,60 @@
 {
-  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
   extends: [
-    ":enableRenovate",
-    "config:recommended",
-    ":disableRateLimiting",
-    ":dependencyDashboard",
-    ":semanticCommits",
-    ":automergeBranch",
-    "docker:enableMajor",
-    ":enablePreCommit",
-    "helpers:pinGitHubActionDigestsToSemver",
-
-    // Local fragments
-    "github>zhorvath83/home-ops//.renovate/allowedVersions.json5",
-    "github>zhorvath83/home-ops//.renovate/autoMerge.json5",
-    "github>zhorvath83/home-ops//.renovate/customManagers.json5",
-    "github>zhorvath83/home-ops//.renovate/disabledDatasources.json5",
-    "github>zhorvath83/home-ops//.renovate/groups.json5",
-    "github>zhorvath83/home-ops//.renovate/overrides.json5",
-    "github>zhorvath83/home-ops//.renovate/prBodyNotes.json5",
-    "github>zhorvath83/home-ops//.renovate/semanticCommits.json5",
-    "github>zhorvath83/home-ops//.renovate/talosFactory.json5",
+    ':enableRenovate',
+    'config:recommended',
+    ':disableRateLimiting',
+    ':dependencyDashboard',
+    ':semanticCommits',
+    ':automergeBranch',
+    'docker:enableMajor',
+    ':enablePreCommit',
+    'helpers:pinGitHubActionDigestsToSemver',
+    'github>zhorvath83/home-ops//.renovate/allowedVersions.json5',
+    'github>zhorvath83/home-ops//.renovate/autoMerge.json5',
+    'github>zhorvath83/home-ops//.renovate/customManagers.json5',
+    'github>zhorvath83/home-ops//.renovate/disabledDatasources.json5',
+    'github>zhorvath83/home-ops//.renovate/groups.json5',
+    'github>zhorvath83/home-ops//.renovate/overrides.json5',
+    'github>zhorvath83/home-ops//.renovate/prBodyNotes.json5',
+    'github>zhorvath83/home-ops//.renovate/semanticCommits.json5',
+    'github>zhorvath83/home-ops//.renovate/talosFactory.json5',
   ],
-
-  dependencyDashboardTitle: "Renovate Dashboard 🤖",
-  baseBranches: ["main"],
+  dependencyDashboardTitle: 'Renovate Dashboard 🤖',
+  baseBranchPatterns: [
+    'main',
+  ],
   commitBodyTable: true,
-  suppressNotifications: ["prIgnoreNotification", "prEditedNotification"],
-  rebaseWhen: "auto",
-  assignees: ["@zhorvath83"],
-  timezone: "Europe/Budapest",
-
-  // mirror.gcr.io is a read-only Docker Hub proxy; the source of truth is docker.io.
-  // This alias makes Renovate look up versions against docker.io for mirror.gcr.io packages.
+  suppressNotifications: [
+    'prIgnoreNotification',
+    'prEditedNotification',
+  ],
+  rebaseWhen: 'auto',
+  assignees: [
+    '@zhorvath83',
+  ],
+  timezone: 'Europe/Budapest',
   registryAliases: {
-    "mirror.gcr.io": "docker.io",
+    'mirror.gcr.io': 'docker.io',
   },
-
-  // Manager file patterns must stay in sync across flux, helm-values, and kubernetes.
   flux: {
     managerFilePatterns: [
-      "/^kubernetes/.+\\.yaml(?:\\.j2)?$/",
+      '/^kubernetes/.+\\.yaml(?:\\.j2)?$/',
     ],
   },
-  "helm-values": {
+  'helm-values': {
     managerFilePatterns: [
-      "/^kubernetes/.+\\.yaml(?:\\.j2)?$/",
+      '/^kubernetes/.+\\.yaml(?:\\.j2)?$/',
     ],
   },
   kubernetes: {
     managerFilePatterns: [
-      "/^kubernetes/.+\\.yaml(?:\\.j2)?$/",
+      '/^kubernetes/.+\\.yaml(?:\\.j2)?$/',
     ],
   },
   helmfile: {
     managerFilePatterns: [
-      "/^kubernetes/bootstrap/helmfile\\.d/.+\\.yaml$/",
+      '/^kubernetes/bootstrap/helmfile\\.d/.+\\.yaml$/',
     ],
   },
 }
