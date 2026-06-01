@@ -87,5 +87,14 @@
       matchDepNames: ["kubectl"],
       overridePackageName: "kubernetes/kubernetes",
     },
+    {
+      description: "Talos - 3-day cooldown before raising upgrade PRs",
+      matchPackageNames: [
+        "ghcr.io/siderolabs/installer",
+        "ghcr.io/siderolabs/talosctl",
+        "/factory\\.talos\\.dev/",
+      ],
+      minimumReleaseAge: "3 days",
+    },
   ],
 }
