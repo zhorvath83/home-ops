@@ -96,3 +96,5 @@ spec:
           actual:
             app:
               - path: /data
+      tmp:
+        type: emptyDir
