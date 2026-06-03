@@ -1,0 +1,105 @@
+---
+name: Flate
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "kubernetes/**"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  filter:
+    name: Flate - Filter
+    runs-on: ubuntu-latest
+    outputs:
+      changed-files: ${{ steps.changed-files.outputs.changed_files }}
+    steps:
+      - name: Get Changed Files
+        id: changed-files
+        uses: bjw-s-labs/action-changed-files@a9a36fb08ce06db9b02fbd8026cc2c0945eb9841 # v0.6.0
+        with:
+          patterns: kubernetes/**/*
+
+  flate:
+    if: ${{ needs.filter.outputs.changed-files != '[]' }}
+    needs: filter
+    name: Flate - Test + Diff
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Install flate
+        uses: home-operations/flate/action@2df8349356dd1b40a56be5bce8bc4b2b4a951962 # 0.2.7
+        with:
+          token: ""
+
+      - name: Run flate test
+        run: flate test all --path ./kubernetes/flux/cluster
+
+      - name: Run flate diff
+        id: diff
+        env:
+          DIFF_OUTPUT: diff.txt
+        run: |
+          set -euo pipefail
+          flate diff all --path ./kubernetes/flux/cluster --output-file "$DIFF_OUTPUT" || true
+          if [ -s "$DIFF_OUTPUT" ]; then
+            {
+              echo "diff<<EOF"
+              cat "$DIFF_OUTPUT"
+              echo EOF
+            } >> "$GITHUB_OUTPUT"
+            echo "diff=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "diff=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Add or Update Comment
+        if: ${{ steps.diff.outputs.diff == 'true' }}
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          DIFF: ${{ steps.diff.outputs.diff }}
+        with:
+          script: |-
+            const { DIFF } = process.env;
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const sha = context.payload.pull_request.head.sha;
+            const marker = `<!-- Sticky Pull Request Comment${issue_number}/flate -->`;
+            const body = [
+              marker,
+              `<details open><summary>Flate diff</summary>`,
+              "",
+              "```diff",
+              DIFF,
+              "```",
+              "",
+              "</details>",
+              "",
+              `<sub>Generated for [\`${sha.slice(0, 7)}\`](${context.payload.pull_request.html_url}/commits/${sha})</sub>`,
+            ].join("\n");
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner, repo, issue_number, per_page: 100,
+            });
+            const existing = comments.find(c => c.body?.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }

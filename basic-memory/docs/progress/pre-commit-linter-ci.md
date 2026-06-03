@@ -35,12 +35,13 @@ permalink: home-ops/docs/progress/pre-commit-linter-ci
 - Created .shellcheckrc (SC1091, SC2155 suppressions, matching onedr0p/buroa)
 - Added shellcheck and actionlint pre-commit hooks (language: system, mise-managed)
 
-### Phase 4 — flux-local CI workflow ✅
+### Phase 4 — flux-local CI workflow ✅ *(superseded 2026-06-03 — see [[flate-migration]])*
 - Created .github/workflows/flux-local.yaml (4 jobs: filter, test, diff matrix, success gate)
 - Uses GITHUB_TOKEN for PR comments (not 1Password service account)
 - Sticky PR comments via github-script (matching bjw-s pattern)
 - Concurrency group with cancel-in-progress
 - metadata.namespace NOT added to ks.yaml files (bjw-s/onedr0p pattern — Flux uses spec.targetNamespace)
+- **Reversed decision (2026-06-03)**: workflow was replaced by `.github/workflows/flate.yaml` and `.github/workflows/validate-images.yaml` — see [[flate-migration]]. Both reference repos (bjw-s-labs/home-ops, onedr0p/home-ops) have completed the same migration.
 
 ### Phase 5 — PR auto-labeler + label sync ✅
 - Created .github/labeler.yaml (5 area labels: github, kubernetes, renovate, talos, terraform)
@@ -85,8 +86,7 @@ permalink: home-ops/docs/progress/pre-commit-linter-ci
 ## Deliberate Decisions (NOT gaps)
 
 - **pre-commit over Lefthook** — utility hooks (trailing-whitespace, etc.) need custom shell scripts in Lefthook; pre-commit repos provide battle-tested implementations
-- **flux-local Docker image in CI** — uses `ghcr.io/allenporter/flux-local:v8.2.0` container action (no Python/pipx dependency); local dev still uses `pipx:flux-local` via mise
-- **No Image Pull workflow** — requires self-hosted runner, operational scope
+- **flate over flux-local** (2026-06-03, supersedes the previous "flux-local over flate" line) — see [[flate-migration]] for the full rationale. Reference repos (bjw-s-labs/home-ops, onedr0p/home-ops) have both completed the migration; flate 0.2.7 has a maintained install action, and removes the Python 3.13+ runtime requirement that bit us in Phase 9/11.
 - **No monthly tagging** — release automation, not linter/CI
 - **No 1Password CI tokens** — using GITHUB_TOKEN instead (simpler, fork PR limitation accepted)
 
@@ -123,17 +123,18 @@ relates_to [[docs/areas/k8s-workloads]]
 - MegaLinter VALIDATE_ALL_CODEBASE: true caused 857 markdown errors on every PR regardless of scope
 - Pre-commit hooks validate full codebase locally; CI validates changed files via flux-local
 
-### Phase 9 — flux-local CI Python 3.13 fix ✅ → Phase 11 — Docker image migration ✅
+### Phase 9 — flux-local CI Python 3.13 fix ✅ → Phase 11 — Docker image migration ✅ *(both superseded 2026-06-03 — see [[flate-migration]])*
 
 - Phase 9: Added actions/setup-python with python-version "3.13" to flux-local workflow (test + diff jobs)
 - Root cause: flux-local>=8.0.0 requires Python >=3.13, but ubuntu-latest ships Python 3.12
 - Phase 11: Replaced setup-python + mise-action with Docker image `ghcr.io/allenporter/flux-local:v8.2.0`
 - Docker approach eliminates Python dependency entirely — no Python setup, no pipx, no mise in CI
 - Local dev still uses `pipx:flux-local` via mise (Python 3.14 on macOS)
+- **Reversed decision (2026-06-03)**: both phases were superseded by the flate migration. The Docker image approach is no longer needed because flate is a Go binary installed by `home-operations/flate/action`. See [[flate-migration]] for the full migration context.
 
 ## Updated Deliberate Decisions
 
-- **MegaLinter removed** — pre-commit covers markdownlint/tflint locally, flux-local covers K8s manifest validation in CI, kubeconform was redundant with flux-local test
+- **MegaLinter removed** — pre-commit covers markdownlint/tflint locally, flate covers K8s manifest validation in CI (since 2026-06-03, see [[flate-migration]]), kubeconform was redundant with flux-local test
 - **markdown-link-check dropped** — low signal-to-noise ratio, not worth CI time
 - **Pre-commit parity** — all linters that run anywhere now also run locally before commit
 

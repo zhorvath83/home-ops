@@ -1,0 +1,105 @@
+---
+name: Validate Images
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "kubernetes/**"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  filter:
+    name: Validate Images - Filter
+    runs-on: ubuntu-latest
+    outputs:
+      changed-files: ${{ steps.changed-files.outputs.changed_files }}
+    steps:
+      - name: Get Changed Files
+        id: changed-files
+        uses: bjw-s-labs/action-changed-files@a9a36fb08ce06db9b02fbd8026cc2c0945eb9841 # v0.6.0
+        with:
+          patterns: kubernetes/**/*
+
+  images:
+    if: ${{ needs.filter.outputs.changed-files != '[]' }}
+    needs: filter
+    name: Validate Images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      FLATE_PATH: ./kubernetes/flux/cluster
+      FLATE_OUTPUT: json
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Install flate
+        uses: home-operations/flate/action@2df8349356dd1b40a56be5bce8bc4b2b4a951962 # 0.2.7
+        with:
+          token: ""
+
+      - name: Run flate diff images
+        id: diff
+        run: |
+          set -euo pipefail
+          diff=$(flate diff images)
+          echo "Changed images:"
+          echo "${diff}" | yq --prettyPrint
+          if [ -n "${diff}" ] && [ "${diff}" != "null" ] && [ "${diff}" != "[]" ]; then
+            {
+              echo "diff<<EOF"
+              echo "${diff}" | yq --prettyPrint
+              echo EOF
+            } >> "$GITHUB_OUTPUT"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Add or Update Comment
+        if: ${{ steps.diff.outputs.changed == 'true' }}
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          DIFF: ${{ steps.diff.outputs.diff }}
+        with:
+          script: |-
+            const { DIFF } = process.env;
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const sha = context.payload.pull_request.head.sha;
+            const marker = `<!-- Sticky Pull Request Comment${issue_number}/flate-images -->`;
+            const body = [
+              marker,
+              `<details open><summary>Changed container images</summary>`,
+              "",
+              "```yaml",
+              DIFF,
+              "```",
+              "",
+              "</details>",
+              "",
+              `<sub>Generated for [\`${sha.slice(0, 7)}\`](${context.payload.pull_request.html_url}/commits/${sha})</sub>`,
+            ].join("\n");
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner, repo, issue_number, per_page: 100,
+            });
+            const existing = comments.find(c => c.body?.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }
