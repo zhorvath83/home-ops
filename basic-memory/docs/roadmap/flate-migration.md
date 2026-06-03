@@ -16,8 +16,9 @@ tags:
 ## Metadata (observation-form, schema validation)
 
 - [topic] Migrate from `flux-local` to `home-operations/flate` for cluster-manifest validation and PR diff
-- [status] proposed
+- [status] done
 - [priority] medium
+- [completed_at] 2026-06-03
 - [scope] Replace the pipx-managed `flux-local` binary and the `ghcr.io/allenporter/flux-local` Docker image in CI with `github:home-operations/flate`. Touch: `.mise.toml`, `.github/workflows/flux-local.yaml` (rename + rewrite to match bjw-s sticky-comment pattern), and `kubernetes/mod.just` (`render-local-ks` recipe). Update the `pre-commit-linter-ci` progress note's Phase 4 and Phase 11 blocks to reflect the reversal of the prior "flux-local over flate" decision. Out of scope: a separate image-diff workflow, dufs-based diff hosting, and pre-commit hook changes.
 - [rationale] The two reference repos (bjw-s-labs/home-ops, onedr0p/home-ops) have both completed a full migration to flate; `rg flux-local` returns zero hits in either of them, and `flate` is now at 0.2.7 with an actively maintained install action (`home-operations/flate/action`). Our `pre-commit-linter-ci` progress note captures the prior reversal ("flux-local over flate — flux-local is mature (v8.2.0), already in mise; flate is newer but less mature"); that rationale no longer matches the ecosystem. Adopting flate consolidates the validation surface to the same tool the reference repos standardize on, and removes one Python dependency from local mise and from CI.
 - [options] (1) **Sticky PR comment, bjw-s pattern** — chosen. Renders the diff inline in a collapsed `<details>` block on the PR, updated in place by `github-script` keyed by a sticky-comment marker. (2) External dufs upload (onedr0p pattern) — rejected: would require a new dufs workload in-cluster plus a 1Password-sourced password secret; scope-creep for a one-tool swap. (3) Pipeline artifact only, no PR comment — rejected: weakens reviewer signal; today reviewers see a flate-style diff in the PR thread.

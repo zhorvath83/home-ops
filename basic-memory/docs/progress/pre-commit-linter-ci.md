@@ -122,7 +122,7 @@ relates_to [[docs/areas/k8s-workloads]]
 - Deleted .github/workflows/linter.yaml (MegaLinter workflow)
 - Rationale: markdownlint and tflint now in pre-commit, kubeconform redundant with flate test, markdown-link-check dropped
 - MegaLinter VALIDATE_ALL_CODEBASE: true caused 857 markdown errors on every PR regardless of scope
-- Pre-commit hooks validate full codebase locally; CI validates changed files via flux-local
+- Pre-commit hooks validate full codebase locally; CI validates changed files via flate (since 2026-06-03, see [[flate-migration]])
 
 ### Phase 9 — flux-local CI Python 3.13 fix ✅ → Phase 11 — Docker image migration ✅ *(both superseded 2026-06-03 — see [[flate-migration]])*
 

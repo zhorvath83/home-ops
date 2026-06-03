@@ -67,9 +67,14 @@ Added workflow-level `permissions: { contents: write, pull-requests: write }` bl
 
 - **FairwindsOps/pluto/github-action kept**: Not flagged by zizmor, Renovate pins SHA, replacement adds maintenance burden.
 - **No `.zizmor.yml` config**: 18 suppressed findings handled by default severity thresholds; no config overhead.
-- **flux-local.yaml not touched**: Its template-injection was suppressed (GitHub-controlled values); modifying clean workflows violates minimum-change principle.
+- **flux-local.yaml not touched**: Its template-injection was suppressed (GitHub-controlled values); modifying clean workflows violates minimum-change principle. *Superseded 2026-06-03 — see [[flate-migration]]: `.github/workflows/flux-local.yaml` was deleted and replaced by `.github/workflows/flate.yaml` and `.github/workflows/validate-images.yaml`. The replacement workflows need a fresh zizmor scan before they can be considered security-reviewed.*
 - **`secrets.PAT` kept for checkout**: Some workflows need PAT for cross-repo or write ops; fallback harmless.
 - **`GITHUB_TOKEN` for issue creation**: With explicit `issues: write` permission, PAT fallback unnecessary for `gh issue create`.
+
+## Follow-up (post-migration)
+
+- [ ] Re-run zizmor on `.github/workflows/flate.yaml` and `.github/workflows/validate-images.yaml`. The new workflows use `home-operations/flate/action@<sha>` with a `version:` input (avoids the SHA-to-tag lookup token failure seen in the prior setup) and a `permissions:` block scoped to the job (not step-level, which actionlint rejected on `actions/github-script`). Verify no new findings are introduced.
+- [ ] Confirm `pull-requests: write` at the job level on both new workflows is acceptable per zizmor `excessive-permissions`. If not, the alternative is splitting into two jobs (one for test, one for comment).
 
 ## Verification
 
