@@ -119,7 +119,7 @@ relates_to [[docs/areas/k8s-workloads]]
 ### Phase 8 — MegaLinter removal ✅
 
 - Deleted .github/workflows/linter.yaml (MegaLinter workflow)
-- Rationale: markdownlint and tflint now in pre-commit, kubeconform redundant with flux-local test, markdown-link-check dropped
+- Rationale: markdownlint and tflint now in pre-commit, kubeconform redundant with flate test, markdown-link-check dropped
 - MegaLinter VALIDATE_ALL_CODEBASE: true caused 857 markdown errors on every PR regardless of scope
 - Pre-commit hooks validate full codebase locally; CI validates changed files via flux-local
 
@@ -134,7 +134,7 @@ relates_to [[docs/areas/k8s-workloads]]
 
 ## Updated Deliberate Decisions
 
-- **MegaLinter removed** — pre-commit covers markdownlint/tflint locally, flate covers K8s manifest validation in CI (since 2026-06-03, see [[flate-migration]]), kubeconform was redundant with flux-local test
+- **MegaLinter removed** — pre-commit covers markdownlint/tflint locally, flate covers K8s manifest validation in CI (since 2026-06-03, see [[flate-migration]]), kubeconform was redundant with flate test
 - **markdown-link-check dropped** — low signal-to-noise ratio, not worth CI time
 - **Pre-commit parity** — all linters that run anywhere now also run locally before commit
 

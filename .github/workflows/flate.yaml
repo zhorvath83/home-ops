@@ -43,9 +43,9 @@ jobs:
           persist-credentials: false
 
       - name: Install flate
-        uses: home-operations/flate/action@2df8349356dd1b40a56be5bce8bc4b2b4a951962 # 0.2.7
+        uses: home-operations/flate/action@2df8349356dd1b40a56be5bce8bc4b2b4a951962
         with:
-          token: ""
+          version: "0.2.7"
 
       - name: Run flate test
         run: flate test all --path ./kubernetes/flux/cluster

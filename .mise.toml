@@ -59,4 +59,5 @@ kubectl = "1.36.1"
 "pipx:ansible-core" = "2.21.0"
 
 # GitOps manifest validation (replaces flux-local, see docs/roadmap/flate-migration)
+# renovate: datasource=github-releases depName=home-operations/flate
 "github:home-operations/flate" = "0.2.7"
