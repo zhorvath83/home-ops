@@ -79,5 +79,13 @@
       group: { commitMessageTopic: "{{{groupName}}} group" },
       minimumGroupSize: 1,
     },
+    {
+      description: "Flate group (mise tool + GitHub Action)",
+      groupName: "Flate",
+      matchDatasources: ["github-releases", "github-tags"],
+      matchPackageNames: ["home-operations/flate"],
+      group: { commitMessageTopic: "{{{groupName}}} group" },
+      minimumGroupSize: 1,
+    },
   ],
 }

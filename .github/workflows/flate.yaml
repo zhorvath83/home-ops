@@ -48,7 +48,7 @@ jobs:
       - name: Install flate
         uses: home-operations/flate/action@2df8349356dd1b40a56be5bce8bc4b2b4a951962
         with:
-          version: "0.2.7"
+          version: "0.2.10"
 
       - name: Run flate test
         run: flate test all --path ./kubernetes/flux/cluster --base "${FLATE_BASE}"
