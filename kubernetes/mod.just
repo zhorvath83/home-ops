@@ -164,4 +164,4 @@ view-secret secret ns:
 [private]
 [script]
 render-local-ks name ns:
-    flate build ks --namespace "{{ ns }}" --output yaml "{{ name }}"
+    flux-local build ks --namespace "{{ ns }}" --path "{{ kubernetes_dir }}/flux/cluster" "{{ name }}"

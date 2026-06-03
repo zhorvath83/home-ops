@@ -638,45 +638,6 @@ url = "https://github.com/fluxcd/flux2/releases/download/v2.8.8/flux_2.8.8_windo
 [tools.flux2."platforms.windows-x64".provenance.slsa]
 url = "https://github.com/fluxcd/flux2/releases/download/v2.8.8/provenance.intoto.jsonl"
 
-[[tools."github:home-operations/flate"]]
-version = "0.2.7"
-backend = "github:home-operations/flate"
-
-[tools."github:home-operations/flate"."platforms.linux-arm64"]
-checksum = "sha256:9851b888b57612c133bcfcc2a023436f29493e5ffa7183a4749e8a04f3fb499d"
-url = "https://github.com/home-operations/flate/releases/download/0.2.7/flate_0.2.7_linux_arm64.tar.gz"
-url_api = "https://api.github.com/repos/home-operations/flate/releases/assets/437260707"
-
-[tools."github:home-operations/flate"."platforms.linux-arm64-musl"]
-checksum = "sha256:9851b888b57612c133bcfcc2a023436f29493e5ffa7183a4749e8a04f3fb499d"
-url = "https://github.com/home-operations/flate/releases/download/0.2.7/flate_0.2.7_linux_arm64.tar.gz"
-url_api = "https://api.github.com/repos/home-operations/flate/releases/assets/437260707"
-
-[tools."github:home-operations/flate"."platforms.linux-x64"]
-checksum = "sha256:3d01684c4f383d923666895da4d899054d7818ba6d4bc1b969f12925adfa3113"
-url = "https://github.com/home-operations/flate/releases/download/0.2.7/flate_0.2.7_linux_amd64.tar.gz"
-url_api = "https://api.github.com/repos/home-operations/flate/releases/assets/437260706"
-
-[tools."github:home-operations/flate"."platforms.linux-x64-musl"]
-checksum = "sha256:3d01684c4f383d923666895da4d899054d7818ba6d4bc1b969f12925adfa3113"
-url = "https://github.com/home-operations/flate/releases/download/0.2.7/flate_0.2.7_linux_amd64.tar.gz"
-url_api = "https://api.github.com/repos/home-operations/flate/releases/assets/437260706"
-
-[tools."github:home-operations/flate"."platforms.macos-arm64"]
-checksum = "sha256:4dd48a5023c0b25b7547e90f1f3f66e22f351a244b9237fb2cac483aeeffefd6"
-url = "https://github.com/home-operations/flate/releases/download/0.2.7/flate_0.2.7_darwin_arm64.tar.gz"
-url_api = "https://api.github.com/repos/home-operations/flate/releases/assets/437260705"
-
-[tools."github:home-operations/flate"."platforms.macos-x64"]
-checksum = "sha256:ac8d4d21e891d49e8b2e5b6a832f18d3bdcf009b242579ff21f0ec7724e58bb9"
-url = "https://github.com/home-operations/flate/releases/download/0.2.7/flate_0.2.7_darwin_amd64.tar.gz"
-url_api = "https://api.github.com/repos/home-operations/flate/releases/assets/437260726"
-
-[tools."github:home-operations/flate"."platforms.windows-x64"]
-checksum = "sha256:4e14c6f3e69f6ad4de637a1aada9cabd3ed05b951a126853f4fe411cd8adedb6"
-url = "https://github.com/home-operations/flate/releases/download/0.2.7/flate_0.2.7_windows_amd64.zip"
-url_api = "https://api.github.com/repos/home-operations/flate/releases/assets/437260708"
-
 [[tools.gum]]
 version = "0.17.0"
 backend = "aqua:charmbracelet/gum"
@@ -887,6 +848,10 @@ backend = "pipx:ansible"
 [[tools."pipx:ansible-core"]]
 version = "2.21.0"
 backend = "pipx:ansible-core"
+
+[[tools."pipx:flux-local"]]
+version = "8.2.0"
+backend = "pipx:flux-local"
 
 [[tools."pipx:yamllint"]]
 version = "1.38.0"
