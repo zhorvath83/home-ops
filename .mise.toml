@@ -60,4 +60,4 @@ kubectl = "1.36.1"
 
 # GitOps manifest validation (replaces flux-local, see docs/progress/flate-migration)
 # renovate: datasource=github-releases depName=home-operations/flate
-"github:home-operations/flate" = "0.2.7"
+"github:home-operations/flate" = "0.2.10"
