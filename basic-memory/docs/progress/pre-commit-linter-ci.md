@@ -13,6 +13,7 @@ permalink: home-ops/docs/progress/pre-commit-linter-ci
 - [created_at] 2025-05-24
 - [completed_at] 2025-05-25
 - [scope] pre-commit, CI, linters, PR checks, zizmor
+- [superseded_by] [[flate-migration]] — the "flux-local over flate" decision in Phase 4 (and the related Phase 9/11 reversals) was superseded on 2026-06-03. The CI validation surface is now provided by `home-operations/flate` instead of `flux-local`. See [[flate-migration]] for the full migration context.
 
 ---
 
