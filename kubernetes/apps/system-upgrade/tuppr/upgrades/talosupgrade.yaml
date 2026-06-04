@@ -16,11 +16,8 @@ spec:
     timeout: 30m
     force: false
     debug: false
-  drain:
-    ignoreDaemonSets: true
-    force: true
-    deleteLocalData: true
-    disableEviction: false
+  # drain omitted: single-node cluster, no other node to evict to. tuppr's
+  # ensureNodeUncordoned reverts the cordon Talos leaves behind.
   healthChecks:
     - apiVersion: kustomize.toolkit.fluxcd.io/v1
       kind: Kustomization
