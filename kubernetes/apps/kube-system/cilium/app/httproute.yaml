@@ -7,7 +7,7 @@ metadata:
   annotations:
     external-dns.alpha.kubernetes.io/controller: none
     gethomepage.dev/enabled: "true"
-    gethomepage.dev/name: Hubble
+    gethomepage.dev/name: Cilium Hubble UI
     gethomepage.dev/group: Observability
     gethomepage.dev/icon: https://cdn.jsdelivr.net/gh/selfhst/icons/svg/cilium-hubble.svg
 spec:
