@@ -8,38 +8,11 @@ spec:
   talos:
     # renovate: datasource=custom.talos-factory depName=siderolabs/talos
     version: "v1.13.3"
-  parallelism: 1
   policy:
-    placement: soft
     rebootMode: powercycle
-    stage: false
-    timeout: 30m
-    force: false
-    debug: false
-  # drain omitted: single-node cluster, no other node to evict to. tuppr's
-  # ensureNodeUncordoned reverts the cordon Talos leaves behind.
   healthChecks:
-    - apiVersion: kustomize.toolkit.fluxcd.io/v1
-      kind: Kustomization
-      name: ALL
-      expr: object.status.conditions.filter(c, c.type == 'Ready').all(c, c.status == 'True')
-      timeout: 5m
-    - apiVersion: helm.toolkit.fluxcd.io/v2
-      kind: HelmRelease
-      name: ALL
-      expr: object.status.conditions.filter(c, c.type == 'Ready').all(c, c.status == 'True')
-      timeout: 5m
-    - apiVersion: helm.toolkit.fluxcd.io/v2
-      kind: HelmRelease
-      name: cilium
-      namespace: kube-system
-      expr: object.status.conditions.filter(c, c.type == 'Ready').all(c, c.status == 'True')
-      timeout: 5m
-    - apiVersion: helm.toolkit.fluxcd.io/v2
-      kind: HelmRelease
-      name: cloudflare-tunnel
-      namespace: networking
-      expr: object.status.conditions.filter(c, c.type == 'Ready').all(c, c.status == 'True')
-      timeout: 5m
-  nodeSelector:
-    matchLabels: {}
+    - description: "All ReplicationSources in idle condition"
+      apiVersion: volsync.backube/v1alpha1
+      kind: ReplicationSource
+      expr: |-
+        status.conditions.filter(c, c.type == "Synchronizing").all(c, c.status == "False")
