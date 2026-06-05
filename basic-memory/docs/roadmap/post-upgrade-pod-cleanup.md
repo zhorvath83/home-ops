@@ -216,3 +216,37 @@ Option B (or both).
 - relates_to [[AD-019-tuppr-system-upgrade]]
 - relates_to [[k8s-workloads]] - cluster inventory invariant
 - relates_to [[talos-cluster]] - reboot trigger
+
+## Pending verification (2026-06-05)
+
+Phase 1 changes are staged in the working tree but **not committed yet**.
+Until the next Tuppr-driven Talos upgrade runs and the acceptance criteria
+are checked, this roadmap stays `in-progress`. Do not promote to
+`completed` or open Phase 2 work in the meantime.
+
+### Staged working-tree changes
+
+- `kubernetes/apps/system-upgrade/tuppr/upgrades/talosupgrade.yaml` -
+  `spec.drain.enabled: false` added (the actual fix). `rebootMode` kept
+  on `powercycle`. healthChecks unchanged.
+- `kubernetes/apps/system-upgrade/tuppr/app/helmrelease.yaml` -
+  explicit `values.image.tag: 0.2.1` with Renovate
+  `datasource=docker depName=ghcr.io/home-operations/tuppr` annotation.
+  Independent of the cleanup fix; bundled because of the same review pass.
+- `.renovate/groups.json5` - new "Tuppr" group so the chart (OCIRepository
+  tag) and the controller image (HR values.image.tag) are grouped into a
+  single Renovate PR on lockstep releases.
+- `basic-memory/docs/roadmap/post-upgrade-pod-cleanup.md` - this note
+  rewritten with the revised root-cause analysis.
+
+### What "pending" means here
+
+- The TalosUpgrade CR change has no effect until Tuppr starts a fresh
+  upgrade run. Editing the CR alone does not retry the previous run.
+- The next Renovate-driven Talos version bump is the natural trigger.
+  No manual upgrade should be forced just to test this.
+- When that upgrade lands, run the Verification plan in this note
+  (`kubectl get pods -A --field-selector=status.phase=Failed/Succeeded`,
+  filter out Job-owned, count) and update the note with the result.
+- If 0 ghosts -> mark this note `completed` and close Phase 2 as
+  not-needed. If >0 -> open Phase 2 with the recorded ghost count.
