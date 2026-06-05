@@ -9,7 +9,7 @@ metadata:
     gethomepage.dev/enabled: "true"
     gethomepage.dev/name: Hubble
     gethomepage.dev/group: Observability
-    gethomepage.dev/icon: cilium-hubble.svg
+    gethomepage.dev/icon: https://cdn.jsdelivr.net/gh/selfhst/icons/svg/cilium-hubble.svg
 spec:
   parentRefs:
     - name: envoy-internal
