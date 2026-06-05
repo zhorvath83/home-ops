@@ -8,6 +8,9 @@ spec:
   talos:
     # renovate: datasource=custom.talos-factory depName=siderolabs/talos
     version: "v1.13.3"
+  # Skip the kubectl drain step: on a single-node cluster there is nowhere to drain.
+  drain:
+    enabled: false
   policy:
     rebootMode: powercycle
   healthChecks:

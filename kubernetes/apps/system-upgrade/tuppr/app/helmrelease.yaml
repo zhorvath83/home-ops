@@ -17,6 +17,9 @@ spec:
   # allowedKubernetesNamespaces:[system-upgrade]
   values:
     replicaCount: 1
+    image:
+      # renovate: datasource=docker depName=ghcr.io/home-operations/tuppr
+      tag: 0.2.1
     monitoring:
       serviceMonitor:
         enabled: true

@@ -79,5 +79,13 @@
       group: { commitMessageTopic: "{{{groupName}}} group" },
       minimumGroupSize: 1,
     },
+    {
+      description: "Tuppr group (chart + controller image, lockstep release)",
+      groupName: "Tuppr",
+      matchDatasources: ["docker", "helm"],
+      matchPackageNames: ["/home-operations/tuppr/", "/home-operations/charts/tuppr/"],
+      group: { commitMessageTopic: "{{{groupName}}} group" },
+      minimumGroupSize: 1,
+    },
   ],
 }
