@@ -3,8 +3,6 @@
   // automergeType: "pr" is set globally via the :automergePr preset in
   // .renovaterc.json5 — Renovate opens a PR, waits for required status checks
   // to pass, then merges. The rules below scope which packages are eligible.
-  // Switched from "branch" to "pr" so future required CI checks gate the
-  // automerge instead of being bypassed.
   packageRules: [
     {
       description: "Auto-merge trusted container updates (digest, minor, patch)",
