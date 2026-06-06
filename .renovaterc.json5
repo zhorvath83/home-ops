@@ -6,7 +6,7 @@
     ':disableRateLimiting',
     ':dependencyDashboard',
     ':semanticCommits',
-    ':automergeBranch',
+    ':automergePr',
     'docker:enableMajor',
     ':enablePreCommit',
     'helpers:pinGitHubActionDigestsToSemver',
