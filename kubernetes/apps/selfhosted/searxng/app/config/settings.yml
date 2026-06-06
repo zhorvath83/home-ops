@@ -11,14 +11,18 @@ search:
   autocomplete: duckduckgo
   favicon_resolver: duckduckgo
   default_lang: ""
-  # `json` required by open-webui's RAG web search integration.
+  languages:
+    - all
+    - en
+    - en-US
+    - hu
+    - hu-HU
   formats:
     - html
     - json
   max_page: 20
 
 outgoing:
-  # Default 3.0s; slower engines (Mojeek/Brave) often time out on home internet.
   request_timeout: 5.0
   useragent_suffix: "home-ops"
 
@@ -51,27 +55,32 @@ enabled_plugins:
   - Unit converter plugin
 
 hostnames:
-  # Ranking boost; does NOT filter — English results still surface.
   high_priority:
     - (.*)\/blog\/(.*)
-    - (.*\.)?wikipedia\.org$
+    - (.*\.)?wikipedia.org$
+    - (.*\.)?github.com$
+    - (.*\.)?reddit.com$
+    - (.*\.)?docker.com$
+    - (.*\.)?archlinux.org$
+    - (.*\.)?stackoverflow.com$
+    - (.*\.)?askubuntu.com$
+    - (.*\.)?superuser.com$
+    - (.*\.)?hwsw\.hu$
+    - (.*\.)?prohardver\.hu$
+    - (.*\.)?mobilarena\.hu$
     - (.*\.)?telex\.hu$
     - (.*\.)?444\.hu$
     - (.*\.)?hvg\.hu$
-    - (.*\.)?index\.hu$
-    - (.*\.)?nyest\.hu$
+    - (.*\.)?portfolio\.hu$
     - (.*\.)?gov\.hu$
-    - (.*\.)?nemzetiarchivum\.hu$
   low_priority:
     - (.*\.)?pinterest\.com$
     - (.*\.)?quora\.com$
 
 engines:
-  # Tor-only engines: auto-disable themselves at init without a Tor proxy.
   - name: ahmia
     disabled: true
   - name: torch
     disabled: true
-  # Broken in 2026.6.5 (sqlite cache init race): "no such table: properties".
   - name: radio browser
     disabled: true
