@@ -1,5 +1,12 @@
 ---
-use_default_settings: true
+use_default_settings:
+  engines:
+    # Tor-only engines (auto-inactive without a Tor proxy)
+    # and the sqlite-race-broken radio browser in 2026.6.5.
+    remove:
+      - ahmia
+      - torch
+      - radio browser
 
 server:
   limiter: false
@@ -76,11 +83,3 @@ hostnames:
   low_priority:
     - (.*\.)?pinterest\.com$
     - (.*\.)?quora\.com$
-
-engines:
-  - name: ahmia
-    disabled: true
-  - name: torch
-    disabled: true
-  - name: radio browser
-    disabled: true

@@ -117,6 +117,9 @@ spec:
           - path: /etc/searxng/limiter.toml
             subPath: limiter.toml
             readOnly: true
+          - path: /etc/searxng/favicons.toml
+            subPath: favicons.toml
+            readOnly: true
       tmp:
         type: emptyDir
         globalMounts:

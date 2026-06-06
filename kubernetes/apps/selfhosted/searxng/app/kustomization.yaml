@@ -10,6 +10,7 @@ configMapGenerator:
     files:
       - config/settings.yml
       - config/limiter.toml
+      - config/favicons.toml
 generatorOptions:
   disableNameSuffixHash: true
   annotations:
