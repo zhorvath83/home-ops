@@ -1,0 +1,123 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: open-webui
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  values:
+    defaultPodOptions:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+    controllers:
+      open-webui:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/open-webui/open-webui
+              tag: v0.9.6@sha256:90eae5b419e40b4c3dd684582b2c83440b36f9ae2f6532c09639b2ba4ee65158
+            env:
+              TZ: "${TIMEZONE}"
+              WEBUI_URL: "https://chat.${PUBLIC_DOMAIN}"
+              # Providers added via admin UI; persisted in SQLite (ENABLE_PERSISTENT_CONFIG=true default).
+              ENABLE_OLLAMA_API: false
+              ENABLE_OPENAI_API: false
+              ENABLE_LOGIN_FORM: true
+              ENABLE_SIGNUP: false
+              ENABLE_RAG_WEB_SEARCH: true
+              ENABLE_SEARCH_QUERY: true
+              RAG_WEB_SEARCH_ENGINE: searxng
+              SEARXNG_QUERY_URL: http://searxng.selfhosted.svc.cluster.local:8080/search?q=<query>
+            envFrom:
+              - secretRef:
+                  name: open-webui-secret
+            probes:
+              startup:
+                enabled: true
+                spec:
+                  periodSeconds: 10
+                  timeoutSeconds: 5
+                  failureThreshold: 30
+              liveness:
+                enabled: true
+                spec:
+                  periodSeconds: 30
+                  timeoutSeconds: 5
+                  failureThreshold: 5
+              readiness:
+                enabled: true
+                spec:
+                  periodSeconds: 30
+                  timeoutSeconds: 5
+                  failureThreshold: 5
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: {drop: ["ALL"]}
+            resources:
+              requests:
+                cpu: 100m
+                memory: 512Mi
+              limits:
+                memory: 2Gi
+    service:
+      app:
+        controller: open-webui
+        ports:
+          http:
+            port: &port 8080
+    route:
+      app:
+        annotations:
+          gethomepage.dev/enabled: "true"
+          gethomepage.dev/name: Open WebUI
+          gethomepage.dev/group: AI
+          gethomepage.dev/icon: open-webui
+        hostnames:
+          - "chat.${PUBLIC_DOMAIN}"
+        parentRefs:
+          - name: envoy-external
+            namespace: networking
+            sectionName: https
+          - name: envoy-internal
+            namespace: networking
+            sectionName: https
+        rules:
+          - backendRefs:
+              - identifier: app
+                port: *port
+    persistence:
+      data:
+        existingClaim: open-webui
+        advancedMounts:
+          open-webui:
+            app:
+              - path: /app/backend/data
+      # Embedding / tiktoken / whisper model weights — redownloadable, kept out of backups.
+      cache:
+        type: emptyDir
+        globalMounts:
+          - path: /app/backend/data/cache
+      # open-webui rewrites favicon/splash/loader into STATIC_DIR on startup; ROFS-incompatible without this.
+      static:
+        type: emptyDir
+        globalMounts:
+          - path: /app/backend/open_webui/static
+      tmp:
+        type: emptyDir
+        globalMounts:
+          - path: /tmp

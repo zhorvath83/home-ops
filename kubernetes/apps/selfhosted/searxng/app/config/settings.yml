@@ -1,0 +1,22 @@
+---
+use_default_settings: true
+
+server:
+  limiter: false
+  image_proxy: true
+  method: GET
+
+search:
+  safe_search: 0
+  autocomplete: duckduckgo
+  default_lang: ""
+  # `json` required by open-webui's RAG web search integration.
+  formats:
+    - html
+    - json
+
+general:
+  instance_name: SearXNG
+
+ui:
+  static_use_hash: true
