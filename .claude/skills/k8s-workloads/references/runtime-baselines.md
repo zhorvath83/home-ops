@@ -4,21 +4,39 @@ Use this reference for container hardening, resources, storage, and config handl
 
 ## Security Defaults
 
-Prefer this baseline unless live behavior proves an exception is required:
+Both blocks below are **mandatory** on every new app workload. Deviate only when the image truly cannot be made to run with them; document the reason inline next to the relaxed field.
 
-- pod-level `runAsNonRoot: true`
-- aligned `runAsUser`, `runAsGroup`, and `fsGroup`
-- `fsGroupChangePolicy: OnRootMismatch`
-- `seccompProfile.type: RuntimeDefault`
-- container-level `allowPrivilegeEscalation: false`
-- container-level `readOnlyRootFilesystem: true`
-- dropped capabilities
-- writable paths added explicitly with `emptyDir` or PVC mounts
-- explicit `defaultPodOptions.automountServiceAccountToken: false`, or `true` only when the workload calls the Kubernetes API and has an explicit ServiceAccount with bound RBAC
+Pod level — under `spec.values.defaultPodOptions`:
 
-Keep exceptions narrow and preserve or add an inline explanation when a workload truly needs root, privilege, or a writable root filesystem.
+```yaml
+defaultPodOptions:
+  automountServiceAccountToken: false
+  enableServiceLinks: false
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 10001
+    runAsGroup: 10001
+    fsGroup: 10001
+    fsGroupChangePolicy: OnRootMismatch
+    seccompProfile:
+      type: RuntimeDefault
+```
 
-Do not add `privileged`, `hostNetwork`, or `hostPID` unless the live sibling pattern or upstream requirement clearly justifies the exception.
+Container level — under each `containers.<name>`:
+
+```yaml
+securityContext:
+  privileged: false
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities: {drop: ["ALL"]}
+```
+
+`automountServiceAccountToken: true` is allowed only when the workload calls the Kubernetes API with an explicit ServiceAccount and bound RBAC.
+
+UID/GID may diverge from `10001` only when the image hardcodes ownership to a different id and overriding breaks the workload. Match it then to the image's native id and align `APP_UID` / `APP_GID` in `ks.yaml` `postBuild.substitute`.
+
+Writable paths must be added explicitly as `emptyDir` or PVC mounts. Do not add `privileged`, `hostNetwork`, or `hostPID` without a clear upstream or live-sibling justification.
 
 ## Resources And Health
 
