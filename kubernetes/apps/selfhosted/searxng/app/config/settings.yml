@@ -15,6 +15,12 @@ search:
   formats:
     - html
     - json
+  max_page: 20
+
+outgoing:
+  # Default 3.0s; slower engines (Mojeek/Brave) often time out on home internet.
+  request_timeout: 5.0
+  useragent_suffix: "home-ops"
 
 general:
   instance_name: SearXNG
@@ -45,9 +51,20 @@ enabled_plugins:
   - Unit converter plugin
 
 hostnames:
+  # Ranking boost; does NOT filter — English results still surface.
   high_priority:
     - (.*)\/blog\/(.*)
-    - (.*\.)?wikipedia.org$
+    - (.*\.)?wikipedia\.org$
+    - (.*\.)?telex\.hu$
+    - (.*\.)?444\.hu$
+    - (.*\.)?hvg\.hu$
+    - (.*\.)?index\.hu$
+    - (.*\.)?nyest\.hu$
+    - (.*\.)?gov\.hu$
+    - (.*\.)?nemzetiarchivum\.hu$
+  low_priority:
+    - (.*\.)?pinterest\.com$
+    - (.*\.)?quora\.com$
 
 engines:
   # Tor-only engines: auto-disable themselves at init without a Tor proxy.
