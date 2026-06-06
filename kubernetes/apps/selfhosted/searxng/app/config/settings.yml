@@ -34,7 +34,7 @@ outgoing:
   useragent_suffix: "home-ops"
 
 general:
-  instance_name: SearXNG
+  instance_name: zhorvath83's Search
 
 ui:
   default_theme: simple

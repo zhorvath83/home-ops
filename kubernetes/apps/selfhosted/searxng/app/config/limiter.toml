@@ -7,7 +7,10 @@ ipv6_prefix = 48
 # If the request IP is in trusted_proxies list, the client IP address is
 # extracted from the X-Forwarded-For and X-Real-IP headers. This should be
 # used if SearXNG is behind a reverse proxy or load balancer.
-trusted_proxies = ['127.0.0.0/8', '10.42.0.0/16']
+# Pod CIDR only: Envoy Gateway pods forward client IPs via X-Forwarded-For.
+# Localhost (kubelet probes) is intentionally NOT trusted so the missing
+# X-Forwarded-For header on probe traffic doesn't trigger botdetection warnings.
+trusted_proxies = ['10.244.0.0/16']
 
 [botdetection.ip_limit]
 
@@ -27,8 +30,9 @@ link_token = false
 block_ip = []
 
 pass_ip = [
-  '192.168.0.0/16', # IPv4 private network
-  '10.0.0.0/8',     # IPv4 private network
+  '127.0.0.0/8',
+  '192.168.0.0/16',
+  '10.0.0.0/8'
 ]
 
 # Activate passlist of (hardcoded) IPs from the SearXNG organization,
