@@ -33,6 +33,9 @@ spec:
             env:
               TZ: "${TIMEZONE}"
               WEBUI_URL: "https://chat.${PUBLIC_DOMAIN}"
+              CORS_ALLOW_ORIGIN: "https://chat.${PUBLIC_DOMAIN}"
+              # Browser-style UA so RAG web fetches aren't blocked by sites that filter on UA.
+              USER_AGENT: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
               # Providers added via admin UI; persisted in SQLite (ENABLE_PERSISTENT_CONFIG=true default).
               ENABLE_OLLAMA_API: false
               ENABLE_OPENAI_API: false
