@@ -1,0 +1,7 @@
+[botdetection.ip_lists]
+# Pod CIDR + LAN — kubelet probes and Envoy-Gateway-routed traffic bypass bot detection.
+pass_ip = [
+  "127.0.0.0/8",
+  "10.244.0.0/16",
+  "192.168.1.0/24",
+]

@@ -20,3 +20,13 @@ general:
 
 ui:
   static_use_hash: true
+
+engines:
+  # Tor-only engines: auto-disable themselves at init without a Tor proxy.
+  - name: ahmia
+    disabled: true
+  - name: torch
+    disabled: true
+  # Broken in 2026.6.5 (sqlite cache init race): "no such table: properties".
+  - name: radio browser
+    disabled: true
