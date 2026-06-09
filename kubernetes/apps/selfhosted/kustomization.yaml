@@ -9,4 +9,5 @@ resources:
   - ./namespace.yaml
   # Flux-Kustomizations
   - ./open-webui/ks.yaml
+  - ./pingvin-share-x/ks.yaml
   - ./searxng/ks.yaml

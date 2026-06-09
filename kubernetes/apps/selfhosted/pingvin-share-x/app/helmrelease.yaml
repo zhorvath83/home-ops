@@ -1,0 +1,110 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: pingvin-share-x
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  values:
+    defaultPodOptions:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+    controllers:
+      pingvin-share-x:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/smp46/pingvin-share-x
+              tag: v1.19.1@sha256:332f0b41acf1828f0f0221acb74304f6e1d33a7a952a1be60b3988eeae2b797e
+            env:
+              TZ: ${TIMEZONE}
+              TRUST_PROXY: "true"
+              DATA_DIRECTORY: /data
+            probes:
+              startup:
+                enabled: true
+                spec:
+                  periodSeconds: 10
+                  timeoutSeconds: 5
+                  failureThreshold: 30
+              liveness:
+                enabled: true
+                spec:
+                  periodSeconds: 30
+                  timeoutSeconds: 5
+                  failureThreshold: 5
+              readiness:
+                enabled: true
+                spec:
+                  periodSeconds: 30
+                  timeoutSeconds: 5
+                  failureThreshold: 5
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                  - ALL
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                memory: 1Gi
+    service:
+      app:
+        controller: pingvin-share-x
+        ports:
+          http:
+            port: &port 3000
+    route:
+      app:
+        annotations:
+          gethomepage.dev/enabled: "true"
+          gethomepage.dev/name: Pingvin Share
+          gethomepage.dev/group: Selfhosted
+          gethomepage.dev/icon: pingvin-share
+        hostnames:
+          - "share.${PUBLIC_DOMAIN}"
+        parentRefs:
+          - name: envoy-external
+            namespace: networking
+            sectionName: https
+          - name: envoy-internal
+            namespace: networking
+            sectionName: https
+        rules:
+          - backendRefs:
+              - identifier: app
+                port: *port
+    persistence:
+      data:
+        existingClaim: pingvin-share-x
+        advancedMounts:
+          pingvin-share-x:
+            app:
+              - path: /data
+      uploads:
+        type: nfs
+        server: ${NAS_IP}
+        path: /media/pingvinshare_uploads
+        globalMounts:
+          - path: /data/uploads
+            # tmp:
+            #   type: emptyDir
+            #   globalMounts:
+            #     - path: /tmp
