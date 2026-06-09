@@ -32,4 +32,4 @@ releases:
     namespace: observability
     chart: oci://ghcr.io/grafana/helm-charts/grafana-operator
     # renovate: registryUrl=https://ghcr.io/grafana/helm-charts chart=grafana-operator
-    version: 5.23.0
+    version: 5.24.0
