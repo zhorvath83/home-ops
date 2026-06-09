@@ -97,6 +97,13 @@ spec:
           pingvin-share-x:
             app:
               - path: /opt/app/backend/data
+      frontend-img:
+        existingClaim: pingvin-share-x
+        advancedMounts:
+          pingvin-share-x:
+            app:
+              - path: /opt/app/frontend/public/img
+                subPath: images
       uploads:
         type: nfs
         server: ${NAS_IP}
