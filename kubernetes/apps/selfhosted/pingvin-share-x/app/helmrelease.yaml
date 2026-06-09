@@ -55,7 +55,7 @@ spec:
                   failureThreshold: 5
             securityContext:
               allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: true
+              # readOnlyRootFilesystem: true
               capabilities:
                 drop:
                   - ALL
@@ -104,7 +104,3 @@ spec:
         path: /media/pingvinshare_uploads
         globalMounts:
           - path: /data/uploads
-      tmp:
-        type: emptyDir
-        globalMounts:
-          - path: /tmp
