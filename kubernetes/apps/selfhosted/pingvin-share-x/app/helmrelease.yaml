@@ -104,7 +104,7 @@ spec:
         path: /media/pingvinshare_uploads
         globalMounts:
           - path: /data/uploads
-            # tmp:
-            #   type: emptyDir
-            #   globalMounts:
-            #     - path: /tmp
+      tmp:
+        type: emptyDir
+        globalMounts:
+          - path: /tmp
