@@ -33,7 +33,6 @@ spec:
             env:
               TZ: ${TIMEZONE}
               TRUST_PROXY: "true"
-              DATA_DIRECTORY: /data
             probes:
               startup:
                 enabled: true
@@ -97,10 +96,18 @@ spec:
         advancedMounts:
           pingvin-share-x:
             app:
-              - path: /data
+              - path: /opt/app/backend/data
       uploads:
         type: nfs
         server: ${NAS_IP}
         path: /media/pingvinshare_uploads
         globalMounts:
-          - path: /data/uploads
+          - path: /opt/app/backend/data/uploads
+      caddy-config:
+        type: emptyDir
+        globalMounts:
+          - path: /.config
+      caddy-data:
+        type: emptyDir
+        globalMounts:
+          - path: /.local
