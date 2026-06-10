@@ -104,12 +104,6 @@ spec:
             app:
               - path: /opt/app/frontend/public/img
                 subPath: images
-      uploads:
-        type: nfs
-        server: ${NAS_IP}
-        path: /media/pingvinshare_uploads
-        globalMounts:
-          - path: /opt/app/backend/data/uploads
       caddy-config:
         type: emptyDir
         globalMounts:
