@@ -22,7 +22,7 @@ pipx.uvx = true
 "aqua:helm/helm" = "4.2.0"
 "aqua:helmfile/helmfile" = "1.5.3"
 "aqua:fluxcd/flux2" = "2.8.8"
-"aqua:casey/just" = "1.51.0"
+"aqua:casey/just" = "1.52.0"
 
 # Kubernetes — bare name kept: aqua 3-part path (kubernetes/kubernetes/kubectl) breaks Renovate
 kubectl = "1.36.1"
