@@ -14,7 +14,7 @@ spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
       labels:
-        egress.home.arpa/custom-egress: ""
+        egress.home.arpa/custom-egress: restricted
       securityContext:
         runAsNonRoot: true
         runAsUser: 10001
