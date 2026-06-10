@@ -34,23 +34,33 @@ spec:
               tag: v1.19.1@sha256:332f0b41acf1828f0f0221acb74304f6e1d33a7a952a1be60b3988eeae2b797e
             env:
               TZ: ${TIMEZONE}
+              CADDY_DISABLED: "true"
               TRUST_PROXY: "true"
             probes:
               startup:
                 enabled: true
                 spec:
+                  httpGet:
+                    path: /api/health
+                    port: 8080
                   periodSeconds: 10
                   timeoutSeconds: 5
                   failureThreshold: 30
               liveness:
                 enabled: true
                 spec:
+                  httpGet:
+                    path: /api/health
+                    port: 8080
                   periodSeconds: 30
                   timeoutSeconds: 5
                   failureThreshold: 5
               readiness:
                 enabled: true
                 spec:
+                  httpGet:
+                    path: /api/health
+                    port: 8080
                   periodSeconds: 30
                   timeoutSeconds: 5
                   failureThreshold: 5
@@ -71,7 +81,9 @@ spec:
         controller: pingvin-share-x
         ports:
           http:
-            port: &port 3000
+            port: &frontendPort 3333
+          api:
+            port: &backendPort 8080
     route:
       app:
         annotations:
@@ -89,9 +101,20 @@ spec:
             namespace: networking
             sectionName: https
         rules:
-          - backendRefs:
+          - matches:
+              - path:
+                  type: PathPrefix
+                  value: /api
+            backendRefs:
               - identifier: app
-                port: *port
+                port: *backendPort
+          - matches:
+              - path:
+                  type: PathPrefix
+                  value: /
+            backendRefs:
+              - identifier: app
+                port: *frontendPort
     persistence:
       data:
         existingClaim: pingvin-share-x
@@ -106,11 +129,3 @@ spec:
             app:
               - path: /opt/app/frontend/public/img
                 subPath: images
-      caddy-config:
-        type: emptyDir
-        globalMounts:
-          - path: /.config
-      caddy-data:
-        type: emptyDir
-        globalMounts:
-          - path: /.local

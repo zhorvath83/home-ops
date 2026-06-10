@@ -28,5 +28,7 @@ spec:
                 - envoy-internal
       toPorts:
         - ports:
-            - port: "3000"
+            - port: "3333"
+              protocol: TCP
+            - port: "8080"
               protocol: TCP
