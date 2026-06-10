@@ -1,0 +1,26 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: pingvin-share-x
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: pingvin-share-x
+      app.kubernetes.io/instance: pingvin-share-x
+      app.kubernetes.io/controller: pingvin-share-x
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: networking
+          matchExpressions:
+            - key: gateway.networking.k8s.io/gateway-name
+              operator: In
+              values:
+                - envoy-external
+                - envoy-internal
+      toPorts:
+        - ports:
+            - port: "3000"
+              protocol: TCP
