@@ -1,5 +1,10 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
+#
+# Egress is fully restricted. The pod opts out of the cluster-wide baseline
+# egress CCNP via the egress.home.arpa/custom-egress label. Only DNS resolution
+# is allowed — no outbound traffic to the internet or other cluster workloads.
+# Add egress rules for SMTP or OAuth providers if those features are enabled.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -23,4 +28,15 @@ spec:
       toPorts:
         - ports:
             - port: "3000"
+              protocol: TCP
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s-app: kube-dns
+            k8s:io.kubernetes.pod.namespace: kube-system
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
               protocol: TCP
