@@ -175,18 +175,6 @@ resource "cloudflare_zero_trust_access_application" "private_website" {
   }]
 }
 
-## Private R2 downloads exclude from UserAuth
-resource "cloudflare_zero_trust_access_application" "private_r2_downloads" {
-  zone_id          = cloudflare_zone.domain.id
-  name             = "Private R2 downloads"
-  domain           = "downloads.${var.CF_DOMAIN_NAME}"
-  type             = "self_hosted"
-
-  policies = [{
-    id = cloudflare_zero_trust_access_policy.bypass_everyone_policy.id
-  }]
-}
-
 ## Flux webhook
 ## Protected by WAF and ZeroTrust too
 resource "cloudflare_zero_trust_access_application" "flux_webhook" {
