@@ -200,6 +200,18 @@ resource "cloudflare_zero_trust_access_application" "mta_sts_policy" {
   }]
 }
 
+## Share subdomain - no authentication required
+resource "cloudflare_zero_trust_access_application" "share" {
+  zone_id          = cloudflare_zone.domain.id
+  name             = "Share"
+  domain           = "share.${var.CF_DOMAIN_NAME}"
+  type             = "self_hosted"
+
+  policies = [{
+    id = cloudflare_zero_trust_access_policy.bypass_everyone_policy.id
+  }]
+}
+
 ## Exchange rates exclude from UserAuth
 resource "cloudflare_zero_trust_access_application" "exchange-rates" {
   zone_id          = cloudflare_zone.domain.id
