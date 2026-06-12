@@ -12,12 +12,12 @@ spec:
     - name: democratic-csi
       namespace: kube-system
   interval: 1h
-  path: ./kubernetes/apps/default/home-gallery/app
+  path: ./kubernetes/apps/selfhosted/home-gallery/app
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  targetNamespace: default
+  targetNamespace: selfhosted
   timeout: 5m
   wait: false
