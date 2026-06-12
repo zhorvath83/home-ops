@@ -36,7 +36,7 @@ Introduce Recyclarr into the cluster to automate quality profile, custom format,
 | Image | ghcr.io/home-operations/sonarr:4.0.17.2967 |
 | Port | 8989 |
 | Route | shows.PUBLIC_DOMAIN (envoy-external + envoy-internal) |
-| Namespace | default |
+| Namespace | media |
 | PVC | sonarr (existingClaim) |
 | Security | UID/GID 10001, readOnlyRootFilesystem, drop ALL caps |
 | Resources | 5m CPU / 220Mi mem request, 1Gi mem limit |
@@ -51,7 +51,7 @@ Introduce Recyclarr into the cluster to automate quality profile, custom format,
 | Image | ghcr.io/home-operations/radarr:6.2.0.10390 |
 | Port | 7878 |
 | Route | movies.PUBLIC_DOMAIN (envoy-external + envoy-internal) |
-| Namespace | default |
+| Namespace | media |
 | PVC | radarr (existingClaim) |
 | Security | UID/GID 10001, readOnlyRootFilesystem, drop ALL caps |
 | Resources | 5m CPU / 200Mi mem request, 1Gi mem limit |
@@ -108,10 +108,10 @@ Quick setup: recyclarr config create --template <name> generates a working confi
 
 | Aspect | bjw-s Reference | home-ops Adaptation | Rationale |
 |--------|-----------------|---------------------|-----------|
-| Namespace | downloads | default | All arr-stack apps in default namespace |
+| Namespace | downloads | media | All arr-stack apps in media namespace |
 | UID/GID | 2000 | 10001 | Cluster-wide standard |
-| Sonarr URL | sonarr.downloads.svc:8989 | sonarr.default.svc:8989 | Namespace change |
-| Radarr URL | radarr.downloads.svc:7878 | radarr.default.svc:7878 | Namespace change |
+| Sonarr URL | sonarr.downloads.svc:8989 | sonarr.media.svc:8989 | Namespace change |
+| Radarr URL | radarr.downloads.svc:7878 | radarr.media.svc:7878 | Namespace change |
 | API keys | ExternalSecret per key (radarr, sonarr 1Password items) | TBD — need to decide on secret delivery approach | Current gap |
 | ConfigMap | configMapGenerator with disableNameSuffixHash | Same pattern | Preserves stable name for HelmRelease reference |
 | Flux substitution | Disabled on ConfigMap (annotation) | Same — prevents !env_var conflict | Essential |
@@ -157,14 +157,14 @@ How much CF automation:
 
 - [ ] 1. Decide on API key delivery approach (see Decision Point 1)
 - [ ] 2. Create 1Password items for API keys if needed
-- [ ] 3. Create directory structure: kubernetes/apps/default/recyclarr/app/config/
+- [ ] 3. Create directory structure: kubernetes/apps/media/recyclarr/app/config/
 - [ ] 4. Create recyclarr.yml config (based on decisions from DP 2-4)
 - [ ] 5. Create app/kustomization.yaml with configMapGenerator for recyclarr.yml
 - [ ] 6. Create app/ocirepository.yaml for app-template chart
 - [ ] 7. Create app/externalsecret.yaml for API keys
 - [ ] 8. Create app/helmrelease.yaml (CronJob controller, sync command, security context UID 10001)
 - [ ] 9. Create ks.yaml with VolSync component and postBuild substitutes
-- [ ] 10. Register recyclarr in kubernetes/apps/default/kustomization.yaml
+- [ ] 10. Register recyclarr in kubernetes/apps/media/kustomization.yaml
 - [ ] 11. Validate: flux build ks recyclarr --dry-run
 - [ ] 12. Commit and push, verify reconciliation
 
@@ -183,7 +183,7 @@ How much CF automation:
 - Prowlarr does not need Recyclarr (they manage orthogonal aspects: indexers vs. quality)
 - CF groups (v8+) auto-sync reduces manual config significantly when using guide-backed quality profiles
 - The !file syntax (v7.5.0+) could be an alternative to !env_var if file-based secret mounting is preferred
-- Namespace alignment: all arr-stack apps are in default, so Recyclarr goes there too
+- Namespace alignment: all arr-stack apps are in media namespace, so Recyclarr goes there too
 
 ## Related
 

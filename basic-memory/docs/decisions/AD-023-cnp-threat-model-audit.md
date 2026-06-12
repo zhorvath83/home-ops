@@ -80,7 +80,7 @@ The `cloudflared` agent overwrites `X-Forwarded-For` with the real client IP (88
 ## Current implementation state (2026-05-17)
 
 - `kubernetes/apps/kube-system/cilium/netpols/` — 2 cluster-wide baseline CCNPs + dedicated Flux `Kustomization` `cilium-netpols` with `dependsOn: cilium`
-- `kubernetes/apps/default/paperless/app/ciliumnetworkpolicy.yaml` — first per-app CNP at Szint I (ingress-only, allows TCP/8000 from both Gateways; egress baseline)
+- `kubernetes/apps/selfhosted/paperless/app/ciliumnetworkpolicy.yaml` — first per-app CNP at Szint I (ingress-only, allows TCP/8000 from both Gateways; egress baseline)
 - `envoy-external` / `envoy-internal` CNPs — egress sections deleted, baseline takes over; ingress allowlists preserved
 - `bpf.datapathMode: netkit` + `socketLB.hostNamespaceOnly: false` Cilium fix — resolves the netkit + tc-LB CT mismatch that caused SYN-ACK drops on strict ingress CNPs (CT is now recorded with pod IP, not Service IP)
 - `SecurityPolicy/envoy-external-cloudflare` — deleted per the lesson above

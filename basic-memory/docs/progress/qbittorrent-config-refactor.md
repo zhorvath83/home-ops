@@ -118,7 +118,7 @@ Stale categories.json and watched_folders.json are removed by qbt-init.sh on eve
 
 - qbittorrent/app/helmrelease.yaml — initContainer, postStart hook, QBT_WEBUI_PASSWORD secretKeyRef, persistence restructure
 - qbittorrent/app/kustomization.yaml — configMapGenerator: scripts + config, Flux envsubst disabled
-- default/kustomization.yaml — p2pblocklist ks.yaml removed
+- media/kustomization.yaml — p2pblocklist ks.yaml removed
 
 ## Related
 
