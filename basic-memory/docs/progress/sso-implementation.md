@@ -31,7 +31,7 @@ Steps 1-7 from the updated roadmap: Pocket-ID (bjw-s app-template), TinyAuth (bj
 Created:
 - `kubernetes/apps/security/namespace.yaml` + `kustomization.yaml` (registers pocket-id, tinyauth)
 - `kubernetes/apps/security/pocket-id/ks.yaml + app/{kustomization,externalsecret,helmrelease}.yaml` -- bjw-s app-template, ghcr.io/pocket-id/pocket-id:v2.8.0-distroless (UID 65532), SQLite at /app/data, VolSync component (APP=pocket-id, APP_UID/APP_GID=65532, 1Gi), HTTPRoute on id.${PUBLIC_DOMAIN} via envoy-external + envoy-internal, GeoIP via MAXMIND_LICENSE_KEY
-- `kubernetes/apps/security/tinyauth/ks.yaml + app/{kustomization,externalsecret,helmrelease,referencegrant}.yaml` -- bjw-s app-template, ghcr.io/steveiliop56/tinyauth:v3.6.2, SQLite at /data, VolSync component (APP=tinyauth, 1Gi), Pocket-ID generic OAuth provider with autoredirect, Google OAuth provider env stubs, ReferenceGrant authorizing cross-namespace SecurityPolicy refs from networking/selfhosted/media/observability
+- `kubernetes/apps/security/tinyauth/ks.yaml + app/{kustomization,externalsecret,helmrelease,referencegrant}.yaml` -- bjw-s app-template, ghcr.io/tinyauthapp/tinyauth, SQLite at /data, VolSync component (APP=tinyauth, 1Gi), Pocket-ID generic OAuth provider with autoredirect, Google OAuth provider env stubs, ReferenceGrant authorizing cross-namespace SecurityPolicy refs from networking/selfhosted/media/observability
 - `kubernetes/components/forward-auth/{kustomization,securitypolicy}.yaml` -- reusable Kustomize Component generating `${APP}-forward-auth` SecurityPolicy targeting HTTPRoute by `${APP}` name, extAuth path `/api/auth/envoy`, identity headers forwarded to backend
 
 Modified:

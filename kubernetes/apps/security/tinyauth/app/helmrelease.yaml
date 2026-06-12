@@ -28,8 +28,8 @@ spec:
         containers:
           app:
             image:
-              # renovate: datasource=docker depName=ghcr.io/steveiliop56/tinyauth
-              repository: ghcr.io/steveiliop56/tinyauth
+              # renovate: datasource=docker depName=ghcr.io/tinyauthapp/tinyauth
+              repository: ghcr.io/tinyauthapp/tinyauth
               tag: v5.0.7
             env:
               TZ: "${TIMEZONE}"
