@@ -21,7 +21,6 @@ spec:
   postBuild:
     substitute:
       APP: paperless-gpt
-      VOLSYNC_SOURCE_NS: default
   prune: true
   sourceRef:
     kind: GitRepository

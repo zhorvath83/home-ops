@@ -20,7 +20,6 @@ spec:
   postBuild:
     substitute:
       APP: actual
-      VOLSYNC_SOURCE_NS: default
       VOLSYNC_CAPACITY: "5Gi"
   prune: true
   sourceRef:
