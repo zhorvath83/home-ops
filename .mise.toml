@@ -19,13 +19,13 @@ pipx.uvx = true
 [tools]
 # Core CLI tooling
 "aqua:siderolabs/talos" = "1.13.4"
-"aqua:helm/helm" = "4.2.0"
+"aqua:helm/helm" = "4.2.1"
 "aqua:helmfile/helmfile" = "1.5.3"
 "aqua:fluxcd/flux2" = "2.8.8"
 "aqua:casey/just" = "1.52.0"
 
 # Kubernetes — bare name kept: aqua 3-part path (kubernetes/kubernetes/kubectl) breaks Renovate
-kubectl = "1.36.1"
+kubectl = "1.36.2"
 
 # Templating + secrets
 "aqua:mitsuhiko/minijinja" = "2.20.0"
@@ -54,6 +54,6 @@ kubectl = "1.36.1"
 "aqua:zizmorcore/zizmor" = "1.25.2"
 
 # Python tooling (pipx backend)
-"pipx:flux-local" = "8.2.0"
+"pipx:flux-local" = "8.3.0"
 "pipx:ansible" = "14.0.0"
 "pipx:ansible-core" = "2.21.0"
