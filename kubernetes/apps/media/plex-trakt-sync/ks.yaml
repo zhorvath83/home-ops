@@ -21,7 +21,6 @@ spec:
   postBuild:
     substitute:
       APP: plex-trakt-sync
-      VOLSYNC_SOURCE_NS: default
   prune: true
   sourceRef:
     kind: GitRepository

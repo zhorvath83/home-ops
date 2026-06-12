@@ -20,7 +20,6 @@ spec:
   postBuild:
     substitute:
       APP: seerr
-      VOLSYNC_SOURCE_NS: default
       APP_UID: "1000"
       APP_GID: "1000"
   prune: true
