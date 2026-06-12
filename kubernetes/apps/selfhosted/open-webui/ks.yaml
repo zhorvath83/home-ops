@@ -23,7 +23,6 @@ spec:
       APP_UID: "10001"
       APP_GID: "10001"
       VOLSYNC_CAPACITY: "5Gi"
-      VOLSYNC_CACHE: "1Gi"
   prune: true
   sourceRef:
     kind: GitRepository

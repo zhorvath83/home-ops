@@ -24,7 +24,6 @@ spec:
     substitute:
       APP: plex
       VOLSYNC_CAPACITY: "5Gi"
-      VOLSYNC_CACHE: "2Gi"
   prune: true
   sourceRef:
     kind: GitRepository
