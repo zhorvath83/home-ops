@@ -16,6 +16,7 @@ This guide applies to everything under `kubernetes/`. It captures durable guardr
 ## Subtree Guides
 
 - default applications: [apps/default/CLAUDE.md](apps/default/CLAUDE.md) (BM: `docs/areas/k8s-workloads`)
+- media applications: [apps/media/CLAUDE.md](apps/media/CLAUDE.md) (symlink to the default apps guide; BM: `docs/areas/k8s-workloads`)
 - networking platform: [apps/networking/CLAUDE.md](apps/networking/CLAUDE.md) (BM: `docs/areas/networking`)
 - external secrets platform: [apps/external-secrets/CLAUDE.md](apps/external-secrets/CLAUDE.md) (BM: `docs/areas/external-secrets`)
 - VolSync platform: [apps/volsync-system/CLAUDE.md](apps/volsync-system/CLAUDE.md) (BM: `docs/areas/volsync-backup`)

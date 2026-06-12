@@ -3,11 +3,11 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: isponsorblocktv
+  name: qbittorrent
 spec:
   commonMetadata:
     labels:
-      app.kubernetes.io/name: isponsorblocktv
+      app.kubernetes.io/name: qbittorrent
   components:
     - ../../../../components/volsync
   dependsOn:
@@ -16,15 +16,16 @@ spec:
     - name: democratic-csi
       namespace: kube-system
   interval: 1h
-  path: ./kubernetes/apps/default/isponsorblocktv/app
+  path: ./kubernetes/apps/media/qbittorrent/app
   postBuild:
     substitute:
-      APP: isponsorblocktv
+      APP: qbittorrent
+      VOLSYNC_SOURCE_NS: default
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  targetNamespace: default
+  targetNamespace: media
   timeout: 5m
   wait: false

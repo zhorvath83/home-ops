@@ -3,11 +3,11 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: sonarr
+  name: prowlarr
 spec:
   commonMetadata:
     labels:
-      app.kubernetes.io/name: sonarr
+      app.kubernetes.io/name: prowlarr
   components:
     - ../../../../components/volsync
   dependsOn:
@@ -16,15 +16,16 @@ spec:
     - name: democratic-csi
       namespace: kube-system
   interval: 1h
-  path: ./kubernetes/apps/default/sonarr/app
+  path: ./kubernetes/apps/media/prowlarr/app
   postBuild:
     substitute:
-      APP: sonarr
+      APP: prowlarr
+      VOLSYNC_SOURCE_NS: default
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  targetNamespace: default
+  targetNamespace: media
   timeout: 5m
   wait: false

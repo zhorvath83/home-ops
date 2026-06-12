@@ -3,11 +3,11 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: maintainerr
+  name: radarr
 spec:
   commonMetadata:
     labels:
-      app.kubernetes.io/name: maintainerr
+      app.kubernetes.io/name: radarr
   components:
     - ../../../../components/volsync
   dependsOn:
@@ -16,15 +16,16 @@ spec:
     - name: democratic-csi
       namespace: kube-system
   interval: 1h
-  path: ./kubernetes/apps/default/maintainerr/app
+  path: ./kubernetes/apps/media/radarr/app
   postBuild:
     substitute:
-      APP: maintainerr
+      APP: radarr
+      VOLSYNC_SOURCE_NS: default
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  targetNamespace: default
+  targetNamespace: media
   timeout: 5m
   wait: false

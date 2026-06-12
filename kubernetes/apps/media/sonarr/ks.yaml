@@ -3,33 +3,29 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: plex
+  name: sonarr
 spec:
   commonMetadata:
     labels:
-      app.kubernetes.io/name: plex
+      app.kubernetes.io/name: sonarr
   components:
-    - ../../../../components/gpu
     - ../../../../components/volsync
   dependsOn:
     - name: onepassword-connect
       namespace: external-secrets
     - name: democratic-csi
       namespace: kube-system
-    - name: intel-gpu-resource-driver
-      namespace: kube-system
   interval: 1h
-  path: ./kubernetes/apps/default/plex/app
+  path: ./kubernetes/apps/media/sonarr/app
   postBuild:
     substitute:
-      APP: plex
-      VOLSYNC_CAPACITY: "5Gi"
-      VOLSYNC_CACHE: "2Gi"
+      APP: sonarr
+      VOLSYNC_SOURCE_NS: default
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  targetNamespace: default
+  targetNamespace: media
   timeout: 5m
   wait: false

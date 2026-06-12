@@ -33,8 +33,8 @@ spec:
             args:
               - watch
             env:
-              PLEX_BASEURL: http://plex.default.svc.cluster.local:32400
-              PLEX_LOCALURL: http://plex.default.svc.cluster.local:32400
+              PLEX_BASEURL: http://plex.media.svc.cluster.local:32400
+              PLEX_LOCALURL: http://plex.media.svc.cluster.local:32400
               PLEX_TOKEN:
                 valueFrom:
                   secretKeyRef:

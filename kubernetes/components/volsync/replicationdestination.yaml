@@ -26,6 +26,9 @@ spec:
     repository: "${APP}-volsync-secret"
     sourceIdentity:
       sourceName: "${APP}"
+      # Empty string falls back to the RD's own namespace (perfectra1n mover builder.go).
+      # Set VOLSYNC_SOURCE_NS only temporarily, to restore a lineage backed up in another namespace.
+      sourceNamespace: "${VOLSYNC_SOURCE_NS:=}"
     storageClassName: "${VOLSYNC_STORAGECLASS:=democratic-csi-local-hostpath}"
     volumeSnapshotClassName: "${VOLSYNC_SNAPSHOTCLASS:=democratic-csi-local-hostpath}"
     moverSecurityContext:

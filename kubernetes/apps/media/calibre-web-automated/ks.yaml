@@ -3,11 +3,11 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: radarr
+  name: calibre-web-automated
 spec:
   commonMetadata:
     labels:
-      app.kubernetes.io/name: radarr
+      app.kubernetes.io/name: calibre-web-automated
   components:
     - ../../../../components/volsync
   dependsOn:
@@ -16,15 +16,18 @@ spec:
     - name: democratic-csi
       namespace: kube-system
   interval: 1h
-  path: ./kubernetes/apps/default/radarr/app
+  path: ./kubernetes/apps/media/calibre-web-automated/app
   postBuild:
     substitute:
-      APP: radarr
+      APP: calibre-web-automated
+      VOLSYNC_SOURCE_NS: default
+      APP_UID: "1000"
+      APP_GID: "100"
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  targetNamespace: default
+  targetNamespace: media
   timeout: 5m
   wait: false

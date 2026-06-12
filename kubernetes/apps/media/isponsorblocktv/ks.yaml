@@ -3,11 +3,11 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: seerr
+  name: isponsorblocktv
 spec:
   commonMetadata:
     labels:
-      app.kubernetes.io/name: seerr
+      app.kubernetes.io/name: isponsorblocktv
   components:
     - ../../../../components/volsync
   dependsOn:
@@ -16,17 +16,16 @@ spec:
     - name: democratic-csi
       namespace: kube-system
   interval: 1h
-  path: ./kubernetes/apps/default/seerr/app
+  path: ./kubernetes/apps/media/isponsorblocktv/app
   postBuild:
     substitute:
-      APP: seerr
-      APP_UID: "1000"
-      APP_GID: "1000"
+      APP: isponsorblocktv
+      VOLSYNC_SOURCE_NS: default
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  targetNamespace: default
+  targetNamespace: media
   timeout: 5m
   wait: false

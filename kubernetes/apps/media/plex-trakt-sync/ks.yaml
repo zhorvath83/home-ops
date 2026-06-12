@@ -17,15 +17,16 @@ spec:
       namespace: kube-system
     - name: plex
   interval: 1h
-  path: ./kubernetes/apps/default/plex-trakt-sync/app
+  path: ./kubernetes/apps/media/plex-trakt-sync/app
   postBuild:
     substitute:
       APP: plex-trakt-sync
+      VOLSYNC_SOURCE_NS: default
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  targetNamespace: default
+  targetNamespace: media
   timeout: 5m
   wait: false

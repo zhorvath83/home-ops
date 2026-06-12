@@ -1,6 +1,6 @@
 # Default Apps Guide
 
-This guide applies to `kubernetes/apps/default/`. It captures durable guardrails for user-facing application workloads; for current-state detail (app inventory by Homepage group, cross-cutting patterns, exposure model, storage strategy, claims, drift risk) read the Basic Memory area-reference `docs/areas/k8s-workloads` via the `basic-memory` MCP.
+This guide applies to `kubernetes/apps/default/` and `kubernetes/apps/media/` (the latter via symlink). It captures durable guardrails for user-facing application workloads; for current-state detail (app inventory by Homepage group, cross-cutting patterns, exposure model, storage strategy, claims, drift risk) read the Basic Memory area-reference `docs/areas/k8s-workloads` via the `basic-memory` MCP.
 
 ## Scope
 
