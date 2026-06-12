@@ -8,6 +8,7 @@ components:
 resources:
   - ./namespace.yaml
   # Flux-Kustomizations
+  - ./calibre-web-automated/ks.yaml
   - ./open-webui/ks.yaml
   - ./pingvin-share-x/ks.yaml
   - ./searxng/ks.yaml

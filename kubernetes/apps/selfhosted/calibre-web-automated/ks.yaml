@@ -16,10 +16,11 @@ spec:
     - name: democratic-csi
       namespace: kube-system
   interval: 1h
-  path: ./kubernetes/apps/media/calibre-web-automated/app
+  path: ./kubernetes/apps/selfhosted/calibre-web-automated/app
   postBuild:
     substitute:
       APP: calibre-web-automated
+      VOLSYNC_SOURCE_NS: media
       APP_UID: "1000"
       APP_GID: "100"
   prune: true
@@ -27,6 +28,6 @@ spec:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  targetNamespace: media
+  targetNamespace: selfhosted
   timeout: 5m
   wait: false

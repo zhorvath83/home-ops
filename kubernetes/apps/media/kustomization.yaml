@@ -16,7 +16,6 @@ resources:
   - ./sonarr/ks.yaml
   - ./bazarr/ks.yaml
   - ./subsyncarr/ks.yaml
-  - ./calibre-web-automated/ks.yaml
   - ./seerr/ks.yaml
   - ./maintainerr/ks.yaml
   - ./isponsorblocktv/ks.yaml
