@@ -8,12 +8,4 @@ components:
 resources:
   - ./namespace.yaml
   # Flux-Kustomizations
-  - ./actual/ks.yaml
-  - ./wallos/ks.yaml
-  - ./homepage/ks.yaml
-  - ./resticprofile/ks.yaml
-  - ./backrest/ks.yaml
-  - ./mealie/ks.yaml
-  - ./paperless/ks.yaml
-  - ./paperless-gpt/ks.yaml
   - ./home-gallery/ks.yaml

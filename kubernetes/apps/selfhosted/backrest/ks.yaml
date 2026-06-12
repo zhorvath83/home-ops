@@ -3,11 +3,11 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: mealie
+  name: backrest
 spec:
   commonMetadata:
     labels:
-      app.kubernetes.io/name: mealie
+      app.kubernetes.io/name: backrest
   components:
     - ../../../../components/volsync
   dependsOn:
@@ -16,15 +16,18 @@ spec:
     - name: democratic-csi
       namespace: kube-system
   interval: 1h
-  path: ./kubernetes/apps/default/mealie/app
+  path: ./kubernetes/apps/selfhosted/backrest/app
   postBuild:
     substitute:
-      APP: mealie
+      APP: backrest
+      VOLSYNC_SOURCE_NS: default
+      APP_UID: "0"
+      APP_GID: "0"
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  targetNamespace: default
+  targetNamespace: selfhosted
   timeout: 5m
   wait: false

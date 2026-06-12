@@ -3,27 +3,31 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: resticprofile
+  name: wallos
 spec:
   commonMetadata:
     labels:
-      app.kubernetes.io/name: resticprofile
+      app.kubernetes.io/name: wallos
+  components:
+    - ../../../../components/volsync
   dependsOn:
     - name: onepassword-connect
       namespace: external-secrets
     - name: democratic-csi
       namespace: kube-system
   interval: 1h
-  path: ./kubernetes/apps/default/resticprofile/app
+  path: ./kubernetes/apps/selfhosted/wallos/app
   postBuild:
     substitute:
-      APP_UID: "0"
-      APP_GID: "0"
+      APP: wallos
+      VOLSYNC_SOURCE_NS: default
+      APP_UID: "1000"
+      APP_GID: "1000"
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  targetNamespace: default
+  targetNamespace: selfhosted
   timeout: 5m
   wait: false

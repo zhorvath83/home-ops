@@ -3,11 +3,11 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: paperless-gpt
+  name: paperless
 spec:
   commonMetadata:
     labels:
-      app.kubernetes.io/name: paperless-gpt
+      app.kubernetes.io/name: paperless
   components:
     - ../../../../components/volsync
   dependsOn:
@@ -15,17 +15,24 @@ spec:
       namespace: external-secrets
     - name: democratic-csi
       namespace: kube-system
-    - name: paperless
   interval: 1h
-  path: ./kubernetes/apps/default/paperless-gpt/app
+  path: ./kubernetes/apps/selfhosted/paperless/app
   postBuild:
     substitute:
-      APP: paperless-gpt
+      APP: paperless
+      VOLSYNC_SOURCE_NS: default
+      APP_UID: "1000"
+      APP_GID: "1000"
+      VOLSYNC_CAPACITY: "20Gi"
+      VOLSYNC_CACHE: "2Gi"
+      VOLSYNC_RETAIN_DAILY: "7"
+      VOLSYNC_RETAIN_WEEKLY: "4"
+      VOLSYNC_RETAIN_MONTHLY: "12"
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  targetNamespace: default
+  targetNamespace: selfhosted
   timeout: 5m
   wait: false

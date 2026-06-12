@@ -8,7 +8,15 @@ components:
 resources:
   - ./namespace.yaml
   # Flux-Kustomizations
+  - ./actual/ks.yaml
+  - ./backrest/ks.yaml
   - ./calibre-web-automated/ks.yaml
+  - ./homepage/ks.yaml
+  - ./mealie/ks.yaml
   - ./open-webui/ks.yaml
+  - ./paperless/ks.yaml
+  - ./paperless-gpt/ks.yaml
   - ./pingvin-share-x/ks.yaml
+  - ./resticprofile/ks.yaml
   - ./searxng/ks.yaml
+  - ./wallos/ks.yaml

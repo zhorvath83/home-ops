@@ -26,7 +26,7 @@ spec:
               protocol: TCP
     - fromEndpoints:
         - matchLabels:
-            k8s:io.kubernetes.pod.namespace: default
+            k8s:io.kubernetes.pod.namespace: selfhosted
             app.kubernetes.io/name: paperless-gpt
       toPorts:
         - ports:
