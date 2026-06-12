@@ -75,7 +75,6 @@ spec:
           gethomepage.dev/name: Actual
           gethomepage.dev/group: PFM
           gethomepage.dev/icon: actual-budget
-          gethomepage.dev/siteMonitor: http://actual.default.svc.cluster.local:5006
         hostnames:
           - "pfm.${PUBLIC_DOMAIN}"
         parentRefs:
