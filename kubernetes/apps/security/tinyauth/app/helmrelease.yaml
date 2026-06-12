@@ -40,7 +40,6 @@ spec:
               TINYAUTH_DATABASE_PATH: /data/tinyauth.db
               TINYAUTH_AUTH_SECURECOOKIE: "true"
               TINYAUTH_AUTH_SESSIONEXPIRY: 86400
-              TINYAUTH_AUTH_ACLS_POLICY: deny
               TINYAUTH_LOG_LEVEL: info
               TINYAUTH_LOG_JSON: "true"
               TINYAUTH_OAUTH_AUTOREDIRECT: pocketid
