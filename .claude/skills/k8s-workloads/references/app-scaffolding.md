@@ -5,7 +5,7 @@ Use this reference when adding a new workload or reshaping directory structure.
 ## Start Here
 
 1. Inspect the target subtree guide and nearby sibling apps.
-2. Confirm whether the app belongs in `default/` or a platform namespace.
+2. Confirm whether the app belongs in `selfhosted/` or a platform namespace.
 3. Decide chart strategy in this order:
    - official chart
    - bjw-s `app-template`
@@ -31,7 +31,7 @@ For scheduled sidecar work, a sibling directory such as `backup/` is acceptable 
 ## `ks.yaml`
 
 - `ks.yaml` is the Flux entry point.
-- Flux Kustomization names follow the simple `<app>` convention (e.g. `paperless`, `plex`, `backrest`). The Kustomization lives in the `flux-system` namespace but its workloads target `default` or another app namespace.
+- Flux Kustomization names follow the simple `<app>` convention (e.g. `paperless`, `plex`, `backrest`). The Kustomization lives in the `flux-system` namespace but its workloads target `selfhosted` or another app namespace.
 - `path` should point to the concrete child directory being applied.
 - `dependsOn` must declare real startup dependencies; never rely on creation order.
 - Use `postBuild.substitute` for repeated app-local values when the sibling pattern already does that.

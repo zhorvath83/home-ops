@@ -1,1 +1,1 @@
-../default/CLAUDE.md
+../selfhosted/CLAUDE.md

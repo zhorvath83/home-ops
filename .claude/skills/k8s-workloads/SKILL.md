@@ -1,6 +1,6 @@
 ---
 name: k8s-workloads
-description: Plan and implement non-platform Flux-managed application workloads in the home-ops repository. Use when adding a new app under kubernetes/apps/default or another non-platform app subtree, reshape ks.yaml or app manifests, choose chart, dependency, security, storage, or routing patterns, wire routine app-level ExternalSecret or VolSync settings into a workload, or validate application changes that do not redesign the networking, external-secrets, or volsync-system platforms.
+description: Plan and implement non-platform Flux-managed application workloads in the home-ops repository. Use when adding a new app under kubernetes/apps/selfhosted or another non-platform app subtree, reshape ks.yaml or app manifests, choose chart, dependency, security, storage, or routing patterns, wire routine app-level ExternalSecret or VolSync settings into a workload, or validate application changes that do not redesign the networking, external-secrets, or volsync-system platforms.
 ---
 
 # Home Ops K8s Workloads

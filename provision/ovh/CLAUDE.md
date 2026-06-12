@@ -11,7 +11,7 @@ Terraform files here are the source of truth for the OVH Cloud Project Storage r
 - provider + remote state wiring (`main.tf`)
 - input variables (`variables.tf`)
 
-The provisioned S3 endpoint, user, and credentials are consumed downstream by the VolSync/Kopia plane (`kubernetes/components/volsync/` + `kubernetes/apps/volsync-system/`) and by the file-level resticprofile plane (`kubernetes/apps/default/resticprofile/`).
+The provisioned S3 endpoint, user, and credentials are consumed downstream by the VolSync/Kopia plane (`kubernetes/components/volsync/` + `kubernetes/apps/volsync-system/`) and by the file-level resticprofile plane (`kubernetes/apps/selfhosted/resticprofile/`).
 
 ## Operating Rules
 

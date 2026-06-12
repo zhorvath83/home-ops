@@ -11,6 +11,5 @@ resources:
   - ./observability
   - ./system-upgrade
   - ./volsync-system
-  - ./default
   - ./media
   - ./selfhosted
