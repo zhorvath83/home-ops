@@ -1,0 +1,25 @@
+---
+# Allow SecurityPolicy resources in other namespaces (e.g. the forward-auth
+# component applied per-app) to reference the tinyauth Service for extAuth.
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: tinyauth-extauth
+spec:
+  from:
+    - group: gateway.envoyproxy.io
+      kind: SecurityPolicy
+      namespace: networking
+    - group: gateway.envoyproxy.io
+      kind: SecurityPolicy
+      namespace: selfhosted
+    - group: gateway.envoyproxy.io
+      kind: SecurityPolicy
+      namespace: media
+    - group: gateway.envoyproxy.io
+      kind: SecurityPolicy
+      namespace: observability
+  to:
+    - group: ""
+      kind: Service
+      name: tinyauth

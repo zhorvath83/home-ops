@@ -3,26 +3,30 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: echo
+  name: pocket-id
 spec:
   commonMetadata:
     labels:
-      app.kubernetes.io/name: echo
+      app.kubernetes.io/name: pocket-id
   components:
-    - ../../../../components/forward-auth
+    - ../../../../components/volsync
   dependsOn:
-    - name: tinyauth
-      namespace: security
+    - name: onepassword-connect
+      namespace: external-secrets
+    - name: democratic-csi
+      namespace: kube-system
   interval: 1h
-  path: ./kubernetes/apps/networking/echo/app
+  path: ./kubernetes/apps/security/pocket-id/app
   postBuild:
     substitute:
-      APP: echo
+      APP: pocket-id
+      APP_UID: "65532"
+      APP_GID: "65532"
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  targetNamespace: networking
+  targetNamespace: security
   timeout: 5m
   wait: false

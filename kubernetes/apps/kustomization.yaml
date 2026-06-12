@@ -9,6 +9,7 @@ resources:
   - ./kube-system
   - ./networking
   - ./observability
+  - ./security
   - ./system-upgrade
   - ./volsync-system
   - ./media

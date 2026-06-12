@@ -1,0 +1,33 @@
+---
+# Reusable forward-auth component.
+# Consumers set ${APP} via Flux postBuild.substitute. ${APP} must equal the
+# HTTPRoute resource name (= the HelmRelease metadata.name in this repo's
+# bjw-s app-template convention, NOT the hostname). E.g. for selfhosted/actual
+# the HelmRelease + HTTPRoute are both named "actual" even though the hostname
+# is pfm.${PUBLIC_DOMAIN}.
+# A ReferenceGrant in the `security` namespace authorizes the cross-namespace
+# backendRef to the tinyauth Service.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: "${APP}-forward-auth"
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "${APP}"
+  extAuth:
+    http:
+      backendRefs:
+        - name: tinyauth
+          namespace: security
+          port: 3000
+      path: /api/auth/envoy
+      headersToBackend:
+        - Remote-User
+        - Remote-Email
+        - Remote-Groups
+        - Remote-Name
+        - Remote-Sub
+        - Location
+        - Set-Cookie
