@@ -41,7 +41,7 @@ spec:
               TINYAUTH_AUTH_SESSIONEXPIRY: 86400
               TINYAUTH_LOG_LEVEL: info
               TINYAUTH_LOG_JSON: "true"
-              TINYAUTH_OAUTH_AUTOREDIRECT: pocketid
+              # TINYAUTH_OAUTH_AUTOREDIRECT: pocketid
               TINYAUTH_OAUTH_PROVIDERS_POCKETID_NAME: "IdP"
               TINYAUTH_OAUTH_PROVIDERS_POCKETID_SCOPES: "openid email profile groups"
               TINYAUTH_OAUTH_PROVIDERS_POCKETID_AUTHURL: "https://id.${PUBLIC_DOMAIN}/authorize"
