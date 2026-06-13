@@ -46,6 +46,10 @@ spec:
               # 8h sliding idle, 7d hard cap.
               TINYAUTH_AUTH_SESSIONEXPIRY: 28800
               TINYAUTH_AUTH_SESSIONMAXLIFETIME: 604800
+              # Re-enable when upstream tinyauth ships a stable release with the
+              # Auth.ACLs.Policy field AND the UserAllowedRule OAuth empty-filter
+              # asymmetry is fixed (currently returns Deny, should Abstain).
+              # TINYAUTH_AUTH_ACLS_POLICY: deny
               TINYAUTH_LOG_LEVEL: info
               TINYAUTH_LOG_JSON: "true"
               # Emit auth events on a dedicated stream for security forensics.
@@ -60,7 +64,7 @@ spec:
               TINYAUTH_OAUTH_PROVIDERS_POCKETID_REDIRECTURL: "https://auth.${PUBLIC_DOMAIN}/api/oauth/callback/pocketid"
               # Per-app ACLs are MANDATORY on v5.0.7 — without a per-app block the
               # OAuthGroupRule returns Allow on nil ACLs and lets any authenticated
-              # user through. A pre-commit hook enforces this contract.
+              # user through.
               TINYAUTH_APPS_echo_CONFIG_DOMAIN: "echo.${PUBLIC_DOMAIN}"
               TINYAUTH_APPS_echo_OAUTH_GROUPS: admins
               TINYAUTH_APPS_maintainerr_CONFIG_DOMAIN: "maintainerr.${PUBLIC_DOMAIN}"
