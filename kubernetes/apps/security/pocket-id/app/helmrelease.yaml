@@ -37,6 +37,9 @@ spec:
               PORT: &port 1411
               HOST: 0.0.0.0
               DB_CONNECTION_STRING: "/app/data/pocket-id.db"
+              # GeoLite2 mmdb is auto-refreshed on startup + by a cron job; keep it
+              # out of the backed-up PVC.
+              GEOLITE_DB_PATH: "/app/geolite/GeoLite2-City.mmdb"
               TRUST_PROXY: "true"
               ANALYTICS_DISABLED: "true"
               VERSION_CHECK_DISABLED: "true"
@@ -90,6 +93,12 @@ spec:
           pocket-id:
             app:
               - path: /app/data
+      geolite:
+        type: emptyDir
+        advancedMounts:
+          pocket-id:
+            app:
+              - path: /app/geolite
       tmp:
         type: emptyDir
     route:
