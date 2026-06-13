@@ -52,6 +52,9 @@ spec:
               TINYAUTH_LOG_JSON: "true"
               # Emit auth events on a dedicated stream for security forensics.
               TINYAUTH_LOG_STREAMS_AUDIT_ENABLED: "true"
+              # No label-discovery: we use HTTPRoute (not Ingress) and the K8s label
+              # provider would otherwise try to mount the service account token.
+              TINYAUTH_LABELPROVIDER: none
               TINYAUTH_OAUTH_AUTOREDIRECT: pocketid
               TINYAUTH_OAUTH_PROVIDERS_POCKETID_NAME: "IdP"
               TINYAUTH_OAUTH_PROVIDERS_POCKETID_SCOPES: "openid email profile groups"
