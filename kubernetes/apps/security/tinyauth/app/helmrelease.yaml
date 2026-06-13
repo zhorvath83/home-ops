@@ -34,6 +34,7 @@ spec:
               tag: nightly-distroless@sha256:f85f441a67090f84ee790a5a4a1440e6354592c32078a20af08452cd73fea738
             env:
               TZ: "${TIMEZONE}"
+              TINYAUTH_UI_TITLE: "Auth"
               TINYAUTH_APPURL: "https://auth.${PUBLIC_DOMAIN}"
               TINYAUTH_ANALYTICS_ENABLED: false
               TINYAUTH_SERVER_PORT: &port 3000
