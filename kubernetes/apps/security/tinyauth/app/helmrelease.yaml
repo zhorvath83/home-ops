@@ -30,8 +30,7 @@ spec:
             image:
               # renovate: datasource=docker depName=ghcr.io/tinyauthapp/tinyauth
               repository: ghcr.io/tinyauthapp/tinyauth
-              # Nightly required for Auth.ACLs.Policy; pin until v5.0.8 stable.
-              tag: nightly-distroless@sha256:f85f441a67090f84ee790a5a4a1440e6354592c32078a20af08452cd73fea738
+              tag: v5.0.7@sha256:0793c71c49906e079d90c7e693cded9df569217a92d717dc9b171f2116fcd1c6
             env:
               TZ: "${TIMEZONE}"
               TINYAUTH_UI_TITLE: "Authentication"
@@ -47,15 +46,10 @@ spec:
               # 8h sliding idle, 7d hard cap.
               TINYAUTH_AUTH_SESSIONEXPIRY: 28800
               TINYAUTH_AUTH_SESSIONMAXLIFETIME: 604800
-              # Default-deny safety net for apps without explicit per-app ACL config below.
-              TINYAUTH_AUTH_ACLS_POLICY: deny
               TINYAUTH_LOG_LEVEL: info
               TINYAUTH_LOG_JSON: "true"
               # Emit auth events on a dedicated stream for security forensics.
               TINYAUTH_LOG_STREAMS_AUDIT_ENABLED: "true"
-              # No label-discovery: we use HTTPRoute (not Ingress) and the K8s label
-              # provider would otherwise try to mount the service account token.
-              TINYAUTH_LABELPROVIDER: none
               TINYAUTH_OAUTH_AUTOREDIRECT: pocketid
               TINYAUTH_OAUTH_PROVIDERS_POCKETID_NAME: "IdP"
               TINYAUTH_OAUTH_PROVIDERS_POCKETID_SCOPES: "openid email profile groups"
@@ -64,8 +58,9 @@ spec:
               TINYAUTH_OAUTH_PROVIDERS_POCKETID_TOKENURL: "http://pocket-id.security.svc.cluster.local:1411/api/oidc/token"
               TINYAUTH_OAUTH_PROVIDERS_POCKETID_USERINFOURL: "http://pocket-id.security.svc.cluster.local:1411/api/oidc/userinfo"
               TINYAUTH_OAUTH_PROVIDERS_POCKETID_REDIRECTURL: "https://auth.${PUBLIC_DOMAIN}/api/oauth/callback/pocketid"
-              # Per-app ACLs. The global ACLS_POLICY=deny above gates apps that lack
-              # an explicit block here; this list is the allowlist with group mapping.
+              # Per-app ACLs are MANDATORY on v5.0.7 — without a per-app block the
+              # OAuthGroupRule returns Allow on nil ACLs and lets any authenticated
+              # user through. A pre-commit hook enforces this contract.
               TINYAUTH_APPS_echo_CONFIG_DOMAIN: "echo.${PUBLIC_DOMAIN}"
               TINYAUTH_APPS_echo_OAUTH_GROUPS: admins
               TINYAUTH_APPS_maintainerr_CONFIG_DOMAIN: "maintainerr.${PUBLIC_DOMAIN}"
