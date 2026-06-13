@@ -67,8 +67,8 @@ spec:
               # an explicit block here; this list is the allowlist with group mapping.
               TINYAUTH_APPS_echo_CONFIG_DOMAIN: "echo.${PUBLIC_DOMAIN}"
               TINYAUTH_APPS_echo_OAUTH_GROUPS: admins
-              TINYAUTH_APPS_maintainerr_CONFIG_DOMAIN: "maintainerr.${PUBLIC_DOMAIN}"
-              TINYAUTH_APPS_maintainerr_OAUTH_GROUPS: admins
+              # TINYAUTH_APPS_maintainerr_CONFIG_DOMAIN: "maintainerr.${PUBLIC_DOMAIN}"
+              # TINYAUTH_APPS_maintainerr_OAUTH_GROUPS: admins
             envFrom:
               - secretRef:
                   name: tinyauth-secret
