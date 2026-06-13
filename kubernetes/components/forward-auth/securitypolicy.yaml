@@ -22,7 +22,15 @@ spec:
         - name: tinyauth
           namespace: security
           port: 3000
-      path: /api/auth/envoy
+      # Trailing "?path=" turns Envoy's path_prefix concatenation into a
+      # query string tinyauth v5 ExtAuthz mode reads via c.Query("path").
+      # See: https://github.com/envoyproxy/gateway/issues/5783
+      path: /api/auth/envoy?path=
+      headersToExtAuth:
+        - cookie
+        - accept
+        - user-agent
+        - x-forwarded-proto
       headersToBackend:
         - Remote-User
         - Remote-Email
