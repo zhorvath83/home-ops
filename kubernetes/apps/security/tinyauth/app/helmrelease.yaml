@@ -42,7 +42,7 @@ spec:
               TINYAUTH_LOG_LEVEL: info
               TINYAUTH_LOG_JSON: "true"
               TINYAUTH_OAUTH_AUTOREDIRECT: pocketid
-              TINYAUTH_OAUTH_PROVIDERS_POCKETID_NAME: "IDP"
+              TINYAUTH_OAUTH_PROVIDERS_POCKETID_NAME: "IdP"
               TINYAUTH_OAUTH_PROVIDERS_POCKETID_SCOPES: "openid email profile groups"
               TINYAUTH_OAUTH_PROVIDERS_POCKETID_AUTHURL: "https://id.${PUBLIC_DOMAIN}/authorize"
               TINYAUTH_OAUTH_PROVIDERS_POCKETID_TOKENURL: "https://id.${PUBLIC_DOMAIN}/api/oidc/token"
