@@ -34,8 +34,11 @@ spec:
             env:
               TZ: "${TIMEZONE}"
               TINYAUTH_APPURL: "https://auth.${PUBLIC_DOMAIN}"
+              TINYAUTH_ANALYTICS_ENABLED: false
               TINYAUTH_SERVER_PORT: &port 3000
               TINYAUTH_SERVER_ADDRESS: 0.0.0.0
+              TINYAUTH_AUTH_TRUSTEDPROXIES: 10.244.0.0/16
+              TINYAUTH_RESOURCES_PATH: /data/resources
               TINYAUTH_DATABASE_PATH: /data/tinyauth.db
               TINYAUTH_AUTH_SECURECOOKIE: "true"
               TINYAUTH_AUTH_SESSIONEXPIRY: 86400

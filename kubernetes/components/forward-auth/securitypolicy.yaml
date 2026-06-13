@@ -17,15 +17,16 @@ spec:
       kind: HTTPRoute
       name: "${APP}"
   extAuth:
-    # HeadersToExtAuth lives on the parent ExtAuth struct, not on .http.
-    # Envoy default check headers (Host, Method, Path, Content-Length,
-    # Authorization) don't include x-forwarded-proto, which tinyauth v5
-    # ExtAuthz mode requires.
+    # Fail closed if tinyauth is unreachable.
+    failOpen: false
     headersToExtAuth:
       - cookie
       - accept
       - user-agent
+      - x-forwarded-for
+      - x-forwarded-host
       - x-forwarded-proto
+      - x-forwarded-uri
     http:
       backendRefs:
         - name: tinyauth
