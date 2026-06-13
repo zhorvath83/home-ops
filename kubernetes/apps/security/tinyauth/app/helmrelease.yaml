@@ -30,27 +30,39 @@ spec:
             image:
               # renovate: datasource=docker depName=ghcr.io/tinyauthapp/tinyauth
               repository: ghcr.io/tinyauthapp/tinyauth
-              tag: v5.0.7
+              tag: v5.0.7@sha256:0793c71c49906e079d90c7e693cded9df569217a92d717dc9b171f2116fcd1c6
             env:
               TZ: "${TIMEZONE}"
               TINYAUTH_APPURL: "https://auth.${PUBLIC_DOMAIN}"
               TINYAUTH_ANALYTICS_ENABLED: false
               TINYAUTH_SERVER_PORT: &port 3000
               TINYAUTH_SERVER_ADDRESS: 0.0.0.0
+              # Pod CIDR; narrower trust handled by the tinyauth CiliumNetworkPolicy.
               TINYAUTH_AUTH_TRUSTEDPROXIES: 10.244.0.0/16
               TINYAUTH_RESOURCES_PATH: /data/resources
               TINYAUTH_DATABASE_PATH: /data/tinyauth.db
               TINYAUTH_AUTH_SECURECOOKIE: "true"
-              TINYAUTH_AUTH_SESSIONEXPIRY: 86400
+              # 8h sliding idle, 7d hard cap.
+              TINYAUTH_AUTH_SESSIONEXPIRY: 28800
+              TINYAUTH_AUTH_SESSIONMAXLIFETIME: 604800
+              # Default-deny ACL: every forward-auth app needs an explicit TINYAUTH_APPS_* block.
+              TINYAUTH_ACLS_POLICY: deny
               TINYAUTH_LOG_LEVEL: info
               TINYAUTH_LOG_JSON: "true"
+              # Emit auth events on a dedicated stream for security forensics.
+              TINYAUTH_LOG_STREAMS_AUDIT_ENABLED: "true"
               TINYAUTH_OAUTH_AUTOREDIRECT: pocketid
               TINYAUTH_OAUTH_PROVIDERS_POCKETID_NAME: "IdP"
               TINYAUTH_OAUTH_PROVIDERS_POCKETID_SCOPES: "openid email profile groups"
+              # AUTH/REDIRECT URLs are browser-facing; TOKEN/USERINFO go cluster-internal.
               TINYAUTH_OAUTH_PROVIDERS_POCKETID_AUTHURL: "https://id.${PUBLIC_DOMAIN}/authorize"
-              TINYAUTH_OAUTH_PROVIDERS_POCKETID_TOKENURL: "https://id.${PUBLIC_DOMAIN}/api/oidc/token"
-              TINYAUTH_OAUTH_PROVIDERS_POCKETID_USERINFOURL: "https://id.${PUBLIC_DOMAIN}/api/oidc/userinfo"
+              TINYAUTH_OAUTH_PROVIDERS_POCKETID_TOKENURL: "http://pocket-id.security.svc.cluster.local:1411/api/oidc/token"
+              TINYAUTH_OAUTH_PROVIDERS_POCKETID_USERINFOURL: "http://pocket-id.security.svc.cluster.local:1411/api/oidc/userinfo"
               TINYAUTH_OAUTH_PROVIDERS_POCKETID_REDIRECTURL: "https://auth.${PUBLIC_DOMAIN}/api/oauth/callback/pocketid"
+              # Per-app ACLs. Each forward-auth-protected app pins its hostname
+              # via CONFIG_DOMAIN and its required pocket-id group via OAUTH_GROUPS.
+              TINYAUTH_APPS_echo_CONFIG_DOMAIN: "echo.${PUBLIC_DOMAIN}"
+              TINYAUTH_APPS_echo_OAUTH_GROUPS: admins
             envFrom:
               - secretRef:
                   name: tinyauth-secret

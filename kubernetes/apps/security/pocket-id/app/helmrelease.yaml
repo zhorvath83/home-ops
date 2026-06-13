@@ -30,7 +30,7 @@ spec:
             image:
               # renovate: datasource=docker depName=ghcr.io/pocket-id/pocket-id
               repository: ghcr.io/pocket-id/pocket-id
-              tag: v2.8.0-distroless
+              tag: v2.8.0-distroless@sha256:6a3aad6023ea0729e3763c75b77060d6d5d9069ad566af0b0b14a2288da0c9e0
             env:
               TZ: "${TIMEZONE}"
               APP_URL: "https://id.${PUBLIC_DOMAIN}"
