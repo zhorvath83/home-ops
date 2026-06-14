@@ -114,7 +114,7 @@ restart-failed-hrs:
           flux resume hr "$name" -n "$ns"
         done
 
-[doc('Emergency rollback: suspend HR, helm-rollback to previous release, leave suspended. Resume manually after fixing the source.')]
+[doc('Emergency rollback: suspend and rollback HR, leave suspended. Resume manually after fixing the source.')]
 [group('flux')]
 [script]
 hr-rollback name ns:
