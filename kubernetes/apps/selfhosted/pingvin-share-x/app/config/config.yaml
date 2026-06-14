@@ -14,7 +14,7 @@ oauth:
   oidc-clientSecret: "$${OIDC_CLIENT_SECRET}"
   oidc-scope: openid email profile groups
   oidc-roleGeneralAccess: "users"
-  oidc-roleAdminAccess: "admins"
+  oidc-roleAdminAccess: "adminstrators"
   disablePassword: "true"
 
 initUser:
