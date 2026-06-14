@@ -28,12 +28,13 @@ spec:
         initContainers:
           config-init:
             image:
-              repository: public.ecr.aws/docker/library/bash
-              tag: "5.2.26@sha256:bdb899fbeb80f790cc2891b3adb11dc1b885ecb703ff680c4566364601bf657c"
+              repository: public.ecr.aws/docker/library/busybox
+              tag: "1.38.0"
             command:
-              - /usr/local/bin/bash
+              - /bin/sh
               - -c
-              - envsubst < /config-template/config.yaml > /config/config.yaml
+              - |
+                sed -e "s|\${OIDC_CLIENT_ID}|${OIDC_CLIENT_ID}|g" -e "s|\${OIDC_CLIENT_SECRET}|${OIDC_CLIENT_SECRET}|g" /config-template/config.yaml > /config/config.yaml
             envFrom:
               - secretRef:
                   name: pingvin-share-x-secret
