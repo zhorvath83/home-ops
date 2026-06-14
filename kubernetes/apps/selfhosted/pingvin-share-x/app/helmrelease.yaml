@@ -29,7 +29,7 @@ spec:
           config-init:
             image:
               repository: public.ecr.aws/docker/library/bash
-              tag: "5.2.26@sha256:bdb899fbeb80f790cc2891b3adb11dc1b885ecb703ff680c4566364601bf657c"
+              tag: "5.3.15@sha256:a25cef5ed010cc5cdb115d4176a60231466d3989811eb6d7080d882e8d953401"
             command:
               - /usr/local/bin/bash
               - -c
