@@ -37,7 +37,7 @@
         "/kubelet/",
       ],
       group: { commitMessageTopic: "{{{groupName}}} group" },
-      minimumGroupSize: 4,
+      minimumGroupSize: 1,
     },
     {
       description: "Talos group (installer + talosctl + factory-verified versions)",
