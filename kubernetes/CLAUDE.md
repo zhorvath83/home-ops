@@ -74,6 +74,7 @@ Treat everything under `kubernetes/` as desired state for Flux, not as an impera
   - Rule of thumb: an anchor must save at least 2 reuses **and** name a value the chart values themselves understand. Anchors that exist only to deduplicate the app name are removed.
 - Keep YAML formatting close to neighboring files rather than reformatting entire manifests.
 - Preserve existing inline `# renovate:` annotations when touching versioned manifests.
+- **Inline comment policy**: comments in manifests are terse and explain WHY, never WHAT. One short line is the default; two or three lines only when a non-obvious constraint, upstream bug reference, or trust-boundary rationale genuinely needs spelling out. Header-comment blocks that summarize obvious behavior, header-by-header policy walk-throughs, or comments that restate the field name in prose are removed. The `yaml-language-server` schema line at the top of a document and `# renovate:` annotations on versioned values are not subject to this — they are machine-readable directives, not prose.
 - Use repo-local skills for detailed procedures:
   - app workloads: `.claude/skills/k8s-workloads/`
   - shared Flux wiring: `.claude/skills/flux-gitops/`
