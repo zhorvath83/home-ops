@@ -13,3 +13,6 @@ oauth:
   oidc-clientId: "$${OIDC_CLIENT_ID}"
   oidc-clientSecret: "$${OIDC_CLIENT_SECRET}"
   disablePassword: "true"
+
+initUser:
+  enabled: false

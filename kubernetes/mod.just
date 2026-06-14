@@ -114,6 +114,16 @@ restart-failed-hrs:
           flux resume hr "$name" -n "$ns"
         done
 
+[doc('Emergency rollback: suspend HR, helm-rollback to previous release, leave suspended. Resume manually after fixing the source.')]
+[group('flux')]
+[script]
+hr-rollback name ns:
+    just log info "Suspending HelmRelease" target "{{ ns }}/{{ name }}"
+    flux -n "{{ ns }}" suspend helmrelease "{{ name }}"
+    just log info "Rolling back to previous release" target "{{ ns }}/{{ name }}"
+    helm -n "{{ ns }}" rollback "{{ name }}"
+    just log info "Rollback complete — HR stays suspended" hint "fix the source, then: flux -n {{ ns }} resume hr {{ name }}"
+
 # === debug ===
 
 [doc('Open a debug Alpine shell with a PVC mounted (default mountpath=/mnt; pod auto-removes on exit)')]

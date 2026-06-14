@@ -39,6 +39,17 @@
     },
     {
       customType: "regex",
+      description: "Process Helm chart images that use the non-standard `image.registry: <full-path>` + `image.tag: <version>[@sha256:<digest>]` shape (e.g. democratic-csi)",
+      managerFilePatterns: [
+        "/^kubernetes/.+\\.yaml(?:\\.j2)?$/",
+      ],
+      matchStrings: [
+        "registry:\\s+(?<depName>\\S+/\\S+)\\s+tag:\\s*[\"']?(?<currentValue>v?[0-9][^\"'\\s@]*)(?:@sha256:(?<currentDigest>[a-f0-9]+))?",
+      ],
+      datasourceTemplate: "docker",
+    },
+    {
+      customType: "regex",
       description: "Process busybox image refs across bjw-s (repository/tag), democratic-csi (registry/tag), and CEL inline (image: \"path:tag\") shapes",
       managerFilePatterns: [
         "/^kubernetes/.+\\.yaml(?:\\.j2)?$/",
