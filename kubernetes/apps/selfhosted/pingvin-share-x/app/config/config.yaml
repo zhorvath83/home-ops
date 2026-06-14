@@ -11,6 +11,8 @@ general:
   showHomePage: "false"
   #Time after which a user must log in again (default: 3 months).
   sessionDuration: 7 days
+  #Default language
+  defaultLanguage: "hu-HU"
 appearance:
   #Mantine primary color used across the UI.
   #Use one of the named colors: dark, gray, red, pink, grape, violet, indigo, blue, cyan, teal, green, lime, yellow, orange, victoria, custom
