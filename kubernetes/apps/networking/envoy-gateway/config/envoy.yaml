@@ -69,7 +69,7 @@ spec:
           sinks:
             - type: File
               file:
-                path: /dev/stdout
+                path: /dev/stdout # picked up by the cluster log pipeline
     metrics:
       prometheus:
         compression:

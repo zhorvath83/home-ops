@@ -10,15 +10,7 @@ spec:
       app.kubernetes.io/name: envoy
       gateway.envoyproxy.io/owning-gateway-name: envoy-internal
   ingress:
-    # HTTP, HTTPS and QUIC (UDP/10443) listener traffic. LAN clients arrive
-    # through the Cilium L2 announced LB IP and reach the pod with the
-    # original client IP preserved (externalTrafficPolicy: Local). The L4
-    # ingress is restricted to RFC1918 source CIDRs as a belt-and-suspenders
-    # layer in front of SecurityPolicy/envoy-internal-rfc1918 — if that L7
-    # policy ever drops or its defaultAction regresses (e.g. CRD-schema
-    # rejection like the rate-limit case), the L4 layer still denies world.
-    # cluster + host + remote-node are kept separately for kubelet probes
-    # and intra-cluster client traffic.
+    # L4 RFC1918 allowlist as defense-in-depth behind SecurityPolicy/envoy-internal-rfc1918.
     - fromCIDR:
         - 10.0.0.0/8
         - 172.16.0.0/12

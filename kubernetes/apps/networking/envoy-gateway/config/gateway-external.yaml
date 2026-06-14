@@ -25,37 +25,15 @@ spec:
     annotations:
       external-dns.alpha.kubernetes.io/hostname: *hostname
   listeners:
-    # HTTP listener has no hostname filter: it only serves the local
-    # https-redirect HTTPRoute (allowedRoutes restricted to Same namespace),
-    # and the redirect must fire for any Host header that lands on :80.
     - name: http
       protocol: HTTP
       port: 80
       allowedRoutes:
         namespaces:
           from: Same
-    # HTTPS listener is split per SNI hostname pattern to bind route
-    # attachment to the cert SAN list. The wildcard cert covers
-    # "${PUBLIC_DOMAIN}" (apex) plus "*.${PUBLIC_DOMAIN}" (single-label
-    # subdomain). Any HTTPRoute whose hostname falls outside these patterns
-    # cannot attach to the listener — defense against accidental or
-    # malicious HTTPRoutes (e.g. from any-namespace attach) trying to expose
-    # hostnames the cert does not cover.
-    - name: https-apex
+    - name: https
       protocol: HTTPS
       port: 443
-      hostname: "${PUBLIC_DOMAIN}"
-      allowedRoutes:
-        namespaces:
-          from: All
-      tls:
-        certificateRefs:
-          - kind: Secret
-            name: "${PUBLIC_DOMAIN/./-}"
-    - name: https-wildcard
-      protocol: HTTPS
-      port: 443
-      hostname: "*.${PUBLIC_DOMAIN}"
       allowedRoutes:
         namespaces:
           from: All
