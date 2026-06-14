@@ -37,5 +37,19 @@
       datasourceTemplate: "docker",
       packageNameTemplate: "registry.k8s.io/{{depName}}",
     },
+    {
+      customType: "regex",
+      description: "Process busybox image refs across bjw-s (repository/tag), democratic-csi (registry/tag), and CEL inline (image: \"path:tag\") shapes",
+      managerFilePatterns: [
+        "/^kubernetes/.+\\.yaml(?:\\.j2)?$/",
+      ],
+      matchStrings: [
+        "repository:\\s+public\\.ecr\\.aws/docker/library/busybox[\\s\\S]+?tag:\\s*[\"']?(?<currentValue>[^\"'\\s]+)",
+        "registry:\\s+public\\.ecr\\.aws/docker/library/busybox[\\s\\S]+?tag:\\s*[\"']?(?<currentValue>[^\"'\\s]+)",
+        "image:\\s*[\"']public\\.ecr\\.aws/docker/library/busybox:(?<currentValue>[^\"'\\s]+)[\"']",
+      ],
+      datasourceTemplate: "docker",
+      depNameTemplate: "public.ecr.aws/docker/library/busybox",
+    },
   ],
 }

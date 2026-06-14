@@ -34,7 +34,10 @@ spec:
               - /bin/sh
               - -c
               - |
-                sed -e "s|\${OIDC_CLIENT_ID}|${OIDC_CLIENT_ID}|g" -e "s|\${OIDC_CLIENT_SECRET}|${OIDC_CLIENT_SECRET}|g" /config-template/config.yaml > /config/config.yaml
+                sed \
+                  -e "s@\${OIDC_CLIENT_ID}@${OIDC_CLIENT_ID}@g" \
+                  -e "s@\${OIDC_CLIENT_SECRET}@${OIDC_CLIENT_SECRET}@g" \
+                  /config-template/config.yaml > /config/config.yaml
             envFrom:
               - secretRef:
                   name: pingvin-share-x-secret
