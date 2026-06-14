@@ -1,11 +1,8 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
 #
-# Egress is fully restricted. The pod opts out of the cluster-wide baseline
-# egress CCNP via the egress.home.arpa/custom-egress label. DNS is covered by
-# the cluster-wide allow-dns-egress CCNP (endpointSelector: {}). No other
-# outbound traffic is permitted. Add egress rules for SMTP or OAuth providers
-# if those features are enabled.
+# Egress is handled by the cluster-wide allow-cluster-egress CCNP (the pod no
+# longer opts out of the baseline egress policy).
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:

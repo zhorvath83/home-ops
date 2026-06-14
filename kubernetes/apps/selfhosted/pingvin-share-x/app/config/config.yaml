@@ -1,0 +1,15 @@
+---
+general:
+  appUrl: "https://share.${PUBLIC_DOMAIN}"
+  secureCookies: "true"
+
+share:
+  allowRegistration: "false"
+  maxExpiration: "30 days"
+
+oauth:
+  oidc-enabled: "true"
+  oidc-discoveryUri: "https://id.${PUBLIC_DOMAIN}/.well-known/openid-configuration"
+  oidc-clientId: "$$OIDC_CLIENT_ID"
+  oidc-clientSecret: "$$OIDC_CLIENT_SECRET"
+  disablePassword: "true"

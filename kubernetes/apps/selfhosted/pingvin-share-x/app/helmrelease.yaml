@@ -13,8 +13,6 @@ spec:
     defaultPodOptions:
       automountServiceAccountToken: false
       enableServiceLinks: false
-      labels:
-        egress.home.arpa/custom-egress: restricted
       securityContext:
         runAsNonRoot: true
         runAsUser: 10001
@@ -27,6 +25,24 @@ spec:
       pingvin-share-x:
         annotations:
           reloader.stakater.com/auto: "true"
+        initContainers:
+          config-init:
+            image:
+              repository: public.ecr.aws/docker/library/bash
+              tag: "5.2.26@sha256:bdb899fbeb80f790cc2891b3adb11dc1b885ecb703ff680c4566364601bf657c"
+            command:
+              - /usr/local/bin/bash
+              - -c
+              - envsubst < /config-template/config.yaml > /config/config.yaml
+            envFrom:
+              - secretRef:
+                  name: pingvin-share-x-secret
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                  - ALL
         containers:
           app:
             image:
@@ -36,6 +52,10 @@ spec:
               TZ: ${TIMEZONE}
               CADDY_DISABLED: "true"
               TRUST_PROXY: "true"
+              DATA_DIRECTORY: /data
+              CONFIG_FILE: /config/config.yaml
+              DATABASE_URL: file:/data/pingvin-share.db?connection_limit=1
+              PV_LOG_LEVEL: verbose
             probes:
               startup:
                 enabled: true
@@ -116,12 +136,27 @@ spec:
               - identifier: app
                 port: *frontendPort
     persistence:
+      config-template:
+        type: configMap
+        name: pingvin-share-x-config
+        advancedMounts:
+          pingvin-share-x:
+            config-init:
+              - path: /config-template
+      config:
+        type: emptyDir
+        advancedMounts:
+          pingvin-share-x:
+            config-init:
+              - path: /config
+            app:
+              - path: /config
       data:
         existingClaim: pingvin-share-x
         advancedMounts:
           pingvin-share-x:
             app:
-              - path: /opt/app/backend/data
+              - path: /data
       frontend-img:
         existingClaim: pingvin-share-x
         advancedMounts:
