@@ -127,7 +127,7 @@ smtp:
   #Only set this to true if you need to trust self signed certificates.
   allowUnauthorizedCertificates: "false"
   #Host of the SMTP server
-  host: "$${SMTP_HOST}"
+  host: "$${SMTP_HOSTNAME}"
   #Port of the SMTP server
   port: "$${SMTP_PORT}"
   #Email address from which the emails get sent
