@@ -31,7 +31,7 @@ spec:
               repository: docker.io/nginx
               tag: "stable-alpine"
             command:
-              - "/usr/local/bin/bash"
+              - "/bin/sh"
               - -c
               - envsubst < /config-template/config.yaml > /config/config.yaml
             envFrom:
