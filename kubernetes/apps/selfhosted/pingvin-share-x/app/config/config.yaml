@@ -1,21 +1,179 @@
 ---
+# https://github.com/smp46/pingvin-share-x/blob/main/config.example.yaml
 general:
+  #Name of the application
+  appName: File share
+  #On which URL Pingvin Share is available
   appUrl: "https://share.${PUBLIC_DOMAIN}"
+  #Whether to set the secure flag on cookies. If enabled, the site will not function when accessed over HTTP.
   secureCookies: "true"
+  #Whether to show the home page
+  showHomePage: "false"
+  #Time after which a user must log in again (default: 3 months).
+  sessionDuration: 7 days
+appearance:
+  #Mantine primary color used across the UI.
+  #Use one of the named colors: dark, gray, red, pink, grape, violet, indigo, blue, cyan, teal, green, lime, yellow, orange, victoria, custom
+  themePrimaryColor: victoria
+  #If themePrimaryColor is set to custom, this hex color will be used as override.
+  themePrimaryColorOverride: ""
+  #Mantine default border radius (xs, sm, md, lg, xl).
+  themeRadius: sm
+  #Default color scheme for the UI. Options: system, light, dark
+  themeColorScheme: system
+  #Custom CSS that will be injected globally into the frontend. Use carefully, as invalid CSS may impact the UI.
+  customCss: ""
 
 share:
+  #Whether registration is allowed
   allowRegistration: "false"
-  maxExpiration: "30 days"
+  #Whether unauthenticated users can create shares
+  allowUnauthenticatedShares: "false"
+  #Maximum share expiration. Set to 0 to allow unlimited expiration.
+  maxExpiration: 90 days
+  #Default length for the generated ID of a share. This value is also used to generate links for reverse shares. A value below 8 is not considered secure.
+  shareIdLength: "24"
+  #Maximum share size
+  maxSize: "1000000000"
+  #Adjust the level to balance between file size and compression speed. Valid values range from 0 to 9, with 0 being no compression and 9 being maximum compression.
+  zipCompressionLevel: "9"
+  #Adjust the chunk size for your uploads to balance efficiency and reliability according to your internet connection. Smaller chunks can enhance success rates for unstable connections, while larger chunks make uploads faster for stable connections.
+  chunkSize: "10000000"
+  #The share creation modal automatically appears when a user selects files, eliminating the need to manually click the button.
+  autoOpenShareModal: "true"
+  #Whether admins can access all shares without tokens/passwords
+  allowAdminAccessAllShares: "true"
+  #How long files are kept after shares expire or are deleted by the uploader.
+  fileRetentionPeriod: 7 days
+
+cache:
+  #Normally Pingvin Share caches information in memory. If you run multiple instances of Pingvin Share, you need to enable Redis caching to share the cache between the instances.
+  redis-enabled: "false"
+
+email:
+  #Whether to allow email sharing with recipients. Only enable this if SMTP is activated.
+  enableShareEmailRecipients: "true"
+  #Subject of the email which gets sent to the share recipients.
+  shareRecipientsSubject: Files shared with you
+  #Message which gets sent to the share recipients. Available variables:
+  # {creator} - The username of the creator of the share
+  # {creatorEmail} - The email of the creator of the share
+  # {shareUrl} - The URL of the share
+  # {desc} - The description of the share
+  # {expires} - The expiration date of the share
+  # These variables will be replaced with the actual value.
+  shareRecipientsMessage: >-
+    Hey!
+
+    {creator} ({creatorEmail}) shared some files with you. You can view or download the
+    files with this link: {shareUrl}
+
+    The share will expire {expires}.
+
+    Note: {desc}
+
+    Shared securely with Pingvin Share 🐧
+  #Subject of the sent email when someone created a share with your reverse share link.
+  reverseShareSubject: Reverse share link used
+  #Message which gets sent when someone created a share with your reverse share link. {shareUrl} will be replaced with the creator's name and the share URL.
+  reverseShareMessage: |-
+    Hey!
+
+    A share was just created with your reverse share link: {shareUrl}
+
+    Shared securely with Pingvin Share 🐧
+  #Subject of the sent email when a user requests a password reset.
+  resetPasswordSubject: Pingvin Share password reset
+  #Message which gets sent when a user requests a password reset. {url} will be replaced with the reset password URL.
+  resetPasswordMessage: >-
+    Hey!
+
+    You requested a password reset. Click this link to reset your password:
+    {url}
+
+    The link expires in an hour.
+
+    Pingvin Share 🐧
+  #Subject of the sent email when an admin invites a user.
+  inviteSubject: Pingvin Share invite
+  #Message which gets sent when an admin invites a user. {url} will be replaced with the invite URL, {email} with the email and {password} with the users password.
+  inviteMessage: >-
+    Hey!
+
+    You were invited to Pingvin Share. Click this link to accept the invite:
+    {url}
+
+    You can use the email "{email}" and the password "{password}" to sign in.
+
+    Pingvin Share 🐧
+  #Whether to send an email to the share creator when an email recipient downloads a file. This requires SMTP and email recipient sharing.
+  enableShareDownloadNotifications: "true"
+  #Subject of the email which gets sent to the share creator when a recipient downloads a file.
+  shareDownloadNotificationSubject: Your file was downloaded
+  #Message which gets sent to the share creator when a recipient downloads a file. Available variables:
+  # {recipientEmail} - The email of the recipient
+  # {fileName} - The downloaded file name
+  # {shareUrl} - The URL of the share
+  shareDownloadNotificationMessage: |-
+    Hey!
+
+    {recipientEmail} downloaded {fileName} from your share: {shareUrl}
+
+    Pingvin Share 🐧
+
+smtp:
+  #Whether SMTP is enabled. Only set this to true if you entered the host, port, email, user and password of your SMTP server.
+  enabled: "true"
+  #Only set this to true if you need to trust self signed certificates.
+  allowUnauthorizedCertificates: "false"
+  #Host of the SMTP server
+  host: "$${SMTP_HOST}"
+  #Port of the SMTP server
+  port: "$${SMTP_PORT}"
+  #Email address from which the emails get sent
+  email: "$${SMTP_FROM}"
+  #Username of the SMTP server
+  username: "$${SMTP_USER}"
+  #Password of the SMTP server
+  password: "$${SMTP_PASSWORD}"
+
+ldap:
+  #Use LDAP authentication for user login
+  enabled: "false"
 
 oauth:
-  oidc-enabled: "true"
-  oidc-discoveryUri: "https://id.${PUBLIC_DOMAIN}/.well-known/openid-configuration"
-  oidc-clientId: "$${OIDC_CLIENT_ID}"
-  oidc-clientSecret: "$${OIDC_CLIENT_SECRET}"
-  oidc-scope: openid email profile groups
-  oidc-roleGeneralAccess: "users"
-  oidc-roleAdminAccess: "adminstrators"
+  #Allow users to register via social login
+  allowRegistration: "true"
+  #Whether to ignore TOTP when user using social login
+  ignoreTotp: "true"
+  #Whether to disable password login
+  #Make sure that an OAuth provider is properly configured before activating this configuration to avoid being locked out.
   disablePassword: "true"
+
+  oidc-enabled: "true"
+  #Discovery URI of the OpenID Connect OAuth app
+  oidc-discoveryUri: "https://id.${PUBLIC_DOMAIN}/.well-known/openid-configuration"
+  #Whether the "Sign out" button will sign out from the OpenID Connect provider
+  oidc-signOut: "true"
+  #Scopes which should be requested from the OpenID Connect provider.
+  oidc-scope: openid email profile groups
+  #Username claim in OpenID Connect ID token. Leave it blank if you don't know what this config is.
+  oidc-usernameClaim: "preferred_username"
+  #Role required for general access. Must be present in a user's roles for them to log in. Leave it blank if you don't know what this config is.
+  oidc-roleGeneralAccess: ""
+  #Role required for administrative access. Must be present in a user's roles for them to access the admin panel. Leave it blank if you don't know what this config is.
+  oidc-roleAdminAccess: "pingvin_share_admins"
+  #Client ID of the OpenID Connect OAuth app
+  oidc-clientId: "$${OIDC_CLIENT_ID}"
+  #Client secret of the OpenID Connect OAuth app
+  oidc-clientSecret: "$${OIDC_CLIENT_SECRET}"
+s3:
+  #Whether S3 should be used to store the shared files instead of the local file system.
+  enabled: "false"
+
+legal:
+  #Whether to show a link to imprint and privacy policy in the footer.
+  enabled: "false"
 
 initUser:
   enabled: false
