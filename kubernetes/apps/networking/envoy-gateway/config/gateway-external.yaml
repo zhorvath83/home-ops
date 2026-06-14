@@ -34,6 +34,8 @@ spec:
     - name: https
       protocol: HTTPS
       port: 443
+      # Apex stays at the external provider; only single-label subdomains reach the cluster.
+      hostname: "*.${PUBLIC_DOMAIN}"
       allowedRoutes:
         namespaces:
           from: All
