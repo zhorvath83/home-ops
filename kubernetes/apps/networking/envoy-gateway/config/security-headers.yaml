@@ -1,0 +1,47 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/gateway.envoyproxy.io/envoyextensionpolicy_v1alpha1.json
+# Inject baseline security response headers on every HTTP response served by
+# either Gateway. v1.8.1 has no native gateway-level response-header
+# injection on BackendTrafficPolicy / ClientTrafficPolicy, so a small inline
+# Lua filter is the cleanest CRD-native primitive available.
+#
+# Header-by-header policy:
+# - Strict-Transport-Security: replace() — the gateway is the authoritative
+#   edge for TLS posture; no app should weaken or override this. 2-year
+#   max-age with includeSubDomains, "preload" intentionally omitted (preload
+#   is a one-way browser-registry commitment that is hard to unwind).
+# - X-Content-Type-Options: replace() — only valid value is "nosniff",
+#   replace is idempotent.
+# - Referrer-Policy: add-if-absent — privacy-sensitive apps may legitimately
+#   want a stricter value (e.g. "no-referrer" or "same-origin"); the gateway
+#   only supplies a sensible baseline for apps that set nothing.
+#
+# Headers intentionally NOT injected here:
+# - Content-Security-Policy, X-Frame-Options: app-specific (iframe embeds,
+#   inline scripts vary per workload).
+# - Cross-Origin-Opener-Policy, Cross-Origin-Embedder-Policy: almost always
+#   break legitimate cross-origin loads when applied blindly.
+# - Permissions-Policy: app-specific feature-access policy.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyExtensionPolicy
+metadata:
+  name: security-response-headers
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: envoy-external
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: envoy-internal
+  lua:
+    - type: Inline
+      inline: |-
+        function envoy_on_response(response_handle)
+          local headers = response_handle:headers()
+          headers:replace("strict-transport-security", "max-age=63072000; includeSubDomains")
+          headers:replace("x-content-type-options", "nosniff")
+          if headers:get("referrer-policy") == nil then
+            headers:add("referrer-policy", "strict-origin-when-cross-origin")
+          end
+        end

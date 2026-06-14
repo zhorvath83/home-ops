@@ -5,6 +5,14 @@ kind: BackendTrafficPolicy
 metadata:
   name: envoy
 spec:
+  # Bound upstream connection pool so a misbehaving backend cannot exhaust
+  # envoy worker capacity. Defaults are EG-defaults; values raised modestly
+  # for a single-node cluster with many small backends.
+  circuitBreaker:
+    maxConnections: 2048
+    maxPendingRequests: 2048
+    maxParallelRequests: 2048
+    maxParallelRetries: 128
   compressor:
     - type: Zstd
       zstd: {}
@@ -26,14 +34,29 @@ spec:
       requestTimeout: 0s
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/gateway.envoyproxy.io/clienttrafficpolicy_v1alpha1.json
+# envoy-external CTP: kliens → Cloudflare edge → cloudflared pod → envoy.
+# Cloudflare's edge sets CF-Connecting-IP with the original client address
+# and overwrites any client-supplied value, so trusting this header is
+# strictly stronger than counting XFF hops — no hop math to maintain and no
+# spoofing surface when traffic flows through Cloudflare. failClosed: false
+# falls back to the TCP source IP (the cloudflared pod) when the header is
+# missing, which covers cluster-internal probes and other non-CF callers
+# permitted by the CiliumNetworkPolicy. HTTP/3 disabled: cloudflared cannot
+# relay raw QUIC to the origin, so advertising H/3 here would be
+# unreachable; public clients still get HTTP/3 via Cloudflare's edge.
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: ClientTrafficPolicy
 metadata:
-  name: envoy
+  name: envoy-external
 spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: envoy-external
   clientIPDetection:
-    xForwardedFor:
-      numTrustedHops: 1
+    customHeader:
+      name: CF-Connecting-IP
+      failClosed: false
   connection:
     bufferLimit: 8Mi
     maxAcceptPerSocketEvent: 0
@@ -51,10 +74,51 @@ spec:
     initialStreamWindowSize: 2Mi
     initialConnectionWindowSize: 32Mi
     onInvalidMessage: TerminateStream
-  http3: {}
-  targetSelectors:
+  tcpKeepalive: {}
+  timeout:
+    http:
+      requestReceivedTimeout: 0s
+  tls:
+    minVersion: "1.3"
+    alpnProtocols:
+      - h2
+      - http/1.1
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/gateway.envoyproxy.io/clienttrafficpolicy_v1alpha1.json
+# envoy-internal CTP: LAN client connects directly to the L2-announced LB VIP
+# (externalTrafficPolicy=Local preserves the real source IP). There is no
+# trusted proxy in front, so numTrustedHops=0 — incoming XFF headers must
+# NOT be trusted (otherwise a LAN client could forge its reported client
+# IP for logs / app-level audit / IP-based ACLs). HTTP/3 enabled: CNP
+# already permits UDP/10443 and the Cilium L2 announcement carries UDP.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: ClientTrafficPolicy
+metadata:
+  name: envoy-internal
+spec:
+  targetRefs:
     - group: gateway.networking.k8s.io
       kind: Gateway
+      name: envoy-internal
+  clientIPDetection:
+    xForwardedFor:
+      numTrustedHops: 0
+  connection:
+    bufferLimit: 8Mi
+    maxAcceptPerSocketEvent: 0
+  headers:
+    earlyRequestHeaders:
+      remove:
+        - Remote-User
+        - Remote-Email
+        - Remote-Groups
+        - Remote-Name
+        - Remote-Sub
+  http2:
+    initialStreamWindowSize: 2Mi
+    initialConnectionWindowSize: 32Mi
+    onInvalidMessage: TerminateStream
+  http3: {}
   tcpKeepalive: {}
   timeout:
     http:
@@ -71,9 +135,13 @@ kind: EnvoyPatchPolicy
 metadata:
   name: envoy-external
 spec:
+  # envoy-external has no https-*-quic listener (HTTP/3 disabled on this
+  # Gateway — CF Tunnel cannot relay QUIC to the origin). The HTTPS listener
+  # is split per SNI pattern (https-apex + https-wildcard), so the zstd
+  # compressor fine-tuning is applied to both.
   jsonPatches:
     - type: type.googleapis.com/envoy.config.listener.v3.Listener
-      name: network/envoy-external/https
+      name: networking/envoy-external/https-apex
       operation: &operation
         op: add
         jsonPath: ..filters[*].typed_config.http_filters[?(@.name=="envoy.filters.http.compressor.zstd")].typed_config
@@ -87,12 +155,52 @@ spec:
           response_direction_config:
             remove_accept_encoding_header: true
     - type: type.googleapis.com/envoy.config.listener.v3.Listener
-      name: network/envoy-external/https-quic
+      name: networking/envoy-external/https-wildcard
       operation: *operation
   targetRef:
     group: gateway.networking.k8s.io
     kind: Gateway
     name: envoy-external
+  type: JSONPatch
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/gateway.envoyproxy.io/envoypatchpolicy_v1alpha1.json
+# envoy-internal serves HTTP/3 (LAN clients can reach UDP/443 via the
+# L2-announced LB VIP). The HTTPS listener is split per SNI pattern, and
+# each split produces both a TCP listener and a UDP (-quic) listener, so
+# the zstd fine-tuning patch covers all four.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyPatchPolicy
+metadata:
+  name: envoy-internal
+spec:
+  jsonPatches:
+    - type: type.googleapis.com/envoy.config.listener.v3.Listener
+      name: networking/envoy-internal/https-apex
+      operation: &operation-internal
+        op: add
+        jsonPath: ..filters[*].typed_config.http_filters[?(@.name=="envoy.filters.http.compressor.zstd")].typed_config
+        value:
+          "@type": type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
+          choose_first: true
+          compressor_library:
+            name: envoy.compression.zstd.compressor
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.compression.zstd.compressor.v3.Zstd
+          response_direction_config:
+            remove_accept_encoding_header: true
+    - type: type.googleapis.com/envoy.config.listener.v3.Listener
+      name: networking/envoy-internal/https-apex-quic
+      operation: *operation-internal
+    - type: type.googleapis.com/envoy.config.listener.v3.Listener
+      name: networking/envoy-internal/https-wildcard
+      operation: *operation-internal
+    - type: type.googleapis.com/envoy.config.listener.v3.Listener
+      name: networking/envoy-internal/https-wildcard-quic
+      operation: *operation-internal
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: envoy-internal
   type: JSONPatch
 # NOTE: rate-limit-external BackendTrafficPolicy disabled — upstream Envoy
 # Gateway v1.8.0 ships a CRD regression (PR envoyproxy/gateway#8798): the

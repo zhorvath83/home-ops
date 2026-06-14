@@ -29,9 +29,23 @@ spec:
       allowedRoutes:
         namespaces:
           from: Same
-    - name: https
+    # See gateway-external.yaml for the rationale of the apex / wildcard
+    # listener split.
+    - name: https-apex
       protocol: HTTPS
       port: 443
+      hostname: "${PUBLIC_DOMAIN}"
+      allowedRoutes:
+        namespaces:
+          from: All
+      tls:
+        certificateRefs:
+          - kind: Secret
+            name: "${PUBLIC_DOMAIN/./-}"
+    - name: https-wildcard
+      protocol: HTTPS
+      port: 443
+      hostname: "*.${PUBLIC_DOMAIN}"
       allowedRoutes:
         namespaces:
           from: All
