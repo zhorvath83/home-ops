@@ -9,13 +9,14 @@ verified_at: '2026-06-14'
 summary: Gateway API with Envoy Gateway provides cluster ingress, split across two
   shared entrypoints (envoy-external for Cloudflare Tunnel public traffic, envoy-internal
   for LAN traffic on a Cilium L2-announced VIP). Single HTTPS listener per Gateway
-  (named `https`); listener-hostname SAN binding was attempted and reverted —
-  see drift_risk. ClientTrafficPolicy is per-gateway — external uses CF-Connecting-IP
-  for client IP detection, internal rejects client-supplied XFF (numTrustedHops=0).
-  HTTP/3 enabled internal-only (CF Tunnel cannot relay QUIC to origin). Baseline
-  security response headers (HSTS, nosniff, Referrer-Policy) injected via inline
-  Lua. Per-EnvoyProxy access logs to stdout. Split DNS by k8s-gateway (LAN) and
-  ExternalDNS (public).
+  (named `https`), SNI-restricted to `*.${PUBLIC_DOMAIN}` — the apex stays at an
+  external provider and never enters the cluster. cloudflared ingress mirrors that
+  scope (only the wildcard rule plus a 404 catch-all). ClientTrafficPolicy is
+  per-gateway — external uses CF-Connecting-IP for client IP detection, internal
+  rejects client-supplied XFF (numTrustedHops=0). HTTP/3 enabled internal-only
+  (CF Tunnel cannot relay QUIC to origin). Baseline security response headers
+  (HSTS, nosniff, Referrer-Policy) injected via inline Lua. Per-EnvoyProxy access
+  logs to stdout. Split DNS by k8s-gateway (LAN) and ExternalDNS (public).
 verified_against:
 - kubernetes/apps/networking/envoy-gateway/config/gateway-internal.yaml
 - kubernetes/apps/networking/envoy-gateway/config/gateway-external.yaml
@@ -31,18 +32,21 @@ verified_against:
 - kubernetes/apps/networking/CLAUDE.md
 drift_risk: 'HSTS includeSubDomains with 2-year max-age is a one-way commitment —
   any future HTTP-only subdomain under PUBLIC_DOMAIN would be blocked from cached
-  browsers; preload deliberately omitted. Listener hostname SAN-binding (split
-  into https-apex + https-wildcard) was attempted and reverted in commit 6e890d8f7
-  — all 30+ HTTPRoutes pin sectionName: https in parentRefs, the rename produced
-  NoMatchingParent on every route. Re-introducing the split requires migrating
-  every HTTPRoute parentRef first (mind single-label subdomain, so sectionName:
-  https-wildcard is the right target). rate-limit-external BackendTrafficPolicy
-  still disabled (envoy-gateway v1.8.0/v1.8.1 CRD regression, fix #8798 merged to
-  main but not cherry-picked to release/v1.8) — Cloudflare WAF covers external rate
-  limiting in the meantime. The envoy v1.38.2 image tag is hardcoded in EnvoyProxy
-  spec, not chart-managed. EnvoyPatchPolicy listener naming uses the EG IR format
-  gateway-namespace/gateway-name/listener-name (single `https`, plus `https-quic`
-  on internal).'
+  browsers; preload deliberately omitted. The listener hostname filter is
+  `*.${PUBLIC_DOMAIN}` (single-label wildcard), which matches every current
+  HTTPRoute hostname — adding a route with a multi-label hostname (e.g.
+  foo.bar.${PUBLIC_DOMAIN}) or the bare apex would fail with NoMatchingParent
+  until either the listener pattern is extended or the route hostname adjusted.
+  Apex `${PUBLIC_DOMAIN}` DNS points straight at the external website provider
+  (Hetzner A/AAAA, proxied=false) — moving the apex into the cluster would
+  require DNS rewrite, an apex HTTPRoute, and either widening or splitting the
+  listener hostname filter. rate-limit-external BackendTrafficPolicy still
+  disabled (envoy-gateway v1.8.0/v1.8.1 CRD regression, fix #8798 merged to main
+  but not cherry-picked to release/v1.8) — Cloudflare WAF covers external rate
+  limiting in the meantime. The envoy v1.38.2 image tag is hardcoded in
+  EnvoyProxy spec, not chart-managed. EnvoyPatchPolicy listener naming uses the
+  EG IR format gateway-namespace/gateway-name/listener-name (single `https`,
+  plus `https-quic` on internal).'
 ---
 
 # networking — current state
@@ -60,10 +64,16 @@ Gateway API with Envoy Gateway provides cluster ingress, split across two shared
 `envoy-external` for Cloudflare Tunnel public traffic (ClusterIP-only Service) and
 `envoy-internal` for LAN traffic (Cilium L2-announced LoadBalancer VIP, RFC1918-restricted).
 Each Gateway exposes a single HTTP/80 listener (Same-namespace routes only, serving
-the shared https-redirect) and a single HTTPS/443 listener named `https` (All-namespace
-routes). A hostname-restricted listener split (https-apex + https-wildcard) was
-attempted and reverted because every existing HTTPRoute pins `sectionName: https`,
-which produced `NoMatchingParent` on every route after the rename — see drift_risk.
+the shared https-redirect) and a single HTTPS/443 listener named `https`
+(All-namespace routes, SNI-restricted to `*.${PUBLIC_DOMAIN}`). The wildcard
+filter keeps the listener name stable (HTTPRoutes attach via `sectionName: https`
+unchanged) while binding route attachment and TLS SNI to the cert SAN list —
+HTTPRoutes with a hostname outside the wildcard pattern (apex, multi-label,
+unrelated domain) are rejected with `NoMatchingParent`. The apex
+`${PUBLIC_DOMAIN}` is served by an external provider and intentionally never
+reaches the cluster; cloudflared's ingress mirrors that, forwarding only
+`*.${PUBLIC_DOMAIN}` to envoy-external and falling through to a 404 catch-all
+otherwise.
 Per-gateway `ClientTrafficPolicy`: external uses `CF-Connecting-IP` (set authoritatively by
 Cloudflare edge, overwritten on every request, `failClosed: false` falls back to TCP
 source for non-CF callers), internal sets `numTrustedHops: 0` (LAN-direct, no proxy
@@ -86,7 +96,7 @@ and injected into every child Kustomization via Flux `postBuild.substituteFrom`.
 - [component] Envoy Gateway controller — GatewayClasses `envoy-external` and `envoy-internal` (kubernetes/apps/networking/envoy-gateway/app/)
 - [component] EnvoyProxy/envoy-external — ClusterIP Service, replicas=1, envoy v1.38.2, JSON access log to stdout (envoy.yaml first doc)
 - [component] EnvoyProxy/envoy-internal — LoadBalancer Service with externalTrafficPolicy: Local, JSON access log to stdout (envoy.yaml second doc)
-- [component] Gateway/envoy-external — HTTP/80 (Same-ns routes, redirect only) + HTTPS/443 (All-ns routes), ExternalDNS target external.${PUBLIC_DOMAIN} (gateway-external.yaml)
+- [component] Gateway/envoy-external — HTTP/80 (Same-ns, redirect only) + HTTPS/443 named `https` with hostname filter `*.${PUBLIC_DOMAIN}` (All-ns routes, single-label subdomains only), ExternalDNS target external.${PUBLIC_DOMAIN} (gateway-external.yaml)
 - [component] Gateway/envoy-internal — same listener layout as external, LAN VIP pinned to ${ENVOY_INTERNAL_IP} (gateway-internal.yaml)
 - [component] BackendTrafficPolicy/envoy — shared compression (Zstd/Brotli/Gzip), retry on reset, circuitBreaker (maxConnections/maxPendingRequests/maxParallelRequests=2048, maxParallelRetries=128), tcpKeepalive (gateway-policies.yaml)
 - [component] ClientTrafficPolicy/envoy-external — CF-Connecting-IP client IP detection (failClosed=false), HTTP/2 hardening, TLS 1.3 floor, no HTTP/3 (gateway-policies.yaml)
@@ -98,7 +108,7 @@ and injected into every child Kustomization via Flux `postBuild.substituteFrom`.
 - [component] HTTPRoute/https-redirect — shared HTTP→HTTPS 301 redirect, attached to both Gateways at sectionName=http (gateway-policies.yaml)
 - [component] CiliumNetworkPolicy/envoy-external — ingress allowed only from cloudflare-tunnel pod (10080/10443 TCP) + prometheus + kubelet probe (ciliumnetworkpolicy-external.yaml)
 - [component] CiliumNetworkPolicy/envoy-internal — ingress restricted to RFC1918 fromCIDR + cluster/host/remote-node entities on data ports, prometheus + kubelet separately (ciliumnetworkpolicy-internal.yaml)
-- [component] cloudflare-tunnel — forwards ${PUBLIC_DOMAIN} (originServerName=${PUBLIC_DOMAIN}) and *.${PUBLIC_DOMAIN} (originServerName=external.${PUBLIC_DOMAIN}) to envoy-external (kubernetes/apps/networking/cloudflare-tunnel/)
+- [component] cloudflare-tunnel — single ingress rule forwarding `*.${PUBLIC_DOMAIN}` (originServerName=external.${PUBLIC_DOMAIN}) to envoy-external, plus a `http_status:404` catch-all. Apex is intentionally not handled — its DNS points at the external website provider. (kubernetes/apps/networking/cloudflare-tunnel/)
 - [component] external-dns — manages public Cloudflare DNS records from Gateway/HTTPRoute sources (kubernetes/apps/networking/external-dns/)
 - [component] k8s-gateway — LAN split-DNS for ${PUBLIC_DOMAIN}, watches HTTPRoutes filtered to GatewayClass envoy-internal, LAN VIP ${K8S_GATEWAY_IP} (k8s-gateway/app/helmrelease.yaml)
 - [component] CiliumLoadBalancerIPPool/default — LAN VIP allocation range ${LB_IP_POOL_START}–${LB_IP_POOL_STOP} (kube-system/cilium/config/pool.yaml)
@@ -114,7 +124,8 @@ and injected into every child Kustomization via Flux `postBuild.substituteFrom`.
 - [claim] "envoy-external Service is type ClusterIP — public reach is via Cloudflare Tunnel only" (evidence: repo, ref: envoy.yaml, verified: 2026-06-14)
 - [claim] "envoy-internal is protected by SecurityPolicy/envoy-internal-rfc1918 with defaultAction=Deny and clientCIDRs allowlist of all three RFC1918 ranges" (evidence: repo, ref: gateway-policies.yaml, verified: 2026-06-14)
 - [claim] "Shared HTTPRoute/https-redirect issues a 301 HTTP→HTTPS redirect and attaches via parentRefs to both Gateways at sectionName: http" (evidence: repo, ref: gateway-policies.yaml, verified: 2026-06-14)
-- [claim] "Each Gateway exposes a single HTTPS/443 listener named `https` (no hostname filter, All-namespace route attach) plus a HTTP/80 listener restricted to local-namespace routes that only attaches the shared https-redirect. Listener-hostname SAN binding was attempted (https-apex + https-wildcard) and reverted in commit 6e890d8f7 because every HTTPRoute pins sectionName: https." (evidence: repo + git log, ref: gateway-external.yaml + gateway-internal.yaml, verified: 2026-06-14)
+- [claim] "Each Gateway exposes a single HTTPS/443 listener named `https` with hostname filter `*.${PUBLIC_DOMAIN}` (All-namespace route attach, single-label subdomains only) plus a HTTP/80 listener restricted to local-namespace routes that only attaches the shared https-redirect. HTTPRoutes outside the wildcard pattern are rejected with NoMatchingParent at attach time." (evidence: repo, ref: gateway-external.yaml + gateway-internal.yaml, verified: 2026-06-14)
+- [claim] "cloudflared ingress contains a single rule forwarding `*.${PUBLIC_DOMAIN}` (originServerName=external.${PUBLIC_DOMAIN}) to envoy-external, plus a final http_status:404 catch-all — the apex is served entirely by an external provider (Hetzner A/AAAA, proxied=false) and never enters the tunnel." (evidence: repo, ref: cloudflare-tunnel/app/helmrelease.yaml + provision/cloudflare/dns_records.tf, verified: 2026-06-14)
 - [claim] "ClientTrafficPolicy is per-gateway: envoy-external uses CF-Connecting-IP customHeader (failClosed=false), envoy-internal uses numTrustedHops=0 and enables HTTP/3" (evidence: repo, ref: gateway-policies.yaml, verified: 2026-06-14)
 - [claim] "Both EnvoyProxy resources emit JSON access logs to /dev/stdout, picked up by the cluster log pipeline" (evidence: repo, ref: envoy.yaml, verified: 2026-06-14)
 - [claim] "BackendTrafficPolicy/envoy declares circuitBreaker thresholds (2048 for connections/pending/parallel, 128 for retries) so a misbehaving backend cannot exhaust envoy worker capacity" (evidence: repo, ref: gateway-policies.yaml, verified: 2026-06-14)
@@ -128,7 +139,7 @@ and injected into every child Kustomization via Flux `postBuild.substituteFrom`.
 ## Drift Risk
 
 - [drift] HSTS includeSubDomains with 2-year max-age is a one-way commitment — once a browser caches it, any future HTTP-only subdomain under ${PUBLIC_DOMAIN} (IoT, legacy tool, dev instance) is unreachable from that browser until the entry expires. `preload` was intentionally omitted to keep this revocable (preload registers the domain with browser vendors and is far harder to unwind). (ref: security-headers.yaml)
-- [drift] Listener-hostname SAN binding (https-apex + https-wildcard split) was attempted and reverted in commit 6e890d8f7. Re-introduction requires migrating every HTTPRoute parentRef from `sectionName: https` to `sectionName: https-wildcard` first (all current routes are single-label subdomains, so the wildcard listener is the target). Until then, the single `https` listener accepts All-namespace routes without SAN-based attach filtering. (ref: gateway-external.yaml, gateway-internal.yaml)
+- [drift] Listener hostname filter is `*.${PUBLIC_DOMAIN}` (single-label wildcard). Adding a multi-label hostname HTTPRoute (e.g. `foo.bar.${PUBLIC_DOMAIN}`) or an apex route would fail NoMatchingParent — either widen the listener pattern (split apex+wildcard with HTTPRoute parentRef migration) or adjust the route hostname. The hostname split was attempted in commit 6e890d8f7 and reverted because every HTTPRoute pinned `sectionName: https`; the current setup avoids that by keeping the listener name `https` and only adding the hostname filter. (ref: gateway-external.yaml, gateway-internal.yaml)
 - [drift] EnvoyPatchPolicy is a workaround for missing native Zstd compressor fine-tuning options on EnvoyProxy/BackendTrafficPolicy — drop both EnvoyPatchPolicy/envoy-external and envoy-internal when the EnvoyProxy CRD exposes `choose_first` and `remove_accept_encoding_header` on the compressor field. (ref: gateway-policies.yaml)
 - [drift] rate-limit-external BackendTrafficPolicy still disabled (commented out) — envoy-gateway v1.8.0 CRD regression (envoyproxy/gateway#8798: uint32 Requests field emits format: int32 + maximum: 4294967295, rejected by K8s 1.36 strict OpenAPI validation). The fix is merged to main but not cherry-picked to release/v1.8, so v1.8.1 is still affected. Re-enable when v1.9.0 GA lands or a v1.8.2 patch backport ships, then bump the OCIRepository tag. Cloudflare WAF covers external rate limiting in the meantime. (ref: gateway-policies.yaml)
 - [drift] envoy container image tag (v1.38.2) is hardcoded in EnvoyProxy spec rather than chart-managed — track manually via inline `# renovate:` annotation. (ref: envoy.yaml)
