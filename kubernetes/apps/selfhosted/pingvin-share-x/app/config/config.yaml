@@ -12,6 +12,9 @@ oauth:
   oidc-discoveryUri: "https://id.${PUBLIC_DOMAIN}/.well-known/openid-configuration"
   oidc-clientId: "$${OIDC_CLIENT_ID}"
   oidc-clientSecret: "$${OIDC_CLIENT_SECRET}"
+  oidc-scope: openid email profile groups
+  oidc-roleGeneralAccess: "users"
+  oidc-roleAdminAccess: "admins"
   disablePassword: "true"
 
 initUser:
