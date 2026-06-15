@@ -1,29 +1,140 @@
-# CLAUDE.md - AI Assistant Guidance for home-ops
+# Project-Specific AI Instructions - home-ops
+<!-- Keep all instructions in English for AI consumption -->
 
-This file is the operational guide for working in this repository. Treat it as the authoritative source for agent behavior inside `home-ops`. Subdirectory guides live in `CLAUDE.md` files and are traversed manually per the rule below; current-state detail per area lives in Basic Memory under `docs/areas/<name>` and is read via the `basic-memory` MCP.
+## Project Identity
+
+**Project Name**: home-ops
+**GitHub Repository**: https://github.com/zhorvath83/home-ops
+**GitHub Project ID**: 381819341
+**Basic Memory Project**: `home-ops`
+
+## Project Context
+
+**Project Type**: Personal home infrastructure / single-node Kubernetes cluster GitOps monorepo (Infrastructure as Code)
+
+**Primary Language**: YAML (Kubernetes/GitOps manifests), HCL (Terraform), minijinja/Jinja2 templates, shell scripts — no single application runtime language; the repo is infrastructure/configuration-as-code
+
+**Status**: Active production cluster on a single bare-metal Talos Linux control-plane node (HP ProDesk 600 G6), with NAS/OMV host as secondary machine. Flux-based GitOps is the steady-state reconciliation model.
+
+## Technology Stack
+
+- **Cluster OS & Runtime**: Talos Linux (immutable, API-driven) + Kubernetes
+- **GitOps Engine**: Flux CD via Flux Operator pattern; root Kustomization at `kubernetes/flux/cluster/ks.yaml`
+- **Package/Deployment**: Mainly Helm 4.x, Helmfile
+- **CNI & Ingress**: Cilium; Envoy Gateway
+- **Secrets Management**: External Secrets Operator + 1Password Connect
+- **Storage**: democratic-csi (local-hostpath backend)
+- **Backup Planes**: VolSync + Kopia → S3 (PVC snapshots)
+- **Provisioning (cloud)**: Terraform for Cloudflare and OVH Cloud Project Storage (S3)
+- **Task Runner**: Just
+- **Version/Tool Management**: mise
+- **Dependency Update Automation**: Renovate
+- **Linting/Security**: pre-commit hooks, yamlfmt, yamllint, actionlint, shellcheck, gitleaks, tflint, zizmor, markdownlint-cli2
+- **Knowledge Graph**: Basic Memory
+- **Source Control**: GitHub, default branch `main`, conventional commits with emoji prefixes
+
+## Source Control Platform
+
+This project is on **GitHub** (not GitLab). The personal layer's `gitops-principles` and `gitlab-workflow` rules are GitLab-oriented; the following overrides apply to this project:
+
+- Default branch: `main` — the personal rule's `master` terminology does NOT apply here
+- Use **Pull Request (PR)** — not "Merge Request / MR"
+- Branches may be created locally; the GitLab MCP and MR-first branch creation rule do not apply
+- CI/CD is driven by **GitHub Actions** (`.github/workflows/`); there is no `.gitlab-ci.yml`
+- Issues and PRs are managed on GitHub, not via GitLab MCP
+
+## Architecture Quick View
+
+```
+home-ops
+├── kubernetes/       # GitOps-managed cluster state (Flux)
+│   ├── apps/         # workloads grouped by namespace
+│   ├── bootstrap/    # Talos + K8s platform bootstrap
+│   ├── components/   # reusable Kustomize components
+│   ├── flux/cluster/ # root cluster-apps Kustomization
+│   ├── talos/        # Talos machine config templates
+│   └── volsync/      # backup plane helpers
+├── provision/        # provider-facing infrastructure (Terraform)
+│   ├── cloudflare/   # DNS, Tunnel, Access, WAF, R2, Workers
+│   ├── ovh/          # S3 backup storage
+│   ├── openmediavault/
+│   └── openwrt/
+├── .claude/skills/   # repo-local AI skills
+└── basic-memory/     # project knowledge graph
+
+```
+
+## AI Workflow Model
+
+```
+Request → Identify Domain → Load Relevant Skills → Gather Specifics → Execute
+```
+
+This project uses **Claude Code** with a **skill composition model**:
+- **Language skills** (code style, type system, architecture) + **Role skills** (debugging, testing, security) are composed per task
+- Skills load **on-demand** via progressive disclosure (metadata → SKILL.md → references/)
+- Use the **Task tool** only for truly parallel, independent work streams — not for role-based delegation
+- **Rules** (personal + project) enforce constraints with high priority, always loaded
+
+## What the Personal Layer Provides
+
+The personal layer (`~/.claude/`) provides global rules and skills available in ALL projects:
+- **Rules** (always loaded): security-principles, code-generation, working-principles, code-style, spec-driven-development, MCP access, BM access, tool assignment, document constraints, operating rules, testing principles, agent-mode, gitlab-workflow, gitops-principles — note: `gitlab-workflow`'s GitLab-specific behaviors (MR terminology, GitLab MCP, master branch) are overridden by the Source Control Platform section above
+- **Skills** (on-demand): session management, project-memory (project↔wiki boundary routing), language development, role skills (investigation, security-audit, test-writing, refactoring, API design, DB design, macOS)
+- **CLAUDE.md** (`~/.claude/CLAUDE.md`): global routing table pointing to all rules and skills
+- **Read-only**: `~/.claude/` is a deployed artifact — NEVER modify directly. Changes go through the template's `personal/` layer and `/updatepersonal`.
+
+## MCP Access via Code-Executor
+
+**All MCP tools are accessed through code-executor**. Use `callMCPTool()` for all MCP operations:
+
+```typescript
+// Use the Basic Memory project name defined in Project Identity section above
+const PROJECT_NAME = 'home-ops';
+
+// Read project context
+const project = await callMCPTool('mcp__basic-memory__read_note', {
+  identifier: 'docs/project',
+  project: PROJECT_NAME
+});
+
+// Search notes
+const results = await callMCPTool('mcp__basic-memory__search_notes', {
+  query: 'pattern-name',
+  project: PROJECT_NAME
+});
+
+// Get library documentation (Context7 FIRST, web search last)
+const docs = await callMCPTool('mcp__Context7__get-library-docs', {
+  libraryPath: '/org/library',
+  topic: 'feature'
+});
+```
+
+For MCP call examples, see the `mcp-patterns` skill.
+
+## Documentation Scope Rules
+
+**Where to write what**:
+- New feature planning → `docs/roadmap`
+- Architecture/technology choice → `docs/decisions`
+- Fully implemented roadmap items → `progress/[roadmap-item-name]`
+
+## DO NOT MODIFY
+
+- Basic Memory structure (docs/*, progress/* — NO guidelines/ in BM)
+- Security-first approach (enforced by personal rules)
+- Tool assignment rules (enforced by personal rules)
+
 
 ## Non-Negotiables
 
 - Treat this repository as potentially public and durable. Do not introduce plaintext credentials or new sensitive external identifiers.
 - Do not commit plaintext secrets, API keys, tokens, passwords, or certificate material anywhere in the repo.
-- The public domain, public IPs **may be hardcoded** in manifests, docs, and operational wrappers — they are not secret, they are published via DNS/TLS/Cloudflare.
-- Private RFC1918 addresses, cluster-local hostnames, and other internal topology values may be hardcoded directly in manifests when they reflect the live repo model.
 - App-level secrets (tokens, passwords, hashes, multi-line config files) are delivered via External Secrets backed by the shared `ClusterSecretStore` named `onepassword-connect`. Values live either inline in manifests (when non-sensitive) or in per-app `ExternalSecret` resources. Multi-line config-as-secret content (e.g. homepage dashboard config) is stored in 1Password as multi-line text fields and rendered via ESO `template.data`.
 - Bootstrap-time secrets (1Password Connect creds, Talos machine config templating) are injected from 1Password via `op inject` during the `just cluster-bootstrap` chain.
 - Keep GitOps as the source of truth for steady-state cluster configuration. Avoid manual out-of-band `kubectl apply` changes except for documented bootstrap, recovery, or existing Just-driven workflows in the repo.
 
-## Scope And Priorities
-
-Use these sources in this order:
-
-1. The current files in the repository
-2. This `CLAUDE.md`
-3. More specific `CLAUDE.md` files in subdirectories
-4. Basic Memory area-references under `docs/areas/<name>` (read via `basic-memory` MCP)
-5. `.justfile` (root) and `mod.just` files under `kubernetes/`, `kubernetes/bootstrap/`, `kubernetes/talos/`, `kubernetes/volsync/`, `provision/openmediavault/`, `provision/cloudflare/`, `provision/ovh/`
-6. `.renovaterc.json5` (repo root) and the imported fragments under `.renovate/*.json5`
-7. repo-local skills under `.claude/skills/`
-8. Root `README.md` for human-facing context
 
 ## Guide Traversal Rule
 
@@ -41,17 +152,6 @@ Examples:
 - `kubernetes/apps/networking/...` -> root `CLAUDE.md` -> `kubernetes/CLAUDE.md` -> `kubernetes/apps/networking/CLAUDE.md` -> BM `docs/areas/networking`
 - `provision/cloudflare/...` -> root `CLAUDE.md` -> `provision/CLAUDE.md` -> `provision/cloudflare/CLAUDE.md` -> BM `docs/areas/cloudflare`
 
-## Current Repository Shape
-
-This repository currently manages a single-node home infrastructure stack with these main areas:
-
-- `kubernetes/` — GitOps-managed cluster state with Flux `Kustomization` objects, Helm releases, and reusable components
-- `provision/cloudflare/` — Terraform for Cloudflare DNS, tunnel, workers, pages, redirects, and zone configuration
-- `provision/ovh/` — Terraform for OVH Cloud Project Storage (S3 backup buckets and the S3 user consumed by the VolSync/Kopia and resticprofile backup planes)
-- `.claude/skills/` — repo-local skill sources for reusable workflow knowledge
-- `.justfile` + `**/mod.just` — operational entry points (Just-based)
-- `.renovaterc.json5` + `.renovate/*.json5` — Renovate policy and package rule definitions (root config + per-topic fragments)
-- `basic-memory/` — Basic Memory knowledge graph (project name `home-ops`); area-references, schemas, decisions, and roadmap notes authored via Basic Memory MCP and committed to git
 
 ## Working Rules
 
@@ -62,16 +162,13 @@ This repository currently manages a single-node home infrastructure stack with t
 - Do not create new documentation locations unless they clearly fit the current structure.
 - Preserve `README.md` as human-facing overview unless the task explicitly requires changing it.
 - Prefer repo-native operational entry points over raw commands when they already exist as Just recipes.
-- Distinguish carefully between local repository state and live cluster state.
-- Local file edits do not change the cluster until the watched Git source is updated and reconciled.
-- Do not treat `flux reconcile` as if it applied the local working tree.
+- Local file edits do not change the cluster until the watched Git source is updated and reconciled; the full GitOps apply boundary is elaborated in `kubernetes/CLAUDE.md`.
 - Stage commits with explicit pathspecs (`git add <file>` per touched file), never `git add -A` or `git add .`. The working tree often contains user-driven in-progress work (config refactors, schema URL migrations, doc renames) that must not bleed into unrelated commits. The session-start `git status` snapshot can be stale — always run `git status` immediately before staging to see the live state.
 
 ## Repo-Wide Anti-Patterns
 
 - Hardcoding public domains, public IPs, email addresses, credentials, or other sensitive external identifiers.
 - Introducing plaintext secrets outside External Secrets.
-- Making imperative cluster changes that bypass Flux for normal steady-state configuration.
 - Treating local file edits as if they were already deployed by GitOps, or using `flux reconcile` as though it applied the local working tree.
 - Changing shared secret names, store names, or dependency wiring without tracing the related Flux and Just recipe references first.
 - Refactoring file layout or documentation structure when an established local pattern already exists.
