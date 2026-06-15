@@ -124,17 +124,17 @@ spec:
           - matches:
               - path:
                   type: PathPrefix
-                  value: /api
-            backendRefs:
-              - identifier: app
-                port: *backendPort
-          - matches:
-              - path:
-                  type: PathPrefix
                   value: /
             backendRefs:
               - identifier: app
                 port: *frontendPort
+          - matches:
+              - path:
+                  type: PathPrefix
+                  value: /api
+            backendRefs:
+              - identifier: app
+                port: *backendPort
     persistence:
       config-template:
         type: configMap

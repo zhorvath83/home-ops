@@ -25,6 +25,15 @@ tags:
 - roadmap
 ---
 
+## Open Security Gaps & TODOs
+
+> These items must be resolved before considering the SSO migration production-complete.
+
+- [ ] **TinyAuth ACL default-deny gap** — `TINYAUTH_AUTH_ACLS_POLICY: deny` is currently unavailable in TinyAuth v5.0.7 (only in `main`). Per-app ACL blocks (`TINYAUTH_APPS_<NAME>_OAUTH_GROUPS`) are **mandatory**; without them the OAuthGroupRule returns `Allow` on nil ACLs and lets any authenticated user through. Track upstream for a stable release containing the fix.
+- [ ] **Rate limiting on external gateway** — `rate-limit-external` `BackendTrafficPolicy` is disabled due to Envoy Gateway v1.8.0 CRD regression (PR envoyproxy/gateway#8798). Cloudflare WAF covers us externally, but this is a cluster-side gap. Re-enable once Envoy Gateway v1.9.0 GA lands and the OCIRepository tag is bumped.
+- [ ] **Trusted proxy CIDR review** — `TINYAUTH_AUTH_TRUSTEDPROXIES` is currently set to the full Pod CIDR (`10.244.0.0/16`). Evaluate whether this can be narrowed to the gateway service endpoints only.
+
+---
 # SSO implementation - Pocket-ID + TinyAuth replacing Cloudflare Access
 
 ## Architecture
@@ -187,3 +196,9 @@ Actual Budget configuration:
 - relates_to [[networking]]
 - relates_to [[external-secrets]]
 - relates_to [[k8s-workloads]]
+
+
+## Audit Update (2026-06-15)
+- **Current State**: System is fully operational with Pocket-ID as IdP and TinyAuth as the forward-auth PEP. Envoy Gateway manages traffic with strict header sanitization on both internal/external paths.
+- **Constraint**: `TINYAUTH_AUTH_ACLS_POLICY: deny` is currently unavailable in v5.0.7 (only in `main`). This is a known gap; monitor upstream for a stable release.
+- **Security Posture**: Trust-chain is verified: `Client → Envoy (Header Strip) → ExtAuthz → TinyAuth (Identity Verify) → App`.
