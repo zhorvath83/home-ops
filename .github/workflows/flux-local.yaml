@@ -40,7 +40,7 @@ jobs:
           persist-credentials: false
 
       - name: Run flux-local test
-        uses: docker://ghcr.io/allenporter/flux-local:v8.2.0
+        uses: docker://ghcr.io/allenporter/flux-local:v8.3.0
         with:
           args: >-
             test
@@ -78,7 +78,7 @@ jobs:
           persist-credentials: false
 
       - name: Run flux-local diff
-        uses: docker://ghcr.io/allenporter/flux-local:v8.2.0
+        uses: docker://ghcr.io/allenporter/flux-local:v8.3.0
         with:
           args: >-
             diff ${{ matrix.kind }}
