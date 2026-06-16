@@ -10,7 +10,6 @@ resources:
   # Flux-Kustomizations
   - ./actual/ks.yaml
   - ./backrest/ks.yaml
-  - ./calibre-web-automated/ks.yaml
   - ./home-gallery/ks.yaml
   - ./homepage/ks.yaml
   - ./mealie/ks.yaml

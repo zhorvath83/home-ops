@@ -18,6 +18,9 @@ spec:
       namespace: media
     - group: gateway.envoyproxy.io
       kind: SecurityPolicy
+      namespace: downloads
+    - group: gateway.envoyproxy.io
+      kind: SecurityPolicy
       namespace: observability
   to:
     - group: ""

@@ -3,11 +3,11 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: radarr
+  name: prowlarr
 spec:
   commonMetadata:
     labels:
-      app.kubernetes.io/name: radarr
+      app.kubernetes.io/name: prowlarr
   components:
     - ../../../../components/volsync
   dependsOn:
@@ -16,15 +16,15 @@ spec:
     - name: democratic-csi
       namespace: kube-system
   interval: 1h
-  path: ./kubernetes/apps/media/radarr/app
+  path: ./kubernetes/apps/downloads/prowlarr/app
   postBuild:
     substitute:
-      APP: radarr
+      APP: prowlarr
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  targetNamespace: media
+  targetNamespace: downloads
   timeout: 5m
   wait: false
