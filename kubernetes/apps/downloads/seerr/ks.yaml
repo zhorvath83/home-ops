@@ -3,11 +3,11 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: prowlarr
+  name: seerr
 spec:
   commonMetadata:
     labels:
-      app.kubernetes.io/name: prowlarr
+      app.kubernetes.io/name: seerr
   components:
     - ../../../../components/volsync
   dependsOn:
@@ -16,15 +16,17 @@ spec:
     - name: democratic-csi
       namespace: kube-system
   interval: 1h
-  path: ./kubernetes/apps/media/prowlarr/app
+  path: ./kubernetes/apps/downloads/seerr/app
   postBuild:
     substitute:
-      APP: prowlarr
+      APP: seerr
+      APP_UID: "1000"
+      APP_GID: "1000"
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  targetNamespace: media
+  targetNamespace: downloads
   timeout: 5m
   wait: false

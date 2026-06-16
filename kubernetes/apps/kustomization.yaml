@@ -13,4 +13,5 @@ resources:
   - ./system-upgrade
   - ./volsync-system
   - ./media
+  - ./downloads
   - ./selfhosted

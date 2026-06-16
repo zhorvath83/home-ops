@@ -16,7 +16,7 @@ spec:
     - name: democratic-csi
       namespace: kube-system
   interval: 1h
-  path: ./kubernetes/apps/media/sonarr/app
+  path: ./kubernetes/apps/downloads/sonarr/app
   postBuild:
     substitute:
       APP: sonarr
@@ -25,6 +25,6 @@ spec:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  targetNamespace: media
+  targetNamespace: downloads
   timeout: 5m
   wait: false

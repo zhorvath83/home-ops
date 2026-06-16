@@ -2,13 +2,17 @@
 # yaml-language-server: $schema=https://json.schemastore.org/kustomization
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-namespace: media
+namespace: downloads
 components:
   - ../../components/common
 resources:
   - ./namespace.yaml
   # Flux-Kustomizations
-  - ./plex/ks.yaml
-  - ./plex-trakt-sync/ks.yaml
-  - ./calibre-web-automated/ks.yaml
-  - ./isponsorblocktv/ks.yaml
+  - ./qbittorrent/ks.yaml
+  - ./prowlarr/ks.yaml
+  - ./radarr/ks.yaml
+  - ./sonarr/ks.yaml
+  - ./bazarr/ks.yaml
+  - ./subsyncarr/ks.yaml
+  - ./seerr/ks.yaml
+  - ./maintainerr/ks.yaml
