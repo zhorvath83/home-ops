@@ -119,6 +119,7 @@ For MCP call examples, see the `mcp-patterns` skill.
 - New feature planning → `docs/roadmap`
 - Architecture/technology choice → `docs/decisions`
 - Fully implemented roadmap items → `progress/[roadmap-item-name]`
+- Session progress notes → `docs/progress/[branch-name]`
 
 ## DO NOT MODIFY
 
