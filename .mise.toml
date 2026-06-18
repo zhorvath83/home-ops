@@ -28,7 +28,7 @@ pipx.uvx = true
 kubectl = "1.36.2"
 
 # Templating + secrets
-"aqua:mitsuhiko/minijinja" = "2.20.0"
+"aqua:mitsuhiko/minijinja" = "2.21.0"
 
 # YAML/JSON tooling
 "aqua:mikefarah/yq" = "4.53.3"
