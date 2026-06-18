@@ -44,7 +44,10 @@
         "/^kubernetes/.+\\.yaml(?:\\.j2)?$/",
       ],
       matchStrings: [
-        "registry:\\s+(?<depName>\\S+/\\S+)\\s+tag:\\s*[\"']?(?<currentValue>v?[0-9][^\"'\\s@]*)(?:@sha256:(?<currentDigest>[a-f0-9]+))?",
+        // currentDigest includes the `sha256:` prefix so it matches the docker
+        // datasource's newDigest format — otherwise confirmIfDepUpdated fails
+        // with "Digest is not updated" and the branch update errors out.
+        "registry:\\s+(?<depName>\\S+/\\S+)\\s+tag:\\s*[\"']?(?<currentValue>v?[0-9][^\"'\\s@]*)(?:@(?<currentDigest>sha256:[a-f0-9]{64}))?",
       ],
       datasourceTemplate: "docker",
     },
