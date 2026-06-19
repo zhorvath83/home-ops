@@ -2,133 +2,108 @@
 title: cnp-per-app-audit
 type: roadmap
 permalink: home-ops/docs/roadmap/cnp-per-app-audit
-topic: Per-app CiliumNetworkPolicy rollout — blanket Szint I for user-facing apps
+topic: CNP rollout by egress shape, Hubble-driven
 status: proposed
 priority: medium
-scope: Revised 2026-06-12. Blanket Szint I (ingress-allowlist) CNP for every user-facing
-  app — any app with an HTTPRoute on envoy-external/envoy-internal, a LoadBalancer
-  Service, or a ClusterIP Service consumed by other pods. Szint II stays threat-model-driven per AD-023.
-rationale: The original AD-023 follow-up left coverage audit-driven and accidental.
-  Revised to deterministic blanket coverage of the user-facing surface so every routed/consumed
-  workload has an explicit ingress contract; supersedes the "5-8 high-value apps"
-  estimate in AD-023 (the two-tier model itself stands).
+scope: Execution path for AD-023 — classify the fleet by egress shape, build a reusable
+  Tier I ingress component, and roll out per-app contained-egress CNPs (no-world /
+  narrow-world / broad-world-lite) from Hubble observations, value × tractability
+  first.
+rationale: AD-023 defines the model; this roadmap is the how and the order. Every
+  egress allowlist is built from hubble-live captures, not guessed.
 options:
-- 'Phase 1: externally exposed apps (envoy-external routes) — highest exposure first'
-- 'Phase 2: internal-only routed apps + LoadBalancer services (k8s-gateway)'
-- 'Phase 3: consumed-Service-only apps (onepassword-connect)'
-- 'Deferred: media cluster + hubble-ui in a later pass'
+- 'Phase 0: cluster-wide Hubble baseline survey — confirm shapes and east-west pairs'
+- 'Phase 1: Tier I ingress component + migrate existing ingress-only CNPs'
+- 'Phase 2: crown-jewel narrow-world — onepassword-connect first'
+- 'Phase 3: no-world class — cheap, high-value, no churn'
+- 'Phase 4: broad-world-lite — downloads/* and media/* per-app'
+- 'Phase 5: narrow-world remainder — open-webui, backup plane'
+- 'Deferred: baseline world-deny tightening (separate decision, survey-gated)'
 related_areas:
 - networking
 - k8s-workloads
 decision_link: AD-023-cnp-threat-model-audit
 ---
 
-# Per-app CiliumNetworkPolicy rollout — blanket Szint I for user-facing apps
+# CNP rollout by egress shape, Hubble-driven
 
 ## Metadata (observation-form, schema validation)
 
-- [topic] Per-app CiliumNetworkPolicy rollout — blanket Szint I for user-facing apps
+- [topic] CNP rollout by egress shape, Hubble-driven
 - [status] proposed
 - [priority] medium
 
-## Scope (revised 2026-06-12)
+## Goal
 
-Previous scope ("run the AD-023 audit, target count driven by findings") is **superseded**. New policy: **every user-facing app gets a dedicated CNP** with an explicit ingress allowlist (Szint I). "User-facing" means any of:
+- [observation] Implement AD-023 so a compromised pod cannot freely move east-west or exfiltrate, with maintenance proportional to risk
+- [observation] Drive every egress allowlist from observed traffic (`just k8s hubble-live`), not guesswork — this is what makes egress containment sustainable this time
 
-1. has an HTTPRoute attached to `envoy-external` and/or `envoy-internal`
-2. has a LoadBalancer Service (Cilium L2 / lbipam)
-3. has a ClusterIP Service consumed by other pods
+## Current state
 
-Szint II (ingress + strict egress + `egress.home.arpa/custom-egress: ""` opt-out label) remains threat-model-driven, exactly as AD-023 defines it. AD-023's two-tier model, the cluster-wide baseline CCNPs and the B-csapda warning stay authoritative — only the "5-8 high-value apps" coverage estimate is superseded by this roadmap.
+- [observation] Ingress-only CNPs: paperless, paperless-gpt, pingvin-share-x, tinyauth, pocket-id (+ envoy ext/int, cloudflare-tunnel)
+- [observation] [gap] No per-app egress except cloudflare-tunnel; onepassword-connect (crown jewel) has NO CNP at all
+- [observation] No reusable ingress component yet (`components/`: common, forward-auth, gpu, volsync)
 
-- [decision] Blanket Szint I for user-facing apps; Szint II stays opt-in per threat model
-- [decision] homepage communicates with NO app — dashboard entries are plain URLs/links opened by the browser; no widget/siteMonitor probes. No "homepage → app" ingress rule is needed anywhere. The only repo-visible probe (actual siteMonitor annotation) was removed on 2026-06-12.
-- [supersedes] AD-023 "5-8 high-value apps" coverage estimate (model itself unchanged)
+## Hubble survey methodology (`hubble-live`)
 
-## CNP pattern (existing precedent)
+`just k8s hubble-live [label] [secs] [verdict]` (kubernetes/mod.just) captures live Hubble flows and prints a deduped `COUNT VERDICT SRC DEST PORT PROTO DIR REASON` table.
 
-Per-app file `kubernetes/apps/<ns>/<app>/app/ciliumnetworkpolicy.yaml` (see `selfhosted/paperless`):
+- [observation] [step] **Cluster-wide baseline**: `just k8s hubble-live` during normal activity → steady-state east-west + egress graph; confirms shape classification and east-west pairs
+- [observation] [step] **Per-app capture**: `just k8s hubble-live k8s:app.kubernetes.io/name=<app>` → real destinations (FQDNs via L7 DNS, in-cluster peers, apiserver, world)
+- [observation] [step] **Draft egress** from observed flows AND threat-model reasoning — question every destination; pick the shape (no-world / narrow-world / broad-world-lite)
+- [observation] [step] **Deploy** ingress + egress CNP + opt-out label (same commit) → reconcile
+- [observation] [step] **Verify**: `just k8s hubble-live k8s:app.kubernetes.io/name=<app> 120 DROPPED` → catch over-tight drops under real usage, iterate until clean
 
-- `endpointSelector`: `app.kubernetes.io/name|instance|controller: <app>`
-- Gateway ingress: `fromEndpoints` with `k8s:io.kubernetes.pod.namespace: networking` + matchExpressions `gateway.networking.k8s.io/gateway-name In [envoy-external, envoy-internal]`, `toPorts` to the service port
-- Consumer ingress: `fromEndpoints` with namespace + `app.kubernetes.io/name` labels (see paperless ← paperless-gpt)
-- Egress: none at Szint I — cluster-wide baseline (`allow-cluster-egress` + `allow-dns-egress`) applies because the opt-out label is absent
-- Kubelet probes need no explicit rule at Szint I (paperless precedent: works without host allow); the envoy CNPs allow the probe port explicitly only because they are stricter
+## Tier I ingress component (design direction — decide at Phase 1)
 
-## Survey — affected apps and required ingress directions (2026-06-12)
+- [observation] [option-A] Generic label-selected component: CNP matches a shared opt-in label, allows ingress from envoy-external+internal to all ports. Zero per-app params; less port precision
+- [observation] [option-B] Component + Flux postBuild substitution: per-app `${APP_NAME}`/`${APP_PORT}` vars drive a templated CNP. Port-precise, matches existing postBuild pattern
+- [observation] Tier II apps add their east-west ingress (sibling/consumer rules) on top of the component baseline, like pocket-id does today
+- [observation] LoadBalancer-exposed apps (plex, k8s-gateway) take a LAN-client ingress rule (fromCIDR/fromEntities on the LB ports), NOT the gateway component — the component is gateway-ingress only
 
-### Cross-cutting ingress sources
+## Fleet classification by egress shape (provisional, Hubble-refined)
 
-- envoy-external / envoy-internal → app service port: every routed app
-- prometheus → app metrics port: only for apps with ServiceMonitor (grafana, victoria-logs, speedtest-exporter, onepassword-connect); cloudflare-tunnel CNP already models this pattern
-- homepage: NOT an ingress source — link-only dashboard, no probes (see decision above); its Kubernetes cluster-mode discovery talks to the kube-apiserver, not to pods
+Starting hypothesis from app architecture; Phase 0 survey confirms or moves apps.
 
-### Repo-verified app-to-app directions (file evidence)
+### Tier P — platform-exempt (no CNP)
 
-- paperless-gpt → paperless:8000 (paperless-gpt/app/helmrelease.yaml:35; already in paperless CNP)
-- open-webui → searxng:8080 (open-webui/app/helmrelease.yaml:47)
-- grafana → kube-prometheus-stack-prometheus:9090 and victoria-logs-server:9428 (grafana/app/helmrelease.yaml:109,116)
-- victoria-logs-collector → victoria-logs-server:9428 (victoria-logs/collector/helmrelease.yaml:20)
-- external-secrets controller → onepassword-connect:8080 (onepassword-connect/app/clustersecretstore.yaml:10)
-- cloudflared → envoy-external:443 (cloudflare-tunnel/app/helmrelease.yaml:22; already in envoy-external CNP)
+- [observation] kube-system: cilium, coredns, democratic-csi, intel-gpu-resource-driver, metrics-server, reloader, snapshot-controller
+- [observation] cert-manager, flux-operator/instance/provider, external-secrets controller, volsync controller, tuppr, kube-prometheus-stack internals
+- [observation] networking platform: envoy-gateway, external-dns, k8s-gateway, cloudflare-tunnel (already CNP'd)
 
-### LAN ingress (LoadBalancer services in scope)
+### Tier II — no-world (in-cluster + DNS, world denied)
 
-- k8s-gateway ← LAN on 53 TCP+UDP (LB `\${K8S_GATEWAY_IP}`, split-DNS for the public domain; externalTrafficPolicy Local → fromCIDR LAN / fromEntities world)
+- [observation] paperless, grafana, actual, home-gallery, victoria-logs, pingvin-share-x, homepage (link-only); wallos pending survey
+- [observation] Cheap, no churn — strong early targets
 
-### Inventory — new CNPs required (17)
+### Tier II — narrow-world (toFQDNs allowlist)
 
-| Namespace | App | Port(s) | Exposure | Ingress to allow |
-|---|---|---|---|---|
-| selfhosted | actual | 5006 | route ext+int | gateways |
-| selfhosted | backrest | 9898 | route ext+int | gateways |
-| selfhosted | calibre-web-automated | 80 | route ext+int | gateways |
-| selfhosted | home-gallery | 3000 | route ext+int | gateways |
-| selfhosted | homepage | 3000 | route ext+int | gateways |
-| selfhosted | mealie | 9000 | route ext+int | gateways |
-| selfhosted | wallos | 80 | route ext+int | gateways |
-| selfhosted | open-webui | 8080 | route ext+int | gateways |
-| selfhosted | searxng | 8080 | route ext+int | gateways, open-webui |
-| observability | grafana | 3000 | route ext+int | gateways, prometheus (ServiceMonitor) |
-| observability | victoria-logs | 9428 | route int + consumers | gateway int, grafana, victoria-logs-collector, prometheus |
-| observability | speedtest-exporter | 9798 | route ext+int | gateways, prometheus |
-| networking | echo | 80 | route ext+int | gateways |
-| networking | k8s-gateway | 53 TCP+UDP | LB | LAN clients |
-| flux-system | flux-instance webhook-receiver | 80 | route ext only (/hook/) | envoy-external only |
-| volsync-system | kopia | 8080 | route ext+int | gateways |
-| external-secrets | onepassword-connect | 8080 | consumed Service | external-secrets controller, prometheus |
+- [observation] [priority-1] external-secrets/onepassword-connect — crown jewel, zero CNP today: tight ingress (ESO + Prometheus) + egress to the 1Password endpoint only
+- [observation] open-webui (LLM API FQDNs), paperless-gpt (LLM), backup plane kopia/backrest/resticprofile (S3 endpoint); pocket-id pending survey (SMTP?)
 
-### Existing per-app CNPs (keep as-is)
+### Tier II — broad-world-lite (world wholesale, no in-cluster east-west)
 
-- selfhosted/paperless (Szint I; gateways + paperless-gpt on 8000)
-- selfhosted/paperless-gpt (Szint I; gateways on 8080)
-- selfhosted/pingvin-share-x (Szint II; gateways on 3333+8080, strict egress + opt-out label)
-- networking/cloudflare-tunnel (prometheus ingress + egress rules)
-- networking/envoy-gateway external + internal (ingress allowlists, baseline egress)
+- [observation] downloads/* per-app: qbittorrent, prowlarr, radarr, sonarr, bazarr, seerr, maintainerr, subsyncarr — each with named east-west to its real siblings (indexer → *arr → download client), confirmed by Hubble
+- [observation] media/* : plex (LAN-only via its own LoadBalancer — no internet route, no gateway; lower entry probability → lower rollout priority, but broad world egress (plex.tv / metadata / relay) still fits the lite shape. Ingress is a LAN-client → LB rule (fromCIDR/fromEntities), like k8s-gateway — NOT the gateway component), plex-trakt-sync, isponsorblocktv
+- [observation] selfhosted: searxng (search engines), mealie (recipe scraping)
+- [observation] observability/speedtest-exporter (low value, clean lite example)
 
-### Deferred — media cluster + hubble-ui (later pass)
+### Tier I — ingress-only via component (egress baseline accepted)
 
-Deferred apps: **hubble-ui** (kube-system).
+- [observation] echo and any low-value routed app not worth the opt-out discipline; existing hand-written ingress-only CNPs migrate onto the component unless promoted to Tier II
 
-- hubble-ui: helm-managed pod labels (not app-template trio) — endpointSelector must match the actual deployment labels
+## Rollout phases (value × tractability)
 
-### Not affected (no route, no consumed Service)
-
-volsync controller; reloader, snapshot-controller, democratic-csi, intel-gpu-resource-driver (kube-system); flux-provider-pushover; victoria-logs-collector (egress-only)
-
-### Platform components intentionally out of this pass (optional follow-up)
-
-coredns, metrics-server, cert-manager, kube-prometheus-stack internals, external-dns, flux-operator, external-secrets controller, tuppr, cilium agent/operator — infrastructure plane, not user-facing; a separate platform-CNP pass may cover them later.
-
-## Rollout plan
-
-1. **Phase 1 — externally exposed**: all envoy-external routed apps from the inventory (highest exposure)
-2. **Phase 2 — internal + LB**: victoria-logs (envoy-internal-only) + k8s-gateway (LB)
-3. **Phase 3 — consumed-only Services**: onepassword-connect
-5. Each phase: write CNPs → commit+push → flux reconcile → verify with hubble observe (drops) → fix → next phase
+1. [observation] **Phase 0** — cluster-wide Hubble baseline survey; finalize shape classification and east-west pairs
+2. [observation] **Phase 1** — build Tier I ingress component; migrate existing ingress-only CNPs
+3. [observation] **Phase 2** — narrow-world onepassword-connect (crown jewel, biggest single gap)
+4. [observation] **Phase 3** — no-world class (paperless, grafana, …): cheap, high-value, no churn
+5. [observation] **Phase 4** — broad-world-lite: downloads/* then media/*, per-app, Hubble-driven, one app at a time
+6. [observation] **Phase 5** — narrow-world remainder (open-webui, backup plane)
+7. [observation] **Deferred** — evaluate baseline world-deny tightening as a separate AD once the survey is mature
 
 ## Related
 
+- implements [[AD-023-cnp-threat-model-audit]]
 - relates_to [[networking]]
 - relates_to [[k8s-workloads]]
-- decided_in [[AD-023-cnp-threat-model-audit]]

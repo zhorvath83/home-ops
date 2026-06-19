@@ -175,3 +175,74 @@ view-secret secret ns:
 [script]
 render-local-ks name ns:
     flux-local build ks --namespace "{{ ns }}" --path "{{ kubernetes_dir }}/flux/cluster" "{{ name }}"
+
+# === hubble ===
+
+[doc('Hubble healthcheck: relay reachability, TLS, flow-buffer size + flow/s, connected nodes. -P auto port-forwards to kube-system/hubble-relay.')]
+[group('observe')]
+[script]
+hubble-status:
+    hubble status -P
+
+[arg('secs', pattern='|[0-9]+')]
+[arg('verdict', pattern='|FORWARDED|DROPPED|ALLOWED')]
+[doc('Cilium Hubble capture. label = cilium endpoint label e.g. k8s:app=foo (empty = cluster-wide); verdict = DROPPED or ALLOWED (empty = all)')]
+[group('observe')]
+[script]
+hubble-live label="" secs="60" verdict="":
+    label="{{ label }}"
+    secs="{{ secs }}"
+    verdict="{{ verdict }}"
+    # an empty positional placeholder (e.g. to skip ahead to verdict) falls back to the default window
+    [ -n "$secs" ] || secs=60
+    # fail fast on the common setup miss (tool absent / mise env not active) instead of waiting out the window for nothing
+    command -v hubble >/dev/null 2>&1 || { echo "hubble not found in PATH — is it installed and your mise env active?" >&2; exit 127; }
+    cap="$(mktemp)"
+    hpid=""
+    trap 'kill "$hpid" 2>/dev/null || true; pkill -P "$hpid" 2>/dev/null || true; rm -f "$cap"' EXIT INT TERM
+    if [ -n "$label" ]; then
+      hubble observe -P -f -o json -l "$label" > "$cap" &
+    else
+      hubble observe -P -f -o json > "$cap" &
+    fi
+    hpid=$!
+    if [ -n "$label" ]; then scope="label=$label"; else scope="cluster-wide"; fi
+    if [ -n "$verdict" ]; then vdisp="$verdict"; else vdisp="all"; fi
+    just log info "Capturing live ${vdisp} flows for ${secs}s — trigger app activity now" scope "$scope"
+    sleep "$secs"
+    kill "$hpid" 2>/dev/null || true
+    wait "$hpid" 2>/dev/null || true
+    # grep -c already prints 0 on no match (and exits 1) — keep that 0, do not append another
+    nflows="$(grep -c '"flow"' "$cap" 2>/dev/null || true)"
+    just log info "Captured ${nflows:-0} flows" window "${secs}s"
+    # -R + fromjson? reads JSONL line-by-line and tolerates a truncated final line if hubble was killed mid-write.
+    # awk hash-dedup (one pass, O(unique-tuples) memory) instead of sort|uniq -c — avoids sorting the full raw flow set on long/cluster-wide captures.
+    rows="$(jq -R -r --arg lbl "$label" --arg verdict "$verdict" '
+        def src:
+          if .source.pod_name then .source.pod_name
+          elif ((.source.labels//[])|any(.=="reserved:host")) then "host"
+          elif ((.source.labels//[])|any(.=="reserved:world")) then "world"
+          else "?" end;
+        def dest:
+          if .destination.pod_name then .destination.pod_name
+          elif (.l7.dns.query // "") != "" then "DNS:"+.l7.dns.query
+          elif ((.destination.labels//[])|any(.=="reserved:kube-apiserver")) then "kube-apiserver"
+          elif ((.destination.labels//[])|any(.=="reserved:host")) then "host"
+          elif ((.destination.labels//[])|any(.=="reserved:world")) then "world"
+          else "ip:"+(.IP.destination//"??") end;
+        def port: ((.l4.TCP.destination_port // .l4.UDP.destination_port // .l4.ICMPv4.type // .l4.ICMPv6.type // "?")|tostring);
+        def proto: (((.l4 // {})|keys|.[0]) // "?");
+        fromjson? | .flow
+          | select(if $verdict == "" then true elif $verdict == "ALLOWED" then (.verdict == "FORWARDED" or .verdict == "REDIRECTED") else (.verdict == $verdict) end)
+          # non-DROPPED: drop only true reply legs, keep initiating (false) and unknown-direction (null, e.g. UDP/DNS) legs; DROPPED: keep all
+          | select(if .verdict == "DROPPED" then true else (.is_reply != true) end)
+          # match either endpoint, like hubble -l itself — never hide a flow the capture matched
+          | select(if $lbl == "" then true else (((.source.labels // []) + (.destination.labels // [])) | index($lbl)) end)
+          | [.verdict, src, dest, port, proto, (.traffic_direction // "-"), (.drop_reason_desc // "-")]
+          | @tsv
+      ' "$cap" | awk '{ c[$0]++ } END { for (k in c) print c[k] "\t" k }' | sort -rn)"
+    if [ -z "$rows" ]; then
+      just log info "No flows matched the filter"
+    else
+      { printf 'COUNT VERDICT SRC DEST PORT PROTO DIR REASON\n'; printf '%s\n' "$rows"; } | column -t
+    fi

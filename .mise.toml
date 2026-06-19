@@ -27,6 +27,9 @@ pipx.uvx = true
 # Kubernetes — bare name kept: aqua 3-part path (kubernetes/kubernetes/kubectl) breaks Renovate
 kubectl = "1.36.2"
 
+# Observability (Cilium Hubble) — CLI matches cluster cilium minor; -P auto port-forwards to hubble-relay
+"aqua:cilium/hubble" = "1.19.4"
+
 # Templating + secrets
 "aqua:mitsuhiko/minijinja" = "2.21.0"
 
