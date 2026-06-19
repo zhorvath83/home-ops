@@ -107,3 +107,20 @@ Starting hypothesis from app architecture; Phase 0 survey confirms or moves apps
 - implements [[AD-023-cnp-threat-model-audit]]
 - relates_to [[networking]]
 - relates_to [[k8s-workloads]]
+
+## Phase 0 — first capture findings (2026-06-20, 60s cluster-wide)
+
+- [observation] [verified] hubble-live + hubble-analyze validated on a real 60s cluster-wide capture (6089 flows): FQDN / world:ip / direction / DROPPED-reason all render correctly
+- [observation] [crown-jewel] onepassword-connect's ONLY world egress is a single 1Password cloud endpoint (world:13.226.244.60:443) — narrow-world allowlist = DNS + that endpoint; confirmed tractable, stays priority-1
+- [observation] [confirmed] broad-world-lite holds: qbittorrent (many peers, TCP+UDP), plex (plex.tv), isponsorblocktv (google/youtube)
+- [observation] [confirmed] no-world holds (quiet in-window): paperless, grafana, actual, home-gallery, wallos, victoria-logs, homepage — only DNS + inbound probe/scrape, no world egress
+- [observation] [east-west-hub] prometheus scrapes every app's metrics port and kube-apiserver reaches every app port — every ingress CNP (Tier I component included) must allow both
+- [observation] [finding] on this single control-plane node, kubelet health-probes + admission-webhooks carry the reserved:kube-apiserver identity (node IP = apiserver IP). Ingress probe-allow rules must use reserved:kube-apiserver (NOT reserved:host); the DROPPED verify step must confirm probes still pass on each strict ingress CNP
+- [observation] [finding] DNS query names are the reliable FQDN source for narrow-world allowlists (Hubble destination_names enrichment is sparse on world flows due to connection reuse / out-of-window DNS). hubble-analyze now resolves .l7.dns.query before pod_name so per-app lookups render as DNS:<fqdn>
+- [observation] [finding] a 60s window misses the downloads east-west mesh (*arr → qbittorrent, prowlarr → *arr were idle) — per-app downloads egress needs an activity-triggered or longer capture (trigger search/download during the window)
+
+## Phase 0 — refinements from activity-triggered capture (2026-06-20)
+
+- [observation] [verified] DNS-first ordering works in production: per-app DNS query names now render (DNS:t.ncore.sh, DNS:ghcr.io, DNS:api.github.com, DNS:sonarr...) — this is the narrow-world FQDN source, and toFQDNs rules should match the bare apex name (the .svc.cluster.local-suffixed variants are ndots:5 search-domain NXDOMAINs, ignore them)
+- [observation] [priority-1-ready] onepassword-connect is fully specifiable from observed traffic: ingress = external-secrets (ESO) + prometheus + kube-apiserver (probes); egress = world:13.226.244.60:443 (1Password cloud) only. The narrow-world CNP can be written directly from data — no guessing
+- [observation] [verify-item] *arr cross-links are misconfigured: bazarr/seerr query sonarr/radarr at *.media.svc.cluster.local, but all *arr run in the downloads namespace (kubectl-confirmed); the name is stale runtime config (not in repo), likely NXDOMAIN. Fix in each *arr app's own config (UI/DB, not a manifest): use the bare service name (e.g. sonarr) since caller and target share the downloads namespace — this resolves correctly via the first search domain AND eliminates the ndots:5 search-domain explosion. Do this before writing the downloads east-west mesh allowlist so it reflects real endpoints
