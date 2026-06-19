@@ -184,12 +184,13 @@ render-local-ks name ns:
 hubble-status:
     hubble status -P
 
+[arg('direction', pattern='|egress|ingress')]
 [arg('secs', pattern='|[0-9]+')]
 [arg('verdict', pattern='|FORWARDED|DROPPED|ALLOWED')]
-[doc('Cilium Hubble capture. label = cilium endpoint label e.g. k8s:app=foo (empty = cluster-wide); verdict = DROPPED or ALLOWED (empty = all)')]
+[doc('Cilium Hubble capture to /tmp/hubble-live.jsonl, then summarise. label = cilium endpoint label e.g. k8s:app=foo (empty = cluster-wide); verdict = DROPPED|ALLOWED (empty = all); direction = egress|ingress (needs label). Re-slice the same capture without recapturing via hubble-analyze.')]
 [group('observe')]
 [script]
-hubble-live label="" secs="60" verdict="":
+hubble-live label="" secs="60" verdict="" direction="":
     label="{{ label }}"
     secs="{{ secs }}"
     verdict="{{ verdict }}"
@@ -197,9 +198,11 @@ hubble-live label="" secs="60" verdict="":
     [ -n "$secs" ] || secs=60
     # fail fast on the common setup miss (tool absent / mise env not active) instead of waiting out the window for nothing
     command -v hubble >/dev/null 2>&1 || { echo "hubble not found in PATH — is it installed and your mise env active?" >&2; exit 127; }
-    cap="$(mktemp)"
+    # fixed path so hubble-analyze can re-slice the same capture without recapturing; overwritten each run, intentionally not cleaned up
+    cap="/tmp/hubble-live.jsonl"
     hpid=""
-    trap 'kill "$hpid" 2>/dev/null || true; pkill -P "$hpid" 2>/dev/null || true; rm -f "$cap"' EXIT INT TERM
+    # keep the capture file on exit (analyze reads it) — only reap the background observer
+    trap 'kill "$hpid" 2>/dev/null || true; pkill -P "$hpid" 2>/dev/null || true' EXIT INT TERM
     if [ -n "$label" ]; then
       hubble observe -P -f -o json -l "$label" > "$cap" &
     else
@@ -214,21 +217,35 @@ hubble-live label="" secs="60" verdict="":
     wait "$hpid" 2>/dev/null || true
     # grep -c already prints 0 on no match (and exits 1) — keep that 0, do not append another
     nflows="$(grep -c '"flow"' "$cap" 2>/dev/null || true)"
-    just log info "Captured ${nflows:-0} flows" window "${secs}s"
+    just log info "Captured ${nflows:-0} flows to ${cap}" window "${secs}s"
+    just k8s hubble-analyze "$label" "{{ verdict }}" "{{ direction }}"
+
+[arg('direction', pattern='|egress|ingress')]
+[arg('verdict', pattern='|FORWARDED|DROPPED|ALLOWED')]
+[doc('Re-summarise the last hubble-live capture (/tmp/hubble-live.jsonl) with different filters — no recapture. label scopes to an endpoint (empty = all); verdict = DROPPED|ALLOWED (empty = all); direction = egress|ingress (needs label: egress = app is source, ingress = app is destination). world dests resolve to fqdn: via the L7 DNS proxy when known.')]
+[group('observe')]
+[script]
+hubble-analyze label="" verdict="" direction="":
+    cap="/tmp/hubble-live.jsonl"
+    [ -s "$cap" ] || { echo "no capture at $cap — run 'just k8s hubble-live' first" >&2; exit 1; }
     # -R + fromjson? reads JSONL line-by-line and tolerates a truncated final line if hubble was killed mid-write.
     # awk hash-dedup (one pass, O(unique-tuples) memory) instead of sort|uniq -c — avoids sorting the full raw flow set on long/cluster-wide captures.
-    rows="$(jq -R -r --arg lbl "$label" --arg verdict "$verdict" '
+    rows="$(jq -R -r --arg lbl "{{ label }}" --arg verdict "{{ verdict }}" --arg dir "{{ direction }}" '
         def src:
           if .source.pod_name then .source.pod_name
+          elif ((.source_names // []) | length) > 0 then "fqdn:"+(.source_names[0])
+          elif ((.source.labels//[])|any(.=="reserved:kube-apiserver")) then "kube-apiserver"
           elif ((.source.labels//[])|any(.=="reserved:host")) then "host"
-          elif ((.source.labels//[])|any(.=="reserved:world")) then "world"
-          else "?" end;
+          elif ((.source.labels//[])|any(.=="reserved:world")) then "world:"+(.IP.source//"??")
+          else "ip:"+(.IP.source//"??") end;
         def dest:
-          if .destination.pod_name then .destination.pod_name
-          elif (.l7.dns.query // "") != "" then "DNS:"+.l7.dns.query
+          # l7.dns.query BEFORE pod_name: DNS queries hit coredns (which has a pod_name) — checking pod_name first would mask the resolved FQDN, the primary narrow-world allowlist source
+          if (.l7.dns.query // "") != "" then "DNS:"+.l7.dns.query
+          elif .destination.pod_name then .destination.pod_name
+          elif ((.destination_names // []) | length) > 0 then "fqdn:"+(.destination_names[0])
           elif ((.destination.labels//[])|any(.=="reserved:kube-apiserver")) then "kube-apiserver"
           elif ((.destination.labels//[])|any(.=="reserved:host")) then "host"
-          elif ((.destination.labels//[])|any(.=="reserved:world")) then "world"
+          elif ((.destination.labels//[])|any(.=="reserved:world")) then "world:"+(.IP.destination//"??")
           else "ip:"+(.IP.destination//"??") end;
         def port: ((.l4.TCP.destination_port // .l4.UDP.destination_port // .l4.ICMPv4.type // .l4.ICMPv6.type // "?")|tostring);
         def proto: (((.l4 // {})|keys|.[0]) // "?");
@@ -236,8 +253,13 @@ hubble-live label="" secs="60" verdict="":
           | select(if $verdict == "" then true elif $verdict == "ALLOWED" then (.verdict == "FORWARDED" or .verdict == "REDIRECTED") else (.verdict == $verdict) end)
           # non-DROPPED: drop only true reply legs, keep initiating (false) and unknown-direction (null, e.g. UDP/DNS) legs; DROPPED: keep all
           | select(if .verdict == "DROPPED" then true else (.is_reply != true) end)
-          # match either endpoint, like hubble -l itself — never hide a flow the capture matched
-          | select(if $lbl == "" then true else (((.source.labels // []) + (.destination.labels // [])) | index($lbl)) end)
+          # label scope: direction picks the endpoint (egress = app is source, ingress = app is destination); empty dir matches either, like hubble -l
+          | select(
+              if $lbl == "" then true
+              elif $dir == "egress" then ((.source.labels // []) | index($lbl))
+              elif $dir == "ingress" then ((.destination.labels // []) | index($lbl))
+              else (((.source.labels // []) + (.destination.labels // [])) | index($lbl)) end
+            )
           | [.verdict, src, dest, port, proto, (.traffic_direction // "-"), (.drop_reason_desc // "-")]
           | @tsv
       ' "$cap" | awk '{ c[$0]++ } END { for (k in c) print c[k] "\t" k }' | sort -rn)"
