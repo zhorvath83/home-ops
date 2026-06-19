@@ -110,7 +110,7 @@ spec:
       enabled: true
       image:
         registry: ghcr.io/democratic-csi/csi-grpc-proxy
-        tag: v0.5.7@sha256:78e86badadfe67a9afdbe2c9a3afc02bc50aa43b86203c9ca6fc046ab3519e3f
+        tag: v0.5.7@sha256:0240d0fba3cedd598036766b1865e88aa2eac9c16822df03d5d912a81128ebb6
       resources:
         requests:
           cpu: 5m
