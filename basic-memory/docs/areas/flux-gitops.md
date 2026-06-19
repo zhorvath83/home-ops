@@ -34,7 +34,7 @@ drift_risk: Performance patches (concurrent counts, memory limits, OOMWatch, in-
 - [area] flux-gitops
 - [status] current
 - [confidence] high
-- [verified_at] 2026-05-19
+- [verified_at] 2026-05-22
 
 ## Summary
 

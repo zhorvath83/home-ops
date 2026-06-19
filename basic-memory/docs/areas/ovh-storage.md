@@ -5,7 +5,7 @@ permalink: home-ops/docs/areas/ovh-storage
 area: ovh-storage
 status: current
 confidence: high
-verified_at: '2026-05-19'
+verified_at: '2026-06-20'
 summary: Terraform in `provision/ovh/` provisions a set of OVH Cloud Project Object
   Storage buckets and one dedicated cloud-project user (`objectstore_operator` role)
   with an S3 credential and an inline bucket-scoped S3 policy. Buckets live in region
@@ -46,7 +46,7 @@ tags:
 - [area] ovh-storage
 - [status] current
 - [confidence] high
-- [verified_at] 2026-05-19
+- [verified_at] 2026-06-20
 
 ## Summary
 
@@ -59,12 +59,12 @@ tags:
 
 Terraform state lives in Terraform Cloud (org `zhorvath83`, workspace `ovh`). All OVH credentials and the bucket list come in as `TF_VAR_*` env vars rendered from 1Password through `op run --no-masking --env-file=./.env -- terraform ...`.
 
-The `just ovh apply` recipe is the single supported apply path: after `terraform apply` it reads six outputs (`s3_user_id`, `s3_username`, `s3_user_description`, `s3_access_key`, `s3_secret_key`, `s3_endpoint`) as JSON and pushes them back into the 1Password item `HomeOps/ovh` via `op item edit`. That item is the contract surface for the in-cluster consumers — VolSync/Kopia (`kubernetes/components/volsync/` + `kubernetes/apps/volsync-system/`) and the file-level resticprofile workload (`kubernetes/apps/default/resticprofile/`) — which fetch the values via External Secrets.
+The `just ovh apply` recipe is the single supported apply path: after `terraform apply` it reads six outputs (`s3_user_id`, `s3_username`, `s3_user_description`, `s3_access_key`, `s3_secret_key`, `s3_endpoint`) as JSON and pushes them back into the 1Password item `HomeOps/ovh` via `op item edit`. That item is the contract surface for the in-cluster consumers — VolSync/Kopia (`kubernetes/components/volsync/` + `kubernetes/apps/volsync-system/`) and the file-level resticprofile workload (`kubernetes/apps/selfhosted/resticprofile/`) — which fetch the values via External Secrets.
 
 ## Components
 
 - [component] Terraform Cloud workspace — org `zhorvath83`, workspace `ovh`, `required_version = "~> 1.0"` (provision/ovh/main.tf:1-23)
-- [component] OVH provider — `ovh/ovh` pinned at `2.13.1` (provision/ovh/main.tf:12-16)
+- [component] OVH provider — `ovh/ovh` pinned at `2.14.0` (provision/ovh/main.tf:12-16)
 - [component] null provider — `hashicorp/null` 3.3.0 (provision/ovh/main.tf:18-21)
 - [component] OVH provider auth — `endpoint` from `OVH_ENDPOINT` (default `ovh-eu` per terraform.tfvars), plus the long-lived `application_key` / `application_secret` / `consumer_key` triple (provision/ovh/main.tf:25-30 + terraform.tfvars:1)
 - [component] Buckets — `ovh_cloud_project_storage.backup` `for_each` over `local.bucket_names` (parsed from comma-and-space-separated `S3_BUCKET_NAMES`), region pinned to `DE` (provision/ovh/buckets.tf:1-11)
@@ -78,17 +78,17 @@ The `just ovh apply` recipe is the single supported apply path: after `terraform
 
 ## Claims (verified against repo)
 
-- [claim] "Terraform state lives in Terraform Cloud, org `zhorvath83`, workspace `ovh`" (evidence: repo, ref: provision/ovh/main.tf:5-10, verified: 2026-05-19)
-- [claim] "OVH provider `ovh/ovh` is pinned at version 2.13.1 (no Renovate disable annotation observed)" (evidence: repo, ref: provision/ovh/main.tf:12-16, verified: 2026-05-19)
-- [claim] "OVH provider authenticates with the long-lived application_key + application_secret + consumer_key triple plus an endpoint (`ovh-eu` per the in-repo tfvars) — no API token model" (evidence: repo, ref: provision/ovh/main.tf:25-30 + terraform.tfvars:1, verified: 2026-05-19)
-- [claim] "All buckets are created in region `DE` and the derived public endpoint is `s3.de.io.cloud.ovh.net`" (evidence: repo, ref: provision/ovh/buckets.tf:1-15, verified: 2026-05-19)
-- [claim] "Bucket set is driven by `var.S3_BUCKET_NAMES` — a comma-and-space-separated string parsed into a set; adding or removing a bucket requires editing that var and re-applying, not editing buckets.tf" (evidence: repo, ref: provision/ovh/variables.tf:29-32 + buckets.tf:1-11, verified: 2026-05-19)
-- [claim] "Exactly one OVH Cloud Project user is created (`role_names = ["objectstore_operator"]`), with a single S3 credential and a single S3 policy attached" (evidence: repo, ref: provision/ovh/user.tf:1-29, verified: 2026-05-19)
-- [claim] "The S3 policy is a single Allow statement `s3:*` scoped to the same bucket set as `local.bucket_names` — both the bucket ARN and the object ARN are granted" (evidence: repo, ref: provision/ovh/user.tf:12-29, verified: 2026-05-19)
-- [claim] "`just ovh apply` does two things in sequence: (1) `terraform apply` via `op run`, (2) a single `op item edit ovh --vault HomeOps` that writes six fields (`ovh_s3_user_id`, `ovh_s3_username`, `ovh_s3_user_description`, `ovh_s3_access_key`, `ovh_s3_secret_key`, `ovh_s3_endpoint`) using outputs parsed from a single `terraform output -json` call" (evidence: repo, ref: provision/ovh/mod.just:26-50, verified: 2026-05-19)
-- [claim] "The post-apply 1Password sync uses `jq -er` so a missing or null output aborts the recipe rather than silently writing empty fields" (evidence: repo, ref: provision/ovh/mod.just:33-43, verified: 2026-05-19)
-- [claim] "The 1Password `HomeOps/ovh` item is the contract surface for the in-cluster consumers — VolSync/Kopia and resticprofile both read `ovh_s3_*` from this item via External Secrets; Terraform itself never reaches the cluster" (evidence: repo, ref: provision/ovh/CLAUDE.md:7-10,15-15, verified: 2026-05-19)
-- [claim] "Four operational entry points exist: `just ovh init|plan|apply|unlock`; `unlock` wraps `terraform force-unlock` for state recovery" (evidence: repo, ref: provision/ovh/mod.just:16-55, verified: 2026-05-19)
+- [claim] "Terraform state lives in Terraform Cloud, org `zhorvath83`, workspace `ovh`" (evidence: repo, ref: provision/ovh/main.tf:5-10, verified: 2026-06-20)
+- [claim] "OVH provider `ovh/ovh` is pinned at version 2.14.0 (no Renovate disable annotation observed)" (evidence: repo, ref: provision/ovh/main.tf:12-16, verified: 2026-06-20)
+- [claim] "OVH provider authenticates with the long-lived application_key + application_secret + consumer_key triple plus an endpoint (`ovh-eu` per the in-repo tfvars) — no API token model" (evidence: repo, ref: provision/ovh/main.tf:25-30 + terraform.tfvars:1, verified: 2026-06-20)
+- [claim] "All buckets are created in region `DE` and the derived public endpoint is `s3.de.io.cloud.ovh.net`" (evidence: repo, ref: provision/ovh/buckets.tf:1-15, verified: 2026-06-20)
+- [claim] "Bucket set is driven by `var.S3_BUCKET_NAMES` — a comma-and-space-separated string parsed into a set; adding or removing a bucket requires editing that var and re-applying, not editing buckets.tf" (evidence: repo, ref: provision/ovh/variables.tf:29-32 + buckets.tf:1-11, verified: 2026-06-20)
+- [claim] "Exactly one OVH Cloud Project user is created (`role_names = ["objectstore_operator"]`), with a single S3 credential and a single S3 policy attached" (evidence: repo, ref: provision/ovh/user.tf:1-29, verified: 2026-06-20)
+- [claim] "The S3 policy is a single Allow statement `s3:*` scoped to the same bucket set as `local.bucket_names` — both the bucket ARN and the object ARN are granted" (evidence: repo, ref: provision/ovh/user.tf:12-29, verified: 2026-06-20)
+- [claim] "`just ovh apply` does two things in sequence: (1) `terraform apply` via `op run`, (2) a single `op item edit ovh --vault HomeOps` that writes six fields (`ovh_s3_user_id`, `ovh_s3_username`, `ovh_s3_user_description`, `ovh_s3_access_key`, `ovh_s3_secret_key`, `ovh_s3_endpoint`) using outputs parsed from a single `terraform output -json` call" (evidence: repo, ref: provision/ovh/mod.just:26-50, verified: 2026-06-20)
+- [claim] "The post-apply 1Password sync uses `jq -er` so a missing or null output aborts the recipe rather than silently writing empty fields" (evidence: repo, ref: provision/ovh/mod.just:33-43, verified: 2026-06-20)
+- [claim] "The 1Password `HomeOps/ovh` item is the contract surface for the in-cluster consumers — VolSync/Kopia and resticprofile both read `ovh_s3_*` from this item via External Secrets; Terraform itself never reaches the cluster" (evidence: repo, ref: provision/ovh/CLAUDE.md:7-10,15-15, verified: 2026-06-20)
+- [claim] "Four operational entry points exist: `just ovh init|plan|apply|unlock`; `unlock` wraps `terraform force-unlock` for state recovery" (evidence: repo, ref: provision/ovh/mod.just:16-55, verified: 2026-06-20)
 
 ## Drift Risk
 
