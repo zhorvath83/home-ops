@@ -23,7 +23,7 @@ spec:
         enabled: true
         image:
           registry: ghcr.io/democratic-csi/democratic-csi
-          tag: v1.9.5@sha256:746bf6b373ae75f5da8b1e412d13c3e8d0e2e1494654268b9dd6fe1f1e55aade
+          tag: v1.9.5@sha256:fc3b7d7ed3a616714139525075312758e23a5d425ffb539ad12c9bd20fb6001f
       externalProvisioner:
         enabled: true
         image:
@@ -79,7 +79,7 @@ spec:
       driver:
         image:
           registry: ghcr.io/democratic-csi/democratic-csi
-          tag: v1.9.5@sha256:746bf6b373ae75f5da8b1e412d13c3e8d0e2e1494654268b9dd6fe1f1e55aade
+          tag: v1.9.5@sha256:fc3b7d7ed3a616714139525075312758e23a5d425ffb539ad12c9bd20fb6001f
         resources:
           requests:
             cpu: 60m
