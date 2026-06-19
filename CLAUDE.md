@@ -236,7 +236,8 @@ Platform areas:
 - `docs/areas/talos-cluster` — single control-plane Talos node, machine config templating, op-inject flow
 - `docs/areas/volsync-backup` — VolSync + Kopia for PVC backups, jitter policy, KopiaMaintenance, per-app component
 - `docs/areas/resticprofile-backup` — file-level NAS `/backups` plane + Backrest browse UI
-- `docs/areas/observability` — kube-prometheus-stack + grafana + speedtest-exporter (draft)
+- `docs/areas/observability` — kube-prometheus-stack + grafana + speedtest-exporter + victoria-logs
+- `docs/areas/iam` — Pocket-ID OIDC provider + TinyAuth forward-auth, Envoy header-stripping trust chain, per-app group ACLs (apps/security)
 
 Provisioning areas:
 

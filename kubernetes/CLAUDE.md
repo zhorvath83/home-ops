@@ -21,13 +21,16 @@ This guide applies to everything under `kubernetes/`. It captures durable guardr
 - networking platform: [apps/networking/CLAUDE.md](apps/networking/CLAUDE.md) (BM: `docs/areas/networking`)
 - external secrets platform: [apps/external-secrets/CLAUDE.md](apps/external-secrets/CLAUDE.md) (BM: `docs/areas/external-secrets`)
 - VolSync platform: [apps/volsync-system/CLAUDE.md](apps/volsync-system/CLAUDE.md) (BM: `docs/areas/volsync-backup`)
+- IAM platform (Pocket-ID + TinyAuth): [apps/security/CLAUDE.md](apps/security/CLAUDE.md) (BM: `docs/areas/iam`)
+- system upgrades (tuppr Talos/K8s): [apps/system-upgrade/CLAUDE.md](apps/system-upgrade/CLAUDE.md) (BM: `docs/decisions/AD-019-tuppr-system-upgrade`)
+- cert-manager (TLS issuance): [apps/cert-manager/CLAUDE.md](apps/cert-manager/CLAUDE.md) (BM: `docs/areas/cloudflare`, `docs/areas/networking`)
 
 Additional BM area-references with no subtree CLAUDE.md (read via `basic-memory` MCP):
 
 - `docs/areas/flux-gitops` — Flux Operator + FluxInstance, cluster-apps root Kustomization, shared HelmRelease defaults, Pushover alerting
 - `docs/areas/talos-cluster` — single control-plane Talos node, machine config templating, op-inject flow, `just talos` recipes
 - `docs/areas/resticprofile-backup` — file-level NAS `/backups` plane + Backrest browse UI
-- `docs/areas/observability` — kube-prometheus-stack + grafana + speedtest-exporter (draft)
+- `docs/areas/observability` — kube-prometheus-stack + grafana + speedtest-exporter + victoria-logs (logs plane)
 
 ## GitOps Apply Boundary
 
@@ -57,7 +60,7 @@ Treat everything under `kubernetes/` as desired state for Flux, not as an impera
 - Shared reusable logic belongs in `components/` only when it is already proven across multiple apps.
 - Dependencies between apps must be declared in `spec.dependsOn`; do not rely on creation order.
 - Prefer official Helm charts first, then bjw-s `app-template`, then custom manifests only when needed.
-- **HelmRelease minimal-spec policy**: an app `helmrelease.yaml` `spec` block should contain only `chartRef`, `interval`, `values` (and, very rarely, `postRenderers` when an upstream chart leaves no other way to patch a manifest field — `nextcloud`-style). The cluster-root `Kustomization` (`kubernetes/flux/cluster/ks.yaml`) injects `install.crds`, `install.strategy.name`, `rollback.cleanupOnFail`, `timeout`, `upgrade.cleanupOnFail`, `upgrade.crds`, `upgrade.strategy.name`, `upgrade.remediation.remediateLastFailure`, `upgrade.remediation.retries` into every HelmRelease through a kustomize patch — never repeat or override those fields per-app. Per-HR `install.createNamespace`, `install.remediation.retries: -1`, `upgrade.remediation.strategy: rollback`, `upgrade.remediation.retries: <N>`, `uninstall.keepHistory` were historical K3s-era noise and have been dropped. If a future app genuinely needs a different remediation profile, change the root patch or accept the default rather than re-introducing per-HR drift.
+- **HelmRelease minimal-spec policy**: an app `helmrelease.yaml` `spec` block should contain only `chartRef`, `interval`, `values` (and, very rarely, `postRenderers` when an upstream chart leaves no other way to patch a manifest field — `nextcloud`-style). The cluster-root `Kustomization` (`kubernetes/flux/cluster/ks.yaml`) injects `install.crds`, `install.strategy.name`, `rollback.cleanupOnFail`, `timeout`, `upgrade.cleanupOnFail`, `upgrade.crds`, `upgrade.strategy.name`, `upgrade.remediation.remediateLastFailure`, `upgrade.remediation.retries` into every HelmRelease through a kustomize patch — never repeat or override those fields per-app. The exact injected field/value set is verified in BM `docs/areas/flux-gitops`; treat that note as the single source for the values, and keep this list to field names only so the two do not drift. Per-HR `install.createNamespace`, `install.remediation.retries: -1`, `upgrade.remediation.strategy: rollback`, `upgrade.remediation.retries: <N>`, `uninstall.keepHistory` were historical K3s-era noise and have been dropped. If a future app genuinely needs a different remediation profile, change the root patch or accept the default rather than re-introducing per-HR drift.
 - **Resource policy baseline**:
   - user-facing workloads should declare explicit `resources.requests.cpu`, `resources.requests.memory`, and `resources.limits.memory`
   - CPU limits are optional and should be added only when there is a clear workload-specific reason
