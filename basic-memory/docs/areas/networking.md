@@ -157,3 +157,19 @@ and injected into every child Kustomization via Flux `postBuild.substituteFrom`.
 - relates_to [[external-secrets]]
 - part_of [[home-ops-platform]]
 - supersedes [[networking-readme]]
+
+## LAN Split-DNS & Edge Bypass (operational, router side)
+
+The LAN path to public hostnames depends on router-side configuration that lives outside the cluster (managed in the private OpenWRT provisioning repo). Durable requirements:
+
+- [claim] "The router DNS must conditionally forward ${PUBLIC_DOMAIN} to the k8s-gateway VIP ${K8S_GATEWAY_IP}, so LAN clients resolve the internal Envoy VIP instead of hairpinning through Cloudflare" (evidence: behavior, ref: migrated from kubernetes/apps/networking/README.md, verified: 2026-06-20)
+- [claim] "The router must allow DNS rebinding for ${PUBLIC_DOMAIN}; otherwise RFC1918 answers (e.g. ${ENVOY_INTERNAL_IP}) returned by k8s-gateway may be dropped or rewritten" (evidence: behavior, ref: migrated from networking/README.md, verified: 2026-06-20)
+- [claim] "An app is reachable directly from the LAN only if its HTTPRoute attaches to envoy-internal; dual attachment is the default, while envoy-external-only routes (e.g. flux-webhook) are intentionally internet-only" (evidence: repo, ref: networking route model, verified: 2026-06-20)
+
+Edge bypass checklist — the public/internal separation can be silently defeated at the router/edge. When auditing exposure, check for:
+
+- [drift] port forwards or DMZ rules pointing at the Envoy VIPs or the node IP
+- [drift] UPnP / NAT-PMP opening inbound ports automatically
+- [drift] router DNS rebinding protection blocking ${PUBLIC_DOMAIN} from resolving to the internal VIP
+
+(Migrated 2026-06-20 from kubernetes/apps/networking/README.md, which hardcoded the public domain and LAN IPs in violation of the repo non-negotiables; replaced here with cluster-settings variables.)
