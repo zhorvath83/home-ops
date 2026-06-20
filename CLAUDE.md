@@ -173,6 +173,7 @@ Examples:
 - Treating local file edits as if they were already deployed by GitOps, or using `flux reconcile` as though it applied the local working tree.
 - Changing shared secret names, store names, or dependency wiring without tracing the related Flux and Just recipe references first.
 - Refactoring file layout or documentation structure when an established local pattern already exists.
+- Adding verbose multi-line comment blocks to manifest files (YAML, HCL, Just, etc.). Keep comments to 1–2 lines, only when they explain a non-obvious "why"; never narrate what the manifest already states.
 
 ## Validation And Routing
 
