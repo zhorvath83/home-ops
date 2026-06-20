@@ -177,6 +177,12 @@ render-local-ks name ns:
     flux-local build ks --namespace "{{ ns }}" --path "{{ kubernetes_dir }}/flux/cluster" "{{ name }}"
 
 # === hubble ===
+#
+# Flow visibility for the CNP egress-shape survey (BM: cnp-per-app-audit).
+# Shared filter args — hubble-live captures, hubble-analyze re-slices the same /tmp/hubble-live.jsonl:
+#   label      cilium endpoint label, e.g. k8s:app.kubernetes.io/name=bazarr  (empty = cluster-wide / all)
+#   verdict    DROPPED | ALLOWED                                              (empty = all)
+#   direction  egress | ingress — needs label; egress = app is source, ingress = app is destination
 
 [doc('Hubble healthcheck: relay reachability, TLS, flow-buffer size + flow/s, connected nodes. -P auto port-forwards to kube-system/hubble-relay.')]
 [group('observe')]
@@ -187,7 +193,7 @@ hubble-status:
 [arg('direction', pattern='|egress|ingress')]
 [arg('secs', pattern='|[0-9]+')]
 [arg('verdict', pattern='|FORWARDED|DROPPED|ALLOWED')]
-[doc('Cilium Hubble capture to /tmp/hubble-live.jsonl, then summarise. label = cilium endpoint label e.g. k8s:app=foo (empty = cluster-wide); verdict = DROPPED|ALLOWED (empty = all); direction = egress|ingress (needs label). Re-slice the same capture without recapturing via hubble-analyze.')]
+[doc('Capture live flows for secs (default 60), then summarise. Args: label secs verdict direction (see hubble header).')]
 [group('observe')]
 [script]
 hubble-live label="" secs="60" verdict="" direction="":
@@ -222,7 +228,7 @@ hubble-live label="" secs="60" verdict="" direction="":
 
 [arg('direction', pattern='|egress|ingress')]
 [arg('verdict', pattern='|FORWARDED|DROPPED|ALLOWED')]
-[doc('Re-summarise the last hubble-live capture (/tmp/hubble-live.jsonl) with different filters — no recapture. label scopes to an endpoint (empty = all); verdict = DROPPED|ALLOWED (empty = all); direction = egress|ingress (needs label: egress = app is source, ingress = app is destination). world dests resolve to fqdn: via the L7 DNS proxy when known.')]
+[doc('Re-slice the last capture with different filters, no recapture. Args: label verdict direction (see hubble header).')]
 [group('observe')]
 [script]
 hubble-analyze label="" verdict="" direction="":
