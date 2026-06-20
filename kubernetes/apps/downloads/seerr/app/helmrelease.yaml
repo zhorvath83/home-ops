@@ -71,9 +71,6 @@ spec:
         hostnames:
           - "reqs.${PUBLIC_DOMAIN}"
         parentRefs:
-          - name: envoy-external
-            namespace: networking
-            sectionName: https
           - name: envoy-internal
             namespace: networking
             sectionName: https
