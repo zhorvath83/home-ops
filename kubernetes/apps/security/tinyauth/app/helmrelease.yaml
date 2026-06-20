@@ -71,6 +71,18 @@ spec:
               TINYAUTH_APPS_echo_OAUTH_GROUPS: echo_server_users
               TINYAUTH_APPS_maintainerr_CONFIG_DOMAIN: "maintainerr.${PUBLIC_DOMAIN}"
               TINYAUTH_APPS_maintainerr_OAUTH_GROUPS: maintainerr_users
+              TINYAUTH_APPS_prowlarr_CONFIG_DOMAIN: "indexers.${PUBLIC_DOMAIN}"
+              TINYAUTH_APPS_prowlarr_OAUTH_GROUPS: prowlarr_users
+              TINYAUTH_APPS_qbittorrent_CONFIG_DOMAIN: "bt.${PUBLIC_DOMAIN}"
+              TINYAUTH_APPS_qbittorrent_OAUTH_GROUPS: qbittorrent_users
+              TINYAUTH_APPS_radarr_CONFIG_DOMAIN: "movies.${PUBLIC_DOMAIN}"
+              TINYAUTH_APPS_radarr_OAUTH_GROUPS: radarr_users
+              TINYAUTH_APPS_seerr_CONFIG_DOMAIN: "reqs.${PUBLIC_DOMAIN}"
+              TINYAUTH_APPS_seerr_OAUTH_GROUPS: seerr_users
+              TINYAUTH_APPS_sonarr_CONFIG_DOMAIN: "shows.${PUBLIC_DOMAIN}"
+              TINYAUTH_APPS_sonarr_OAUTH_GROUPS: sonarr_users
+              TINYAUTH_APPS_subsyncarr_CONFIG_DOMAIN: "subsync.${PUBLIC_DOMAIN}"
+              TINYAUTH_APPS_subsyncarr_OAUTH_GROUPS: subsyncarr_users
             envFrom:
               - secretRef:
                   name: tinyauth-secret

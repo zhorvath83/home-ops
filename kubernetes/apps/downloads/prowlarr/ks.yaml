@@ -10,11 +10,14 @@ spec:
       app.kubernetes.io/name: prowlarr
   components:
     - ../../../../components/volsync
+    - ../../../../components/forward-auth
   dependsOn:
     - name: onepassword-connect
       namespace: external-secrets
     - name: democratic-csi
       namespace: kube-system
+    - name: tinyauth
+      namespace: security
   interval: 1h
   path: ./kubernetes/apps/downloads/prowlarr/app
   postBuild:

@@ -8,10 +8,16 @@ spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: subsyncarr
+  components:
+    - ../../../../components/forward-auth
+  dependsOn:
+    - name: tinyauth
+      namespace: security
   interval: 1h
   path: ./kubernetes/apps/downloads/subsyncarr/app
   postBuild:
     substitute:
+      APP: subsyncarr
       APP_UID: "1000"
       APP_GID: "1000"
   prune: true
