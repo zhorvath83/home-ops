@@ -179,28 +179,24 @@ render-local-ks name ns:
 # === hubble ===
 #
 # Flow visibility for the CNP egress-shape survey (BM: cnp-per-app-audit).
-# Shared filter args — hubble-live captures, hubble-analyze re-slices the same /tmp/hubble-live.jsonl:
+# hubble-live-capture records raw cluster-wide flows to /tmp/hubble-live.jsonl; hubble-analyze re-slices that capture:
 #   label      cilium endpoint label, e.g. k8s:app.kubernetes.io/name=bazarr  (empty = cluster-wide / all)
 #   verdict    DROPPED | ALLOWED                                              (empty = all)
 #   direction  egress | ingress — needs label; egress = app is source, ingress = app is destination
 
-[doc('Hubble healthcheck: relay reachability, TLS, flow-buffer size + flow/s, connected nodes. -P auto port-forwards to kube-system/hubble-relay.')]
+[doc('Cilium Hubble healthcheck.')]
 [group('observe')]
 [script]
 hubble-status:
     hubble status -P
 
-[arg('direction', pattern='|egress|ingress')]
 [arg('secs', pattern='|[0-9]+')]
-[arg('verdict', pattern='|FORWARDED|DROPPED|ALLOWED')]
-[doc('Capture live flows for secs (default 60), then summarise. Args: label secs verdict direction (see hubble header).')]
+[doc('Capture cluster-wide flows for secs seconds (trigger app activity during the window), then print a summary.')]
 [group('observe')]
 [script]
-hubble-live label="" secs="60" verdict="" direction="":
-    label="{{ label }}"
+hubble-live-capture secs="60":
     secs="{{ secs }}"
-    verdict="{{ verdict }}"
-    # an empty positional placeholder (e.g. to skip ahead to verdict) falls back to the default window
+    # an empty positional placeholder falls back to the default window
     [ -n "$secs" ] || secs=60
     # fail fast on the common setup miss (tool absent / mise env not active) instead of waiting out the window for nothing
     command -v hubble >/dev/null 2>&1 || { echo "hubble not found in PATH — is it installed and your mise env active?" >&2; exit 127; }
@@ -209,31 +205,26 @@ hubble-live label="" secs="60" verdict="" direction="":
     hpid=""
     # keep the capture file on exit (analyze reads it) — only reap the background observer
     trap 'kill "$hpid" 2>/dev/null || true; pkill -P "$hpid" 2>/dev/null || true' EXIT INT TERM
-    if [ -n "$label" ]; then
-      hubble observe -P -f -o json -l "$label" > "$cap" &
-    else
-      hubble observe -P -f -o json > "$cap" &
-    fi
+    # capture cluster-wide; hubble-analyze does all label/verdict/direction slicing
+    hubble observe -P -f -o json > "$cap" &
     hpid=$!
-    if [ -n "$label" ]; then scope="label=$label"; else scope="cluster-wide"; fi
-    if [ -n "$verdict" ]; then vdisp="$verdict"; else vdisp="all"; fi
-    just log info "Capturing live ${vdisp} flows for ${secs}s — trigger app activity now" scope "$scope"
+    just log info "Capturing live flows for ${secs}s — trigger app activity now" scope "cluster-wide"
     sleep "$secs"
     kill "$hpid" 2>/dev/null || true
     wait "$hpid" 2>/dev/null || true
     # grep -c already prints 0 on no match (and exits 1) — keep that 0, do not append another
     nflows="$(grep -c '"flow"' "$cap" 2>/dev/null || true)"
     just log info "Captured ${nflows:-0} flows to ${cap}" window "${secs}s"
-    just k8s hubble-analyze "$label" "{{ verdict }}" "{{ direction }}"
+    just k8s hubble-analyze
 
 [arg('direction', pattern='|egress|ingress')]
 [arg('verdict', pattern='|FORWARDED|DROPPED|ALLOWED')]
-[doc('Re-slice the last capture with different filters, no recapture. Args: label verdict direction (see hubble header).')]
+[doc('Re-slice the last capture. Args: label (cilium endpoint label, e.g. k8s:app.kubernetes.io/name=bazarr) verdict direction.')]
 [group('observe')]
 [script]
 hubble-analyze label="" verdict="" direction="":
     cap="/tmp/hubble-live.jsonl"
-    [ -s "$cap" ] || { echo "no capture at $cap — run 'just k8s hubble-live' first" >&2; exit 1; }
+    [ -s "$cap" ] || { echo "no capture at $cap — run 'just k8s hubble-live-capture' first" >&2; exit 1; }
     # -R + fromjson? reads JSONL line-by-line and tolerates a truncated final line if hubble was killed mid-write.
     # awk hash-dedup (one pass, O(unique-tuples) memory) instead of sort|uniq -c — avoids sorting the full raw flow set on long/cluster-wide captures.
     rows="$(jq -R -r --arg lbl "{{ label }}" --arg verdict "{{ verdict }}" --arg dir "{{ direction }}" '

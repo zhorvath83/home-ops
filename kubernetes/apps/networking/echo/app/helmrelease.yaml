@@ -28,7 +28,7 @@ spec:
           app:
             image:
               repository: ghcr.io/mendhak/http-https-echo
-              tag: 41
+              tag: 41@sha256:5e5427377ee3af38baa0f7e6b92bb213217f1ad2ea6f5695315d7733d7f6d4d2
             env:
               HTTP_PORT: &port 80
               LOG_WITHOUT_NEWLINE: true

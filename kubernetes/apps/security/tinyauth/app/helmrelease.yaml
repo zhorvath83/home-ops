@@ -59,16 +59,16 @@ spec:
               TINYAUTH_OAUTH_PROVIDERS_POCKETID_SCOPES: "openid email profile groups"
               # AUTH/REDIRECT URLs are browser-facing; TOKEN/USERINFO go cluster-internal.
               TINYAUTH_OAUTH_PROVIDERS_POCKETID_AUTHURL: "https://id.${PUBLIC_DOMAIN}/authorize"
+              TINYAUTH_OAUTH_PROVIDERS_POCKETID_REDIRECTURL: "https://auth.${PUBLIC_DOMAIN}/api/oauth/callback/pocketid"
               TINYAUTH_OAUTH_PROVIDERS_POCKETID_TOKENURL: "http://pocket-id.security.svc.cluster.local:1411/api/oidc/token"
               TINYAUTH_OAUTH_PROVIDERS_POCKETID_USERINFOURL: "http://pocket-id.security.svc.cluster.local:1411/api/oidc/userinfo"
-              TINYAUTH_OAUTH_PROVIDERS_POCKETID_REDIRECTURL: "https://auth.${PUBLIC_DOMAIN}/api/oauth/callback/pocketid"
               # Per-app ACLs are MANDATORY on v5.0.7 — without a per-app block the
               # OAuthGroupRule returns Allow on nil ACLs and lets any authenticated
               # user through.
               TINYAUTH_APPS_echo_CONFIG_DOMAIN: "echo.${PUBLIC_DOMAIN}"
-              TINYAUTH_APPS_echo_OAUTH_GROUPS: admins
+              TINYAUTH_APPS_echo_OAUTH_GROUPS: echo_server_users
               TINYAUTH_APPS_maintainerr_CONFIG_DOMAIN: "maintainerr.${PUBLIC_DOMAIN}"
-              TINYAUTH_APPS_maintainerr_OAUTH_GROUPS: admins
+              TINYAUTH_APPS_maintainerr_OAUTH_GROUPS: maintainerr_users
             envFrom:
               - secretRef:
                   name: tinyauth-secret
