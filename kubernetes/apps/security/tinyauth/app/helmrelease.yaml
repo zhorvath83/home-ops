@@ -65,6 +65,8 @@ spec:
               # Per-app ACLs are MANDATORY on v5.0.7 — without a per-app block the
               # OAuthGroupRule returns Allow on nil ACLs and lets any authenticated
               # user through.
+              TINYAUTH_APPS_bazarr_CONFIG_DOMAIN: "subs.${PUBLIC_DOMAIN}"
+              TINYAUTH_APPS_bazarr_OAUTH_GROUPS: bazarr_users
               TINYAUTH_APPS_echo_CONFIG_DOMAIN: "echo.${PUBLIC_DOMAIN}"
               TINYAUTH_APPS_echo_OAUTH_GROUPS: echo_server_users
               TINYAUTH_APPS_maintainerr_CONFIG_DOMAIN: "maintainerr.${PUBLIC_DOMAIN}"
