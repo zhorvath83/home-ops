@@ -59,7 +59,7 @@
     "bypass_auth_subnet_whitelist_enabled": true,
     "bypass_auth_subnet_whitelist": "10.244.0.0/16",
     "status_bar_external_ip": true,
-    "web_ui_csrf_protection_enabled": true,
+    "web_ui_csrf_protection_enabled": false,
     "web_ui_host_header_validation_enabled": false,
     "web_ui_secure_cookie_enabled": true,
     "web_ui_session_timeout": 3600,
