@@ -103,13 +103,19 @@ The egress decision is a single question: does the app legitimately need open / 
 ## Load-bearing infra facts (still true; the model depends on them)
 
 - [observation] [datapath] Strict ingress CNPs work only because of `bpf.datapathMode: netkit` + `socketLB.hostNamespaceOnly: false` — CT is recorded with the pod IP, resolving the netkit + tc-LB mismatch that dropped SYN-ACKs. Do not revert without re-validating every ingress CNP
-- [observation] [probe-identity] on this single control-plane node kubelet health-probes + admission-webhooks carry the `reserved:kube-apiserver` identity (node IP = apiserver IP). Ingress probe-allow rules must use `reserved:kube-apiserver` (NOT `reserved:host`)
+- [observation] [probe-identity] on this single control-plane node kubelet health-probes + admission-webhooks carry the `reserved:kube-apiserver` identity (node IP = apiserver IP). Empirically (verified 2026-06-22) strict ingress CNPs do NOT need an explicit probe-allow rule — kubelet probes reach local pods via Cilium local-host fast-path even when the CNP omits them (onepassword-connect, pocket-id, paperless are all healthy with no apiserver/host ingress rule; Hubble shows kube-apiserver→pod FORWARDED without a matching rule). If an explicit rule ever proves necessary, use `reserved:kube-apiserver` (NOT `reserved:host`)
 - [observation] [east-west-hub] prometheus scrapes every app metrics port and kube-apiserver reaches every app port — every ingress CNP must allow both
 - [observation] [envoy-external] Edge ingress defense is architectural: ClusterIP-only + CNP allowlist (cloudflared + Prometheus + kubelet probe) + CF Tunnel mTLS. `SecurityPolicy.principal.clientCIDRs` is unworkable (cloudflared rewrites XFF, the CF POP IP is never a hop → 403); cert-based Cloudflare AOP is the only viable edge-mTLS if ever needed
 
 ## Deferred — north-star
 
 - [decision] [deferred] Tightening the cluster-wide baseline to drop `toEntities: world` (making internet egress opt-in fleet-wide) is the strongest single lever but high blast-radius; gated behind a mature cluster-wide Hubble survey and decided separately. Current committed path is per-app, incremental
+
+## Validation — onepassword-connect reference (2026-06-22)
+
+- [observation] [verified] the repo's first per-app narrow-world CNP (onepassword-connect) is live and proven: ingress (ESO + prometheus + kubelet probes) and egress (toFQDNs) all FORWARDED, zero legitimate DROPPED flows, ClusterSecretStore Valid, connect-sync `### sync complete ###`
+- [observation] [autopath-prerequisite] per-app `toFQDNs` egress REQUIRES CoreDNS `autopath` to be OFF — autopath rewrites external query names into a CNAME chain that Cilium does not correlate to toFQDNs selectors, so the allowlist silently fails (connection timeout, not a visible DROPPED). Disabled in the coredns HelmRelease (`pods verified` kept for security). This is now a load-bearing prerequisite for EVERY narrow-world app
+- [observation] [multi-domain] a narrow-world app may legitimately need SEVERAL external domains — onepassword-connect needs both `1password.com` (API + B5 backend) AND `1passwordusercontent.com` (file-attachment CDN). The file CDN was absent from the initial Hubble window and only surfaced via connect-sync error logs on a forced resync. Lesson: drive narrow-world allowlists from BOTH Hubble AND the app's own logs, and allow the whole domain
 
 ## Related
 

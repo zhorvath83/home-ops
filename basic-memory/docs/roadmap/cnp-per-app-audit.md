@@ -108,6 +108,14 @@ decision_link: AD-023-cnp-threat-model-audit
 6. [observation] **Phase 5** — Class A ingress-only (off-world + low-value), AFTER the high-value Class B apps are done — value is east-west ingress coverage
 7. [observation] **Deferred** — evaluate baseline world-deny tightening as a separate AD once the survey is mature
 
+## Phase 1 + 2 — onepassword-connect reference (DONE, 2026-06-22)
+
+- [observation] [done] reference CNP built, deployed, and verified end-to-end; the per-app skeleton (hand-written, no component) is proven and becomes the clone template for the remaining narrow-world apps
+- [observation] [skeleton-confirmed] ingress = ESO + prometheus on the app port (no explicit kubelet-probe rule needed — local-host fast-path); egress = full-domain `toFQDNs` + opt-out label `egress.home.arpa/custom-egress: ""` set via the chart's pod-label values, in the same commit
+- [observation] [prerequisite] CoreDNS `autopath` had to be disabled cluster-wide for toFQDNs to correlate (see AD-023 validation) — this is a one-time platform fix that unblocks all narrow-world apps
+- [observation] [multi-domain] onepassword-connect needed two domains: `1password.com` + `1passwordusercontent.com` (file CDN); expect other narrow-world apps to need more than one external domain
+- [observation] [tooling] verify workflow is `just k8s hubble-live-capture <secs>` (cluster-wide capture) then `just k8s hubble-analyze <full-cilium-label> [verdict]` to slice — e.g. label `k8s:app=onepassword-connect` (match the app's REAL pod label, not always app.kubernetes.io/name)
+
 ## Related
 
 - implements [[AD-023-cnp-threat-model-audit]]
