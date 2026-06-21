@@ -56,5 +56,23 @@
       "Bash(kubectl describe secret:*)",
       "Bash(kubectl describe secrets:*)"
     ]
+  },
+  "sandbox": {
+    "network": {
+      "allowedDomains": [
+        "ghcr.io",
+        "registry.k8s.io",
+        "quay.io",
+        "gcr.io",
+        "mirror.gcr.io",
+        "public.ecr.aws",
+        "factory.talos.dev",
+        "api.github.com",
+        "raw.githubusercontent.com",
+        "api.cloudflare.com",
+        "eu.api.ovh.com",
+        "api.ovh.com"
+      ]
+    }
   }
 }
