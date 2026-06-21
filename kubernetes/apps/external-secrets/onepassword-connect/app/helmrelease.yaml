@@ -14,7 +14,7 @@ spec:
     # readOnlyRootFilesystem, drop ALL caps, UID/GID 999.
     connect:
       podLabels:
-        egress.home.arpa/custom-egress: ""
+        egress.home.arpa/custom-egress: "true"
       annotations:
         reloader.stakater.com/auto: "true"
       api:

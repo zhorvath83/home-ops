@@ -9,8 +9,9 @@
 # to repeat DNS / cluster / world egress rules.
 #
 # Opt-out: label a pod or workload with
-#   egress.home.arpa/custom-egress: ""
-# to remove it from this baseline. Any per-app CNP attached to that pod then
+#   egress.home.arpa/custom-egress: "true"
+# to remove it from this baseline. (The selector keys off the label's existence,
+# so any value works; "true" is convention.) Any per-app CNP attached to that pod then
 # becomes the sole source of egress allow rules — and the pod falls back to
 # default-deny for any egress not explicitly listed there.
 #
