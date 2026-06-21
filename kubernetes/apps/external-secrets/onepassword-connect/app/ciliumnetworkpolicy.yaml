@@ -1,7 +1,7 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
 # Ingress: external-secrets (Connect API consumer) + prometheus (ServiceMonitor /metrics, 8080).
-# Egress: 1Password cloud only (toFQDNs); DNS via the cluster-wide allow-dns-egress CCNP.
+# Egress: 1Password cloud (API + file-attachment CDN) via toFQDNs; DNS via the cluster-wide allow-dns-egress CCNP.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -31,6 +31,8 @@ spec:
     - toFQDNs:
         - matchName: "1password.com"
         - matchPattern: "*.1password.com"
+        - matchName: "1passwordusercontent.com"
+        - matchPattern: "*.1passwordusercontent.com"
       toPorts:
         - ports:
             - port: "443"
