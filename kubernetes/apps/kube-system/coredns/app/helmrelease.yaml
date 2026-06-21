@@ -37,8 +37,10 @@ spec:
             configBlock: |-
               pods verified
               fallthrough in-addr.arpa ip6.arpa
-          - name: autopath
-            parameters: "@kubernetes"
+          # autopath rewrites query names (CNAME chain), which Cilium fails to
+          # correlate to per-app toFQDNs egress allowlists — breaks narrow-world CNPs.
+          # - name: autopath
+          #   parameters: "@kubernetes"
           - name: forward
             parameters: . /etc/resolv.conf
           - name: cache
