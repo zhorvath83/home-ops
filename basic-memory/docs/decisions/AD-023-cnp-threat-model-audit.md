@@ -3,107 +3,113 @@ title: AD-023-cnp-threat-model-audit
 type: decision
 permalink: home-ops/docs/decisions/ad-023-cnp-threat-model-audit
 decision_id: AD-023
-topic: CiliumNetworkPolicy threat model & egress-shape containment strategy
+topic: CiliumNetworkPolicy threat model & containment strategy
 status: active
 decided_at: '2026-06-20'
-decision: Threat-model-driven CNP strategy on two axes. Policy amount = three tiers
-  (P platform / I ingress-only / II contained-egress). Within Tier II the egress SHAPE
-  is the primary axis, driven by the app's legitimate egress profile observed via
-  Hubble - no-world (deny world), narrow-world (toFQDNs allowlist), broad-world-lite
-  (world wholesale but no in-cluster east-west). Per-app granularity. Containment
-  is the goal - if a pod is compromised the cluster must not be a thoroughfare.
-rationale: Today only ingress CNPs exist; every non-cloudflared pod rides the broad
-  baseline (toEndpoints + cluster + world open) — full lateral move and full internet
-  egress. Egress containment is the missing layer and the primary value of CNP here
-  (edge ingress is already handled by Gateway L7). Hubble (hubble-live) makes egress
-  allowlists empirical, removing the guesswork that killed the earlier opt-out-label
-  attempt (pingvin-share-x was reverted).
-tradeoffs: Tier II needs the opt-out label paired with an egress section in the same
-  commit (B-csapda) and re-audit on upgrades. broad-world-lite blocks in-cluster lateral
-  but not internet exfil (impossible for those apps) nor LAN pivot (LAN is world).
-  Tier P/I keep broad baseline egress until the deferred baseline-tightening north-star.
+decision: 'Threat-model-driven, hand-written per-app CiliumNetworkPolicies (no shared
+  component, no postBuild templating). Class P (platform) gets no CNP. Every other
+  app gets a per-app CNP whose INGRESS is always defined (east-west containment: which
+  in-cluster source may reach the pod) and whose EGRESS is a binary choice: apps that
+  legitimately need open/unpredictable world stay ingress-only on the broad baseline
+  (egress containment is futile for them); apps that do NOT need open world get a
+  constrained egress section — no-world (in-cluster + DNS, world denied) or narrow-world
+  (DNS + full-domain toFQDNs). Containment goal unchanged: a compromised pod must
+  not turn the cluster into a thoroughfare.'
+rationale: The átjáróház risk is two things — east-west lateral and internet exfil/C2.
+  East-west is contained by per-app ingress on every app (target-side); this is NOT
+  edge duplication (the Gateway L7 layer guards the envoy→app hop, the CNP restricts
+  every OTHER in-cluster source). Egress containment only pays off where the app does
+  not need open world — there it blocks exfil/C2 and LAN-pivot at a single source-side
+  choke point. For apps that need open world (torrent/*arr/plex/search), egress restriction
+  buys nothing against exfil, so it is skipped and target-side ingress carries the
+  east-west job. Hubble (hubble-live) supplies both the ingress consumer set and the
+  egress allowlist empirically.
+tradeoffs: Per-app ingress everywhere means N policies to keep correct forever, including
+  new apps (a new app with no CNP rides the open baseline). Platform-exempt pods (apiserver,
+  coredns, csi) keep loose/no ingress by necessity, so a popped open-world app can
+  still reach them — residual gap, accepted; crown jewels mitigate it with tight ingress.
+  Class B needs the opt-out label paired with the egress section in the SAME commit
+  (B-csapda) and a re-audit on upgrades. Open-world apps get no exfil/LAN-pivot protection
+  (unavoidable). Baseline world-deny stays deferred.
 related_areas:
 - networking
 - k8s-workloads
 ---
 
-# AD-023 — CiliumNetworkPolicy threat model & egress-shape containment strategy
+# AD-023 — CiliumNetworkPolicy threat model & containment strategy
 
 ## Metadata (observation-form, schema validation)
 
 - [decision_id] AD-023
 - [status] active
 - [decided_at] 2026-06-20
-- [topic] CiliumNetworkPolicy threat model & egress-shape containment strategy
+- [revised] 2026-06-21 — egress narrowed to a binary (constrain only apps that do not need open world); shared ingress component dropped, every CNP is hand-written per app; narrow-world relaxed to full-domain allowlists; pingvin-share-x record corrected
+- [topic] CiliumNetworkPolicy threat model & containment strategy
 
 ## Context — threat model
 
-Single-node Talos home-lab, single-tenant, internet-exposed via Cloudflare Tunnel +
-envoy-external. The design question: **if a malicious actor lands in a pod, how do we
-stop the cluster from being a thoroughfare ("átjáróház")?**
+Single-node Talos home-lab, single-tenant, internet-exposed via Cloudflare Tunnel + envoy-external. The design question: **if a malicious actor lands in a pod, how do we stop the cluster from being a thoroughfare ("átjáróház")?**
 
 - [observation] [entry-vector] internet → CF Tunnel → cloudflared → envoy-external → public-routed app — the realistic RCE entry is a vuln in an internet-exposed self-hosted app (auth-gating via tinyauth/pocket-id/per-app login lowers but does not remove this)
 - [observation] [entry-vector] LAN → envoy-internal / k8s-gateway LB; supply chain → a compromised container image
 - [observation] [crown-jewel] onepassword-connect + external-secrets (all secrets), kube-apiserver (takeover), data PVCs (paperless/photos/actual), backup plane + S3 creds, NAS/OMV on LAN
 - [observation] [adversary-goal] "átjáróház" is TWO distinct things: (a) east-west lateral move to other pods / apiserver / LAN, and (b) egress exfil / C2 to the internet
-- [decision] CNP's primary value here is egress + east-west containment; edge ingress hardening is already done by the Gateway L7 layer (SecurityPolicy) and must not be duplicated
+- [decision] CNP carries two containment jobs here: per-app **ingress** contains east-west (which in-cluster source may reach the pod) on EVERY non-platform app; **egress** contains exfil/C2 + LAN-pivot, but only where the app does not need open world. Edge L7 ingress hardening stays with the Gateway SecurityPolicy layer and is not duplicated — the CNP ingress governs east-west sources, not the edge hop
 
 ## Current gap (2026-06-20)
 
-- [observation] Ingress CNPs exist (paperless, paperless-gpt, pingvin-share-x, tinyauth, pocket-id + envoy ext/int, cloudflare-tunnel) — all gateway allowlists
-- [observation] [gap] Egress: only cloudflare-tunnel has a per-app egress. Every other pod rides `allow-cluster-egress` (toEndpoints {} + cluster + world) — full lateral + full internet, the core átjáróház hole
-- [observation] The opt-out label is used nowhere; pingvin-share-x was reverted from egress-hardened to ingress-only — guess-driven egress did not hold
+- [observation] Ingress CNPs exist (paperless, paperless-gpt, tinyauth, pocket-id + envoy ext/int, cloudflare-tunnel) — gateway / east-west allowlists
+- [observation] [gap] Egress: only cloudflare-tunnel has a per-app egress. Every other pod rides `allow-cluster-egress` (toEndpoints {} + cluster + world) — full lateral + full internet
+- [observation] [correction] pingvin-share-x ingress CNP was removed during a reorganization, NOT because egress hardening failed — the earlier "guess-driven egress did not hold / pingvin reverted" framing was inaccurate; its ingress CNP will be re-added during rollout
+- [observation] onepassword-connect (crown jewel) still has NO CNP at all — the single biggest gap
 
-## Decision — axis 1: policy amount (three tiers)
+## Decision — policy classes
 
-- [decision] [tier-P] **Platform-exempt** — no per-app CNP (cilium, coredns, csi, metrics-server, flux, cert-manager, external-dns, kube-prometheus internals, reloader, snapshot-controller, intel-gpu, tuppr, controllers of external-secrets/volsync). Baseline only. Needs broad/dynamic access; not the realistic RCE entry; over-constraining causes regressions
-- [decision] [tier-I] **Ingress-only (component-provided)** — routed, low-value apps get a standard gateway-ingress CNP from a reusable component; egress stays on the broad baseline, consciously accepted
-- [decision] [tier-II] **Contained-egress** — selected apps get a tailored ingress CNP plus a contained egress section; they opt out of the baseline so their CNP is the sole egress source
+- [decision] [class-P] **Platform-exempt** — no per-app CNP (cilium, coredns, democratic-csi, metrics-server, flux, cert-manager, external-dns, kube-prometheus internals, reloader, snapshot-controller, intel-gpu, tuppr, external-secrets/volsync controllers, kube-apiserver/kubelet). Baseline only — needs broad/dynamic access, is not the realistic RCE entry, and over-constraining regresses the platform
+- [decision] [all-other-apps] one **hand-written, per-app** CNP — **no shared component, no postBuild templating**. Ingress always defined; egress per the binary below
+- [decision] [granularity] per-app even within coherent namespaces (downloads, media) — a popped pod reaches only its declared ingress sources / egress peers, not the whole namespace; the intra-ns mesh is enumerated from Hubble, not guessed
 
-## Decision — axis 2: egress shape (primary axis within Tier II)
+## Decision — ingress (every non-platform app)
 
-The shape is chosen from the app's *legitimate* egress profile (Hubble-revealed), not pre-assigned:
+- [decision] Ingress is always specified: gateway sources (envoy-external/internal) for routed apps; prometheus (metrics port); `reserved:kube-apiserver` for kubelet probes + admission webhooks; named east-west consumers (sibling/consumer rules, like pocket-id today); LAN CIDR (`fromCIDR`/`fromEntities`) for LoadBalancer-exposed apps (plex, k8s-gateway)
+- [observation] Value = **east-west containment** (which in-cluster source may reach the pod), not edge duplication — this is the layer the Gateway L7 does not provide
 
-- [decision] [shape-no-world] in-cluster (named peers) + DNS, **world denied** — for apps with no internet need (paperless, grafana, actual, home-gallery, homepage, victoria-logs, pingvin). Cheap, no churn, blocks both exfil and lateral
-- [decision] [shape-narrow-world] enumerated `toFQDNs` + named east-west + DNS — for apps with a narrow, stable internet need (onepassword-connect → 1password.com, open-webui → LLM APIs, backup plane → S3, paperless-gpt → LLM). Tightest world control; FQDN maintenance cost
-- [decision] [shape-broad-world-lite] `toEntities: world` wholesale + named east-west + DNS, **no blanket cluster east-west** — for apps needing free/unpredictable internet but initiating little in-cluster (qbittorrent, the *arr stack, plex, searxng, mealie, speedtest-exporter). One coarse `world` line, zero FQDN churn; blocks in-cluster lateral move while accepting internet egress
+## Decision — egress (binary)
+
+The egress decision is a single question: does the app legitimately need open / unpredictable world egress?
+
+- [decision] [open-world → ingress-only] apps that need open world (qbittorrent, the *arr stack, plex, searxng, mealie, isponsorblocktv, speedtest-exporter) get **no egress section and no opt-out label** — they ride the broad baseline egress. Egress containment is futile for exfil here; their east-west lateral is contained on the TARGET side by those pods ingress
+- [decision] [no-world] apps with no internet need (paperless, actual, grafana, home-gallery, victoria-logs, pingvin-share-x, homepage) get egress = named in-cluster peers + DNS, **world denied**
+- [decision] [narrow-world] apps with a narrow, stable internet need (onepassword-connect → 1Password cloud, open-webui → LLM API, paperless-gpt → LLM, backup plane → S3) get egress = named east-west + DNS + `toFQDNs` at **full-domain granularity** (`matchName` apex + `matchPattern "*.apex"`). No subdomain-level fiddling — allow the whole domain
 
 ## Egress mechanism & discipline
 
-- [decision] All three Tier II shapes require the opt-out label `egress.home.arpa/custom-egress: ""` — otherwise the broad baseline is additive (policies OR together) and the restriction has no effect
-- [observation] [B-csapda] label WITHOUT a paired egress section breaks the pod — only DNS survives. **Label and egress section MUST land in the same commit**
+- [decision] no-world and narrow-world require the opt-out label `egress.home.arpa/custom-egress: ""` — otherwise the broad baseline ORs back in (policies are additive) and the restriction is moot. Open-world (ingress-only) apps do NOT take the label
+- [observation] [B-csapda] the label WITHOUT a paired egress section breaks the pod (only DNS survives) — **label and egress section MUST land in the same commit**
 - [observation] DNS always works: `allow-dns-egress` (L7 proxy, matchPattern "*") applies to every pod including opted-out ones, and is the prerequisite for any `toFQDNs` allowlist
-- [observation] Reply traffic is automatic: Cilium is stateful (conntrack), so replies to inbound connections (gateway→pod, sibling→pod) need no egress rule — removing cluster egress does not break replies
+- [observation] Reply traffic is automatic: Cilium is stateful (conntrack), so replies to inbound connections need no egress rule — removing cluster egress does not break replies
 
 ## Risk rubric
 
-- [observation] [rubric] **Tier II selection** — exposure (internet > LAN > internal) × asset/blast-radius (reaches crown jewels? holds data?) × code/supply-chain risk
-- [observation] [rubric] **Shape selection** — legitimate egress breadth: none → no-world; narrow+stable → narrow-world; broad/unpredictable → broad-world-lite
-- [observation] The Hubble survey both informs the rubric (surprising egress = red flag) and supplies the allowlist content, then verifies via DROPPED capture
-
-## Granularity — per-app
-
-- [decision] Per-app CNPs, even within coherent namespaces (downloads, media). Namespace-scoped lite (one policy per ns: world + same-namespace + DNS) was considered — lower maintenance — but rejected in favor of per-app precision: per-app lite restricts even intra-namespace lateral to named pairs (a popped qbittorrent reaches only its declared siblings, not the whole ns)
-- [observation] Cost: the intra-ns mesh (e.g. indexer → *arr → download client) must be enumerated per app; Hubble makes this observable rather than guessed
+- [observation] [rubric] ingress is universal; the egress class is chosen by legitimate egress breadth — open/unpredictable → ingress-only; narrow + stable → narrow-world; none → no-world
+- [observation] Hubble both informs the rubric (surprising egress = red flag) and supplies the allowlist content, then verifies via a DROPPED capture
 
 ## Honest limits
 
-- [observation] broad-world-lite does NOT stop internet exfil/C2 (unavoidable for apps that need free world) — for those, containment lives on the TARGET side: tight ingress allowlists on the crown jewels (a popped broad-world app still bounces off onepassword-connect)
-- [observation] `world` includes the LAN (NAS/router are outside cluster identity) — lite blocks in-cluster pivot but not LAN pivot; closing that needs a CIDRGroup carve-out (deferred, higher complexity)
+- [observation] open-world apps get NO exfil/C2 protection (unavoidable for apps that need free world) — containment for them lives on the TARGET side: tight ingress on the crown jewels (a popped open-world app bounces off onepassword-connect ingress)
+- [observation] `world` includes the LAN (NAS/router are outside cluster identity) — only no-world/narrow-world apps are barred from LAN pivot; open-world apps are not (closing that needs a CIDRGroup carve-out, deferred)
+- [observation] [residual] platform-exempt pods keep loose/no ingress by necessity — a popped pod can reach them east-west; accepted, mitigated by crown-jewel ingress
 
 ## Load-bearing infra facts (still true; the model depends on them)
 
 - [observation] [datapath] Strict ingress CNPs work only because of `bpf.datapathMode: netkit` + `socketLB.hostNamespaceOnly: false` — CT is recorded with the pod IP, resolving the netkit + tc-LB mismatch that dropped SYN-ACKs. Do not revert without re-validating every ingress CNP
+- [observation] [probe-identity] on this single control-plane node kubelet health-probes + admission-webhooks carry the `reserved:kube-apiserver` identity (node IP = apiserver IP). Ingress probe-allow rules must use `reserved:kube-apiserver` (NOT `reserved:host`)
+- [observation] [east-west-hub] prometheus scrapes every app metrics port and kube-apiserver reaches every app port — every ingress CNP must allow both
 - [observation] [envoy-external] Edge ingress defense is architectural: ClusterIP-only + CNP allowlist (cloudflared + Prometheus + kubelet probe) + CF Tunnel mTLS. `SecurityPolicy.principal.clientCIDRs` is unworkable (cloudflared rewrites XFF, the CF POP IP is never a hop → 403); cert-based Cloudflare AOP is the only viable edge-mTLS if ever needed
 
 ## Deferred — north-star
 
 - [decision] [deferred] Tightening the cluster-wide baseline to drop `toEntities: world` (making internet egress opt-in fleet-wide) is the strongest single lever but high blast-radius; gated behind a mature cluster-wide Hubble survey and decided separately. Current committed path is per-app, incremental
-
-## Tradeoffs
-
-- [observation] Tier II maintenance: opt-out discipline + FQDN re-audit (narrow-world) on upgrades; Hubble lowers but does not remove the cost
-- [observation] Tier P/I keep broad baseline egress until the deferred north-star; reviewers must read the per-app shape rationale, CNP is not default-deploy
 
 ## Related
 

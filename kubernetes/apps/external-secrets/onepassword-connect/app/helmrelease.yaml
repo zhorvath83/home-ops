@@ -13,6 +13,8 @@ spec:
     # Chart defaults handle security: seccompProfile=RuntimeDefault, runAsNonRoot,
     # readOnlyRootFilesystem, drop ALL caps, UID/GID 999.
     connect:
+      podLabels:
+        egress.home.arpa/custom-egress: ""
       annotations:
         reloader.stakater.com/auto: "true"
       api:

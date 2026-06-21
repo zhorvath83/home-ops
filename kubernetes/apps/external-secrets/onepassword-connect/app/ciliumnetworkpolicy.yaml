@@ -1,0 +1,37 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
+# Ingress: external-secrets (Connect API consumer) + prometheus (ServiceMonitor /metrics, 8080).
+# Egress: 1Password cloud only (toFQDNs); DNS via the cluster-wide allow-dns-egress CCNP.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: onepassword-connect
+spec:
+  endpointSelector:
+    matchLabels:
+      app: onepassword-connect
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: external-secrets
+            app.kubernetes.io/name: external-secrets
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: observability
+            app.kubernetes.io/name: prometheus
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+  egress:
+    - toFQDNs:
+        - matchName: "1password.com"
+        - matchPattern: "*.1password.com"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
