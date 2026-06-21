@@ -84,7 +84,7 @@ The egress decision is a single question: does the app legitimately need open / 
 
 ## Egress mechanism & discipline
 
-- [decision] no-world and narrow-world require the opt-out label `egress.home.arpa/custom-egress: ""` — otherwise the broad baseline ORs back in (policies are additive) and the restriction is moot. Open-world (ingress-only) apps do NOT take the label
+- [decision] no-world and narrow-world require the opt-out label `egress.home.arpa/custom-egress: "true"` — otherwise the broad baseline ORs back in (policies are additive) and the restriction is moot. Open-world (ingress-only) apps do NOT take the label
 - [observation] [B-csapda] the label WITHOUT a paired egress section breaks the pod (only DNS survives) — **label and egress section MUST land in the same commit**
 - [observation] DNS always works: `allow-dns-egress` (L7 proxy, matchPattern "*") applies to every pod including opted-out ones, and is the prerequisite for any `toFQDNs` allowlist
 - [observation] Reply traffic is automatic: Cilium is stateful (conntrack), so replies to inbound connections need no egress rule — removing cluster egress does not break replies
