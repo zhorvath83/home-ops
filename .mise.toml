@@ -6,7 +6,7 @@ MINIJINJA_CONFIG_FILE = "{{config_root}}/.minijinja.toml"
 GITHUB_TOKEN = "{{ exec(command='gh auth token') | trim }}"
 # Talos + Kubernetes versions consumed by kubernetes/talos templates and recipes.
 # renovate: datasource=custom.talos-factory depName=siderolabs/talos
-TALOS_VERSION = "v1.13.4"
+TALOS_VERSION = "v1.13.5"
 # renovate: datasource=docker depName=ghcr.io/siderolabs/kubelet
 KUBERNETES_VERSION = "v1.36.2"
 # Path to the NAS-share mount helper used by the openwrt/omv recipes.
