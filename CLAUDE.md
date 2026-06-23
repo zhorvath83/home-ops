@@ -229,22 +229,30 @@ Common types:
 
 Each area-reference is evidence-backed (file+line citations) and schema-validated. Read via the `basic-memory` MCP — do not Read/Edit `basic-memory/` files directly.
 
+Load the matching area-reference *before* touching code (Guide Traversal step 4). `Read before you…` is the trigger; `Covers` is the evidence-backed content of the note.
+
 Platform areas:
 
-- `docs/areas/flux-gitops` — Flux Operator + FluxInstance, cluster-apps root Kustomization, shared HelmRelease defaults, Pushover alerting
-- `docs/areas/networking` — Envoy Gateway split (external/internal), Cloudflare Tunnel, ExternalDNS, k8s-gateway, Cilium L2 IPAM
-- `docs/areas/external-secrets` — ESO + 1Password Connect + ClusterSecretStore, bootstrap secret flow
-- `docs/areas/talos-cluster` — single control-plane Talos node, machine config templating, op-inject flow
-- `docs/areas/volsync-backup` — VolSync + Kopia for PVC backups, jitter policy, KopiaMaintenance, per-app component
-- `docs/areas/resticprofile-backup` — file-level NAS `/backups` plane + Backrest browse UI
-- `docs/areas/observability` — kube-prometheus-stack + grafana + speedtest-exporter + victoria-logs
-- `docs/areas/iam` — Pocket-ID OIDC provider + TinyAuth forward-auth, Envoy header-stripping trust chain, per-app group ACLs (apps/security)
+| Area | Read before you… | Covers |
+|---|---|---|
+| `docs/areas/flux-gitops` | Touch Flux wiring, root Kustomization, shared HelmRelease defaults, dependency ordering, alerting | Flux Operator + FluxInstance, cluster-apps root Kustomization, shared HelmRelease defaults, Pushover alerting |
+| `docs/areas/networking` | Add ingress/HTTPRoute, change Gateway/Tunnel/ExternalDNS/Cilium L2 exposure | Envoy Gateway split (external/internal), Cloudflare Tunnel, ExternalDNS, k8s-gateway, Cilium L2 IPAM |
+| `docs/areas/external-secrets` | Create/modify an ExternalSecret, ClusterSecretStore, or 1Password Connect flow | ESO + 1Password Connect + ClusterSecretStore, bootstrap secret flow |
+| `docs/areas/talos-cluster` | Edit Talos machine config, node overrides, schematic, or op-inject bootstrap | single control-plane Talos node, machine config templating, op-inject flow |
+| `docs/areas/volsync-backup` | Wire PVC backup/restore, change schedule/jitter/retention/Kopia maintenance | VolSync + Kopia for PVC backups, jitter policy, KopiaMaintenance, per-app component |
+| `docs/areas/resticprofile-backup` | Touch the file-level NAS `/backups` plane or Backrest browse UI | file-level NAS `/backups` plane + Backrest browse UI |
+| `docs/areas/observability` | Change Prometheus/Grafana/VictoriaLogs/exporters | kube-prometheus-stack + grafana + speedtest-exporter + victoria-logs |
+| `docs/areas/iam` | Wire SSO/forward-auth, Pocket-ID OIDC, TinyAuth, or per-app group ACLs | Pocket-ID OIDC provider + TinyAuth forward-auth, Envoy header-stripping trust chain, per-app group ACLs (apps/security) |
 
 Provisioning areas:
 
-- `docs/areas/cloudflare` — zone, tunnel, Access apps, Workers, R2, mail-stack DNS, WAF
-- `docs/areas/ovh-storage` — S3 buckets, object-store user, S3 policy, 1Password sync
+| Area | Read before you… | Covers |
+|---|---|---|
+| `docs/areas/cloudflare` | Modify Cloudflare zone/tunnel/Access/Workers/R2/mail DNS/WAF (Terraform) | zone, tunnel, Access apps, Workers, R2, mail-stack DNS, WAF |
+| `docs/areas/ovh-storage` | Modify OVH S3 buckets, object-store user, or S3 policy (Terraform) | S3 buckets, object-store user, S3 policy, 1Password sync |
 
 Application area:
 
-- `docs/areas/k8s-workloads` — app inventory, canonical shape, cross-cutting patterns, exposure model
+| Area | Read before you… | Covers |
+|---|---|---|
+| `docs/areas/k8s-workloads` | Add/reshape a non-platform app, choose chart/dependency/storage/route pattern | app inventory, canonical shape, cross-cutting patterns, exposure model |
