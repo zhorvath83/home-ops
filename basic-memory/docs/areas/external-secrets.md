@@ -102,6 +102,14 @@ Bootstrap-time secrets that ESO itself depends on (Connect credentials + access 
 - [gap] The relationship between the cluster-wide `onepassword-connect` store and any app-local `SecretStore` (none currently declared, but the ESO CRD allows it) was not traced — assume "cluster store is the only path" until proven otherwise.
 - [gap] The Pushover/flux-alerts cross-tie deserves its own review under the flux-gitops area; that note already flags a gap on how Pushover credentials flow.
 
+## Network Containment (per AD-023, added 2026-06-22)
+
+- [observation] [current] onepassword-connect carries a per-app CiliumNetworkPolicy: ingress from external-secrets (ESO) + prometheus on 8080 + kubelet probes (local-host fast-path, no explicit rule); egress restricted via `toFQDNs` to `1password.com` + `1passwordusercontent.com` only; the pod opts out of the baseline egress with `egress.home.arpa/custom-egress: "true"`. Verified live (DROPPED-clean, store Valid, sync complete)
+- [observation] [prerequisite] this requires CoreDNS `autopath` to be disabled — autopath rewrites query names and Cilium cannot correlate them to toFQDNs (see AD-023)
+- [observation] [planned] external-secrets (ESO controller + webhook + cert-controller) reclassified from platform-exempt to no-world; egress is in-cluster only (op-connect + apiserver + DNS). CNPs not yet implemented — see roadmap cnp-per-app-audit Phase 2
+- relates_to [[AD-023-cnp-threat-model-audit]]
+- relates_to [[cnp-per-app-audit]]
+
 ## Relations
 
 - depends_on [[talos-cluster]]

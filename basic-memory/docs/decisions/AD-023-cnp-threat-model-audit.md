@@ -65,7 +65,7 @@ Single-node Talos home-lab, single-tenant, internet-exposed via Cloudflare Tunne
 
 ## Decision — policy classes
 
-- [decision] [class-P] **Platform-exempt** — no per-app CNP (cilium, coredns, democratic-csi, metrics-server, flux, cert-manager, external-dns, kube-prometheus internals, reloader, snapshot-controller, intel-gpu, tuppr, external-secrets/volsync controllers, kube-apiserver/kubelet). Baseline only — needs broad/dynamic access, is not the realistic RCE entry, and over-constraining regresses the platform
+- [decision] [class-P] **Platform-exempt** — no per-app CNP (cilium, coredns, democratic-csi, metrics-server, flux, cert-manager, external-dns, kube-prometheus internals, reloader, snapshot-controller, intel-gpu, tuppr, volsync controller, kube-apiserver/kubelet). Baseline only — needs broad/dynamic access, is not the realistic RCE entry, and over-constraining regresses the platform
 - [decision] [all-other-apps] one **hand-written, per-app** CNP — **no shared component, no postBuild templating**. Ingress always defined; egress per the binary below
 - [decision] [granularity] per-app even within coherent namespaces (downloads, media) — a popped pod reaches only its declared ingress sources / egress peers, not the whole namespace; the intra-ns mesh is enumerated from Hubble, not guessed
 
@@ -80,6 +80,7 @@ The egress decision is a single question: does the app legitimately need open / 
 
 - [decision] [open-world → ingress-only] apps that need open world (qbittorrent, the *arr stack, plex, searxng, mealie, isponsorblocktv, speedtest-exporter) get **no egress section and no opt-out label** — they ride the broad baseline egress. Egress containment is futile for exfil here; their east-west lateral is contained on the TARGET side by those pods ingress
 - [decision] [no-world] apps with no internet need (paperless, actual, grafana, home-gallery, victoria-logs, pingvin-share-x, homepage) get egress = named in-cluster peers + DNS, **world denied**
+- [decision] [no-world] [crown-jewel] external-secrets (ESO) reclassified from platform-exempt to no-world (2026-06-22): a crown jewel (reads all secrets, writes Secrets cluster-wide) whose egress is purely in-cluster — it fetches values THROUGH onepassword-connect (never directly to 1Password) + kube-apiserver + DNS, so no-world is cheap and high-value. Covers all three components (controller, webhook, cert-controller), each its own CNP. Caveat: no-world holds only while every configured ESO provider is in-cluster (currently just onepassword-connect); a direct cloud provider would need narrow-world
 - [decision] [narrow-world] apps with a narrow, stable internet need (onepassword-connect → 1Password cloud, open-webui → LLM API, paperless-gpt → LLM, backup plane → S3) get egress = named east-west + DNS + `toFQDNs` at **full-domain granularity** (`matchName` apex + `matchPattern "*.apex"`). No subdomain-level fiddling — allow the whole domain
 
 ## Egress mechanism & discipline

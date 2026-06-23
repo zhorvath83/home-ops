@@ -78,7 +78,7 @@ decision_link: AD-023-cnp-threat-model-audit
 ### Class P — platform-exempt (no CNP)
 
 - [observation] kube-system: cilium, coredns, democratic-csi, intel-gpu-resource-driver, metrics-server, reloader, snapshot-controller
-- [observation] cert-manager, flux-operator/instance/provider, external-secrets controller, volsync controller, tuppr, kube-prometheus-stack internals
+- [observation] cert-manager, flux-operator/instance/provider, volsync controller, tuppr, kube-prometheus-stack internals
 - [observation] networking platform: envoy-gateway, external-dns, k8s-gateway, cloudflare-tunnel (already CNP'd)
 
 ### Class A — ingress-only (off-world + low-value)
@@ -90,6 +90,7 @@ decision_link: AD-023-cnp-threat-model-audit
 
 ### Class B — no-world
 
+- [observation] [crown-jewel] external-secrets (ESO controller + webhook + cert-controller) — reclassified from platform-exempt (2026-06-22); reads/writes all secrets, egress in-cluster only (op-connect + apiserver + DNS, no world). One CNP per component. Caveat: no-world valid only while all ESO providers are in-cluster
 - [observation] paperless, actual, grafana, home-gallery, victoria-logs, pingvin-share-x, homepage (link-only); wallos pending survey
 - [observation] Cheap, no churn — strong early targets after the crown jewel
 
@@ -102,7 +103,7 @@ decision_link: AD-023-cnp-threat-model-audit
 
 1. [observation] **Phase 0** — cluster-wide Hubble baseline (DONE — findings below)
 2. [observation] **Phase 1** — build the **reference CNP** + documented skeleton/convention (NOT a component); migrate existing ingress-only CNPs onto the convention
-3. [observation] **Phase 2** — narrow-world onepassword-connect (crown jewel, biggest single gap)
+3. [observation] **Phase 2** — crown-jewel secret-management pair: onepassword-connect (narrow-world, done) + external-secrets ESO controller/webhook/cert-controller (no-world)
 4. [observation] **Phase 3** — no-world class (paperless, actual, grafana, …): cheap, high-value, no churn
 5. [observation] **Phase 4** — narrow-world remainder (open-webui, paperless-gpt, backup plane)
 6. [observation] **Phase 5** — Class A ingress-only (off-world + low-value), AFTER the high-value Class B apps are done — value is east-west ingress coverage
@@ -115,6 +116,17 @@ decision_link: AD-023-cnp-threat-model-audit
 - [observation] [prerequisite] CoreDNS `autopath` had to be disabled cluster-wide for toFQDNs to correlate (see AD-023 validation) — this is a one-time platform fix that unblocks all narrow-world apps
 - [observation] [multi-domain] onepassword-connect needed two domains: `1password.com` + `1passwordusercontent.com` (file CDN); expect other narrow-world apps to need more than one external domain
 - [observation] [tooling] verify workflow is `just k8s hubble-live-capture <secs>` (cluster-wide capture) then `just k8s hubble-analyze <full-cilium-label> [verdict]` to slice — e.g. label `k8s:app=onepassword-connect` (match the app's REAL pod label, not always app.kubernetes.io/name)
+
+## Status — where we are (2026-06-23)
+
+- [observation] [done] Phase 0 — cluster-wide Hubble baseline survey
+- [observation] [done] Phase 1 — reference CNP + per-app convention (onepassword-connect; hand-written, no component; verified live: DROPPED-clean, store Valid, sync complete)
+- [observation] [done] platform prerequisite — CoreDNS autopath disabled (unblocks all toFQDNs egress; `pods verified` kept)
+- [observation] [done] Phase 2a — onepassword-connect narrow-world CNP live (egress: 1password.com + 1passwordusercontent.com; opt-out label `egress.home.arpa/custom-egress: "true"`)
+- [observation] [next] Phase 2b — external-secrets ESO no-world CNPs (controller + webhook + cert-controller): reclassified + documented, implementation pending
+- [observation] [todo] Phase 3 — no-world data-holders (paperless +egress, actual, grafana, home-gallery, victoria-logs, pingvin re-add, homepage)
+- [observation] [todo] Phase 4 — narrow-world remainder (open-webui, paperless-gpt, backup plane)
+- [observation] [todo] Phase 5 — Class A ingress-only (off-world apps), after the high-value classes
 
 ## Related
 
