@@ -34,8 +34,7 @@ spec:
               TZ: "${TIMEZONE}"
               HOMEPAGE_ALLOWED_HOSTS: &host "dash.${PUBLIC_DOMAIN}"
               LOG_TARGETS: stdout
-              # PUID: "10001"
-              # PGID: "10001"
+              LOG_LEVEL: debug
             envFrom:
               - secretRef:
                   name: "{{ .Release.Name }}-secret"
