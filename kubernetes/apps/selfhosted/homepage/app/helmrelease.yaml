@@ -32,31 +32,25 @@ spec:
               tag: v1.13.2@sha256:a0b71c8e757298d02560186bab9fbe3fc2d375c523a62cc1019177b37e48aa28
             env:
               TZ: "${TIMEZONE}"
-              HOMEPAGE_ALLOWED_HOSTS: &host "dash.${PUBLIC_DOMAIN}"
+              HOMEPAGE_ALLOWED_HOSTS: "*"
               LOG_TARGETS: stdout
-              LOG_LEVEL: debug
+              # LOG_LEVEL: debug
             envFrom:
               - secretRef:
                   name: "{{ .Release.Name }}-secret"
             probes:
-              startup:
+              liveness: &probes
                 enabled: true
+                custom: true
                 spec:
-                  periodSeconds: 30
-                  timeoutSeconds: 5
-                  failureThreshold: 5
-              liveness:
-                enabled: true
-                spec:
-                  periodSeconds: 30
-                  timeoutSeconds: 5
-                  failureThreshold: 5
-              readiness:
-                enabled: true
-                spec:
-                  periodSeconds: 30
-                  timeoutSeconds: 5
-                  failureThreshold: 5
+                  httpGet:
+                    path: /api/healthcheck
+                    port: &port 3000
+                  initialDelaySeconds: 0
+                  periodSeconds: 10
+                  timeoutSeconds: 1
+                  failureThreshold: 3
+              readiness: *probes
             securityContext:
               privileged: false
               allowPrivilegeEscalation: false
@@ -143,7 +137,7 @@ spec:
         controller: homepage
         ports:
           http:
-            port: &port 3000
+            port: *port
     route:
       app:
         hostnames:
@@ -159,6 +153,7 @@ spec:
           - backendRefs:
               - identifier: app
                 port: *port
+
     persistence:
       # Non-secret config files (kubernetes/settings/widgets + empty placeholders) live in git
       # and are rendered into a ConfigMap by kustomize configMapGenerator.
@@ -191,21 +186,3 @@ spec:
         globalMounts:
           - path: /app/config/services.yaml
             subPath: services.yaml
-
-      # Homepage v1.12+ writes its skeleton config files (proxmox.yaml,
-      # custom.css, etc.) into /app/config on first run. Writable emptyDir
-      # there + subPath mounts overlay our customizations.
-      app-config:
-        type: emptyDir
-        globalMounts:
-          - path: /app/config
-
-      cache:
-        type: emptyDir
-        globalMounts:
-          - path: /app/.next/cache
-
-      tmp:
-        type: emptyDir
-        globalMounts:
-          - path: /tmp
