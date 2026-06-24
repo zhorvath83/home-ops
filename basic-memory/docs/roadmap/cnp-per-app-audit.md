@@ -180,3 +180,27 @@ decision_link: AD-023-cnp-threat-model-audit
 - [observation] [finding] startup-transient store-validation failures: for ~25s after a no-world pod restarts, the controller's connect to the onepassword-connect SERVICE ClusterIP returns "no route to host" (socketLB has not yet programmed the new endpoint, so the service IP is not translated to the backend pod IP and the no-world egress denies it). Self-heals once Cilium finishes endpoint programming (store went Valid ~20s after the last error). Benign, expected on every restart of any no-world pod, NOT a policy defect — same behavior seen on the onepassword-connect reference
 - [observation] [param-note] `just k8s hubble-analyze` arg order is `label verdict direction` — e.g. egress drops = `hubble-analyze <label> DROPPED egress` (verdict 2nd, direction 3rd)
 - [observation] [next] Phase 3 — no-world data-holders (paperless +egress, actual, grafana, home-gallery, victoria-logs, pingvin re-add, homepage)
+
+## Phase 3 — Batch 1: selfhosted no-world (2026-06-24)
+
+- [observation] [scope] First Phase 3 batch: the selfhosted data-holders — actual, home-gallery, homepage, paperless, pingvin-share-x. All app-template (bjw-s) charts, one namespace, deployed + verified together. Commit 11b161118 (no-world batch) + d762adff7 (homepage fix).
+- [observation] [method] Drove allowlists from a live cluster-wide Hubble capture (sandbox blocks /tmp writes — capture run outside sandbox); per-app sliced via `just k8s hubble-analyze <label> <verdict> <direction>`. Label/CNP-key behaviour pre-verified offline via flux-local build ks + `helm template app-template 5.0.1` (defaultPodOptions.labels and controllers.<name>.pod.labels both emit the pod-template label).
+- [observation] [skeleton-confirmed] no-world for a data-holder = ingress allowlist (Envoy gateways on the app port; kubelet probes ride the local-host fast-path, NO apiserver ingress rule) + opt-out label `egress.home.arpa/custom-egress: "true"` + NO egress block (DNS via the allow-dns-egress CCNP is enough). Empty egress section + opt-out label = default-deny egress except DNS.
+
+### Verified no-world (4 apps) — DROPPED-clean, healthy
+
+- [observation] [verified] actual, home-gallery, paperless, pingvin-share-x: each CNP Valid=True, HelmRelease Ready (Helm upgrade app-template@5.0.1), pod carries opt-out label, endpoints healthy. Fresh 120s Hubble capture: ZERO DROPPED egress (not even IPv6 NDP noise this window) and ZERO connection-failure log lines — no legitimate egress blocked.
+- [observation] [paperless] opt-out label scoped to `controllers.paperless.pod.labels` (the main pod only) — the backup CronJob pod template has NO opt-out label, confirmed live (`kubectl get cronjob paperless-backup -o jsonpath`), so it stays on baseline egress.
+- [observation] [actual/home-gallery/paperless/pingvin] egress = DNS only (sqlite/file-based or localhost valkey sidecar); no in-cluster peers, no world. Confirmed empty egress in the capture.
+
+### homepage — reclassified no-world → Class A ingress-only (correction)
+
+- [observation] [finding] homepage is NOT a no-world app. Live logs under the no-world CNP showed ETIMEDOUT to api.github.com (release-version widget) and api.openweathermap.org (weather widget): its DEFAULT widgets call external APIs regardless of services.yaml. The earlier "homepage (link-only)" assumption was wrong.
+- [observation] [finding] homepage→kube-apiserver (cluster-mode k8s widget) WAS working under the no-world rule — no k8s/apiserver errors in logs, only the world-API timeouts. The toEntities:kube-apiserver egress rule is effective; the regression was purely the world-egress widgets.
+- [observation] [decision] homepage egress is user-config-driven (services.yaml lives in 1Password, widget set changes over time) → a static toFQDNs allowlist would be brittle. Reclassified to AD-023 Class A: ingress-only CNP (envoy:3000, east-west containment stays target-side), opt-out label + apiserver egress rule removed so it rides baseline egress. Commit d762adff7. Pending push + reconcile + re-verify (widgets recover).
+
+### Discovered classification corrections (carry into Phase 4/5)
+
+- [observation] [grafana] NOT no-world: GF_PLUGINS_PREINSTALL_SYNC (victoriametrics-logs-datasource) + downloadDashboards/gnetId fetch from grafana.com + raw.githubusercontent.com at startup. Steady-state egress is in-cluster datasources (prometheus:9090, victoria-logs-server:9428) only, but a no-world CNP would break a pod restart. Move grafana to Phase 4 narrow-world (allow the plugin/dashboard CDNs) rather than Phase 3.
+- [observation] [victoria-logs] confirmed for the observability batch: collector (DaemonSet) egress = victoria-logs-server:9428 + kube-apiserver:6443 (service discovery) + DNS; server (StatefulSet) is a sink, DNS-only egress, ingress = collector + prometheus (SM) + envoy-internal (route) + grafana (datasource). Two separate CNPs (app/ + collector/), two ks.
+- [observation] [lesson] empty DROPPED capture is necessary but NOT sufficient to prove no-world fit — world-egress attempts can fall outside the capture window (homepage's drops were startup-time). Cross-check app LOGS for connection timeouts/refusals before declaring a no-world app clean.
