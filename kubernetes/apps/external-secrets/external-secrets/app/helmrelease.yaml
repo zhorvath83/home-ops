@@ -14,6 +14,9 @@ spec:
     image:
       repository: ghcr.io/external-secrets/external-secrets
     installCRDs: true
+    # no-world egress opt-out (AD-023); paired with ciliumnetworkpolicy.yaml in the same commit
+    podLabels:
+      egress.home.arpa/custom-egress: "true"
     resources:
       requests:
         cpu: 5m
@@ -26,6 +29,8 @@ spec:
     certController:
       image:
         repository: ghcr.io/external-secrets/external-secrets
+      podLabels:
+        egress.home.arpa/custom-egress: "true"
       resources:
         requests:
           cpu: 5m
@@ -38,6 +43,8 @@ spec:
     webhook:
       image:
         repository: ghcr.io/external-secrets/external-secrets
+      podLabels:
+        egress.home.arpa/custom-egress: "true"
       resources:
         requests:
           cpu: 1m
