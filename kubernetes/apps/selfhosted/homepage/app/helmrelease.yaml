@@ -183,6 +183,7 @@ spec:
             subPath: custom.css
           - path: /app/config/custom.js
             subPath: custom.js
+
       # services.yaml stays in 1Password because it contains personal/financial URLs;
       # delivered as a key in the shared homepage-secret (alongside the env var token).
       config-services:
@@ -191,3 +192,21 @@ spec:
         globalMounts:
           - path: /app/config/services.yaml
             subPath: services.yaml
+
+      # Homepage v1.12+ writes its skeleton config files (proxmox.yaml,
+      # custom.css, etc.) into /app/config on first run. Writable emptyDir
+      # there + subPath mounts overlay our customizations.
+      app-config:
+        type: emptyDir
+        globalMounts:
+          - path: /app/config
+
+      cache:
+        type: emptyDir
+        globalMounts:
+          - path: /app/.next/cache
+
+      tmp:
+        type: emptyDir
+        globalMounts:
+          - path: /tmp
