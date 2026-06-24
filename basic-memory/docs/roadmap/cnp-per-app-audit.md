@@ -123,7 +123,7 @@ decision_link: AD-023-cnp-threat-model-audit
 - [observation] [done] Phase 1 — reference CNP + per-app convention (onepassword-connect; hand-written, no component; verified live: DROPPED-clean, store Valid, sync complete)
 - [observation] [done] platform prerequisite — CoreDNS autopath disabled (unblocks all toFQDNs egress; `pods verified` kept)
 - [observation] [done] Phase 2a — onepassword-connect narrow-world CNP live (egress: 1password.com + 1passwordusercontent.com; opt-out label `egress.home.arpa/custom-egress: "true"`)
-- [observation] [next] Phase 2b — external-secrets ESO no-world CNPs (controller + webhook + cert-controller): reclassified + documented, implementation pending
+- [observation] [done-pending-verify] Phase 2b — external-secrets ESO no-world CNPs committed (controller + webhook + cert-controller, each its own CNP; opt-out label on all three pods, same commit): manifests in repo, awaiting deploy + DROPPED verify
 - [observation] [todo] Phase 3 — no-world data-holders (paperless +egress, actual, grafana, home-gallery, victoria-logs, pingvin re-add, homepage)
 - [observation] [todo] Phase 4 — narrow-world remainder (open-webui, paperless-gpt, backup plane)
 - [observation] [todo] Phase 5 — Class A ingress-only (off-world apps), after the high-value classes
@@ -156,3 +156,14 @@ decision_link: AD-023-cnp-threat-model-audit
 - [observation] the qbittorrent / plex / isponsorblocktv world-egress data is no longer used to build egress allowlists — those apps are now Class A (ingress-only); their observed east-west PAIRS instead feed the per-app INGRESS rules
 - [observation] onepassword-connect single-endpoint world egress maps directly to a narrow-world full-domain `toFQDNs`; still priority-1, fully data-specified
 - [observation] the *arr cross-link fix (bare service names) remains a prerequisite — but now for the downloads east-west INGRESS rules (Class A), not an egress mesh
+
+## Phase 2b — ESO no-world CNPs (committed, 2026-06-24)
+
+- [observation] [done] three hand-written CNPs added in `kubernetes/apps/external-secrets/external-secrets/app/ciliumnetworkpolicy.yaml` (one per component), opt-out label `egress.home.arpa/custom-egress: "true"` on controller/certController/webhook `podLabels` in the same commit (B-csapda avoided). Commit 76ea396c9
+- [observation] [data] allowlists derived from the live 124k-flow Hubble capture, not guessed — per-component egress/ingress sliced via `just k8s hubble-analyze`
+- [observation] [controller] ingress prometheus→8080; egress onepassword-connect:8080 + kube-apiserver:6443 (DNS via CCNP) — no world
+- [observation] [cert-controller] ingress prometheus→8080; egress kube-apiserver:6443 (DNS via CCNP) — no world; healthz 8081 probe rides host fast-path, no rule
+- [observation] [webhook] ingress prometheus→8080 + explicit `fromEntities: kube-apiserver` on 10250 (admission) + 8081 (healthz); no egress section (initiates nothing, DNS via CCNP)
+- [observation] [decision] webhook gets an EXPLICIT kube-apiserver ingress rule (not host fast-path) because its ValidatingWebhookConfiguration is failurePolicy=Fail on externalsecret/secretstore/clustersecretstore — a dropped apiserver→10250 admission call would block all ESO admission cluster-wide. Belt-and-suspenders; AD-023 sanctions reserved:kube-apiserver where warranted
+- [observation] [verify-pending] after deploy: `just k8s hubble-live-capture 120` (trigger an ExternalSecret create/update + `just k8s sync-es`), then `hubble-analyze k8s:app.kubernetes.io/name=external-secrets[-cert-controller|-webhook] "" egress DROPPED` per component until clean; confirm ClusterSecretStore Valid + a fresh ExternalSecret admits (webhook alive)
+- [observation] [local-only] committed to repo, NOT yet reconciled — no cluster change until pushed + Flux reconcile
