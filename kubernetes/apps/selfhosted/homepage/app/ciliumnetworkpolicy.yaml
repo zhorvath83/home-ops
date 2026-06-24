@@ -1,8 +1,7 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
-# homepage no-world (AD-023): dashboard with the cluster-mode Kubernetes widget (backend: kubernetes).
-# Ingress: the external/internal Envoy gateways only; kubelet probes ride the local-host fast-path (no rule needed).
-# Egress: kube-apiserver only (the k8s widget lists namespaces/pods/nodes/ingresses/httproutes per its ClusterRole); DNS via the cluster-wide allow-dns-egress CCNP.
+# homepage ingress-only (AD-023 Class A): the dashboard aggregates external widget APIs (GitHub releases, OpenWeatherMap, …) plus the k8s API; its egress set is user-config-driven (services.yaml from 1Password), so it rides baseline egress rather than a brittle allowlist.
+# East-west containment is still enforced target-side by this ingress rule. Ingress: the external/internal Envoy gateways only; kubelet probes ride the local-host fast-path.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -26,11 +25,4 @@ spec:
       toPorts:
         - ports:
             - port: "3000"
-              protocol: TCP
-  egress:
-    - toEntities:
-        - kube-apiserver
-      toPorts:
-        - ports:
-            - port: "6443"
               protocol: TCP
