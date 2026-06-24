@@ -32,7 +32,24 @@
       "Bash(flux version:*)",
       "Bash(flux export:*)",
       "Bash(flux list:*)",
-      "Bash(flux debug:*)"
+      "Bash(flux debug:*)",
+      "Bash(talosctl get:*)",
+      "Bash(talosctl version:*)",
+      "Bash(kustomize build:*)",
+      "Bash(helm template:*)",
+      "Bash(helm show:*)",
+      "Bash(yq:*)",
+      "Bash(jq:*)",
+      "Bash(rg:*)",
+      "Bash(fd:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr diff:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh issue list:*)",
+      "Bash(gh run view:*)",
+      "Bash(gh run list:*)"
     ],
     "deny": [
       "Bash(just cluster-bootstrap cluster:*)",
@@ -48,8 +65,6 @@
       "Bash(just talos bootstrap:*)",
       "Bash(just talos gen-secrets:*)",
       "Bash(just volsync restore:*)",
-      "Bash(just volsync state:*)",
-      "Bash(just k8s restart-failed-hrs:*)",
       "Bash(just k8s delete-ks:*)",
       "Bash(kubectl get secret:*)",
       "Bash(kubectl get secrets:*)",
@@ -73,6 +88,7 @@
         "eu.api.ovh.com",
         "api.ovh.com"
       ]
-    }
+    },
+    "excludedCommands": ["gh *", "terraform *"]
   }
 }
