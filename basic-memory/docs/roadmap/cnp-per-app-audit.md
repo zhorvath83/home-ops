@@ -123,7 +123,7 @@ decision_link: AD-023-cnp-threat-model-audit
 - [observation] [done] Phase 1 — reference CNP + per-app convention (onepassword-connect; hand-written, no component; verified live: DROPPED-clean, store Valid, sync complete)
 - [observation] [done] platform prerequisite — CoreDNS autopath disabled (unblocks all toFQDNs egress; `pods verified` kept)
 - [observation] [done] Phase 2a — onepassword-connect narrow-world CNP live (egress: 1password.com + 1passwordusercontent.com; opt-out label `egress.home.arpa/custom-egress: "true"`)
-- [observation] [done-pending-verify] Phase 2b — external-secrets ESO no-world CNPs committed (controller + webhook + cert-controller, each its own CNP; opt-out label on all three pods, same commit): manifests in repo, awaiting deploy + DROPPED verify
+- [observation] [done] Phase 2b — external-secrets ESO no-world CNPs live + verified (controller + webhook + cert-controller, each its own CNP; opt-out label on all three pods): all 3 CNP Valid, egress no-world confirmed, admission webhook proven via server dry-run, store Valid, all ExternalSecrets SecretSynced
 - [observation] [todo] Phase 3 — no-world data-holders (paperless +egress, actual, grafana, home-gallery, victoria-logs, pingvin re-add, homepage)
 - [observation] [todo] Phase 4 — narrow-world remainder (open-webui, paperless-gpt, backup plane)
 - [observation] [todo] Phase 5 — Class A ingress-only (off-world apps), after the high-value classes
@@ -167,3 +167,14 @@ decision_link: AD-023-cnp-threat-model-audit
 - [observation] [decision] webhook gets an EXPLICIT kube-apiserver ingress rule (not host fast-path) because its ValidatingWebhookConfiguration is failurePolicy=Fail on externalsecret/secretstore/clustersecretstore — a dropped apiserver→10250 admission call would block all ESO admission cluster-wide. Belt-and-suspenders; AD-023 sanctions reserved:kube-apiserver where warranted
 - [observation] [verify-pending] after deploy: `just k8s hubble-live-capture 120` (trigger an ExternalSecret create/update + `just k8s sync-es`), then `hubble-analyze k8s:app.kubernetes.io/name=external-secrets[-cert-controller|-webhook] "" egress DROPPED` per component until clean; confirm ClusterSecretStore Valid + a fresh ExternalSecret admits (webhook alive)
 - [observation] [local-only] committed to repo, NOT yet reconciled — no cluster change until pushed + Flux reconcile
+
+## Phase 2b — live verification (2026-06-24, deployed)
+
+- [observation] [verified] all three CNPs Valid; opt-out label `egress.home.arpa/custom-egress: "true"` present on controller/cert-controller/webhook pods (HelmRelease v5, pods restarted to pick it up)
+- [observation] [verified] controller egress (Hubble, fresh 12957-flow capture): FORWARDED to onepassword-connect:8080 + kube-apiserver:6443 + coredns:53 only — zero world egress
+- [observation] [verified] cert-controller + webhook DROPPED egress: only IPv6 link-local NDP/MLD noise (fe80::/ff02::, UNSUPPORTED_L3_PROTOCOL) — Cilium global, unrelated to the CNP; zero legitimate drops
+- [observation] [verified] webhook admission path (the failurePolicy=Fail risk): `kubectl annotate ... --dry-run=server` on an ExternalSecret AND the ClusterSecretStore both succeeded — proves apiserver->10250 admission traverses the strict ingress CNP. The explicit `fromEntities: kube-apiserver` rule works; not relying on host fast-path was the right call
+- [observation] [verified] ClusterSecretStore onepassword-connect Valid/Ready=True; all ExternalSecrets SecretSynced
+- [observation] [finding] startup-transient store-validation failures: for ~25s after a no-world pod restarts, the controller's connect to the onepassword-connect SERVICE ClusterIP returns "no route to host" (socketLB has not yet programmed the new endpoint, so the service IP is not translated to the backend pod IP and the no-world egress denies it). Self-heals once Cilium finishes endpoint programming (store went Valid ~20s after the last error). Benign, expected on every restart of any no-world pod, NOT a policy defect — same behavior seen on the onepassword-connect reference
+- [observation] [param-note] `just k8s hubble-analyze` arg order is `label verdict direction` — e.g. egress drops = `hubble-analyze <label> DROPPED egress` (verdict 2nd, direction 3rd)
+- [observation] [next] Phase 3 — no-world data-holders (paperless +egress, actual, grafana, home-gallery, victoria-logs, pingvin re-add, homepage)
