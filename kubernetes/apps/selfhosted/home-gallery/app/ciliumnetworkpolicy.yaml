@@ -1,17 +1,17 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
-# pingvin-share-x no-world (AD-023): file-based sqlite, no in-cluster or world egress (DNS via the cluster-wide allow-dns-egress CCNP).
-# Ingress: the external/internal Envoy gateways only (frontend 3333 + api 8080); kubelet probes ride the local-host fast-path.
+# home-gallery no-world (AD-023): serves a local photo gallery off PVC + read-only NFS; no in-cluster or world egress (DNS via the cluster-wide allow-dns-egress CCNP).
+# Ingress: the external/internal Envoy gateways only; kubelet probes ride the local-host fast-path (no rule needed).
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
-  name: pingvin-share-x
+  name: home-gallery
 spec:
   endpointSelector:
     matchLabels:
-      app.kubernetes.io/name: pingvin-share-x
-      app.kubernetes.io/instance: pingvin-share-x
-      app.kubernetes.io/controller: pingvin-share-x
+      app.kubernetes.io/name: home-gallery
+      app.kubernetes.io/instance: home-gallery
+      app.kubernetes.io/controller: home-gallery
   ingress:
     - fromEndpoints:
         - matchLabels:
@@ -24,7 +24,5 @@ spec:
                 - envoy-internal
       toPorts:
         - ports:
-            - port: "3333"
-              protocol: TCP
-            - port: "8080"
+            - port: "3000"
               protocol: TCP

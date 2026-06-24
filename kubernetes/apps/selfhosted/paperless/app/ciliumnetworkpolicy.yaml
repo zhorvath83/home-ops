@@ -1,5 +1,7 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
+# paperless no-world (AD-023): sqlite + localhost valkey sidecar, no in-cluster or world egress (DNS via the cluster-wide allow-dns-egress CCNP).
+# Ingress: the external/internal Envoy gateways + paperless-gpt; kubelet probes ride the local-host fast-path. Opt-out label scoped to the main pod (backup CronJob stays on baseline egress).
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:

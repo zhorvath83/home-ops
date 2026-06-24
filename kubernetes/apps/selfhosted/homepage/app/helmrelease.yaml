@@ -13,6 +13,9 @@ spec:
     defaultPodOptions:
       automountServiceAccountToken: true
       enableServiceLinks: false
+      # no-world egress opt-out (AD-023); paired with ciliumnetworkpolicy.yaml in the same commit
+      labels:
+        egress.home.arpa/custom-egress: "true"
       securityContext:
         runAsNonRoot: true
         runAsUser: 10001
