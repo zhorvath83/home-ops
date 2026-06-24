@@ -1,6 +1,6 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
-# ESO no-world (AD-023): crown jewel — reads/writes Secrets cluster-wide, but egress is in-cluster only.
+# ESO no-world (AD-023) — reads/writes Secrets cluster-wide, but egress is in-cluster only.
 # Controller fetches values THROUGH onepassword-connect, never directly to 1Password. DNS via the cluster-wide allow-dns-egress CCNP.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
@@ -65,8 +65,6 @@ spec:
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
 # ESO webhook no-world (AD-023): pure admission server, initiates no egress (DNS via the cluster-wide CCNP).
-# The kube-apiserver ingress is explicit (not fast-path): the validating webhook has failurePolicy=Fail, so a
-# dropped apiserver->10250 admission call would block every ExternalSecret/SecretStore admission cluster-wide.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
