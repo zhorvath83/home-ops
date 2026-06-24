@@ -117,7 +117,9 @@ decision_link: AD-023-cnp-threat-model-audit
 - [observation] [multi-domain] onepassword-connect needed two domains: `1password.com` + `1passwordusercontent.com` (file CDN); expect other narrow-world apps to need more than one external domain
 - [observation] [tooling] verify workflow is `just k8s hubble-live-capture <secs>` (cluster-wide capture) then `just k8s hubble-analyze <full-cilium-label> [verdict]` to slice — e.g. label `k8s:app=onepassword-connect` (match the app's REAL pod label, not always app.kubernetes.io/name)
 
-## Status — where we are (2026-06-23)
+## Status — where we are (2026-06-24)
+
+- [observation] [milestone] Phase 2 COMPLETE — the whole crown-jewel secret-management plane is now per-app CNP'd and live-verified: onepassword-connect (narrow-world, 2a) + external-secrets ESO controller/webhook/cert-controller (no-world, 2b). The single biggest AD-023 gap (op-connect had zero CNP; ESO unconstrained) is closed. Next: Phase 3 (no-world data-holders).
 
 - [observation] [done] Phase 0 — cluster-wide Hubble baseline survey
 - [observation] [done] Phase 1 — reference CNP + per-app convention (onepassword-connect; hand-written, no component; verified live: DROPPED-clean, store Valid, sync complete)
