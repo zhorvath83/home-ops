@@ -41,6 +41,7 @@ function envoy_on_request(request_handle)
     "CragCrawler",
     "Crawl4AI",
     "Crawlspace",
+    "Cursor",
     "Datenbank Crawler",
     "DeepSeekBot",
     "Devin",
