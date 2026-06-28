@@ -32,7 +32,9 @@ spec:
             env:
               ECHO_HTTP_PORT: &port 8080
               ECHO_METRICS_ADDR: ":8081"
+              ECHO_TRUSTED_PROXIES: "${POD_CIDR}"
               ECHO_METRICS_ENABLED: "true"
+              ECHO_LOG_LEVEL: info
               ECHO_LOG_FORMAT: json
               ECHO_PRETTY_PRINT: "true"
               ECHO_KUBERNETES: "true"
