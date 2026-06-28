@@ -27,13 +27,31 @@ spec:
         containers:
           app:
             image:
-              repository: ghcr.io/mendhak/http-https-echo
-              tag: 41@sha256:5e5427377ee3af38baa0f7e6b92bb213217f1ad2ea6f5695315d7733d7f6d4d2
+              repository: ghcr.io/home-operations/echo
+              tag: 0.1.3@sha256:971fbc6f2007af2f6707d6dcf4c3fa9d25ace0cd867f1f8526263890a709187f
             env:
-              HTTP_PORT: &port 80
-              LOG_WITHOUT_NEWLINE: true
-              LOG_IGNORE_PATH: /healthz
-              PROMETHEUS_ENABLED: true
+              ECHO_HTTP_PORT: &port 8080
+              ECHO_METRICS_ADDR: ":8081"
+              ECHO_METRICS_ENABLED: "true"
+              ECHO_LOG_FORMAT: json
+              ECHO_PRETTY_PRINT: "true"
+              ECHO_KUBERNETES: "true"
+              ECHO_POD_NAME:
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.name
+              ECHO_POD_NAMESPACE:
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.namespace
+              ECHO_POD_IP:
+                valueFrom:
+                  fieldRef:
+                    fieldPath: status.podIP
+              ECHO_NODE_NAME:
+                valueFrom:
+                  fieldRef:
+                    fieldPath: spec.nodeName
             probes:
               liveness: &probes
                 enabled: true
@@ -41,12 +59,21 @@ spec:
                 spec:
                   httpGet:
                     path: /healthz
-                    port: *port
-                  initialDelaySeconds: 30
-                  periodSeconds: 30
-                  timeoutSeconds: 5
-                  failureThreshold: 5
+                    port: &metrics-port 8081
+                  initialDelaySeconds: 0
+                  periodSeconds: 10
+                  timeoutSeconds: 1
+                  failureThreshold: 3
               readiness: *probes
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /healthz
+                    port: *metrics-port
+                  failureThreshold: 30
+                  periodSeconds: 5
             securityContext:
               privileged: false
               allowPrivilegeEscalation: false
@@ -54,16 +81,18 @@ spec:
               capabilities: {drop: ["ALL"]}
             resources:
               requests:
-                cpu: 1m
-                memory: 48Mi
+                cpu: 5m
+                memory: 64Mi
               limits:
-                memory: 128Mi
+                memory: 96Mi
+
     service:
       app:
         controller: echo
         ports:
           http:
             port: *port
+
     route:
       app:
         annotations:
@@ -84,3 +113,11 @@ spec:
           - backendRefs:
               - identifier: app
                 port: *port
+
+    serviceMonitor:
+      app:
+        endpoints:
+          - port: metrics
+            path: /metrics
+            interval: 1m
+            scrapeTimeout: 30s
