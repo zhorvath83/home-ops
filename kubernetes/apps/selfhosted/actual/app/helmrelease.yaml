@@ -32,7 +32,7 @@ spec:
           app:
             image:
               repository: ghcr.io/actualbudget/actual
-              tag: 26.6.0
+              tag: nightly
             env:
               TZ: "${TIMEZONE}"
               ACTUAL_PORT: &port 5006
