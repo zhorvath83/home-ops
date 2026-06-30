@@ -21,7 +21,7 @@ pipx.uvx = true
 "aqua:siderolabs/talos" = "1.13.5"
 "aqua:helm/helm" = "4.2.2"
 "aqua:helmfile/helmfile" = "1.6.0"
-"aqua:fluxcd/flux2" = "2.8.8"
+"aqua:fluxcd/flux2" = "2.9.0"
 "aqua:casey/just" = "1.54.0"
 
 # Kubernetes — bare name kept: aqua 3-part path (kubernetes/kubernetes/kubectl) breaks Renovate
