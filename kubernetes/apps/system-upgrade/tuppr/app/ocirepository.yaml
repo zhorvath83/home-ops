@@ -11,5 +11,5 @@ spec:
     operation: copy
   ref:
     # renovate: registryUrl=https://ghcr.io/home-operations/charts chart=tuppr
-    tag: 0.2.8
+    tag: 0.2.9
   url: oci://ghcr.io/home-operations/charts/tuppr
