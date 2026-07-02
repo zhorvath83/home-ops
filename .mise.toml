@@ -57,6 +57,6 @@ kubectl = "1.36.2"
 "aqua:zizmorcore/zizmor" = "1.26.1"
 
 # Python tooling (pipx backend)
-"pipx:flux-local" = "8.3.0"
+"pipx:flux-local" = "8.4.0"
 "pipx:ansible" = "14.1.0"
 "pipx:ansible-core" = "2.21.1"
