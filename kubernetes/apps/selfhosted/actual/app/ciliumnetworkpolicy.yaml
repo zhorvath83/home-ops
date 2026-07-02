@@ -1,6 +1,6 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
-# actual no-world (AD-023): file-based budget DB, no in-cluster or world egress (DNS via the cluster-wide allow-dns-egress CCNP).
+# actual (AD-023): file-based budget DB, no in-cluster or world egress except the enablebanking.com open-banking API (DNS via the cluster-wide allow-dns-egress CCNP).
 # Ingress: the external/internal Envoy gateways only; kubelet probes ride the local-host fast-path (no rule needed).
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
@@ -25,4 +25,13 @@ spec:
       toPorts:
         - ports:
             - port: "5006"
+              protocol: TCP
+  egress:
+    # enablebanking.com open-banking API for bank transaction fetch.
+    - toFQDNs:
+        - matchName: "enablebanking.com"
+        - matchPattern: "*.enablebanking.com"
+      toPorts:
+        - ports:
+            - port: "443"
               protocol: TCP

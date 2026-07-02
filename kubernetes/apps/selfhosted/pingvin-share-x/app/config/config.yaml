@@ -47,6 +47,8 @@ share:
   allowAdminAccessAllShares: "true"
   #How long files are kept after shares expire or are deleted by the uploader.
   fileRetentionPeriod: 7 days
+  #Whether reverse shares are restricted to simple mode (no description, expiration, password, etc.).
+  reverseShareSimpleOnly: "true"
 
 cache:
   #Normally Pingvin Share caches information in memory. If you run multiple instances of Pingvin Share, you need to enable Redis caching to share the cache between the instances.
