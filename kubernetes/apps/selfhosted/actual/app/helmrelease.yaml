@@ -36,6 +36,8 @@ spec:
             env:
               TZ: "${TIMEZONE}"
               ACTUAL_PORT: &port 5006
+              # Bank-sync diagnostics: surfaces enablebanking API error_type/message in logs
+              DEBUG: "actual:enable-banking:*"
             probes:
               liveness:
                 enabled: true
