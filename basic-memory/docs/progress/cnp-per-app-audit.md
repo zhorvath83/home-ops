@@ -27,7 +27,7 @@ Execution log for the V1–V5 hybrid CNP rollout. The full runbook (YAML, per-ap
 
 | Phase | State | Notes |
 |---|---|---|
-| V1 commit 1 — 4 vocabulary CCNPs + kustomization entries (enableDefaultDeny: false staging) | pending | zero behavior change expected |
+| V1 commit 1 — 4 vocabulary CCNPs + kustomization entries (enableDefaultDeny: false staging) | done (validated, awaiting reconcile) | pre-commit clean, flux-local build exit 0, 4 new CCNPs render |
 | V1 commit 2 — V1 labels on pods (incl. kopia/mover labels — see pre-rollout resolution) | pending | per-app mechanics; verify emission per HR before merge |
 | V1 commit 3 — activation: remove enableDefaultDeny + trim/delete per-app CNPs | pending | the commit that closes ingress |
 | V2 — survey (results recorded into the roadmap note) | pending | residual: ovh_s3_endpoint public-IP confirmation |
@@ -54,6 +54,15 @@ Execution log for the V1–V5 hybrid CNP rollout. The full runbook (YAML, per-ap
 - Created this progress note and cross-referenced it from the roadmap note Metadata section.
 
 Next: Phase V1 commit 1 — add the 4 new CCNP files (allow-world-egress, ingress-from-gateways, ingress-from-prometheus, ingress-none; the 3 ingress ones with enableDefaultDeny.ingress: false staging) + netpols/kustomization.yaml entries. Validate with pre-commit + flux-local build. Push, reconcile, verify `kubectl get ccnp` shows 4 new Valid policies and zero behavior change.
+
+### Session 2 — 2026-07-05
+
+- Implemented Phase V1 commit 1: created the 4 vocabulary CCNP files under kubernetes/apps/kube-system/cilium/netpols/ (allow-world-egress with the flux-system/cert-manager infra-namespace grant spec; ingress-from-gateways; ingress-from-prometheus; ingress-none). The 3 ingress CCNPs carry enableDefaultDeny.ingress: false (V1 staging). allow-world-egress is label-gated (inert until pods carry egress.home.arpa/allow-world).
+- Convention decisions: used k8s:io.kubernetes.pod.namespace (Cilium k8s: prefix) consistently in fromEndpoints selectors, matching the repo's existing CNP convention (pocket-id, external-secrets, onepassword-connect) rather than the runbook's prefix-less form. Verified live envoy proxy pods carry app.kubernetes.io/name=envoy + gateway.envoyproxy.io/owning-gateway-name in {envoy-external, envoy-internal}, and prometheus pod carries app.kubernetes.io/name=prometheus in observability — selectors match reality.
+- Validation: pre-commit run on the 5 touched files — all green (yamlfmt, yamllint, gitleaks, k8s-secrets check). flux-local build of the cilium-netpols KS via `just k8s render-local-ks` — exit 0, render contains all 6 CCNPs (2 existing + 4 new). flux-local emitted non-fatal warnings (deprecation notice; postBuild cluster-settings substitute reference unresolvable — known flux-local limitation that does not affect static YAML CCNPs; dependsOn name format quirk) — none block.
+- Committed as dd93c4255 on branch cnp-per-app-audit. mise.lock was touched by the flux-local pipx install side effect — restored it and staged only the 5 V1 commit 1 files (explicit pathspecs per repo rule).
+
+Next: decide verification cadence (see open question to user), then Phase V1 commit 2 — add V1 labels on pods per the per-app assignment, INCLUDING the 4 kopia/mover edits resolved in Session 1 (components/volsync/{replicationsource,replicationdestination}.yaml moverPodLabels; kopiamaintenance.yaml moverPodLabels; kopiaui HR defaultPodOptions.labels). Per-chart mechanics per the runbook reference; verify label emission per HR via flux-local/helm template before merge.
 
 ## Related
 
