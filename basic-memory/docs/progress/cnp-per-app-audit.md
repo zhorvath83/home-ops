@@ -64,7 +64,20 @@ Next: Phase V1 commit 1 — add the 4 new CCNP files (allow-world-egress, ingres
 
 - Pushed main to origin (e8e7b24a2..297a0ec27); Flux reconciled cilium-netpols KS — Ready=True @297a0ec27. `kubectl get ccnp`: 6/6 Valid (allow-cluster-egress, allow-dns-egress + 4 new allow-world-egress, ingress-from-gateways, ingress-from-prometheus, ingress-none). Zero behavior change confirmed by inert design (allow-world-egress label-gated; 3 ingress CCNPs carry enableDefaultDeny.ingress: false).
 
-Next: Phase V1 commit 2 — add V1 labels on pods per the per-app assignment, INCLUDING the 4 kopia/mover edits resolved in Session 1 (components/volsync/{replicationsource,replicationdestination}.yaml moverPodLabels; kopiamaintenance.yaml moverPodLabels; kopiaui HR defaultPodOptions.labels). Per-chart mechanics per the runbook reference; verify label emission per HR via flux-local/helm template before push. Push, Flux reconcile, Hubble FORWARDED check on the new labels.
+## V1 commit 2 — resume checklist (next session)
+
+Edit set, grouped by mechanic. CNP deletes/trims are V1 commit 3, NOT here — commit 2 is labels only (zero behavior change: ingress CCNPs still staged with enableDefaultDeny false; allow-world additive with the pre-flip baseline that still carries toEntities: world).
+
+1. selfhosted gateways label (bjw-s app-template): actual, home-gallery, pingvin-share-x, paperless (main pod ONLY via controllers.paperless.pod.labels — backup CronJob stays label-free), homepage, mealie, wallos, paperless-gpt, backrest, calibre-web-automated. Add ingress.home.arpa/gateways: "true" via defaultPodOptions.labels (or controllers.<name>.pod.labels for paperless main). actual/home-gallery/pingvin-share-x already carry custom-egress — add gateways alongside.
+2. security: tinyauth (gateways + prometheus if ServiceMonitor exists; check), pocket-id (gateways).
+3. observability: grafana (gateways + prometheus), speedtest-exporter (prometheus only). victoria-logs server: NO V1 labels (V5). kube-prometheus-stack: nothing (Class P).
+4. networking: echo (gateways).
+5. external-secrets: onepassword-connect (prometheus label via defaultPodOptions.labels), external-secrets x3 (per-component podLabels prometheus: controller / webhook / certController).
+6. kopia/mover (4 files from Session 1 resolution): components/volsync/replicationsource.yaml spec.kopia.moverPodLabels; components/volsync/replicationdestination.yaml same; volsync-system/volsync/maintenance/kopiamaintenance.yaml spec.moverPodLabels (top-level); volsync-system/kopia/app/helmrelease.yaml defaultPodOptions.labels (allow-world + ingress.home.arpa/gateways).
+7. Verify label emission per edited HR: flux-local/helm template, grep the rendered pod template for the label BEFORE push.
+8. pre-commit + commit (labels only) + push + Flux reconcile + Hubble FORWARDED on the new labels + update this progress note.
+
+Next: Phase V1 commit 2 — start from the resume checklist above. Per-chart mechanics per the runbook reference (How to set pod labels). Verify label emission per HR via flux-local/helm template before push. Push, Flux reconcile, Hubble FORWARDED check on the new labels.
 
 ## Related
 
