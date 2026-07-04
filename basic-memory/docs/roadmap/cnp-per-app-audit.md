@@ -4,7 +4,7 @@ type: roadmap
 permalink: home-ops/docs/roadmap/cnp-per-app-audit
 topic: Hybrid CNP rollout runbook — label vocabulary + world-deny flip; per-app CNPs
   only for app-unique content
-status: proposed
+status: in_progress
 priority: medium
 scope: Execution-grade runbook for AD-023 rev2. Contains the full YAML of every cluster
   policy, the per-app label assignment for all namespaces, the exact edit/verify commands
@@ -32,7 +32,8 @@ decision_link: AD-023-cnp-threat-model-audit
 ## Metadata (observation-form, schema validation)
 
 - [topic] Hybrid CNP rollout runbook — label vocabulary + world-deny flip; per-app CNPs only for app-unique content
-- [status] proposed
+- [status] in_progress
+- [progress] Execution state lives in [[cnp-per-app-audit]] (docs/progress) — phase tracker, session summaries, Next pointer
 - [priority] medium
 
 ## Definitions (use these exact strings everywhere)
@@ -236,7 +237,7 @@ Legend: V1 = label added in Phase V1; V3 = label/grant lands IN the flip commit;
 - [observation] flux-system (flux-instance, flux-operator, flux-provider-pushover): covered by the infra-namespace grant spec in allow-world-egress.yaml — no per-pod labels
 - [observation] cert-manager: covered by the same namespace grant (ACME + Cloudflare DNS01)
 - [observation] tuppr: V3 allow-world (factory.talos.dev, github releases — confirm in survey)
-- [observation] kopia (volsync-system): V3 allow-world (OVH S3 maintenance jobs — confirm label emission on the CronJob template); volsync controller: nothing; mover pods in app namespaces: OPEN QUESTION below
+- [observation] kopia S3 access — THREE distinct pod roles, all need allow-world (OVH S3): (a) kopiaui Deployment (volsync-system/kopia/app/helmrelease.yaml, bjw-s app-template) → V1 commit 2 defaultPodOptions.labels: allow-world + ingress.home.arpa/gateways (pvbackup route, direct S3 via repository.config); (b) KopiaMaintenance CronJob (volsync-system/volsync/maintenance/kopiamaintenance.yaml, spawns kopia-maint-* pods) → V1 commit 2 spec.moverPodLabels (top-level, not under kopia); (c) VolSync kopia mover pods (app namespaces, spawned per backup/restore) → V1 commit 2 via components/volsync/{replicationsource,replicationdestination}.yaml spec.kopia.moverPodLabels — see the resolved Open Question. volsync controller itself: nothing (in-cluster only)
 
 ## Phase V1 — vocabulary (zero-downtime, 3 commits)
 
@@ -257,7 +258,7 @@ Legend: V1 = label added in Phase V1; V3 = label/grant lands IN the flip commit;
 
 ## Phase V3 — flip (ONE commit)
 
-1. [observation] [step] The single commit contains: (a) allow-cluster-egress edit (drop world, add kube-apiserver entity — YAML above); (b) EVERY V3 label from the assignment (downloads, media, homepage, mealie, speedtest, external-dns, tuppr, kopia, grafana+paperless-gpt temporary, per V2 results); (c) coredns CNP file; (d) isponsorblocktv LAN CNP (from V2 IPs); (e) any V2-discovered extra grant
+1. [observation] [step] The single commit contains: (a) allow-cluster-egress edit (drop world, add kube-apiserver entity — YAML above); (b) EVERY V3 label from the assignment (downloads, media, homepage, mealie, speedtest, external-dns, tuppr, grafana+paperless-gpt temporary, per V2 results) — note: kopia S3 labels (kopiaui + KopiaMaintenance + VolSync movers) already landed in V1 commit 2 as pure allows; (c) coredns CNP file; (d) isponsorblocktv LAN CNP (from V2 IPs); (e) any V2-discovered extra grant
 2. [observation] [step] Pre-merge validation: pre-commit + flux-local build; grep the diff to confirm no app in the V2 world-needers list is missing its grant
 3. [observation] [accept] post-reconcile: just k8s hubble-live-capture 300 under normal use -> hubble-analyze '' DROPPED egress: only expected noise (IPv6 NDP); coredns resolves external names; flux reconciles from github; cert-manager renews (or dry-run ACME check); external-dns syncs; kopia maintenance succeeds; NO app log shows new connection timeouts
 4. [observation] [rollback] git revert <flip-commit> + flux reconcile — single revert restores world
@@ -290,7 +291,7 @@ Legend: V1 = label added in Phase V1; V3 = label/grant lands IN the flip commit;
 
 ## Open questions
 
-- [observation] [open] VolSync mover pod templates (app namespaces) need world for S3 post-flip — check moverPodLabels support in ReplicationSource/our component; else namespace grants or a mover-targeted CCNP; resolve in V2
+- [observation] [resolved 2026-07-04] VolSync S3 world access — CRD-verified against live v0.17.11 perfectra1n fork: ReplicationSource.spec.kopia.moverPodLabels, ReplicationDestination.spec.kopia.moverPodLabels, AND KopiaMaintenance.spec.moverPodLabels ALL exist (type=object, "Labels added to data mover pods"). No namespace-grant / mover-targeted CCNP fallback needed. Four repo edits land in V1 commit 2 (pure allows, additive with the pre-flip baseline): (1) components/volsync/replicationsource.yaml spec.kopia.moverPodLabels: {egress.home.arpa/allow-world: "true"} — covers all ~21 apps consuming the component; (2) components/volsync/replicationdestination.yaml same field (bootstrap restore mover); (3) volsync-system/volsync/maintenance/kopiamaintenance.yaml spec.moverPodLabels (top-level, NOT under kopia) — the live kopia-maint-* pods run today without the label and break at flip without this; (4) volsync-system/kopia/app/helmrelease.yaml defaultPodOptions.labels: allow-world + ingress.home.arpa/gateways (kopiaui Deployment, pvbackup route, direct S3 via repository.config). Pre-flip verification: one full backup cycle + one kopia maintenance run after V1 commit 2, Hubble FORWARDED on the egress.home.arpa/allow-world label. Residual V2 item only: confirm ovh_s3_endpoint resolves to a public IP (record in the flip commit message)
 - [observation] [open] ingress-none / pure empty-allow-set semantics — live-verify during V1 staging (fromEntities kube-apiserver variant is the committed fallback)
 - [observation] [open] IPv6: CIDR math is v4-only — confirm v4-only cluster, record in flip commit message
 - [observation] [governance] versions-renovate checklist: verify CNP-label emission on app-template MAJOR bumps
