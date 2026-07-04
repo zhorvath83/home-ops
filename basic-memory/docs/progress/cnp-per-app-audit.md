@@ -27,7 +27,7 @@ Execution log for the V1–V5 hybrid CNP rollout. The full runbook (YAML, per-ap
 
 | Phase | State | Notes |
 |---|---|---|
-| V1 commit 1 — 4 vocabulary CCNPs + kustomization entries (enableDefaultDeny: false staging) | done (validated, awaiting reconcile) | pre-commit clean, flux-local build exit 0, 4 new CCNPs render |
+| V1 commit 1 — 4 vocabulary CCNPs + kustomization entries (enableDefaultDeny: false staging) | done — reconciled + verified | kubectl get ccnp: 6/6 Valid (4 new); cilium-netpols KS Ready=True @297a0ec27 |
 | V1 commit 2 — V1 labels on pods (incl. kopia/mover labels — see pre-rollout resolution) | pending | per-app mechanics; verify emission per HR before merge |
 | V1 commit 3 — activation: remove enableDefaultDeny + trim/delete per-app CNPs | pending | the commit that closes ingress |
 | V2 — survey (results recorded into the roadmap note) | pending | residual: ovh_s3_endpoint public-IP confirmation |
@@ -39,9 +39,9 @@ Execution log for the V1–V5 hybrid CNP rollout. The full runbook (YAML, per-ap
 
 - [observation] [resolved 2026-07-04] VolSync S3 world access — CRD-verified against live v0.17.11 perfectra1n fork: ReplicationSource.spec.kopia.moverPodLabels, ReplicationDestination.spec.kopia.moverPodLabels, AND KopiaMaintenance.spec.moverPodLabels all exist. Four repo edits land in V1 commit 2 (pure allows): (1) components/volsync/replicationsource.yaml spec.kopia.moverPodLabels: {egress.home.arpa/allow-world: "true"} — covers ~21 apps; (2) components/volsync/replicationdestination.yaml same field; (3) volsync-system/volsync/maintenance/kopiamaintenance.yaml spec.moverPodLabels (top-level); (4) volsync-system/kopia/app/helmrelease.yaml defaultPodOptions.labels: allow-world + ingress.home.arpa/gateways (kopiaui Deployment, pvbackup route). volsync controller itself: nothing (in-cluster). Recorded in roadmap note Open Questions as resolved; residual V2 item: confirm ovh_s3_endpoint is a public IP.
 
-## Branch / PR
+## Workflow strategy
 
-- [observation] Feature branch `cnp-per-app-audit` created from main; the full V1–V5 rollout commits here. PR opened before V3 flip for review of the flip commit specifically.
+- [observation] [decided 2026-07-05] Working directly on `main` (no feature branch). Each commit pushes to origin/main, Flux reconciles, read-only `kubectl` verifies. Abandoned the earlier feature-branch+PR plan — simpler GitOps, each phase reconciled+verified before the next. The flip (V3) still lands as one commit so rollback = single revert.
 
 ## Session summaries
 
@@ -62,7 +62,9 @@ Next: Phase V1 commit 1 — add the 4 new CCNP files (allow-world-egress, ingres
 - Validation: pre-commit run on the 5 touched files — all green (yamlfmt, yamllint, gitleaks, k8s-secrets check). flux-local build of the cilium-netpols KS via `just k8s render-local-ks` — exit 0, render contains all 6 CCNPs (2 existing + 4 new). flux-local emitted non-fatal warnings (deprecation notice; postBuild cluster-settings substitute reference unresolvable — known flux-local limitation that does not affect static YAML CCNPs; dependsOn name format quirk) — none block.
 - Committed as dd93c4255 on branch cnp-per-app-audit. mise.lock was touched by the flux-local pipx install side effect — restored it and staged only the 5 V1 commit 1 files (explicit pathspecs per repo rule).
 
-Next: decide verification cadence (see open question to user), then Phase V1 commit 2 — add V1 labels on pods per the per-app assignment, INCLUDING the 4 kopia/mover edits resolved in Session 1 (components/volsync/{replicationsource,replicationdestination}.yaml moverPodLabels; kopiamaintenance.yaml moverPodLabels; kopiaui HR defaultPodOptions.labels). Per-chart mechanics per the runbook reference; verify label emission per HR via flux-local/helm template before merge.
+- Pushed main to origin (e8e7b24a2..297a0ec27); Flux reconciled cilium-netpols KS — Ready=True @297a0ec27. `kubectl get ccnp`: 6/6 Valid (allow-cluster-egress, allow-dns-egress + 4 new allow-world-egress, ingress-from-gateways, ingress-from-prometheus, ingress-none). Zero behavior change confirmed by inert design (allow-world-egress label-gated; 3 ingress CCNPs carry enableDefaultDeny.ingress: false).
+
+Next: Phase V1 commit 2 — add V1 labels on pods per the per-app assignment, INCLUDING the 4 kopia/mover edits resolved in Session 1 (components/volsync/{replicationsource,replicationdestination}.yaml moverPodLabels; kopiamaintenance.yaml moverPodLabels; kopiaui HR defaultPodOptions.labels). Per-chart mechanics per the runbook reference; verify label emission per HR via flux-local/helm template before push. Push, Flux reconcile, Hubble FORWARDED check on the new labels.
 
 ## Related
 
