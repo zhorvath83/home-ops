@@ -1,0 +1,20 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumclusterwidenetworkpolicy_v2.json
+#
+# Near-deny ingress for consumer-less workers (label
+# ingress.home.arpa/none="true"). kube-apiserver entity only —
+# guaranteed-semantics fallback per AD-023. Staged with enableDefaultDeny
+# false in V1 — remove at activation.
+apiVersion: cilium.io/v2
+kind: CiliumClusterwideNetworkPolicy
+metadata:
+  name: ingress-none
+spec:
+  endpointSelector:
+    matchLabels:
+      ingress.home.arpa/none: "true"
+  enableDefaultDeny:
+    ingress: false
+  ingress:
+    - fromEntities:
+        - kube-apiserver

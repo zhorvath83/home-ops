@@ -1,0 +1,38 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumclusterwidenetworkpolicy_v2.json
+#
+# Public-internet egress opt-in (label egress.home.arpa/allow-world="true");
+# LAN is carved out via the except list. Inert until pods carry the label.
+# The second spec grants world to infra namespaces whose vendored controller
+# pods are not naturally labelable (flux-system, cert-manager).
+apiVersion: cilium.io/v2
+kind: CiliumClusterwideNetworkPolicy
+metadata:
+  name: allow-world-egress
+specs:
+  - endpointSelector:
+      matchLabels:
+        egress.home.arpa/allow-world: "true"
+    egress:
+      - toCIDRSet:
+          - cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12 # not 175.16 — gabe565 carried that typo for years
+              - 192.168.0.0/16
+              - 100.64.0.0/10
+  - endpointSelector:
+      matchExpressions:
+        - key: k8s:io.kubernetes.pod.namespace
+          operator: In
+          values:
+            - flux-system
+            - cert-manager
+    egress:
+      - toCIDRSet:
+          - cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+              - 100.64.0.0/10
