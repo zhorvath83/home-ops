@@ -27,7 +27,7 @@ spec:
           app:
             image:
               repository: ghcr.io/maintainerr/maintainerr
-              tag: 3.16.0@sha256:93e3ed1518e7dbf950b110b4f2f2f659d2abbc5da9af6c7630fc777911e039d1
+              tag: 3.17.0@sha256:df6dcc419b068f0412a05d8791190f67ae7ce5ff9ddd5ea3506a6ba5fa29bdf2
             env:
               TZ: "${TIMEZONE}"
               UI_PORT: &port 6246
