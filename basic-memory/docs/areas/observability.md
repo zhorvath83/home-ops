@@ -124,7 +124,7 @@ The namespace is `observability` and pulls in the shared `common` component (whi
 
 ## Update — 2026-07-05 (Alertmanager enablement + Flux alert unification)
 
-Implemented via roadmap `docs/roadmap/alertmanager-introduction` (status: done). Re-verified against the cluster after each phase.
+Implemented via `docs/progress/alertmanager-introduction` (status: done). Re-verified against the cluster after each phase.
 
 **Alertmanager now ENABLED** in kube-prometheus-stack:
 - `alertmanager.enabled: true` with `route.main` on `envoy-internal` (networking/https), host `alertmanager.${PUBLIC_DOMAIN}` — LAN-only UI like grafana/logs.

@@ -1,7 +1,7 @@
 ---
 title: alertmanager-introduction
-type: roadmap
-permalink: home-ops/docs/roadmap/alertmanager-introduction
+type: progress
+permalink: home-ops/docs/progress/alertmanager-introduction
 status: done
 confidence: high
 area: observability
