@@ -60,6 +60,12 @@ spec:
       route:
         main:
           enabled: true
+          annotations:
+            gethomepage.dev/enabled: "true"
+            gethomepage.dev/name: Alertmanager
+            gethomepage.dev/group: Observability
+            gethomepage.dev/icon: alertmanager.svg
+            gethomepage.dev/pod-selector: app.kubernetes.io/name=alertmanager
           hostnames:
             - "alertmanager.${PUBLIC_DOMAIN}"
           parentRefs:
