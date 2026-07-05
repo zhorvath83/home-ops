@@ -27,6 +27,10 @@ spec:
         mountPath: /tmp
     deploymentStrategy:
       type: Recreate
+    # AD-023 vocabulary: envoy-routed (gateways) + prometheus scrape (ServiceMonitor)
+    podLabels:
+      ingress.home.arpa/gateways: "true"
+      ingress.home.arpa/prometheus: "true"
     env:
       GF_PLUGINS_PREINSTALL_SYNC: victoriametrics-logs-datasource@0.26.3
       GF_ANALYTICS_CHECK_FOR_UPDATES: false

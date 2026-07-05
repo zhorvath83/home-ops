@@ -25,10 +25,11 @@ spec:
       paperless:
         annotations:
           reloader.stakater.com/auto: "true"
-        # no-world egress opt-out (AD-023) on the main pod only; the backup CronJob keeps baseline egress
+        # AD-023 vocabulary on the main pod only; the backup CronJob keeps baseline egress
         pod:
           labels:
             egress.home.arpa/custom-egress: "true"
+            ingress.home.arpa/gateways: "true"
         containers:
           # NOTE: Container-level security contexts are NOT used for paperless-ngx containers
           # because the s6-overlay init system requires privileges to fix /run permissions.

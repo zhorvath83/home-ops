@@ -25,6 +25,9 @@ spec:
       runAsUser: ${APP_UID:=10001}
       runAsGroup: ${APP_GID:=10001}
       fsGroup: ${APP_GID:=10001}
+    # AD-023: kopia mover pushes backups to OVH S3 (world egress)
+    moverPodLabels:
+      egress.home.arpa/allow-world: "true"
     retain:
       hourly: ${VOLSYNC_RETAIN_HOURLY:=24}
       daily: ${VOLSYNC_RETAIN_DAILY:=7}

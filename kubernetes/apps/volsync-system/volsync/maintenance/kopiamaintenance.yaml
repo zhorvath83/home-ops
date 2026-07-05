@@ -5,6 +5,9 @@ metadata:
   name: kopia-daily-maintenance
 spec:
   enabled: true
+  # AD-023: kopia maintenance pods talk to OVH S3 (world egress)
+  moverPodLabels:
+    egress.home.arpa/allow-world: "true"
   repository:
     repository: volsync-secret
   trigger:

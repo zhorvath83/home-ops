@@ -13,9 +13,10 @@ spec:
     defaultPodOptions:
       automountServiceAccountToken: false
       enableServiceLinks: false
-      # no-world egress opt-out (AD-023); paired with ciliumnetworkpolicy.yaml in the same commit
+      # AD-023 vocabulary: custom-egress (per-app CNP) + gateways ingress (ingress-from-gateways CCNP)
       labels:
         egress.home.arpa/custom-egress: "true"
+        ingress.home.arpa/gateways: "true"
       securityContext:
         runAsNonRoot: true
         runAsUser: 10001

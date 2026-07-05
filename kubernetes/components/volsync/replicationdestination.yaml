@@ -27,3 +27,6 @@ spec:
       runAsUser: ${APP_UID:=10001}
       runAsGroup: ${APP_GID:=10001}
       fsGroup: ${APP_GID:=10001}
+    # AD-023: kopia mover pulls from OVH S3 on restore (world egress)
+    moverPodLabels:
+      egress.home.arpa/allow-world: "true"
