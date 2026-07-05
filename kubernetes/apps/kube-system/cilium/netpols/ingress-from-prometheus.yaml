@@ -1,8 +1,6 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumclusterwidenetworkpolicy_v2.json
-#
 # Ingress from prometheus (label ingress.home.arpa/prometheus="true").
-# Staged with enableDefaultDeny false in V1 — remove at activation.
 apiVersion: cilium.io/v2
 kind: CiliumClusterwideNetworkPolicy
 metadata:
@@ -11,8 +9,6 @@ spec:
   endpointSelector:
     matchLabels:
       ingress.home.arpa/prometheus: "true"
-  enableDefaultDeny:
-    ingress: false
   ingress:
     - fromEndpoints:
         - matchLabels:

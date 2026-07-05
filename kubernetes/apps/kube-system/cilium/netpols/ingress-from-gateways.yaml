@@ -1,9 +1,6 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumclusterwidenetworkpolicy_v2.json
-#
-# Ingress from envoy-external/envoy-internal proxies (label
-# ingress.home.arpa/gateways="true"). Staged with enableDefaultDeny false
-# in V1 — remove that block in the V1 activation commit to close ingress.
+# Ingress from envoy-external/envoy-internal proxies (label ingress.home.arpa/gateways="true").
 apiVersion: cilium.io/v2
 kind: CiliumClusterwideNetworkPolicy
 metadata:
@@ -12,8 +9,6 @@ spec:
   endpointSelector:
     matchLabels:
       ingress.home.arpa/gateways: "true"
-  enableDefaultDeny:
-    ingress: false
   ingress:
     - fromEndpoints:
         - matchLabels:

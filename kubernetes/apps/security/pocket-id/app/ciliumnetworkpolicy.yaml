@@ -1,7 +1,6 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
-# Ingress: envoy data-plane (public OIDC), tinyauth (internal token/userinfo),
-# prometheus (ServiceMonitor; idle until METRICS_ENABLED flips on).
+# pocket-id (AD-023): envoy + prometheus ingress via the matching CCNPs; this CNP keeps only the tinyauth named-consumer east-west rule (forward-auth token/userinfo).
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -15,29 +14,8 @@ spec:
   ingress:
     - fromEndpoints:
         - matchLabels:
-            k8s:io.kubernetes.pod.namespace: networking
-          matchExpressions:
-            - key: gateway.networking.k8s.io/gateway-name
-              operator: In
-              values:
-                - envoy-external
-                - envoy-internal
-      toPorts:
-        - ports:
-            - port: "1411"
-              protocol: TCP
-    - fromEndpoints:
-        - matchLabels:
             k8s:io.kubernetes.pod.namespace: security
             app.kubernetes.io/name: tinyauth
-      toPorts:
-        - ports:
-            - port: "1411"
-              protocol: TCP
-    - fromEndpoints:
-        - matchLabels:
-            k8s:io.kubernetes.pod.namespace: observability
-            app.kubernetes.io/name: prometheus
       toPorts:
         - ports:
             - port: "1411"

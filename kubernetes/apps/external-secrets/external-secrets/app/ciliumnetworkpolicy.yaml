@@ -1,6 +1,6 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
-# ESO no-world (AD-023) — reads/writes Secrets cluster-wide, but egress is in-cluster only.
+# ESO no-world (AD-023) — reads/writes Secrets cluster-wide; prometheus scrape via the ingress-from-prometheus CCNP.
 # Controller fetches values THROUGH onepassword-connect, never directly to 1Password. DNS via the cluster-wide allow-dns-egress CCNP.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
@@ -10,15 +10,6 @@ spec:
   endpointSelector:
     matchLabels:
       app.kubernetes.io/name: external-secrets
-  ingress:
-    - fromEndpoints:
-        - matchLabels:
-            k8s:io.kubernetes.pod.namespace: observability
-            app.kubernetes.io/name: prometheus
-      toPorts:
-        - ports:
-            - port: "8080"
-              protocol: TCP
   egress:
     - toEndpoints:
         - matchLabels:
@@ -36,7 +27,7 @@ spec:
               protocol: TCP
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
-# ESO cert-controller no-world (AD-023): manages the webhook CA bundle via kube-apiserver only.
+# ESO cert-controller no-world (AD-023): prometheus scrape via the ingress-from-prometheus CCNP; manages the webhook CA bundle via kube-apiserver only.
 # kubelet healthz probe (8081) rides the local-host fast-path, no explicit rule needed.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
@@ -46,15 +37,6 @@ spec:
   endpointSelector:
     matchLabels:
       app.kubernetes.io/name: external-secrets-cert-controller
-  ingress:
-    - fromEndpoints:
-        - matchLabels:
-            k8s:io.kubernetes.pod.namespace: observability
-            app.kubernetes.io/name: prometheus
-      toPorts:
-        - ports:
-            - port: "8080"
-              protocol: TCP
   egress:
     - toEntities:
         - kube-apiserver
@@ -64,7 +46,7 @@ spec:
               protocol: TCP
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
-# ESO webhook no-world (AD-023): pure admission server, initiates no egress (DNS via the cluster-wide CCNP).
+# ESO webhook no-world (AD-023): prometheus scrape via the ingress-from-prometheus CCNP; pure admission server, initiates no egress (DNS via the cluster-wide CCNP).
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -74,14 +56,6 @@ spec:
     matchLabels:
       app.kubernetes.io/name: external-secrets-webhook
   ingress:
-    - fromEndpoints:
-        - matchLabels:
-            k8s:io.kubernetes.pod.namespace: observability
-            app.kubernetes.io/name: prometheus
-      toPorts:
-        - ports:
-            - port: "8080"
-              protocol: TCP
     - fromEntities:
         - kube-apiserver
       toPorts:
