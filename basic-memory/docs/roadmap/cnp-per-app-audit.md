@@ -194,14 +194,14 @@ Legend: V1 = label added in Phase V1; V3 = label/grant lands IN the flip commit;
 
 ### selfhosted
 
-- [observation] actual: V1 gateways (custom-egress already on pod); DELETE app/ciliumnetworkpolicy.yaml in the same commit; prometheus label only if a ServiceMonitor exists (check: grep -rl ServiceMonitor kubernetes/apps/selfhosted/actual/)
+- [observation] actual: V1 gateways (custom-egress already on pod); TRIM app/ciliumnetworkpolicy.yaml in the same commit — keep the toFQDNs enablebanking.com:443 egress (the pod custom-egress label opts it out of the baseline allow-cluster-egress CCNP, so the CNP is its only egress grant), drop the envoy ingress block (to ingress-from-gateways CCNP). No ServiceMonitor under actual (verified V1 commit 3) so no prometheus label. [corrected V1 commit 3: runbook originally said DELETE, which would have left actual with zero egress and broken bank-transaction fetch]
 - [observation] home-gallery: same pattern as actual
 - [observation] pingvin-share-x: same pattern as actual
-- [observation] paperless: V1 gateways via controllers.paperless.pod.labels (main pod ONLY — backup CronJob must stay label-free); custom-egress stays main-pod-scoped; DELETE CNP file; backup CronJob egress = (survey)
+- [observation] paperless: V1 gateways via controllers.paperless.pod.labels (main pod ONLY — backup CronJob must stay label-free); custom-egress stays main-pod-scoped; TRIM CNP file — keep the paperless-gpt to paperless:8000 named-consumer ingress rule (east-west, not covered by any CCNP), drop the envoy ingress block (to ingress-from-gateways CCNP); backup CronJob egress = (survey). [corrected V1 commit 3: runbook originally said DELETE, which would have dropped paperless-gpt east-west at activation]
 - [observation] homepage: V1 gateways; V3 allow-world (github/openweathermap widgets); DELETE CNP file at V1
 - [observation] mealie: V1 gateways; V3 allow-world (recipe import)
 - [observation] wallos: V1 gateways; egress class (survey — currency APIs?)
-- [observation] paperless-gpt: V1 gateways + trim envoy/prometheus blocks from its CNP; V3 allow-world TEMPORARY (LLM API would break at flip); V5 tighten to narrow-world toFQDNs + custom-egress, drop allow-world
+- [observation] paperless-gpt: V1 gateways + DELETE its CNP file (the CNP is envoy-ingress-only — no named-consumer rule exists; an earlier runbook note confused paperless-gpt with paperless); the gateways CCNP fully replaces it; V3 allow-world TEMPORARY (LLM API would break at flip); V5 tighten to narrow-world toFQDNs + custom-egress, drop allow-world
 - [observation] backrest: V1 gateways (browse UI); egress (survey — NFS repo traffic is host-level, likely no pod-network egress needed)
 - [observation] resticprofile: (survey — worker; if pod-network egress exists, classify; else nothing + ingress.home.arpa/none candidate)
 
