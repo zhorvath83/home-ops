@@ -14,11 +14,12 @@ spec:
     repeatInterval: 12h
     receiver: pushover
     routes:
-      - receiver: blackhole
+      - receiver: heartbeat
         matchers:
           - name: alertname
             value: Watchdog
             matchType: =
+        repeatInterval: 5m
       - receiver: blackhole
         matchers:
           - name: alertname
@@ -43,6 +44,13 @@ spec:
           matchType: =
   receivers:
     - name: blackhole
+    - name: heartbeat
+      webhookConfigs:
+        - urlSecret:
+            name: alertmanager-secret
+            key: watchdog_ping_url
+          sendResolved: false
+          maxAlerts: 1
     - name: pushover
       pushoverConfigs:
         - html: true

@@ -119,6 +119,13 @@ spec:
             type: victoriametrics-logs-datasource
             access: proxy
             url: http://victoria-logs-server.observability.svc.cluster.local:9428
+          - name: Alertmanager
+            type: alertmanager
+            access: proxy
+            url: http://kube-prometheus-stack-alertmanager.observability.svc.cluster.local:9093
+            jsonData:
+              implementation: prometheus
+              handleGrafanaManagedAlerts: false
     # ============================================================================
     # Sidecar for ConfigMap dashboards
     # ============================================================================
@@ -303,6 +310,6 @@ spec:
       auth.basic:
         disable_login_form: false
       unified_alerting:
-        enabled: false
+        enabled: true
       alerting:
         enabled: false
