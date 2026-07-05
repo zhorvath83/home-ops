@@ -48,35 +48,44 @@ retires a maintained container image.
 
 - [decision] Relay end-state = **phased replace, eventual retirement**. Stand up Alertmanager in parallel, add the Flux type:alertmanager Provider, verify, THEN delete the custom relay + generic Provider + flux-alerts Alert. No alerting gap at any point.
 - [decision] Alertmanager UI = **internal gateway route only** (`alertmanager.${PUBLIC_DOMAIN}` on envoy-internal, like grafana/logs). LAN-only.
-- [decision] Heartbeat / dead-man's-switch = **skipped for now** (no external uptime monitor). Watchdog can be wired later as a follow-up if healthchecks.io / gatus / Uptime-Kuma appears.
-- [decision] Rule scope = **extended**: keep current groups, additionally enable `general` (Watchdog + InfoInhibitor), `node`, `nodeExporterAlerting`, `nodeExporterRecording`; add a custom OOMKilled PrometheusRule.
+- [decision] Heartbeat / dead-man's-switch = **skipped for now** (no external uptime monitor). Watchdog is routed to blackhole in steady state; wire it to a heartbeat later as a follow-up if healthchecks.io / gatus / Uptime-Kuma appears.
+- [decision] Rule scope = **extended**: keep current groups, additionally enable `general` (Watchdog + InfoInhibitor + TargetDown), `node`, `nodeExporterAlerting`, `nodeExporterRecording`; add a custom OOMKilled PrometheusRule.
 - [decision] GitHub commit-status Provider/Alert (`components/common/alerts/github/`) is a different function (commit statuses) and **stays untouched**.
 
 ## Reference alignment (what bjw-s + onedr0p do)
 
-- [reference] Both enable Alertmanager via `alertmanager.route.main` (Gateway API, envoy-internal) + `alertmanager.alertmanagerSpec` with `alertmanagerConfiguration.name: alertmanager`, `externalUrl`, and a 1Gi PVC.
-- [reference] Both ship an `AlertmanagerConfig` CR (`monitoring.coreos.com/v1alpha1`) named `alertmanager`: default receiver = pushover (rich HTML template, sendResolved), a `blackhole` receiver for InfoInhibitor, a Watchdog route to a heartbeat, and inhibitRules (critical inhibits warning on same alertname+namespace). We drop the heartbeat route/receiver per decision.
+- [reference] Both enable Alertmanager via `alertmanager.route.main` (Gateway API, envoy-internal) + `alertmanager.alertmanagerSpec` with `alertmanagerConfiguration.name: alertmanager`, `externalUrl`, and a 1Gi PVC. The `route.main` Gateway-API support is a chart feature present in the version we run (v86.3.2) — the sibling `../grafana/app/helmrelease.yaml` uses the identical `route.main` shape, so it is proven in this repo.
+- [reference] Both ship an `AlertmanagerConfig` CR (`monitoring.coreos.com/v1alpha1`) named `alertmanager`: default receiver = pushover (rich HTML template, sendResolved), a `blackhole` receiver for InfoInhibitor/Watchdog, and inhibitRules (critical inhibits warning on same alertname+namespace). References route Watchdog to an external heartbeat; we blackhole it (no heartbeat yet).
 - [reference] Both ship an `ExternalSecret` named `alertmanager` targeting secret `alertmanager-secret` with pushover token + userkey pulled from 1Password.
 - [reference] Neither customizes `defaultRules` (full chart defaults, multi-node). Our repo stays minified but widens the enabled set per the extended-scope decision.
 - [reference] Custom PrometheusRules: OOMKilled (both), ZFS (both), DockerHub rate-limit (onedr0p). We take **OOMKilled only** (ZFS/DockerHub not applicable here).
 - [reference] **onedr0p replaces its custom Flux to Pushover path exactly the way we plan**: `kubernetes/components/alerts/alertmanager/` holds a Flux `Provider` `type: alertmanager` (address `http://alertmanager-operated.<ns>.svc.cluster.local:9093/api/v2/alerts/`) + an `Alert` covering all Flux event kinds. Canonical template for Phase 2.
 
+## AD-023 network model — READ before 1.1 and 1.5 (repo-specific, references do NOT have this)
+
+This cluster runs a Cilium label-driven network baseline (V3 flip). It differs from the
+reference repos, which have no default-deny. Two consequences the executor MUST handle:
+
+- [netmodel] **Egress to the public internet is NOT in the baseline.** Pods in `flux-system` and `cert-manager` get world egress for free (second spec of `allow-world-egress`), which is why the current relay reaches Pushover. **Alertmanager lives in `observability`, which does NOT** — so the Alertmanager pod MUST carry `egress.home.arpa/allow-world: "true"` or it cannot reach `api.pushover.net` and Pushover delivery silently fails. (Reference file: `kubernetes/apps/kube-system/cilium/netpols/allow-world-egress.yaml`.)
+- [netmodel] **Ingress is default-deny once a pod is selected by any ingress policy.** Labeling Alertmanager with `ingress.home.arpa/gateways` + `ingress.home.arpa/prometheus` (needed for the UI route + prometheus scrape) makes it ingress default-deny for everything else. The Flux notification-controller (Phase 2) posting to `alertmanager-operated:9093` is neither a gateway nor prometheus, so it needs an **explicit per-app `CiliumNetworkPolicy`** (step 1.5). The two `ingress.home.arpa/*` grants come from cluster-wide policies (`ingress-from-gateways`, `ingress-from-prometheus`); Cilium unions all ingress allow rules.
+- [netmodel] In-cluster egress (pod→pod, kube-apiserver) is allowed by the `allow-cluster-egress` baseline; the `allow-world` label ADDS world egress without opting out of cluster egress. No DNS rule needed (`allow-dns-egress` applies to all pods).
+
 ## Target end-state
 
-- Alertmanager running in `observability`, 1Gi local-hostpath PVC, internal-gateway route.
-- One `AlertmanagerConfig` (pushover + blackhole + InfoInhibitor route + inhibitRules).
+- Alertmanager running in `observability`, 1Gi local-hostpath PVC, internal-gateway route, world-egress label for Pushover.
+- One `AlertmanagerConfig` (pushover + blackhole for InfoInhibitor & Watchdog + inhibitRules).
 - `alertmanager-secret` via ExternalSecret from 1Password.
 - Extended default rules + OOMKilled custom rule.
+- One per-app CiliumNetworkPolicy granting flux notification-controller → Alertmanager:9093.
 - Flux reconciliation errors delivered through Alertmanager (Flux `type: alertmanager` Provider), not the custom relay.
 - Retired: `flux-provider-pushover` app, generic `pushover` Provider, `flux-alerts` Alert.
 - Kept: GitHub commit-status Provider/Alert.
 
 ---
 
-## MANUAL PREREQUISITE (human, before Phase 1 deploy)
+## MANUAL PREREQUISITE (human — DONE 2026-07-05)
 
-- [prereq] In the **Pushover dashboard**, create a new Application named `Alertmanager` and copy its API token. In **1Password**, open the existing `pushover` item (the one already backing the relay) and add a field `PUSHOVER_ALERTMANAGER_TOKEN` with that token. Do NOT reuse `PUSHOVER_FLUXCD_API_KEY` — keep sources distinguishable in Pushover. `PUSHOVER_USER_KEY` already exists and is reused as-is.
-- [note] This step cannot be done by the executor AI (external dashboard + secret manager). Hard gate for Phase 1: the ExternalSecret will not become Ready without `PUSHOVER_ALERTMANAGER_TOKEN`.
+- [prereq] In the **Pushover dashboard**, create a new Application named `Alertmanager` and copy its API token. In **1Password**, open the existing `pushover` item and add a field `PUSHOVER_ALERTMANAGER_TOKEN` with that token. `PUSHOVER_USER_KEY` already exists and is reused as-is. **Status: completed by the user on 2026-07-05** — the `PUSHOVER_ALERTMANAGER_TOKEN` field exists in the `pushover` 1Password item. This is a hard gate for Phase 1: the ExternalSecret will not become Ready without it.
 
 ---
 
@@ -86,7 +95,7 @@ All paths under `kubernetes/apps/observability/kube-prometheus-stack/app/`.
 
 ### 1.1 Edit `helmrelease.yaml`
 
-- [step] Replace the `AlertManager - DISABLED` block (currently `alertmanager.enabled: false`) with:
+- [step] Replace the `AlertManager - DISABLED` block (currently `alertmanager.enabled: false`, around lines 55-59) with:
 
 ```yaml
     alertmanager:
@@ -106,8 +115,11 @@ All paths under `kubernetes/apps/observability/kube-prometheus-stack/app/`.
         externalUrl: "https://alertmanager.${PUBLIC_DOMAIN}"
         podMetadata:
           labels:
+            # AD-023: envoy-routed UI (gateways CCNP) + prometheus scrape (prometheus CCNP)
+            # + internet egress for api.pushover.net (allow-world CCNP — observability is NOT free-world).
             ingress.home.arpa/gateways: "true"
             ingress.home.arpa/prometheus: "true"
+            egress.home.arpa/allow-world: "true"
         resources:
           requests:
             cpu: 5m
@@ -125,8 +137,9 @@ All paths under `kubernetes/apps/observability/kube-prometheus-stack/app/`.
                   storage: 1Gi
 ```
 
-- [step] In `defaultRules.rules`, flip to `true`: `general`, `node`, `nodeExporterAlerting`, `nodeExporterRecording`. Leave the rest as-is. (`general` gives Watchdog + InfoInhibitor, which the AlertmanagerConfig routes/inhibits.)
-- [check] Mirror AD-023 labels + the exact envoy-internal `sectionName`/`namespace` from `../grafana/app/helmrelease.yaml` and `../victoria-logs/app/helmrelease.yaml`. The gateway namespace in this repo is `networking` (not `network` as in upstream references) — confirm before commit.
+- [step] In `defaultRules.rules`, flip to `true`: `general`, `node`, `nodeExporterAlerting`, `nodeExporterRecording`. Leave the rest as-is. (`general` gives Watchdog + InfoInhibitor + TargetDown.)
+- [note] No manual Prometheus→Alertmanager wiring is needed: the operator auto-populates the Prometheus CR `spec.alerting.alertmanagers` when `alertmanager.enabled: true`. Do not look for a separate config step.
+- [check] The gateway namespace in this repo is `networking` (not `network` as in the upstream references) — confirm against `../grafana/app/helmrelease.yaml` `route.main` before commit.
 
 ### 1.2 New file `externalsecret.yaml`
 
@@ -156,7 +169,7 @@ spec:
 
 ### 1.3 New file `alertmanagerconfig.yaml`
 
-Adapted from onedr0p/bjw-s, heartbeat removed:
+Adapted from onedr0p/bjw-s; heartbeat removed, Watchdog routed to blackhole (no external monitor yet):
 
 ```yaml
 ---
@@ -175,6 +188,11 @@ spec:
     repeatInterval: 12h
     receiver: pushover
     routes:
+      - receiver: blackhole
+        matchers:
+          - name: alertname
+            value: Watchdog
+            matchType: =
       - receiver: blackhole
         matchers:
           - name: alertname
@@ -269,29 +287,55 @@ resources:
   - ./oomkilled.yaml
 ```
 
-### 1.5 Edit `ciliumnetworkpolicy.yaml`
+### 1.5 Edit `ciliumnetworkpolicy.yaml` — APPEND a second document
 
-- [step] Add a CiliumNetworkPolicy for the alertmanager endpoint (`app.kubernetes.io/name: alertmanager`) allowing **ingress** from (a) the envoy-internal gateway on 9093 (UI) and (b) the flux-system notification-controller on 9093 (needed in Phase 2; pre-provisioning now is harmless).
-- [check] Do NOT hand-invent selectors. Read BM `docs/areas/networking` + the `security-review`/`networking-platform` skill and mirror an existing cross-namespace ingress post-V3-flip. The AD-023 `ingress.home.arpa/gateways` pod label from 1.1 may already cover the gateway path; the flux-system to alertmanager path likely needs an explicit rule.
+The file currently holds one CNP (prometheus egress to the OpenWRT router). Keep it, and append the alertmanager ingress policy as a second `---` document in the SAME file (the kustomization already references `./ciliumnetworkpolicy.yaml`, no kustomization change needed). This grants the Flux notification-controller → Alertmanager path used in Phase 2; provisioning it now is harmless.
+
+```yaml
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
+# alertmanager (AD-023): envoy + prometheus ingress via the matching CCNPs; this CNP adds the
+# flux notification-controller east-west rule (Flux reconciliation alerts → Alertmanager API, Phase 2).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: alertmanager
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: alertmanager
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: flux-system
+            app: notification-controller
+      toPorts:
+        - ports:
+            - port: "9093"
+              protocol: TCP
+```
+
+- [note] `app.kubernetes.io/name: alertmanager` is the operator-created Alertmanager pod label (same convention as the prometheus selector in `ingress-from-prometheus`). `app: notification-controller` is the verified pod label of the Flux notification-controller in flux-system. Do NOT set `metadata.namespace` on this file — the ks `targetNamespace: observability` places it (matches the sibling prometheus CNP).
 
 ### 1.6 Edit `kustomization.yaml`
 
-- [step] Add `./externalsecret.yaml`, `./alertmanagerconfig.yaml`, `./prometheusrules` to `resources`. Keep existing entries.
+- [step] Add `./externalsecret.yaml`, `./alertmanagerconfig.yaml`, `./prometheusrules` to `resources`. Keep existing entries. (`./ciliumnetworkpolicy.yaml` is already listed — the appended doc rides along.)
 
 ### 1.7 Commit + reconcile + VERIFY (Phase 1 gate)
 
 - [verify] After commit + push: `just k8s flux-reconcile` (or `flux reconcile ks kube-prometheus-stack`).
-- [verify] `kubectl -n observability get externalsecret alertmanager` Ready=True (else the 1Password prereq is missing). Direct Secret reads are DENIED — use ExternalSecret status, not `kubectl get secret`.
+- [verify] `kubectl -n observability get externalsecret alertmanager` Ready=True (else the 1Password prereq is missing). Direct Secret content reads are DENIED by policy — use ExternalSecret status only.
 - [verify] `kubectl -n observability get alertmanager,pods -l app.kubernetes.io/name=alertmanager` pod Running/Ready, PVC Bound.
-- [verify] `kubectl -n observability get prometheusrule` shows `oom-alert` + the newly enabled default groups.
-- [verify] Reach `https://alertmanager.${PUBLIC_DOMAIN}` from LAN; Status shows the pushover receiver config.
-- [verify] **End-to-end Pushover test**: confirm a real alert reaches the phone. Watchdog (always-firing, from `general`) is the cleanest signal. Alternatively fire a synthetic alert with `amtool alert add`. Record the method in the progress note.
+- [verify] `kubectl -n observability get httproute` shows an alertmanager route; `kubectl -n observability get ciliumnetworkpolicy` shows the `alertmanager` policy.
+- [verify] `kubectl -n observability get prometheusrule` shows `oom-alert` + the newly enabled default groups (general/node/etc.).
+- [verify] Reach `https://alertmanager.${PUBLIC_DOMAIN}` from LAN; the Status page shows the loaded config (pushover receiver).
+- [verify] **End-to-end Pushover test** (proves both the AlertmanagerConfig AND the world-egress label): inject a synthetic alert rather than relying on Watchdog (which is blackholed). Port-forward and use amtool, e.g. `kubectl -n observability exec <alertmanager-pod> -- amtool alert add test_alert severity=critical --alertmanager.url=http://localhost:9093` (or `amtool` from a workstation against the port-forwarded API). Confirm the phone receives it. If it does not: check the Alertmanager pod logs for a dial timeout to `api.pushover.net` → that means the `egress.home.arpa/allow-world` label did not take. Record the method + result in the progress note.
 
 ---
 
 ## Phase 2 — Flux reconciliation errors via Alertmanager
 
-New dir `kubernetes/components/common/alerts/alertmanager/` (mirrors onedr0p `components/alerts/alertmanager/`).
+New dir `kubernetes/components/common/alerts/alertmanager/` (mirrors onedr0p `components/alerts/alertmanager/`). No netpol change here — the flux→AM ingress CNP was already added in 1.5.
 
 ### 2.1 `provider.yaml`
 
@@ -356,12 +400,13 @@ resources:
 ### 2.4 Edit `kubernetes/components/common/alerts/kustomization.yaml`
 
 - [step] Add `./alertmanager` to `resources` (alongside `./pushover` and `./github`). This deploys the Provider+Alert into every namespace pulling in the common component — same fan-out as `pushover`/`github`.
-- [note] The address is a fixed cluster-DNS name to observability; a per-namespace Provider is fine (Flux resolves the cross-namespace Service URL), mirroring how the generic `pushover` Provider already points at the flux-system relay Service from every namespace.
+- [note] The Provider address is a fixed cluster-DNS name to observability; a per-namespace Provider is fine (Flux resolves the cross-namespace Service URL), mirroring how the generic `pushover` Provider already points at the flux-system relay Service from every namespace.
 
 ### 2.5 Commit + reconcile + VERIFY (Phase 2 gate)
 
 - [verify] `kubectl get provider,alert -A | grep alertmanager` present, Ready=True.
-- [verify] Generate a benign Flux error and confirm it reaches Pushover **via Alertmanager** (Alertmanager UI shows the Flux alert; phone gets it). Safe way: throwaway test Kustomization/HelmRelease with a bad ref on a branch, revert after.
+- [verify] Generate a benign Flux error and confirm it reaches Pushover **via Alertmanager** (Alertmanager UI shows the incoming Flux alert; phone gets it). Safe way: point a throwaway test Kustomization/HelmRelease at a bad ref on a branch, revert after.
+- [verify] If the Flux alert appears in notification-controller logs as "sent" but never shows in Alertmanager, suspect the 1.5 ingress CNP (notification-controller blocked at :9093) — check `kubectl -n flux-system logs deploy/notification-controller` for a connection error to alertmanager-operated.
 - [verify] During Phase 2 BOTH paths (old relay + new Alertmanager) are active — expected, confirms no gap before Phase 3.
 
 ---
@@ -370,13 +415,13 @@ resources:
 
 ### 3.1 Remove the relay app
 
-- [step] Delete `kubernetes/apps/flux-system/flux-provider-pushover/` (git rm the dir).
-- [step] Remove its reference in `kubernetes/apps/flux-system/kustomization.yaml` (or the aggregating ks). Confirm `grep -rn flux-provider-pushover kubernetes/` returns nothing.
+- [step] Delete the directory `kubernetes/apps/flux-system/flux-provider-pushover/`.
+- [step] Edit `kubernetes/apps/flux-system/kustomization.yaml` and remove the line `- ./flux-provider-pushover/ks.yaml` (verified present at line 12). Confirm `grep -rn flux-provider-pushover kubernetes/` returns nothing.
 
 ### 3.2 Remove the generic Pushover Provider + flux-alerts Alert
 
-- [step] Delete `kubernetes/components/common/alerts/pushover/` (provider.yaml, alert.yaml, externalsecret.yaml, kustomization.yaml).
-- [step] Edit `kubernetes/components/common/alerts/kustomization.yaml`: remove `./pushover`. Keep `./github` and `./alertmanager`.
+- [step] Delete the directory `kubernetes/components/common/alerts/pushover/` (provider.yaml, alert.yaml, externalsecret.yaml, kustomization.yaml).
+- [step] Edit `kubernetes/components/common/alerts/kustomization.yaml`: remove `- ./pushover`. Keep `- ./github` and `- ./alertmanager`.
 
 ### 3.3 Keep GitHub commit-status untouched
 
@@ -391,15 +436,15 @@ resources:
 
 ### 3.5 Optional follow-ups (NOT this roadmap unless asked)
 
-- [followup] Grafana Alertmanager datasource (grafana helmrelease datasources: `type: alertmanager`, url `http://alertmanager-operated.observability.svc.cluster.local:9093`).
-- [followup] Dead-man's-switch: if healthchecks.io / gatus / Uptime-Kuma is added, add a Watchdog to heartbeat route + receiver + secret.
+- [followup] Grafana Alertmanager datasource (grafana helmrelease datasources: `type: alertmanager`, url `http://alertmanager-operated.observability.svc.cluster.local:9093`). NOTE: this adds a grafana→AM:9093 east-west path — extend the 1.5 CNP with a second `fromEndpoints` entry for `{namespace: observability, app.kubernetes.io/name: grafana}` or grafana calls will be blocked by AM's default-deny ingress.
+- [followup] Dead-man's-switch: if healthchecks.io / gatus / Uptime-Kuma is added, replace the Watchdog→blackhole route with a Watchdog→heartbeat receiver (webhookConfigs) + secret, per the reference AlertmanagerConfig.
 - [followup] Consider enabling `kubernetesResources`/`kubernetesStorage` default groups once node/general rules prove stable.
 
 ---
 
 ## Documentation updates (Phase 3 close-out)
 
-- [doc] Update BM `docs/areas/observability`: Alertmanager ENABLED (route, PVC, rules), flux-alerts relay retired, alerting unified. Bump `verified_at`.
+- [doc] Update BM `docs/areas/observability`: Alertmanager ENABLED (route, PVC, rules, allow-world label), flux-alerts relay retired, alerting unified. Bump `verified_at`.
 - [doc] Update BM `docs/areas/flux-gitops`: replace the flux-alerts/flux-provider-pushover model with the `type: alertmanager` Provider model; note GitHub commit-status unchanged; resolve the existing "Pushover provider model split" open question.
 - [doc] Optionally add an AD note capturing "why Alertmanager over the custom relay".
 
