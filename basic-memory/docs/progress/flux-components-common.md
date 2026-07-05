@@ -76,7 +76,7 @@ with an opt-out via `labelSelector: substitution.flux.home.arpa/disabled notin (
 | Reference piece | Action | Why |
 |---|---|---|
 | `namespace.yaml` (`not-used` dummy namespace) | **Rejected — per-namespace files instead** | Initial implementation used a shared `_` namespace, but each namespace needs different labels/annotations. Moved to per-namespace `apps/*/namespace.yaml` files (2026-05-23). |
-| `alerts/alertmanager/` | **Defer / skip** | We have no Alertmanager today; depends on [[alertmanager-enable]]. Until then, the existing per-namespace Pushover `components/flux-alerts/` covers this path |
+| `alerts/alertmanager/` | **Adopted (2026-07-05)** | Built and live via [[alertmanager-introduction]] — Flux Provider+Alert → in-cluster Alertmanager. The per-namespace Pushover `components/flux-alerts/` relay was retired (Phase 3) |
 | `alerts/github/` | **Adopt and adapt** | Posts Flux Kustomization status back to GitHub as commit-status checks — high value for visible MR feedback. Needs 1P item `flux` (or equivalent) with a GitHub PAT, plumbed via ExternalSecret backed by our `onepassword-connect` ClusterSecretStore (not the heavybullets8 `onepassword` name) |
 | `repos/app-template/` | **Adopt** | Removes per-app duplication of the bjw-s `app-template` OCIRepository. Inventory the app subtrees that currently declare their own and migrate to the shared one |
 | `sops/` | **Skip** | Phase 6.7 (2026-05-17) collapsed the runtime SOPS layer entirely (`AD-009` superseded). We do not want to reintroduce SOPS at the substitution layer |
@@ -99,7 +99,7 @@ Today our `kubernetes/flux/cluster/ks.yaml` already has a patch that injects Hel
 3. Migrate hardcoded values to `${VAR}` substitution one subtree at a time, validating reconciliation between each batch
 4. Land `repos/app-template/` and migrate apps' `chartRef` to the shared OCIRepository
 5. Add `alerts/github/` once the 1P `flux` item is provisioned with a scoped PAT (Repo-status write only)
-6. Defer `alerts/alertmanager/` until [[alertmanager-enable]] is decided and implemented
+6. `alerts/alertmanager/` — DONE via [[alertmanager-introduction]] (2026-07-05); subtree built and live in `components/common/alerts/alertmanager/`
 
 ## Rationale
 
@@ -111,7 +111,7 @@ Today our `kubernetes/flux/cluster/ks.yaml` already has a patch that injects Hel
 ## Tradeoffs and risks
 
 - **Coordination with [[pushover-provider-model-unify]]**: that roadmap item already flags that we have two parallel Pushover delivery surfaces. Adding `alerts/github/` to a new `components/common/` introduces a *third* alerting surface unless we unify first. Sequencing matters.
-- **Coordination with [[alertmanager-enable]]**: if we adopt Alertmanager, the `alerts/alertmanager/` subtree becomes relevant; if we don't, it stays disabled. The common component should be designed so the alertmanager subtree can be added later without restructuring.
+- **Coordination with [[alertmanager-introduction]]**: Alertmanager was adopted (2026-07-05); the `alerts/alertmanager/` subtree is built and live in `components/common/alerts/alertmanager/`. The common component design accommodated adding the subtree without restructuring.
 - **Substitution-on-everything blast radius**: any malformed `cluster-settings` ConfigMap entry that interpolates into a manifest can break reconciliation across every Kustomization in one shot. The `substitution.flux.home.arpa/disabled` opt-out label is the escape hatch — needs to be documented as part of the rollout.
 - **SOPS resurrection risk**: the heavybullets8 reference uses SOPS for cluster-secrets. We must NOT copy this; `AD-009` was explicitly superseded. Sensitive substitution vars (if any) MUST flow through ExternalSecret-backed `Secret/cluster-secrets`.
 - **VolSync privileged-mover annotation**: the dummy namespace declares `volsync.backube/privileged-movers: "true"`. We need to verify this is the right default for the home-ops cluster — `docs/areas/volsync-backup` should be cross-checked before adopting verbatim.
@@ -120,7 +120,7 @@ Today our `kubernetes/flux/cluster/ks.yaml` already has a patch that injects Hel
 ## Options
 
 1. **Full adoption** — mirror the heavybullets8 layout 1:1, dropping only the `sops/` and `vars/cluster-secrets.secret.sops.yaml` pieces. Maximum parity, highest cognitive familiarity for anyone coming from the homelab community.
-2. **Selective adoption (recommended starting point)** — `namespace.yaml` + `repos/app-template/` + `vars/cluster-settings.yaml` + cluster `ks.yaml` substituteFrom patch first. Defer `alerts/github/` and `alerts/alertmanager/` until the cross-cutting alerting model is resolved via [[pushover-provider-model-unify]] and [[alertmanager-enable]].
+2. **Selective adoption (recommended starting point)** — `namespace.yaml` + `repos/app-template/` + `vars/cluster-settings.yaml` + cluster `ks.yaml` substituteFrom patch first. `alerts/github/` landed with this roadmap; `alerts/alertmanager/` landed later via [[alertmanager-introduction]] (the cross-cutting alerting model was resolved there).
 3. **Substitution-only adoption** — just the `vars/cluster-settings` ConfigMap and the `ks.yaml` substituteFrom patch. Skip the components/common Kustomize Component shape entirely. Minimum surface, but loses the shared OCIRepository and GitHub-alert benefits.
 
 ## Related
@@ -129,7 +129,7 @@ Today our `kubernetes/flux/cluster/ks.yaml` already has a patch that injects Hel
 - relates_to [[k8s-workloads]]
 - relates_to [[external-secrets]]
 - relates_to [[pushover-provider-model-unify]]
-- relates_to [[alertmanager-enable]]
+- relates_to [[alertmanager-introduction]]
 - relates_to [[volsync-backup]]
 
 ## Identified consumers
@@ -143,4 +143,4 @@ Implemented via commit 925b3cfd4 and 4da7cc2a5. The cluster-settings ConfigMap n
 Deferred items:
 
 - Shared OCIRepository for bjw-s app-template (repos/app-template/) — deferred to a follow-up
-- Alertmanager integration — deferred pending alertmanager-enable roadmap item
+- Alertmanager integration — DONE (2026-07-05) via [[alertmanager-introduction]]; the `alerts/alertmanager/` subtree is built and live

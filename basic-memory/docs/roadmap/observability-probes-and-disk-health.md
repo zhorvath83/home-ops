@@ -58,11 +58,11 @@ Both have low operational cost; both are present in all three reference clusters
 
 ## Options
 
-The two exporters are independent; either could be deployed first if the work needs to be split. Recommended order: **smartctl-exporter first** (highest signal on a single-node cluster), **blackbox-exporter second** (after the Pushover/Alertmanager routing model is clarified — see [[pushover-provider-model-unify]], [[alertmanager-enable]]).
+The two exporters are independent; either could be deployed first if the work needs to be split. Recommended order: **smartctl-exporter first** (highest signal on a single-node cluster), **blackbox-exporter second**. The Pushover/Alertmanager routing model is now resolved via [[alertmanager-introduction]] (Alertmanager live, Flux alerts routed through it).
 
 ## Related
 
 - relates_to [[observability]]
 - relates_to [[talos-cluster]]
 - relates_to [[pushover-provider-model-unify]]
-- relates_to [[alertmanager-enable]]
+- relates_to [[alertmanager-introduction]]
