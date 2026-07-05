@@ -2,7 +2,7 @@
 title: alertmanager-introduction
 type: roadmap
 permalink: home-ops/docs/roadmap/alertmanager-introduction
-status: planned
+status: done
 confidence: high
 area: observability
 created: '2026-07-05'
@@ -25,7 +25,7 @@ tags:
 ## Metadata (observation-form)
 
 - [area] observability
-- [status] planned
+- [status] done
 - [confidence] high
 - [created] 2026-07-05
 - [complexity] medium-large (three phases, spans observability + flux-system + components/common)
@@ -462,3 +462,18 @@ resources:
 - relates_to [[flux-gitops]]
 - depends_on [[external-secrets]]
 - relates_to [[networking]]
+
+---
+
+## Completion — 2026-07-05
+
+Roadmap executed end-to-end across three phases with verification gates between each. All commits on `main`:
+
+- **Phase 1** (`401d50021` + `cbf182f4e`): enabled Alertmanager in kube-prometheus-stack (internal-gateway route `alertmanager.${PUBLIC_DOMAIN}`, 1Gi local-hostpath PVC, AD-023 labels `ingress.home.arpa/gateways` + `ingress.home.arpa/prometheus` + `egress.home.arpa/allow-world`), `alertmanager` ExternalSecret from 1Password `pushover` item (PUSHOVER_ALERTMANAGER_TOKEN + PUSHOVER_USER_KEY), `alertmanager` AlertmanagerConfig (pushover default receiver, Watchdog/InfoInhibitor→blackhole, severity=critical→pushover, inhibitRules), extended default rules (`general` + `node` + `nodeExporterAlerting` + `nodeExporterRecording`), custom `oom-alert` PrometheusRule, and the alertmanager ingress CiliumNetworkPolicy (flux notification-controller→:9093, provisioned in Phase 1 for Phase 2). Verified: ExternalSecret Ready, Alertmanager pod Running 2/2, PVC Bound, HTTPRoute present, CNP VALID, PrometheusRules present, Prometheus auto-wired to Alertmanager, loaded config shows pushover receiver. End-to-end synthetic `test_alert` (severity=critical) delivered to Pushover — confirms both AlertmanagerConfig and the allow-world egress label.
+- **Phase 1 add-on** (`cbf182f4e`): added Alertmanager to the Homepage dashboard (Observability group, `alertmanager.svg` icon, pod-selector status).
+- **Phase 2** (`94a2f3359`): added `components/common/alerts/alertmanager/` (Flux `Provider` `type: alertmanager` → `http://alertmanager-operated.observability.svc.cluster.local:9093/api/v2/alerts/` + `Alert` covering FluxInstance/GitRepository/HelmRelease/HelmRepository/Kustomization/OCIRepository with the same exclusionList as the retired relay), wired into `components/common/alerts/kustomization.yaml`. Fan-out confirmed: 12 namespaces carry the alertmanager Provider+Alert. End-to-end Flux error (throwaway `alertmanager-test` Kustomization, bad path → ArtifactFailed) flowed notification-controller→Alertmanager API (`FluxKustomizationArtifactfailed` active, severity=error→default pushover receiver) and delivered to Pushover.
+- **Phase 3** (`93a8b58ab`): retired the custom relay — deleted `apps/flux-system/flux-provider-pushover/` and `components/common/alerts/pushover/`, removed both from their parent kustomizations. GitHub commit-status Provider/Alert kept untouched. Pruning verified cluster-wide: relay Deployment gone, `pushover` Provider + `flux-alerts` Alert + `flux-pushover-secret` + `flux-provider-pushover-secret` ExternalSecrets pruned, only `alertmanager` + `github`/`github-status` remain. Regression test (same throwaway Kustomization, old relay now gone) confirmed Pushover still delivers — solely via Alertmanager, no alerting gap.
+
+**Side note**: the kube-prometheus-stack chart was already at tag `87.10.1` in the repo (Renovate-tracked) when this roadmap landed; the BM `docs/areas/observability` note (verified 2026-06-20) still said v86.3.2 — corrected in the area-note update.
+
+**Follow-ups (out of scope here, per roadmap 3.5)**: Grafana Alertmanager datasource (needs grafana→AM:9093 east-west CNP entry); dead-man's-switch if an uptime monitor is added (replace Watchdog→blackhole with Watchdog→heartbeat webhook receiver); consider `kubernetesResources`/`kubernetesStorage` default rule groups once node/general rules prove stable.

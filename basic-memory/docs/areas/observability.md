@@ -98,7 +98,7 @@ The namespace is `observability` and pulls in the shared `common` component (whi
 ## Drift Risk
 
 - [drift] The minified kube-prometheus-stack disables most default alerting rules and exporters — intentional for one node, but a blind spot if the cluster ever scales to multi-node or if a platform needs its own alerts.
-- [drift] Alertmanager is shipped by the chart but disabled; Flux failures page via Pushover (flux-alerts) while Prometheus-rule alerting is effectively off. Closing that gap needs an explicit Alertmanager route or an alternative rule sink.
+- [drift] (Resolved 2026-07-05 by roadmap alertmanager-introduction) Alertmanager is now ENABLED — internal-gateway route alertmanager.${PUBLIC_DOMAIN}, 1Gi local-hostpath PVC, AlertmanagerConfig with pushover receiver, extended default rules (general/node/nodeExporterAlerting/nodeExporterRecording) + custom oom-alert PrometheusRule. Flux reconciliation alerts now route through the Flux type:alertmanager Provider (components/common/alerts/alertmanager) into the same Alertmanager; the custom flux-provider-pushover relay + flux-alerts component are retired. See the Update section below.
 - [drift] Per-platform ServiceMonitors and PrometheusRules are scattered with no inventory — an app that omits its own ServiceMonitor is silently unmonitored.
 - [drift] Prometheus (7d/4500MB on 5Gi) and victoria-logs (14d on 10Gi) retention are fixed sizes tuned for current volume; revisit if metric/log volume grows or the local-hostpath PVC fills.
 - [drift] Chart tags (kube-prometheus-stack, grafana, victoria-logs server/collector, speedtest-exporter image) are Renovate-tracked OCI refs — a major bump can change CRDs or values schema; review before merging.
@@ -118,3 +118,28 @@ The namespace is `observability` and pulls in the shared `common` component (whi
 - relates_to [[flux-gitops]]
 - relates_to [[volsync-backup]]
 - part_of [[home-ops-platform]]
+
+## Update — 2026-07-05 (Alertmanager enablement + Flux alert unification)
+
+Implemented via roadmap `docs/roadmap/alertmanager-introduction` (status: done). Re-verified against the cluster after each phase.
+
+**Alertmanager now ENABLED** in kube-prometheus-stack (chart tag is now `87.10.1` in the repo — the prior note's v86.3.2 was stale):
+- `alertmanager.enabled: true` with `route.main` on `envoy-internal` (networking/https), host `alertmanager.${PUBLIC_DOMAIN}` — LAN-only UI like grafana/logs.
+- `alertmanagerSpec.alertmanagerConfiguration.name: alertmanager`, `externalUrl: https://alertmanager.${PUBLIC_DOMAIN}`, 1Gi `democratic-csi-local-hostpath` PVC.
+- podMetadata labels: `ingress.home.arpa/gateways` + `ingress.home.arpa/prometheus` (UI + scrape via cluster CCNPs) and `egress.home.arpa/allow-world` (api.pushover.net — observability is NOT free-world under AD-023 V3 baseline; without this label Pushover delivery silently fails).
+- defaultRules widened: `general` (Watchdog + InfoInhibitor + TargetDown), `node`, `nodeExporterAlerting`, `nodeExporterRecording` flipped to true. `alertmanager` rule group left false (we ship our own AlertmanagerConfig).
+- Custom `oom-alert` PrometheusRule (severity=critical) under `app/prometheusrules/`.
+
+**Secret delivery**: `alertmanager` ExternalSecret → `alertmanager-secret` via the `onepassword-connect` ClusterSecretStore, extracting `PUSHOVER_ALERTMANAGER_TOKEN` + `PUSHOVER_USER_KEY` from the 1Password `pushover` item (token field created manually 2026-07-05 as a hard gate).
+
+**AlertmanagerConfig** (`app/alertmanagerconfig.yaml`): default receiver pushover (rich HTML template, sendResolved, sound gamelan, ttl 86400s); Watchdog + InfoInhibitor routed to a `blackhole` receiver (no external heartbeat monitor yet — follow-up if gatus/Uptime-Kuma/healthchecks.io is added); severity=critical routed to pushover; inhibitRules (critical inhibits warning on same alertname+namespace).
+
+**Networking (AD-023)**: a second CiliumNetworkPolicy document appended to `app/ciliumnetworkpolicy.yaml` — `alertmanager` ingress granting flux-system/notification-controller → :9093 (the Flux→Alertmanager east-west path). The existing prometheus openwrt-scrape CNP is unchanged. No `metadata.namespace` (ks `targetNamespace: observability` places it).
+
+**Flux alerting unified**: the custom `ghcr.io/zhorvath83/flux-provider-pushover` relay app (`apps/flux-system/flux-provider-pushover/`) and the `components/common/alerts/pushover/` Provider/Alert/ExternalSecret bundle are RETIRED. Flux reconciliation errors now flow through a native Flux `Provider` `type: alertmanager` (`components/common/alerts/alertmanager/provider.yaml` → `http://alertmanager-operated.observability.svc.cluster.local:9093/api/v2/alerts/`) + `Alert` covering FluxInstance/GitRepository/HelmRelease/HelmRepository/Kustomization/OCIRepository, wired into `components/common/alerts/kustomization.yaml` alongside `github`. Fan-out: 12 namespaces carry the alertmanager Provider+Alert. The GitHub commit-status Provider/Alert (`components/common/alerts/github/`) is unchanged.
+
+**Homepage**: Alertmanager added to the Homepage dashboard Observability group (`alertmanager.svg` icon, pod-selector status) via HTTPRoute annotations on `route.main`.
+
+**Verified live**: ExternalSecret Ready, Alertmanager pod Running 2/2, PVC Bound, HTTPRoute present, CNP VALID, PrometheusRules present (oom-alert + general/node/node-exporter groups), Prometheus auto-wired to Alertmanager (operator-populated spec.alerting.alertmanagers), loaded config shows pushover receiver. End-to-end synthetic alert (amtool, severity=critical) delivered to Pushover. End-to-end Flux error (throwaway Kustomization, bad path → ArtifactFailed) flowed notification-controller → Alertmanager API (`FluxKustomizationArtifactfailed`, severity=error → default pushover receiver) → Pushover. Regression test after relay retirement confirmed Pushover still delivers solely via Alertmanager — no alerting gap.
+
+**Open follow-ups** (not in this roadmap): Grafana Alertmanager datasource (needs a grafana→AM:9093 east-west CNP entry); dead-man's-switch (replace Watchdog→blackhole with a heartbeat webhook receiver if an uptime monitor lands); consider `kubernetesResources`/`kubernetesStorage` default rule groups once node/general rules prove stable.
