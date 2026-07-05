@@ -5,7 +5,7 @@ permalink: home-ops/docs/areas/networking
 area: networking
 status: current
 confidence: high
-verified_at: '2026-06-14'
+verified_at: '2026-07-05'
 summary: Gateway API with Envoy Gateway provides cluster ingress, split across two
   shared entrypoints (envoy-external for Cloudflare Tunnel public traffic, envoy-internal
   for LAN traffic on a Cilium L2-announced VIP). Single HTTPS listener per Gateway
@@ -113,7 +113,7 @@ and injected into every child Kustomization via Flux `postBuild.substituteFrom`.
 - [component] k8s-gateway — LAN split-DNS for ${PUBLIC_DOMAIN}, watches HTTPRoutes filtered to GatewayClass envoy-internal, LAN VIP ${K8S_GATEWAY_IP} (k8s-gateway/app/helmrelease.yaml)
 - [component] CiliumLoadBalancerIPPool/default — LAN VIP allocation range ${LB_IP_POOL_START}–${LB_IP_POOL_STOP} (kube-system/cilium/config/pool.yaml)
 - [component] CiliumL2AnnouncementPolicy — L2 announcement for the pool (kube-system/cilium/config/l2-announcement-policy.yaml)
-- [component] CiliumClusterwideNetworkPolicy baseline — allow-cluster-egress + allow-dns-egress (kube-system/cilium/netpols/)
+- [component] CiliumClusterwideNetworkPolicy baseline (AD-023 two-tier model; V3 flip landed in commit 953626966) — 6 CCNPs in kube-system/cilium/netpols/: allow-cluster-egress (flipped — toEndpoints {} + toEntities: cluster + toEntities: kube-apiserver; public internet no longer in baseline), allow-dns-egress (L7 DNS proxy), allow-world-egress (toCIDRSet 0.0.0.0/0 except RFC1918/100.64/10, gated by egress.home.arpa/allow-world label), ingress-from-gateways, ingress-from-prometheus, ingress-none. 5-label dictionary: egress.home.arpa/{custom-egress,allow-world} + ingress.home.arpa/{gateways,prometheus,none}. Per-app CNPs cover upstreams the flipped baseline no longer grants — coredns world:53 (kubernetes/apps/kube-system/coredns/app/ciliumnetworkpolicy.yaml) and kube-prometheus-stack-prometheus LAN 192.168.1.1/32:9100 (kubernetes/apps/observability/kube-prometheus-stack/app/ciliumnetworkpolicy.yaml).
 
 ## Claims (verified against repo)
 
@@ -133,7 +133,7 @@ and injected into every child Kustomization via Flux `postBuild.substituteFrom`.
 - [claim] "CiliumNetworkPolicy/envoy-internal restricts ingress on data ports to RFC1918 fromCIDR plus cluster/host/remote-node entities — defense-in-depth behind SecurityPolicy/envoy-internal-rfc1918" (evidence: repo, ref: ciliumnetworkpolicy-internal.yaml, verified: 2026-06-14)
 - [claim] "k8s-gateway watches HTTPRoute resources filtered to GatewayClass envoy-internal" (evidence: repo, ref: k8s-gateway/app/helmrelease.yaml:23-27, verified: 2026-05-19)
 - [claim] "Public domain managed by this stack is ${PUBLIC_DOMAIN} (from cluster-settings ConfigMap); ExternalDNS target on Gateway/envoy-external is external.${PUBLIC_DOMAIN}" (evidence: repo, ref: gateway-external.yaml + k8s-gateway/app/helmrelease.yaml:13, verified: 2026-06-14)
-- [claim] "Cilium ClusterwideNetworkPolicies allow-cluster-egress and allow-dns-egress exist as cluster-wide baseline" (evidence: repo, ref: kube-system/cilium/netpols/, verified: 2026-05-19)
+- [claim] "Cilium baseline (AD-023 V3, commit 953626966) is 6 CCNPs in kube-system/cilium/netpols/: allow-cluster-egress (flipped — toEndpoints {} + cluster + kube-apiserver, no toEntities: world), allow-dns-egress (L7 DNS proxy), allow-world-egress (toCIDRSet 0.0.0.0/0 except RFC1918/100.64/10, gated by egress.home.arpa/allow-world), ingress-from-gateways, ingress-from-prometheus, ingress-none" (evidence: repo, ref: kube-system/cilium/netpols/ + kubernetes/apps/kube-system/coredns/app/ciliumnetworkpolicy.yaml + kubernetes/apps/observability/kube-prometheus-stack/app/ciliumnetworkpolicy.yaml, verified: 2026-07-05)
 - [claim] "envoy-gateway is split into three Kustomizations: certificate, app (controller), config" (evidence: repo, ref: kubernetes/apps/networking/envoy-gateway/{certificate,app,config}/, verified: 2026-05-19)
 
 ## Drift Risk

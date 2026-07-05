@@ -5,7 +5,7 @@ permalink: home-ops/docs/areas/k8s-workloads
 area: k8s-workloads
 status: current
 confidence: high
-verified_at: '2026-06-17'
+verified_at: '2026-07-05'
 summary: 'Non-platform Flux-managed application workloads live under kubernetes/apps/<group>/<app>/
   with a canonical ks.yaml + app/ shape. The repo hosts 4 apps in the media namespace
   (consumption: calibre-web-automated, isponsorblocktv, plex, plex-trakt-sync), 8
@@ -141,7 +141,7 @@ Homepage dashboard metadata uses a stable set of groups defined in `kubernetes/a
 ## Drift Risk
 
 - [drift] HelmRelease minimal-spec is enforced **only by code review**. There is no automated lint that rejects `install.createNamespace`, `upgrade.remediation.retries`, `uninstall.keepHistory`, etc. on app HRs. Past K3s-era noise has been cleaned but can return with any new app.
-- [drift] Apps span three namespaces (media, downloads, selfhosted) with a coarse cluster-wide Cilium baseline (`allow-cluster-egress` + `allow-dns-egress`). Per-app CiliumNetworkPolicies are being rolled out per cnp-per-app-audit roadmap (paperless and pingvin-share-x already have CNPs; cloudflare-tunnel has its own). A compromised pod in any namespace still has cluster-wide egress unless it carries the `egress.home.arpa/custom-egress` opt-out label (Szint II).
+- [drift] Apps span three namespaces (media, downloads, selfhosted) under the AD-023 two-tier Cilium model (V3 flip landed, commit 953626966). The cluster-wide baseline `allow-cluster-egress` no longer grants `toEntities: world` — public internet egress is opt-in via the `egress.home.arpa/allow-world` pod label (backed by the `allow-world-egress` CCNP, toCIDRSet 0.0.0.0/0 except RFC1918/100.64/10) or a per-app CNP. Per-app CNPs cover app-unique upstreams the flipped baseline no longer grants (coredns world:53, kube-prometheus-stack-prometheus LAN 192.168.1.1/32:9100); crown-jewel apps (external-secrets, onepassword-connect, pocket-id, paperless, actual, cloudflare-tunnel, envoy-external/internal) carry their own CNPs. A compromised pod without the allow-world label or a matching CNP has cluster-only egress — the previous "coarse baseline" residual risk is closed.
 - [drift] The NFS server (at `${NAS_IP}` from cluster-settings) is a single point of failure for /backups exports and media mounts across at least 11 apps. If the NAS is offline, scheduled exports silently produce stale data and writes block — Restic/Backrest health checks only catch the backup-side failure 24h later.
 - [drift] Storage strategy (PVC vs NFS vs emptyDir) is decided per app and documented only in CLAUDE.md plus the runtime-baselines reference — there is no manifest-level enforcement. Apps that diverge from the documented baseline are visible only in code review.
 - [drift] The "always wire VolSync when the app has a PVC" rule is informal: 17 of 24 apps wire it, but the 7 that don't are not explicitly enumerated as "intentionally no backup" anywhere. Some may be ephemeral (homepage with configMapGenerator), others may be oversights.
