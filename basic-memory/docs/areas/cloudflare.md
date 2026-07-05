@@ -31,7 +31,7 @@ verified_against:
 - kubernetes/apps/networking/cloudflare-tunnel/app/
 - .claude/skills/cloudflare-terraform/SKILL.md
 drift_risk: Cloudflare provider has a `renovate:disablePlugin terraform cloudflare/cloudflare`
-  inline annotation pinning version 5.19.1 — provider major bumps (4.x → 5.x already
+  inline annotation pinning the provider version — major bumps (4.x → 5.x already
   happened, see `.terraform/providers` cache) tend to break schemas; bumping requires
   a careful manual plan. The tunnel and Access service-token `null_resource` blocks
   write back into 1Password via `op item edit` as a post-create side effect — the
@@ -66,8 +66,8 @@ A single Kubernetes consumer of the tunnel lives at `kubernetes/apps/networking/
 ## Components
 
 - [component] Terraform Cloud workspace — org `zhorvath83`, workspace `cloudflare`, `required_version = "~> 1.0"` (provision/cloudflare/main.tf:1-44)
-- [component] Cloudflare provider — `cloudflare/cloudflare` pinned at `5.19.1` with `# renovate:disablePlugin terraform cloudflare/cloudflare` inline directive (provision/cloudflare/main.tf:18-22)
-- [component] Other providers — `integrations/github` 6.12.1, `hashicorp/http` 3.6.0, `hashicorp/external` 2.4.0, `hashicorp/random` 3.9.0, `hashicorp/null` 3.3.0 (provision/cloudflare/main.tf:13-43)
+- [component] Cloudflare provider — `cloudflare/cloudflare` pinned with `# renovate:disablePlugin terraform cloudflare/cloudflare` inline directive (provision/cloudflare/main.tf:18-22)
+- [component] Other providers — `integrations/github`, `hashicorp/http`, `hashicorp/external`, `hashicorp/random`, `hashicorp/null` (provision/cloudflare/main.tf:13-43)
 - [component] Cloudflare zone — `cloudflare_zone.domain` with `type = "full"`, name from `CF_DOMAIN_NAME` (mirrors cluster `${PUBLIC_DOMAIN}`), account from `CF_ACCOUNT_ID` (provision/cloudflare/main.tf:51-57)
 - [component] Cloudflared tunnel — `cloudflare_zero_trust_tunnel_cloudflared.home-ops-tunnel` with name `CF_TUNNEL_NAME` and secret `CF_TUNNEL_SECRET`, post-create `null_resource` writes `tunnel_name`/`tunnel_id`/`tunnel_secret` back into 1Password item `cloudflare` in vault `HomeOps` (provision/cloudflare/tunnel.tf:1-16)
 - [component] Tunnel DNS CNAME — `external.${PUBLIC_DOMAIN}` → `<tunnel-id>.cfargotunnel.com` proxied (provision/cloudflare/tunnel.tf:18-26)
@@ -87,7 +87,7 @@ A single Kubernetes consumer of the tunnel lives at `kubernetes/apps/networking/
 ## Claims (verified against repo)
 
 - [claim] "Terraform state lives in Terraform Cloud, org `zhorvath83`, workspace `cloudflare`" (evidence: repo, ref: provision/cloudflare/main.tf:5-10, verified: 2026-05-19)
-- [claim] "Cloudflare provider is pinned at version 5.19.1 with an inline `# renovate:disablePlugin terraform cloudflare/cloudflare` directive — Renovate is intentionally not bumping this provider automatically" (evidence: repo, ref: provision/cloudflare/main.tf:18-22, verified: 2026-05-19)
+- [claim] "Cloudflare provider is pinned with an inline `# renovate:disablePlugin terraform cloudflare/cloudflare` directive — Renovate is intentionally not bumping this provider automatically" (evidence: repo, ref: provision/cloudflare/main.tf:18-22, verified: 2026-05-19)
 - [claim] "Cloudflare provider authentication uses Global API Key (`var.CF_GLOBAL_APIKEY`) + account email (`var.CF_USERNAME`), not an API Token" (evidence: repo, ref: provision/cloudflare/main.tf:46-49 + variables.tf:131-139, verified: 2026-05-19)
 - [claim] "The Cloudflared tunnel resource writes its `tunnel_id`/`tunnel_name`/`tunnel_secret` back into 1Password item `cloudflare` (vault `HomeOps`) via a local-exec `op item edit` after creation — the kubernetes-side consumer fetches those from 1Password via ExternalSecret" (evidence: repo, ref: provision/cloudflare/tunnel.tf:9-16 + kubernetes/apps/networking/cloudflare-tunnel/app/externalsecret.yaml, verified: 2026-05-19)
 - [claim] "Access mobile-app service token (`MobileAppsServiceToken`) is written back into the same 1Password `cloudflare` item as `CF-Access-Client-Id` + `CF-Access-Client-Secret` via a local-exec `op item edit` after creation" (evidence: repo, ref: provision/cloudflare/access.tf:5-19, verified: 2026-05-19)
@@ -103,7 +103,7 @@ A single Kubernetes consumer of the tunnel lives at `kubernetes/apps/networking/
 
 ## Drift Risk
 
-- [drift] Cloudflare provider version is pinned at 5.19.1 with a Renovate disable annotation — major-version bumps must be done manually. The provider cache under `.terraform/providers/` contains many older versions (4.26.0 → 5.18.0) showing past upgrades were done by hand.
+- [drift] Cloudflare provider version is pinned with a Renovate disable annotation — major-version bumps must be done manually. The provider cache under `.terraform/providers/` contains many older versions showing past upgrades were done by hand.
 - [drift] The two `null_resource` blocks (tunnel + service token) write secrets back to 1Password via `op item edit` as a one-shot `local-exec` after create. Terraform does not track the 1Password side — if the 1Password item is renamed, deleted, or its fields differ, the Kubernetes consumers silently break. There is no automated reconciliation.
 - [drift] Mail-stack DNS uses Zoho as the primary mailbox provider plus SMTP2GO for the `.msg` subdomain. Provider switches require coordinated edits to MX/SPF/DKIM/DMARC plus the MTA-STS Worker template.
 - [drift] `192.0.2.1` (TEST-NET-1) and `100::` (IPv6 discard prefix) are used as content for proxied A/AAAA records (`mta-sts`, `arfolyam`) — these are correct as carriers for Workers/Tunnel-fronted hostnames, but a careless cleanup could mistakenly "fix" them.

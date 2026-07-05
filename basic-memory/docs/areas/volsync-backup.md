@@ -8,7 +8,7 @@ confidence: high
 verified_at: '2026-05-22'
 summary: Cluster PVC backups use VolSync with the Kopia mover, targeting OVH Object
   Storage. The platform under kubernetes/apps/volsync-system/ deploys the VolSync
-  operator (perfectra1n fork v0.17.11), Kopia repository-server browser UI, KopiaMaintenance
+  operator (perfectra1n fork), Kopia repository-server browser UI, KopiaMaintenance
   CR, a cluster-wide MutatingAdmissionPolicy that injects a 0-300s jitter initContainer
   into every volsync-src-* Job, and PrometheusRules. Per-app wiring is a Kustomize
   component at kubernetes/components/volsync/ parameterized by APP-style variables
@@ -36,7 +36,7 @@ verified_against:
 - kubernetes/components/volsync/replicationdestination.yaml
 - kubernetes/volsync/mod.just
 drift_risk: VolSync runs the perfectra1n fork of the operator and its mover images
-  (ghcr.io/perfectra1n/volsync v0.17.11), pinned via Helm chart fullnameOverride —
+  (ghcr.io/perfectra1n/volsync), pinned via Helm chart fullnameOverride —
   upstream resource names are required for the chart but the image is forked. Kopia
   Server runs read-only with enableActions disabled; do not enable actions without
   revisiting the security model. The component contract (APP, APP-bootstrap, APP-volsync-secret)
@@ -62,7 +62,7 @@ tags:
 
 ## Summary
 
-PVC-level cluster backups are handled by VolSync + Kopia + OVH Object Storage. The platform side under `kubernetes/apps/volsync-system/` provides three sub-Kustomizations — `volsync` (the operator, depends on `snapshot-controller`), `volsync-maintenance` (the KopiaMaintenance CR + its ExternalSecret, depends on `onepassword-connect` + `volsync`), and `kopia` (the Kopia repository-server browser UI, depends on `onepassword-connect` + `volsync`). Operator and movers all use the **perfectra1n fork** image `ghcr.io/perfectra1n/volsync:v0.17.11` across kopia/restic/rsync/rsync-tls/syncthing variants; `fullnameOverride: volsync` keeps upstream resource names so app components keep working.
+PVC-level cluster backups are handled by VolSync + Kopia + OVH Object Storage. The platform side under `kubernetes/apps/volsync-system/` provides three sub-Kustomizations — `volsync` (the operator, depends on `snapshot-controller`), `volsync-maintenance` (the KopiaMaintenance CR + its ExternalSecret, depends on `onepassword-connect` + `volsync`), and `kopia` (the Kopia repository-server browser UI, depends on `onepassword-connect` + `volsync`). Operator and movers all use the **perfectra1n fork** image `ghcr.io/perfectra1n/volsync` across kopia/restic/rsync/rsync-tls/syncthing variants; `fullnameOverride: volsync` keeps upstream resource names so app components keep working.
 
 A cluster-wide MutatingAdmissionPolicy (`volsync-mover-jitter`) injects a `busybox` initContainer that sleeps 0-300s into every Job whose name starts with `volsync-src-` and whose `app.kubernetes.io/created-by` label is `volsync`, smoothing the herd-effect of the hourly schedules. PrometheusRules fire `VolSyncComponentAbsent` (target down 15m, critical) and `VolSyncVolumeOutOfSync` (any volume out of sync 15m, critical).
 
@@ -72,10 +72,10 @@ Operational flows are wrapped by `just volsync` recipes: `snapshot` and `snapsho
 
 ## Components
 
-- [component] VolSync operator — HelmRelease in `volsync-system`, chart from `OCIRepository/volsync`, `fullnameOverride: volsync` (perfectra1n fork wiring), all mover images shared via the `*image` YAML anchor (`ghcr.io/perfectra1n/volsync:v0.17.11` for kopia/restic/rclone/rsync/rsync-tls/syncthing), `manageCRDs: true`, `metrics.disableAuth: true`, runs as UID/GID 1000 with RuntimeDefault seccomp (kubernetes/apps/volsync-system/volsync/app/helmrelease.yaml)
+- [component] VolSync operator — HelmRelease in `volsync-system`, chart from `OCIRepository/volsync`, `fullnameOverride: volsync` (perfectra1n fork wiring), all mover images shared via the `*image` YAML anchor (`ghcr.io/perfectra1n/volsync` for kopia/restic/rclone/rsync/rsync-tls/syncthing), `manageCRDs: true`, `metrics.disableAuth: true`, runs as UID/GID 1000 with RuntimeDefault seccomp (kubernetes/apps/volsync-system/volsync/app/helmrelease.yaml)
 - [component] volsync Kustomization — depends on `snapshot-controller` in `kube-system` (kubernetes/apps/volsync-system/volsync/ks.yaml:11-13)
 - [component] volsync-maintenance Kustomization — depends on `onepassword-connect` + `volsync`; deploys `KopiaMaintenance/kopia-daily-maintenance` running at `0 12 * * *` against repository alias `volsync-secret` + its ExternalSecret (volsync/maintenance/kopiamaintenance.yaml + externalsecret.yaml)
-- [component] kopia browser — HelmRelease using bjw-s app-template, image `ghcr.io/home-operations/kopia:0.23.0` (digest-pinned), runs read-only (`readOnlyRootFilesystem: true`, drops ALL caps), serves `--without-password` web UI on `${PUBLIC_DOMAIN}`-prefixed hostname via both `envoy-external` and `envoy-internal` Gateways, persists `/config/repository.config` from `kopia-secret`, cache/logs/tmp on emptyDir (kubernetes/apps/volsync-system/kopia/app/helmrelease.yaml)
+- [component] kopia browser — HelmRelease using bjw-s app-template, image `ghcr.io/home-operations/kopia` (digest-pinned), runs read-only (`readOnlyRootFilesystem: true`, drops ALL caps), serves `--without-password` web UI on `${PUBLIC_DOMAIN}`-prefixed hostname via both `envoy-external` and `envoy-internal` Gateways, persists `/config/repository.config` from `kopia-secret`, cache/logs/tmp on emptyDir (kubernetes/apps/volsync-system/kopia/app/helmrelease.yaml)
 - [component] kopia ExternalSecret — emits Secret `kopia-secret` with both `KOPIA_PASSWORD` env and a templated `repository.config` JSON pointing at the same OVH S3 bucket with `enableActions: false`; pulls from 1P items `volsync-template` and `ovh` (kubernetes/apps/volsync-system/kopia/app/externalsecret.yaml)
 - [component] cluster-wide jitter MutatingAdmissionPolicy — `volsync-mover-jitter` matches `batch/v1` Jobs on CREATE/UPDATE where `metadata.name` starts with `volsync-src-` AND label `app.kubernetes.io/created-by == "volsync"`, injects a `busybox` initContainer that runs `sleep \$(shuf -i 0-300 -n 1)`; binding is via `MutatingAdmissionPolicyBinding` of the same name, `failurePolicy: Fail`, `reinvocationPolicy: IfNeeded` (kubernetes/apps/volsync-system/volsync/app/mutatingadmissionpolicy.yaml)
 - [component] PrometheusRule — group `volsync.rules` with alerts `VolSyncComponentAbsent` (target down 15m, critical) and `VolSyncVolumeOutOfSync` (`volsync_volume_out_of_sync == 1` for 15m, critical) (kubernetes/apps/volsync-system/volsync/app/prometheusrule.yaml)
@@ -89,7 +89,7 @@ Operational flows are wrapped by `just volsync` recipes: `snapshot` and `snapsho
 
 ## Claims (verified against repo)
 
-- [claim] "VolSync runs the `perfectra1n/volsync` fork pinned to `v0.17.11` across all mover variants (kopia/restic/rclone/rsync/rsync-tls/syncthing), with `fullnameOverride: volsync` to keep upstream resource names" (evidence: repo, ref: kubernetes/apps/volsync-system/volsync/app/helmrelease.yaml:13-22, verified: 2026-05-19)
+- [claim] "VolSync runs the `perfectra1n/volsync` fork across all mover variants (kopia/restic/rclone/rsync/rsync-tls/syncthing), with `fullnameOverride: volsync` to keep upstream resource names" (evidence: repo, ref: kubernetes/apps/volsync-system/volsync/app/helmrelease.yaml:13-22, verified: 2026-05-19)
 - [claim] "The VolSync platform is split into three sub-Kustomizations under `kubernetes/apps/volsync-system/kustomization.yaml`: `volsync` (operator, depends on snapshot-controller), `kopia` (browser UI, depends on onepassword-connect + volsync), and `volsync-maintenance` (depends on onepassword-connect + volsync)" (evidence: repo, ref: kubernetes/apps/volsync-system/kustomization.yaml + volsync/ks.yaml + kopia/ks.yaml, verified: 2026-05-19)
 - [claim] "A cluster-wide `MutatingAdmissionPolicy/volsync-mover-jitter` injects a busybox initContainer running `sleep \$(shuf -i 0-300 -n 1)` into every `batch/v1` Job whose name starts with `volsync-src-` and label `app.kubernetes.io/created-by == volsync`. `failurePolicy: Fail`, `reinvocationPolicy: IfNeeded`" (evidence: repo, ref: kubernetes/apps/volsync-system/volsync/app/mutatingadmissionpolicy.yaml, verified: 2026-05-19)
 - [claim] "The cluster has exactly two VolSync PrometheusRule alerts: `VolSyncComponentAbsent` (job=volsync-metrics absent for 15m) and `VolSyncVolumeOutOfSync` (`volsync_volume_out_of_sync == 1` for 15m); both critical" (evidence: repo, ref: kubernetes/apps/volsync-system/volsync/app/prometheusrule.yaml, verified: 2026-05-19)

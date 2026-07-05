@@ -64,8 +64,8 @@ The `just ovh apply` recipe is the single supported apply path: after `terraform
 ## Components
 
 - [component] Terraform Cloud workspace — org `zhorvath83`, workspace `ovh`, `required_version = "~> 1.0"` (provision/ovh/main.tf:1-23)
-- [component] OVH provider — `ovh/ovh` pinned at `2.14.0` (provision/ovh/main.tf:12-16)
-- [component] null provider — `hashicorp/null` 3.3.0 (provision/ovh/main.tf:18-21)
+- [component] OVH provider — `ovh/ovh` pinned (provision/ovh/main.tf:12-16)
+- [component] null provider — `hashicorp/null` (provision/ovh/main.tf:18-21)
 - [component] OVH provider auth — `endpoint` from `OVH_ENDPOINT` (default `ovh-eu` per terraform.tfvars), plus the long-lived `application_key` / `application_secret` / `consumer_key` triple (provision/ovh/main.tf:25-30 + terraform.tfvars:1)
 - [component] Buckets — `ovh_cloud_project_storage.backup` `for_each` over `local.bucket_names` (parsed from comma-and-space-separated `S3_BUCKET_NAMES`), region pinned to `DE` (provision/ovh/buckets.tf:1-11)
 - [component] Endpoint output — `s3_endpoint` = `s3.de.io.cloud.ovh.net` (derived from `local.region`) (provision/ovh/buckets.tf:13-15)
@@ -79,7 +79,7 @@ The `just ovh apply` recipe is the single supported apply path: after `terraform
 ## Claims (verified against repo)
 
 - [claim] "Terraform state lives in Terraform Cloud, org `zhorvath83`, workspace `ovh`" (evidence: repo, ref: provision/ovh/main.tf:5-10, verified: 2026-06-20)
-- [claim] "OVH provider `ovh/ovh` is pinned at version 2.14.0 (no Renovate disable annotation observed)" (evidence: repo, ref: provision/ovh/main.tf:12-16, verified: 2026-06-20)
+- [claim] "OVH provider `ovh/ovh` is pinned (no Renovate disable annotation observed)" (evidence: repo, ref: provision/ovh/main.tf:12-16, verified: 2026-06-20)
 - [claim] "OVH provider authenticates with the long-lived application_key + application_secret + consumer_key triple plus an endpoint (`ovh-eu` per the in-repo tfvars) — no API token model" (evidence: repo, ref: provision/ovh/main.tf:25-30 + terraform.tfvars:1, verified: 2026-06-20)
 - [claim] "All buckets are created in region `DE` and the derived public endpoint is `s3.de.io.cloud.ovh.net`" (evidence: repo, ref: provision/ovh/buckets.tf:1-15, verified: 2026-06-20)
 - [claim] "Bucket set is driven by `var.S3_BUCKET_NAMES` — a comma-and-space-separated string parsed into a set; adding or removing a bucket requires editing that var and re-applying, not editing buckets.tf" (evidence: repo, ref: provision/ovh/variables.tf:29-32 + buckets.tf:1-11, verified: 2026-06-20)
