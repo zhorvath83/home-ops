@@ -85,7 +85,7 @@ Operational flows are wrapped by `just volsync` recipes: `snapshot` and `snapsho
 - [component] Per-app bootstrap PVC — name `${VOLSYNC_CLAIM:=${APP}}` with `dataSourceRef` pointing at `ReplicationDestination/${APP}-bootstrap` on `democratic-csi-local-hostpath` (components/volsync/pvc.yaml)
 - [component] Per-app bootstrap ReplicationDestination — name `${APP}-bootstrap`, label `kustomize.toolkit.fluxcd.io/ssa: IfNotPresent` (Flux applies once), trigger `manual: restore-once`, `enableFileDeletion: true`, `cleanupCachePVC + cleanupTempPVC: true`, `sourceIdentity.sourceName: ${APP}` (components/volsync/replicationdestination.yaml)
 - [component] Just recipes — `snapshot`, `snapshot-all`, `restore`, `list-snapshots`, `kopia-maintenance`, `last-snapshots`, `state suspend|resume` (kubernetes/volsync/mod.just)
-- [component] flux-alerts component — pulled in via `kubernetes/apps/volsync-system/kustomization.yaml` (Pushover alerting on this namespace)
+- [component] alertmanager alerts component — pulled in via `kubernetes/apps/volsync-system/kustomization.yaml` (Flux type:alertmanager Provider → in-cluster Alertmanager for reconciliation alerts)
 
 ## Claims (verified against repo)
 

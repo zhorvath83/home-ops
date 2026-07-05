@@ -10,12 +10,11 @@ summary: Flux runs via the Flux Operator pattern with a single FluxInstance CR d
   controllers, GitRepository sync, and root Kustomization. The cluster-apps Kustomization
   at kubernetes/flux/cluster/ks.yaml is the reconciliation root and injects shared
   HelmRelease defaults into every HelmRelease via a child-Kustomization patch. Per-namespace
-  alerting goes to Pushover.
+  alerting routes through the in-cluster Alertmanager; Pushover is the default receiver.
 verified_against:
 - kubernetes/apps/flux-system/flux-operator/app/helmrelease.yaml
 - kubernetes/apps/flux-system/flux-instance/app/helmrelease.yaml
-- kubernetes/apps/flux-system/flux-provider-pushover/
-- kubernetes/components/flux-alerts/
+- kubernetes/components/common/alerts/alertmanager/
 - kubernetes/flux/cluster/ks.yaml
 - kubernetes/CLAUDE.md
 - .github/workflows/scanning-deprecated-kube-resources.yaml
@@ -40,7 +39,7 @@ drift_risk: Performance patches (concurrent counts, memory limits, OOMWatch, in-
 
 The cluster runs Flux via the Flux Operator pattern: a single `FluxInstance` CR (in `kubernetes/apps/flux-system/flux-instance/`) declares the four controllers, GitRepository sync target, and root Kustomization. No classic `flux bootstrap` step. The Operator reconciles the FluxInstance.
 
-The reconciliation root is `kubernetes/flux/cluster/ks.yaml` — a single `cluster-apps` Kustomization that scans `./kubernetes/apps` with `prune=true` and injects shared HelmRelease defaults into every HelmRelease via a child-Kustomization patch. Flux reconciliation alerts are delivered to Pushover through a native Flux `Provider` `type: alertmanager` (in `components/common/alerts/alertmanager/`) that posts to the in-cluster Alertmanager (`alertmanager-operated.observability.svc.cluster.local:9093/api/v2/alerts/`), which in turn routes to Pushover via its `AlertmanagerConfig`. The custom `flux-provider-pushover` relay app and the `flux-alerts`/`pushover` component bundle were retired 2026-07-05 by roadmap `alertmanager-introduction`. The GitHub commit-status Provider/Alert (`components/common/alerts/github/`) is unchanged.
+The reconciliation root is `kubernetes/flux/cluster/ks.yaml` — a single `cluster-apps` Kustomization that scans `./kubernetes/apps` with `prune=true` and injects shared HelmRelease defaults into every HelmRelease via a child-Kustomization patch. Flux reconciliation alerts are delivered to Pushover through a native Flux `Provider` `type: alertmanager` (in `components/common/alerts/alertmanager/`) that posts to the in-cluster Alertmanager (`alertmanager-operated.observability.svc.cluster.local:9093/api/v2/alerts/`), which in turn routes to Pushover via its `AlertmanagerConfig`. The GitHub commit-status Provider/Alert (`components/common/alerts/github/`) is unchanged.
 
 ## Components
 
@@ -50,7 +49,6 @@ The reconciliation root is `kubernetes/flux/cluster/ks.yaml` — a single `clust
 - [component] flux-instance — declares controllers, sync target, and performance patches (kubernetes/apps/flux-system/flux-instance/app/helmrelease.yaml)
 - [component] cluster-apps Kustomization — single root reconciler, `prune=true`, injects HelmRelease defaults via child-Kustomization patch (kubernetes/flux/cluster/ks.yaml)
 - [component] alertmanager alerts component — per-namespace Flux `Provider` (`type: alertmanager`) + `Alert` bundle that posts Flux reconciliation errors into the in-cluster Alertmanager (kubernetes/components/common/alerts/alertmanager/). Wired into `components/common/alerts/kustomization.yaml` alongside `github`.
-- [component] (Retired 2026-07-05) flux-provider-pushover — was a global custom Pushover relay deployment in flux-system; replaced by the alertmanager alerts component above.
 - [component] Pluto deprecated-API scanning — weekly cron (Fri 00:00 UTC) + workflow_dispatch, `pluto detect-files -d kubernetes`, on-failure auto-creates GitHub issue assigned to repo owner (.github/workflows/scanning-deprecated-kube-resources.yaml)
 
 ## Claims (verified against repo)
@@ -76,7 +74,7 @@ The reconciliation root is `kubernetes/flux/cluster/ks.yaml` — a single `clust
 
 ## Open Questions / Gaps
 
-- [gap] (Resolved 2026-07-05) Pushover provider model split: the former two-path model (`components/common/alerts/pushover/` per-namespace Alert+Provider+ExternalSecret bundle pointing at the standalone `flux-provider-pushover` relay app) was retired by roadmap `alertmanager-introduction`. Flux reconciliation alerts now route through a single native `type: alertmanager` Provider into the kube-prometheus-stack Alertmanager, which routes to Pushover via its AlertmanagerConfig + the observability `alertmanager` ExternalSecret (1Password `pushover` item). One path, one credential source.
+- [gap] (Resolved 2026-07-05) Pushover provider model unified: Flux reconciliation alerts route through a single native `type: alertmanager` Provider into the kube-prometheus-stack Alertmanager, which routes to Pushover via its AlertmanagerConfig + the observability `alertmanager` ExternalSecret (1Password `pushover` item). One path, one credential source.
 - [gap] Live cluster verification (FluxInstance Ready, controllers running, GitRepository latest revision) not performed — repo evidence only
 
 ## Relations
@@ -91,16 +89,12 @@ The reconciliation root is `kubernetes/flux/cluster/ks.yaml` — a single `clust
 
 Flux alerting migrated to Alertmanager. See roadmap alertmanager-introduction.
 
-**Before**: Flux reconciliation errors paged through a custom self-authored relay (image `ghcr.io/zhorvath83/flux-provider-pushover`, a Deployment in flux-system, fed by a Flux generic Provider pointing at the relay Service) plus a per-namespace `flux-alerts`/`pushover` Alert+Provider+ExternalSecret bundle. Two Pushover paths, one maintained container image.
-
-**After**: Flux reconciliation errors flow through a native Flux Provider of type alertmanager (`components/common/alerts/alertmanager/provider.yaml`, address `http://alertmanager-operated.observability.svc.cluster.local:9093/api/v2/alerts/`) plus an Alert covering FluxInstance/GitRepository/HelmRelease/HelmRepository/Kustomization/OCIRepository with the same exclusionList the relay used (github.com and raw.githubusercontent.com lookup, dial tcp timeout, waiting socket). The component is wired into `components/common/alerts/kustomization.yaml` alongside `github` and fans out to every namespace pulling in `components/common`. Alertmanager routes to Pushover via its AlertmanagerConfig (pushover receiver, HTML template, sendResolved) plus the observability `alertmanager` ExternalSecret (1Password `pushover` item, PUSHOVER_ALERTMANAGER_TOKEN and PUSHOVER_USER_KEY).
+**After**: Flux reconciliation errors flow through a native Flux Provider of type alertmanager (`components/common/alerts/alertmanager/provider.yaml`, address `http://alertmanager-operated.observability.svc.cluster.local:9093/api/v2/alerts/`) plus an Alert covering FluxInstance/GitRepository/HelmRelease/HelmRepository/Kustomization/OCIRepository with exclusionList (github.com and raw.githubusercontent.com lookup, dial tcp timeout, waiting socket). The component is wired into `components/common/alerts/kustomization.yaml` alongside `github` and fans out to every namespace pulling in `components/common`. Alertmanager routes to Pushover via its AlertmanagerConfig (pushover receiver, HTML template, sendResolved) plus the observability `alertmanager` ExternalSecret (1Password `pushover` item, PUSHOVER_ALERTMANAGER_TOKEN and PUSHOVER_USER_KEY).
 
 **Networking (AD-023 V3 baseline)**: the Flux notification-controller to Alertmanager:9093 east-west path is granted by a per-app CiliumNetworkPolicy (`kubernetes/apps/observability/kube-prometheus-stack/app/ciliumnetworkpolicy.yaml`, second document, `alertmanager` ingress from `flux-system/notification-controller`). The Alertmanager pod carries `egress.home.arpa/allow-world` for api.pushover.net (observability is NOT free-world under the V3 baseline).
 
-**Retired**: `apps/flux-system/flux-provider-pushover/` (app plus ks) and `components/common/alerts/pushover/` (Provider/Alert/ExternalSecret) deleted; both removed from their parent kustomizations. `flux-pushover-secret` and `flux-provider-pushover-secret` ExternalSecrets and the relay Deployment were pruned cluster-wide (cluster-apps `prune: true`). Verified: only `alertmanager` plus `github` Providers and `alertmanager` plus `github-status` Alerts remain across all 12 namespaces.
-
 **Unchanged**: the GitHub commit status Provider and Alert at components/common/alerts/github — different function, kept as-is.
 
-**Verified live**: a throwaway Flux Kustomization with a bad path (reason ArtifactFailed) generated an error event that the notification-controller dispatched to the alertmanager Provider; it arrived in the Alertmanager API as FluxKustomizationArtifactfailed (severity error, default pushover receiver) and delivered to Pushover. A regression test after the relay retirement confirmed Pushover still delivers solely via Alertmanager — no alerting gap.
+**Verified live**: a throwaway Flux Kustomization with a bad path (reason ArtifactFailed) generated an error event that the notification-controller dispatched to the alertmanager Provider; it arrived in the Alertmanager API as FluxKustomizationArtifactfailed (severity error, default pushover receiver) and delivered to Pushover.
 
 **Note**: the FluxInstance and FluxOperator HelmReleases and the cluster-apps root Kustomization patch (shared HelmRelease defaults) are unchanged by this roadmap; only the notification Provider and Alert model changed.

@@ -69,7 +69,7 @@ Bootstrap-time secrets that ESO itself depends on (Connect credentials + access 
 - [component] ExternalSecret `onepassword-connect-token` — re-renders `token` into Secret `onepassword-connect-token` from the same 1P item (onepassword-connect/app/externalsecret.yaml:22-40)
 - [component] Bootstrap shim — `kubernetes/bootstrap/resources.yaml.j2` ships placeholder Secrets `onepassword-connect-credentials-secret` and `onepassword-connect-vault-secret` in namespace `external-secrets`, rendered via `op inject` during the `just cluster-bootstrap cluster` chain (kubernetes/bootstrap/resources.yaml.j2, kubernetes/bootstrap/mod.just `resources` stage)
 - [component] Namespace marker — `kubernetes/apps/external-secrets/namespace.yaml` defines `metadata.name: _` with `kustomize.toolkit.fluxcd.io/prune: disabled`; the actual namespace name comes from the Flux Kustomization `spec.targetNamespace`. All namespaces use the `_` placeholder pattern (2026-05-23)
-- [component] flux-alerts component — pulled in via `kubernetes/apps/external-secrets/kustomization.yaml` `components` (per-namespace Pushover Alert+Provider+ExternalSecret bundle)
+- [component] alertmanager alerts component — pulled in via `kubernetes/apps/external-secrets/kustomization.yaml` `components` (Flux type:alertmanager Provider → in-cluster Alertmanager for reconciliation alerts)
 - [component] Operational just recipe — `just k8s sync-es <name> <ns>` annotates an ExternalSecret with `force-sync=$(date +%s)` to trigger an out-of-band refresh (kubernetes/mod.just)
 
 ## Claims (verified against repo)
@@ -86,7 +86,7 @@ Bootstrap-time secrets that ESO itself depends on (Connect credentials + access 
 - [claim] "1Password Connect chart `oci://ghcr.io/1password/connect` pinned; chart-default security context (seccompProfile=RuntimeDefault, runAsNonRoot, readOnlyRootFilesystem, drop ALL caps, UID/GID 999) is intentionally left unchanged" (evidence: repo, ref: onepassword-connect/app/ocirepository.yaml:12-14 + onepassword-connect/app/helmrelease.yaml:13-14 + kubernetes/apps/external-secrets/CLAUDE.md:32-44, verified: 2026-05-19)
 - [claim] "Cross-app ExternalSecret pattern: `spec.refreshInterval: 12h` (vs chart default 1h), `secretStoreRef.kind: ClusterSecretStore`, `secretStoreRef.name: onepassword-connect`, `target.creationPolicy: Owner`, no `metadata.namespace` (the Flux Kustomization `spec.targetNamespace` places the ES at apply time)" (evidence: repo, ref: kubernetes/apps/external-secrets/CLAUDE.md:46-58, verified: 2026-05-19)
 - [claim] "Operational recipe `just k8s sync-es <name> <ns>` triggers an out-of-band ExternalSecret refresh by annotating with `force-sync=$(date +%s)` via the flux-client-side-apply field manager" (evidence: repo, ref: kubernetes/mod.just (sync-es recipe), verified: 2026-05-19)
-- [claim] "The `external-secrets` namespace also gets the shared Pushover `flux-alerts` component via `kubernetes/apps/external-secrets/kustomization.yaml` components list — so reconciliation failures here surface through the same Pushover channel as the rest of the cluster" (evidence: repo, ref: kubernetes/apps/external-secrets/kustomization.yaml:10-11, verified: 2026-05-19)
+- [claim] "The `external-secrets` namespace gets the shared `alertmanager` alerts component via `kubernetes/apps/external-secrets/kustomization.yaml` components list — reconciliation failures here surface through the in-cluster Alertmanager (Flux type:alertmanager Provider), the same channel as the rest of the cluster" (evidence: repo, ref: kubernetes/apps/external-secrets/kustomization.yaml:10-11, verified: 2026-07-05)
 
 ## Drift Risk
 
@@ -100,7 +100,7 @@ Bootstrap-time secrets that ESO itself depends on (Connect credentials + access 
 
 - [gap] No verification was run against the live cluster in this pass — claims about `Ready=True` semantics and live token rotation behavior are repo-evidence only. Use `.claude/skills/external-secrets/references/validation.md` for live-state validation.
 - [gap] The relationship between the cluster-wide `onepassword-connect` store and any app-local `SecretStore` (none currently declared, but the ESO CRD allows it) was not traced — assume "cluster store is the only path" until proven otherwise.
-- [gap] The Pushover/flux-alerts cross-tie deserves its own review under the flux-gitops area; that note already flags a gap on how Pushover credentials flow.
+- [gap] (Resolved 2026-07-05) Pushover credentials flow through the observability `alertmanager` ExternalSecret (1Password `pushover` item); the flux-gitops area documents the unified type:alertmanager Provider model.
 
 ## Network Containment (per AD-023, added 2026-06-22)
 
