@@ -11,4 +11,5 @@ spec:
   repository:
     repository: volsync-secret
   trigger:
-    schedule: "30 3,15 * * *"
+    # "30 */6 * * *" = minute 30 past every 6th hour (00:30, 06:30, 12:30, 18:30 UTC), 4 runs/day.
+    schedule: "30 */6 * * *"

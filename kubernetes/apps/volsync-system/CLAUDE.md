@@ -2,6 +2,10 @@
 
 This guide applies to `kubernetes/apps/volsync-system/`. It captures durable guardrails for the PVC backup platform; for current-state detail (operator fork, jitter policy, KopiaMaintenance, alerts, claims, drift risk) read the Basic Memory area-reference `docs/areas/volsync-backup` via the `basic-memory` MCP.
 
+## Fork
+
+The operator and mover images come from the **perfectra1n/volsync** fork (`ghcr.io/perfectra1n/volsync`, chart mirrored at `ghcr.io/home-operations/charts-mirror/volsync-perfectra1n`), not upstream `backube/volsync`. `fullnameOverride: volsync` keeps upstream resource names so the per-app component keeps working. If the fork is abandoned, migrating to upstream requires re-validating manifests — see BM `docs/areas/volsync-backup` drift risk.
+
 ## Scope
 
 This subtree defines the backup platform itself, not ordinary application workloads. Layers:
