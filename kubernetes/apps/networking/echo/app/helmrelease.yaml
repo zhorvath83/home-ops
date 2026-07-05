@@ -34,8 +34,8 @@ spec:
               repository: ghcr.io/home-operations/echo
               tag: 0.2.1@sha256:89e18bc031f50b5fc706a4fc85007f4d44635762146d4f16f49d993fcfde2e39
             env:
-              ECHO_HTTP_PORT: &port 8080
-              ECHO_METRICS_PORT: "8081"
+              ECHO_HTTP_PORT: &httpPort 8080
+              ECHO_METRICS_PORT: &metricsPort 8081
               ECHO_TRUSTED_PROXIES: "${POD_CIDR}"
               ECHO_METRICS_ENABLED: "true"
               ECHO_LOG_LEVEL: info
@@ -65,7 +65,7 @@ spec:
                 spec:
                   httpGet:
                     path: /healthz
-                    port: *port
+                    port: *httpPort
                   initialDelaySeconds: 0
                   periodSeconds: 10
                   timeoutSeconds: 1
@@ -76,7 +76,7 @@ spec:
                 spec:
                   httpGet:
                     path: /readyz
-                    port: *port
+                    port: *httpPort
                   initialDelaySeconds: 0
                   periodSeconds: 10
                   timeoutSeconds: 1
@@ -87,7 +87,7 @@ spec:
                 spec:
                   httpGet:
                     path: /healthz
-                    port: *port
+                    port: *httpPort
                   failureThreshold: 30
                   periodSeconds: 5
             securityContext:
@@ -107,9 +107,9 @@ spec:
         controller: echo
         ports:
           http:
-            port: *port
+            port: *httpPort
           metrics:
-            port: 8081
+            port: *metricsPort
 
     route:
       app:
@@ -130,7 +130,7 @@ spec:
         rules:
           - backendRefs:
               - identifier: app
-                port: *port
+                port: *httpPort
 
     serviceMonitor:
       app:
