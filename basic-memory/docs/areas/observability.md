@@ -13,7 +13,9 @@ summary: Observability for the cluster splits into four workloads under kubernet
   and victoria-logs (single-node server + per-node collector DaemonSet) for the logs
   plane. PrometheusRules and ServiceMonitors are scattered across platform subtrees
   (volsync-system, external-secrets, etc.) instead of being centralized here. Pushover
-  alerting goes through Flux's flux-alerts component, not Alertmanager.
+  alerting routes through the in-cluster Alertmanager (pushover default
+  receiver); Flux reconciliation failures use a Flux type:alertmanager Provider
+  into the same Alertmanager.
 verified_against:
 - kubernetes/apps/observability/kustomization.yaml
 - kubernetes/apps/observability/namespace.yaml
@@ -30,8 +32,9 @@ verified_against:
 - kubernetes/apps/observability/victoria-logs/collector/helmrelease.yaml
 - kubernetes/CLAUDE.md ("Current Reality" section)
 drift_risk: The minified kube-prometheus-stack disables most default rules and exporters
-  (tuned for one node) and ships Alertmanager disabled, so Prometheus-rule alerting
-  is effectively off — only Flux failures page via Pushover (flux-alerts). Per-platform
+  (tuned for one node) and ships Alertmanager enabled (pushover default receiver; Flux
+  reconciliation failures route through the same Alertmanager via a Flux
+  type:alertmanager Provider). Per-platform
   ServiceMonitors/PrometheusRules are scattered with no inventory. Prometheus (7d/4500MB)
   and victoria-logs (14d) retention are fixed sizes that need revisiting as volume
   grows; chart OCI tags are Renovate-tracked and a major bump can shift CRDs or values
@@ -72,13 +75,13 @@ The namespace is `observability` and pulls in the shared `common` component (whi
 
 ## Components
 
-- [component] kube-prometheus-stack — operator + Prometheus + kube-state-metrics + node-exporter; chart, minified homelab tuning, Prometheus 7d/4500MB retention on 5Gi local-hostpath PVC, Alertmanager disabled (kubernetes/apps/observability/kube-prometheus-stack/app/helmrelease.yaml)
+- [component] kube-prometheus-stack — operator + Prometheus + kube-state-metrics + node-exporter; chart, minified homelab tuning, Prometheus 7d/4500MB retention on 5Gi local-hostpath PVC, Alertmanager enabled (internal-gateway route, 1Gi PVC, AlertmanagerConfig with pushover receiver) (kubernetes/apps/observability/kube-prometheus-stack/app/helmrelease.yaml)
 - [component] grafana — standalone chart, admin password from ExternalSecret grafana-secret, telemetry off, hardened; Prometheus + VictoriaLogs datasources, sidecar dashboard discovery, exposed grafana.${PUBLIC_DOMAIN} on both gateways (kubernetes/apps/observability/grafana/)
 - [component] speedtest-exporter — bjw-s app-template, WAN throughput metrics, 20m scrape, scrape-only (no public route; Prometheus scrapes the in-cluster Service via ServiceMonitor), AD-023 labels ingress.home.arpa/prometheus + egress.home.arpa/allow-world (kubernetes/apps/observability/speedtest-exporter/)
 - [component] victoria-logs server — victoria-logs-single, 10Gi PVC, 14d retention, serviceMonitor on, exposed logs.${PUBLIC_DOMAIN} on the internal gateway only with a / → /select/vmui/ redirect (kubernetes/apps/observability/victoria-logs/app/)
 - [component] victoria-logs collector — victoria-logs-collector DaemonSet, PodMonitor on, remote-writes to victoria-logs-server:9428, dependsOn the server (kubernetes/apps/observability/victoria-logs/collector/)
 - [component] Namespace marker — namespace.yaml uses the `_` placeholder; real name comes from the Flux Kustomization spec.targetNamespace (kubernetes/apps/observability/namespace.yaml)
-- [component] common component — pulled in via kustomization.yaml; carries cluster vars + repos + flux-alerts (Pushover) for this namespace
+- [component] common component — pulled in via kustomization.yaml; carries cluster vars + repos + alerts/alertmanager (Flux type:alertmanager Provider → in-cluster Alertmanager) + alerts/github for this namespace
 - [component] flux-system PodMonitor — the only monitor committed under observability/ itself (kubernetes/apps/observability/kube-prometheus-stack/app/podmonitor.yaml)
 - [component] Distributed ServiceMonitors/PrometheusRules — enabled chart-side per owning platform (volsync, external-secrets, kopia, victoria-logs), discovered by the operator; no central rules directory here
 
@@ -91,7 +94,7 @@ The namespace is `observability` and pulls in the shared `common` component (whi
 - [claim] "Grafana has telemetry disabled (GF_ANALYTICS_* false), admin password from existingSecret grafana-secret, read-only rootfs + drop ALL caps + RuntimeDefault, and serves both a Prometheus (default) and a VictoriaLogs datasource" (evidence: repo, ref: grafana/app/helmrelease.yaml, verified: 2026-06-20)
 - [claim] "victoria-logs is the logs plane: a victoria-logs-single server (10Gi PVC, 14d retention) plus a victoria-logs-collector DaemonSet that remote-writes to victoria-logs-server:9428; the collector dependsOn the server" (evidence: repo, ref: victoria-logs/app/ + victoria-logs/collector/, verified: 2026-06-20)
 - [claim] "Exposure: grafana.${PUBLIC_DOMAIN} attaches to both gateways; victoria-logs (logs.${PUBLIC_DOMAIN}) attaches to envoy-internal only — the logs UI is not published externally. The speedtest-exporter has no public route (scrape-only: Prometheus scrapes the in-cluster Service via ServiceMonitor)" (evidence: repo, ref: grafana + victoria-logs/app helmrelease.yaml route blocks + speedtest-exporter/app/helmrelease.yaml, verified: 2026-07-05)
-- [claim] "The observability namespace pulls in the shared common component (flux-alerts → Pushover); Flux reconciliation failures page, but Prometheus Alertmanager is disabled so Prometheus-rule alerting is effectively off" (evidence: repo, ref: kubernetes/apps/observability/kustomization.yaml + kube-prometheus-stack/app/helmrelease.yaml, verified: 2026-06-20)
+- [claim] "The observability namespace pulls in the shared common component (alerts/alertmanager → Flux type:alertmanager Provider into the in-cluster Alertmanager, plus alerts/github for commit-status); Flux reconciliation failures and Prometheus-rule alerts both route through Alertmanager (pushover default receiver, Watchdog/InfoInhibitor→blackhole, severity=critical→pushover)" (evidence: repo, ref: kubernetes/apps/observability/kustomization.yaml + kube-prometheus-stack/app/helmrelease.yaml + components/common/alerts/alertmanager/, verified: 2026-07-05)
 - [claim] "PrometheusRules/ServiceMonitors are NOT centralized here — the only monitor committed under observability/ is a flux-system PodMonitor; platforms publish their own" (evidence: repo, ref: kube-prometheus-stack/app/podmonitor.yaml + observability subtree listing, verified: 2026-06-20)
 
 
