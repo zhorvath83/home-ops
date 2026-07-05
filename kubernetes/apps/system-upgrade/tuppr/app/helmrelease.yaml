@@ -20,6 +20,9 @@ spec:
     image:
       # renovate: datasource=docker depName=ghcr.io/home-operations/tuppr
       tag: 0.2.1
+    # AD-023 vocabulary: internet egress TEMPORARY (factory.talos.dev + github releases; V5 narrow-world)
+    podLabels:
+      egress.home.arpa/allow-world: "true"
     monitoring:
       serviceMonitor:
         enabled: true

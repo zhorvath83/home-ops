@@ -13,9 +13,10 @@ spec:
     defaultPodOptions:
       automountServiceAccountToken: false
       enableServiceLinks: false
-      # AD-023 vocabulary: envoy-routed app, ingress from gateways (ingress-from-gateways CCNP)
+      # AD-023 vocabulary: envoy-routed (gateways CCNP) + internet egress (allow-world-egress CCNP)
       labels:
         ingress.home.arpa/gateways: "true"
+        egress.home.arpa/allow-world: "true"
       securityContext:
         runAsNonRoot: false
         runAsUser: 0

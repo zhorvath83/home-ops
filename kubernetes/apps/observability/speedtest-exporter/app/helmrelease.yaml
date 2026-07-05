@@ -13,10 +13,11 @@ spec:
     defaultPodOptions:
       automountServiceAccountToken: false
       enableServiceLinks: false
-      # AD-023 vocabulary: envoy-routed (gateways) + prometheus scrape (ServiceMonitor)
+      # AD-023 vocabulary: envoy-routed (gateways) + prometheus scrape + internet egress (allow-world)
       labels:
         ingress.home.arpa/gateways: "true"
         ingress.home.arpa/prometheus: "true"
+        egress.home.arpa/allow-world: "true"
       securityContext:
         runAsNonRoot: true
         runAsUser: 10001

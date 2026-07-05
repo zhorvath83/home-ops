@@ -3,10 +3,11 @@
 #
 # Cluster-wide baseline egress policy (bjw-s-labs pattern).
 #
-# Default model: every pod without the opt-out label receives a broad egress
-# allowance to other cluster endpoints and to the public internet. This makes
-# `CiliumNetworkPolicy` opt-in for restrictions instead of forcing every pod
-# to repeat DNS / cluster / world egress rules.
+# Default model: every pod without the opt-out label receives in-cluster egress
+# only — cluster endpoints + kube-apiserver (post-V3 flip; public internet is no
+# longer in the baseline, it is granted by egress.home.arpa/allow-world or a
+# per-app CNP). This makes `CiliumNetworkPolicy` opt-in for the remaining egress
+# rules instead of forcing every pod to repeat DNS / cluster / world egress.
 #
 # Opt-out: label a pod or workload with
 #   egress.home.arpa/custom-egress: "true"
@@ -32,4 +33,4 @@ spec:
     - toEntities:
         - cluster
     - toEntities:
-        - world
+        - kube-apiserver # explicit: probe-identity caution (AD-023)
