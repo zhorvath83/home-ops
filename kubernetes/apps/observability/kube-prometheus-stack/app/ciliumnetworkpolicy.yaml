@@ -20,3 +20,24 @@ spec:
         - ports:
             - port: "9100"
               protocol: TCP
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
+# alertmanager (AD-023): envoy + prometheus ingress via the matching CCNPs; this CNP adds the
+# flux notification-controller east-west rule (Flux reconciliation alerts → Alertmanager API, Phase 2).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: alertmanager
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: alertmanager
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: flux-system
+            app: notification-controller
+      toPorts:
+        - ports:
+            - port: "9093"
+              protocol: TCP

@@ -25,7 +25,7 @@ spec:
       rules:
         alertmanager: false
         etcd: false
-        general: false
+        general: true
         k8s: true
         k8sContainerMemorySwap: false
         k8sContainerMemoryCache: true
@@ -46,17 +46,52 @@ spec:
         kubeSchedulerAlerting: false
         kubeStateMetrics: true
         network: false
-        node: false
-        nodeExporterAlerting: false
-        nodeExporterRecording: false
+        node: true
+        nodeExporterAlerting: true
+        nodeExporterRecording: true
         prometheus: true
         prometheusOperator: true
         windows: false
     # ============================================================================
-    # AlertManager - DISABLED
+    # Alertmanager - enabled (internal-gateway UI + Pushover via AlertmanagerConfig)
     # ============================================================================
     alertmanager:
-      enabled: false
+      enabled: true
+      route:
+        main:
+          enabled: true
+          hostnames:
+            - "alertmanager.${PUBLIC_DOMAIN}"
+          parentRefs:
+            - name: envoy-internal
+              namespace: networking
+              sectionName: https
+      alertmanagerSpec:
+        alertmanagerConfiguration:
+          name: alertmanager
+        externalUrl: "https://alertmanager.${PUBLIC_DOMAIN}"
+        # AD-023: envoy-routed UI (gateways CCNP) + prometheus scrape (prometheus CCNP)
+        # + internet egress for api.pushover.net (allow-world CCNP — observability is NOT free-world).
+        podMetadata:
+          labels:
+            ingress.home.arpa/gateways: "true"
+            ingress.home.arpa/prometheus: "true"
+            egress.home.arpa/allow-world: "true"
+        resources:
+          requests:
+            cpu: 5m
+            memory: 48Mi
+          limits:
+            memory: 128Mi
+        storage:
+          volumeClaimTemplate:
+            spec:
+              storageClassName: democratic-csi-local-hostpath
+              accessModes:
+                - "ReadWriteOnce"
+              resources:
+                requests:
+                  storage: 1Gi
     # ============================================================================
     # Grafana - DISABLED (deployed separately)
     # ============================================================================

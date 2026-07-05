@@ -6,4 +6,7 @@ resources:
   - ./ocirepository.yaml
   - ./podmonitor.yaml
   - ./ciliumnetworkpolicy.yaml
+  - ./externalsecret.yaml
+  - ./alertmanagerconfig.yaml
+  - ./prometheusrules
   - ./helmrelease.yaml
