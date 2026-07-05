@@ -19,7 +19,11 @@ spec:
           - name: alertname
             value: Watchdog
             matchType: =
-        repeatInterval: 5m
+        # Dead-man's-switch heartbeat: repeat_interval < group_interval makes AM notify on
+        # every group_interval flush, so cadence = group_interval (5m). Equality doubles it
+        # (10m) because AM's repeat check is strict "more than", not >=.
+        groupInterval: 5m
+        repeatInterval: 1m
       - receiver: blackhole
         matchers:
           - name: alertname
