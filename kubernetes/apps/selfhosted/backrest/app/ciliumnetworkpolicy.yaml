@@ -1,0 +1,31 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
+# backrest (AD-023): read-only browse + restore UI for the shared Restic repo on OVH S3.
+# Egress: OVH S3 (s3.de.io.cloud.ovh.net) for repo reads/restores + hc-ping.com healthcheck pings (DNS via the cluster-wide allow-dns-egress CCNP). NFS /backups + /restore mounts are node-mounted (democratic-csi / nfs volume), so they do not traverse pod egress.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: backrest
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: backrest
+      app.kubernetes.io/instance: backrest
+      app.kubernetes.io/controller: backrest
+  egress:
+    # OVH Object Storage S3 endpoint — restic repository reads/restores.
+    - toFQDNs:
+        - matchName: "s3.de.io.cloud.ovh.net"
+        - matchPattern: "*.s3.de.io.cloud.ovh.net"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+    # Healthchecks ping endpoint.
+    - toFQDNs:
+        - matchName: "hc-ping.com"
+        - matchPattern: "*.hc-ping.com"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP

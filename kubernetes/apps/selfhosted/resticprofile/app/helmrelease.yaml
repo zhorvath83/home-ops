@@ -13,6 +13,10 @@ spec:
     defaultPodOptions:
       automountServiceAccountToken: false
       enableServiceLinks: false
+      # AD-023 vocabulary: custom-egress (per-app CNP) for OVH S3 + hc-ping.com; ingress-none (consumer-less headless cron workload — no Service/route/probes)
+      labels:
+        egress.home.arpa/custom-egress: "true"
+        ingress.home.arpa/none: "true"
       securityContext:
         runAsNonRoot: true
         runAsUser: 65532

@@ -1,0 +1,31 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
+# resticprofile (AD-023): file-level NAS /backups restic plane.
+# Egress: OVH S3 (s3.de.io.cloud.ovh.net) for repo write + hc-ping.com healthcheck pings (DNS via the cluster-wide allow-dns-egress CCNP). NFS /backups + /mnt/nfs-tmp mounts are node-mounted (nfs volume), so they do not traverse pod egress.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: resticprofile
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: resticprofile
+      app.kubernetes.io/instance: resticprofile
+      app.kubernetes.io/controller: resticprofile
+  egress:
+    # OVH Object Storage S3 endpoint — restic repository writes/checks/prunes.
+    - toFQDNs:
+        - matchName: "s3.de.io.cloud.ovh.net"
+        - matchPattern: "*.s3.de.io.cloud.ovh.net"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+    # Healthchecks ping endpoint.
+    - toFQDNs:
+        - matchName: "hc-ping.com"
+        - matchPattern: "*.hc-ping.com"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP

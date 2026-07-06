@@ -48,6 +48,11 @@ spec:
               ANALYTICS_DISABLED: "true"
               VERSION_CHECK_DISABLED: "true"
               LOG_LEVEL: info
+              # OTel metrics
+              METRICS_ENABLED: "true"
+              OTEL_METRICS_EXPORTER: "prometheus"
+              OTEL_EXPORTER_PROMETHEUS_HOST: "0.0.0.0"
+              OTEL_EXPORTER_PROMETHEUS_PORT: "9464"
             envFrom:
               - secretRef:
                   name: pocket-id-secret
@@ -81,11 +86,14 @@ spec:
         ports:
           http:
             port: *port
+          metrics:
+            port: 9464
+            targetPort: 9464
     serviceMonitor:
       app:
         serviceName: pocket-id
         endpoints:
-          - port: http
+          - port: metrics
             scheme: http
             path: /metrics
             interval: 1m
