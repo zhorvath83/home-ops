@@ -1,0 +1,19 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/monitoring.coreos.com/prometheusrule_v1.json
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: hubble-policy-deny
+spec:
+  groups:
+    - name: hubble
+      rules:
+        - alert: HubblePolicyDeny
+          expr: increase(hubble_drop_total{reason="POLICY_DENIED"}[5m]) > 0
+          labels:
+            severity: critical
+          annotations:
+            description: >-
+              Cilium policy-denied drop on {{ $labels.source_namespace }}/{{ $labels.source_pod }}
+              -> {{ $labels.destination_namespace }}/{{ $labels.destination_pod }} (reason: {{ $labels.reason }}).
+            summary: "Cilium policy denied a packet (Hubble)"

@@ -47,12 +47,14 @@ spec:
       metrics:
         enabled:
           - dns
-          - drop
+          - drop:labelsContext=source_namespace,source_pod,destination_namespace,destination_pod
           - tcp
           - flow
           - port-distribution
           - icmp
           - httpV2
+        serviceMonitor:
+          enabled: true
     ipam:
       mode: kubernetes
     ipv4NativeRoutingCIDR: ${POD_CIDR}
