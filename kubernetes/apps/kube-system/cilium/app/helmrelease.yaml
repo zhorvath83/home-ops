@@ -125,3 +125,7 @@ spec:
       # flow matches stateful CT correctly. Istio compatibility is the only reason
       # to flip it back to true, and we do not run Istio.
       hostNamespaceOnly: false
+    tls:
+      secretsNamespace:
+        # Unused: no CiliumNetworkPolicy TLS interception is configured.
+        create: false
