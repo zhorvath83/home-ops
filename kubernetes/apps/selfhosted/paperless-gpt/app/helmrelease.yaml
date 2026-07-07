@@ -32,8 +32,9 @@ spec:
         containers:
           app:
             image:
+              # renovate: datasource=docker depName=ghcr.io/icereed/paperless-gpt
               repository: ghcr.io/icereed/paperless-gpt
-              tag: v0.26.0
+              tag: v0.26.0@sha256:1210dcf072d9b3de0eb8aff3d7716c28c5d658f2c5b04f0461f16fd6d9551069
             # bypass the root-requiring entrypoint (adduser/chown/su-exec); run the binary directly as UID 10001
             command:
               - /app/paperless-gpt
