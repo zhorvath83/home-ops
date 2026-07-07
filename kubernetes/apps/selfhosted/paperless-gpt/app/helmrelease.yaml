@@ -41,11 +41,13 @@ spec:
               # Auto processing settings
               AUTO_GENERATE_TITLE: "true"
               AUTO_GENERATE_TAGS: "true"
+              CREATE_NEW_TAGS: "false"
               AUTO_GENERATE_DOCUMENT_TYPE: "true"
               AUTO_GENERATE_CORRESPONDENTS: "true"
               AUTO_GENERATE_CREATED_DATE: "true"
               AUTO_OCR_TAG: "AI-OCR"
               AUTO_TAG: "AI-processing"
+              AUTO_TAG_COMPLETE: ""
               # PDF_OCR_TAGGING: "true"
               # PDF_OCR_COMPLETE_TAG: "Inbox"
 
