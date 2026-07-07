@@ -47,7 +47,7 @@ spec:
       metrics:
         enabled:
           - dns
-          - drop:labelsContext=source_namespace,source_pod,destination_namespace,destination_pod
+          - drop:labelsContext=source_namespace,source_pod,source_workload,source_ip,destination_namespace,destination_pod,destination_workload,destination_ip,traffic_direction
           - tcp
           - flow
           - port-distribution

@@ -58,7 +58,7 @@ decision_link: AD-023-cnp-threat-model-audit
 - [observation] `reporter` label does NOT exist in Cilium 1.19.5 (checked proto, handlers, context). The side-orientation signal is `traffic_direction` with values `ingress` / `egress` / `unknown` (`context.go:337-343`) — the flow direction as observed by Hubble. Exact egress-enforcement-vs-ingress-enforcement semantics are UNVERIFIED; traffic_direction is the documented available signal.
 - [observation] HARD LIMITS in v1.19.5 — none of these exist as metric labels: `policy_match_name`, `policy_match_type`, `policy_match_direction`, `destination_port`, `destination_service_name`, `destination_service_port`, `drop_reason`. The `policy` metric (`hubble_policy_verdicts_total`) exposes only fixed `direction` / `match` (= match TYPE e.g. l3_l4/l7_dns, NOT a name) / `action` + the shared labelsContext set. The denying policy NAME is only available in Hubble flow logs (`hubble observe --print-policy-names`).
 - [observation] `hubble-network-policy-correlation-enabled` exists (default true) in `pkg/hubble/parser/cell/config.go` (parser layer); it does NOT gate any Prometheus label and does not produce `policy_match_name` (which does not exist regardless of the flag).
-- [observation] Restart: `hubble.metrics.enabled` is static, bound to cilium-agent lifecycle (read at startup from `--config-dir=/tmp/cilium/config-map`); no hot-reload for the static list. ConfigMap change does NOT auto-roll the DaemonSet unless `rollOutCiliumPods=true` (default false) — new config is inert until the agent next restarts or a rollout is triggered. L3/L4 forwarding + policy enforcement continue across restart (eBPF maps persist); only brief L7-proxy unavailable + delayed flow/metrics processing. Single-node: no L3/L4 dataplane blip, short L7 interruption only if L7-proxied traffic is on the node at restart time.
+- [observation] Restart: `hubble.metrics.enabled` is static, bound to cilium-agent lifecycle (read at startup from `--config-dir=/tmp/cilium/config-map`); no hot-reload for the static list. This repo already sets `rollOutCiliumPods: true` (`kubernetes/apps/kube-system/cilium/app/helmrelease.yaml:90`), so the helm-values edit updates the `cilium-config` ConfigMap and its checksum annotation auto-rolls the cilium-agent DaemonSet on the next Flux reconcile — the new config is NOT inert and needs no manual rollout. L3/L4 forwarding + policy enforcement continue across restart (eBPF maps persist); only brief L7-proxy unavailable + delayed flow/metrics processing. Single-node: no L3/L4 dataplane blip, short L7 interruption only if L7-proxied traffic is on the node at restart time.
 - [observation] Cardinality: IP-context series are NOT auto-pruned (only `pod` / `namespace+pod` contexts are pruned ~1 min after pod deletion — `metrics.rst:1145-1153`). Each unique destination IP becomes a distinct series. No official Cilium cardinality warning for IP-context exists; the risk is inferred from label-value mechanics. For a single-node home cluster with a bounded set of external API destinations, this is manageable but must be monitored.
 
 ## Tier 0 — alert rule + notification cleanup (no infra change)
@@ -76,17 +76,18 @@ investigation command directly in the alert so the on-call has a one-line next s
 ### Design
 
 Introduce a recording rule that drops the 8 scraper labels once, then alert on the
-clean recording rule. New pattern for this repo (no existing `record:` or `label_drop`
-usage in `prometheusrules/`), so this also establishes the convention.
+clean recording rule. PromQL has no `label_drop` function; the idiomatic way to strip labels in a recording
+rule is aggregation with `without`. New pattern for this repo (no existing `record:`
+rule in `prometheusrules/`), so this also establishes the convention.
 
 Recording rule (proposed):
 
 ```yaml
 - record: hubble_policy_denied_increase5m
   expr: |
-    label_drop(label_drop(label_drop(label_drop(label_drop(label_drop(label_drop(
-      increase(hubble_drop_total{reason="POLICY_DENIED"}[5m]),
-      "container"), "endpoint"), "instance"), "job"), "namespace"), "node"), "pod"), "service")
+    sum without (container, endpoint, instance, job, namespace, node, pod, service) (
+      increase(hubble_drop_total{reason="POLICY_DENIED"}[5m])
+    )
 ```
 
 Alert rule (proposed, replaces the current single rule):
@@ -142,10 +143,10 @@ grouping).
 
 - `kubernetes/apps/kube-system/cilium/app/helmrelease.yaml` — the `hubble.metrics.enabled` list, `drop:` entry (line ~50).
 - Reconciles via Flux -> cilium helm upgrade -> cilium-config ConfigMap updated.
-- Requires cilium-agent restart to take effect (static config). Either wait for the
-  next natural restart, or set `rollOutCiliumPods: true` (or trigger a manual
-  rollout) to force it. Decision needed: accept inert-until-restart, or force a
-  controlled rollout now.
+- Requires cilium-agent restart to take effect (static config). This repo already has
+  `rollOutCiliumPods: true`, so the helm upgrade that changes `drop:` rolls the
+  cilium-agent automatically on the next Flux reconcile — no manual rollout decision
+  needed. The only real knob is timing the reconcile for a low-traffic window.
 
 ### Proposed edit
 
@@ -153,7 +154,7 @@ grouping).
 # before
 - drop:labelsContext=source_namespace,source_pod,destination_namespace,destination_pod
 # after
-- drop:labelsContext=source_namespace,source_pod,source_workload,destination_namespace,destination_pod,destination_workload,destination_ip,traffic_direction
+- drop:labelsContext=source_namespace,source_pod,source_workload,source_ip,destination_namespace,destination_pod,destination_workload,destination_ip,traffic_direction
 ```
 
 All added labels are in the v1.19.5 global valid set (`pkg/hubble/metrics/api/context.go:64-80`).
@@ -166,8 +167,10 @@ emits ingress/egress/unknown; `*_workload` are stable across restarts.
   persist). No dataplane blip for L3/L4 on the single node.
 - Brief L7-proxy (Envoy) unavailable during the restart window — affects any traffic
   L7-proxied at that instant. Window is seconds.
-- `rollOutCiliumPods` default false: ConfigMap change alone does not roll the pod;
-  decide explicitly whether to force the rollout or wait for a natural restart.
+- `rollOutCiliumPods: true` is already set in this repo (`helmrelease.yaml:90`): the
+  helm-values change to `drop:` updates the cilium ConfigMap, whose checksum annotation
+  rolls the cilium-agent DaemonSet automatically on reconcile. Activation is immediate;
+  no manual rollout or natural-restart wait is needed.
 
 ### Cardinality
 
@@ -185,7 +188,9 @@ emits ingress/egress/unknown; `*_workload` are stable across restarts.
 - [ ] Prometheus head series count does not grow unbounded after 7 days (spot-check vs pre-change baseline).
 - [ ] Cilium agent restart observed cleanly; no L7-proxied app reports errors around the restart window.
 
-## Tier 2 — persistent Hubble flow-log backend (VictoriaLogs)
+## Tier 2 — persistent Hubble flow-log backend (VictoriaLogs) — DEFERRED (2026-07-07)
+
+> DECISION 2026-07-07: dropped from active scope. The CNP posture denies no normal traffic, so every deny is a fresh anomaly acted on immediately; the live Hubble buffer plus the Tier 0 runbook cover policy-name and port at investigation time. No retroactive/long-term flow analysis is intended — Tier 2's sole justification. Revisit only if that requirement appears. The design below is retained for that contingency.
 
 ### Goal
 
@@ -203,6 +208,15 @@ buffer is minutes-scale; this very investigation hit empty results for 18h-old f
 
 ### Options (export mechanism — needs a design decision)
 
+0. **Cilium `hubble.export` (DROPPED-only) -> `/dev/stdout` -> existing `victoria-logs-collector`** —
+   set `hubble.export.static.filePath: /dev/stdout` with an `allowList` filtering to
+   `verdict: DROPPED`, so only policy denies land in cilium-agent stdout. The already-deployed
+   `victoria-logs-collector` DaemonSet (`collector/helmrelease.yaml`, remoteWrites to
+   `victoria-logs-server:9428`) tails all pod stdout and ships to VictoriaLogs with ZERO
+   new workloads. Aligns with the repo "prefer existing abstractions" principle. Trade-off:
+   mixes flow JSON into cilium-agent logs (bounded by the DROPPED-only filter); verify the
+   collector parses the JSON line into queryable fields. Recommended to evaluate first.
+
 1. **Cilium `hubble.export` static file + tailer** — Cilium writes flows to a file
    (`hubble.export.fileMaxSizeMB` etc.); a sidecar/tailer (Vector/Filebeat) ships to
    VictoriaLogs. Static config, agent-lifecycle-bound (restart on change), same as
@@ -219,7 +233,7 @@ buffer is minutes-scale; this very investigation hit empty results for 18h-old f
 - A new small workload in the observability namespace (or a sidecar on the cilium-agent
   via an extra container — less idiomatic here) that tails the export file and ships to
   VictoriaLogs via its HTTP ingest API. Reuse the existing victoria-logs-server stack.
-- Cilium agent restart (same restart tradeoff as Tier 1; combine rollouts).
+- Cilium agent restart applies (same as Tier 1). Because `rollOutCiliumPods: true` auto-rolls the agent on every cilium ConfigMap change, landing Tier 1 and Tier 2 as separate commits causes TWO rollouts — strengthening the case to combine them into one coordinated change.
 
 ### Acceptance criteria
 
@@ -235,10 +249,10 @@ buffer is minutes-scale; this very investigation hit empty results for 18h-old f
 
 ## Open questions for review
 
-- [ ] Tier 0: verify the exact Go-template idiom for rendering "external/non-pod destination" when `destination_pod` is empty, or accept a fixed annotation string and let Tier 1's destination_ip carry the concrete value.
-- [ ] Tier 1: force a cilium-agent rollout now (`rollOutCiliumPods` or manual) to activate the new labelsContext immediately, or let it ride a natural restart?
-- [ ] Tier 1: include `source_workload` / `destination_workload` (continuity) or keep the labelsContext leaner (only destination_ip + traffic_direction) to minimize cardinality?
-- [ ] Tier 2: which export mechanism (static file + tailer vs Relay consumer vs none)?
+- [x] Tier 0 (RESOLVED): accepted the fixed-annotation form — empty pod-identity renders as an empty `[ip]` slot, and Tier 1's source_ip/destination_ip carries the concrete external endpoint. No regexf/default idiom. Direction-aware runbook via `{{ if eq $labels.traffic_direction "egress" }}`.
+- [x] Tier 1 (RESOLVED): `rollOutCiliumPods: true` is already set (`helmrelease.yaml:90`), so the labelsContext change activates automatically on the next reconcile; the only sub-decision is timing that reconcile for a low-traffic window to minimize the brief L7-proxy blip.
+- [x] Tier 1 (RESOLVED): include `source_workload`/`destination_workload` (stable names) AND both `source_ip`+`destination_ip` so whichever side is external gets an IP, plus `traffic_direction`. Cardinality is safe because denies are rare by design; post-rollout `prometheus_tsdb_head_series` spot-check is the only guard, with IP-label removal as the documented fallback.
+- [x] Tier 2 (DEFERRED): tier dropped from scope (see Decision 2026-07-07). If revived, evaluate option 0 (DROPPED-only export to the existing victoria-logs-collector) first.
 - [ ] Sequencing: Tier 0 alone first (free, immediate), then Tier 1 + Tier 2 together (share one cilium restart), or all three in one coordinated change?
 
 ## Related
@@ -247,3 +261,20 @@ buffer is minutes-scale; this very investigation hit empty results for 18h-old f
 - relates_to [[networking]]
 - implements [[AD-023-cnp-threat-model-audit]]
 - relates_to [[docs/roadmap/hubble-ui-auth]] (Hubble UI exposure — complementary investigation surface)
+
+## Review — 2026-07-07 (evidence-backed against live repo)
+
+- [observation] Verified against live files: alert rule hubble-policy-deny.yaml, drop labelsContext at helmrelease.yaml:50, pushover SortedPairs template at alertmanagerconfig.yaml lines 77-83, Cilium 1.19.5 at ocirepository.yaml:14, and no existing record rule in prometheusrules/ — all match the plan evidence.
+- [correction] rollOutCiliumPods: plan assumed default false. Live helmrelease.yaml:90 already sets it true, so a drop/hubble.export ConfigMap change auto-rolls cilium-agent on reconcile. Tier 1/2 restart sections and open-question 2 corrected; this also strengthens combining Tier 1 and Tier 2 into one change to avoid two auto-rollouts.
+- [correction] Tier 0 recording rule used label_drop, which is not a valid PromQL function on the Prometheus backend. Replaced with idiomatic sum-without aggregation over the 8 scraper labels.
+- [correction] Tier 2 gained option 0: reuse the already-deployed victoria-logs-collector by exporting DROPPED-only Hubble flows to the agent stdout stream, avoiding a new tailer workload. Recommended to evaluate before options 1-3.
+- [note] Tier 0 annotation regexf/default idiom stays unverified vs the Prometheus template engine; the plan already flags the fixed-string fallback, which stands.
+
+## Decision — 2026-07-07 (scope locked)
+
+- [decision] Scope reduced to Tier 0 + Tier 1; Tier 2 deferred. Rationale: the CNP posture denies no normal traffic, so every deny is a fresh anomaly acted on immediately — retroactive/long-term flow analysis, Tier 2 sole justification, is not a goal.
+- [decision] Severity stays critical firing at greater-than-zero with no threshold and no for-delay. A deny is by design an unexpected event, so a per-packet critical is correct signal, not alert fatigue.
+- [decision] Tier 1 labelsContext enriched beyond the original plan with source_ip, so ingress denies expose the external source IP just as egress denies expose destination_ip; traffic_direction disambiguates which side is external.
+- [decision] Policy name and destination port stay out of the alert body (Cilium 1.19.5 hard limit) and are recovered on a fresh deny via the annotation runbook hubble observe --print-policy-names against the still-warm live buffer. Accepted trade-off: a deny that ages out unseen loses that detail.
+- [implementation] Files changed: prometheusrules/hubble-policy-deny.yaml — added recording rule hubble_policy_denied_increase5m stripping the 8 scraper labels via sum-without aggregation, alert now fires on it, enriched direction-aware annotation with a copy-paste runbook, severity kept critical. cilium/app/helmrelease.yaml — drop labelsContext extended with source_workload, source_ip, destination_workload, destination_ip, traffic_direction.
+- [observation] Validation: yamllint and yamlfmt clean on both files; Go-template brace and if/end balance plus PromQL paren balance verified locally; every annotation label is covered by the Tier 1 labelsContext or base metric labels. promtool was not available for full semantic rule validation — pending dependency.

@@ -8,12 +8,22 @@ spec:
   groups:
     - name: hubble
       rules:
+        # Strip the cilium-agent scrape-target labels once; the pushover receiver
+        # renders every .Labels.SortedPairs, so leaving them turns the phone
+        # notification into scraper noise. Flow-relevant labels are preserved.
+        - record: hubble_policy_denied_increase5m
+          expr: |
+            sum without (container, endpoint, instance, job, namespace, node, pod, service) (
+              increase(hubble_drop_total{reason="POLICY_DENIED"}[5m])
+            )
         - alert: HubblePolicyDeny
-          expr: increase(hubble_drop_total{reason="POLICY_DENIED"}[5m]) > 0
+          expr: hubble_policy_denied_increase5m > 0
           labels:
             severity: critical
           annotations:
-            description: >-
-              Cilium policy-denied drop on {{ $labels.source_namespace }}/{{ $labels.source_pod }}
-              -> {{ $labels.destination_namespace }}/{{ $labels.destination_pod }} (reason: {{ $labels.reason }}).
             summary: "Cilium policy denied a packet (Hubble)"
+            # destination_ip / source_ip / traffic_direction populate once the Tier 1
+            # cilium labelsContext lands; before that they render empty (still valid).
+            description: |-
+              Policy-denied drop ({{ $labels.traffic_direction }}) {{ $labels.source_namespace }}/{{ $labels.source_pod }} [{{ $labels.source_ip }}] -> {{ $labels.destination_namespace }}/{{ $labels.destination_pod }} [{{ $labels.destination_ip }}] (proto: {{ $labels.protocol }}).
+              Investigate: {{ if eq $labels.traffic_direction "egress" }}hubble observe --from-pod {{ $labels.source_namespace }}/{{ $labels.source_pod }}{{ else }}hubble observe --to-pod {{ $labels.destination_namespace }}/{{ $labels.destination_pod }}{{ end }} --verdict DROPPED --print-policy-names --last 200
