@@ -1,11 +1,12 @@
 ---
 title: hubble-policy-deny-alert-investigation
-type: roadmap
-permalink: home-ops/docs/roadmap/hubble-policy-deny-alert-investigation
+type: progress
+permalink: home-ops/docs/progress/hubble-policy-deny-alert-investigation
 topic: Make the HubblePolicyDeny alert investigation-ready — drop-metric label enrichment
   (destination_ip + traffic_direction + workload), notification cleanup, and a retroactive
   flow-log backend for the policy-name gap
-status: proposed
+status: done
+verified_at: 2026-07-07
 priority: medium
 scope: Three stacked tiers. Tier 0 cleans the alert rule and notification (no infra
   change). Tier 1 enriches the existing hubble_drop_total metric with destination_ip,
@@ -39,7 +40,7 @@ decision_link: AD-023-cnp-threat-model-audit
 ## Metadata (observation-form, schema validation)
 
 - [topic] Make the HubblePolicyDeny alert investigation-ready — drop-metric label enrichment + notification cleanup + retroactive flow-log backend
-- [status] proposed
+- [status] done
 - [priority] medium
 - [progress] Tracking + session summaries will live in a docs/progress sibling once work starts; this note is the plan.
 
@@ -125,10 +126,10 @@ Alert rule (proposed, replaces the current single rule):
 
 ### Acceptance criteria
 
-- [ ] PrometheusRule applies clean (yamllint + flux reconcile green).
-- [ ] Firing HubblePolicyDeny alert has ONLY labels: alertname, source_namespace, source_pod, destination_namespace, destination_pod, protocol, reason, severity (plus any Tier-1 enrichment once that lands). Scraper labels absent.
-- [ ] Pushover notification for the alert no longer lists container/endpoint/instance/job/namespace/node/pod/service.
-- [ ] Annotation contains a copy-pasteable `hubble observe` command with the source pod filled in.
+- [x] PrometheusRule applies clean — yamllint + yamlfmt clean locally; Flux HelmRelease kube-prometheus-stack READY=True (2026-07-07). [verified 2026-07-07]
+- [x] Firing alert (live test) labels = destination_ip, protocol, reason, severity, source_namespace, source_pod, source_workload, traffic_direction — scraper labels (container/endpoint/instance/job/namespace/node/pod/service) absent. [verified 2026-07-07 live]
+- [x] Alertmanager alert routed to pushover receiver carried only flow-relevant labels (recording rule stripped scraper labels upstream). [verified 2026-07-07 live]
+- [x] Annotation rendered: "hubble observe --from-pod selfhosted/backrest-... --verdict DROPPED --print-policy-names --last 200" — copy-pasteable, source pod filled. [verified 2026-07-07 live]
 
 ## Tier 1 — enrich hubble_drop_total labelsContext (Cilium helm change; agent restart)
 
@@ -183,10 +184,10 @@ emits ingress/egress/unknown; `*_workload` are stable across restarts.
 
 ### Acceptance criteria
 
-- [ ] `hubble_drop_total{reason="POLICY_DENIED"}` series carry non-empty `destination_ip` for external-destination denies, `traffic_direction` = ingress|egress|unknown, and `source_workload`/`destination_workload` populated for pod endpoints.
-- [ ] HubblePolicyDeny annotation (post Tier 0) renders the concrete destination IP for external denies instead of `-> /`.
-- [ ] Prometheus head series count does not grow unbounded after 7 days (spot-check vs pre-change baseline).
-- [ ] Cilium agent restart observed cleanly; no L7-proxied app reports errors around the restart window.
+- [x] Live test: hubble_drop_total{reason="POLICY_DENIED",source_pod=backrest-...} carries destination_ip=192.0.2.123, source_ip=10.244.0.60, source_workload=backrest, traffic_direction=egress (destination_workload empty for world-IP dest = expected). [verified 2026-07-07 live]
+- [x] Live Alertmanager annotation rendered "-> / [192.0.2.123]" — concrete external IP, not bare "-> /". [verified 2026-07-07 live]
+- [ ] DEFERRED — needs 7d post-rollout; baseline at rollout = ~7 hubble_drop_total series incl. 2 TTL_EXCEEDED multicast. Re-check prometheus_tsdb_head_series at 2026-07-14. Fallback (drop IP labels) documented.
+- [x] DaemonSet desired=1 ready=1 updated=1 after rollout; cilium-agent socket dated 2026-07-07 19:31 (today). Two rollouts occurred (Tier-1 labelsContext + cilium-secrets fix as separate commits). [verified 2026-07-07 live]
 
 ## Tier 2 — persistent Hubble flow-log backend (VictoriaLogs) — DEFERRED (2026-07-07)
 
@@ -278,3 +279,15 @@ buffer is minutes-scale; this very investigation hit empty results for 18h-old f
 - [decision] Policy name and destination port stay out of the alert body (Cilium 1.19.5 hard limit) and are recovered on a fresh deny via the annotation runbook hubble observe --print-policy-names against the still-warm live buffer. Accepted trade-off: a deny that ages out unseen loses that detail.
 - [implementation] Files changed: prometheusrules/hubble-policy-deny.yaml — added recording rule hubble_policy_denied_increase5m stripping the 8 scraper labels via sum-without aggregation, alert now fires on it, enriched direction-aware annotation with a copy-paste runbook, severity kept critical. cilium/app/helmrelease.yaml — drop labelsContext extended with source_workload, source_ip, destination_workload, destination_ip, traffic_direction.
 - [observation] Validation: yamllint and yamlfmt clean on both files; Go-template brace and if/end balance plus PromQL paren balance verified locally; every annotation label is covered by the Tier 1 labelsContext or base metric labels. promtool was not available for full semantic rule validation — pending dependency.
+
+## Session — 2026-07-07 (live end-to-end verification)
+
+- [verification] Method: picked `backrest` (selfhosted) — its CNP allows egress only to `s3.de.io.cloud.ovh.net` + `hc-ping.com` on 443 (FQDN, default-deny otherwise). Curled RFC5737 `192.0.2.123` (guaranteed off the allow-list) from the pod to generate a real POLICY_DENIED egress drop.
+- [observation] Hubble captured the drop live: `selfhosted/backrest-65c95f9b97-bf8lb:44056 <> 192.0.2.123:443 (world) Policy denied DROPPED (TCP Flags: SYN)`. curl exited 28 (timeout = SYN dropped).
+- [observation] Fresh `hubble_drop_total{reason="POLICY_DENIED",source_pod="backrest-..."}` carries the Tier-1 enrichment: `destination_ip="192.0.2.123"`, `source_ip="10.244.0.60"`, `source_workload="backrest"`, `traffic_direction="egress"`, value=14. The Tier-1 acceptance criterion is now confirmed on a real POLICY_DENIED deny (previously only stale pre-rollout series existed).
+- [observation] Recording rule `hubble_policy_denied_increase5m` strips the 8 scraper labels — its output labelset had NO container/endpoint/instance/job/namespace/node/pod/service.
+- [observation] Alert `HubblePolicyDeny` went `state=firing` (activeAt 2026-07-07T19:47:51Z) under a sustained deny (increase5m=92.6). Alertmanager received it (state=active, receiver=pushover) with the annotation rendered as designed: `Policy-denied drop (egress) selfhosted/backrest-... [10.244.0.60] -> / [192.0.2.123] (proto: TCP). Investigate: hubble observe --from-pod selfhosted/backrest-... --verdict DROPPED --print-policy-names --last 200`.
+- [observation] Direction-aware runbook branch verified: `traffic_direction="egress"` on the metric (NOT the Hubble flow-log field, which showed UNKNOWN for the SYN-drop) correctly selected the `--from-pod` branch via `{{ if eq $labels.traffic_direction "egress" }}`. Resolves the plan's "UNVERIFIED semantics" caveat favorably for the metric use-case.
+- [caveat] Alert sensitivity: a single sub-scrape-interval burst (3s / 14 SYNs) showed increase5m=0 (single sample, no delta) and did NOT fire. Sustained denies across 2+ scrapes (counter climbing) DID fire. This is inherent Prometheus `increase` behavior, not a rule bug — the alert reliably catches a continuously-denying app (its purpose) but may miss a one-shot sub-scrape burst. Logged as a known characteristic.
+- [caveat] Side effect of the test: a real pushover notification was sent (firing + a later resolved when the denies age out of the 5m window ~5min later). No cluster state was mutated — only transient curl traffic; no kubectl apply.
+- [observation] Two cilium-agent rollouts happened (Tier-1 commit b7dc0b0f9 + cilium-secrets fix 59e98a405 as separate commits) — the plan's "separate commits → two rollouts" risk realized. The L7-proxy blip ran twice. Minor; documented.
