@@ -34,6 +34,9 @@ spec:
             image:
               repository: ghcr.io/icereed/paperless-gpt
               tag: v0.26.0
+            # bypass the root-requiring entrypoint (adduser/chown/su-exec); run the binary directly as UID 10001
+            command:
+              - /app/paperless-gpt
             env:
               # Paperless-ngx connection
               PAPERLESS_BASE_URL: "http://paperless.selfhosted.svc.cluster.local:8000"
