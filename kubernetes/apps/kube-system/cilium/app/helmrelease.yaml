@@ -127,5 +127,6 @@ spec:
       hostNamespaceOnly: false
     tls:
       secretsNamespace:
-        # Unused: no CiliumNetworkPolicy TLS interception is configured.
-        create: false
+        # Keep true: the secure default (readSecretsOnlyFromSecretsNamespace) always
+        # renders agent/operator RBAC into this ns, so create:false wedges helm upgrades.
+        create: true
