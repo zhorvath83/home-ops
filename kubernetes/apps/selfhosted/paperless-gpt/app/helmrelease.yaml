@@ -33,7 +33,7 @@ spec:
           app:
             image:
               repository: ghcr.io/icereed/paperless-gpt
-              tag: v0.25.1
+              tag: v0.26.0
             env:
               # Paperless-ngx connection
               PAPERLESS_BASE_URL: "http://paperless.selfhosted.svc.cluster.local:8000"
