@@ -26,4 +26,5 @@ spec:
     - "error.*lookup raw\\.githubusercontent\\.com"
     - "dial.*tcp.*timeout"
     - "waiting.*socket"
+    - "dial.*tcp.*unreachable"
   suspend: false
