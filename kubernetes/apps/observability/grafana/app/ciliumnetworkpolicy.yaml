@@ -13,11 +13,14 @@ spec:
       app.kubernetes.io/instance: grafana
   egress:
     # grafana.com — plugin marketplace API + gnetId dashboard downloads.
+    # storage.googleapis.com — plugin archive CDN (grafana-plugins-catalog bucket; plugin .zip fetch).
     # raw.githubusercontent.com — URL-style dashboards (flux/envoy).
     # DNS via the cluster-wide allow-dns-egress CCNP.
     - toFQDNs:
         - matchName: "grafana.com"
         - matchPattern: "*.grafana.com"
+        - matchName: "storage.googleapis.com"
+        - matchPattern: "*.storage.googleapis.com"
         - matchName: "raw.githubusercontent.com"
       toPorts:
         - ports:
