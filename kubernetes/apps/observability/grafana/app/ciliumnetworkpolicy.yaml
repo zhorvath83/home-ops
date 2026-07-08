@@ -1,7 +1,7 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
-# grafana (AD-023): envoy + prometheus ingress via the matching CCNPs; this CNP keeps the narrow-world
-# egress for plugin/dashboard downloads (main-container preinstall + download-dashboards init container).
+# grafana (AD-023): envoy + prometheus ingress via the matching CCNPs; custom-egress opt-out, so this CNP is the
+# sole egress source — narrow-world plugin/dashboard CDNs + the in-cluster datasources (Prometheus/VictoriaLogs/Alertmanager).
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -25,4 +25,32 @@ spec:
       toPorts:
         - ports:
             - port: "443"
+              protocol: TCP
+    # In-cluster datasources (observability).
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: observability
+            app.kubernetes.io/name: prometheus
+            app.kubernetes.io/instance: kube-prometheus-stack
+      toPorts:
+        - ports:
+            - port: "9090"
+              protocol: TCP
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: observability
+            app.kubernetes.io/name: alertmanager
+            app.kubernetes.io/instance: kube-prometheus-stack
+      toPorts:
+        - ports:
+            - port: "9093"
+              protocol: TCP
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: observability
+            app.kubernetes.io/name: victoria-logs-single
+            app.kubernetes.io/instance: victoria-logs
+      toPorts:
+        - ports:
+            - port: "9428"
               protocol: TCP
