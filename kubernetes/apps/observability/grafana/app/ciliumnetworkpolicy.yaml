@@ -1,7 +1,8 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
 # grafana (AD-023): envoy + prometheus ingress via the matching CCNPs; custom-egress opt-out, so this CNP is the
-# sole egress source — narrow-world plugin/dashboard CDNs + the in-cluster datasources (Prometheus/VictoriaLogs/Alertmanager).
+# sole egress source — narrow-world plugin/dashboard CDNs + the in-cluster datasources (Prometheus/VictoriaLogs/Alertmanager)
+# + kube-apiserver for the kiwigrid sidecars (grafana-sc-dashboard/datasources discover labeled Secrets via the K8s API).
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -53,4 +54,11 @@ spec:
       toPorts:
         - ports:
             - port: "9428"
+              protocol: TCP
+    # kube-apiserver — the kiwigrid sidecars list labeled Secrets (grafana_dashboard/grafana_datasource) via the K8s API.
+    - toEntities:
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - port: "443"
               protocol: TCP
