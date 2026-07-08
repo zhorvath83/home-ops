@@ -27,11 +27,11 @@ spec:
         mountPath: /tmp
     deploymentStrategy:
       type: Recreate
-    # AD-023 vocabulary: envoy-routed (gateways) + prometheus scrape + internet egress TEMPORARY (plugin CDN; V5 narrow-world)
+    # AD-023 vocabulary: envoy-routed (gateways) + prometheus scrape + custom-egress (plugin/dashboard CDN via per-app CNP; V5 narrow-world)
     podLabels:
       ingress.home.arpa/gateways: "true"
       ingress.home.arpa/prometheus: "true"
-      egress.home.arpa/allow-world: "true"
+      egress.home.arpa/custom-egress: "true"
     env:
       GF_PLUGINS_PREINSTALL_SYNC: victoriametrics-logs-datasource@0.26.3
       GF_ANALYTICS_CHECK_FOR_UPDATES: false
