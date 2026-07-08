@@ -1,0 +1,40 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
+# plex (AD-023): ingress default-deny via the ingress-none CCNP (kube-apiserver fallback only); this CNP admits the *arr named consumers (maintainerr, seerr) and the LAN/IoT clients that reach the PLEX_IP LoadBalancer directly (TCP API + GDM UDP discovery).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: plex
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: plex
+      app.kubernetes.io/instance: plex
+      app.kubernetes.io/controller: plex
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: downloads
+            app.kubernetes.io/name: maintainerr
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: downloads
+            app.kubernetes.io/name: seerr
+      toPorts:
+        - ports:
+            - port: "32400"
+              protocol: TCP
+    - fromCIDRSet:
+        - cidr: ${LAN_SUBNET}
+        - cidr: ${IOT_SUBNET}
+      toPorts:
+        - ports:
+            - port: "32400"
+              protocol: TCP
+            - port: "32410"
+              protocol: UDP
+            - port: "32412"
+              protocol: UDP
+            - port: "32413"
+              protocol: UDP
+            - port: "32414"
+              protocol: UDP

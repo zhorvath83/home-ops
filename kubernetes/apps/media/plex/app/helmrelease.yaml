@@ -13,8 +13,9 @@ spec:
     defaultPodOptions:
       automountServiceAccountToken: false
       enableServiceLinks: false
-      # AD-023 vocabulary: internet egress (plex.tv) via the allow-world-egress CCNP
+      # AD-023 vocabulary: ingress-none CCNP for ingress default-deny (plex is LB-only, no HTTPRoute — the gateways CCNP's envoy admitt would be a no-op) + internet egress (plex.tv) via the allow-world-egress CCNP
       labels:
+        ingress.home.arpa/none: "true"
         egress.home.arpa/allow-world: "true"
       resourceClaims:
         - name: gpu
@@ -39,7 +40,7 @@ spec:
             env:
               TZ: "${TIMEZONE}"
               HOSTNAME: PlexServer
-              PLEX_ADVERTISE_URL: "https://plex.${PUBLIC_DOMAIN},http://${PLEX_IP}:32400"
+              PLEX_ADVERTISE_URL: "http://${PLEX_IP}:32400"
               PLEX_NO_AUTH_NETWORKS: ${LAN_SUBNET},${IOT_SUBNET},${POD_CIDR},${SVC_CIDR}
             envFrom:
               - secretRef:

@@ -1,0 +1,25 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
+# qbittorrent (AD-023): envoy ingress via the gateways CCNP; this CNP admits the *arr named consumers (sonarr, radarr) on the WebUI API port.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: qbittorrent
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: qbittorrent
+      app.kubernetes.io/instance: qbittorrent
+      app.kubernetes.io/controller: qbittorrent
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: downloads
+            app.kubernetes.io/name: sonarr
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: downloads
+            app.kubernetes.io/name: radarr
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP

@@ -14,8 +14,9 @@ spec:
       hostname: qbittorrent
       automountServiceAccountToken: false
       enableServiceLinks: false
-      # AD-023 vocabulary: internet egress (BitTorrent peers + trackers) via the allow-world-egress CCNP
+      # AD-023 vocabulary: envoy-routed (gateways CCNP) + internet egress (BitTorrent peers + trackers) via the allow-world-egress CCNP
       labels:
+        ingress.home.arpa/gateways: "true"
         egress.home.arpa/allow-world: "true"
       securityContext:
         runAsNonRoot: true
