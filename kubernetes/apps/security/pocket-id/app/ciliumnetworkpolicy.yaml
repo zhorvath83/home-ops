@@ -21,10 +21,11 @@ spec:
             - port: "1411"
               protocol: TCP
   egress:
-    # MaxMind GeoLite2 download
+    # MaxMind GeoLite2 download; download.maxmind.com 302-redirects to its R2 bucket for the tarball.
     - toFQDNs:
         - matchName: "download.maxmind.com"
         - matchPattern: "*.maxmind.com"
+        - matchName: "mm-prod-geoip-databases.a2649acb697e2c09b632799562c076f2.r2.cloudflarestorage.com"
       toPorts:
         - ports:
             - port: "443"
