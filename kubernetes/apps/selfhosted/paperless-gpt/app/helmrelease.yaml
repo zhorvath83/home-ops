@@ -13,10 +13,10 @@ spec:
     defaultPodOptions:
       automountServiceAccountToken: false
       enableServiceLinks: false
-      # AD-023 vocabulary: envoy-routed (gateways CCNP) + internet egress TEMPORARY (LLM API; V5 narrow-world)
+      # AD-023 vocabulary: envoy-routed (gateways CCNP) + custom-egress (Mistral API/OCR + in-cluster Paperless via per-app CNP; V5 narrow-world)
       labels:
         ingress.home.arpa/gateways: "true"
-        egress.home.arpa/allow-world: "true"
+        egress.home.arpa/custom-egress: "true"
       securityContext:
         runAsNonRoot: true
         runAsUser: 10001

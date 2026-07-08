@@ -1,0 +1,34 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
+# paperless-gpt (AD-023): envoy ingress via the gateways CCNP; custom-egress opt-out, so this CNP is the sole egress source —
+# narrow-world Mistral API/OCR (mistral.ai) + the in-cluster Paperless API (PAPERLESS_BASE_URL). DNS via the cluster-wide allow-dns-egress CCNP.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: paperless-gpt
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: paperless-gpt
+      app.kubernetes.io/instance: paperless-gpt
+      app.kubernetes.io/controller: paperless-gpt
+  egress:
+    # Mistral AI — LLM (mistral-large-latest) + OCR (mistral-ocr-latest) APIs.
+    - toFQDNs:
+        - matchName: "mistral.ai"
+        - matchPattern: "*.mistral.ai"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+    # Paperless-ngx API (in-cluster; PAPERLESS_BASE_URL).
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: selfhosted
+            app.kubernetes.io/name: paperless
+            app.kubernetes.io/instance: paperless
+            app.kubernetes.io/controller: paperless
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP
