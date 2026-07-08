@@ -16,6 +16,7 @@ spec:
     # grafana.com — plugin marketplace API + gnetId dashboard downloads.
     # storage.googleapis.com — plugin archive CDN (grafana-plugins-catalog bucket; plugin .zip fetch).
     # raw.githubusercontent.com — URL-style dashboards (flux/envoy).
+    # gravatar.com — user avatar fetch (secure.gravatar.com).
     # DNS via the cluster-wide allow-dns-egress CCNP.
     - toFQDNs:
         - matchName: "grafana.com"
@@ -23,6 +24,8 @@ spec:
         - matchName: "storage.googleapis.com"
         - matchPattern: "*.storage.googleapis.com"
         - matchName: "raw.githubusercontent.com"
+        - matchName: "gravatar.com"
+        - matchPattern: "*.gravatar.com"
       toPorts:
         - ports:
             - port: "443"
@@ -55,10 +58,10 @@ spec:
         - ports:
             - port: "9428"
               protocol: TCP
-    # kube-apiserver — the kiwigrid sidecars list labeled Secrets (grafana_dashboard/grafana_datasource) via the K8s API.
+    # kube-apiserver — the kiwigrid sidecars list labeled Secrets (grafana_dashboard/grafana_datasource) via the K8s API (backend port 6443; matches the external-secrets CNP pattern).
     - toEntities:
         - kube-apiserver
       toPorts:
         - ports:
-            - port: "443"
+            - port: "6443"
               protocol: TCP
