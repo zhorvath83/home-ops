@@ -9,4 +9,5 @@ resources:
   - ./externalsecret.yaml
   - ./alertmanagerconfig.yaml
   - ./prometheusrules
+  - ./grafanadatasource.yaml
   - ./helmrelease.yaml

@@ -1,0 +1,21 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/monitoring.coreos.com/servicemonitor_v1.json
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: grafana
+spec:
+  selector:
+    matchLabels:
+      dashboards: grafana
+  endpoints:
+    - port: grafana
+      metricRelabelings:
+        - sourceLabels:
+            - "__name__"
+          regex: "grafana_http_(request_duration|response_size)_seconds_bucket"
+          action: drop
+        - sourceLabels:
+            - "__name__"
+          regex: "^go_.*"
+          action: drop
