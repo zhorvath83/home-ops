@@ -7,7 +7,6 @@ metadata:
   labels:
     dashboards: grafana
 spec:
-  allowCrossNamespaceImport: true
   config:
     analytics:
       check_for_updates: "false"
