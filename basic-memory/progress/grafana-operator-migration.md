@@ -209,3 +209,36 @@ Next: P2 cutover — STOP and request explicit human approval (production Grafan
 ### Next (gated)
 
 - [P4] blackbox-exporter app (nas.lan ICMP + NFS tcp/2049 probes) + kps probeSelectorNilUsesHelmValues: false. Independent; the blackbox 7587 dashboard CR is a P3/P4 touchpoint.
+
+
+## Session 4 — P4: blackbox-exporter + kps probeSelector (2026-07-10)
+
+**Scope**: deploy prometheus-blackbox-exporter (chart 11.15.1 / app v0.28.0) in observability to probe nas.lan (ICMP) and nas.lan:2049 (NFS) via prometheus-operator Probe CRs; flip kps probeSelector to match-all.
+
+**App files** (kubernetes/apps/observability/blackbox-exporter/): ks.yaml (dependsOn kube-prometheus-stack), app/{kustomization, ocirepository (oci://ghcr.io/prometheus-community/charts/prometheus-blackbox-exporter tag 11.15.1), helmrelease, probes, prometheusrule, grafanadashboard, ciliumnetworkpolicy}.yaml. Parent observability/kustomization.yaml lists ./blackbox-exporter/ks.yaml; kps helmrelease gained probeSelectorNilUsesHelmValues: false.
+
+Key decisions (No-Assumptions verified before writing):
+- Chart uses `pod.labels` (NOT podLabels) for pod labels; config.modules default ships ONLY http_2xx -> added icmp + tcp_connect explicitly.
+- securityContext: drop ALL + add NET_RAW for ICMP (chart default drops ALL); runAsUser 1000, readOnlyRootFilesystem, runAsNonRoot.
+- fullnameOverride: prometheus-blackbox-exporter -> deterministic service name for the Probe prober URL.
+- AD-023: allow-world EXCEPTS RFC1918 (192.168/16), so nas.lan (192.168.1.10) needs custom-egress + per-app CNP with toCIDRSet 192.168.1.10/32 (icmps type 8 + tcp/2049), NOT allow-world. Prometheus scrape ingress via the cluster CCNP (ingress.home.arpa/prometheus).
+- nas.lan resolves in-cluster to 192.168.1.10 (CoreDNS 10.245.0.10).
+- Dashboard gnetId 7587 binds its datasource via the DS_SIGNCL-PROMETHEUS input (NOT DS_PROMETHEUS) -> datasources.inputName = DS_SIGNCL-PROMETHEUS, datasourceName = Prometheus.
+- kps: added probeSelectorNilUsesHelmValues: false (completes the sm/pm/rule/probe quartet -> all four selectors match-all).
+
+**Bug found + fixed (loop-until-verified)**: Probe CR spec.prober.url must be a BARE host[:port], not http://... -- the prometheus-operator rejects full URLs ("invalid proberSpec ... should be of the format hostname or hostname:port"). First deploy: operator skipped both Probes, probe_success empty, no up{nas|nfs}. Fix commit a8c08dbe: prober.url = prometheus-blackbox-exporter.observability.svc.cluster.local:9115 (no scheme); added a comment documenting the footgun.
+
+Commits: ebdf73c5 (feat: blackbox-exporter + probeSelector), a8c08dbe (fix: bare host prober.url). Pushed to main; Flux deployed.
+
+**Live verify (all pass)**:
+- blackbox-exporter HR Ready (chart 11.15.1); KS Ready (rev a8c08dbe); pod Running 1/1.
+- Pod labels: app.kubernetes.io/name=prometheus-blackbox-exporter, ingress.home.arpa/prometheus=true, egress.home.arpa/custom-egress=true; capabilities drop ALL + add NET_RAW.
+- CNP prometheus-blackbox-exporter: 2 egress rules (192.168.1.10/32 icmps type 8 + tcp/2049); endpointSelector matches the live pod label; VALID.
+- Prometheus CR probeSelector={}, serviceMonitorSelector={} (match-all); kps helm upgrade succeeded (rev v29).
+- probe_success{instance=nas.lan, job=nas}=1 (ICMP); probe_success{instance=nas.lan:2049, job=nfs}=1 (NFS); up=1 both.
+- BlackboxProbeFailed PrometheusRule loaded (rulefile observability-blackbox-exporter-*.yaml, group blackbox-exporter, 1 rule, severity=critical -> Pushover); not firing (probes succeed -> correct).
+- Dashboard 7587 DashboardSynchronized=True (uid xtkCtBkiz, folder observability).
+
+**Follow-ups**: none new for P4.
+
+**Next**: P5 -- Pocket-ID OIDC SSO (HUMAN GATE: create Pocket-ID client "Grafana" + groups grafana_users/grafana_administrators + 1Password fields GRAFANA_OAUTH_CLIENT_ID/GRAFANA_OAUTH_CLIENT_SECRET, then extend instance/externalsecret + grafana.yaml auth.generic_oauth + instance CNP egress to id.<domain>).
