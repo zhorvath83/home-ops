@@ -110,3 +110,56 @@ Next: P2 cutover — STOP and request explicit human approval (production Grafan
 - volsync R1 VAR_REPLICATIONDESTNAME behavior (P3 vendored ConfigMap).
 - victoria-logs chart dashboards.grafanaOperator.* schema passthrough (P3, D13 caveat).
 - Pocket-ID OIDC discovery endpoint paths (P5).
+
+
+## Session 2 — P2 atomic cutover + verify (2026-07-09)
+
+### Decided (user approved P2 with "mehet")
+
+- [decision] Proceed with the P2 atomic cutover (one commit): instance/ + datasource CRs, delete app/, replace grafana KS doc with grafana-instance, CNP rewrite.
+
+### Done (P2) — commit 0edf7772e on main, pushed
+
+- Created [file] kubernetes/apps/observability/grafana/instance/{kustomization,externalsecret,grafana,grafanafolder,httproute,servicemonitor,ciliumnetworkpolicy}.yaml. externalsecret.yaml moved unchanged from app/. grafana.yaml = stateless Grafana CR (no PVC, no plugins), disableDefaultAdminSecret: true, admin creds via grafana-secret env vars.
+- Created [file] kubernetes/apps/observability/kube-prometheus-stack/app/grafanadatasource.yaml (Prometheus default + Alertmanager; NO VictoriaLogs per D13) + added to that kustomization.
+- Modified [file] kubernetes/apps/observability/grafana/ks.yaml — grafana Kustomization document replaced by grafana-instance (dependsOn grafana-operator + kube-prometheus-stack + onepassword-connect/external-secrets, path ./instance).
+- Deleted [dir] kubernetes/apps/observability/grafana/app/ entirely (HelmRelease, OCIRepository, CNP, kustomization; externalsecret+kustomization recognized as renames to instance/).
+- Commit message: '♻️ refactor(grafana): migrate instance to grafana-operator CRs'. Pre-commit all Passed. Pushed to origin/main.
+
+### Deviation from roadmap spec (applied)
+
+- [observation] httproute.yaml uses envoy-internal ONLY (LAN-only permanent decision D6), NOT both envoy-external+envoy-internal as the roadmap P2 proposed. Homepage annotation typo fixed (Grafanaa -> Grafana).
+
+### Verify (live, post-deploy) — ALL PASS
+
+- [observation] flux get ks -n observability grafana-instance -> Ready (revision 0edf7772). grafana-operator, kube-prometheus-stack also Ready at 0edf7772.
+- [observation] kubectl get grafana.grafana.integreatly.org grafana -> STAGE=complete STAGE STATUS=success, VERSION=13.0.1.
+- [observation] grafana pod grafana-deployment-5644bcb7bc-h2mpp 1/1 Running; container list = ONLY 'grafana' (NO kiwigrid sidecars — security goal achieved: no kube-apiserver egress, no plugin CDN).
+- [observation] kubectl -n observability get cnp grafana -> VALID True.
+- [observation] helm ls -n observability -> old 'grafana' release pruned; only 'grafana-operator' remains.
+- [observation] GrafanaDatasource prometheus + alertmanager -> DatasourceSynchronized=True, reason ApplySuccessful, "successfully applied to 1 instances".
+- [observation] GrafanaFolder observability -> FolderSynchronized=True, ApplySuccessful.
+- [observation] grafana-service labels dashboards=grafana, port name 'grafana' port 3000 targetPort grafana-http -> matches ServiceMonitor selector (dashboards: grafana) + endpoint port 'grafana'. Prometheus active target scrapeUrl=http://10.244.0.234:3000/metrics job=grafana-service health=up.
+- [observation] HTTPRoute grafana -> parentRef envoy-internal ONLY (LAN-only confirmed), conditions Accepted=True, ResolvedRefs=True. hostname grafana.horvathzoltan.me (PUBLIC_DOMAIN substituted). grafana pod /api/health -> HTTP 200.
+
+### VERIFY resolved (post-deploy)
+
+- [VERIFY resolved] Operator-generated Service = grafana-service, port 3000 (matches roadmap assumption). Service labels propagate the Grafana CR 'dashboards: grafana' label.
+- [VERIFY resolved] grafana-data volume = EmptyDir (operator default; no PVC — D2 stateless confirmed). No 'grafana-data' emptyDir needed in grafana.yaml; operator injects it.
+- [VERIFY resolved] Operator pod label app.kubernetes.io/name=grafana-operator matches the instance CNP ingress fromEndpoints rule. Operator->grafana:3000 reached after pod startup.
+
+### Transient + non-blocking observation (logged, NOT fixed — see follow-up)
+
+- [observation] Grafana 13.0.1 background plugin installer (logger=plugin.backgroundinstaller) runs a ONE-TIME startup burst (~31s, 21:43:56->21:44:27) attempting 5 bundled app plugins (grafana-exploretraces-app, grafana-metricsdrilldown-app, elasticsearch, grafana-lokiexplore-app, grafana-pyroscope-app) from grafana.com. All fail with connection timeout — grafana.com is correctly blocked by the instance CNP (D13). NOT perpetual (no retries after the burst). No plugins installed (D13 letter satisfied). The Grafana CR 'complete' stage initially failed at 21:43:58 with 'no route to host' (transient first-packet drop during pod startup / Cilium endpoint-identity propagation lag); self-healed to 'complete success' on the operator's next reconcile at 21:44:38.
+
+### Follow-up (out of P2 scope, logged not implemented)
+
+- [follow-up] Grafana 13 background plugin installer startup burst: ~5 error log lines per pod start. Documented candidate to suppress = [plugins] disable_plugins (comma-list of the 5 bundled app plugin IDs) — Context7 confirms disable_plugins 'prevents loading incl. core plugins, hides from catalog' but does NOT confirm it stops the background installer's download ATTEMPTS. NOT shipped unverified (code-generation No-Assumptions). Revisit if the startup noise becomes undesirable; verify live before committing.
+- [follow-up] P3 dashboard fan-out (17 dashboards + cilium configMapRef + blackbox 7587) — gated, after P2 instance live (now satisfied).
+- [follow-up] P4 blackbox-exporter + kps probeSelectorNilUsesHelmValues: false.
+- [follow-up] P5 Pocket-ID OIDC SSO — HUMAN GATE.
+- [follow-up] P6 BM docs (observability/iam areas, cnp-per-app-audit, roadmap status -> done).
+
+### Next (gated — awaiting approval)
+
+- [P3] Dashboard/folder CR fan-out per owning app. P2 instance is live and verified — P3 prerequisite satisfied.
