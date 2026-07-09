@@ -1,0 +1,115 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/grafana.integreatly.org/grafanadashboard_v1beta1.json
+# Generic Kubernetes / node / OpenWRT dashboards owned by kube-prometheus-stack
+# (same namespace as the Grafana instance → no cross-namespace import).
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: k8s-views-global
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
+  folderRef: observability
+  grafanaCom:
+    id: 15757
+    revision: 43
+  datasources:
+    - inputName: DS_PROMETHEUS
+      datasourceName: Prometheus
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: k8s-views-nodes
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
+  folderRef: observability
+  grafanaCom:
+    id: 15759
+    revision: 40
+  datasources:
+    - inputName: DS_PROMETHEUS
+      datasourceName: Prometheus
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: k8s-views-namespaces
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
+  folderRef: observability
+  grafanaCom:
+    id: 15758
+    revision: 44
+  datasources:
+    - inputName: DS_PROMETHEUS
+      datasourceName: Prometheus
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: k8s-views-pods
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
+  folderRef: observability
+  grafanaCom:
+    id: 15760
+    revision: 37
+  datasources:
+    - inputName: DS_PROMETHEUS
+      datasourceName: Prometheus
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: k8s-volumes
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
+  folderRef: observability
+  grafanaCom:
+    id: 11454
+    revision: 14
+  datasources:
+    - inputName: DS_PROMETHEUS
+      datasourceName: Prometheus
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: node-exporter-full
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
+  folderRef: observability
+  grafanaCom:
+    id: 1860
+    revision: 42
+  datasources:
+    - inputName: DS_PROMETHEUS
+      datasourceName: Prometheus
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: openwrt
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
+  folderRef: observability
+  grafanaCom:
+    id: 18153
+    revision: 2
+  datasources:
+    - inputName: DS_PROMETHEUS
+      datasourceName: Prometheus

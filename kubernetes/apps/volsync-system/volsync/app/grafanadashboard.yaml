@@ -1,0 +1,22 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/grafana.integreatly.org/grafanadashboard_v1beta1.json
+# R1: the dashboard's VAR_REPLICATIONDESTNAME template variable has no CR field
+# (it is a query variable, not a datasource input). Imported via grafanaCom with the
+# Prometheus datasource remap; if the variable default renders empty live, fall back
+# to a vendored ConfigMap with the variable defaulted (see progress note).
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: volsync
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
+  allowCrossNamespaceImport: true
+  folderRef: volsync
+  grafanaCom:
+    id: 21356
+    revision: 3
+  datasources:
+    - inputName: DS_PROMETHEUS
+      datasourceName: Prometheus

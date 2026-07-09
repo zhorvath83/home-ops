@@ -1,0 +1,35 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/grafana.integreatly.org/grafanadashboard_v1beta1.json
+# Victoria-logs dashboards are emitted as ConfigMaps by the chart (dashboards.enabled);
+# referenced here by name. Both query Prometheus (D13: no VL datasource/plugin needed).
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: victoria-logs-vector-k8s-monitoring
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
+  folderRef: observability
+  configMapRef:
+    name: victoria-logs-vector-k8s-monitoring
+    key: vector-k8s-monitoring.json
+  datasources:
+    - inputName: DS_PROMETHEUS
+      datasourceName: Prometheus
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: victoria-logs-victorialogs-single-node
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
+  folderRef: observability
+  configMapRef:
+    name: victoria-logs-victorialogs-single-node
+    key: victorialogs-single-node.json
+  datasources:
+    - inputName: DS_PROMETHEUS
+      datasourceName: Prometheus

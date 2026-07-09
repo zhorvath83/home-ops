@@ -10,4 +10,5 @@ resources:
   - ./alertmanagerconfig.yaml
   - ./prometheusrules
   - ./grafanadatasource.yaml
+  - ./grafanadashboard.yaml
   - ./helmrelease.yaml

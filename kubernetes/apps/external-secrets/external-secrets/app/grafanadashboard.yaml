@@ -1,0 +1,20 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/grafana.integreatly.org/grafanadashboard_v1beta1.json
+# The external-secrets chart emits this dashboard ConfigMap (grafanaDashboard.enabled);
+# referenced here by name so the operator imports it.
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: external-secrets
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
+  allowCrossNamespaceImport: true
+  folderRef: external-secrets
+  configMapRef:
+    name: external-secrets-dashboard
+    key: external-secrets.json
+  datasources:
+    - inputName: DS_PROMETHEUS
+      datasourceName: Prometheus
