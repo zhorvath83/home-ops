@@ -1,0 +1,25 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: grafana-operator
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: grafana-operator
+  values:
+    serviceMonitor:
+      enabled: true
+    # AD-023 vocabulary: scraped by Prometheus (cluster CCNP) + custom-egress (apiserver watch,
+    # Grafana provisioning API, url-sourced dashboard downloads).
+    podLabels:
+      ingress.home.arpa/prometheus: "true"
+      egress.home.arpa/custom-egress: "true"
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
+      limits:
+        memory: 256Mi

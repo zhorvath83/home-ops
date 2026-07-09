@@ -80,6 +80,14 @@
       minimumGroupSize: 1,
     },
     {
+      description: "Grafana Operator group (Flux HelmRelease chart + bootstrap CRDs, lockstep)",
+      groupName: "Grafana Operator",
+      matchDatasources: ["docker", "helm"],
+      matchPackageNames: ["/grafana-operator/"],
+      group: { commitMessageTopic: "{{{groupName}}} group" },
+      minimumGroupSize: 1,
+    },
+    {
       description: "Tuppr group (chart + controller image, lockstep release)",
       groupName: "Tuppr",
       matchDatasources: ["docker", "helm"],
