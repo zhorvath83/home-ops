@@ -482,10 +482,11 @@ spec:
               resources:
                 requests:
                   storage: 5Gi
-        # Discover all ServiceMonitors and PodMonitors
+        # Discover all ServiceMonitors, PodMonitors, and Probes
         serviceMonitorSelectorNilUsesHelmValues: false
         podMonitorSelectorNilUsesHelmValues: false
         ruleSelectorNilUsesHelmValues: false
+        probeSelectorNilUsesHelmValues: false
         # Disable external labels
         prometheusExternalLabelNameClear: true
         replicaExternalLabelNameClear: true

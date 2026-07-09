@@ -11,3 +11,4 @@ resources:
   - ./grafana/ks.yaml
   - ./speedtest-exporter/ks.yaml
   - ./victoria-logs/ks.yaml
+  - ./blackbox-exporter/ks.yaml

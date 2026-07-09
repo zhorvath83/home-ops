@@ -1,0 +1,30 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
+# blackbox-exporter (AD-023): custom-egress opt-out, so this CNP is the sole egress source —
+# nas.lan (192.168.1.10) ICMP echo for the icmp module and tcp/2049 for the tcp_connect module.
+# allow-world does NOT cover 192.168/16 (RFC1918 is excepted), so a CIDR rule is required.
+# Prometheus scrape ingress (:9115) is handled by the cluster CCNP, not here.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: prometheus-blackbox-exporter
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: prometheus-blackbox-exporter
+  egress:
+    # ICMP echo to nas.lan (blackbox icmp module). Cilium is stateful, so the echo-reply
+    # return is allowed automatically once the outbound type 8 is permitted.
+    - toCIDRSet:
+        - cidr: 192.168.1.10/32
+      icmps:
+        - fields:
+            - family: IPv4
+              type: 8
+    # NFS tcp/2049 to nas.lan (blackbox tcp_connect module).
+    - toCIDRSet:
+        - cidr: 192.168.1.10/32
+      toPorts:
+        - ports:
+            - port: "2049"
+              protocol: TCP
