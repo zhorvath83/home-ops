@@ -60,10 +60,10 @@ spec:
             resources:
               requests:
                 cpu: 5m
-                memory: 50Mi
+                memory: 64Mi
               limits:
-                # 256Mi: a one-shot `plextraktsync sync` (full library preload) needs more than the watch loop
-                memory: 256Mi
+                # one-shot `plextraktsync sync` needs it
+                memory: 200Mi
     persistence:
       config:
         type: persistentVolumeClaim

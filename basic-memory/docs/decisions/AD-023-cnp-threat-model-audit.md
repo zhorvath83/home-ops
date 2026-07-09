@@ -53,6 +53,7 @@ related_areas:
 - [decided_at] 2026-06-20
 - [revised] 2026-06-21 — egress narrowed to a binary; shared ingress component dropped; narrow-world relaxed to full-domain allowlists
 - [revised] 2026-06-29 — rev2 hybrid: label vocabulary for generic grants; world-deny flip committed; LAN excluded from world grants; source-side east-west explicitly rejected
+- [revised] 2026-07-09 — rev3: ingress gateways vocabulary split (gateways RETIRED → gateways-dual + gateways-internal); SA/RBAC brought into the containment model (grafana sidecar cluster-wide secrets RBAC finding recorded — remediation moved OUT of the CNP rollout scope; fleet automountServiceAccountToken:false recognized as load-bearing); DNS-exfil detection added as permanent monitoring
 - [topic] CiliumNetworkPolicy threat model & containment strategy
 
 ## Context — threat model
@@ -134,6 +135,12 @@ Single-node Talos home-lab, single-tenant, internet-exposed via Cloudflare Tunne
 - [observation] [allowlist-practice] narrow-world allowlists come from Hubble AND app logs (CDN-style secondary domains surface in logs, not captures); allow the whole domain
 - [observation] [envoy-external] edge ingress defense is architectural: ClusterIP-only + CNP allowlist + CF Tunnel mTLS; SecurityPolicy.principal.clientCIDRs is unworkable (cloudflared rewrites XFF); cert-based Cloudflare AOP is the only viable edge-mTLS if ever needed
 - [observation] [east-west-hub] prometheus scrapes every app metrics port and kube-apiserver reaches every app port — covered by the two ingress vocabulary labels
+
+## Rev3 addendum (2026-07-09 — security review)
+
+- [decision] [gateways-split] ingress.home.arpa/gateways is RETIRED, replaced by ingress.home.arpa/gateways-dual (admits envoy-external + envoy-internal) and ingress.home.arpa/gateways-internal (admits envoy-internal only). Rationale: every externally-routed app is also internal-routed, but the internal-ONLY carrier set (downloads *arr/qbittorrent, kube-prometheus-stack; victoria-logs upcoming) is exactly the weak/no-auth admin-UI class — a compromised envoy-external must not have a network path to them. Label-freeze exception: executed additively (add-both → retire-old, two commits, single-revert rollback), names chosen so the exposure class is readable from the label itself. Execution: roadmap V5 item (m).
+- [decision] [rbac-containment] SA/RBAC is part of the containment model, not only network policy: a pod SA token is an east-west path that bypasses every CNP (via kube-apiserver, which many CNPs must allow). Fleet state verified 2026-07-09: automountServiceAccountToken: false on effectively all app HRs — load-bearing, keep it on every new app. homepage is the accepted exception (automount true + read-only ClusterRole: namespaces/pods/nodes/ingresses/httproutes/metrics, NO secrets, no write verbs — recon-only exposure; live can-i checks: list secrets no, patch pods no). grafana FINDING (HIGH): the chart sidecar ClusterRole granted cluster-wide secrets get/list/watch (live can-i list secrets -A = yes, external-secrets ns included) — an internet-routed pod with all-secrets read defeats the crown-jewel network containment. Remediation: removed from the CNP rollout scope (user decision 2026-07-09) — the finding stays OPEN and is NOT part of the V1-V5 runbook; candidate direction is a grafana-operator migration (operator pushes dashboards/datasources via the Grafana HTTP API; the grafana pod then needs no K8s API access at all, and its CNP drops the kube-apiserver:6443 grant), to be decided and tracked as its own roadmap item. Governance: any chart creating RBAC for a routed app must be checked for secrets verbs before adoption.
+- [decision] [dns-exfil-detection] DNS tunneling through the universal allow-dns-egress + coredns world:53 path is the acknowledged residual exfil channel for no-world pods; the policy layer cannot close it (DNS must work). Mitigation is detection: per-pod Hubble DNS metrics (dns:labelsContext=source_namespace,source_pod) + per-pod query-volume and NXDOMAIN-ratio alerts. Complements (does not replace) the HubblePolicyDeny DROPPED alert. Execution: roadmap V5 item (l).
 
 ## Related
 

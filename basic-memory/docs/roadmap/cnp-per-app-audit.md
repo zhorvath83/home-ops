@@ -280,6 +280,8 @@ Legend: V1 = label added in Phase V1; V3 = label/grant lands IN the flip commit;
 - [observation] [item] pocket-id: SMTP result -> narrow-world if needed
 - [observation] [item] worker isolation: ingress.home.arpa/none on plex-trakt-sync, resticprofile (if verified consumer-less)
 - [observation] [item] external-dns narrow-world (api.cloudflare.com) — optional tightening
+- [observation] [item] (l) DNS-exfil detection alert — full execution plan in section "V5 (l) — DNS-exfil detection alert (execution plan)" below
+- [observation] [item] (m) ingress-from-gateways split into gateways-dual + gateways-internal — full execution plan in section "V5 (m) — gateways split (execution plan)" below; decision recorded in AD-023 rev3
 
 ## Operational facts (carried forward, still true)
 
@@ -344,6 +346,130 @@ Legend: V1 = label added in Phase V1; V3 = label/grant lands IN the flip commit;
 - [observation] [V2-VolSync-mover VERIFIED 2026-07-05] The 10:00 UTC ReplicationSource schedule spawned 10 VolSync mover pods (volsync-src-<app>-<id>: paperless, actual, calibre-web-automated, wallos, prowlarr, sonarr, bazarr, pocket-id, radarr, tinyauth, pingvin-share-x, plex-trakt-sync, plex, seerr, mealie, backrest, qbittorrent, maintainerr, isponsorblocktv, paperless-gpt) during the 300s capture. EVERY mover pod carries `egress.home.arpa/allow-world: true` (e.g. volsync-src-sonarr-kb7k7 Running, volsync-src-paperless-6zz5m Init) — confirms components/volsync/{replicationsource,replicationdestination}.yaml spec.kopia.moverPodLabels propagates to the LIVE spawned mover pod, not just the CR spec. Hubble: 2518× FORWARDED mover pods → 141.95.67.80:443 (s3.de.io.cloud.ovh.net); zero policy-denied DROPPED. **V2-VolSync mover UNVERIFIED → RESOLVED. V3-blocker for VolSync movers: CLEARED.** (kopia-maint was already CLEARED via manual trigger.)
 
 - [observation] [V2-isponsorblocktv-TV-capture 2026-07-05] 300s capture while the user ran YouTube on a LAN TV. Main pod isponsorblocktv-6f999d658f-z89l4 (10.244.0.215) shows ONLY EGRESS: YouTube/Google API (142.251.13.91, 192.178.183.136, 206.253.90.145 — sponsor-segment sync) + ctrld sidecar DoH (76.76.2.22:443 = dns.controld.com). **ZERO LAN (192.168.x.x) ingress flow from the TV.** No `isponsorblocktv` Service exists in the media namespace (only calibre-web-automated ClusterIP + plex LoadBalancer) — the ctrld `0.0.0.0:53` listener is reachable only on the pod IP, with NO LoadBalancer/NodePort/ClusterIP exposing :53 to the LAN. The only pod→isponsorblocktv:53 ingress is cluster-internal: CoreDNS (10.244.0.61) ↔ mover pod (volsync-src-isponsorblocktv-zz8d7, 10.244.0.55) DNS forward. **V2-step3 CORRECTION PROPOSED → CONFIRMED: the TV does NOT connect to isponsorblocktv over LAN.** Runbook consequences: (a) "isponsorblocktv pod-to-LAN CNP MUST land in V3" is UNNECESSARY — there is no LAN ingress to allow/deny; (b) the missing ingress.home.arpa/* label is NOT a V3-blocker — ingress stays open post-flip but only cluster-internal CoreDNS forward reaches it, which the baseline allow-cluster-ingress covers; (c) the allow-world label on the main pod is justified (YouTube API + ctrld DoH are genuine world egress). isponsorblocktv V3 action = allow-world only, no per-app CNP.
+
+## V5 (l) — DNS-exfil detection alert (execution plan)
+
+Why: allow-dns-egress + the coredns world:53 CNP leave DNS tunneling open as an exfil channel for EVERY pod, including no-world ones. The policy layer cannot close this (DNS must work); HubblePolicyDeny only fires on DROPPED and tunneling is FORWARDED DNS. Pure detection task — no CNP change. Decision basis: AD-023 rev3.
+
+- [observation] [step] Commit 1 — per-pod DNS metric context. Edit kubernetes/apps/kube-system/cilium/app/helmrelease.yaml: in hubble.metrics.enabled (currently line 49) change the entry "- dns" to "- dns:labelsContext=source_namespace,source_pod" (same option syntax as the existing drop entry on the next line). Do NOT add the query option — per-FQDN labels are unbounded cardinality and exfil domains are unique anyway. Validate: pre-commit run --all-files + flux-local build. NOTE: this rolls the cilium DaemonSet (rollOutPods: true — brief dataplane blip, same class as prior cilium HR edits).
+- [observation] [verify] After reconcile, in Prometheus: count(hubble_dns_queries_total{source_pod!=""}) > 0 (context labels present). Also record the live rcode label values: count by (rcode) (hubble_dns_responses_total) — the NXDOMAIN alert below assumes rcode="Non-Existent Domain"; if the live string differs, use the live string in the rule.
+- [observation] [step] Baseline: run at least 3 days (7 preferred). Threshold query: max_over_time((sum by (source_namespace, source_pod) (rate(hubble_dns_queries_total[5m])))[3d:5m]) — note the busiest legitimate pod. Set VOLUME_THRESHOLD = 3x that value, minimum 5 (qps). This is a (survey)-class value: it MUST come from the baseline query, never guessed; fill it into the rule before merge.
+- [observation] [step] Commit 2 — NEW file kubernetes/apps/observability/kube-prometheus-stack/app/prometheusrules/hubble-dns-exfil.yaml + add "- ./hubble-dns-exfil.yaml" to prometheusrules/kustomization.yaml (sibling of hubble-policy-deny.yaml). Full content (replace VOLUME_THRESHOLD with the baseline-derived number):
+
+```yaml
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/monitoring.coreos.com/prometheusrule_v1.json
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: hubble-dns-exfil
+spec:
+  groups:
+    - name: hubble-dns
+      rules:
+        - record: hubble_dns_qps_by_pod:rate5m
+          expr: |
+            sum by (source_namespace, source_pod) (
+              rate(hubble_dns_queries_total[5m])
+            )
+        - alert: HubbleDnsQueryVolumeHigh
+          expr: hubble_dns_qps_by_pod:rate5m > VOLUME_THRESHOLD
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Sustained high DNS query rate from a single pod (possible DNS tunneling)"
+            description: |-
+              {{ $labels.source_namespace }}/{{ $labels.source_pod }} DNS rate is high (5m rate) for 10m+.
+              Investigate: hubble observe --from-pod {{ $labels.source_namespace }}/{{ $labels.source_pod }} --protocol dns --last 200
+        - alert: HubbleDnsNxdomainRatioHigh
+          expr: |
+            (
+              sum by (source_namespace, source_pod) (rate(hubble_dns_responses_total{rcode="Non-Existent Domain"}[15m]))
+              /
+              sum by (source_namespace, source_pod) (rate(hubble_dns_responses_total[15m]))
+            ) > 0.5
+            and on (source_namespace, source_pod)
+            sum by (source_namespace, source_pod) (rate(hubble_dns_responses_total[15m])) > 0.2
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: "High NXDOMAIN ratio from a single pod (possible DNS tunneling/DGA)"
+            description: |-
+              {{ $labels.source_namespace }}/{{ $labels.source_pod }}: over 50 percent of DNS responses are NXDOMAIN over 15m at non-trivial volume.
+              Investigate: hubble observe --from-pod {{ $labels.source_namespace }}/{{ $labels.source_pod }} --protocol dns --last 200
+```
+
+- [observation] [accept] Deliberate test (user-run, exec into an existing pod that has a shell and nslookup, e.g. homepage): loop "for i in $(seq 1 600); do nslookup ${i}.deadbeef.example.com; done" sustained ~12 minutes → BOTH alerts fire → Pushover FIRING then RESOLVED (same acceptance shape as the V4 HubblePolicyDeny test). Then silent for 1 week under normal use.
+- [observation] [rollback] revert Commit 2 (alerts). Commit 1 (labelsContext) can stay — pure observability, no policy effect.
+
+## V5 (m) — gateways split (execution plan): gateways-dual + gateways-internal
+
+Why (AD-023 rev3): every externally-routed app is ALSO internal-routed, but 9 label-carriers are internal-ONLY — exactly the weak/no-auth admin-UI class (qbittorrent, *arr, prometheus). The shared gateways CCNP admits envoy-external to all of them; a compromised envoy-external must not have a network path to internal-only apps. New vocabulary labels: ingress.home.arpa/gateways-dual (admits envoy-external + envoy-internal) and ingress.home.arpa/gateways-internal (admits envoy-internal only). The old ingress.home.arpa/gateways label + ingress-from-gateways CCNP are RETIRED at the end. Label-freeze exception is documented in AD-023 rev3; the migration is additive (add-both → retire-old), so it is zero-downtime.
+
+- [observation] [assignment] gateways-dual (15 HRs — all currently carry ingress.home.arpa/gateways): calibre-web-automated (media), echo (networking), grafana (observability), pocket-id (security), tinyauth (security — MUST stay dual: it is the ext-auth hop for envoy-external), actual, backrest, home-gallery, homepage, mealie, paperless-gpt, paperless, pingvin-share-x, wallos (selfhosted), kopia (volsync-system)
+- [observation] [assignment] gateways-internal (9 HRs): bazarr, maintainerr, prowlarr, qbittorrent, radarr, seerr, sonarr, subsyncarr (downloads), kube-prometheus-stack (observability)
+- [observation] [assignment] victoria-logs server (V5 item e, not yet labeled): give it ingress.home.arpa/gateways-internal from the start — do NOT introduce the old label anywhere new
+- [observation] [out-of-scope] flux-instance github webhook route is envoy-external-only but its receiver pod is unlabeled (flux-system, ingress open) — unchanged here; hubble-ui (cilium httproute, envoy-internal) also unlabeled — unchanged
+- [observation] [mechanics] The complete edit set for both commits is exactly the file list from: grep -rln "ingress.home.arpa/gateways" kubernetes/apps --include=helmrelease.yaml (24 files as of 2026-07-09) plus the netpols dir. In each HR the label lives in the SAME block as the existing line (defaultPodOptions.labels / podLabels / podMetadata.labels) — add or remove a sibling line, do not move blocks.
+
+- [observation] [step] Commit 1 (additive, zero behavior change): (a) NEW files kubernetes/apps/kube-system/cilium/netpols/ingress-from-gateways-dual.yaml and ingress-from-gateways-internal.yaml (full YAML below); (b) add both to netpols/kustomization.yaml resources ("- ./ingress-from-gateways-dual.yaml", "- ./ingress-from-gateways-internal.yaml"); (c) in each of the 24 HRs add the new label line directly under the existing ingress.home.arpa/gateways line per the assignment above (value always "true"). The old CCNP still admits both gateways, so the grant union is unchanged. Validate: pre-commit run --all-files + flux-local build; verify label emission per edited HR (helm template + grep the rendered pod template) as in V1 commit 2. Push, reconcile — pods roll on the label change.
+
+```yaml
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumclusterwidenetworkpolicy_v2.json
+# Ingress from BOTH envoy gateways (label ingress.home.arpa/gateways-dual="true").
+apiVersion: cilium.io/v2
+kind: CiliumClusterwideNetworkPolicy
+metadata:
+  name: ingress-from-gateways-dual
+spec:
+  endpointSelector:
+    matchLabels:
+      ingress.home.arpa/gateways-dual: "true"
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: networking
+            app.kubernetes.io/name: envoy
+          matchExpressions:
+            - key: gateway.envoyproxy.io/owning-gateway-name
+              operator: In
+              values:
+                - envoy-external
+                - envoy-internal
+```
+
+```yaml
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumclusterwidenetworkpolicy_v2.json
+# Ingress from envoy-internal ONLY (label ingress.home.arpa/gateways-internal="true").
+apiVersion: cilium.io/v2
+kind: CiliumClusterwideNetworkPolicy
+metadata:
+  name: ingress-from-gateways-internal
+spec:
+  endpointSelector:
+    matchLabels:
+      ingress.home.arpa/gateways-internal: "true"
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: networking
+            app.kubernetes.io/name: envoy
+          matchExpressions:
+            - key: gateway.envoyproxy.io/owning-gateway-name
+              operator: In
+              values:
+                - envoy-internal
+```
+
+- [observation] [accept commit 1] kubectl get ccnp → 8 total, all Valid; spot-check pod labels: kubectl get pod -A -l ingress.home.arpa/gateways-dual and -l ingress.home.arpa/gateways-internal (expect 15 vs 9 app pod sets); Hubble zero policy-denied DROPPED; all routed apps still respond via gateway.
+- [observation] [step] Commit 2 (flip + retire): remove the old ingress.home.arpa/gateways line from the same 24 HRs; DELETE kubernetes/apps/kube-system/cilium/netpols/ingress-from-gateways.yaml; remove its kustomization entry. Behavior change: the 9 internal-set pods stop admitting envoy-external.
+- [observation] [accept commit 2] internal-only UIs reachable from LAN via internal hostnames (spot: prometheus, qbittorrent); dual apps reachable via BOTH public and internal hostnames (spot: grafana, homepage); negative check with Hubble: no FORWARDED flow from the envoy-external proxy pod to any downloads/kube-prometheus-stack pod after the flip; HubblePolicyDeny stays silent — if it fires here, the source app was mis-assigned: move it to gateways-dual in a follow-up commit rather than reverting, unless breakage is widespread.
+- [observation] [rollback] revert Commit 2 (restores the old label + CCNP; the new grants are additive and harmless to leave in place).
+- [observation] [post] update the Definitions section of THIS note: label vocabulary now lists ingress.home.arpa/gateways-dual + ingress.home.arpa/gateways-internal instead of ingress.home.arpa/gateways (6-label vocabulary; AD-023 rev3 records the decision). versions-renovate governance line unchanged — the label-emission check on app-template MAJOR bumps now covers the two new labels.
 
 ## Related
 
