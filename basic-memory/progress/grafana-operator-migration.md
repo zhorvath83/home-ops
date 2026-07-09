@@ -163,3 +163,49 @@ Next: P2 cutover — STOP and request explicit human approval (production Grafan
 ### Next (gated — awaiting approval)
 
 - [P3] Dashboard/folder CR fan-out per owning app. P2 instance is live and verified — P3 prerequisite satisfied.
+
+
+## Session 3 — P3 dashboard/folder fan-out (2026-07-09/10, committed 5ecda15bc)
+
+### Scope (decided with human)
+
+- [decision] P3 scope = full parity, 23 dashboards: 17 url/grafana.com imports (kps k8s-views x4 + k8s-volumes + node-exporter-full + openwrt, speedtest, flux x4, envoy x2, external-dns, cert-manager, volsync) + 6 configMapRef imports of chart-emitted ConfigMaps (cilium x2, external-secrets, tuppr, victoria-logs x2). 8 folders, one per owner namespace (D4): observability (existing from P2) + 7 new cross-namespace (flux-system, networking, cert-manager, volsync-system, kube-system, external-secrets, system-upgrade).
+- [decision] Chart-emitted dashboards use configMapRef (uniform, avoids per-chart grafanaOperator-schema verification) rather than flipping each chart's grafanaOperator mode.
+
+### Schema verified (Context7 /grafana/grafana-operator — No Assumptions)
+
+- GrafanaDashboard: grafanaCom{id,revision} for gnetId; url for URL imports; configMapRef{name,key}; datasources[{inputName,datasourceName}] remaps templated datasources; folderRef = same-namespace GrafanaFolder CR name; allowCrossNamespaceImport default false.
+- GrafanaFolder: title, instanceSelector (immutable), allowCrossNamespaceImport, uid (immutable).
+- Cross-namespace import requires allowCrossNamespaceImport: true on BOTH the Grafana instance CR AND each cross-ns dashboard/folder CR. Added to instance/grafana.yaml (was same-ns-only in P2). Operator is cluster-scoped (no WATCH_NAMESPACE restriction).
+- No CR field for non-datasource template variables (e.g. VAR_*) -> volsync R1 applies.
+
+### Changes committed (5ecda15bc, 31 files: 18 new + 13 modified)
+
+- 11 GrafanaDashboard files (23 dashboards) + 7 new GrafanaFolder files across 11 owning apps; 11 app kustomization.yaml updated to reference them.
+- instance/grafana.yaml: + spec.allowCrossNamespaceImport: true (no pod redeploy — field only affects operator matching logic; pod stayed 1/1, no downtime).
+- cilium helmrelease: removed both now-dead annotations.grafana_folder: Cilium blocks (dashboards + operator.dashboards), kept enabled: true so the CMs persist as configMapRef sources.
+- All 23 dashboards carry datasources[{inputName: DS_PROMETHEUS, datasourceName: Prometheus}] remap (same convention the old kiwigrid sidecar used).
+- Omitted the old `# renovate: depName="..."` annotations: quoted space-containing depName with no datasource= does not match the repo generic regex customManager, and no grafana-operator grafanaCom customManager exists -> they were inert.
+
+### Live verify (operator-CR level, all green)
+
+- 23/23 GrafanaDashboard DashboardSynchronized=True ("applied to 1 instances").
+- 8/8 GrafanaFolder FolderSynchronized=True; folder tree = D4 owner-namespace structure (Cert Manager, External Secrets, Flux System, Cilium, Networking, Observability, System Upgrade, VolSync).
+- 2/2 GrafanaDatasource (prometheus default + alertmanager) carried from P2, unchanged.
+- Grafana instance complete/success; pod 1/1, single 'grafana' container (no kiwigrid sidecar regression).
+- DS_PROMETHEUS remap confirmed matching: cilium-dashboard ConfigMap uses templating var DS_PROMETHEUS.
+- Transient reconcile race: external-dns "GrafanaFolder networking not found" errors at 22:00:28-34 (dashboard reconciled before the folder CR registered in the operator cache); self-healed by 22:00:35 (DashboardSynchronized=True, lastResync 22:00:35). No flapping after.
+- pre-commit (yamlfmt, yamllint, gitleaks, k8s-secret scan) all Passed on the 31 files.
+
+### Follow-up (out of P3 scope, logged not implemented)
+
+- [follow-up] volsync R1: VAR_REPLICATIONDESTNAME template variable has no CR field; imported via grafanaCom with DS_PROMETHEUS remap only. UI-verify whether the dashboard renders data; if empty, fall back to a vendored ConfigMap with the variable defaulted (roadmap R1).
+- [follow-up] Renovate grafana-operator grafanaCom dashboard revision bumping: no customManager exists for the new GrafanaDashboard grafanaCom{id,revision} shape; the old depName annotations were not functional. Add a customManager if dashboard revision auto-update is desired.
+- [follow-up] Grafana 13 background plugin installer hardening (Session 2, unchanged).
+- [follow-up] P4 blackbox-exporter + kps probeSelectorNilUsesHelmValues: false.
+- [follow-up] P5 Pocket-ID OIDC SSO — HUMAN GATE.
+- [follow-up] P6 BM docs (observability/iam areas, cnp-per-app-audit, roadmap status -> done).
+
+### Next (gated)
+
+- [P4] blackbox-exporter app (nas.lan ICMP + NFS tcp/2049 probes) + kps probeSelectorNilUsesHelmValues: false. Independent; the blackbox 7587 dashboard CR is a P3/P4 touchpoint.
