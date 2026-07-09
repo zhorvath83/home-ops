@@ -11,7 +11,8 @@ spec:
   interval: 60s
   module: icmp
   prober:
-    url: http://prometheus-blackbox-exporter.observability.svc.cluster.local:9115
+    # Bare host[:port] — the operator rejects http:// here and builds the /probe URL itself.
+    url: prometheus-blackbox-exporter.observability.svc.cluster.local:9115
   targets:
     staticConfig:
       static:
@@ -26,7 +27,8 @@ spec:
   interval: 60s
   module: tcp_connect
   prober:
-    url: http://prometheus-blackbox-exporter.observability.svc.cluster.local:9115
+    # Bare host[:port] — the operator rejects http:// here and builds the /probe URL itself.
+    url: prometheus-blackbox-exporter.observability.svc.cluster.local:9115
   targets:
     staticConfig:
       static:
