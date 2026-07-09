@@ -16,20 +16,21 @@ spec:
     auth:
       # OIDC-only: password webform disabled. Recovery = flip here, Flux redeploys, form returns.
       disable_login: "true"
-      generic_oauth:
-        # token/userinfo hit the in-cluster service (matches tinyauth); auth_url is public for the browser.
-        enabled: "true"
-        name: Pocket ID
-        scopes: openid email profile groups
-        auth_url: "https://id.${PUBLIC_DOMAIN}/authorize"
-        token_url: "http://pocket-id.security.svc.cluster.local:1411/api/oidc/token"
-        api_url: "http://pocket-id.security.svc.cluster.local:1411/api/oidc/userinfo"
-        email_attribute_name: "email:primary"
-        allow_sign_up: "true"
-        # grafana_admins → Admin; no grafana_users group yet, so everyone else → None (no access).
-        role_attribute_path: "contains(groups[*], 'grafana_admins') && 'Admin' || 'None'"
-        role_attribute_strict: "true"
-        skip_org_role_sync: "false"
+    # grafana.ini [auth.generic_oauth] is a dotted section name → first-level key under config.
+    auth.generic_oauth:
+      # token/userinfo hit the in-cluster service (matches tinyauth); auth_url is public for the browser.
+      enabled: "true"
+      name: Pocket ID
+      scopes: openid email profile groups
+      auth_url: "https://id.${PUBLIC_DOMAIN}/authorize"
+      token_url: "http://pocket-id.security.svc.cluster.local:1411/api/oidc/token"
+      api_url: "http://pocket-id.security.svc.cluster.local:1411/api/oidc/userinfo"
+      email_attribute_name: "email:primary"
+      allow_sign_up: "true"
+      # grafana_admins → Admin; no grafana_users group yet, so everyone else → None (no access).
+      role_attribute_path: "contains(groups[*], 'grafana_admins') && 'Admin' || 'None'"
+      role_attribute_strict: "true"
+      skip_org_role_sync: "false"
     date_formats:
       use_browser_locale: "true"
     log:
