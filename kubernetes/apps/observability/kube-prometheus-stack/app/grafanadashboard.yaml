@@ -95,7 +95,7 @@ spec:
     matchLabels:
       dashboards: grafana
   folderRef: observability
-  url: https://grafana.com/api/dashboards/18153/revisions/2/download
+  url: https://grafana.com/api/dashboards/18153/revisions/4/download
   datasources:
     - inputName: DS_PROMETHEUS
       datasourceName: Prometheus
