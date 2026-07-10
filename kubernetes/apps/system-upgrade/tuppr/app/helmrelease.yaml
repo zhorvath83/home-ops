@@ -20,9 +20,10 @@ spec:
     image:
       # renovate: datasource=docker depName=ghcr.io/home-operations/tuppr
       tag: 0.2.1
-    # AD-023 V5: custom-egress opt-out; the per-app ciliumnetworkpolicy.yaml is the sole egress source (factory.talos.dev + kube-apiserver).
+    # AD-023 V5: custom-egress opt-out (per-app ciliumnetworkpolicy.yaml is the sole egress source); prometheus scrape via the CCNP + webhook/probe ingress in the CNP.
     podLabels:
       egress.home.arpa/custom-egress: "true"
+      ingress.home.arpa/prometheus: "true"
     monitoring:
       serviceMonitor:
         enabled: true

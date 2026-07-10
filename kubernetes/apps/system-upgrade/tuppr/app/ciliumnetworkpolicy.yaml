@@ -2,9 +2,10 @@
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
 # tuppr (AD-023 V5): custom-egress opt-out, so this CNP is the sole egress source — factory.talos.dev (installer image
 # availability check) + kube-apiserver, which on this single node also carries the Talos apid (50000, kubernetesTalosAPIAccess)
-# alongside the K8s API (6443). DNS via the cluster-wide allow-dns-egress CCNP. Ingress is left default-open on purpose: the
-# admission webhook (:9443) and kubelet probes (:8081) arrive as the kube-apiserver identity, so an ingress label would also
-# require an explicit apiserver ingress grant — not worth the webhook-breakage risk for a cluster-internal operator.
+# alongside the K8s API (6443). DNS via the cluster-wide allow-dns-egress CCNP. Ingress: the Prometheus scrape arrives via the
+# ingress.home.arpa/prometheus label + matching CCNP; the app-unique part below is the apiserver-called validating webhook
+# (:9443, failurePolicy=Fail — a closed ingress here would reject every TalosUpgrade/KubernetesUpgrade write) and the kubelet
+# liveness/readiness probes (:8081), both on the kube-apiserver identity on the single node, with a reserved:host fallback for the probe path.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -30,4 +31,21 @@ spec:
             - port: "6443"
               protocol: TCP
             - port: "50000"
+              protocol: TCP
+  ingress:
+    # apiserver → validating webhook (:9443) + kubelet probes (:8081); the node IP carries the kube-apiserver identity on the single node.
+    - fromEntities:
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - port: "9443"
+              protocol: TCP
+            - port: "8081"
+              protocol: TCP
+    # host fallback for the kubelet probe path, in case it is ever classified as reserved:host rather than kube-apiserver.
+    - fromEntities:
+        - host
+      toPorts:
+        - ports:
+            - port: "8081"
               protocol: TCP
