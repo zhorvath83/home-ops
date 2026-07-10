@@ -21,3 +21,11 @@ spec:
         - ports:
             - port: "443"
               protocol: TCP
+    # SMTP2GO mail submission (implicit TLS).
+    - toFQDNs:
+        - matchName: "mail-eu.smtp2go.com"
+        - matchPattern: "*.smtp2go.com"
+      toPorts:
+        - ports:
+            - port: "465"
+              protocol: TCP
