@@ -91,9 +91,10 @@ spec:
               startup:
                 enabled: true
                 spec:
+                  # CWA-init chowns the NFS ebook library on every boot; on a large library this exceeds a normal probe budget.
                   initialDelaySeconds: 60
-                  failureThreshold: 45
-                  periodSeconds: 5
+                  failureThreshold: 120
+                  periodSeconds: 10
             securityContext:
               allowPrivilegeEscalation: true # because S6 overlay
               readOnlyRootFilesystem: false # because S6 overlay
