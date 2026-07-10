@@ -1,7 +1,7 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
 # plex-trakt-sync (AD-023): consumer-less worker (ingress.home.arpa/none default-deny); custom-egress opt-out, so this CNP is the sole
-# egress source — narrow-world Trakt API + the in-cluster Plex server (PLEX_BASEURL). DNS via the cluster-wide allow-dns-egress CCNP.
+# egress source — narrow-world Trakt API + MyPlex account API + the in-cluster Plex server (PLEX_BASEURL). DNS via the cluster-wide allow-dns-egress CCNP.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -17,6 +17,13 @@ spec:
     - toFQDNs:
         - matchName: "api.trakt.tv"
         - matchPattern: "*.trakt.tv"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+    # MyPlex account API — plextraktsync calls /api/v2/user to resolve/validate the PLEX_TOKEN account.
+    - toFQDNs:
+        - matchName: "plex.tv"
       toPorts:
         - ports:
             - port: "443"
