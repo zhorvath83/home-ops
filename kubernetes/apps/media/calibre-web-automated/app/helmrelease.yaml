@@ -75,6 +75,8 @@ spec:
               TZ: "${TIMEZONE}"
               PUID: 1000
               PGID: 100
+              # NFS library: skip the boot-time recursive chown of /calibre-library + disable SQLite WAL + poll watchers
+              NETWORK_SHARE_MODE: "true"
             probes:
               liveness:
                 enabled: true
