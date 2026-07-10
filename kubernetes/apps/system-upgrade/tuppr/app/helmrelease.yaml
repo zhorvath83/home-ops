@@ -20,9 +20,9 @@ spec:
     image:
       # renovate: datasource=docker depName=ghcr.io/home-operations/tuppr
       tag: 0.2.1
-    # AD-023 vocabulary: internet egress TEMPORARY (factory.talos.dev + github releases; V5 narrow-world)
+    # AD-023 V5: custom-egress opt-out; the per-app ciliumnetworkpolicy.yaml is the sole egress source (factory.talos.dev + kube-apiserver).
     podLabels:
-      egress.home.arpa/allow-world: "true"
+      egress.home.arpa/custom-egress: "true"
     monitoring:
       serviceMonitor:
         enabled: true
