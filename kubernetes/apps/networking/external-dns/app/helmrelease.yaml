@@ -38,9 +38,10 @@ spec:
       enabled: true
     podAnnotations:
       secret.reloader.stakater.com/reload: external-dns-secret
-    # AD-023 vocabulary: internet egress (Cloudflare API) via the allow-world-egress CCNP
+    # AD-023 vocabulary: custom-egress (per-app CNP → Cloudflare API + kube-apiserver) + prometheus ingress (ServiceMonitor)
     podLabels:
-      egress.home.arpa/allow-world: "true"
+      egress.home.arpa/custom-egress: "true"
+      ingress.home.arpa/prometheus: "true"
     resources:
       requests:
         cpu: 5m

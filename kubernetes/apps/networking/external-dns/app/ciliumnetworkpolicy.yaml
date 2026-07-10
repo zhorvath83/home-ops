@@ -1,0 +1,28 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
+# external-dns (AD-023): prometheus ingress via the matching CCNP; custom-egress opt-out, so this CNP is the sole egress source —
+# the Cloudflare API (DNS record sync) + kube-apiserver (watches Ingress/HTTPRoute/Gateway sources). DNS via the cluster-wide allow-dns-egress CCNP.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: external-dns
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: external-dns
+      app.kubernetes.io/instance: external-dns
+  egress:
+    # Cloudflare API — DNS record synchronization.
+    - toFQDNs:
+        - matchName: "api.cloudflare.com"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+    # kube-apiserver — watches Ingress / HTTPRoute / Gateway sources (post-DNAT backend port 6443).
+    - toEntities:
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - port: "6443"
+              protocol: TCP
