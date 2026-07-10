@@ -168,9 +168,9 @@ oauth:
   #Role required for administrative access. Must be present in a user's roles for them to access the admin panel. Leave it blank if you don't know what this config is.
   oidc-roleAdminAccess: "pingvin_share_admins"
   #Client ID of the OpenID Connect OAuth app
-  oidc-clientId: "$${OIDC_CLIENT_ID}"
+  oidc-clientId: "$${PINGVINSHARE_OIDC_CLIENT_ID}"
   #Client secret of the OpenID Connect OAuth app
-  oidc-clientSecret: "$${OIDC_CLIENT_SECRET}"
+  oidc-clientSecret: "$${PINGVINSHARE_OIDC_CLIENT_SECRET}"
 s3:
   #Whether S3 should be used to store the shared files instead of the local file system.
   enabled: "false"
