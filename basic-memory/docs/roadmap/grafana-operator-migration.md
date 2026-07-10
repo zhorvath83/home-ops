@@ -5,7 +5,7 @@ permalink: home-ops/docs/roadmap/grafana-operator-migration
 topic: Re-implement Grafana with grafana-operator (operator/instance split, decentralized
   dashboard/datasource CRs, Pocket-ID SSO) + blackbox-exporter probing nas.lan ICMP
   + NFS tcp/2049
-status: planned
+status: done
 priority: medium
 scope: Execution-grade roadmap. Contains the full YAML of every new/changed manifest,
   the per-app dashboard placement table, CNP rewrites under AD-023, the Pocket-ID
@@ -50,7 +50,7 @@ tags:
 ## Metadata (observation-form, schema validation)
 
 - [topic] Re-implement Grafana with grafana-operator (operator/instance split, decentralized dashboard/datasource CRs) + new blackbox-exporter probing nas.lan (ICMP) and its NFS service (TCP 2049)
-- [status] planned
+- [status] done
 - [progress] Execution state will live in [[grafana-operator-migration]] (docs/progress) — create it at P1 start from this note's phase list
 - [priority] medium
 

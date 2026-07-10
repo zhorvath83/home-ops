@@ -5,7 +5,7 @@ permalink: home-ops/docs/areas/observability
 area: observability
 status: current
 confidence: high
-verified_at: '2026-07-05'
+verified_at: '2026-07-10'
 summary: Observability for the cluster splits into four workloads under kubernetes/apps/observability/
   — kube-prometheus-stack (operator + Prometheus + Alertmanager + kube-state-metrics
   + node-exporter, minimal single-node configuration), a standalone grafana (with
@@ -66,7 +66,7 @@ Re-verified 2026-07-05: the speedtest-exporter public route (speed.${PUBLIC_DOMA
 The cluster's observability stack lives under `kubernetes/apps/observability/` as four sub-Kustomizations:
 
 - `kube-prometheus-stack` — upstream chart `oci://ghcr.io/prometheus-community/charts/kube-prometheus-stack`, a "minified" single-node homelab variant: most `defaultRules` and the kube-apiserver / kubelet / etcd / kube-controller-manager / scheduler / proxy / coredns exporters are disabled; only the `k8s`, `kubernetesApps`, `kubeStateMetrics`, `prometheusOperator`, and `prometheus` rule groups survive. `cleanPrometheusOperatorObjectNames: true`. Prometheus retention is now explicit: 7d / 4500MB on a 5Gi `democratic-csi-local-hostpath` PVC. Alertmanager is enabled (see update section).
-- `grafana` — standalone chart, admin password from ExternalSecret `grafana-secret`, telemetry off (`GF_ANALYTICS_*` false), hardened (read-only rootfs, drop ALL caps, RuntimeDefault). Datasources: Prometheus (default) plus a VictoriaLogs datasource (plugin preinstalled). Dashboards auto-discovered via the sidecar (`grafana_dashboard` label, all namespaces). `GF_SERVER_ROOT_URL = https://grafana.${PUBLIC_DOMAIN}`. Depends on kube-prometheus-stack + onepassword-connect.
+- `grafana` — **operator-managed** (grafana-operator, `operator/`+`instance/` split). Stateless `Grafana` CR (emptyDir DB, no PVC), telemetry off, hardened (read-only rootfs, drop ALL, RuntimeDefault). Datasources (`Prometheus` default, `Alertmanager`), dashboards, and folders are declarative CRs (`GrafanaDatasource`/`GrafanaDashboard`/`GrafanaFolder`) co-located with the owning app; the operator provisions them via the Grafana API using the `grafana-secret` admin creds. **No plugins** (D13) + `preinstall_disabled` — zero grafana.com startup egress; no VictoriaLogs datasource (logs stay in the vmui). **SSO via Pocket-ID OIDC** (`auth.generic_oauth`), local login form hidden (`disable_login_form: true`). `root_url = https://grafana.${PUBLIC_DOMAIN}`, internal gateway only. Depends on grafana-operator + kube-prometheus-stack + onepassword-connect.
 - `speedtest-exporter` — bjw-s `app-template`, WAN throughput metrics on a 20m scrape interval, hardened (nonRoot 10001, read-only rootfs, drop ALL). No `dependsOn`.
 - `victoria-logs` — the logs plane, added since the previous pass. A single-node server (`victoria-logs-single`, 10Gi PVC, 14d retention) plus a per-node collector DaemonSet (`victoria-logs-collector`) that remote-writes to `http://victoria-logs-server.observability.svc.cluster.local:9428`. The collector `dependsOn` the server.
 
@@ -146,3 +146,15 @@ Implemented via `docs/progress/alertmanager-introduction` (status: done). Re-ver
 **Verified live**: ExternalSecret Ready, Alertmanager pod Running 2/2, PVC Bound, HTTPRoute present, CNP VALID, PrometheusRules present (oom-alert + general/node/node-exporter groups), Prometheus auto-wired to Alertmanager (operator-populated spec.alerting.alertmanagers), loaded config shows pushover receiver. End-to-end synthetic alert (amtool, severity=critical) delivered to Pushover. End-to-end Flux error (throwaway Kustomization, bad path → ArtifactFailed) flowed notification-controller → Alertmanager API (`FluxKustomizationArtifactfailed`, severity=error → default pushover receiver) → Pushover. Regression test after relay retirement confirmed Pushover still delivers solely via Alertmanager — no alerting gap.
 
 **Open follow-ups** (not in this roadmap): Grafana Alertmanager datasource (needs a grafana→AM:9093 east-west CNP entry); dead-man's-switch (replace Watchdog→blackhole with a heartbeat webhook receiver if an uptime monitor lands); consider `kubernetesResources`/`kubernetesStorage` default rule groups once node/general rules prove stable.
+
+
+## Update — 2026-07-10: Grafana migrated to grafana-operator (roadmap grafana-operator-migration, P0–P6)
+
+- [observation] The standalone Grafana Helm chart (`grafana/app/`, deleted) was replaced by the **grafana-operator** pattern: `kubernetes/apps/observability/grafana/` now splits into `operator/` (HelmRelease, OCIRepository `grafana-operator` 5.24.0, CNP) and `instance/` (Grafana CR, datasource + folder CRs, HTTPRoute, ServiceMonitor, ExternalSecret, CNP). Two Flux Kustomizations: `grafana-operator` (wait) + `grafana-instance` (dependsOn grafana-operator, kube-prometheus-stack, onepassword-connect).
+- [observation] 23 dashboards + 8 folders (one per owner namespace, D4) + 2 datasources are `Grafana*` CRs co-located with owning apps (D3). Chart-emitted dashboards (cilium ×2, external-secrets, tuppr, victoria-logs ×2) imported via `configMapRef`; the rest via **pinned URL imports** `url: .../api/dashboards/<id>/revisions/<rev>/download`, auto-updated by the home-operations `grafanaDashboards` Renovate preset (reviewed revision-bump PRs) — bjw-s-aligned; converted from `grafanaCom{id,revision}` on 2026-07-10.
+- [observation] kiwigrid sidecars removed → no kube-apiserver egress. No plugins (D13) + `preinstall_disabled: "true"` → no grafana.com startup egress (was previously blocked by CNP → HubblePolicyDeny; now suppressed at source).
+- [observation] New `blackbox-exporter` app (P4): Probe CRs for nas.lan ICMP + NFS tcp/2049; kps gained `probeSelectorNilUsesHelmValues: false`. BlackboxProbeFailed → Alertmanager → Pushover.
+- [observation] SSO via Pocket-ID OIDC (P5) — see [[iam]].
+- [observation] Grafana DB is ephemeral (emptyDir, D2): the operator re-provisions all dashboards/datasources on each pod start. A pod restart (e.g. `grafana-secret` change → operator `checksum/secrets` pod recreation) briefly empties the UI until the operator re-syncs. No PVC/VolSync by design.
+
+See [[grafana-operator-migration]] (progress) for the full execution log.

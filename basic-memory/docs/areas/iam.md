@@ -5,7 +5,7 @@ permalink: home-ops/docs/areas/iam
 area: iam
 status: current
 confidence: high
-verified_at: '2026-06-15'
+verified_at: '2026-07-10'
 summary: Centralized Identity and Access Management using Pocket-ID as the primary
   OIDC provider and TinyAuth as a forward-auth proxy for non-OIDC workloads.
 verified_against:
@@ -127,3 +127,17 @@ To add a new application to the IAM system:
 ## Relations addendum
 
 - decided_in [[AD-023-cnp-threat-model-audit]]
+
+
+## 5. OIDC-Native Apps Registry
+
+### Grafana (added 2026-07-10, roadmap grafana-operator-migration P5)
+
+- **Path**: A (OIDC-native via `auth.generic_oauth`, grafana-operator-managed instance).
+- **Pocket-ID client**: "Grafana" at `grafana.${PUBLIC_DOMAIN}`, redirect `/login/generic_oauth`.
+- **Group → role**: `grafana_admins` → Admin; any other authenticated user → None (no access). `role_attribute_strict: true`, `skip_org_role_sync: false`.
+- **Endpoints**: public issuer only (AD-023) — `https://id.${PUBLIC_DOMAIN}/authorize | /api/oidc/token | /api/oidc/userinfo`. The token/userinfo backchannel hairpins through envoy, so the grafana pod carries `egress.home.arpa/allow-gateways` in addition to `custom-egress`.
+- **Secret**: 1Password item `grafana`, keys `GRAFANA_OIDC_CLIENT_ID`/`GRAFANA_OIDC_CLIENT_SECRET` → ExternalSecret `grafana-secret` → env `GF_AUTH_GENERIC_OAUTH_CLIENT_ID`/`_SECRET`.
+- **Local login**: form hidden (`disable_login_form: true`). **DEVIATION from roadmap D5** (which planned to keep the form as documented break-glass). The `admin-user`/`admin-password` in `grafana-secret` are retained — they are NOT a human login path once the form is hidden, but the **grafana-operator's provisioning credential**: the operator authenticates to the Grafana API with them to push dashboard/datasource/folder CRs. Removing them breaks provisioning. Break-glass recovery = `grafana-cli admin reset-admin-password` in-pod, or temporarily flip `disable_login_form`.
+- **Gotcha (fixed 2026-07-10)**: the earlier config used `disable_login` (a non-existent grafana.ini key → no-op, form stayed visible); the valid key is `disable_login_form`. Also an "Invalid client secret" login failure was a value mismatch between the 1Password field and the Pocket-ID client secret (not a network/CNP issue) — the token exchange reaches Pocket-ID and is rejected; resync the secret + restart the pod (ephemeral DB re-seeds admin from env).
+- Closes Grafana's standing IAM exception (§3: no app without an IAM policy).

@@ -4,7 +4,7 @@ type: progress
 permalink: home-ops/docs/progress/grafana-operator-migration
 topic: Execution state for the grafana-operator-migration roadmap (operator/instance
   split, decentralized dashboard/datasource CRs, blackbox-exporter, Pocket-ID SSO)
-status: in-progress
+status: done
 roadmap: '[[grafana-operator-migration]]'
 related_areas:
 - observability
@@ -27,7 +27,7 @@ tags:
 ## Metadata (observation-form)
 
 - [topic] Execution state for the grafana-operator-migration roadmap
-- [status] in-progress
+- [status] done
 - [roadmap] [[grafana-operator-migration]] (docs/roadmap)
 - [priority] medium
 
@@ -242,3 +242,75 @@ Commits: ebdf73c5 (feat: blackbox-exporter + probeSelector), a8c08dbe (fix: bare
 **Follow-ups**: none new for P4.
 
 **Next**: P5 -- Pocket-ID OIDC SSO (HUMAN GATE: create Pocket-ID client "Grafana" + groups grafana_users/grafana_administrators + 1Password fields GRAFANA_OAUTH_CLIENT_ID/GRAFANA_OAUTH_CLIENT_SECRET, then extend instance/externalsecret + grafana.yaml auth.generic_oauth + instance CNP egress to id.<domain>).
+
+
+## Session 5 — P5: Pocket-ID OIDC SSO (2026-07-09/10, commits 83bb79cc6, d3a4ecf44, 518aa4b03, 6598ada5f, f990d45e4, 703dd9e03)
+
+**Scope**: close Grafana's IAM exception — make Grafana OIDC-native against Pocket-ID (iam Path A). HUMAN GATE items (Pocket-ID client + groups + 1Password fields) done by the human.
+
+### Done (P5)
+
+- [done] Pocket-ID OIDC client "Grafana" created (client_id `777facef-f5f4-44d3-abaf-e00884bfa35a`), redirect `https://grafana.${PUBLIC_DOMAIN}/login/generic_oauth`.
+- [done] `instance/grafana.yaml`: added `spec.config.auth.generic_oauth` (enabled, name, scopes `openid email profile groups`, auth/token/userinfo at the public issuer `id.${PUBLIC_DOMAIN}` per AD-023, `email_attribute_name: email:primary`, `allow_sign_up: true`). Client id/secret injected via env `GF_AUTH_GENERIC_OAUTH_CLIENT_ID/SECRET` from `grafana-secret`.
+- [done] `instance/externalsecret.yaml`: template emits the OIDC keys; instance CNP already carries `egress.home.arpa/allow-gateways` for the token/userinfo hairpin through envoy.
+- [done] Role mapping: `role_attribute_path: contains(groups[*], 'grafana_admins') && 'Admin' || 'None'`, `role_attribute_strict: true`, `skip_org_role_sync: false`.
+
+### Deviations from roadmap D5 (intentional, decided with human)
+
+- [decision] Group is `grafana_admins` → Admin (everyone else → None), NOT `grafana_users`/`grafana_administrators` with Viewer/GrafanaAdmin.
+- [decision] Local login form is **hidden** (`disable_login_form: true`), NOT kept as break-glass. The `admin-user`/`admin-password` in `grafana-secret` remain as the **grafana-operator provisioning credential** (operator auths to the Grafana API with them), not a human login path.
+- [decision] Secret keys renamed to `GRAFANA_OIDC_CLIENT_ID`/`GRAFANA_OIDC_CLIENT_SECRET` (1Password item `grafana`), not `GRAFANA_OAUTH_*`.
+
+### Fixes during P5 rollout
+
+- [observation] `allowCrossNamespaceImport` as a top-level Grafana CR field was invalid → removed (d3a4ecf44). Cross-ns import is set on the dashboard/folder CRs (P3) + `spec.allowCrossNamespaceImport` on the instance.
+- [observation] `auth.generic_oauth` is a dotted grafana.ini section → must be a first-level key under `spec.config` (518aa4b03).
+- [observation] ExternalSecret template must explicitly emit the OIDC keys (6598ada5f).
+
+## Session 6 — SSO/plugin/empty-UI debugging + fixes (2026-07-10, commits 4ba4c9ce8 + reloader-removal; SSO secret fixes by human)
+
+### SSO "Login failed / Failed to get token from provider" — RESOLVED
+
+- [root-cause] The token exchange reached Pocket-ID and was rejected: grafana log `[auth.oauth.token.exchange] failed to exchange code to token: oauth2: "Invalid client secret"`; Pocket-ID log `invalid client secret` on `POST /api/oidc/token` from the grafana pod IP. NOT a network/CNP/hairpin issue (a different client's token exchange succeeded over the same path). The `OIDC_CLIENT_SECRET` value in 1Password did not match the Pocket-ID client secret.
+- [fix] Human re-synced the secret value (1Password ↔ Pocket-ID) + pod restart (ephemeral DB re-seeds admin from env). SSO login works.
+
+### Plugin preinstall noise — RESOLVED (commit 4ba4c9ce8)
+
+- [root-cause] Grafana 13 core `plugin.backgroundinstaller` attempts 5 default preinstall app plugins (lokiexplore, exploretraces, pyroscope, metricsdrilldown app, + elasticsearch version check) from grafana.com at startup → blocked by CNP → HubblePolicyDeny. Confirmed NOT bundled in the image (`/var/lib/grafana/plugins` empty; only core datasources bundled). 4 apps need backends absent from this cluster; metrics-drilldown unused.
+- [fix] `preinstall_disabled: "true"` under `spec.config.plugins` — stops the startup fetch (D13). Resolves the delegated cnp-per-app-audit finding.
+
+### Login form not actually hidden — FIXED (commit 4ba4c9ce8)
+
+- [root-cause] Config used `auth.disable_login` — a non-existent grafana.ini key (no-op) → the user/pass form stayed visible despite intent.
+- [fix] Corrected to `disable_login_form: "true"`. Confirmed via Grafana docs (Context7).
+
+### "Everything empty in the Grafana UI" — RESOLVED (was a stale browser session, backend healthy)
+
+- [investigation] Traced through operator auth flapping, ephemeral-DB wipes, and `NoMatchingInstance`/`EmptyAPIReply` on dashboard CRs. Root fragility: `grafana-data` is emptyDir; every `grafana-secret` change flips the operator's `checksum/secrets` pod-template annotation → pod recreated → DB wiped → instance briefly "not ready" → dashboard/datasource/folder reconcilers skip. The many secret changes during this session caused repeated recreations.
+- [evidence] Once the pod stabilized: 24 dashboards + 8 folders + 2 datasources all `ApplySuccessful`, `GrafanaReady=True`. In-pod API queries (using the pod's own env creds — secret never exposed) confirmed data present: legacy `/api/search` = 24, unified-storage search `totalHits: 32` (24+8), `/api/dashboards/uid/xtkCtBkiz` = 200, SSO user (id=2) = Admin in org 1. The Grafana 13 `dashboard-service "starting from scratch"` log is benign (index works).
+- [root-cause] The user's empty view was a **stale browser session** from a login during the provisioning window (user id=2 created/last-seen 15:24, mid-restart). Hard-refresh / re-login showed everything. Confirmed OK by user.
+
+### reloader annotation — added then removed
+
+- [observation] Added `reloader.stakater.com/auto` (4ba4c9ce8), then found it **redundant**: the grafana-operator's `checksum/secrets` pod-template annotation already recreates the pod on `grafana-secret` changes, so reloader would cause a double restart. Removed (human commit).
+
+### Secret key rename (human)
+
+- [observation] OIDC keys renamed `OIDC_CLIENT_ID/SECRET` → `GRAFANA_OIDC_CLIENT_ID/SECRET` across `grafana.yaml` env + `externalsecret.yaml` template + 1Password fields; live `grafana-secret` keys and env references verified consistent (ExternalSecret SecretSynced).
+
+### Migration status: COMPLETE
+
+- [done] P0–P6 complete. Functional end state verified live. Docs updated: [[observability]] + [[iam]] area notes, [[cnp-per-app-audit]] finding closed, roadmap status → done.
+
+### Open follow-ups (optional, non-blocking)
+
+- [follow-up] Renovate customManager for grafanaCom dashboard revisions: no manager understands the `grafanaCom: {id, revision}` shape, so the 17 URL-imported dashboard revisions are manually pinned (same as pre-migration — NOT a regression). Add a regex customManager (`datasource=grafana-dashboards`, id→depName, revision→currentValue) if auto-bump is wanted. Deferred — manual pin is acceptable/safer for a homelab.
+- [resolved] volsync dashboard (VAR_REPLICATIONDESTNAME): renders data — OK per user (2026-07-10). No vendored-ConfigMap fallback needed.
+
+
+## Update — 2026-07-10 (later): dashboard revisions — pinned URL form + Renovate auto-update (B2, bjw-s-aligned)
+
+- [context] A "drop the pin" step was briefly done (grafanaCom id-only → latest), then reviewing bjw-s-labs/home-ops showed the reference repo PINS every revision and auto-updates via Renovate. Adopted that pattern (B2), which the roadmap's best-practice alignment favors.
+- [done] All 12 dashboards converted from `grafanaCom: {id, revision}` to the pinned URL form `url: https://grafana.com/api/dashboards/<id>/revisions/<rev>/download` (6 files: external-dns, cert-manager, kube-prometheus-stack ×7, speedtest-exporter, blackbox-exporter, volsync).
+- [done] Added the home-operations `grafanaDashboards` Renovate preset to `.renovaterc.json5` extends: `github>home-operations/renovate-presets//managers/grafanaDashboards.json5#2.1.0`. It defines a `grafana-dashboards` custom datasource + a regex customManager matching `dashboards/<id>/revisions/<rev>/download` → opens reviewed revision-bump PRs (`chore(grafana-dashboards): update dashboard X (43 ➔ 44)`).
+- [outcome] Deterministic/reproducible from git AND low-maintenance (reviewed auto-bump PRs). Best of both — supersedes the "manual pin" follow-up and the transient "pins dropped" step.
