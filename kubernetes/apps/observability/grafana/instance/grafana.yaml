@@ -14,13 +14,14 @@ spec:
       reporting_enabled: "false"
       feedback_links_enabled: "false"
     auth:
-      # OIDC-only: password webform disabled. Recovery = flip here, Flux redeploys, form returns.
-      disable_login: "true"
+      # OIDC-only for humans: hide the local login form. The admin credential stays as the
+      # grafana-operator provisioning credential (in-cluster API), not a human login path.
+      disable_login_form: "true"
     # grafana.ini [auth.generic_oauth] is a dotted section name → first-level key under config.
     auth.generic_oauth:
       # Uniform public-issuer convention (AD-023): every OIDC endpoint uses the public hostname.
       enabled: "true"
-      name: Pocket ID
+      name: IdP
       scopes: openid email profile groups
       auth_url: "https://id.${PUBLIC_DOMAIN}/authorize"
       token_url: "https://id.${PUBLIC_DOMAIN}/api/oidc/token"
@@ -41,6 +42,8 @@ spec:
       news_feed_enabled: "false"
     plugins:
       plugin_admin_enabled: "false"
+      # D13: no plugins — don't fetch the default preinstall apps from grafana.com at startup.
+      preinstall_disabled: "true"
     security:
       allow_embedding: "true"
     server:
@@ -49,6 +52,11 @@ spec:
   disableDefaultAdminSecret: true
   disableDefaultSecurityContext: All
   deployment:
+    metadata:
+      # Ephemeral DB re-seeds the admin password from grafana-secret on each start; restart on
+      # rotation so it stays in sync with the operator's provisioning credential.
+      annotations:
+        reloader.stakater.com/auto: "true"
     spec:
       strategy:
         type: Recreate
