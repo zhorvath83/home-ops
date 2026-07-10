@@ -147,3 +147,14 @@ Single-node Talos home-lab, single-tenant, internet-exposed via Cloudflare Tunne
 - relates_to [[networking]]
 - relates_to [[k8s-workloads]]
 - elaborated_in [[cnp-per-app-audit]]
+
+## rev4 (2026-07-10) — uniform public-issuer OIDC convention
+
+- [observation] [decision] All native OIDC clients use the public issuer (https://id.<PUBLIC_DOMAIN>) for every endpoint; the OIDC backchannel is ordinary gateway traffic. The oidc-backchannel vocabulary label + CCNP drafted the same day was discarded before commit.
+- [observation] [rationale] Token endpoint is world-exposed by design; the envoy hairpin is reachable from every baseline-egress pod, so per-client network grants add explicitness, not a boundary. Discovery-only clients cannot split endpoints, so the split-endpoint pattern froze a permanent two-class rule.
+- [observation] [consequence] grafana/tinyauth reverted to public token/userinfo; pocket-id CNP carries no ingress section (gateways + prometheus CCNPs only); custom-egress OIDC clients grant envoy :10443 in their own CNP; coredns forwards ${PUBLIC_DOMAIN} to k8s-gateway (in-cluster split horizon, removes the router hop from hairpins).
+- [observation] [detail] Execution detail and acceptance steps recorded in [[cnp-per-app-audit]] (docs/roadmap), section "OIDC endpoint convention".
+
+- [observation] [rev4-refinement 2026-07-10] Added egress.home.arpa/allow-gateways vocabulary label + allow-gateways-egress CCNP (egress to envoy pods :10443) for custom-egress pods that consume cluster-hosted services via public hostnames — the public-issuer OIDC hairpin class (grafana, pingvin-share-x). Replaces per-app hand-written envoy egress rules; pingvin-share-x stays custom-egress (DNS + gateways only) instead of falling back to baseline.
+
+- [observation] [rev4-naming 2026-07-10] Label grammar decision: allow-* prefix = grant (backed by a generic CCNP), unprefixed = behavior marker (custom-egress, none); direction lives in the key prefix (ingress.home.arpa/ vs egress.home.arpa/). Live ingress labels stay as-is for now; the FULL rename executes inside the V5(m) gateways-split migration (which retires ingress.home.arpa/gateways anyway): the rev3 label names are AMENDED to ingress.home.arpa/allow-gateways-dual + ingress.home.arpa/allow-gateways-internal, and ingress.home.arpa/prometheus -> allow-prometheus rides in the same staged batch (same HR set, pods roll once). No standalone rename migration.

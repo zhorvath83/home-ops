@@ -13,10 +13,12 @@ spec:
     defaultPodOptions:
       automountServiceAccountToken: false
       enableServiceLinks: false
-      # AD-023 vocabulary: custom-egress (per-app CNP) + gateways ingress (ingress-from-gateways CCNP)
+      # AD-023 vocabulary: gateways ingress; custom-egress (no egress needs of its own) +
+      # allow-gateways for the public-issuer OIDC hairpin (allow-gateways-egress CCNP).
       labels:
-        egress.home.arpa/custom-egress: "true"
         ingress.home.arpa/gateways: "true"
+        egress.home.arpa/custom-egress: "true"
+        egress.home.arpa/allow-gateways: "true"
       securityContext:
         runAsNonRoot: true
         runAsUser: 10001

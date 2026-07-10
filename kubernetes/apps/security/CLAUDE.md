@@ -25,6 +25,7 @@ For OIDC-less apps the request path is `User → Envoy Gateway → SecurityPolic
 - **TinyAuth nil-ACL trap**: define the per-app `TINYAUTH_APPS_<NAME>_OAUTH_GROUPS` ACL **before** attaching `forward-auth` to an app. The pinned TinyAuth release defaults to *allow* when no per-app ACL exists, so a missing ACL silently grants access to every authenticated user. (See the BM note for the exact version and upstream fix status.)
 - **ReferenceGrant coverage**: a forward-auth app in a new namespace needs that namespace added to the `tinyauth-extauth` `ReferenceGrant` in the `security` namespace first, or Envoy Gateway rejects the `SecurityPolicy`.
 - OIDC client credentials come from a per-app `ExternalSecret` backed by the `onepassword-connect` ClusterSecretStore (see `kubernetes/apps/external-secrets/CLAUDE.md`); never inline `client_id`/`client_secret`.
+- **OIDC endpoints are always the public issuer** (`https://id.${PUBLIC_DOMAIN}/...`) — every client, every endpoint (auth/token/userinfo/discovery), per AD-023 rev4. Never point token/userinfo at the in-cluster Pocket-ID Service: discovery-only clients cannot follow a split config, and the split pattern created a two-class rule. The backchannel hairpins through envoy; a client pod that opts out of baseline egress (`egress.home.arpa/custom-egress`) must therefore also carry `egress.home.arpa/allow-gateways`, or its token exchange is dropped by its own CNP posture.
 - Preserve the Pocket-ID passkey-first posture — do not re-introduce a password fallback.
 
 ## Validation

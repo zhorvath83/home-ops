@@ -116,3 +116,14 @@ To add a new application to the IAM system:
 - **Current**: `rate-limit-external` `BackendTrafficPolicy` is commented out due to Envoy Gateway v1.8.0 CRD regression (envoyproxy/gateway#8798).
 - **Interim coverage**: Cloudflare WAF provides external rate limiting.
 - **Action**: Re-enable once Envoy Gateway v1.9.0 GA lands and the OCIRepository tag is bumped. Tracked in the SSO roadmap TODOs.
+
+## SSO / OIDC endpoint convention (AD-023 rev4, 2026-07-10 — local-only, pending deploy)
+
+- [observation] [convention] Every native OIDC client uses the PUBLIC issuer https://id.<PUBLIC_DOMAIN> for ALL endpoints (auth/token/userinfo/discovery). Split configs (public auth_url + in-cluster token/userinfo — the former grafana/tinyauth pattern) are RETIRED: discovery-only clients (pingvin-share-x) cannot follow them, and the token endpoint is world-exposed by design so an in-cluster-only network path adds no boundary.
+- [observation] [consequence] The OIDC backchannel is ordinary gateway traffic (client pod -> envoy VIP -> pocket-id). Baseline-egress clients need nothing. Clients with egress.home.arpa/custom-egress MUST also carry egress.home.arpa/allow-gateways (allow-gateways-egress CCNP, envoy :10443) or their token exchange is dropped. Current carriers: grafana, pingvin-share-x.
+- [observation] [dns] The hairpin resolves via the coredns split-horizon zone: ${PUBLIC_DOMAIN} forwards to ${K8S_GATEWAY_IP} (k8s-gateway) so pods get the envoy-internal VIP without the node-resolver -> router hop.
+- [observation] [status] Decided and implemented in the working tree 2026-07-10; verify and refresh verified_at after deploy (grafana + tinyauth + pingvin login tests under a Hubble capture).
+
+## Relations addendum
+
+- decided_in [[AD-023-cnp-threat-model-audit]]

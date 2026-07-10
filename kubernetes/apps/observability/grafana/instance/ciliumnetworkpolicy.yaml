@@ -1,7 +1,8 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
-# grafana instance (AD-023): envoy + prometheus ingress via CCNPs; custom-egress → this CNP is the sole
-# egress source — gravatar avatars, in-cluster datasources (Prometheus/Alertmanager), Pocket-ID OIDC.
+# grafana instance (AD-023): envoy + prometheus ingress via CCNPs; custom-egress → egress comes from
+# this CNP (gravatar avatars, in-cluster Prometheus/Alertmanager datasources) plus the allow-gateways
+# label (public-issuer OIDC hairpin via the allow-gateways-egress CCNP).
 # Operator model: no sidecars (kube-apiserver gone), dashboards fetched by the operator (grafana.com/
 # raw.githubusercontent.com gone), no plugins per D13 (plugin CDN + victoria-logs egress gone).
 apiVersion: cilium.io/v2
@@ -47,13 +48,4 @@ spec:
       toPorts:
         - ports:
             - port: "9093"
-              protocol: TCP
-    # OIDC token + userinfo exchange (server-side; auth_url is the browser's public redirect).
-    - toEndpoints:
-        - matchLabels:
-            k8s:io.kubernetes.pod.namespace: security
-            app.kubernetes.io/name: pocket-id
-      toPorts:
-        - ports:
-            - port: "1411"
               protocol: TCP

@@ -265,3 +265,67 @@ hubble-analyze label="" verdict="" direction="":
     else
       { printf 'COUNT VERDICT SRC DEST PORT PROTO DIR REASON\n'; printf '%s\n' "$rows"; } | column -t
     fi
+
+[doc('Per-app CNP grant matrix from live pods (✓ = policy selects the pod; open = no policy in that direction → default-allow). Arg: app name or namespace (empty = whole cluster).')]
+[group('observe')]
+[script]
+show-cnp-matrix app="":
+    tmpd="$(mktemp -d)"
+    trap 'rm -rf "$tmpd"' EXIT
+    kubectl get pods -A -o json > "$tmpd/pods.json"
+    kubectl get cnp -A -o json > "$tmpd/cnp.json"
+    kubectl get ccnp -o json > "$tmpd/ccnp.json"
+    # evaluates every CNP (same-namespace) + CCNP endpointSelector against each pod's labels — the
+    # matrix is derived from live policy objects, so it cannot drift from what Cilium enforces.
+    # CCNP columns are dynamic (one per cluster policy per direction); per-app CNPs land in APP-CNP(e/i).
+    # Pods of one app with different grant profiles stay separate rows, suffixed by controller/gateway.
+    jq -r --arg app "{{ app }}" --slurpfile cnp "$tmpd/cnp.json" --slurpfile ccnp "$tmpd/ccnp.json" '
+      def stripk: gsub("^(k8s:|any:)"; "");
+      def shortname: sub("^allow-"; "") | sub("^ingress-from-"; "") | sub("^ingress-"; "") | sub("-egress$"; "");
+      def matches(sel; lbls):
+        (((sel.matchLabels // {}) | with_entries(.key |= stripk)) | to_entries | all(lbls[.key] == .value))
+        and (((sel.matchExpressions // []) | map(.key |= stripk)) | all(
+          . as $e | lbls[$e.key] as $v
+          | if $e.operator == "In" then ($v != null and (($e.values | index($v)) != null))
+            elif $e.operator == "NotIn" then ($v == null or (($e.values | index($v)) == null))
+            elif $e.operator == "Exists" then ($v != null)
+            elif $e.operator == "DoesNotExist" then ($v == null)
+            else false end));
+      def pspecs(p): [p.spec // empty] + (p.specs // []);
+      [$ccnp[0].items[] | {name: .metadata.name,
+                           e: ([pspecs(.)[] | has("egress") or has("egressDeny")] | any),
+                           i: ([pspecs(.)[] | has("ingress") or has("ingressDeny")] | any)}] as $cc
+      | ([$cc[] | select(.e) | .name] | sort) as $ecols
+      | ([$cc[] | select(.i) | .name] | sort) as $icols
+      | (["NAMESPACE", "APP", "PODS", "│"] + ($ecols | map("e:" + shortname)) + ["e:open", "│"]
+         + ($icols | map("i:" + shortname)) + ["i:open", "│", "APP-CNP"] | @tsv),
+        (.items
+         | map(
+             (.metadata.labels // {}) + {"io.kubernetes.pod.namespace": .metadata.namespace} as $lbls
+             | ($lbls["app.kubernetes.io/name"] // $lbls["app"] // $lbls["k8s-app"]
+                // (.metadata.generateName | values | sub("-$"; "")) // .metadata.name) as $name
+             | ($lbls["app.kubernetes.io/controller"] // $lbls["gateway.envoyproxy.io/owning-gateway-name"] // $name) as $ctl
+             | {ns: .metadata.namespace, app: (if $ctl == $name then $name else $name + "/" + $ctl end)} as $row
+             | [ ({p: $ccnp[0].items[], kind: "ccnp"},
+                  {p: ($cnp[0].items[] | select(.metadata.namespace == $row.ns)), kind: "cnp"})
+                 | . as $w | pspecs($w.p)[]
+                 | select(matches(.endpointSelector // {}; $lbls))
+                 | {name: $w.p.metadata.name, kind: $w.kind, e: (has("egress") or has("egressDeny")), i: (has("ingress") or has("ingressDeny"))} ] as $m
+             | ($m | map(select(.kind == "cnp"))) as $ma
+             | $row + {
+                 em: [$ecols[] as $c | if ($m | any(.kind == "ccnp" and .name == $c and .e)) then "✓" else "·" end],
+                 im: [$icols[] as $c | if ($m | any(.kind == "ccnp" and .name == $c and .i)) then "✓" else "·" end],
+                 eo: (if ($m | any(.e)) then "·" else "✓" end),
+                 io: (if ($m | any(.i)) then "·" else "✓" end),
+                 cnps: (($ma | group_by(.name)
+                        | map(.[0].name + "(" + (if any(.e) then "e" else "" end) + (if any(.i) then "i" else "" end) + ")")
+                        | join(",")) | if . == "" then "-" else . end)})
+         | map(select($app == "" or .ns == $app or .app == $app or (.app | startswith($app + "/"))))
+         | group_by([.ns, .app, .em, .im, .eo, .io, .cnps])
+         | map(.[0] + {pods: length})
+         | sort_by([.ns, .app])
+         | .[] | ([.ns, .app, (.pods | tostring), "│"] + .em + [.eo, "│"] + .im + [.io, "│", .cnps]) | @tsv)
+    ' "$tmpd/pods.json" \
+      | column -t -s $'\t' \
+      | awk 'NR == 1 { hdr = $0; sep = $0; gsub(/[^│]/, "─", sep); gsub(/│/, "┼", sep); print; print sep; next }
+             { if (prev != "" && $1 != prev) { print ""; print hdr; print sep } print; prev = $1 }'

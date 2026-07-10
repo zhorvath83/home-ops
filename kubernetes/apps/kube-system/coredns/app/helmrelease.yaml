@@ -21,6 +21,18 @@ spec:
       name: kube-dns
       clusterIP: ${CLUSTER_DNS_IP}
     servers:
+      # Split horizon for pods: the public domain resolves via k8s-gateway (envoy VIP) instead of
+      # the node resolver → router hop; keeps public-issuer OIDC hairpins router-independent.
+      - zones:
+          - zone: ${PUBLIC_DOMAIN}
+            scheme: dns://
+            use_tcp: true
+        port: 53
+        plugins:
+          - name: errors
+          - name: forward
+            parameters: . ${K8S_GATEWAY_IP}
+          - name: cache
       - zones:
           - zone: .
             scheme: dns://

@@ -1,6 +1,6 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
-# pocket-id (AD-023): envoy + prometheus ingress via the matching CCNPs; this CNP keeps the tinyauth named-consumer east-west rule (forward-auth token/userinfo) and the MaxMind GeoLite2 egress for the in-app UpdateGeoLiteDB job.
+# pocket-id (AD-023): envoy + prometheus ingress via the matching CCNPs — OIDC clients arrive through envoy (uniform public-issuer convention); this CNP keeps the MaxMind GeoLite2 egress for the in-app UpdateGeoLiteDB job.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -11,15 +11,6 @@ spec:
       app.kubernetes.io/name: pocket-id
       app.kubernetes.io/instance: pocket-id
       app.kubernetes.io/controller: pocket-id
-  ingress:
-    - fromEndpoints:
-        - matchLabels:
-            k8s:io.kubernetes.pod.namespace: security
-            app.kubernetes.io/name: tinyauth
-      toPorts:
-        - ports:
-            - port: "1411"
-              protocol: TCP
   egress:
     # MaxMind GeoLite2 download; download.maxmind.com 302-redirects to its R2 bucket for the tarball.
     - toFQDNs:
