@@ -122,7 +122,7 @@ To add a new application to the IAM system:
 - [observation] [convention] Every native OIDC client uses the PUBLIC issuer https://id.<PUBLIC_DOMAIN> for ALL endpoints (auth/token/userinfo/discovery). Split configs (public auth_url + in-cluster token/userinfo — the former grafana/tinyauth pattern) are RETIRED: discovery-only clients (pingvin-share-x) cannot follow them, and the token endpoint is world-exposed by design so an in-cluster-only network path adds no boundary.
 - [observation] [consequence] The OIDC backchannel is ordinary gateway traffic (client pod -> envoy VIP -> pocket-id). Baseline-egress clients need nothing. Clients with egress.home.arpa/custom-egress MUST also carry egress.home.arpa/allow-gateways (allow-gateways-egress CCNP, envoy :10443) or their token exchange is dropped. Current carriers: grafana, pingvin-share-x.
 - [observation] [dns] The hairpin resolves via the coredns split-horizon zone: ${PUBLIC_DOMAIN} forwards to ${K8S_GATEWAY_IP} (k8s-gateway) so pods get the envoy-internal VIP without the node-resolver -> router hop.
-- [observation] [status] Decided and implemented in the working tree 2026-07-10; verify and refresh verified_at after deploy (grafana + tinyauth + pingvin login tests under a Hubble capture).
+- [observation] [status] Decided, implemented, and DEPLOYED 2026-07-10 (commit 409242998); VERIFIED live — pingvin OIDC login OK with the token/userinfo hairpin FORWARDED to the envoy pod :10443 (LB-VIP resolves to envoy identity via socketLB, so allow-gateways-egress toEndpoints matches — no toCIDR grant needed). coredns split-horizon live (id.\${PUBLIC_DOMAIN} → envoy-internal VIP 192.168.1.18 from pods). Full verification in [[cnp-per-app-audit]] (docs/progress) Session 13.
 
 ## Relations addendum
 
