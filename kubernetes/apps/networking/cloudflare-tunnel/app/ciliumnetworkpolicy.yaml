@@ -50,3 +50,24 @@ spec:
               protocol: TCP
             - port: "7844"
               protocol: UDP
+    # ICMP to the Cloudflare edge: cloudflared ICMP-proxy echo (type 8/128) plus
+    # kernel/control unreachable (type 3/1) on the QUIC path. Not function-critical
+    # (QUIC/H2 prechecks pass), but silences recurring HubblePolicyDeny drops.
+    - toCIDRSet:
+        - cidrGroupRef: cloudflare
+      icmps:
+        - fields:
+            - family: IPv4
+              type: 8
+            - family: IPv4
+              type: 3
+            - family: IPv6
+              type: 128
+            - family: IPv6
+              type: 1
+    # Cloudflare public resolvers: remote-triggered connectivity diagnostic
+    # (traceroute, TCP+ICMP). Ports are unpredictable, so the two /32s are
+    # allowed unrestricted.
+    - toCIDRSet:
+        - cidr: 1.1.1.1/32
+        - cidr: 1.0.0.1/32
