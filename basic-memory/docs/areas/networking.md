@@ -5,7 +5,7 @@ permalink: home-ops/docs/areas/networking
 area: networking
 status: current
 confidence: high
-verified_at: '2026-07-05'
+verified_at: '2026-07-11'
 summary: Gateway API with Envoy Gateway provides cluster ingress, split across two
   shared entrypoints (envoy-external for Cloudflare Tunnel public traffic, envoy-internal
   for LAN traffic on a Cilium L2-announced VIP). Single HTTPS listener per Gateway
@@ -29,6 +29,7 @@ verified_against:
 - kubernetes/apps/networking/cloudflare-tunnel/app/helmrelease.yaml
 - kubernetes/apps/networking/cloudflare-tunnel/app/ciliumnetworkpolicy.yaml
 - kubernetes/apps/networking/cloudflare-tunnel/app/ciliumcidrgroup.yaml
+- kubernetes/apps/networking/external-dns/app/ciliumnetworkpolicy.yaml
 - kubernetes/apps/kube-system/cilium/config/pool.yaml
 - kubernetes/apps/kube-system/cilium/netpols/
 - kubernetes/apps/networking/CLAUDE.md
@@ -58,7 +59,7 @@ drift_risk: 'HSTS includeSubDomains with 2-year max-age is a one-way commitment 
 - [area] networking
 - [status] current
 - [confidence] high
-- [verified_at] 2026-06-14
+- [verified_at] 2026-07-11
 
 ## Summary
 
@@ -115,7 +116,7 @@ and injected into every child Kustomization via Flux `postBuild.substituteFrom`.
 - [component] k8s-gateway — LAN split-DNS for ${PUBLIC_DOMAIN}, watches HTTPRoutes filtered to GatewayClass envoy-internal, LAN VIP ${K8S_GATEWAY_IP} (k8s-gateway/app/helmrelease.yaml)
 - [component] CiliumLoadBalancerIPPool/default — LAN VIP allocation range ${LB_IP_POOL_START}–${LB_IP_POOL_STOP} (kube-system/cilium/config/pool.yaml)
 - [component] CiliumL2AnnouncementPolicy — L2 announcement for the pool (kube-system/cilium/config/l2-announcement-policy.yaml)
-- [component] CiliumClusterwideNetworkPolicy baseline (AD-023 two-tier model; V3 flip landed in commit 953626966) — 6 CCNPs in kube-system/cilium/netpols/: allow-cluster-egress (flipped — toEndpoints {} + toEntities: cluster + toEntities: kube-apiserver; public internet no longer in baseline), allow-dns-egress (L7 DNS proxy), allow-world-egress (toCIDRSet 0.0.0.0/0 except RFC1918/100.64/10, gated by egress.home.arpa/allow-world label), ingress-from-gateways, ingress-from-prometheus, ingress-none. 5-label dictionary: egress.home.arpa/{custom-egress,allow-world} + ingress.home.arpa/{gateways,prometheus,none}. Per-app CNPs cover upstreams the flipped baseline no longer grants — coredns world:53 (kubernetes/apps/kube-system/coredns/app/ciliumnetworkpolicy.yaml) and kube-prometheus-stack-prometheus LAN 192.168.1.1/32:9100 (kubernetes/apps/observability/kube-prometheus-stack/app/ciliumnetworkpolicy.yaml).
+- [component] CiliumClusterwideNetworkPolicy baseline (AD-023 two-tier model; V3 flip landed in commit 953626966) — 6 CCNPs in kube-system/cilium/netpols/: allow-cluster-egress (flipped — toEndpoints {} + toEntities: cluster + toEntities: kube-apiserver; public internet no longer in baseline), allow-dns-egress (L7 DNS proxy), allow-world-egress (toCIDRSet 0.0.0.0/0 except RFC1918/100.64/10, gated by egress.home.arpa/allow-world label), ingress-from-gateways, ingress-from-prometheus, ingress-none. 5-label dictionary: egress.home.arpa/{custom-egress,allow-world} + ingress.home.arpa/{gateways,prometheus,none}. Per-app CNPs cover app-unique needs the flipped baseline does not grant — e.g. kube-prometheus-stack-prometheus LAN 192.168.1.1/32:9100 (kubernetes/apps/observability/kube-prometheus-stack/app/ciliumnetworkpolicy.yaml) plus AD-023 V5 narrow-world CNPs (external-dns, tuppr, victoria-logs, grafana, paperless-gpt, pocket-id). NOTE: the former coredns world:53 CNP was REMOVED 2026-07-11 (inert — the baseline covers the host-DNS forward; see the 2026-07-11 Update).
 
 ## Claims (verified against repo)
 
@@ -136,7 +137,7 @@ and injected into every child Kustomization via Flux `postBuild.substituteFrom`.
 - [claim] "CiliumNetworkPolicy/envoy-internal restricts ingress on data ports to RFC1918 fromCIDR plus cluster/host/remote-node entities — defense-in-depth behind SecurityPolicy/envoy-internal-rfc1918" (evidence: repo, ref: ciliumnetworkpolicy-internal.yaml, verified: 2026-06-14)
 - [claim] "k8s-gateway watches HTTPRoute resources filtered to GatewayClass envoy-internal" (evidence: repo, ref: k8s-gateway/app/helmrelease.yaml:23-27, verified: 2026-05-19)
 - [claim] "Public domain managed by this stack is ${PUBLIC_DOMAIN} (from cluster-settings ConfigMap); ExternalDNS target on Gateway/envoy-external is external.${PUBLIC_DOMAIN}" (evidence: repo, ref: gateway-external.yaml + k8s-gateway/app/helmrelease.yaml:13, verified: 2026-06-14)
-- [claim] "Cilium baseline (AD-023 V3, commit 953626966) is 6 CCNPs in kube-system/cilium/netpols/: allow-cluster-egress (flipped — toEndpoints {} + cluster + kube-apiserver, no toEntities: world), allow-dns-egress (L7 DNS proxy), allow-world-egress (toCIDRSet 0.0.0.0/0 except RFC1918/100.64/10, gated by egress.home.arpa/allow-world), ingress-from-gateways, ingress-from-prometheus, ingress-none" (evidence: repo, ref: kube-system/cilium/netpols/ + kubernetes/apps/kube-system/coredns/app/ciliumnetworkpolicy.yaml + kubernetes/apps/observability/kube-prometheus-stack/app/ciliumnetworkpolicy.yaml, verified: 2026-07-05)
+- [claim] "Cilium baseline (AD-023 V3, commit 953626966) is 6 CCNPs in kube-system/cilium/netpols/: allow-cluster-egress (flipped — toEndpoints {} + cluster + kube-apiserver, no toEntities: world), allow-dns-egress (L7 DNS proxy), allow-world-egress (toCIDRSet 0.0.0.0/0 except RFC1918/100.64/10, gated by egress.home.arpa/allow-world), ingress-from-gateways, ingress-from-prometheus, ingress-none" (evidence: repo, ref: kube-system/cilium/netpols/ + kubernetes/apps/observability/kube-prometheus-stack/app/ciliumnetworkpolicy.yaml; the coredns per-app CNP was removed 2026-07-11, verified: 2026-07-11)
 - [claim] "envoy-gateway is split into three Kustomizations: certificate, app (controller), config" (evidence: repo, ref: kubernetes/apps/networking/envoy-gateway/{certificate,app,config}/, verified: 2026-05-19)
 
 ## Drift Risk
@@ -177,3 +178,13 @@ Edge bypass checklist — the public/internal separation can be silently defeate
 - [drift] router DNS rebinding protection blocking ${PUBLIC_DOMAIN} from resolving to the internal VIP
 
 (Migrated 2026-06-20 from kubernetes/apps/networking/README.md, which hardcoded the public domain and LAN IPs in violation of the repo non-negotiables; replaced here with cluster-settings variables.)
+
+
+## Update — 2026-07-11: AD-023 V5 CNP changes (coredns CNP removed; per-app narrow-world CNPs)
+
+- [observation] **coredns per-app CNP REMOVED** (V5k, @6b621c68b + a one-time manual `kubectl delete` — the coredns ks is `prune: false`). Its only rule was `toEntities: world :53`, which was never the enforcement point: Talos `hostDNS.forwardKubeDNSToHost: true` makes coredns forward `.` to the host DNS on the node (→ `kube-apiserver` identity on the single node, already covered by the allow-cluster-egress baseline), and the rev4 split-horizon `${PUBLIC_DOMAIN}`→`${K8S_GATEWAY_IP}` forward is socket-LB DNAT'd to the in-cluster k8s-gateway pod:1053 (covered by baseline `toEndpoints`). Verified live: internal/external/split-horizon DNS resolve with zero coredns DROPPED.
+- [observation] **external-dns per-app CNP added** (V5h, @df71cdef5): dropped `egress.home.arpa/allow-world` → `egress.home.arpa/custom-egress` + `ingress.home.arpa/prometheus`; the per-app CNP is the sole egress source — `toFQDNs api.cloudflare.com:443` (DNS record sync) + `toEntities kube-apiserver:6443` (watches Ingress/HTTPRoute/Gateway sources). (`kubernetes/apps/networking/external-dns/app/ciliumnetworkpolicy.yaml`)
+- [observation] Other AD-023 V5 narrow-world per-app CNPs landed cluster-wide (not all under networking): tuppr (factory.talos.dev + apiserver/Talos-apid), victoria-logs server (DNS-only sink + closed ingress), grafana, paperless-gpt, pocket-id (GeoLite2 + SMTP), plex-trakt-sync, calibre-web-automated. The `ingress.home.arpa/gateways` label gained users (e.g. victoria-logs server); the (m) split into `gateways-external`/`gateways-internal` is still pending.
+- [observation] DNS-exfil detection (V5l): the Cilium Hubble `dns` metric gained `labelsContext=source_*` and a `HubbleDNSExfilSuspected` PrometheusRule was added — details in [[observability]].
+
+See [[cnp-per-app-audit]] (progress) Sessions 16–21 for the execution log.

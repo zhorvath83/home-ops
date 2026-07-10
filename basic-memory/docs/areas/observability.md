@@ -5,7 +5,7 @@ permalink: home-ops/docs/areas/observability
 area: observability
 status: current
 confidence: high
-verified_at: '2026-07-10'
+verified_at: '2026-07-11'
 summary: Observability for the cluster splits into four workloads under kubernetes/apps/observability/
   — kube-prometheus-stack (operator + Prometheus + Alertmanager + kube-state-metrics
   + node-exporter, minimal single-node configuration), a standalone grafana (with
@@ -30,6 +30,9 @@ verified_against:
 - kubernetes/apps/observability/victoria-logs/app/helmrelease.yaml
 - kubernetes/apps/observability/victoria-logs/app/ocirepository.yaml
 - kubernetes/apps/observability/victoria-logs/collector/helmrelease.yaml
+- kubernetes/apps/observability/victoria-logs/app/ciliumnetworkpolicy.yaml
+- kubernetes/apps/observability/kube-prometheus-stack/app/prometheusrules/dns-exfil.yaml
+- kubernetes/apps/kube-system/cilium/app/helmrelease.yaml
 - kubernetes/CLAUDE.md ("Current Reality" section)
 drift_risk: The minified kube-prometheus-stack disables most default rules and exporters
   (tuned for one node) and ships Alertmanager enabled (pushover default receiver; Flux
@@ -52,7 +55,7 @@ tags:
 - [area] observability
 - [status] current
 - [confidence] high
-- [verified_at] 2026-07-05
+- [verified_at] 2026-07-11
 
 ## Status
 
@@ -158,3 +161,13 @@ Implemented via `docs/progress/alertmanager-introduction` (status: done). Re-ver
 - [observation] Grafana DB is ephemeral (emptyDir, D2): the operator re-provisions all dashboards/datasources on each pod start. A pod restart (e.g. `grafana-secret` change → operator `checksum/secrets` pod recreation) briefly empties the UI until the operator re-syncs. No PVC/VolSync by design.
 
 See [[grafana-operator-migration]] (progress) for the full execution log.
+
+
+## Update — 2026-07-11: victoria-logs CNPs + DNS-exfil detection (AD-023 V5 e/l)
+
+- [observation] **victoria-logs server** (AD-023 V5e, @d37f89f69): now carries `egress.home.arpa/custom-egress` (opt-out → DNS-only sink; the per-app CNP has NO egress section) + `ingress.home.arpa/gateways` + `ingress.home.arpa/prometheus` (set via `server.podLabels`). New per-app CiliumNetworkPolicy (`victoria-logs/app/ciliumnetworkpolicy.yaml`): ingress default-deny, granting the app-unique kubelet health probes + collector remoteWrite on :9428 (`fromEntities: [kube-apiserver, host]` + `fromEndpoints: victoria-logs-collector`); the envoy-internal route + Prometheus scrape arrive via the gateways/prometheus CCNPs. Everything is served on the single port :9428. No grafana→victoria-logs datasource exists (logs stay in the vmui), so no grafana ingress rule.
+- [observation] **victoria-logs collector** (V5e, @7bc05ca9a): carries `ingress.home.arpa/prometheus` (top-level `podLabels`) → ingress default-deny except the Prometheus podMonitor scrape (:9429). No per-app CNP (no health probes, no other ingress). Egress stays baseline (server:9428 + apiserver:6443 + DNS, all in-cluster).
+- [observation] **DNS-exfil detection** (AD-023 V5l, @d9005e048): the Cilium Hubble `dns` metric gained `labelsContext=source_namespace,source_pod,source_workload` (`kubernetes/apps/kube-system/cilium/app/helmrelease.yaml` — required a manual `kubectl rollout restart ds/cilium` to take effect; the chart does not auto-roll on a hubble-metrics configmap change), so `hubble_dns_queries_total` is now attributable per source pod. New `HubbleDNSExfilSuspected` PrometheusRule (`kube-prometheus-stack/app/prometheusrules/dns-exfil.yaml`, severity warning): per-source-pod DNS query rate >30 q/s for 10m, coredns excluded. NXDOMAIN is NOT the primary signal — baseline NXDOMAIN fraction is ~35% (normal ndots search-domain misses). Starter threshold (~4× the cluster's ~7/s total), to be tightened to a per-pod baseline after a soak.
+- [observation] The `prometheusrules/` subtree now holds three rule files: `oomkilled.yaml`, `hubble-policy-deny.yaml`, `dns-exfil.yaml`. `HubblePolicyDeny` remains `> 0` with no `for:` — the rollout-transient tuning was deliberately deferred (per user decision).
+
+See [[cnp-per-app-audit]] (progress) Sessions 19–21 for the execution log.
