@@ -11,9 +11,7 @@ spec:
     matchLabels:
       dashboards: grafana
   folderRef: observability
-  grafanaCom:
-    id: 15757
-    revision: 43
+  url: https://grafana.com/api/dashboards/15757/revisions/43/download
   datasources:
     - inputName: DS_PROMETHEUS
       datasourceName: Prometheus
@@ -27,9 +25,7 @@ spec:
     matchLabels:
       dashboards: grafana
   folderRef: observability
-  grafanaCom:
-    id: 15759
-    revision: 40
+  url: https://grafana.com/api/dashboards/15759/revisions/40/download
   datasources:
     - inputName: DS_PROMETHEUS
       datasourceName: Prometheus
@@ -43,9 +39,7 @@ spec:
     matchLabels:
       dashboards: grafana
   folderRef: observability
-  grafanaCom:
-    id: 15758
-    revision: 44
+  url: https://grafana.com/api/dashboards/15758/revisions/44/download
   datasources:
     - inputName: DS_PROMETHEUS
       datasourceName: Prometheus
@@ -59,9 +53,7 @@ spec:
     matchLabels:
       dashboards: grafana
   folderRef: observability
-  grafanaCom:
-    id: 15760
-    revision: 37
+  url: https://grafana.com/api/dashboards/15760/revisions/37/download
   datasources:
     - inputName: DS_PROMETHEUS
       datasourceName: Prometheus
@@ -75,9 +67,7 @@ spec:
     matchLabels:
       dashboards: grafana
   folderRef: observability
-  grafanaCom:
-    id: 11454
-    revision: 14
+  url: https://grafana.com/api/dashboards/11454/revisions/14/download
   datasources:
     - inputName: DS_PROMETHEUS
       datasourceName: Prometheus
@@ -91,9 +81,7 @@ spec:
     matchLabels:
       dashboards: grafana
   folderRef: observability
-  grafanaCom:
-    id: 1860
-    revision: 42
+  url: https://grafana.com/api/dashboards/1860/revisions/42/download
   datasources:
     - inputName: DS_PROMETHEUS
       datasourceName: Prometheus
@@ -107,9 +95,7 @@ spec:
     matchLabels:
       dashboards: grafana
   folderRef: observability
-  grafanaCom:
-    id: 18153
-    revision: 2
+  url: https://grafana.com/api/dashboards/18153/revisions/2/download
   datasources:
     - inputName: DS_PROMETHEUS
       datasourceName: Prometheus

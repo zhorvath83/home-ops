@@ -9,9 +9,7 @@ spec:
     matchLabels:
       dashboards: grafana
   folderRef: observability
-  grafanaCom:
-    id: 13665
-    revision: 4
+  url: https://grafana.com/api/dashboards/13665/revisions/4/download
   datasources:
     - inputName: DS_PROMETHEUS
       datasourceName: Prometheus

@@ -10,9 +10,7 @@ spec:
       dashboards: grafana
   allowCrossNamespaceImport: true
   folderRef: cert-manager
-  grafanaCom:
-    id: 20340
-    revision: 1
+  url: https://grafana.com/api/dashboards/20340/revisions/1/download
   datasources:
     - inputName: DS_PROMETHEUS
       datasourceName: Prometheus
