@@ -13,10 +13,11 @@ spec:
     defaultPodOptions:
       automountServiceAccountToken: false
       enableServiceLinks: false
-      # AD-023 vocabulary: envoy-routed (gateways CCNP) + internet egress TEMPORARY (book metadata; V5 narrow-world)
+      # AD-023 vocabulary: envoy-routed (gateways CCNP) + custom-egress (per-app CNP → SMTP2GO only) + allow-gateways (upcoming OIDC hairpin)
       labels:
         ingress.home.arpa/gateways: "true"
-        egress.home.arpa/allow-world: "true"
+        egress.home.arpa/custom-egress: "true"
+        egress.home.arpa/allow-gateways: "true"
       securityContext:
         runAsNonRoot: false # because S6 overlay
         runAsUser: 0 # because S6 overlay
@@ -28,40 +29,42 @@ spec:
       calibre-web-automated:
         annotations:
           reloader.stakater.com/auto: "true"
-        initContainers:
-          01-clone-molyhu:
-            image:
-              repository: registry.k8s.io/git-sync/git-sync
-              tag: v4.7.0@sha256:d232fd13474ba1b46dba431af2b1411b9d9afacda55ae644d2a32e43975128dd
-            args:
-              - --repo=https://github.com/crash5/calibre-molyhu
-              - --ref=main
-              - --depth=1
-              - --root=/tmp/molyhu-repo
-              - --link=calibre-molyhu
-              - --one-time
-            resources:
-              limits:
-                memory: 128Mi
-          02-copy-molyhu-provider:
-            image:
-              repository: public.ecr.aws/docker/library/busybox
-              tag: 1.38.0
-            command:
-              - /bin/sh
-              - -c
-            args:
-              - |
-                cp /tmp/molyhu-repo/calibre-molyhu/calibre-web/moly_hu.py /tmp/molyhu-provider/moly_hu.py &&
-                cp /tmp/molyhu-repo/calibre-molyhu/moly_hu/src/moly_hu/moly_hu.py /tmp/molyhu-provider/moly_hu_provider.py &&
-                # sed -i 's/return requests.get(page).text/return requests.get(page, headers={"User-Agent": "Mozilla\/5.0 (compatible; CalibreWeb\/1.0)"}).text/' /tmp/molyhu-provider/moly_hu.py &&
-                echo "Moly.hu metadata provider files copied and patched successfully."
-            resources:
-              requests:
-                cpu: 5m
-                memory: 10Mi
-              limits:
-                memory: 64Mi
+        # Molyhu metadata-provider DISABLED (AD-023 no-internet posture): the git-sync clone needs github.com egress.
+        # Re-enable with a github.com toFQDNs grant in ciliumnetworkpolicy.yaml AND uncomment the molyhu-repo/molyhu-provider
+        # persistence volumes below (the app subPath-mounts moly_hu.py from them).
+        # initContainers:
+        #   01-clone-molyhu:
+        #     image:
+        #       repository: registry.k8s.io/git-sync/git-sync
+        #       tag: v4.7.0@sha256:d232fd13474ba1b46dba431af2b1411b9d9afacda55ae644d2a32e43975128dd
+        #     args:
+        #       - --repo=https://github.com/crash5/calibre-molyhu
+        #       - --ref=main
+        #       - --depth=1
+        #       - --root=/tmp/molyhu-repo
+        #       - --link=calibre-molyhu
+        #       - --one-time
+        #     resources:
+        #       limits:
+        #         memory: 128Mi
+        #   02-copy-molyhu-provider:
+        #     image:
+        #       repository: public.ecr.aws/docker/library/busybox
+        #       tag: 1.38.0
+        #     command:
+        #       - /bin/sh
+        #       - -c
+        #     args:
+        #       - |
+        #         cp /tmp/molyhu-repo/calibre-molyhu/calibre-web/moly_hu.py /tmp/molyhu-provider/moly_hu.py &&
+        #         cp /tmp/molyhu-repo/calibre-molyhu/moly_hu/src/moly_hu/moly_hu.py /tmp/molyhu-provider/moly_hu_provider.py &&
+        #         echo "Moly.hu metadata provider files copied and patched successfully."
+        #     resources:
+        #       requests:
+        #         cpu: 5m
+        #         memory: 10Mi
+        #       limits:
+        #         memory: 64Mi
         containers:
           app:
             image:
@@ -148,33 +151,33 @@ spec:
         existingClaim: calibre-web-automated
         globalMounts:
           - path: /config
+      # molyhu-repo / molyhu-provider volumes commented out with the initContainers above (AD-023 no-internet):
+      # the app subPath-mounts moly_hu.py from molyhu-provider, which only the disabled copy init populates.
+      # molyhu-repo:
+      #   type: emptyDir
+      #   advancedMounts:
+      #     calibre-web-automated:
+      #       01-clone-molyhu:
+      #         - path: /tmp/molyhu-repo
+      #       02-copy-molyhu-provider:
+      #         - path: /tmp/molyhu-repo
+      #           readOnly: true
+      # molyhu-provider:
+      #   type: emptyDir
+      #   advancedMounts:
+      #     calibre-web-automated:
+      #       02-copy-molyhu-provider:
+      #         - path: /tmp/molyhu-provider
+      #       app:
+      #         - path: /app/calibre-web-automated/cps/metadata_provider/moly_hu.py
+      #           subPath: moly_hu.py
+      #           readOnly: true
+      #         - path: /app/calibre-web-automated/cps/metadata_provider/moly_hu_provider.py
+      #           subPath: moly_hu_provider.py
+      #           readOnly: true
       nfs-calibre-library:
         type: nfs
         server: ${NAS_IP}
         path: /backups/documents/personal/ebooks
         globalMounts:
           - path: /calibre-library
-      # git-sync clone target for crash5/calibre-molyhu repo
-      molyhu-repo:
-        type: emptyDir
-        advancedMounts:
-          calibre-web-automated:
-            01-clone-molyhu:
-              - path: /tmp/molyhu-repo
-            02-copy-molyhu-provider:
-              - path: /tmp/molyhu-repo
-                readOnly: true
-      # Moly.hu metadata provider files for calibre-web
-      molyhu-provider:
-        type: emptyDir
-        advancedMounts:
-          calibre-web-automated:
-            02-copy-molyhu-provider:
-              - path: /tmp/molyhu-provider
-            app:
-              - path: /app/calibre-web-automated/cps/metadata_provider/moly_hu.py
-                subPath: moly_hu.py
-                readOnly: true
-              - path: /app/calibre-web-automated/cps/metadata_provider/moly_hu_provider.py
-                subPath: moly_hu_provider.py
-                readOnly: true

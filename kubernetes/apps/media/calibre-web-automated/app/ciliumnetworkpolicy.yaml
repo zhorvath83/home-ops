@@ -1,0 +1,24 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
+# calibre-web-automated (AD-023): envoy ingress via the gateways CCNP; custom-egress opt-out, so this CNP is the sole egress source —
+# outbound SMTP to SMTP2GO only. The upcoming OIDC hairpin is granted by the egress.home.arpa/allow-gateways label
+# (allow-gateways-egress CCNP); DNS by the cluster-wide allow-dns-egress CCNP; NFS to the NAS is node-level, not pod egress.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: calibre-web-automated
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: calibre-web-automated
+      app.kubernetes.io/instance: calibre-web-automated
+      app.kubernetes.io/controller: calibre-web-automated
+  egress:
+    # SMTP2GO mail submission (implicit TLS).
+    - toFQDNs:
+        - matchName: "mail-eu.smtp2go.com"
+        - matchPattern: "*.smtp2go.com"
+      toPorts:
+        - ports:
+            - port: "465"
+              protocol: TCP
