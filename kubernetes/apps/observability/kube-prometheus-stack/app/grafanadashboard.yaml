@@ -53,7 +53,7 @@ spec:
     matchLabels:
       dashboards: grafana
   folderRef: observability
-  url: https://grafana.com/api/dashboards/15760/revisions/37/download
+  url: https://grafana.com/api/dashboards/15760/revisions/39/download
   datasources:
     - inputName: DS_PROMETHEUS
       datasourceName: Prometheus
