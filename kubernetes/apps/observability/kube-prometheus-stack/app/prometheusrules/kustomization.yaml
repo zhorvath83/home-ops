@@ -5,3 +5,4 @@ kind: Kustomization
 resources:
   - ./oomkilled.yaml
   - ./hubble-policy-deny.yaml
+  - ./dns-exfil.yaml

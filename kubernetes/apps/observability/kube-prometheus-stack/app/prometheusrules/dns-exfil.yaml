@@ -1,0 +1,29 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/monitoring.coreos.com/prometheusrule_v1.json
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: hubble-dns-exfil
+spec:
+  groups:
+    - name: hubble-dns
+      rules:
+        # Per-source-pod DNS query rate is the robust DNS-exfiltration signal here: exfil/tunneling
+        # drives one workload to a large sustained query volume. NXDOMAIN fraction is NOT usable as the
+        # primary signal — ~35% of cluster DNS is already NXDOMAIN (normal ndots search-domain misses).
+        # coredns is the resolver itself (it aggregates every upstream forward) so it is excluded.
+        # Starter threshold 30 q/s is ~4x the whole cluster's current DNS rate (~7/s) → effectively zero
+        # false-positive risk while catching gross exfil; tighten to a per-pod baseline after a soak.
+        - alert: HubbleDNSExfilSuspected
+          expr: |
+            sum by (source_namespace, source_workload, source_pod) (
+              rate(hubble_dns_queries_total{source_workload!="coredns"}[5m])
+            ) > 30
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High DNS query rate — possible DNS exfiltration"
+            description: |-
+              {{ $labels.source_namespace }}/{{ $labels.source_pod }} ({{ $labels.source_workload }}) is issuing {{ printf "%.0f" $value }} DNS queries/s, sustained >=10m (normal cluster-wide rate is ~7/s). Investigate for DNS tunneling / data exfiltration.
+              Inspect: hubble observe --from-pod {{ $labels.source_namespace }}/{{ $labels.source_pod }} --protocol dns --last 200

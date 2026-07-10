@@ -44,7 +44,7 @@ spec:
         rollOutPods: true
       metrics:
         enabled:
-          - dns
+          - dns:labelsContext=source_namespace,source_pod,source_workload
           - drop:labelsContext=source_namespace,source_pod,source_workload,source_ip,destination_namespace,destination_pod,destination_workload,destination_ip,traffic_direction
           - tcp
           - flow
