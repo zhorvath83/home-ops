@@ -52,11 +52,6 @@ spec:
   disableDefaultAdminSecret: true
   disableDefaultSecurityContext: All
   deployment:
-    metadata:
-      # Ephemeral DB re-seeds the admin password from grafana-secret on each start; restart on
-      # rotation so it stays in sync with the operator's provisioning credential.
-      annotations:
-        reloader.stakater.com/auto: "true"
     spec:
       strategy:
         type: Recreate
