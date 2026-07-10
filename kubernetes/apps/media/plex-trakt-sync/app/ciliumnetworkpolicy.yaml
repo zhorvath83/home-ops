@@ -1,0 +1,34 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
+# plex-trakt-sync (AD-023): consumer-less worker (ingress.home.arpa/none default-deny); custom-egress opt-out, so this CNP is the sole
+# egress source — narrow-world Trakt API + the in-cluster Plex server (PLEX_BASEURL). DNS via the cluster-wide allow-dns-egress CCNP.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: plex-trakt-sync
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: plex-trakt-sync
+      app.kubernetes.io/instance: plex-trakt-sync
+      app.kubernetes.io/controller: plex-trakt-sync
+  egress:
+    # Trakt API — all sync + OAuth token operations.
+    - toFQDNs:
+        - matchName: "api.trakt.tv"
+        - matchPattern: "*.trakt.tv"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+    # Plex Media Server (in-cluster; PLEX_BASEURL/PLEX_LOCALURL).
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: media
+            app.kubernetes.io/name: plex
+            app.kubernetes.io/instance: plex
+            app.kubernetes.io/controller: plex
+      toPorts:
+        - ports:
+            - port: "32400"
+              protocol: TCP

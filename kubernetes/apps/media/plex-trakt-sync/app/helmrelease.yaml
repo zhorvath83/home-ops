@@ -13,9 +13,10 @@ spec:
     defaultPodOptions:
       automountServiceAccountToken: false
       enableServiceLinks: false
-      # AD-023 vocabulary: internet egress TEMPORARY (trakt + plex APIs; V5 narrow-world)
+      # AD-023 vocabulary: custom-egress (per-app CNP → narrow-world Trakt + in-cluster Plex) + consumer-less worker (ingress none)
       labels:
-        egress.home.arpa/allow-world: "true"
+        egress.home.arpa/custom-egress: "true"
+        ingress.home.arpa/none: "true"
       securityContext:
         runAsNonRoot: true
         runAsUser: 10001
