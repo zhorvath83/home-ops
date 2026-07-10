@@ -11,6 +11,9 @@ spec:
     name: victoria-logs-collector
   values:
     fullnameOverride: victoria-logs-collector
+    # AD-023 V5e: close ingress (default-deny) except the Prometheus scrape via the CCNP; the collector has no probes and no other ingress.
+    podLabels:
+      ingress.home.arpa/prometheus: "true"
     global:
       image:
         registry: quay.io
