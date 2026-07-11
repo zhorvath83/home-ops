@@ -78,3 +78,24 @@ tags:
 - relates_to [[networking]]
 - relates_to [[observability]]
 - decided_in [[AD-023-cnp-threat-model-audit]]
+
+
+## Session 1 — Live verify (2026-07-11, commit 35ccd7ec1 pushed as 6bfff4689)
+
+### Deploy
+
+- [observation] User pushed main (AI could not: SSH agent refused the ED25519 key sign in non-TTY context). flux reconcile ks cilium -n kube-system + tinyauth -n security → both applied revision refs/heads/main@sha1:6bfff4689.
+
+### Verify (live, post-deploy) — ALL PASS
+
+- [VERIFY pass] kubectl get securitypolicy hubble-ui-forward-auth -n kube-system → status.ancestors[envoy-internal/https].conditions[Accepted]=True, message "Policy has been accepted." (gateway.envoyproxy.io/gatewayclass-controller).
+- [VERIFY pass] kubectl get httproute hubble-ui -n kube-system → Accepted=True, ResolvedRefs=True.
+- [VERIFY pass] hubble-ui pod restarted (pod-template-hash 5d749c78b8 → 7f99d88955); live pod labels include ingress.home.arpa/allow-gateway-internal=true → selected by the cluster-wide ingress-from-gateway-internal CCNP (ingress now envoy-internal-only).
+- [VERIFY pass] tinyauth pod restarted by the Helm upgrade (age 4m24s at check); deploy + live pod env contain TINYAUTH_APPS_hubbleui_CONFIG_DOMAIN=hubble.horvathzoltan.me and TINYAUTH_APPS_hubbleui_OAUTH_GROUPS=hubble_users.
+- [VERIFY pass] End-to-end auth: `curl -sI https://hubble.horvathzoltan.me` from LAN → HTTP/2 401 with `x-tinyauth-location: https://auth.horvathzoltan.me/login?redirect_uri=...hubble.horvathzoltan.me...` and `x-envoy-upstream-service-time: 0` (request intercepted at envoy extAuth, never reached the hubble-ui backend). Hubble UI is no longer openly accessible.
+- [VERIFY pass] Bypass protection: `wget http://hubble-ui.kube-system.svc.cluster.local:80` from the bazarr pod (downloads ns) → download timed out (Cilium drop — the CCNP denies non-envoy-internal ingress). The forward-auth cannot be bypassed via the in-cluster Service.
+
+### Remaining (HUMAN GATE)
+
+- [action] Create the `hubble_users` group in the Pocket-ID UI and add the user(s). Until then hubble-ui is fail-closed: curl → 401 → login redirect → after Pocket-ID login, tinyauth denies because the user is not in `hubble_users`. This is the intended secure state. Once the group exists and the user is in it, the same flow returns 200 (Hubble UI).
+- [follow-up] After the group is created and 200 access confirmed, set the roadmap note [[hubble-ui-auth]] status to done and add hubble-ui to the iam area-reference OIDC-less app registry; update the iam ReferenceGrant coverage list to include kube-system.
