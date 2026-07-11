@@ -90,3 +90,47 @@ options:
 
 ### Effort
 M (~0.5–1 day for a staged rollout across the signed sources + digest pinning).
+
+
+## Discovery findings (2026-07-11)
+
+Read-only reconnaissance done; no manifests or cluster state changed. cosign was not installed — ran ephemerally via mise/aqua (`aqua:sigstore/cosign@3.1.1`, checksum-verified) and probed every publisher against its live tag.
+
+### Current state (verified)
+- 35 OCIRepositories total; **none** carry `spec.verify`; all Ready=True.
+- Enumerated with: `kubectl get ocirepository -A -o 'custom-columns=NS:.metadata.namespace,NAME:.metadata.name,URL:.spec.url,VERIFY:.spec.verify.provider,READY:.status.conditions[-1].status'`.
+
+### Keyless-signed with confirmed GitHub-OIDC identity (ready to configure)
+All share issuer regex `^https://token\.actions\.githubusercontent\.com$`. Subjects captured live via `cosign verify <ref> --certificate-identity-regexp='.*' --certificate-oidc-issuer-regexp='.*'`:
+
+| Source (ns) | Apps affected | matchOIDCIdentity subject regex |
+|---|---|---|
+| flux-instance (flux-system) | 1 controlplane | `^https://github\.com/controlplaneio-fluxcd/charts/\.github/workflows/.*$` |
+| flux-operator (flux-system) | 1 controlplane | same as flux-instance |
+| app-template (shared component) | ~13 apps | `^https://github\.com/bjw-s-labs/helm-charts/\.github/workflows/.*$` |
+| k8s-gateway (networking) | 1 | `^https://github\.com/k8s-gateway/k8s_gateway/\.github/workflows/.*$` |
+| charts-mirror/* (home-operations) | 3 (external-dns, metrics-server, volsync) | `^https://github\.com/home-operations/charts-mirror/\.github/workflows/.*$` |
+
+Observed exact subjects (for reference):
+- controlplaneio: `https://github.com/controlplaneio-fluxcd/charts/.github/workflows/release.yml@refs/tags/v0.16.3`
+- bjw-s app-template: `https://github.com/bjw-s-labs/helm-charts/.github/workflows/chart-release-steps.yaml@refs/heads/main`
+- k8s-gateway: `https://github.com/k8s-gateway/k8s_gateway/.github/workflows/chart-release-steps.yaml@refs/heads/master`
+- home-operations charts-mirror: `https://github.com/home-operations/charts-mirror/.github/workflows/app-builder.yaml@refs/heads/main`
+
+### Signed, but identity extraction needs follow-up
+cosign verifies a signature but the cert-identity block is empty (`optional: []`) — likely a non-keyless / different signing scheme; needs per-publisher digging (possibly `spec.verify.secretRef` with a public key) before configuring:
+- `cilium` (quay.io/cilium/charts/cilium), `external-secrets`, `coredns`, `victoria-logs` (single + collector), `reloader`, `home-operations/charts/tuppr`.
+
+### Unsigned — cannot add verify
+- `1password/connect`, `cert-manager` ⚠️ (**roadmap assumption was wrong** — quay.io/jetstack/charts/cert-manager is NOT cosign-signed), `democratic-csi`, `grafana-operator`, `intel-gpu-resource-driver`, `snapshot-controller`, `kube-prometheus-stack`, `blackbox-exporter`, `silence-operator`, `envoy-gateway` (mirror.gcr.io).
+
+### Decisions still open (asked, deferred)
+- **Scope for first PR**: recommended minimal start = flux-instance + flux-operator only (controlplane, lowest blast radius), then expand.
+- **Delivery**: recommended branch + PR + merge (Flux only verifies live after merge to main; wrong identity → that one source NotReady, running workloads keep last-applied state).
+
+### Next actions when resuming
+1. Pick scope (min flux×2 vs. all 5 clean-keyless).
+2. Add `spec.verify.provider: cosign` + `matchOIDCIdentity` (issuer+subject from table) to chosen OCIRepositories.
+3. Deep-dive the 6 empty-identity sources.
+4. Renovate digest-pinning as a separate workstream.
+5. Verify live: `flux reconcile source oci <name> -n <ns>` → Ready + "verified signature" event; negative test on a staging source.
