@@ -1,0 +1,39 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: prometheus-adapter
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: prometheus-adapter
+  values:
+    # Chart ships a hardened securityContext by default (non-root 10001, drop ALL,
+    # read-only rootfs, RuntimeDefault) and serves the APIService over a self-signed
+    # cert with insecureSkipTLSVerify (tls/certManager disabled) — no overrides needed.
+    prometheus:
+      url: http://prometheus-operated.observability.svc.cluster.local
+      port: 9090
+    rules:
+      # Disable the chart's default container_* resource rules — none are wanted.
+      default: false
+      external:
+        # Serve blackbox-exporter probe_success as an External Metric so HPAs with
+        # metrics[].type: External (the zeroscaler component) can resolve it.
+        # namespaced: false — the NFS probe is cluster-scoped, not tied to a namespace;
+        # HPAs query it with a job=<nfs_probe> labelSelector from any namespace.
+        # max_over_time [1m] smooths a single failed probe so the HPA does not flap.
+        - seriesQuery: '{__name__="probe_success"}'
+          resources:
+            namespaced: false
+          name:
+            as: probe_success
+          metricsQuery: max_over_time(<<.Series>>{<<.LabelMatchers>>}[1m])
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
+      limits:
+        memory: 256Mi
