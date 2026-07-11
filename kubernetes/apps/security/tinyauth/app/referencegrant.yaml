@@ -21,6 +21,9 @@ spec:
       namespace: downloads
     - group: gateway.envoyproxy.io
       kind: SecurityPolicy
+      namespace: kube-system
+    - group: gateway.envoyproxy.io
+      kind: SecurityPolicy
       namespace: observability
   to:
     - group: ""

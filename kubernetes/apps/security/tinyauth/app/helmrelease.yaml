@@ -73,6 +73,12 @@ spec:
               TINYAUTH_APPS_bazarr_OAUTH_GROUPS: bazarr_users
               TINYAUTH_APPS_echo_CONFIG_DOMAIN: "echo.${PUBLIC_DOMAIN}"
               TINYAUTH_APPS_echo_OAUTH_GROUPS: echo_server_users
+              # App ID is a single token (hubbleui) — paerser's env decoder replaces every
+              # underscore with a dot, so a hyphenated/underscored ID would not bind the ACL
+              # to the App struct and the v5.0.7 nil-ACL allow-all behaviour would leak through.
+              # Matching is by CONFIG_DOMAIN (host), not the app ID.
+              TINYAUTH_APPS_hubbleui_CONFIG_DOMAIN: "hubble.${PUBLIC_DOMAIN}"
+              TINYAUTH_APPS_hubbleui_OAUTH_GROUPS: hubble_users
               TINYAUTH_APPS_maintainerr_CONFIG_DOMAIN: "maintainerr.${PUBLIC_DOMAIN}"
               TINYAUTH_APPS_maintainerr_OAUTH_GROUPS: maintainerr_users
               TINYAUTH_APPS_prowlarr_CONFIG_DOMAIN: "indexers.${PUBLIC_DOMAIN}"
