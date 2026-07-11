@@ -3,7 +3,7 @@ title: nfs-dependency-zeroscaler
 type: roadmap
 permalink: home-ops/docs/roadmap/nfs-dependency-zeroscaler
 topic: Adopt zeroscaler component for NFS-dependency scale-to-zero gating
-status: proposed
+status: done
 priority: low
 scope: Mirror the bjw-s components/zeroscaler/ pattern into our repo. Single HorizontalPodAutoscaler
   (autoscaling/v2) manifest templated via postBuild substitute — no operator, no CRD.
@@ -32,7 +32,7 @@ blocked_by: prometheus-adapter
 ## Metadata (observation-form, schema validation)
 
 - [topic] Adopt zeroscaler component for NFS-dependency scale-to-zero gating
-- [status] proposed
+- [status] done
 - [priority] low
 
 ## Scope

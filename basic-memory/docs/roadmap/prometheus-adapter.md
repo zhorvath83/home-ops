@@ -3,7 +3,7 @@ title: prometheus-adapter
 type: roadmap
 permalink: home-ops/docs/roadmap/prometheus-adapter
 topic: Add prometheus-adapter to expose Prometheus metrics as External Metrics API
-status: proposed
+status: done
 priority: medium
 scope: 'Deploy prometheus-adapter into observability namespace following the bjw-s
   reference shape. Minimal values: default rules disabled, single external rule for
@@ -28,7 +28,7 @@ related_areas:
 ## Metadata (observation-form, schema validation)
 
 - [topic] Add prometheus-adapter to expose Prometheus metrics as External Metrics API
-- [status] proposed
+- [status] done
 - [priority] medium
 
 ## Scope
