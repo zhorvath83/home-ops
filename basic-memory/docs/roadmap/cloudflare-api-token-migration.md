@@ -6,17 +6,19 @@ topic: Cloudflare Terraform provider auth hardening — Global API Key → scope
   Token
 status: proposed
 priority: medium
-scope: 'Migrate provision/cloudflare/ Terraform provider authentication from Global
-  API Key + account email (var.CF_GLOBAL_APIKEY + var.CF_USERNAME) to a scoped API
-  Token. Touchpoints: provider block, 1Password ''cloudflare'' item, .env via op run,
-  and the token permission set covering DNS/WAF/Workers/R2/Access/Tunnel/notifications.'
-rationale: Global API Key has full-account blast radius. The cloudflare area-reference
-  explicitly flags this as a 'hardening follow-up rather than current blocker'. Scoped
-  API Tokens limit blast radius and are Cloudflare's recommended Terraform pattern.
+scope: 'Migrate provision/cloudflare Terraform provider authentication from the account
+  Global API Key (var.CF_GLOBAL_APIKEY + var.CF_USERNAME) to a scoped API Token whose
+  permissions cover exactly the managed surface: Zone DNS/settings/WAF/Rulesets, Workers
+  + KV + Routes, R2, Zero Trust Access apps/groups/service-tokens, Tunnel, account
+  resources, notifications.'
+rationale: A scoped token limits the provider credential to exactly the resources
+  this repo manages, so the blast radius of that credential shrinks from the whole
+  Cloudflare account to just the home-ops surface — and a scoped token used elsewhere
+  (delete_stale_tunnels.sh) already proves the pattern works here.
 options:
-- Single all-in-one token — lowest churn, one rotation point
-- Split per-product tokens — smaller blast radius per token but requires multiple
-  aliased provider blocks and per-resource provider= references
+- Single all-in-one token — lowest churn, one rotation point (recommended)
+- Split per-product tokens — smaller per-token blast radius but needs aliased provider
+  blocks and per-resource provider= references
 related_areas:
 - cloudflare
 ---
@@ -29,28 +31,25 @@ related_areas:
 - [status] proposed
 - [priority] medium
 
-## Scope
+## What we gain
 
-Migrate the `provision/cloudflare/` Terraform provider authentication from Cloudflare's Global API Key + account email model (`var.CF_GLOBAL_APIKEY` + `var.CF_USERNAME`, provision/cloudflare/main.tf:46-49, variables.tf:131-139) to a scoped API Token model.
+- The Terraform credential can touch only what home-ops manages — unrelated zones, Workers, and Access apps are out of its reach.
+- The token is independently rotatable and revocable without disturbing the account key.
+- Aligns with Cloudflares documented best practice and with the scoped token already in use by delete_stale_tunnels.sh.
 
-Touchpoints:
+## What to do
 
-1. `provision/cloudflare/main.tf` provider block — replace `api_key` + `api_user_service_key` with `api_token`
-2. 1Password `cloudflare` item — add the new token field; retire `CF_GLOBAL_APIKEY` + `CF_USERNAME` once a clean `just cloudflare plan` is reproduced
-3. `.env` template injected via `op run --no-masking --env-file=./.env -- terraform ...` — swap the variables
-4. Token permission set must cover every resource type currently in the stack: Zone DNS edit, Zone settings + WAF + Rulesets, Workers + Workers KV + Workers Routes, R2 + R2 custom domain, Zero Trust Access apps + groups + service tokens, Cloudflare Tunnel, Account-level resources, notification policies
-
-## Rationale
-
-The Global API Key has full-account blast radius; a leaked token destroys the entire Cloudflare account, including any unrelated zones, Workers, and Access apps not managed by this repo. The `docs/areas/cloudflare` area-reference flags this as **"a hardening follow-up rather than current blocker"** — explicit deferred work, not a drift risk. Scoped API Tokens narrow the blast radius to the actual managed surface and are Cloudflare's documented best practice for Terraform.
-
-The migration is not a current blocker because the home-ops account is single-tenant and the credential is held only in 1Password + Terraform Cloud. The cost of the migration is reproducing the right permission scope on the new token without breaking `just cloudflare apply`.
+1. Replace the provider api_key + api_user_service_key with api_token in provision/cloudflare/main.tf.
+2. Create a scoped token covering the full managed permission set (list above); add it to the 1Password cloudflare item; swap the .env vars injected via op run.
+3. Reproduce a clean just cloudflare plan, then retire CF_GLOBAL_APIKEY + CF_USERNAME.
+4. Verify: just cloudflare plan/apply succeeds with the scoped token and no permission gaps.
 
 ## Options
 
-1. **Single all-in-one token** — one token with the union of all permissions; lowest operational cost; one secret rotation point
-2. **Split per-product tokens** — separate tokens for DNS, Workers, R2, Access; smaller blast radius per token, but the Terraform provider only accepts one `api_token` value so this would require multiple aliased provider blocks and resource-level `provider =` references — significantly more churn
+1. Single all-in-one token — lowest churn, one rotation point (recommended)
+2. Split per-product tokens — smaller per-token blast radius but needs aliased provider blocks and per-resource provider= references
 
 ## Related
 
 - relates_to [[cloudflare]]
+- relates_to [[cloudflare-tls-and-tfvar-hygiene]]
