@@ -13,9 +13,8 @@ spec:
     defaultPodOptions:
       automountServiceAccountToken: false
       enableServiceLinks: false
-      # AD-023 vocabulary: envoy-routed app, ingress from gateways (ingress-from-gateways CCNP)
+      # AD-023 vocabulary: envoy-routed app, ingress via the ingress-from-gateway-external + -internal CCNPs
       labels:
-        ingress.home.arpa/gateways: "true"
         ingress.home.arpa/allow-gateway-external: "true"
         ingress.home.arpa/allow-gateway-internal: "true"
       securityContext:

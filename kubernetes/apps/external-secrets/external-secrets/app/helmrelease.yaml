@@ -17,7 +17,6 @@ spec:
     # AD-023 vocabulary: custom-egress (per-app CNP) + prometheus scrape (ServiceMonitor)
     podLabels:
       egress.home.arpa/custom-egress: "true"
-      ingress.home.arpa/prometheus: "true"
       ingress.home.arpa/allow-prometheus: "true"
     resources:
       requests:
@@ -33,7 +32,6 @@ spec:
         repository: ghcr.io/external-secrets/external-secrets
       podLabels:
         egress.home.arpa/custom-egress: "true"
-        ingress.home.arpa/prometheus: "true"
         ingress.home.arpa/allow-prometheus: "true"
       resources:
         requests:
@@ -49,7 +47,6 @@ spec:
         repository: ghcr.io/external-secrets/external-secrets
       podLabels:
         egress.home.arpa/custom-egress: "true"
-        ingress.home.arpa/prometheus: "true"
         ingress.home.arpa/allow-prometheus: "true"
       resources:
         requests:

@@ -1,6 +1,6 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
-# paperless-gpt (AD-023): envoy ingress via the gateways CCNP; custom-egress opt-out, so this CNP is the sole egress source —
+# paperless-gpt (AD-023): envoy-internal ingress via the ingress-from-gateway-internal CCNP; custom-egress opt-out, so this CNP is the sole egress source —
 # narrow-world Mistral API/OCR (mistral.ai) + the in-cluster Paperless API (PAPERLESS_BASE_URL). DNS via the cluster-wide allow-dns-egress CCNP.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy

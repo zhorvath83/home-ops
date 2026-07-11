@@ -76,13 +76,11 @@ spec:
         alertmanagerConfiguration:
           name: alertmanager
         externalUrl: "https://alertmanager.${PUBLIC_DOMAIN}"
-        # AD-023: envoy-routed UI (gateways CCNP) + prometheus scrape (prometheus CCNP)
+        # AD-023: envoy-internal UI (ingress-from-gateway-internal CCNP) + prometheus scrape (ingress-from-prometheus CCNP)
         # + internet egress for api.pushover.net (allow-world CCNP — observability is NOT free-world).
         podMetadata:
           labels:
-            ingress.home.arpa/gateways: "true"
             ingress.home.arpa/allow-gateway-internal: "true"
-            ingress.home.arpa/prometheus: "true"
             ingress.home.arpa/allow-prometheus: "true"
             egress.home.arpa/allow-world: "true"
         resources:

@@ -1,6 +1,6 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
-# radarr (AD-023): envoy ingress via the gateways CCNP; this CNP admits the *arr named consumers (bazarr, prowlarr, seerr) on the API port.
+# radarr (AD-023): envoy-internal ingress via the ingress-from-gateway-internal CCNP; this CNP admits the *arr named consumers (bazarr, prowlarr, seerr) on the API port.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:

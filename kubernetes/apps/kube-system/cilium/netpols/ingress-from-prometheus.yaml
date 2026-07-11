@@ -1,26 +1,16 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumclusterwidenetworkpolicy_v2.json
-# Ingress from prometheus. Transitional dual selector: matches both the legacy
-# ingress.home.arpa/prometheus and the new ingress.home.arpa/allow-prometheus label
-# during the V5(m) rename; the legacy spec is trimmed at retire.
+# Ingress from prometheus (label ingress.home.arpa/allow-prometheus="true").
 apiVersion: cilium.io/v2
 kind: CiliumClusterwideNetworkPolicy
 metadata:
   name: ingress-from-prometheus
-specs:
-  - endpointSelector:
-      matchLabels:
-        ingress.home.arpa/prometheus: "true"
-    ingress:
-      - fromEndpoints:
-          - matchLabels:
-              k8s:io.kubernetes.pod.namespace: observability
-              app.kubernetes.io/name: prometheus
-  - endpointSelector:
-      matchLabels:
-        ingress.home.arpa/allow-prometheus: "true"
-    ingress:
-      - fromEndpoints:
-          - matchLabels:
-              k8s:io.kubernetes.pod.namespace: observability
-              app.kubernetes.io/name: prometheus
+spec:
+  endpointSelector:
+    matchLabels:
+      ingress.home.arpa/allow-prometheus: "true"
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: observability
+            app.kubernetes.io/name: prometheus

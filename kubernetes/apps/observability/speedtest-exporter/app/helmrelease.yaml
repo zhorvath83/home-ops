@@ -15,7 +15,6 @@ spec:
       enableServiceLinks: false
       # AD-023 vocabulary: prometheus scrape + internet egress (allow-world) — not envoy-routed (scrape-only)
       labels:
-        ingress.home.arpa/prometheus: "true"
         ingress.home.arpa/allow-prometheus: "true"
         egress.home.arpa/allow-world: "true"
       securityContext:

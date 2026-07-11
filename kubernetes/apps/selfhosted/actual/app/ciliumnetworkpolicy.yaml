@@ -1,6 +1,6 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
-# actual (AD-023): file-based budget DB; ingress from envoy gateways via the ingress-from-gateways CCNP.
+# actual (AD-023): file-based budget DB; envoy ingress via the ingress-from-gateway-external + -internal CCNPs.
 # Egress: only the enablebanking.com open-banking API for bank transaction fetch (DNS via the cluster-wide allow-dns-egress CCNP).
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy

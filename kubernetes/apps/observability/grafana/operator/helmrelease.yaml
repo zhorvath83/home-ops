@@ -15,7 +15,6 @@ spec:
     # AD-023 vocabulary: scraped by Prometheus (cluster CCNP) + custom-egress (apiserver watch,
     # Grafana provisioning API, url-sourced dashboard downloads).
     podLabels:
-      ingress.home.arpa/prometheus: "true"
       ingress.home.arpa/allow-prometheus: "true"
       egress.home.arpa/custom-egress: "true"
     resources:

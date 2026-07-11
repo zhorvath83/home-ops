@@ -18,9 +18,7 @@ spec:
       # AD-023 V5e: custom-egress sink (DNS-only; egress locked by ciliumnetworkpolicy.yaml) + envoy-internal route & prometheus scrape ingress via CCNPs.
       podLabels:
         egress.home.arpa/custom-egress: "true"
-        ingress.home.arpa/gateways: "true"
         ingress.home.arpa/allow-gateway-internal: "true"
-        ingress.home.arpa/prometheus: "true"
         ingress.home.arpa/allow-prometheus: "true"
       persistentVolume:
         enabled: true

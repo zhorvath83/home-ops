@@ -12,10 +12,9 @@ spec:
   values:
     defaultPodOptions:
       automountServiceAccountToken: false
-      # AD-023 vocabulary: direct OVH S3 (allow-world) + envoy-routed UI (gateways)
+      # AD-023 vocabulary: direct OVH S3 (allow-world) + envoy-internal UI (allow-gateway-internal)
       labels:
         egress.home.arpa/allow-world: "true"
-        ingress.home.arpa/gateways: "true"
         ingress.home.arpa/allow-gateway-internal: "true"
     controllers:
       kopia:

@@ -1,6 +1,6 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
-# prowlarr (AD-023): envoy ingress via the gateways CCNP; this CNP admits radarr/sonarr pulling indexer details from prowlarr on the API port (reverse direction of the app-UI "prowlarr → radarr/sonarr" sync config).
+# prowlarr (AD-023): envoy-internal ingress via the ingress-from-gateway-internal CCNP; this CNP admits radarr/sonarr pulling indexer details from prowlarr on the API port (reverse direction of the app-UI "prowlarr → radarr/sonarr" sync config).
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
