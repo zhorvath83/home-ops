@@ -101,6 +101,15 @@
         "api.ovh.com"
       ]
     },
-    "excludedCommands": ["gh *", "terraform *"]
+    "excludedCommands": [
+      "gh *",
+      "terraform *",
+      "kubectl *",
+      "flux *",
+      "talosctl *",
+      "just k8s *",
+      "just volsync *",
+      "just talos *"
+    ]
   }
 }
