@@ -121,3 +121,18 @@ options:
 
 ### Effort
 L (~1–1.5 days: ~3 forward-auth apps are quick copy-paste; the 3 OIDC-native apps each need a Pocket-ID client + ExternalSecret + app config + testing).
+
+
+## Progress log
+
+### 2026-07-11 — Step C (Cloudflare service-token scoping) implemented in Terraform
+
+- [decision] Only **paperless (docs)** and **mealie (recipes)** use CF Access header-based auth (native mobile clients) — user-confirmed. No other externally-exposed app consumes the `MobileAppsServiceToken`.
+- [evidence] The service-token credentials (`CF-Access-Client-Id`/`-Secret`) have **zero in-cluster consumers** — the only repo reference is the Terraform `op item edit` write-back (`provision/cloudflare/access.tf:14`). The token is used purely by external native clients, so scope is a user-only fact.
+- [change] `provision/cloudflare/access.tf`: removed the `service_token_auth` (`non_identity`) policy from the wildcard `Private Cloud` app (`*.${CF_DOMAIN_NAME}`); added two dedicated `self_hosted` Access apps — `Paperless` (`docs.*`) and `Mealie` (`recipes.*`) — each keeping `service_token_auth` (prec 1) + `unrestricted_users_policy` (prec 2). Most-specific hostname wins over the wildcard (same mechanism the existing `fenykepek.*` app relies on).
+- [effect] The mobile token can no longer bypass identity on every subdomain — only on `docs` and `recipes`. Every other host under the wildcard now requires Google-OAuth identity (unrestricted-users) in addition to the edge.
+- [related] The same commit also shortened `session_duration` 720h→24h on the wildcard + photos apps (belongs to `cloudflare-access-session-hardening`; co-located in one file so committed together).
+- [commit] `139ab76dd` 🔒 fix(cloudflare): scope mobile service-token to docs/recipes
+- [validation] `tflint` clean; blocks fmt-clean; **authoritative `just cloudflare plan` NOT yet run** (`op` not signed in). Run `op signin && just cloudflare plan` then `just cloudflare apply` to reach live Cloudflare. Expected plan: +2 apps, wildcard app loses the service-token policy attachment, session_duration updates — no destroys.
+- [status] Step C done-in-code (pending apply). Steps A (forward-auth for home-gallery/wallos/calibre) and B (OIDC-native for actual/paperless/mealie) remain **proposed / not started**.
+- [verify-after-apply] With only `CF-Access-Client-*` headers, a scoped-out host (e.g. `pfm`, `books`, `photos`) must return the CF Access login instead of passing through; `docs` and `recipes` must still pass with the token.
