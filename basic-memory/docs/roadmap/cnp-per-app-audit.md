@@ -4,7 +4,7 @@ type: roadmap
 permalink: home-ops/docs/roadmap/cnp-per-app-audit
 topic: Hybrid CNP rollout runbook — label vocabulary + world-deny flip; per-app CNPs
   only for app-unique content
-status: in_progress
+status: done
 priority: medium
 scope: Execution-grade runbook for AD-023 rev2. Contains the full YAML of every cluster
   policy, the per-app label assignment for all namespaces, the exact edit/verify commands
