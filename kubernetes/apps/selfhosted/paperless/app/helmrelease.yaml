@@ -90,6 +90,7 @@ spec:
               PAPERLESS_WEBSERVER_WORKERS: "1"
               # Disable optional features for reduced resource usage
               PAPERLESS_ENABLE_NLTK: "false"
+              PAPERLESS_ENABLE_UPDATE_CHECK: "false"
               PAPERLESS_TRAIN_TASK_CRON: "disable"
               PAPERLESS_EMAIL_TASK_CRON: "disable"
               PAPERLESS_WORKFLOW_SCHEDULED_TASK_CRON: "disable"

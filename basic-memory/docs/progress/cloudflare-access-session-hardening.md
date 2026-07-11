@@ -1,10 +1,16 @@
 ---
 title: cloudflare-access-session-hardening
-type: roadmap
-permalink: home-ops/docs/roadmap/cloudflare-access-session-hardening
+type: progress
+permalink: home-ops/docs/progress/cloudflare-access-session-hardening
 topic: Tighter Cloudflare Access sessions + step-up for sensitive apps
-status: proposed
+status: done
 priority: medium
+tags:
+- progress
+- cloudflare
+- iam
+- security
+- access
 scope: Shorten the Access session duration for the unrestricted-users policy and layer
   a cluster-side identity gate on sensitive apps, reducing the value of any single
   compromised SSO session.
@@ -24,7 +30,7 @@ options:
 ## Metadata (observation-form, schema validation)
 
 - [topic] Tighter Cloudflare Access sessions + step-up for sensitive apps
-- [status] proposed
+- [status] done
 - [priority] medium
 
 ## What we gain
@@ -79,3 +85,27 @@ options:
 
 ### Effort
 S (~30 min for the session change; the second gate is tracked separately).
+
+
+## Completion (2026-07-11)
+
+Moved from `docs/roadmap` on completion. The session-hardening deliverable — shorter Cloudflare Access sessions on every identity-gated app — is implemented and committed.
+
+### What shipped
+- `session_duration` lowered **720h → 24h** on all four identity-gated Access apps: `private_cloud` (wildcard fallback), `private_cloud_photos`, and the two dedicated apps `paperless` (docs) + `mealie` (recipes). Bypass / non_identity apps have no session to shorten.
+- Strategy: **24h uniform** (user decision) — same-day expiry for a stolen session vs. low family re-auth friction (passkey/Google re-login is quick).
+
+### Verification
+- `just cloudflare plan` at the session-hardening stage showed **only** `session_duration` diffs on the two original apps (`720h -> 24h`): 0 add / 2 change / 0 destroy — no structural drift.
+- The final committed change additionally adds the `paperless`/`mealie` apps and drops the service-token policy from the wildcard; that portion belongs to [[forward-auth-coverage-external-data-apps]] (step C).
+
+### Commit
+- `139ab76dd` — 🔒 fix(cloudflare): scope mobile service-token to docs/recipes (carries both this roadmap's session change and forward-auth step C). Unpushed at time of writing.
+
+### Operational note
+- Cloudflare is Terraform-applied, not Flux-reconciled: `just cloudflare apply` pushes the 24h sessions live. Already-open sessions keep their old TTL; the next login gets the 24h window.
+
+### Scope boundary (why this is complete)
+- Step 1 (shorten session): **done**.
+- Step 2 (cluster-side forward-auth second gate): tracked separately in [[forward-auth-coverage-external-data-apps]]; partly advanced by the same commit's service-token scoping.
+- Step 3 (device posture / WARP): **optional**, deferred — evaluate against family usability later if desired.
