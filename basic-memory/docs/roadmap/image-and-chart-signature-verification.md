@@ -48,3 +48,45 @@ options:
 
 - relates_to [[flux-gitops]]
 - relates_to [[main-branch-protection-and-commit-signing]]
+
+## Execution plan (research-backed)
+
+### Current state
+- No OCIRepository carries `spec.verify` (audit: all ~35 sources `verify=` empty). Example: `kubernetes/apps/flux-system/flux-instance/app/ocirepository.yaml:12-15` pins only `tag: 0.54.1` on `oci://ghcr.io/controlplaneio-fluxcd/charts/flux-instance`.
+- controlplaneio-fluxcd charts/images are cosign **keyless**-signed via GitHub Actions OIDC; cert-manager (jetstack) and cilium also publish signatures.
+- Renovate already manages versions via `# renovate:` annotations (e.g. ocirepository.yaml:13).
+
+### Target state
+- The OCIRepositories whose publishers sign carry `spec.verify` (cosign), so a re-pushed/poisoned chart is rejected at fetch.
+- Critical/platform container images pinned by digest.
+
+### Implementation steps
+1. **Start with the flux-instance chart** (publisher is known-signed). Edit `kubernetes/apps/flux-system/flux-instance/app/ocirepository.yaml`, add under `spec`:
+   ```yaml
+   spec:
+     verify:
+       provider: cosign
+       matchOIDCIdentity:
+         - issuer: "^https://token\\.actions\\.githubusercontent\\.com$"
+           subject: "^https://github\\.com/controlplaneio-fluxcd/.*$"
+   ```
+   (Keyless verification needs no secret. Confirm the exact signing identity: `cosign verify ghcr.io/controlplaneio-fluxcd/charts/flux-instance:0.54.1 --certificate-oidc-issuer=... --certificate-identity-regexp=...`.)
+2. **Roll out to other signed sources** the same way: enumerate with `kubectl get ocirepository -A -o custom-columns=NS:.metadata.namespace,NAME:.metadata.name,URL:.spec.url`; for each, confirm the publisher signs (`cosign verify <ref>`), then add the matching `matchOIDCIdentity`. Prioritise: flux-operator, cert-manager, cilium, kube-prometheus-stack.
+3. **Digest-pin critical images.** In `.renovate/` add/confirm a rule enabling `pinDigests` (or the `docker:pinDigests` preset) so Renovate appends `@sha256:…` to platform images (kube-apiserver, cilium, cert-manager, 1password/connect, grafana). Keep the human-readable tag alongside the digest.
+4. Commit per conventional style: `🔒 feat(flux): cosign-verify controlplaneio OCIRepositories`.
+
+### Verification
+- `flux reconcile source oci flux-instance -n flux-system` (dangerouslyDisableSandbox) → Ready=True with a "verified signature" event: `kubectl -n flux-system describe ocirepository flux-instance | grep -i verif`.
+- Negative test (staging): point a test OCIRepository at an unsigned tag → it fails with a verification error, does not fetch.
+
+### Rollback & safety
+- Remove the `spec.verify` block and reconcile. Low blast radius: a mis-specified identity makes that ONE source fail to fetch (existing running workloads keep their last-applied state until you fix it).
+- Introduce it one source at a time; watch each reconcile before moving on.
+
+### Gotchas & dependencies
+- Getting `matchOIDCIdentity` regex wrong = source stuck NotReady; always validate with the `cosign verify` CLI first.
+- Not every image publisher signs — only add verify where a signature actually exists.
+- Complements `main-branch-protection-and-commit-signing` (git side) — together they cover both supply-chain halves.
+
+### Effort
+M (~0.5–1 day for a staged rollout across the signed sources + digest pinning).

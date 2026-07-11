@@ -53,3 +53,52 @@ related_areas:
 
 - relates_to [[cloudflare]]
 - relates_to [[cloudflare-tls-and-tfvar-hygiene]]
+
+## Execution plan (research-backed)
+
+### Current state
+- Provider authenticates with the account Global API Key: `provision/cloudflare/main.tf:46-49` → `provider "cloudflare" { ... api_key = var.CF_GLOBAL_APIKEY }` (+ email/`CF_USERNAME`). Provider is `cloudflare/cloudflare` **v5.22.0** (main.tf:19-21) — resources are v5 (`cloudflare_zone_setting`, `cloudflare_zero_trust_access_*`).
+- A scoped token already exists and is proven: used as a Bearer by `delete_stale_tunnels.sh` (`op://HomeOps/cloudflare/apitoken_1`).
+- Vars in `provision/cloudflare/variables.tf`: `CF_GLOBAL_APIKEY` (:136), `CF_USERNAME` (:131). TF runs via `op run --env-file=./.env -- terraform` (`provision/cloudflare/mod.just`).
+
+### Target state
+- The Terraform provider uses a scoped API Token limited to exactly the managed surface; the Global API Key is retired from this stack.
+
+### Implementation steps
+1. **Enumerate required permissions from the actual resources** in `provision/cloudflare/*.tf`:
+   - Zone → DNS: Edit (`dns_records.tf`)
+   - Zone → Zone Settings: Edit (`zone_settings.tf`)
+   - Zone → Zone WAF / Config Rules / Rulesets: Edit (`firewall_rules.tf`)
+   - Account → Cloudflare Tunnel: Edit (`tunnel.tf`)
+   - Account → Access: Apps and Policies + Access: Service Tokens: Edit (`access.tf`)
+   - Account → Workers Scripts + Workers KV Storage + Zone → Workers Routes: Edit (`workers.tf`)
+   - Account → Workers R2 Storage: Edit (if R2 managed)
+   - Account → Notifications: Edit (`notification.tf`)
+   - Zone → Zone: Read (baseline)
+   Create the token in the Cloudflare dashboard (My Profile → API Tokens → Create Custom Token) scoped to the home-ops zone + account only.
+2. **Add the token to 1Password** (`op://HomeOps/cloudflare` item, e.g. field `TF_VAR_CF_API_TOKEN`) and reference it in `provision/cloudflare/.env`.
+3. **Edit the provider block** `provision/cloudflare/main.tf:46-49`:
+   ```hcl
+   provider "cloudflare" {
+     api_token = var.CF_API_TOKEN
+   }
+   ```
+   Add `variable "CF_API_TOKEN" { type = string, sensitive = true }` to variables.tf; remove the `api_key`/email lines once the plan is clean.
+4. **Reproduce a clean plan:** `just cloudflare plan` (via op run) → must show **no changes** (auth swap only, not resource changes). Fix token scope until plan is clean.
+5. **Retire** `CF_GLOBAL_APIKEY` + `CF_USERNAME` from .env and variables.tf. Commit: `🔒 refactor(cloudflare): scoped API token for TF provider`.
+
+### Verification
+- `just cloudflare plan` → "No changes" with the token.
+- A deliberately out-of-scope action (e.g. touching an unrelated zone) would be denied — confirms scoping.
+
+### Rollback & safety
+- Revert main.tf/variables.tf/.env to the Global API Key. State is unaffected (auth method change only).
+- **Risk:** a missing permission makes `terraform apply` fail mid-run (partial apply). Do a full `plan` + a no-op `apply` first; keep the Global API Key available until the token is proven across a real apply.
+
+### Gotchas & dependencies
+- v5 provider: confirm attribute name is `api_token` (it is in cloudflare/cloudflare v5).
+- Enable `sensitive=true` on the new var (see `cloudflare-tls-and-tfvar-hygiene`).
+- Token needs BOTH zone-scoped and account-scoped permissions (Access/Tunnel/Workers/R2 are account-level).
+
+### Effort
+M (~3–4h, mostly getting the permission scope exactly right).
