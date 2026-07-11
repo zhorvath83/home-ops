@@ -10,6 +10,7 @@ spec:
       app.kubernetes.io/name: calibre-web-automated
   components:
     - ../../../../components/volsync
+    - ../../../../components/zeroscaler
   dependsOn:
     - name: onepassword-connect
       namespace: external-secrets

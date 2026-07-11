@@ -11,6 +11,7 @@ spec:
   components:
     - ../../../../components/gpu
     - ../../../../components/volsync
+    - ../../../../components/zeroscaler
   dependsOn:
     - name: onepassword-connect
       namespace: external-secrets

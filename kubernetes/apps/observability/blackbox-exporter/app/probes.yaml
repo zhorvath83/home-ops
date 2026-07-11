@@ -1,17 +1,16 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/monitoring.coreos.com/probe_v1.json
 # Probe CRs are scraped by the kube-prometheus-stack Prometheus once its probeSelector
-# is match-all (probeSelectorNilUsesHelmValues: false). nas.lan resolves in-cluster to 192.168.1.10.
+# is match-all (probeSelectorNilUsesHelmValues: false).
 apiVersion: monitoring.coreos.com/v1
 kind: Probe
 metadata:
-  name: nas-icmp
+  name: devices
 spec:
-  jobName: nas
+  jobName: devices_probe
   interval: 60s
   module: icmp
   prober:
-    # Bare host[:port] — the operator rejects http:// here and builds the /probe URL itself.
     url: prometheus-blackbox-exporter.observability.svc.cluster.local:9115
   targets:
     staticConfig:
@@ -21,13 +20,12 @@ spec:
 apiVersion: monitoring.coreos.com/v1
 kind: Probe
 metadata:
-  name: nfs-tcp
+  name: nfs
 spec:
-  jobName: nfs
+  jobName: nfs_probe
   interval: 60s
   module: tcp_connect
   prober:
-    # Bare host[:port] — the operator rejects http:// here and builds the /probe URL itself.
     url: prometheus-blackbox-exporter.observability.svc.cluster.local:9115
   targets:
     staticConfig:

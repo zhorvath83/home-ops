@@ -8,6 +8,8 @@ spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: resticprofile
+  components:
+    - ../../../../components/zeroscaler
   dependsOn:
     - name: onepassword-connect
       namespace: external-secrets
@@ -17,6 +19,7 @@ spec:
   path: ./kubernetes/apps/selfhosted/resticprofile/app
   postBuild:
     substitute:
+      APP: resticprofile
       APP_UID: "0"
       APP_GID: "0"
   prune: true

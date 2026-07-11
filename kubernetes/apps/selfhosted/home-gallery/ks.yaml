@@ -8,11 +8,16 @@ spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: home-gallery
+  components:
+    - ../../../../components/zeroscaler
   dependsOn:
     - name: democratic-csi
       namespace: kube-system
   interval: 1h
   path: ./kubernetes/apps/selfhosted/home-gallery/app
+  postBuild:
+    substitute:
+      APP: home-gallery
   prune: true
   sourceRef:
     kind: GitRepository
