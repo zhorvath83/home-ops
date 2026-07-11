@@ -1,0 +1,12 @@
+---
+# Silence KubeHpaMaxedOut: zeroscaler HPAs (max=1, min=0) are "maxed out" by design when the
+# NFS probe is healthy, so the kubernetes-apps (max != min) guard does not exclude them.
+# The alert stays visible in Prometheus/Alertmanager; this only suppresses notifications.
+apiVersion: observability.giantswarm.io/v1alpha2
+kind: Silence
+metadata:
+  name: hpa-maxed-out
+spec:
+  matchers:
+    - name: alertname
+      value: KubeHpaMaxedOut

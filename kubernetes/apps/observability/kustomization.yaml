@@ -13,3 +13,4 @@ resources:
   - ./victoria-logs/ks.yaml
   - ./blackbox-exporter/ks.yaml
   - ./prometheus-adapter/ks.yaml
+  - ./silence-operator/ks.yaml

@@ -1,0 +1,40 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
+# silence-operator (AD-023): custom-egress opt-out, so this CNP is the sole egress source —
+# kube-apiserver (watch/reconcile Silence CRs) and the Alertmanager API (:9093, create silences).
+# Prometheus scrape ingress on :8080 (chart PodMonitor). DNS via the cluster-wide allow-dns-egress CCNP.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: silence-operator
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: silence-operator
+  ingress:
+    # Prometheus scrape (chart PodMonitor, metrics on :8080).
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: observability
+            app.kubernetes.io/name: prometheus
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+  egress:
+    # kube-apiserver — the operator watches/reconciles Silence CRs via the K8s API.
+    - toEntities:
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - port: "6443"
+              protocol: TCP
+    # Alertmanager API — the operator creates/maintains AM silences from Silence CRs.
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: observability
+            app.kubernetes.io/name: alertmanager
+      toPorts:
+        - ports:
+            - port: "9093"
+              protocol: TCP
