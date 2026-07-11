@@ -16,6 +16,7 @@ spec:
     # Grafana provisioning API, url-sourced dashboard downloads).
     podLabels:
       ingress.home.arpa/prometheus: "true"
+      ingress.home.arpa/allow-prometheus: "true"
       egress.home.arpa/custom-egress: "true"
     resources:
       requests:

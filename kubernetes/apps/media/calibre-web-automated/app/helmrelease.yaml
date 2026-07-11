@@ -16,6 +16,8 @@ spec:
       # AD-023 vocabulary: envoy-routed (gateways CCNP) + custom-egress (per-app CNP → SMTP2GO only) + allow-gateways (upcoming OIDC hairpin)
       labels:
         ingress.home.arpa/gateways: "true"
+        ingress.home.arpa/allow-gateway-external: "true"
+        ingress.home.arpa/allow-gateway-internal: "true"
         egress.home.arpa/custom-egress: "true"
         egress.home.arpa/allow-gateways: "true"
       securityContext:

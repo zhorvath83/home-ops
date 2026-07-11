@@ -19,7 +19,9 @@ spec:
       podLabels:
         egress.home.arpa/custom-egress: "true"
         ingress.home.arpa/gateways: "true"
+        ingress.home.arpa/allow-gateway-internal: "true"
         ingress.home.arpa/prometheus: "true"
+        ingress.home.arpa/allow-prometheus: "true"
       persistentVolume:
         enabled: true
         size: 10Gi

@@ -42,6 +42,7 @@ spec:
     podLabels:
       egress.home.arpa/custom-egress: "true"
       ingress.home.arpa/prometheus: "true"
+      ingress.home.arpa/allow-prometheus: "true"
     resources:
       requests:
         cpu: 5m

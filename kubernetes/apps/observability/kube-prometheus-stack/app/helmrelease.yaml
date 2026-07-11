@@ -81,7 +81,9 @@ spec:
         podMetadata:
           labels:
             ingress.home.arpa/gateways: "true"
+            ingress.home.arpa/allow-gateway-internal: "true"
             ingress.home.arpa/prometheus: "true"
+            ingress.home.arpa/allow-prometheus: "true"
             egress.home.arpa/allow-world: "true"
         resources:
           requests:

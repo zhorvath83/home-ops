@@ -16,6 +16,7 @@ spec:
       # AD-023 vocabulary: envoy-routed app, ingress from gateways (ingress-from-gateways CCNP); custom-egress (per-app CNP) for OVH S3 + hc-ping.com
       labels:
         ingress.home.arpa/gateways: "true"
+        ingress.home.arpa/allow-gateway-internal: "true"
         egress.home.arpa/custom-egress: "true"
       securityContext:
         runAsNonRoot: true

@@ -16,6 +16,7 @@ spec:
       # AD-023 vocabulary: envoy-routed (gateways CCNP)
       labels:
         ingress.home.arpa/gateways: "true"
+        ingress.home.arpa/allow-gateway-internal: "true"
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000

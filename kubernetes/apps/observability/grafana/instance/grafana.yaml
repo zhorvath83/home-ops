@@ -60,7 +60,9 @@ spec:
           labels:
             app.kubernetes.io/name: grafana
             ingress.home.arpa/gateways: "true"
+            ingress.home.arpa/allow-gateway-internal: "true"
             ingress.home.arpa/prometheus: "true"
+            ingress.home.arpa/allow-prometheus: "true"
             egress.home.arpa/custom-egress: "true"
             egress.home.arpa/allow-gateways: "true"
         spec:

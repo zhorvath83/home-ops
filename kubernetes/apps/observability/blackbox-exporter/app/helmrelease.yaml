@@ -48,6 +48,7 @@ spec:
     pod:
       labels:
         ingress.home.arpa/prometheus: "true"
+        ingress.home.arpa/allow-prometheus: "true"
         egress.home.arpa/custom-egress: "true"
     serviceMonitor:
       # Exporter's own /metrics (blackbox_exporter_* used by dashboard 7587).

@@ -16,6 +16,7 @@ spec:
       podLabels:
         egress.home.arpa/custom-egress: "true"
         ingress.home.arpa/prometheus: "true"
+        ingress.home.arpa/allow-prometheus: "true"
       annotations:
         reloader.stakater.com/auto: "true"
       api:

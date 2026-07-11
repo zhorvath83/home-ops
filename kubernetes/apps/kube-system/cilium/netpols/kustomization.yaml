@@ -7,6 +7,8 @@ resources:
   - ./allow-dns-egress.yaml
   - ./allow-gateways-egress.yaml
   - ./allow-world-egress.yaml
+  - ./ingress-from-gateway-external.yaml
+  - ./ingress-from-gateway-internal.yaml
   - ./ingress-from-gateways.yaml
   - ./ingress-from-prometheus.yaml
   - ./ingress-none.yaml

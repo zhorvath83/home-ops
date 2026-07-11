@@ -1,0 +1,21 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumclusterwidenetworkpolicy_v2.json
+# Ingress from envoy-internal ONLY (label ingress.home.arpa/allow-gateway-internal="true").
+apiVersion: cilium.io/v2
+kind: CiliumClusterwideNetworkPolicy
+metadata:
+  name: ingress-from-gateway-internal
+spec:
+  endpointSelector:
+    matchLabels:
+      ingress.home.arpa/allow-gateway-internal: "true"
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: networking
+            app.kubernetes.io/name: envoy
+          matchExpressions:
+            - key: gateway.envoyproxy.io/owning-gateway-name
+              operator: In
+              values:
+                - envoy-internal

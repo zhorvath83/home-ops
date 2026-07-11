@@ -16,6 +16,7 @@ spec:
       labels:
         egress.home.arpa/allow-world: "true"
         ingress.home.arpa/gateways: "true"
+        ingress.home.arpa/allow-gateway-internal: "true"
     controllers:
       kopia:
         annotations:
