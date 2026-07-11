@@ -131,12 +131,54 @@ resource "cloudflare_zero_trust_access_identity_provider" "google_oauth" {
 # Applications
 
 ## Private cloud
+## Wildcard fallback for every subdomain without its own Access app.
+## The service-token (non_identity) policy is intentionally NOT here: it is
+## scoped to the specific apps that need header-based access (docs, recipes),
+## so the mobile token can no longer bypass identity on every host.
 resource "cloudflare_zero_trust_access_application" "private_cloud" {
   zone_id          = cloudflare_zone.domain.id
   name             = "Private Cloud"
   domain           = "*.${var.CF_DOMAIN_NAME}"
   type             = "self_hosted"
-  session_duration = "720h"
+  session_duration = "24h"
+
+  policies = [
+    {
+      id         = cloudflare_zero_trust_access_policy.unrestricted_users_policy.id
+      precedence = 1
+    }
+  ]
+}
+
+## Paperless (docs) — Paperless mobile client authenticates via CF Access
+## service-token headers, so this host keeps the non_identity policy.
+resource "cloudflare_zero_trust_access_application" "paperless" {
+  zone_id          = cloudflare_zone.domain.id
+  name             = "Paperless"
+  domain           = "docs.${var.CF_DOMAIN_NAME}"
+  type             = "self_hosted"
+  session_duration = "24h"
+
+  policies = [
+    {
+      id         = cloudflare_zero_trust_access_policy.service_token_auth.id
+      precedence = 1
+    },
+    {
+      id         = cloudflare_zero_trust_access_policy.unrestricted_users_policy.id
+      precedence = 2
+    }
+  ]
+}
+
+## Mealie (recipes) — mobile client authenticates via CF Access service-token
+## headers, so this host keeps the non_identity policy.
+resource "cloudflare_zero_trust_access_application" "mealie" {
+  zone_id          = cloudflare_zone.domain.id
+  name             = "Mealie"
+  domain           = "recipes.${var.CF_DOMAIN_NAME}"
+  type             = "self_hosted"
+  session_duration = "24h"
 
   policies = [
     {
@@ -156,7 +198,7 @@ resource "cloudflare_zero_trust_access_application" "private_cloud_photos" {
   name             = "Private Cloud Photos"
   domain           = "fenykepek.${var.CF_DOMAIN_NAME}"
   type             = "self_hosted"
-  session_duration = "720h"
+  session_duration = "24h"
 
   policies = [{
     id = cloudflare_zero_trust_access_policy.restricted_user_policy.id
