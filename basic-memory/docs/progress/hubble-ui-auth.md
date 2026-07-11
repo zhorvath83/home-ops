@@ -5,7 +5,7 @@ permalink: home-ops/docs/progress/hubble-ui-auth
 topic: Guard the Cilium Hubble UI (hubble.${PUBLIC_DOMAIN}, envoy-internal) with tinyauth
   forward-auth
 status: implemented
-roadmap: '[[hubble-ui-auth]]'
+roadmap: null
 related_areas:
 - networking
 - observability
@@ -28,8 +28,21 @@ tags:
 
 - [topic] Guard the Cilium Hubble UI (hubble.${PUBLIC_DOMAIN}, envoy-internal) with tinyauth forward-auth
 - [status] implemented (pending live verify after push + Pocket-ID group)
-- [roadmap] [[hubble-ui-auth]] (docs/roadmap)
 - [priority] medium
+
+## Scope (from roadmap)
+
+Expose the Cilium Hubble UI via a Gateway API HTTPRoute (attached to `envoy-internal`) with an authentication layer in front. Originally two auth options were considered — Anubis (lightweight proof-of-work / SSO middleware) or HTTP basic-auth via an Envoy `SecurityPolicy`. Previously Hubble UI was only accessible via `kubectl port-forward`.
+
+## Rationale (from roadmap)
+
+Hubble flow log access during debugging is significantly faster with a persistent web UI than per-session port-forward. The data exposed (cluster pod-to-pod flow metadata) is sensitive enough to warrant auth — open-on-LAN is not acceptable since it would expose flow patterns to anyone on the network.
+
+## Options considered (from roadmap)
+
+1. Anubis — proof-of-work / lightweight SSO; consistent if we plan to add it for other apps later
+2. HTTP basic-auth via Envoy `SecurityPolicy` — simpler, no new component
+3. **tinyauth forward-auth** (chosen) — the cluster standard for OIDC-less apps; see Decisions below
 
 ## Decisions (decided with human, 2026-07-11)
 
@@ -68,12 +81,11 @@ tags:
 ## Tradeoffs / follow-ups
 
 - [observation] Transient deploy window: both Kustomizations land in one commit/push. If the cilium SecurityPolicy is accepted before the tinyauth pod reloads the new `hubbleui` ACL (Reloader restart), there is a seconds-long "no matching app" state in tinyauth. Strict improvement over the previous fully-open state; negligible on a single-user home cluster.
-- [follow-up] After live verify passes, set the roadmap note [[hubble-ui-auth]] status to done and confirm the iam area-reference ReferenceGrant coverage list (currently lists networking/selfhosted/media/observability — now also kube-system).
+- [follow-up] Confirm the iam area-reference ReferenceGrant coverage list (currently lists networking/selfhosted/media/observability — now also kube-system).
 - [follow-up] Consider adding hubble-ui to the iam area-reference OIDC-less app registry once verified.
 
 ## Relations
 
-- implements [[hubble-ui-auth]]
 - relates_to [[iam]]
 - relates_to [[networking]]
 - relates_to [[observability]]
@@ -98,4 +110,4 @@ tags:
 ### Remaining (HUMAN GATE)
 
 - [action] Create the `hubble_users` group in the Pocket-ID UI and add the user(s). Until then hubble-ui is fail-closed: curl → 401 → login redirect → after Pocket-ID login, tinyauth denies because the user is not in `hubble_users`. This is the intended secure state. Once the group exists and the user is in it, the same flow returns 200 (Hubble UI).
-- [follow-up] After the group is created and 200 access confirmed, set the roadmap note [[hubble-ui-auth]] status to done and add hubble-ui to the iam area-reference OIDC-less app registry; update the iam ReferenceGrant coverage list to include kube-system.
+- [follow-up] After the group is created and 200 access confirmed, add hubble-ui to the iam area-reference OIDC-less app registry; update the iam ReferenceGrant coverage list to include kube-system.
