@@ -59,3 +59,8 @@ NAS/NFS down → probe_success{job=nfs_probe} → 0 → HPA ceil(0/1)=0 → minR
 - relates_to [[k8s-workloads]]
 - relates_to [[observability]]
 - relates_to [[observability-probes-and-disk-health]]
+
+
+## Follow-up — KubeHpaMaxedOut silencing (2026-07-11)
+
+- [follow-up] The zeroscaler HPAs (maxReplicas:1, minReplicas:0) are permanently "maxed out" while the NFS probe is healthy (desired=1=max); the kubernetes-apps KubeHpaMaxedOut rule guard `max != min` does not exclude them → 11 constant firing warnings. Suppressed via the giantswarm silence-operator + a GitOps-managed Silence CR. See [[silence-operator]].

@@ -171,3 +171,20 @@ See [[grafana-operator-migration]] (progress) for the full execution log.
 - [observation] The `prometheusrules/` subtree now holds three rule files: `oomkilled.yaml`, `hubble-policy-deny.yaml`, `dns-exfil.yaml`. `HubblePolicyDeny` remains `> 0` with no `for:` — the rollout-transient tuning was deliberately deferred (per user decision).
 
 See [[cnp-per-app-audit]] (progress) Sessions 19–21 for the execution log.
+
+
+## Update — 2026-07-11: prometheus-adapter (External Metrics API) + silence-operator (KubeHpaMaxedOut silencing)
+
+Three observability components the Summary/Components above pre-date — all OCIRepository-backed HelmReleases with AD-023 CNPs, dependsOn kube-prometheus-stack:
+
+- [observation] **blackbox-exporter** (`kubernetes/apps/observability/blackbox-exporter/`): Probe CRs `devices` (jobName devices_probe, module icmp, target nas.lan) and `nfs` (jobName nfs_probe, module tcp_connect, target nas.lan:2049). prober url `prometheus-blackbox-exporter.observability.svc.cluster.local:9115` (fullnameOverride). Emits `probe_success{job=<jobName>}`. Deployed as part of the grafana-operator-migration P4; jobName renamed 2026-07-11 to symmetric `<name>_probe` for the zeroscaler metric selector.
+- [observation] **prometheus-adapter** (`kubernetes/apps/observability/prometheus-adapter/`): serves `external.metrics.k8s.io` (APIService v1beta1.external.metrics.k8s.io, Available=True). Chart `oci://ghcr.io/prometheus-community/charts/prometheus-adapter` 4.12.0. values: `rules.default: false` + one external rule mapping `probe_success` with `max_over_time(...[1m])` smoothing, `resources.namespaced: false`. Required so an HPA with `metrics[].type: External` can resolve (unblocks the zeroscaler scale-to-zero pattern — see [[nfs-dependency-zeroscaler]]). No cert-manager (chart default insecureSkipTLSVerify + self-signed cert). End-to-end verified: `kubectl get --raw /apis/external.metrics.k8s.io/v1beta1/.../probe_success?labelSelector=job%3Dnfs_probe` returns value 1; HPA paperless reports ScalingActive=True / ValidMetricFound.
+- [observation] **silence-operator** (`kubernetes/apps/observability/silence-operator/`): giantswarm silence-operator (chart `oci://gsci.azurecr.io/charts/giantswarm/silence-operator` 0.20.1, new registry) reconciles `Silence` CRs (CRD `observability.giantswarm.io/v1alpha2`; chart also installs the legacy v1alpha1 `monitoring.giantswarm.io` CRD) into Alertmanager API silences. Two Flux Kustomizations in one ks.yaml: `silence-operator` (app/, healthCheck on HR) + `silence-operator-silences` (silences/, dependsOn silence-operator). values: `alertmanagerAddress: http://alertmanager-operated.observability.svc.cluster.local:9093`, `networkPolicy.enabled: false`. AD-023 CNP restricts egress to kube-apiserver:6443 + alertmanager:9093, ingress prometheus:8080 (chart PodMonitor). silence-operator added to the alertmanager CNP ingress allowlist (functional — the alertmanager CNP is ingress default-deny).
+- [observation] **KubeHpaMaxedOut silenced**: the zeroscaler HPAs (maxReplicas:1, minReplicas:0) are permanently "maxed out" while the NFS probe is healthy (desired=1=max); the kubernetes-apps rule guard `max != min` does not exclude them → 11 constant firing warnings. A global `Silence` CR `hpa-maxed-out` (`matchers: [{alertname: KubeHpaMaxedOut}]`) suppresses notifications (perpetual, ends 2126). The alerts stay visible in Alertmanager (state=suppressed); only the Pushover notification is suppressed. Reversible by deleting the Silence CR.
+- [decision] Chose the silence-operator approach (bjw-s pattern) over disabling/modifying the default KubeHpaMaxedOut rule: keeps the alert visible in Prometheus, GitOps-managed + reversible (CR delete), reusable for future silences. Cost: a new lightweight operator + two CRDs. Scope caveat: the silence is global (not per-HPA) — acceptable today because no maxReplicas>1 HPA exists; revisit (add horizontalpodautoscaler/namespace matchers) if a real autoscaling HPA is added.
+
+## Relations
+
+- relates_to [[prometheus-adapter]]
+- relates_to [[nfs-dependency-zeroscaler]]
+- relates_to [[silence-operator]]
