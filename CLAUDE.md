@@ -79,7 +79,7 @@ This project uses **Claude Code** with a **skill composition model**:
 ## What the Personal Layer Provides
 
 The personal layer (`~/.claude/`) provides global rules and skills available in ALL projects:
-- **Rules** (always loaded): security-principles, code-generation, working-principles, code-style, spec-driven-development, MCP access, BM access, tool assignment, document constraints, operating rules, testing principles, agent-mode, gitlab-workflow, gitops-principles — note: `gitlab-workflow`'s GitLab-specific behaviors (MR terminology, GitLab MCP, master branch) are overridden by the Source Control Platform section above
+- **Rules** (always loaded): security-principles, code-generation, working-principles, code-style, spec-driven-development, MCP access, BM access, tool assignment, document constraints, operating rules, testing principles, operating-modes, gitlab-workflow, gitops-principles — note: `gitlab-workflow`'s GitLab-specific behaviors (MR terminology, GitLab MCP, master branch) are overridden by the Source Control Platform section above
 - **Skills** (on-demand): session management, project-memory (project↔wiki boundary routing), language development, role skills (investigation, security-audit, test-writing, refactoring, API design, DB design, macOS)
 - **CLAUDE.md** (`~/.claude/CLAUDE.md`): global routing table pointing to all rules and skills
 - **Read-only**: `~/.claude/` is a deployed artifact — NEVER modify directly. Changes go through the template's `personal/` layer and `/updatepersonal`.

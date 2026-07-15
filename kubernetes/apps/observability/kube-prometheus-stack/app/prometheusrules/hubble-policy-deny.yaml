@@ -21,8 +21,16 @@ spec:
               unless
               increase(hubble_drop_total{reason="POLICY_DENIED", destination_namespace="downloads", destination_pod=~"qbittorrent-.*", traffic_direction="ingress", protocol=~"ICMPv[46]"}[5m])
             )
+        # plex-trakt-sync egress uses Cilium toFQDNs for trakt.tv/plex.tv; the
+        # first connection to a freshly-resolved IP can race the DNS-proxy cache
+        # update and drop 1-2 SYNs before succeeding. Threshold only this app so
+        # a transient race (~2/5m) doesn't page, while a sustained/repeated deny
+        # (>5/5m — real leak or stuck retry) still does. Every other app keeps >0.
         - alert: HubblePolicyDeny
-          expr: hubble_policy_denied_increase5m > 0
+          expr: |
+            hubble_policy_denied_increase5m{source_pod!~"plex-trakt-sync-.*"} > 0
+            or
+            hubble_policy_denied_increase5m{source_pod=~"plex-trakt-sync-.*"} > 3
           labels:
             severity: critical
           annotations:
