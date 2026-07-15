@@ -46,7 +46,6 @@ spec:
               TINYAUTH_AUTH_TRUSTEDPROXIES: 10.244.0.0/16
               TINYAUTH_RESOURCES_PATH: /data/resources
               TINYAUTH_DATABASE_PATH: /data/tinyauth.db
-              # v5.1.0 fatals on rest.InClusterConfig() if the kubernetes label provider is
               # auto-detected with no SA token (automount disabled); env-based apps, not labels.
               TINYAUTH_LABEL_PROVIDER: "none"
               TINYAUTH_AUTH_SECURECOOKIE: "true"
