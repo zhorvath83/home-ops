@@ -5,7 +5,7 @@ permalink: home-ops/docs/areas/iam
 area: iam
 status: current
 confidence: high
-verified_at: '2026-07-10'
+verified_at: '2026-07-16'
 summary: Centralized Identity and Access Management using Pocket-ID as the primary
   OIDC provider and TinyAuth as a forward-auth proxy for non-OIDC workloads.
 verified_against:
@@ -81,20 +81,30 @@ To add a new application to the IAM system:
 
 ## 4. Known Limitations & Warnings
 
-### TinyAuth v5.0.7 Nil-ACL Behaviour (CRITICAL)
-- **Bug**: In TinyAuth v5.0.7, the `OAuthGroupRule` returns `Allow` when no per-app ACL is defined. This means **any authenticated Pocket-ID user can access an OIDC-less app** unless an explicit `TINYAUTH_APPS_<NAME>_OAUTH_GROUPS` block exists.
-- **Mitigation**: Always add the per-app ACL block in the TinyAuth `HelmRelease` values **before** enabling the `forward-auth` component for the app.
-- **Future fix**: `TINYAUTH_AUTH_ACLS_POLICY: deny` is available in TinyAuth `main` but not yet in a stable release. Monitor upstream and adopt as soon as released.
+### TinyAuth v5.1.0 ACL Behaviour (CRITICAL)
 
+TinyAuth was upgraded to v5.1.0 on 2026-07-16 (image `ghcr.io/tinyauthapp/tinyauth:v5.1.0`). The ACL engine changed in two ways affecting the forward-auth PEP posture:
+
+- **deny-by-default is now ENABLED** (`TINYAUTH_AUTH_ACLS_POLICY: deny`): nil ACL / unknown host -> Deny (fail-closed). The v5.0.7 nil-ACL allow-all trap is closed. This was previously a "future fix in main"; it shipped in v5.1.0 and is now set in the HelmRelease.
+- **NEW v5.1.0 trap -- empty `oauth.whitelist` denies OAuth users**: `UserAllowedRule` runs first (before `OAuthGroupRule`). In v5.1.0 `utils.CheckFilter` returns `(false, ErrFilterEmpty)` for an empty filter, and the OAuth branch of `UserAllowedRule` treats ANY error (incl. `ErrFilterEmpty`) as `EffectDeny` -- NOT Abstain. So an app with `OAUTH_GROUPS` but no `OAUTH_WHITELIST` denies every OAuth user before the group check runs (asymmetry: the `users.allow` branch treats `ErrFilterEmpty` as Abstain; the OAuth branch does not).
+- **Mitigation (DEPLOYED)**: every forward-auth app sets `TINYAUTH_APPS_<NAME>_OAUTH_WHITELIST: "/.*/"` (passes any authenticated email) above `TINYAUTH_APPS_<NAME>_OAUTH_GROUPS`; access control defers to the group rule. Mandatory for every OIDC-less app on v5.1.0.
+- **Matching is by `CONFIG_DOMAIN` (host), not the app ID**; `TINYAUTH_APPS_<NAME>_CONFIG_DOMAIN` is required. The app ID must be a single token -- paerser's env decoder turns `_` into `.`, so an underscored ID does not bind the ACL and the deny policy catches it.
+- **Upstream status**: the empty-whitelist asymmetry is NOT fixed upstream (`UserAllowedRule` still returns Deny on `ErrFilterEmpty` for OAuth). The `/.*/` whitelist is the stable workaround, not a fix to remove later.
+
+### TinyAuth v5.1.0 SQLite Migration -- One-Way, No Rollback (CRITICAL)
+
+- v5.1.0 added sqlite migrations `000009_oidc_userinfo_profile` and `000010_oidc_rework` (v5.0.7 has only 000001-000008). The DB on the `tinyauth` PVC is migrated to version 10 on first v5.1.0 boot.
+- **Rolling back from v5.1.0 to v5.0.7 is FATAL**: v5.0.7 has no v9/v10 down-migration, so it crashes with `no migration found for version 10: read down for version 10 migrations: file does not exist`. This caused the 2026-07-16 outage: the v5.1.0 rollout timed out (10m HelmRelease timeout; reason not retained in logs), Flux `remediateLastFailure` rolled back to v5.0.7, and v5.0.7 crash-looped against the v10 DB.
+- **Lesson**: the v5.1.0 DB migration is one-way. Do NOT roll tinyauth back across the v5.0.7 <-> v5.1.0 boundary. If v5.1.0 must be reverted, the `tinyauth` PVC DB must be reset first (v5.1.0 re-migrates an empty DB cleanly; v5.0.7 cannot run a v10 DB). The DB holds sessions only -- users/groups live in Pocket-ID -- so a reset forces re-login, not data loss.
+- **Recovery applied 2026-07-16**: re-deployed v5.1.0 (DB already at v10, no re-migration) with the ACL fix above.
 ### Forward-Auth Onboarding Checklist (Mandatory for Every New OIDC-less App)
 1. [ ] Create `appname_users` group in Pocket-ID UI.
-2. [ ] Add `TINYAUTH_APPS_<APP_NAME>_CONFIG_DOMAIN` and `TINYAUTH_APPS_<APP_NAME>_OAUTH_GROUPS` to TinyAuth `HelmRelease` values.
-3. [ ] Add `forward-auth` Kustomize component to the app's `ks.yaml`.
+2. [ ] Add `TINYAUTH_APPS_<APP_NAME>_CONFIG_DOMAIN`, `TINYAUTH_APPS_<APP_NAME>_OAUTH_WHITELIST: "/.*/"`, and `TINYAUTH_APPS_<APP_NAME>_OAUTH_GROUPS` to the TinyAuth `HelmRelease` values (the whitelist is mandatory on v5.1.0 -- see the v5.1.0 ACL section above).
+3. [ ] Add the `forward-auth` Kustomize component to the app's `ks.yaml`.
 4. [ ] Verify the app's namespace is listed in the `tinyauth-extauth` `ReferenceGrant` in the `security` namespace.
 5. [ ] Verify the app is unreachable without login and that only the designated group can access it.
-
 ### ReferenceGrant Namespace Coverage
-- The `tinyauth-extauth` `ReferenceGrant` currently authorises `SecurityPolicy` resources in: `networking`, `selfhosted`, `media`, `observability`.
+- The `tinyauth-extauth` `ReferenceGrant` currently authorises `SecurityPolicy` resources in: `networking`, `selfhosted`, `media`, `downloads`, `kube-system`, `observability`.
 - When adding a forward-auth app in a **new namespace**, extend the `ReferenceGrant` first or the `SecurityPolicy` will be rejected by Envoy Gateway.
 
 ## 5. Operational Findings from Security Audit (2026-06-15)
