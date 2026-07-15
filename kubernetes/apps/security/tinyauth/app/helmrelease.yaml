@@ -89,7 +89,7 @@ spec:
               TINYAUTH_APPS_prowlarr_OAUTH_WHITELIST: "/.*/"
               TINYAUTH_APPS_prowlarr_OAUTH_GROUPS: prowlarr_users
               TINYAUTH_APPS_qbittorrent_CONFIG_DOMAIN: "bt.${PUBLIC_DOMAIN}"
-              # TINYAUTH_APPS_qbittorrent_OAUTH_WHITELIST: "/.*/"
+              TINYAUTH_APPS_qbittorrent_OAUTH_WHITELIST: "/.*/"
               TINYAUTH_APPS_qbittorrent_OAUTH_GROUPS: qbittorrent_users
               TINYAUTH_APPS_radarr_CONFIG_DOMAIN: "movies.${PUBLIC_DOMAIN}"
               TINYAUTH_APPS_radarr_OAUTH_WHITELIST: "/.*/"
