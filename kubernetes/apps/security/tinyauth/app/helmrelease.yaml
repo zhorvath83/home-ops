@@ -47,7 +47,7 @@ spec:
               TINYAUTH_RESOURCES_PATH: /data/resources
               TINYAUTH_DATABASE_PATH: /data/tinyauth.db
               # auto-detected with no SA token (automount disabled); env-based apps, not labels.
-              TINYAUTH_LABEL_PROVIDER: "none"
+              TINYAUTH_LABELPROVIDER: "none"
               TINYAUTH_AUTH_SECURECOOKIE: "true"
               # 8h sliding idle, 7d hard cap.
               TINYAUTH_AUTH_SESSIONEXPIRY: 28800
