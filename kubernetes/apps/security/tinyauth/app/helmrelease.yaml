@@ -34,7 +34,7 @@ spec:
             image:
               # renovate: datasource=docker depName=ghcr.io/tinyauthapp/tinyauth
               repository: ghcr.io/tinyauthapp/tinyauth
-              tag: v5.1.0@sha256:b16837b6b88dcfdc43881a1efb30b913bb5a82ae6a3f85486841f817f6f6649d
+              tag: v5.1.0-distroless@sha256:c00730e3571b68395cadae94ee7934421ba48c60355605f4e770142b36a30c8b
             env:
               TZ: "${TIMEZONE}"
               TINYAUTH_UI_TITLE: "Authentication"
