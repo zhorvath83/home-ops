@@ -34,7 +34,7 @@ spec:
             image:
               # renovate: datasource=docker depName=ghcr.io/tinyauthapp/tinyauth
               repository: ghcr.io/tinyauthapp/tinyauth
-              tag: v5.1.0-distroless@sha256:c00730e3571b68395cadae94ee7934421ba48c60355605f4e770142b36a30c8b
+              tag: v5.1.1-rc.1-distroless@sha256:a77605a9bb031db80f8a6f218052ef5b4f23398d1c281e4717d0b6f523ae432f
             env:
               TZ: "${TIMEZONE}"
               TINYAUTH_UI_TITLE: "Authentication"
@@ -67,41 +67,30 @@ spec:
               TINYAUTH_OAUTH_PROVIDERS_POCKETID_TOKENURL: "https://id.${PUBLIC_DOMAIN}/api/oidc/token"
               TINYAUTH_OAUTH_PROVIDERS_POCKETID_USERINFOURL: "https://id.${PUBLIC_DOMAIN}/api/oidc/userinfo"
               # Per-app ACLs are MANDATORY (nil ACL → OAuthGroupRule Allow, any user passes).
-              # v5.1.0 asymmetry: empty oauth.whitelist makes UserAllowedRule deny OAuth users
-              # (ErrFilterEmpty → Deny, not Abstain), so OAUTH_WHITELIST "/.*/" passes any
-              # authenticated email and defers access control to OAUTH_GROUPS.
+              # Empty oauth.whitelist now abstains (v5.1.1 fix #1010, was Deny in v5.1.0), so
+              # access control defers to OAUTH_GROUPS with no whitelist "/.*/" workaround needed.
               # Matching is by CONFIG_DOMAIN (host), not the app ID.
               TINYAUTH_APPS_bazarr_CONFIG_DOMAIN: "subs.${PUBLIC_DOMAIN}"
-              TINYAUTH_APPS_bazarr_OAUTH_WHITELIST: "/.*/"
               TINYAUTH_APPS_bazarr_OAUTH_GROUPS: bazarr_users
               TINYAUTH_APPS_echo_CONFIG_DOMAIN: "echo.${PUBLIC_DOMAIN}"
-              TINYAUTH_APPS_echo_OAUTH_WHITELIST: "/.*/"
               TINYAUTH_APPS_echo_OAUTH_GROUPS: echo_server_users
               # App ID must be a single token: paerser's env decoder turns underscores into
               # dots, so an underscored ID would not bind the ACL (nil-ACL allow-all leaks).
               TINYAUTH_APPS_hubbleui_CONFIG_DOMAIN: "hubble.${PUBLIC_DOMAIN}"
-              TINYAUTH_APPS_hubbleui_OAUTH_WHITELIST: "/.*/"
               TINYAUTH_APPS_hubbleui_OAUTH_GROUPS: hubble_users
               TINYAUTH_APPS_maintainerr_CONFIG_DOMAIN: "maintainerr.${PUBLIC_DOMAIN}"
-              TINYAUTH_APPS_maintainerr_OAUTH_WHITELIST: "/.*/"
               TINYAUTH_APPS_maintainerr_OAUTH_GROUPS: maintainerr_users
               TINYAUTH_APPS_prowlarr_CONFIG_DOMAIN: "indexers.${PUBLIC_DOMAIN}"
-              TINYAUTH_APPS_prowlarr_OAUTH_WHITELIST: "/.*/"
               TINYAUTH_APPS_prowlarr_OAUTH_GROUPS: prowlarr_users
               TINYAUTH_APPS_qbittorrent_CONFIG_DOMAIN: "bt.${PUBLIC_DOMAIN}"
-              TINYAUTH_APPS_qbittorrent_OAUTH_WHITELIST: "/.*/"
               TINYAUTH_APPS_qbittorrent_OAUTH_GROUPS: qbittorrent_users
               TINYAUTH_APPS_radarr_CONFIG_DOMAIN: "movies.${PUBLIC_DOMAIN}"
-              TINYAUTH_APPS_radarr_OAUTH_WHITELIST: "/.*/"
               TINYAUTH_APPS_radarr_OAUTH_GROUPS: radarr_users
               TINYAUTH_APPS_seerr_CONFIG_DOMAIN: "reqs.${PUBLIC_DOMAIN}"
-              TINYAUTH_APPS_seerr_OAUTH_WHITELIST: "/.*/"
               TINYAUTH_APPS_seerr_OAUTH_GROUPS: seerr_users
               TINYAUTH_APPS_sonarr_CONFIG_DOMAIN: "shows.${PUBLIC_DOMAIN}"
-              TINYAUTH_APPS_sonarr_OAUTH_WHITELIST: "/.*/"
               TINYAUTH_APPS_sonarr_OAUTH_GROUPS: sonarr_users
               TINYAUTH_APPS_subsyncarr_CONFIG_DOMAIN: "subsync.${PUBLIC_DOMAIN}"
-              TINYAUTH_APPS_subsyncarr_OAUTH_WHITELIST: "/.*/"
               TINYAUTH_APPS_subsyncarr_OAUTH_GROUPS: subsyncarr_users
             envFrom:
               - secretRef:
