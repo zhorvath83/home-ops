@@ -56,7 +56,7 @@ spec:
               TINYAUTH_AUTH_ACLS_POLICY: deny
               # Login-gate allow-all: under ACLS_POLICY=deny an empty OAuth whitelist abstains
               # → resolved to Deny, blocking every login. Per-app access stays gated by OAUTH_GROUPS.
-              TINYAUTH_OAUTH_WHITELIST: "/.*/"
+              # TINYAUTH_OAUTH_WHITELIST: "/.*/"
               TINYAUTH_LOG_LEVEL: info
               TINYAUTH_LOG_JSON: "true"
               # Emit auth events on a dedicated stream for security forensics.
