@@ -56,7 +56,7 @@ spec:
               TINYAUTH_AUTH_ACLS_POLICY: deny
               # Login-gate allow-all: under ACLS_POLICY=deny an empty OAuth whitelist abstains
               # → resolved to Deny, blocking every login. Per-app access stays gated by OAUTH_GROUPS.
-              TINYAUTH_OAUTH_WHITELIST: "/.*/"
+              # TINYAUTH_OAUTH_WHITELIST: "/.*/"
               TINYAUTH_LOG_LEVEL: info
               TINYAUTH_LOG_JSON: "true"
               # Emit auth events on a dedicated stream for security forensics.
@@ -69,40 +69,31 @@ spec:
               TINYAUTH_OAUTH_PROVIDERS_POCKETID_REDIRECTURL: "https://auth.${PUBLIC_DOMAIN}/api/oauth/callback/pocketid"
               TINYAUTH_OAUTH_PROVIDERS_POCKETID_TOKENURL: "https://id.${PUBLIC_DOMAIN}/api/oidc/token"
               TINYAUTH_OAUTH_PROVIDERS_POCKETID_USERINFOURL: "https://id.${PUBLIC_DOMAIN}/api/oidc/userinfo"
-              # Per-app access = OAUTH_GROUPS. But under ACLS_POLICY=deny, RuleUserAllowed abstains
-              # on an empty per-app whitelist → resolved to Deny before the group rule runs, so
-              # OAUTH_WHITELIST "/.*/" (pass any email) is required. Match is by CONFIG_DOMAIN (host).
+              # Per-app ACLs are MANDATORY (nil ACL → OAuthGroupRule Allow, any user passes).
+              # Empty oauth.whitelist now abstains (v5.1.1 fix #1010, was Deny in v5.1.0), so
+              # access control defers to OAUTH_GROUPS with no whitelist "/.*/" workaround needed.
+              # Matching is by CONFIG_DOMAIN (host), not the app ID.
               TINYAUTH_APPS_bazarr_CONFIG_DOMAIN: "subs.${PUBLIC_DOMAIN}"
-              TINYAUTH_APPS_bazarr_OAUTH_WHITELIST: "/.*/"
               TINYAUTH_APPS_bazarr_OAUTH_GROUPS: bazarr_users
               TINYAUTH_APPS_echo_CONFIG_DOMAIN: "echo.${PUBLIC_DOMAIN}"
-              TINYAUTH_APPS_echo_OAUTH_WHITELIST: "/.*/"
               TINYAUTH_APPS_echo_OAUTH_GROUPS: echo_server_users
               # App ID must be a single token: paerser's env decoder turns underscores into
               # dots, so an underscored ID would not bind the ACL (nil-ACL allow-all leaks).
               TINYAUTH_APPS_hubbleui_CONFIG_DOMAIN: "hubble.${PUBLIC_DOMAIN}"
-              TINYAUTH_APPS_hubbleui_OAUTH_WHITELIST: "/.*/"
               TINYAUTH_APPS_hubbleui_OAUTH_GROUPS: hubble_users
               TINYAUTH_APPS_maintainerr_CONFIG_DOMAIN: "maintainerr.${PUBLIC_DOMAIN}"
-              TINYAUTH_APPS_maintainerr_OAUTH_WHITELIST: "/.*/"
               TINYAUTH_APPS_maintainerr_OAUTH_GROUPS: maintainerr_users
               TINYAUTH_APPS_prowlarr_CONFIG_DOMAIN: "indexers.${PUBLIC_DOMAIN}"
-              TINYAUTH_APPS_prowlarr_OAUTH_WHITELIST: "/.*/"
               TINYAUTH_APPS_prowlarr_OAUTH_GROUPS: prowlarr_users
               TINYAUTH_APPS_qbittorrent_CONFIG_DOMAIN: "bt.${PUBLIC_DOMAIN}"
-              TINYAUTH_APPS_qbittorrent_OAUTH_WHITELIST: "/.*/"
               TINYAUTH_APPS_qbittorrent_OAUTH_GROUPS: qbittorrent_users
               TINYAUTH_APPS_radarr_CONFIG_DOMAIN: "movies.${PUBLIC_DOMAIN}"
-              TINYAUTH_APPS_radarr_OAUTH_WHITELIST: "/.*/"
               TINYAUTH_APPS_radarr_OAUTH_GROUPS: radarr_users
               TINYAUTH_APPS_seerr_CONFIG_DOMAIN: "reqs.${PUBLIC_DOMAIN}"
-              TINYAUTH_APPS_seerr_OAUTH_WHITELIST: "/.*/"
               TINYAUTH_APPS_seerr_OAUTH_GROUPS: seerr_users
               TINYAUTH_APPS_sonarr_CONFIG_DOMAIN: "shows.${PUBLIC_DOMAIN}"
-              TINYAUTH_APPS_sonarr_OAUTH_WHITELIST: "/.*/"
               TINYAUTH_APPS_sonarr_OAUTH_GROUPS: sonarr_users
               TINYAUTH_APPS_subsyncarr_CONFIG_DOMAIN: "subsync.${PUBLIC_DOMAIN}"
-              TINYAUTH_APPS_subsyncarr_OAUTH_WHITELIST: "/.*/"
               TINYAUTH_APPS_subsyncarr_OAUTH_GROUPS: subsyncarr_users
             envFrom:
               - secretRef:
