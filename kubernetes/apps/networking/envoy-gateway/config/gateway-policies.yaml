@@ -71,7 +71,7 @@ spec:
     http:
       requestReceivedTimeout: 0s
   tls:
-    minVersion: "1.3"
+    minVersion: "1.2"
     alpnProtocols:
       - h2
       - http/1.1
