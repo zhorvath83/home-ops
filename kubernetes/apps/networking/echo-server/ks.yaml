@@ -3,21 +3,19 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: echo
+  name: echo-server
 spec:
   commonMetadata:
     labels:
-      app.kubernetes.io/name: echo
+      app.kubernetes.io/name: echo-server
   components:
-    - ../../../../components/forward-auth
-  dependsOn:
-    - name: tinyauth
-      namespace: security
+    - ../../../../components/gateway-oidc
   interval: 1h
-  path: ./kubernetes/apps/networking/echo/app
+  path: ./kubernetes/apps/networking/echo-server/app
   postBuild:
     substitute:
-      APP: echo
+      APP: echo-server
+      APP_SUBDOMAIN: echo
   prune: true
   sourceRef:
     kind: GitRepository
