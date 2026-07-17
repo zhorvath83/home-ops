@@ -21,6 +21,21 @@ spec:
       name: kube-dns
       clusterIP: ${CLUSTER_DNS_IP}
     servers:
+      # id.* → envoy-internal ClusterIP (not its LB VIP): the proxy pod backs that VIP and
+      # can't hairpin to it (eTP:Local), which breaks native SecurityPolicy.oidc token exchange.
+      # More specific zone than the ${PUBLIC_DOMAIN} block below, so it wins for id.*.
+      - zones:
+          - zone: id.${PUBLIC_DOMAIN}
+            scheme: dns://
+            use_tcp: true
+        port: 53
+        plugins:
+          - name: errors
+          - name: rewrite
+            parameters: name exact id.${PUBLIC_DOMAIN} envoy-internal.networking.svc.cluster.local
+          - name: kubernetes
+            parameters: cluster.local
+          - name: cache
       # Split horizon for pods: the public domain resolves via k8s-gateway (envoy VIP) instead of
       # the node resolver → router hop; keeps public-issuer OIDC hairpins router-independent.
       - zones:
