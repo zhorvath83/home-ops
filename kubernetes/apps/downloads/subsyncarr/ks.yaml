@@ -9,7 +9,7 @@ spec:
     labels:
       app.kubernetes.io/name: subsyncarr
   components:
-    - ../../../../components/forward-auth
+    - ../../../../components/gateway-oidc
     - ../../../../components/zeroscaler
   dependsOn:
     - name: tinyauth

@@ -10,7 +10,7 @@ spec:
       app.kubernetes.io/name: bazarr
   components:
     - ../../../../components/volsync
-    - ../../../../components/forward-auth
+    - ../../../../components/gateway-oidc
     - ../../../../components/zeroscaler
   dependsOn:
     - name: onepassword-connect
