@@ -23,6 +23,7 @@ spec:
   postBuild:
     substitute:
       APP: prowlarr
+      APP_SUBDOMAIN: indexers
   prune: true
   sourceRef:
     kind: GitRepository

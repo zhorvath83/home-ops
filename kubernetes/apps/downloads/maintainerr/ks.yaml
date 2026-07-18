@@ -21,6 +21,7 @@ spec:
   postBuild:
     substitute:
       APP: maintainerr
+      APP_SUBDOMAIN: maintainerr
   prune: true
   sourceRef:
     kind: GitRepository

@@ -24,6 +24,7 @@ spec:
   postBuild:
     substitute:
       APP: sonarr
+      APP_SUBDOMAIN: shows
   prune: true
   sourceRef:
     kind: GitRepository

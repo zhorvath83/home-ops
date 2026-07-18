@@ -19,6 +19,7 @@ spec:
   postBuild:
     substitute:
       APP: subsyncarr
+      APP_SUBDOMAIN: subsync
       APP_UID: "1000"
       APP_GID: "1000"
   prune: true

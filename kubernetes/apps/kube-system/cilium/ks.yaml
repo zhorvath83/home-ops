@@ -18,6 +18,7 @@ spec:
   postBuild:
     substitute:
       APP: hubble-ui
+      APP_SUBDOMAIN: hubble
   prune: true
   sourceRef:
     kind: GitRepository

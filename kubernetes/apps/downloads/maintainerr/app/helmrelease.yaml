@@ -79,7 +79,7 @@ spec:
           gethomepage.dev/group: Arr Stack
           gethomepage.dev/icon: maintainerr.png
         hostnames:
-          - "{{ .Release.Name }}.${PUBLIC_DOMAIN}"
+          - "${APP_SUBDOMAIN}.${PUBLIC_DOMAIN}"
         parentRefs:
           - name: envoy-internal
             namespace: networking

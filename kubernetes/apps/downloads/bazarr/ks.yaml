@@ -24,6 +24,7 @@ spec:
   postBuild:
     substitute:
       APP: bazarr
+      APP_SUBDOMAIN: subs
   prune: true
   sourceRef:
     kind: GitRepository

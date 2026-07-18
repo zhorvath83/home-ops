@@ -90,7 +90,7 @@ spec:
           gethomepage.dev/group: Arr Stack
           gethomepage.dev/icon: mdi-subtitles
         hostnames:
-          - "subsync.${PUBLIC_DOMAIN}"
+          - "${APP_SUBDOMAIN}.${PUBLIC_DOMAIN}"
         parentRefs:
           - name: envoy-internal
             namespace: networking

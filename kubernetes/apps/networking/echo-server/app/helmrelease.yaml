@@ -120,7 +120,7 @@ spec:
           gethomepage.dev/group: Observability
           gethomepage.dev/icon: terminal.svg
         hostnames:
-          - "${APP_SUBDOMAIN:=${APP}}.${PUBLIC_DOMAIN}"
+          - "${APP_SUBDOMAIN}.${PUBLIC_DOMAIN}"
         parentRefs:
           - name: envoy-external
             namespace: networking

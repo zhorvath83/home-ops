@@ -74,7 +74,7 @@ spec:
           gethomepage.dev/group: Arr Stack
           gethomepage.dev/icon: prowlarr.svg
         hostnames:
-          - "indexers.${PUBLIC_DOMAIN}"
+          - "${APP_SUBDOMAIN}.${PUBLIC_DOMAIN}"
         parentRefs:
           - name: envoy-internal
             namespace: networking

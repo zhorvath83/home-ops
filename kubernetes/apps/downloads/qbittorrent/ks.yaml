@@ -24,6 +24,7 @@ spec:
   postBuild:
     substitute:
       APP: qbittorrent
+      APP_SUBDOMAIN: bt
   prune: true
   sourceRef:
     kind: GitRepository

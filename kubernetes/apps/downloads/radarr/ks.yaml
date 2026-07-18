@@ -24,6 +24,7 @@ spec:
   postBuild:
     substitute:
       APP: radarr
+      APP_SUBDOMAIN: movies
   prune: true
   sourceRef:
     kind: GitRepository

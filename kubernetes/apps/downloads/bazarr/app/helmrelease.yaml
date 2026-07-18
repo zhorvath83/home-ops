@@ -104,7 +104,7 @@ spec:
           gethomepage.dev/group: Arr Stack
           gethomepage.dev/icon: bazarr.svg
         hostnames:
-          - "subs.${PUBLIC_DOMAIN}"
+          - "${APP_SUBDOMAIN}.${PUBLIC_DOMAIN}"
         parentRefs:
           - name: envoy-internal
             namespace: networking
