@@ -6,3 +6,11 @@ resources:
   - ./certificate.yaml
   - ./helmrelease.yaml
   - ./backendtlspolicy.yaml
+# kanidm-theme ConfigMap from override.css; fixed name so the HR mount resolves,
+# reloader rolls the pod on change (subPath mounts don't live-update).
+configMapGenerator:
+  - name: kanidm-theme
+    files:
+      - ./override.css
+generatorOptions:
+  disableNameSuffixHash: true

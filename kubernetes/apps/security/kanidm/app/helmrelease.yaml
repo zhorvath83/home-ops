@@ -94,6 +94,14 @@ spec:
         defaultMode: 0400
         globalMounts:
           - path: /certs
+      # web-UI theme, served by kanidm at /pkg/override.css (loaded last in <head>)
+      theme:
+        type: configMap
+        name: kanidm-theme
+        globalMounts:
+          - path: /hpkg/override.css
+            subPath: override.css
+            readOnly: true
       tmpfs:
         type: emptyDir
         globalMounts:

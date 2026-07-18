@@ -1,0 +1,657 @@
+/* INDIGO AURORA — kanidm 1.10.3 override.css
+ * Vendored from kelchm/home-lab (MIT), kubernetes/apps/identity/kanidm/app/override.css
+ *
+ * Calm indigo theme with automatic light/dark and a custom key logo.
+ * kanidm's style.js toggles data-bs-theme on <html> from prefers-color-scheme,
+ * so Bootstrap 5.3 color modes are live; the palette is driven from --bs-*
+ * tokens per mode and this file loads last, winning the cascade.
+ *
+ * Self-contained for kanidm's CSP: system fonts + an inline data: SVG logo, no
+ * remote assets. Targets AA contrast in both modes, keeps focus visible under
+ * forced-colors, and respects prefers-reduced-motion. Accent #4f46e5.
+ * Design rationale and coverage notes live in the PR, not inline.
+ */
+
+/* ===== Foundations ======================================================= */
+
+:root {
+  --ia-font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --ia-font-mono: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+  --ia-radius-sm: 10px;
+  --ia-radius-md: 14px;
+  --ia-radius-lg: 18px;
+  --ia-accent: #4f46e5;
+  --ia-accent-rgb: 79, 70, 229;
+}
+
+body, .btn, .form-control, .form-select, .navbar, .card, .nav-link,
+.modal, .toast, .alert {
+  font-family: var(--ia-font-sans);
+}
+body {
+  letter-spacing: 0.1px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Palette — light: cool near-white with a faint indigo wash */
+:root,
+[data-bs-theme="light"] {
+  --bs-body-bg: #f7f8fc;
+  --bs-body-color: #1f2430;
+  --bs-secondary-color: #5b6173;
+  --bs-secondary-bg: #eef0f8;
+  --bs-tertiary-bg: #e9ecf6;
+  --bs-tertiary-color: #5b6173;
+  --bs-emphasis-color: #14181f;
+  --bs-border-color: #e2e5f1;
+  --bs-border-color-translucent: rgba(var(--ia-accent-rgb), 0.14);
+
+  --bs-primary: var(--ia-accent);
+  --bs-primary-rgb: var(--ia-accent-rgb);
+  --bs-link-color: var(--ia-accent);
+  --bs-link-color-rgb: var(--ia-accent-rgb);
+  --bs-link-hover-color: #3a31b8;
+  --bs-link-hover-color-rgb: 58, 49, 184;
+
+  --bs-form-valid-color: #15692f;
+  --bs-form-valid-border-color: #15692f;
+  --bs-form-invalid-color: #b42318;
+  --bs-form-invalid-border-color: #d92d20;
+
+  --ia-surface: #ffffff;
+  --ia-page-tint: radial-gradient(1200px 520px at 50% -8%,
+      rgba(var(--ia-accent-rgb), 0.07), transparent 60%);
+  --ia-elev: 0 1px 2px rgba(20, 24, 48, 0.05),
+             0 12px 32px -12px rgba(var(--ia-accent-rgb), 0.18);
+  --ia-elev-hover: 0 2px 4px rgba(20, 24, 48, 0.07),
+                   0 18px 40px -14px rgba(var(--ia-accent-rgb), 0.28);
+  --ia-focus-border: #4f46e5;
+  --ia-focus-ring: rgba(99, 102, 241, 0.32);
+}
+
+/* Palette — dark: deep blue-charcoal, raised elevation ladder, never black */
+[data-bs-theme="dark"] {
+  --bs-body-bg: #13172a;
+  --bs-body-color: #e7e9f3;
+  --bs-secondary-color: #9aa3bd;
+  --bs-secondary-bg: #1b2036;
+  --bs-tertiary-bg: #232a45;
+  --bs-tertiary-color: #aab2cb;
+  --bs-emphasis-color: #ffffff;
+  --bs-border-color: #2b3350;
+  --bs-border-color-translucent: rgba(129, 140, 248, 0.18);
+
+  --bs-primary: var(--ia-accent);
+  --bs-primary-rgb: var(--ia-accent-rgb);
+  --bs-link-color: #a5b4fc;
+  --bs-link-color-rgb: 165, 180, 252;
+  --bs-link-hover-color: #c7d0ff;
+  --bs-link-hover-color-rgb: 199, 208, 255;
+
+  --bs-form-valid-color: #4ade80;
+  --bs-form-valid-border-color: #4ade80;
+  --bs-form-invalid-color: #fca5a5;
+  --bs-form-invalid-border-color: #f87171;
+
+  --ia-surface: #1b2036;
+  --ia-page-tint: radial-gradient(1200px 560px at 50% -10%,
+      rgba(124, 58, 237, 0.16), transparent 62%);
+  --ia-elev: 0 1px 2px rgba(0, 0, 0, 0.4),
+             0 16px 40px -14px rgba(0, 0, 0, 0.6);
+  --ia-elev-hover: 0 2px 6px rgba(0, 0, 0, 0.5),
+                   0 22px 48px -16px rgba(0, 0, 0, 0.7);
+  --ia-focus-border: #818cf8;
+  --ia-focus-ring: rgba(129, 140, 248, 0.45);
+}
+
+/* Logo — custom key mark as a per-mode inline SVG (kept out of the palette
+   blocks above so those stay readable). Light glow indigo, dark glow brighter. */
+:root,
+[data-bs-theme="light"] {
+  --ia-logo: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2096%2096%22%3E%3Cdefs%3E%3CradialGradient%20id%3D%22g%22%20cx%3D%2250%25%22%20cy%3D%2243%25%22%20r%3D%2255%25%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%237c3aed%22%20stop-opacity%3D%22.22%22%2F%3E%3Cstop%20offset%3D%22.55%22%20stop-color%3D%22%234f46e5%22%20stop-opacity%3D%22.10%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%234f46e5%22%20stop-opacity%3D%220%22%2F%3E%3C%2FradialGradient%3E%3C%2Fdefs%3E%3Ccircle%20cx%3D%2248%22%20cy%3D%2242%22%20r%3D%2246%22%20fill%3D%22url%28%23g%29%22%2F%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22%234f46e5%22%20stroke-width%3D%225.2%22%20stroke-linecap%3D%22round%22%3E%3Ccircle%20cx%3D%2248%22%20cy%3D%2235%22%20r%3D%2213%22%2F%3E%3Cpath%20d%3D%22M48%2048V74M48%2060H62M48%2069H59%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
+  --ia-navlogo: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2040%2040%22%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22%234f46e5%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%3E%3Ccircle%20cx%3D%2220%22%20cy%3D%2213%22%20r%3D%227.5%22%2F%3E%3Cpath%20d%3D%22M20%2020.5V33M20%2027H29M20%2031.5H26%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
+}
+[data-bs-theme="dark"] {
+  --ia-logo: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2096%2096%22%3E%3Cdefs%3E%3CradialGradient%20id%3D%22g%22%20cx%3D%2250%25%22%20cy%3D%2243%25%22%20r%3D%2255%25%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23818cf8%22%20stop-opacity%3D%22.34%22%2F%3E%3Cstop%20offset%3D%22.55%22%20stop-color%3D%22%237c3aed%22%20stop-opacity%3D%22.16%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%234f46e5%22%20stop-opacity%3D%220%22%2F%3E%3C%2FradialGradient%3E%3C%2Fdefs%3E%3Ccircle%20cx%3D%2248%22%20cy%3D%2242%22%20r%3D%2246%22%20fill%3D%22url%28%23g%29%22%2F%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22%23a5b4fc%22%20stroke-width%3D%225.2%22%20stroke-linecap%3D%22round%22%3E%3Ccircle%20cx%3D%2248%22%20cy%3D%2235%22%20r%3D%2213%22%2F%3E%3Cpath%20d%3D%22M48%2048V74M48%2060H62M48%2069H59%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
+  --ia-navlogo: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2040%2040%22%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22%23a5b4fc%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%3E%3Ccircle%20cx%3D%2220%22%20cy%3D%2213%22%20r%3D%227.5%22%2F%3E%3Cpath%20d%3D%22M20%2020.5V33M20%2027H29M20%2031.5H26%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
+}
+
+/* Page background: flat color + a faint top aurora wash */
+body {
+  background-color: var(--bs-body-bg);
+  background-image: var(--ia-page-tint);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+/* ===== Controls ========================================================== */
+
+/* Primary + success share the "main action" indigo (kanidm reuses success for
+   Save / Sign out / Return — color tracks intent, not Bootstrap semantics) */
+.btn-primary,
+.btn-success {
+  --bs-btn-color: #ffffff;
+  --bs-btn-bg: var(--ia-accent);
+  --bs-btn-border-color: var(--ia-accent);
+  --bs-btn-hover-color: #ffffff;
+  --bs-btn-hover-bg: #4338ca;
+  --bs-btn-hover-border-color: #4338ca;
+  --bs-btn-active-color: #ffffff;
+  --bs-btn-active-bg: #3a31b8;
+  --bs-btn-active-border-color: #3a31b8;
+  --bs-btn-disabled-color: #2b2670;
+  --bs-btn-disabled-bg: #a29df2;
+  --bs-btn-disabled-border-color: #a29df2;
+  border-radius: var(--ia-radius-sm);
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  padding-block: 0.55rem;
+  box-shadow: 0 1px 2px rgba(var(--ia-accent-rgb), 0.25);
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.06s ease;
+}
+.btn-primary:hover,
+.btn-success:hover { box-shadow: 0 6px 18px -6px rgba(var(--ia-accent-rgb), 0.55); }
+.btn-primary:active,
+.btn-success:active { transform: translateY(0.5px); }
+[data-bs-theme="dark"] .btn-primary,
+[data-bs-theme="dark"] .btn-success {
+  --bs-btn-hover-bg: #5b54ea;
+  --bs-btn-hover-border-color: #5b54ea;
+  --bs-btn-active-bg: #4f46e5;
+  --bs-btn-active-border-color: #4f46e5;
+}
+
+.btn-outline-primary {
+  --bs-btn-color: var(--bs-link-color);
+  --bs-btn-border-color: rgba(var(--ia-accent-rgb), 0.5);
+  --bs-btn-hover-color: #ffffff;
+  --bs-btn-hover-bg: var(--ia-accent);
+  --bs-btn-hover-border-color: var(--ia-accent);
+  --bs-btn-active-bg: #4338ca;
+  --bs-btn-active-border-color: #4338ca;
+  border-radius: var(--ia-radius-sm);
+}
+
+/* Caution amber (Add Password, Accept SHA1) */
+.btn-warning {
+  --bs-btn-color: #3d2c00;
+  --bs-btn-bg: #f6c344;
+  --bs-btn-border-color: #f6c344;
+  --bs-btn-hover-color: #3d2c00;
+  --bs-btn-hover-bg: #eab308;
+  --bs-btn-hover-border-color: #eab308;
+  --bs-btn-active-bg: #d99e06;
+  --bs-btn-active-border-color: #d99e06;
+  border-radius: var(--ia-radius-sm);
+  font-weight: 500;
+}
+
+/* Escalate the one genuinely-destructive amber button (Delete Legacy
+   Credentials) to red, keyed on kanidm's own hx-confirm marker, not endpoint
+   URLs. .btn-danger / .btn-outline-danger Removes are already red by class. */
+.btn-warning[hx-confirm] {
+  --bs-btn-color: #ffffff;
+  --bs-btn-bg: #d92d20;
+  --bs-btn-border-color: #d92d20;
+  --bs-btn-hover-color: #ffffff;
+  --bs-btn-hover-bg: #b42318;
+  --bs-btn-hover-border-color: #b42318;
+  --bs-btn-active-bg: #912018;
+  --bs-btn-active-border-color: #912018;
+  --bs-btn-disabled-bg: rgba(217, 45, 32, 0.55);
+  --bs-btn-disabled-border-color: rgba(217, 45, 32, 0.55);
+}
+
+/* Quiet danger by default, intensifying on hover */
+.btn-outline-danger {
+  --bs-btn-color: #d92d20;
+  --bs-btn-border-color: rgba(217, 45, 32, 0.45);
+  --bs-btn-hover-color: #ffffff;
+  --bs-btn-hover-bg: #d92d20;
+  --bs-btn-hover-border-color: #d92d20;
+  border-radius: var(--ia-radius-sm);
+}
+[data-bs-theme="dark"] .btn-outline-danger { --bs-btn-color: #fca5a5; }
+
+/* Body-target Cancel/back reads neutral, not danger */
+.btn-danger[hx-target="body"] {
+  --bs-btn-color: var(--bs-secondary-color);
+  --bs-btn-bg: transparent;
+  --bs-btn-border-color: var(--bs-border-color);
+  --bs-btn-hover-color: var(--bs-body-color);
+  --bs-btn-hover-bg: var(--bs-tertiary-bg);
+  --bs-btn-hover-border-color: var(--bs-border-color);
+}
+
+/* .btn-sml: kanidm references this size class but never defines it */
+.btn-tiny, .btn-sml {
+  --bs-btn-padding-y: 0.05rem;
+  --bs-btn-padding-x: 0.4rem;
+  --bs-btn-font-size: 0.75rem;
+  border-radius: 7px;
+}
+
+/* Keyboard focus: real outline (survives forced-colors) + a decorative glow */
+.btn:focus-visible,
+.btn-close:focus-visible {
+  outline: 2px solid var(--ia-focus-border);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 0.28rem var(--ia-focus-ring);
+}
+
+a { text-underline-offset: 0.18em; text-decoration-thickness: 0.06em; }
+a:hover { text-decoration-color: rgba(var(--ia-accent-rgb), 0.6); }
+
+/* Inputs — recolor focus glow and checked states off Bootstrap blue */
+.form-control,
+.form-select {
+  border-radius: var(--ia-radius-sm);
+  border-color: var(--bs-border-color);
+  background-color: var(--ia-surface);
+  padding: 0.6rem 0.85rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.form-control:hover,
+.form-select:hover { border-color: rgba(var(--ia-accent-rgb), 0.4); }
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--ia-focus-border);
+  box-shadow: 0 0 0 0.22rem var(--ia-focus-ring);
+}
+.form-control::placeholder { color: var(--bs-secondary-color); opacity: 1; }
+
+.form-check-input:checked {
+  background-color: var(--ia-accent);
+  border-color: var(--ia-accent);
+}
+.form-check-input:focus {
+  border-color: var(--ia-focus-border);
+  box-shadow: 0 0 0 0.2rem var(--ia-focus-ring);
+}
+.form-label,
+.col-form-label { font-weight: 500; color: var(--bs-secondary-color); letter-spacing: 0.2px; }
+.invalid-feedback { color: var(--bs-form-invalid-color); font-weight: 500; }
+.valid-feedback { color: var(--bs-form-valid-color); }
+
+/* Readonly profile fields read inert; editable ones keep their chrome */
+.form-control-plaintext {
+  color: var(--bs-secondary-color);
+  background: transparent;
+  border: 1px solid transparent;
+}
+
+/* ===== Pages ============================================================= */
+
+/* Login / recover / error card */
+main.form-signin {
+  max-width: 432px;
+  width: 100%;
+  margin-block: clamp(2rem, 8vh, 5rem);
+  padding: 2.75rem 2.5rem 2.4rem;
+  background: var(--ia-surface);
+  border: 1px solid var(--bs-border-color-translucent);
+  border-radius: var(--ia-radius-lg);
+  box-shadow: var(--ia-elev);
+}
+main.form-signin h3 { font-size: 1.375rem; font-weight: 600; letter-spacing: -0.2px; margin-bottom: 1.6rem; }
+main.form-signin .form-control { text-align: left; }
+main.form-signin a { font-weight: 500; }
+main.form-signin .btn + .btn { margin-top: 0.6rem; }
+
+/* Custom key mark (login / recover / error) */
+.kanidm_logo {
+  width: 7.5em;
+  height: 7.5em;
+  margin-bottom: 0.4rem;
+  content: var(--ia-logo);
+  object-fit: contain;
+}
+
+/* Context banner: a calm neutral wayfinding chip, not an alarm */
+.alert { border-radius: var(--ia-radius-md); border-width: 1px; }
+.alert-info {
+  --bs-alert-bg: var(--bs-secondary-bg);
+  --bs-alert-border-color: var(--bs-border-color);
+  --bs-alert-color: var(--bs-body-color);
+  border-left: 3px solid var(--ia-accent);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.alert-info::before {   /* leading lock icon for the auth-context chip (Tabler 'lock', masked) */
+  content: "";
+  flex: none;
+  width: 1.1rem;
+  height: 1.1rem;
+  background-color: var(--bs-link-color);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23000%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M5%2013a2%202%200%200%201%202%20-2h10a2%202%200%200%201%202%202v6a2%202%200%200%201%20-2%202h-10a2%202%200%200%201%20-2%20-2v-6%22%20%2F%3E%3Cpath%20d%3D%22M11%2016a1%201%200%201%200%202%200a1%201%200%200%200%20-2%200%22%20%2F%3E%3Cpath%20d%3D%22M8%2011v-4a4%204%200%201%201%208%200v4%22%20%2F%3E%3C%2Fsvg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23000%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M5%2013a2%202%200%200%201%202%20-2h10a2%202%200%200%201%202%202v6a2%202%200%200%201%20-2%202h-10a2%202%200%200%201%20-2%20-2v-6%22%20%2F%3E%3Cpath%20d%3D%22M11%2016a1%201%200%201%200%202%200a1%201%200%200%200%20-2%200%22%20%2F%3E%3Cpath%20d%3D%22M8%2011v-4a4%204%200%201%201%208%200v4%22%20%2F%3E%3C%2Fsvg%3E") center / contain no-repeat;
+}
+.alert-danger {
+  --bs-alert-bg: rgba(217, 45, 32, 0.08);
+  --bs-alert-border-color: rgba(217, 45, 32, 0.3);
+  --bs-alert-color: var(--bs-body-color);
+  border-left: 3px solid #d92d20;
+}
+[data-bs-theme="dark"] .alert-danger {
+  --bs-alert-bg: rgba(248, 113, 113, 0.12);
+  --bs-alert-border-color: rgba(248, 113, 113, 0.32);
+}
+
+/* Navbar */
+nav.navbar.bg-body-tertiary {           /* !important beats the .bg-body-tertiary utility */
+  background-color: var(--ia-surface) !important;
+  border-bottom: 1px solid var(--bs-border-color-translucent);
+  box-shadow: 0 1px 0 rgba(var(--ia-accent-rgb), 0.04),
+              0 6px 20px -16px rgba(20, 24, 48, 0.5);
+}
+.navbar-brand {
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+nav .navbar-brand img {
+  content: var(--ia-navlogo);
+  width: auto;
+  height: 34px;
+}
+.navbar-brand div {                     /* cap long display names off the toggler */
+  max-width: 46vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.navbar .nav-link svg.feather,          /* the three nav icons are all "file" — drop them */
+.navbar .nav-link [data-feather] { display: none; }
+.navbar .nav-link {
+  font-weight: 500;
+  border-radius: var(--ia-radius-sm);
+  padding-inline: 0.7rem;
+  color: var(--bs-secondary-color);
+  transition: color 0.12s ease, background-color 0.12s ease;
+}
+.navbar .nav-link:hover,
+.navbar .nav-link:focus {
+  color: var(--bs-link-color);
+  background-color: rgba(var(--ia-accent-rgb), 0.08);
+}
+.navbar .nav-link.active {
+  color: var(--bs-link-color);
+  background-color: rgba(var(--ia-accent-rgb), 0.1);
+}
+.navbar-nav.ms-md-auto .nav-link {      /* Sign out sits apart from primary nav */
+  border: 1px solid var(--bs-border-color);
+}
+.navbar-toggler {
+  border-color: var(--bs-border-color);
+  border-radius: var(--ia-radius-sm);
+  color: var(--bs-secondary-color);
+}
+.navbar-toggler:focus {
+  outline: 2px solid var(--ia-focus-border);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 0.26rem var(--ia-focus-ring);
+}
+
+/* Apps launcher */
+main.container-lg { padding-top: 0.5rem; }
+main.container-lg h2 { font-size: 1.5rem; font-weight: 600; letter-spacing: -0.3px; }
+main.container-lg > hr {
+  border-color: var(--bs-border-color);
+  opacity: 1;
+  margin-bottom: 1.6rem;
+}
+@media (min-width: 768px) {              /* fix the 4-column bug: col-md-3 fights row-cols-md-3 */
+  main.container-lg .row-cols-md-3 > .col-md-3 { flex: 0 0 auto; width: 33.3333%; }
+}
+main.container-lg .card { height: 100%; }
+.card {
+  background-color: var(--ia-surface);
+  border: 1px solid var(--bs-border-color-translucent);
+  border-radius: var(--ia-radius-md);
+  box-shadow: var(--ia-elev);
+  overflow: hidden;
+  transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--ia-elev-hover);
+  border-color: rgba(var(--ia-accent-rgb), 0.35);
+}
+.card .link-emphasis,
+.card a.stretched-link { color: var(--bs-body-color); font-weight: 500; text-decoration: none; }
+.card label { color: var(--bs-secondary-color); font-weight: 500; padding-bottom: 0.5rem; }
+.card:hover label { color: var(--bs-link-color); }
+.oauth2-img { object-fit: contain; border-radius: var(--ia-radius-sm); }
+/* Keyboard focus rings the app tile via an overlay on the link (the focus target) */
+.card a.stretched-link:focus-visible::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  outline: 2px solid var(--ia-focus-border);
+  outline-offset: 2px;
+  border-radius: var(--ia-radius-md);
+}
+
+/* OAuth2 consent — scope list as a bounded, scannable block. Excludes
+   .list-unstyled so it doesn't box the login_mech_choose button list. */
+main.form-signin h2.h3 { font-size: 1.375rem; font-weight: 600; letter-spacing: -0.2px; margin-bottom: 1.25rem; }
+main.form-signin ul:not(.list-unstyled) {
+  text-align: left;
+  list-style: none;
+  background: var(--bs-secondary-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--ia-radius-md);
+  padding: 0.4rem;
+  margin-bottom: 1.5rem;
+}
+main.form-signin ul:not(.list-unstyled) li {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: var(--ia-radius-sm);
+  color: var(--bs-body-color);
+}
+main.form-signin ul:not(.list-unstyled) li::before {   /* accent marker per scope row */
+  content: "";
+  flex: none;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: var(--ia-accent);
+}
+main.form-signin ul:not(.list-unstyled) li + li { border-top: 1px solid var(--bs-border-color); }
+main.form-signin .btn-lg { border-radius: var(--ia-radius-md); padding-block: 0.7rem; }
+
+/* Credential reset / settings shell + side menu */
+.form-cred-reset-body {
+  max-width: 520px;
+  padding: 1.75rem;
+  background: var(--ia-surface);
+  border: 1px solid var(--bs-border-color-translucent);
+  border-radius: var(--ia-radius-lg);
+  box-shadow: var(--ia-elev);
+}
+#settings-window .form-cred-reset-body { max-width: 720px; }
+.form-cred-reset-body hr { border-color: var(--bs-border-color); opacity: 1; }
+.form-cred-reset-body hr + hr { display: none; }   /* collapse dividers from empty/denied sections */
+.form-cred-reset-body h4 { font-weight: 600; letter-spacing: -0.2px; }
+.form-cred-reset-body .d-flex.justify-content-between { column-gap: 0.75rem; }
+.side-menu { min-width: 188px; }
+.side-menu-item {
+  border-radius: var(--ia-radius-sm);
+  color: var(--bs-body-color);
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+.side-menu-item:hover,
+.side-menu-item.active { background-color: var(--bs-tertiary-bg); }
+.side-menu-item.active {
+  color: var(--bs-link-color);
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--ia-accent);
+}
+
+/* Dark-mode leak fix 1: #cred-update-commit-bar is hardcoded background:white */
+#cred-update-commit-bar {
+  background: var(--bs-tertiary-bg);
+  border: 1px solid var(--bs-border-color);
+  border-top: 2px solid var(--ia-accent);
+  border-radius: var(--ia-radius-md);
+  box-shadow: var(--ia-elev);
+}
+#cred-update-commit-bar .btn-danger {   /* Discard reads as quiet danger; Save stays primary */
+  --bs-btn-color: var(--bs-secondary-color);
+  --bs-btn-bg: transparent;
+  --bs-btn-border-color: var(--bs-border-color);
+  --bs-btn-hover-color: #ffffff;
+  --bs-btn-hover-bg: #d92d20;
+  --bs-btn-hover-border-color: #d92d20;
+}
+
+/* Dark-mode leak fix 2: .totp-display-container has hardcoded light neumorphism */
+.totp-display-container {
+  background-color: var(--bs-secondary-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--ia-radius-md);
+  box-shadow: -4px -4px 10px rgba(255, 255, 255, 0.5),
+              4px 4px 12px rgba(20, 24, 48, 0.1);
+}
+[data-bs-theme="dark"] .totp-display-container {
+  background-color: var(--bs-tertiary-bg);
+  border-color: rgba(129, 140, 248, 0.22);
+  box-shadow: -3px -3px 8px rgba(255, 255, 255, 0.03),
+              4px 4px 14px rgba(0, 0, 0, 0.5);
+}
+.totp-display { font-family: var(--ia-font-mono); font-variant-numeric: tabular-nums; letter-spacing: 0.12em; }
+
+/* Dark-mode leak fix 3: side-menu icons use filter:invert(40%), invisible on dark */
+[data-bs-theme="dark"] .side-menu-item .icon-container img { filter: invert(72%) brightness(1.15); }
+
+/* QR codes: kanidm emits hardcoded #000-on-#fff, so frame only — never re-fill */
+#totpInfo svg, #intentInfo svg {
+  border-radius: var(--ia-radius-sm);
+  box-shadow: 0 0 0 6px #ffffff, var(--ia-elev);
+}
+/* Plaintext secrets as contained monospace with a caution border */
+#intentInfo code, #totpInfo code {
+  font-family: var(--ia-font-mono);
+  display: inline-block;
+  background: var(--bs-secondary-bg);
+  border: 1px solid #b8860b;
+  border-radius: var(--ia-radius-sm);
+  padding: 0.35rem 0.6rem;
+  color: var(--bs-emphasis-color);
+  user-select: all;
+}
+[data-bs-theme="dark"] #intentInfo code,
+[data-bs-theme="dark"] #totpInfo code { border-color: rgba(246, 195, 68, 0.5); }
+
+/* Passkey / SSH lists; theme the hardcoded text-bg-dark key-type badge */
+.list-group-item {
+  background-color: var(--ia-surface);
+  border-color: var(--bs-border-color);
+  color: var(--bs-body-color);
+}
+.text-bg-dark {
+  background-color: var(--bs-tertiary-bg) !important;
+  color: var(--bs-body-color) !important;
+}
+.badge.text-bg-dark { border: 1px solid var(--bs-border-color); }
+
+/* Tap targets (WCAG 2.5.8): grow small controls to >=44px via an invisible
+   centered hit-area, leaving the visual box and row height unchanged */
+.btn-tiny, .btn-sml { position: relative; }
+.btn-tiny::before, .btn-sml::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+}
+.bi-plus-square { width: 22px; height: 22px; color: var(--ia-accent); }
+.kanidm-remove-list-entry:hover {       /* email Remove (btn-secondary): restrained danger */
+  --bs-btn-hover-color: #ffffff;
+  --bs-btn-hover-bg: #d92d20;
+  --bs-btn-hover-border-color: #d92d20;
+}
+
+/* ===== Feedback ========================================================== */
+
+/* Toasts — status via a colored left border, paired with the header word */
+#toast-container { padding: 1rem; display: flex; flex-direction: column; gap: 0.6rem; }
+.toast {
+  background-color: var(--ia-surface);
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--ia-radius-md);
+  box-shadow: var(--ia-elev-hover);
+  max-width: 360px;
+}
+.toast-header { background: transparent; border-bottom: 1px solid var(--bs-border-color); color: var(--bs-emphasis-color); }
+#savedToast { border-left: 4px solid #15803d; }
+#permissionDeniedToast { border-left: 4px solid #d92d20; }
+[data-bs-theme="dark"] #savedToast { border-left-color: #4ade80; }
+[data-bs-theme="dark"] #permissionDeniedToast { border-left-color: #f87171; }
+.btn-close { border-radius: 7px; }
+
+/* Modals (sign-out, error) */
+.modal-content {
+  background-color: var(--ia-surface);
+  border: 1px solid var(--bs-border-color-translucent);
+  border-radius: var(--ia-radius-lg);
+  box-shadow: var(--ia-elev-hover);
+}
+.modal-header, .modal-footer { border-color: var(--bs-border-color); }
+.modal-title { font-weight: 600; }
+[data-bs-theme="dark"] #signoutModal .modal-body img { filter: drop-shadow(0 2px 10px rgba(129, 140, 248, 0.25)); }
+
+/* Failure screens. Headings are deliberately NOT reddened: login_denied's <h3>
+   is indistinguishable from the sign-in display-name <h3>, and the apps-page
+   <h2> shares the same #main wrapper, so any selector reddens the wrong one. */
+#main { padding-top: 0.25rem; }
+#main code, #main .opid { font-family: var(--ia-font-mono); user-select: all; }
+
+/* Footer */
+footer.footer.bg-body-tertiary {        /* !important beats the .bg-body-tertiary utility */
+  background-color: transparent !important;
+  border-top: 1px solid var(--bs-border-color-translucent);
+  color: var(--bs-tertiary-color);
+}
+footer.footer a { color: var(--bs-link-color); font-weight: 500; }
+
+/* ===== Accessibility ===================================================== */
+
+a:focus-visible,
+.side-menu-item:focus-visible,
+.nav-link:focus-visible,
+a.cursor-pointer:focus-visible {
+  outline: 2px solid var(--ia-focus-border);
+  outline-offset: 2px;
+  border-radius: var(--ia-radius-sm);
+}
+::selection { background: rgba(var(--ia-accent-rgb), 0.22); }
+
+/* Forced-colors: keep focus visible via system colors, drop decorative shadow */
+@media (forced-colors: active) {
+  .btn:focus-visible,
+  .navbar-toggler:focus,
+  a:focus-visible,
+  .nav-link:focus-visible,
+  .side-menu-item:focus-visible { outline-color: Highlight; }
+  .totp-display-container { box-shadow: none; }
+  .text-bg-dark { forced-color-adjust: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card, .btn-primary, .btn-success, .form-control, .form-select, .nav-link { transition: none; }
+  .card:hover { transform: none; }
+  .btn-primary:active, .btn-success:active { transform: none; }
+}
