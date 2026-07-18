@@ -379,7 +379,7 @@ oauth2-new-wf: ensure-login
       gum confirm "Group '${group}' does not exist — create it?" \
         || { just log error "An existing access group is required — aborting, nothing changed"; exit 1; }
       create_group='yes'
-      members="$(gum input --header 'Members to add (space-separated; empty to skip)')"
+      members="$(gum input --header 'Members to add (space-separated; empty to skip)' --value "${USER}")"
     fi
     scopes="$(gum input --header 'Scopes granted to the group' --value 'openid profile email groups')"
     short_username='no'
