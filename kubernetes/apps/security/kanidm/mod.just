@@ -264,7 +264,7 @@ group-new-wf: ensure-login
 #
 # Minimal client-onboarding flow: oauth2-create → oauth2-add-redirect-url →
 # oauth2-update-scope-map (group gates who may log in) → oauth2-show-secret.
-# Rarer toggles (claim maps, PKCE/strict-redirect switches, key rotation) go
+# Rarer toggles (claim maps, strict-redirect switches, key rotation) go
 # through `just kanidm run system oauth2 ...`.
 
 [doc('List OAuth2 clients')]
@@ -345,6 +345,13 @@ oauth2-prefer-short-username name: ensure-client
 [script]
 oauth2-disable-consent-prompt name: ensure-client
     kubectl -n security exec kanidm-client -- kanidm system oauth2 disable-consent-prompt "$1" -D idm_admin
+
+[doc('Disable PKCE for an OAuth2 client — security downgrade for clients that cannot do PKCE (re-enable: just kanidm run system oauth2 enable-pkce <name> -D idm_admin)')]
+[group('oauth2')]
+[script]
+oauth2-disable-pkce name: ensure-client
+    gum confirm "Disable PKCE for OAuth2 client '$1'? This weakens code-flow security — only for clients that cannot do PKCE." || { just log info "Aborted"; exit 0; }
+    kubectl -n security exec kanidm-client -- kanidm system oauth2 warning-insecure-client-disable-pkce "$1" -D idm_admin
 
 [doc('Interactive wizard: create a fully wired OAuth2 client (type, redirects, access group, scopes, secret) — offers defaults, one summary confirm; re-run skips create and converges the wiring')]
 [group('oauth2')]
