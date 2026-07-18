@@ -1,0 +1,22 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
+# Admin-CLI ingress: the ad-hoc kanidm-client tools pod (just kanidm *) talks TLS
+# directly to the server, since envoy-external ingress is cloudflared-only.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: kanidm
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: kanidm
+      app.kubernetes.io/instance: kanidm
+      app.kubernetes.io/controller: kanidm
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            run: kanidm-client
+      toPorts:
+        - ports:
+            - port: "8443"
+              protocol: TCP

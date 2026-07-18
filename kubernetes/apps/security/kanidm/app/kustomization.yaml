@@ -6,3 +6,4 @@ resources:
   - ./certificate.yaml
   - ./helmrelease.yaml
   - ./backendtlspolicy.yaml
+  - ./ciliumnetworkpolicy.yaml
