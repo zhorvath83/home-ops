@@ -37,9 +37,9 @@ recover-account account:
 # === client ===
 #
 # The kanidm/server image ships no client CLI and there is no macOS package, so all
-# client commands run in an ad-hoc kanidm/tools pod that talks TLS directly to the
-# kanidm service (hostAliases pins idm.<domain> so the server cert verifies; the
-# app CNP allows this ingress). The login session lives in the pod until client-down.
+# client commands run in an ad-hoc kanidm/tools pod. It reaches the server on the
+# public URL: split-horizon DNS resolves idm.* to the envoy-internal VIP, whose CNP
+# admits cluster pods. The login session lives in the pod until client-down.
 
 [private]
 [script]
@@ -50,10 +50,6 @@ ensure-client:
     domain="$(yq -r '.data.PUBLIC_DOMAIN' '{{ cluster_settings }}')"
     # client tag follows the server tag in helmrelease.yaml — one Renovate pin for both
     tag="$(yq -r '.spec.values.controllers.kanidm.containers.app.image.tag' '{{ app_dir }}/app/helmrelease.yaml')"
-    # No in-cluster DNS for idm.* (external-only route) and envoy-external ingress is
-    # cloudflared-only — the client talks straight to the kanidm service; the server's
-    # own idm.<domain> cert keeps TLS verification intact (app CNP allows this ingress).
-    kanidm_ip="$(kubectl -n security get svc kanidm -o jsonpath='{.spec.clusterIP}')"
     just log info "Starting kanidm client pod" image "docker.io/kanidm/tools:${tag}"
     kubectl -n security run kanidm-client \
       --image="docker.io/kanidm/tools:${tag}" \
@@ -62,13 +58,12 @@ ensure-client:
     {
       "spec": {
         "automountServiceAccountToken": false,
-        "hostAliases": [{"ip": "${kanidm_ip}", "hostnames": ["idm.${domain}"]}],
         "containers": [{
           "name": "kanidm-client",
           "image": "docker.io/kanidm/tools:${tag}",
           "command": ["/bin/sh", "-c", "exec sleep infinity"],
           "env": [
-            {"name": "KANIDM_URL", "value": "https://idm.${domain}:8443"},
+            {"name": "KANIDM_URL", "value": "https://idm.${domain}"},
             {"name": "HOME", "value": "/tmp"}
           ],
           "securityContext": {

@@ -13,10 +13,11 @@ spec:
     defaultPodOptions:
       automountServiceAccountToken: false
       enableServiceLinks: false
-      # AD-023 vocabulary: envoy-routed via envoy-external. Ingress is enforced by
-      # the ingress-from-gateway-external CCNP selecting this label.
+      # AD-023 vocabulary: envoy-routed via both gateways. Ingress is enforced by
+      # the ingress-from-gateway-* CCNPs selecting these labels.
       labels:
         ingress.home.arpa/allow-gateway-external: "true"
+        ingress.home.arpa/allow-gateway-internal: "true"
       securityContext:
         runAsNonRoot: true
         runAsUser: 10001
@@ -104,6 +105,9 @@ spec:
           - idm.${PUBLIC_DOMAIN}
         parentRefs:
           - name: envoy-external
+            namespace: networking
+            sectionName: https
+          - name: envoy-internal
             namespace: networking
             sectionName: https
         rules:
