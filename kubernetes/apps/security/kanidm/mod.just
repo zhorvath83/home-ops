@@ -165,29 +165,36 @@ person-new-wf: ensure-login
       exists='yes'
       just log info "Person '${username}' already exists — the create step will be skipped"
     fi
-    displayname=''
+    displayname=''; mail=''
     if [ -z "${exists}" ]; then
       displayname="$(gum input --header 'Display name' --value "${username}")"
+      mail="$(gum input --header 'Mail address (empty to skip)' --placeholder 'user@example.com')"
     fi
     groups="$(gum input --header 'Groups to add the person to (space-separated; empty to skip)')"
+    mail_self_write='yes'
+    if ! gum confirm --default=true 'Allow the person to edit their own mail attribute (idm_people_self_mail_write)?'; then mail_self_write='no'; fi
     reset_token='no'
     if gum confirm --default=true 'Generate a credential reset token (password / passkey enrollment)?'; then reset_token='yes'; fi
     printf '\n── Summary ─────────────────────────────\n'
     if [ -z "${exists}" ]; then
       printf 'person:      %s — "%s"\n' "${username}" "${displayname}"
+      printf 'mail:        %s\n' "${mail:-—}"
     else
       printf 'person:      %s (existing — create skipped)\n' "${username}"
     fi
     printf 'groups:      %s\n' "${groups:-—}"
+    printf 'mail edit:   %s\n' "${mail_self_write}"
     printf 'reset token: %s\n\n' "${reset_token}"
     gum confirm 'Proceed?' || { just log info "Aborted — nothing changed"; exit 0; }
     if [ -z "${exists}" ]; then
       just kanidm person-create "${username}" "${displayname}"
       just -q kanidm entity-exists person "${username}" || { just log error "Person creation failed — see the error above"; exit 1; }
+      if [ -n "${mail}" ]; then just kanidm run person update "${username}" --mail "${mail}" -D idm_admin; fi
     fi
     if [ -n "${groups}" ]; then
       for g in ${groups}; do just kanidm group-add-members "${g}" "${username}"; done
     fi
+    if [ "${mail_self_write}" = 'yes' ]; then just kanidm group-add-members idm_people_self_mail_write "${username}"; fi
     just kanidm person-get "${username}"
     if [ "${reset_token}" = 'yes' ]; then just kanidm person-reset-token "${username}"; fi
 

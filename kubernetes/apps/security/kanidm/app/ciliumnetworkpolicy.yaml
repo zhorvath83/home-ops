@@ -1,0 +1,18 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
+# kanidm (AD-023): envoy ingress via the ingress-from-gateway-* CCNPs selecting these labels;
+# custom-egress opt-out, so this CNP is the sole egress source — kanidm is a pure OIDC/LDAP
+# server with no legitimate outbound (no SMTP, no replication, no OCSP/CRL, no telemetry),
+# so the egress allowlist is empty: a compromised pod cannot probe east-west or exfil. DNS via
+# the cluster-wide allow-dns-egress CCNP; inbound reply traffic is conntrack-allowed.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: kanidm
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: kanidm
+      app.kubernetes.io/instance: kanidm
+      app.kubernetes.io/controller: kanidm
+  egress: []
