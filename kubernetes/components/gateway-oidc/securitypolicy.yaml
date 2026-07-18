@@ -14,7 +14,8 @@ spec:
       name: ${HTTPROUTE_NAME:=${APP}}
   oidc:
     provider:
-      issuer: "https://idm.${PUBLIC_DOMAIN}"
+      # Kanidm uses per-client issuer URLs: /oauth2/openid/<client-id>.
+      issuer: "https://idm.${PUBLIC_DOMAIN}/oauth2/openid/${APP}"
     clientIDRef:
       name: ${APP}-oidc-secret
     clientSecret:
