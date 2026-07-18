@@ -1,0 +1,112 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: kanidm
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  values:
+    defaultPodOptions:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      # AD-023 vocabulary: envoy-routed via envoy-external. Ingress is enforced by
+      # the ingress-from-gateway-external CCNP selecting this label.
+      labels:
+        ingress.home.arpa/allow-gateway-external: "true"
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+    controllers:
+      kanidm:
+        type: statefulset
+        replicas: 1
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              # renovate: datasource=docker depName=docker.io/kanidm/server
+              repository: docker.io/kanidm/server
+              tag: 1.10.4
+            env:
+              KANIDM_ADMIN_BIND_PATH: /var/run/kanidmd.sock
+              KANIDM_DOMAIN: idm.${PUBLIC_DOMAIN}
+              KANIDM_ORIGIN: https://idm.${PUBLIC_DOMAIN}
+              KANIDM_BINDADDRESS: "[::]:8443"
+              KANIDM_LDAPBINDADDRESS: "[::]:3636"
+              KANIDM_DB_PATH: /data/kanidm.db
+              KANIDM_TLS_CHAIN: /certs/tls.crt
+              KANIDM_TLS_KEY: /certs/tls.key
+            probes:
+              liveness: &probe
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /status
+                    port: &port 8443
+                    scheme: HTTPS
+                  initialDelaySeconds: 0
+                  periodSeconds: 10
+                  timeoutSeconds: 1
+                  failureThreshold: 3
+              readiness: *probe
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                  - ALL
+            resources:
+              requests:
+                cpu: 10m
+              limits:
+                memory: 1Gi
+    service:
+      app:
+        controller: kanidm
+        ports:
+          http:
+            port: *port
+          ldap:
+            port: 3636
+    persistence:
+      data:
+        existingClaim: kanidm
+        globalMounts:
+          - path: /data
+            subPath: data
+      # debt: volsync file-snapshots a live kanidm.db (may be inconsistent); switch
+      # to `kanidmd database backup` cron if promoted to replace pocket-id.
+      certs:
+        type: secret
+        name: kanidm-tls
+        defaultMode: 0400
+        globalMounts:
+          - path: /certs
+      tmpfs:
+        type: emptyDir
+        globalMounts:
+          - path: /var/run
+            subPath: var-run
+    route:
+      app:
+        hostnames:
+          - idm.${PUBLIC_DOMAIN}
+        parentRefs:
+          - name: envoy-external
+            namespace: networking
+            sectionName: https
+        rules:
+          - backendRefs:
+              - identifier: app
+                port: *port

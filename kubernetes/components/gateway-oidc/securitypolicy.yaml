@@ -14,7 +14,7 @@ spec:
       name: ${HTTPROUTE_NAME:=${APP}}
   oidc:
     provider:
-      issuer: "https://id.${PUBLIC_DOMAIN}"
+      issuer: "https://idm.${PUBLIC_DOMAIN}"
     clientIDRef:
       name: ${APP}-oidc-secret
     clientSecret:

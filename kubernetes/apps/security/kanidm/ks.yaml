@@ -1,0 +1,32 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: kanidm
+spec:
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: kanidm
+  components:
+    - ../../../../components/volsync
+  dependsOn:
+    - name: onepassword-connect
+      namespace: external-secrets
+    - name: democratic-csi
+      namespace: kube-system
+  interval: 1h
+  path: ./kubernetes/apps/security/kanidm/app
+  postBuild:
+    substitute:
+      APP: kanidm
+      APP_UID: "10001"
+      APP_GID: "10001"
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  targetNamespace: security
+  timeout: 5m
+  wait: false
