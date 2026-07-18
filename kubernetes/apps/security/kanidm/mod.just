@@ -135,12 +135,6 @@ person-list: ensure-client
 person-get username: ensure-client
     kubectl -n security exec kanidm-client -- kanidm person get "$1" -D idm_admin
 
-[doc('Create a person (positional args: username displayname)')]
-[group('person')]
-[script]
-person-create username displayname: ensure-client
-    kubectl -n security exec kanidm-client -- kanidm person create "$1" "$2" -D idm_admin
-
 [doc('Generate a credential reset token/link for a person — use it to set a password or enroll a passkey')]
 [group('person')]
 [script]
@@ -157,7 +151,7 @@ person-delete username: ensure-client
 [doc('Interactive wizard: create a person, add to groups, issue a credential reset token — offers defaults, one summary confirm; re-run skips an existing person')]
 [group('person')]
 [script]
-person-new-wf: ensure-login
+person-create: ensure-login
     username="$(gum input --header 'Username' --placeholder 'jdoe')"
     [ -n "${username}" ] || { just log error "Username is required"; exit 1; }
     exists=''
@@ -212,12 +206,6 @@ group-list: ensure-client
 group-get name: ensure-client
     kubectl -n security exec kanidm-client -- kanidm group get "$1" -D idm_admin
 
-[doc('Create a group')]
-[group('groups')]
-[script]
-group-create name: ensure-client
-    kubectl -n security exec kanidm-client -- kanidm group create "$1" -D idm_admin
-
 [doc('Delete a group — asks for confirmation; scope maps referencing it stop granting access')]
 [group('groups')]
 [script]
@@ -240,7 +228,7 @@ group-remove-members name +members: ensure-client
 [doc('Interactive wizard: create a group and add initial members — one summary confirm; re-run skips an existing group and just adds members')]
 [group('groups')]
 [script]
-group-new-wf: ensure-login
+group-create: ensure-login
     name="$(gum input --header 'Group name' --placeholder 'grafana-users')"
     [ -n "${name}" ] || { just log error "Group name is required"; exit 1; }
     exists=''
@@ -433,3 +421,23 @@ oauth2-new-wf: ensure-login
       just log info "Basic secret below — store it in 1Password for the app ExternalSecret, never in git"
       just kanidm oauth2-show-secret "${name}"
     fi
+
+[doc('Interactive wizard: attach an existing group to an existing OAuth2 client via a scope map (the login gate) — verifies both exist, one summary confirm')]
+[group('oauth2')]
+[script]
+oauth2-add-group: ensure-login
+    name="$(gum input --header 'OAuth2 client name' --placeholder 'grafana')"
+    [ -n "${name}" ] || { just log error "Client name is required"; exit 1; }
+    just -q kanidm entity-exists oauth2 "${name}" || { just log error "OAuth2 client '${name}' does not exist — create it first with oauth2-new-wf"; exit 1; }
+    group="$(gum input --header 'Existing group to attach' --placeholder 'grafana_users')"
+    [ -n "${group}" ] || { just log error "Group is required"; exit 1; }
+    just -q kanidm entity-exists group "${group}" || { just log error "Group '${group}' does not exist — create it first with group-new-wf"; exit 1; }
+    scopes="$(gum input --header 'Scopes granted to the group' --value 'openid profile email groups')"
+    [ -n "${scopes}" ] || { just log error "At least one scope is required"; exit 1; }
+    printf '\n── Summary ─────────────────────────────\n'
+    printf 'client: %s\n' "${name}"
+    printf 'group:  %s\n' "${group}"
+    printf 'scopes: %s\n\n' "${scopes}"
+    gum confirm 'Proceed?' || { just log info "Aborted — nothing changed"; exit 0; }
+    just kanidm oauth2-update-scope-map "${name}" "${group}" ${scopes}
+    just kanidm oauth2-get "${name}"
