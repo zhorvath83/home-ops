@@ -163,6 +163,8 @@ oauth:
   oidc-scope: openid email profile groups
   #Username claim in OpenID Connect ID token. Leave it blank if you don't know what this config is.
   oidc-usernameClaim: "preferred_username"
+  #JMESPath to the array of roles/groups in the OpenID Connect ID token. Kanidm exposes the groups claim with the `groups` scope.
+  oidc-rolePath: "groups"
   #Role required for general access. Must be present in a user's roles for them to log in. Leave it blank if you don't know what this config is.
   oidc-roleGeneralAccess: ""
   #Role required for administrative access. Must be present in a user's roles for them to access the admin panel. Leave it blank if you don't know what this config is.
