@@ -169,8 +169,8 @@ oauth:
   oidc-roleGeneralAccess: ""
   #Role required for administrative access. Must be present in a user's roles for them to access the admin panel. Leave it blank if you don't know what this config is.
   oidc-roleAdminAccess: "pingvin-share-x_admins@idm.${PUBLIC_DOMAIN}"
-  #Client ID of the OpenID Connect OAuth app
-  oidc-clientId: "$${PINGVINSHARE_OIDC_CLIENT_ID}"
+  #Client ID equals the Kanidm OAuth2 client name, which is the ks-injected APP.
+  oidc-clientId: "${APP}"
   #Client secret of the OpenID Connect OAuth app
   oidc-clientSecret: "$${PINGVINSHARE_OIDC_CLIENT_SECRET}"
 s3:

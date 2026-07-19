@@ -19,10 +19,8 @@ spec:
       disable_login_form: "true"
     # grafana.ini [auth.generic_oauth] is a dotted section name → first-level key under config.
     auth.generic_oauth:
-      # Uniform public-issuer convention (AD-023): every OIDC endpoint uses the public hostname.
       enabled: "true"
-      # client_id is public (shown in Kanidm discovery) — hardcoded, not secret-backed.
-      client_id: "grafana"
+      client_id: "${APP}"
       scopes: openid email profile groups
       auth_url: "https://idm.${PUBLIC_DOMAIN}/ui/oauth2"
       token_url: "https://idm.${PUBLIC_DOMAIN}/oauth2/token"
