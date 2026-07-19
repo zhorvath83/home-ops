@@ -21,7 +21,6 @@ spec:
     auth.generic_oauth:
       # Uniform public-issuer convention (AD-023): every OIDC endpoint uses the public hostname.
       enabled: "true"
-      name: IdP
       # client_id is public (shown in Kanidm discovery) — hardcoded, not secret-backed.
       client_id: "grafana"
       scopes: openid email profile groups
