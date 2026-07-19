@@ -23,13 +23,17 @@ spec:
       enabled: "true"
       name: IdP
       scopes: openid email profile groups
-      auth_url: "https://id.${PUBLIC_DOMAIN}/authorize"
-      token_url: "https://id.${PUBLIC_DOMAIN}/api/oidc/token"
-      api_url: "https://id.${PUBLIC_DOMAIN}/api/oidc/userinfo"
-      email_attribute_name: "email:primary"
+      auth_url: "https://idm.${PUBLIC_DOMAIN}/ui/oauth2"
+      token_url: "https://idm.${PUBLIC_DOMAIN}/oauth2/token"
+      # userinfo endpoint — Kanidm serves it per-client at /oauth2/openid/<client_id>/userinfo.
+      api_url: "https://idm.${PUBLIC_DOMAIN}/oauth2/openid/grafana/userinfo"
+      use_pkce: "true"
+      use_refresh_token: "true"
+      login_attribute_path: "preferred_username"
+      email_attribute_name: "email"
       allow_sign_up: "true"
       # grafana_admins → Admin; no grafana_users group yet, so everyone else → None (no access).
-      role_attribute_path: "contains(groups[*], 'grafana_admins') && 'Admin' || 'None'"
+      role_attribute_path: "contains(groups[*], 'grafana_admins@idm.${PUBLIC_DOMAIN}') && 'Admin' || 'None'"
       role_attribute_strict: "true"
       skip_org_role_sync: "false"
     date_formats:
