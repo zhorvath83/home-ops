@@ -135,6 +135,12 @@ person-list: ensure-client
 person-get username: ensure-client
     kubectl -n security exec kanidm-client -- kanidm person get "$1" -D idm_admin
 
+[doc('Create a person (positional args: username displayname)')]
+[group('person')]
+[script]
+person-create username displayname: ensure-client
+    kubectl -n security exec kanidm-client -- kanidm person create "$1" "$2" -D idm_admin
+
 [doc('Generate a credential reset token/link for a person — use it to set a password or enroll a passkey')]
 [group('person')]
 [script]
@@ -148,10 +154,10 @@ person-delete username: ensure-client
     gum confirm "Delete person '$1'? This is irreversible." || { just log info "Aborted"; exit 0; }
     kubectl -n security exec -it kanidm-client -- kanidm person delete "$1" -D idm_admin
 
-[doc('Interactive wizard: create a person, add to groups, issue a credential reset token — offers defaults, one summary confirm; re-run skips an existing person')]
+[doc('Interactive wizard: create a person, add to groups, issue a credential reset token')]
 [group('person')]
 [script]
-person-create: ensure-login
+person-new-wf: ensure-login
     username="$(gum input --header 'Username' --placeholder 'jdoe')"
     [ -n "${username}" ] || { just log error "Username is required"; exit 1; }
     exists=''
@@ -206,6 +212,12 @@ group-list: ensure-client
 group-get name: ensure-client
     kubectl -n security exec kanidm-client -- kanidm group get "$1" -D idm_admin
 
+[doc('Create a group')]
+[group('groups')]
+[script]
+group-create name: ensure-client
+    kubectl -n security exec kanidm-client -- kanidm group create "$1" -D idm_admin
+
 [doc('Delete a group — asks for confirmation; scope maps referencing it stop granting access')]
 [group('groups')]
 [script]
@@ -228,7 +240,7 @@ group-remove-members name +members: ensure-client
 [doc('Interactive wizard: create a group and add initial members — one summary confirm; re-run skips an existing group and just adds members')]
 [group('groups')]
 [script]
-group-create: ensure-login
+group-new-wf: ensure-login
     name="$(gum input --header 'Group name' --placeholder 'grafana-users')"
     [ -n "${name}" ] || { just log error "Group name is required"; exit 1; }
     exists=''
@@ -334,14 +346,14 @@ oauth2-prefer-short-username name: ensure-client
 oauth2-disable-consent-prompt name: ensure-client
     kubectl -n security exec kanidm-client -- kanidm system oauth2 disable-consent-prompt "$1" -D idm_admin
 
-[doc('Disable PKCE for an OAuth2 client — security downgrade for clients that cannot do PKCE (re-enable: just kanidm run system oauth2 enable-pkce <name> -D idm_admin)')]
+[doc('Disable PKCE for an OAuth2 client — security downgrade for clients that cannot do PKCE')]
 [group('oauth2')]
 [script]
 oauth2-disable-pkce name: ensure-client
     gum confirm "Disable PKCE for OAuth2 client '$1'? This weakens code-flow security — only for clients that cannot do PKCE." || { just log info "Aborted"; exit 0; }
     kubectl -n security exec kanidm-client -- kanidm system oauth2 warning-insecure-client-disable-pkce "$1" -D idm_admin
 
-[doc('Interactive wizard: create a fully wired OAuth2 client (type, redirects, access group, scopes, secret) — offers defaults, one summary confirm; re-run skips create and converges the wiring')]
+[doc('Interactive wizard: create a fully wired OAuth2 client (type, redirects, access group, scopes, secret)')]
 [group('oauth2')]
 [script]
 oauth2-new-wf: ensure-login
@@ -421,8 +433,9 @@ oauth2-new-wf: ensure-login
       just log info "Basic secret below — store it in 1Password for the app ExternalSecret, never in git"
       just kanidm oauth2-show-secret "${name}"
     fi
+    just log info "RFC 8414 OAuth 2.0 Authorisation Server Metadata URL (discovery): https://idm.${domain}/oauth2/openid/${name}/.well-known/oauth-authorization-server"
 
-[doc('Interactive wizard: attach an existing group to an existing OAuth2 client via a scope map (the login gate) — verifies both exist, one summary confirm')]
+[doc('Interactive wizard: attach an existing group to an existing OAuth2 client via a scope map')]
 [group('oauth2')]
 [script]
 oauth2-add-group: ensure-login

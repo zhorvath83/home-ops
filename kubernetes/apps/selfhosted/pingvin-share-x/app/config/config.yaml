@@ -156,7 +156,7 @@ oauth:
 
   oidc-enabled: "true"
   #Discovery URI of the OpenID Connect OAuth app
-  oidc-discoveryUri: "https://id.${PUBLIC_DOMAIN}/.well-known/openid-configuration"
+  oidc-discoveryUri: "https://id.${PUBLIC_DOMAIN}/oauth2/openid/${APP}/.well-known/oauth-authorization-server"
   #Whether the "Sign out" button will sign out from the OpenID Connect provider
   oidc-signOut: "true"
   #Scopes which should be requested from the OpenID Connect provider.
@@ -166,7 +166,7 @@ oauth:
   #Role required for general access. Must be present in a user's roles for them to log in. Leave it blank if you don't know what this config is.
   oidc-roleGeneralAccess: ""
   #Role required for administrative access. Must be present in a user's roles for them to access the admin panel. Leave it blank if you don't know what this config is.
-  oidc-roleAdminAccess: "pingvin_share_admins"
+  oidc-roleAdminAccess: "pingvin-share-x_admins"
   #Client ID of the OpenID Connect OAuth app
   oidc-clientId: "$${PINGVINSHARE_OIDC_CLIENT_ID}"
   #Client secret of the OpenID Connect OAuth app
