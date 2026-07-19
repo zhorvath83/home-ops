@@ -156,7 +156,7 @@ oauth:
 
   oidc-enabled: "true"
   #Discovery URI of the OpenID Connect OAuth app
-  oidc-discoveryUri: "https://id.${PUBLIC_DOMAIN}/oauth2/openid/${APP}/.well-known/oauth-authorization-server"
+  oidc-discoveryUri: "https://idm.${PUBLIC_DOMAIN}/oauth2/openid/${APP}/.well-known/oauth-authorization-server"
   #Whether the "Sign out" button will sign out from the OpenID Connect provider
   oidc-signOut: "true"
   #Scopes which should be requested from the OpenID Connect provider.
