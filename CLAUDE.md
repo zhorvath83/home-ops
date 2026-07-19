@@ -242,7 +242,7 @@ Platform areas:
 | `docs/areas/volsync-backup` | Wire PVC backup/restore, change schedule/jitter/retention/Kopia maintenance | VolSync + Kopia for PVC backups, jitter policy, KopiaMaintenance, per-app component |
 | `docs/areas/resticprofile-backup` | Touch the file-level NAS `/backups` plane or Backrest browse UI | file-level NAS `/backups` plane + Backrest browse UI |
 | `docs/areas/observability` | Change Prometheus/Grafana/VictoriaLogs/exporters | kube-prometheus-stack + grafana + speedtest-exporter + victoria-logs |
-| `docs/areas/iam` | Wire SSO/forward-auth, Pocket-ID OIDC, TinyAuth, or per-app group ACLs | Pocket-ID OIDC provider + TinyAuth forward-auth, Envoy header-stripping trust chain, per-app group ACLs (apps/security) |
+| `docs/areas/iam` | Wire SSO/OIDC gate, Kanidm OIDC, gateway-oidc, or per-app group ACLs | Kanidm OIDC provider + gateway-oidc Envoy-native OIDC gate, header-stripping spoofing guard, per-app group ACLs (apps/security) |
 
 Provisioning areas:
 

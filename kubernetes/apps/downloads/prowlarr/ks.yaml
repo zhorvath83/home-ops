@@ -16,7 +16,7 @@ spec:
       namespace: external-secrets
     - name: democratic-csi
       namespace: kube-system
-    - name: tinyauth
+    - name: kanidm
       namespace: security
   interval: 1h
   path: ./kubernetes/apps/downloads/prowlarr/app

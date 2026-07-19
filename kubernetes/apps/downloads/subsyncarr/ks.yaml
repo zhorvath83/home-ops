@@ -12,7 +12,7 @@ spec:
     - ../../../../components/gateway-oidc
     - ../../../../components/zeroscaler
   dependsOn:
-    - name: tinyauth
+    - name: kanidm
       namespace: security
   interval: 1h
   path: ./kubernetes/apps/downloads/subsyncarr/app

@@ -43,7 +43,7 @@ spec:
         enabled: true
         rollOutPods: true
         # Selects the hubble-ui pod for the cluster-wide ingress-from-gateway-internal
-        # CCNP, restricting its ingress to envoy-internal pods only so the forward-auth
+        # CCNP, restricting its ingress to envoy-internal pods only so the OIDC
         # SecurityPolicy cannot be bypassed via the in-cluster Service.
         podLabels:
           ingress.home.arpa/allow-gateway-internal: "true"

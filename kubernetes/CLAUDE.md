@@ -21,7 +21,7 @@ This guide applies to everything under `kubernetes/`. It captures durable guardr
 - networking platform: [apps/networking/CLAUDE.md](apps/networking/CLAUDE.md) (BM: `docs/areas/networking`)
 - external secrets platform: [apps/external-secrets/CLAUDE.md](apps/external-secrets/CLAUDE.md) (BM: `docs/areas/external-secrets`)
 - VolSync platform: [apps/volsync-system/CLAUDE.md](apps/volsync-system/CLAUDE.md) (BM: `docs/areas/volsync-backup`)
-- IAM platform (Pocket-ID + TinyAuth): [apps/security/CLAUDE.md](apps/security/CLAUDE.md) (BM: `docs/areas/iam`)
+- IAM platform (Kanidm + gateway-oidc): [apps/security/CLAUDE.md](apps/security/CLAUDE.md) (BM: `docs/areas/iam`)
 - system upgrades (tuppr Talos/K8s): [apps/system-upgrade/CLAUDE.md](apps/system-upgrade/CLAUDE.md) (BM: `docs/decisions/AD-019-tuppr-system-upgrade`)
 - cert-manager (TLS issuance): [apps/cert-manager/CLAUDE.md](apps/cert-manager/CLAUDE.md) (BM: `docs/areas/cloudflare`, `docs/areas/networking`)
 
@@ -50,7 +50,7 @@ Treat everything under `kubernetes/` as desired state for Flux, not as an impera
 - App PVC backups use the shared `components/volsync/` component (VolSync + Kopia + OVH Object Storage).
 - File-level backups for shared user data, documents, and media use the `resticprofile` workload (OVH Object Storage); Backrest is the browsing surface.
 - Critical apps may intentionally use both backup layers — PVC snapshots for the live volume AND a curated export into `/backups/...` for the file-level plane. Paperless is the canonical example.
-- No shared auth platform is currently declared under `apps/`.
+- The shared auth platform is Kanidm (OIDC IdP) under `apps/security/`, with the `components/gateway-oidc` Envoy-native OIDC gate for consuming apps.
 
 ## Default Patterns
 

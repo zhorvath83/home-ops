@@ -1,7 +1,7 @@
 ---
-# Reusable Envoy-native OIDC login gate (retires tinyauth forward-auth).
+# Reusable Envoy-native OIDC login gate.
 # Consumers set APP (+ optional APP_SUBDOMAIN, HTTPROUTE_NAME) via Flux
-# postBuild.substitute. Per-app group ACL is enforced at Pocket-ID (client
+# postBuild.substitute. Per-app group ACL is enforced at Kanidm (client
 # allowed-groups, default-deny) — this policy carries no authorization block.
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: SecurityPolicy

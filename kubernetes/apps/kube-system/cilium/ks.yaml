@@ -9,9 +9,9 @@ spec:
     labels:
       app.kubernetes.io/name: cilium
   components:
-    # Forward-auth SecurityPolicy targets the hubble-ui HTTPRoute (APP=hubble-ui).
-    # No dependsOn:tinyauth — cilium is the CNI root; the SecurityPolicy failOpen:false
-    # fails closed until tinyauth is up rather than deadlocking bootstrap.
+    # OIDC SecurityPolicy targets the hubble-ui HTTPRoute (APP=hubble-ui).
+    # No dependsOn:kanidm — cilium is the CNI root; the OIDC policy fails
+    # closed until kanidm is reachable rather than deadlocking bootstrap.
     - ../../../../components/gateway-oidc
   interval: 1h
   path: ./kubernetes/apps/kube-system/cilium/app

@@ -89,7 +89,7 @@ spec:
           - path: /data
             subPath: data
       # debt: volsync file-snapshots a live kanidm.db (may be inconsistent); switch
-      # to `kanidmd database backup` cron if promoted to replace pocket-id.
+      # to a `kanidmd database backup` cron if snapshot consistency errors appear.
       certs:
         type: secret
         name: kanidm-tls

@@ -52,8 +52,8 @@ spec:
   connection:
     bufferLimit: 8Mi
     maxAcceptPerSocketEvent: 0
-  # Strip client-supplied forward-auth identity headers before route matching
-  # and ext-auth, so only tinyauth's ext-auth response can set them.
+  # Strip client-supplied identity headers before route matching and auth,
+  # so only the auth layer can set them (header-injection spoofing guard).
   headers:
     earlyRequestHeaders:
       remove:
