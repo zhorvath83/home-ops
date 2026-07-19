@@ -36,10 +36,13 @@ spec:
       role_attribute_path: "contains(groups[*], 'grafana_admins@idm.${PUBLIC_DOMAIN}') && 'Admin' || 'None'"
       role_attribute_strict: "true"
       skip_org_role_sync: "false"
+      # TEMP DEBUG: log userinfo JSON + claim evaluation to pin down "user sync failed".
+      debug: "true"
     date_formats:
       use_browser_locale: "true"
     log:
       mode: console
+      level: debug
     metrics:
       enabled: "true"
     news:
