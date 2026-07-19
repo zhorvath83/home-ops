@@ -36,13 +36,10 @@ spec:
       role_attribute_path: "contains(groups[*], 'grafana_admins@idm.${PUBLIC_DOMAIN}') && 'Admin' || 'None'"
       role_attribute_strict: "true"
       skip_org_role_sync: "false"
-      # TEMP DEBUG: log userinfo JSON + claim evaluation to pin down "user sync failed".
-      debug: "true"
     date_formats:
       use_browser_locale: "true"
     log:
       mode: console
-      level: debug
     metrics:
       enabled: "true"
     news:
@@ -53,6 +50,9 @@ spec:
       preinstall_disabled: "true"
     security:
       allow_embedding: "true"
+      # Non-human admin login for the grafana-operator provisioning API. Must NOT collide with
+      # any OIDC preferred_username (human logins come from Kanidm). See AD-023 / IAM area.
+      admin_user: "provisioning"
     server:
       root_url: "https://grafana.${PUBLIC_DOMAIN}"
       enable_gzip: "true"
@@ -74,16 +74,11 @@ spec:
           containers:
             - name: grafana
               env:
-                - name: GF_SECURITY_ADMIN_USER
-                  valueFrom:
-                    secretKeyRef:
-                      name: grafana-secret
-                      key: admin-user
                 - name: GF_SECURITY_ADMIN_PASSWORD
                   valueFrom:
                     secretKeyRef:
                       name: grafana-secret
-                      key: admin-password
+                      key: provisioning-password
                 - name: GF_AUTH_GENERIC_OAUTH_CLIENT_ID
                   valueFrom:
                     secretKeyRef:
