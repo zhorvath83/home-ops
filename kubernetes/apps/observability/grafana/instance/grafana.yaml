@@ -22,6 +22,8 @@ spec:
       # Uniform public-issuer convention (AD-023): every OIDC endpoint uses the public hostname.
       enabled: "true"
       name: IdP
+      # client_id is public (shown in Kanidm discovery) — hardcoded, not secret-backed.
+      client_id: "grafana"
       scopes: openid email profile groups
       auth_url: "https://idm.${PUBLIC_DOMAIN}/ui/oauth2"
       token_url: "https://idm.${PUBLIC_DOMAIN}/oauth2/token"
@@ -78,17 +80,12 @@ spec:
                   valueFrom:
                     secretKeyRef:
                       name: grafana-secret
-                      key: provisioning-password
-                - name: GF_AUTH_GENERIC_OAUTH_CLIENT_ID
-                  valueFrom:
-                    secretKeyRef:
-                      name: grafana-secret
-                      key: GRAFANA_OIDC_CLIENT_ID
+                      key: PROVISIONING_PASSWORD
                 - name: GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET
                   valueFrom:
                     secretKeyRef:
                       name: grafana-secret
-                      key: GRAFANA_OIDC_CLIENT_SECRET
+                      key: OIDC_CLIENT_SECRET
               resources:
                 requests:
                   cpu: 10m
