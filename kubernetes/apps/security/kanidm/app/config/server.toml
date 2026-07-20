@@ -1,7 +1,0 @@
-version = "2"
-
-# Audit-trail L1B: trust only the pod CIDR as the XFF proxy so the right-walk
-# parser takes the real client IP (Envoy-appended, rightmost) and ignores
-# client-injected left-side XFF. Other server config stays in KANIDM_* env.
-[http_client_address_info]
-x-forward-for = ["10.244.0.0/16"]

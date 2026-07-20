@@ -13,8 +13,5 @@ configMapGenerator:
   - name: kanidm-theme
     files:
       - ./config/override.css
-  - name: kanidm-config
-    files:
-      - ./config/server.toml
 generatorOptions:
   disableNameSuffixHash: true

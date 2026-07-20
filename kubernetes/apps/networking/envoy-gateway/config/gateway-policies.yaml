@@ -80,10 +80,7 @@ spec:
       - http/1.1
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/gateway.envoyproxy.io/clienttrafficpolicy_v1alpha1.json
-# LAN-direct (no proxy in front). numTrustedHops:0 is a no-op in EG v1.8.2
-# (protobuf zero = unset, so clientIPDetection emits no use_remote_address and the
-# client-supplied XFF passes through to backends). The real "append direct TCP
-# source + sanitize client XFF" is set via EnvoyPatchPolicy/envoy-internal below.
+# LAN-direct (no proxy in front): numTrustedHops=0 rejects client-supplied XFF.
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: ClientTrafficPolicy
 metadata:
@@ -177,23 +174,6 @@ spec:
     - type: type.googleapis.com/envoy.config.listener.v3.Listener
       name: networking/envoy-internal/https-quic
       operation: *operation
-    # Audit-trail L1B: append the direct TCP source to XFF + sanitize client-supplied
-    # entries so kanidm's right-walk logs the real client IP. Patching use_remote_address
-    # (not the CTP — EG v1.8.2 numTrustedHops:0 is a no-op) keeps xff_num_trusted_hops at
-    # its default 0, so client-IP detection for the RFC1918 SecurityPolicy, rate-limit,
-    # and the gateway-oidc token-exchange hairpin stays the direct TCP source.
-    - type: type.googleapis.com/envoy.config.listener.v3.Listener
-      name: networking/envoy-internal/https
-      operation:
-        op: add
-        jsonPath: ..filters[?(@.name=="envoy.filters.network.http_connection_manager")].typed_config.use_remote_address
-        value: true
-    - type: type.googleapis.com/envoy.config.listener.v3.Listener
-      name: networking/envoy-internal/https-quic
-      operation:
-        op: add
-        jsonPath: ..filters[?(@.name=="envoy.filters.network.http_connection_manager")].typed_config.use_remote_address
-        value: true
   targetRef:
     group: gateway.networking.k8s.io
     kind: Gateway
