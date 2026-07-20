@@ -42,15 +42,7 @@ spec:
               # renovate: datasource=docker depName=docker.io/kanidm/server
               repository: docker.io/kanidm/server
               tag: 1.10.4
-            env:
-              KANIDM_ADMIN_BIND_PATH: /var/run/kanidmd.sock
-              KANIDM_DOMAIN: idm.${PUBLIC_DOMAIN}
-              KANIDM_ORIGIN: https://idm.${PUBLIC_DOMAIN}
-              KANIDM_BINDADDRESS: "[::]:8443"
-              # KANIDM_LDAPBINDADDRESS: "[::]:3636"
-              KANIDM_DB_PATH: /data/kanidm.db
-              KANIDM_TLS_CHAIN: /certs/tls.crt
-              KANIDM_TLS_KEY: /certs/tls.key
+            env: []
             probes:
               liveness: &probe
                 enabled: true
@@ -82,16 +74,21 @@ spec:
         ports:
           http:
             port: *port
-            # ldap:
-            #   port: 3636
+          ldap:
+            port: 3636
     persistence:
       data:
         existingClaim: kanidm
         globalMounts:
           - path: /data
             subPath: data
-      # debt: volsync file-snapshots a live kanidm.db (may be inconsistent); switch
-      # to a `kanidmd database backup` cron if snapshot consistency errors appear.
+      config:
+        type: configMap
+        name: kanidm-config
+        globalMounts:
+          - path: /data/server.toml
+            subPath: server.toml
+            readOnly: true
       certs:
         type: secret
         name: kanidm-tls

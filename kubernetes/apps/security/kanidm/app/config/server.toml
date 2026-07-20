@@ -1,0 +1,30 @@
+# Kanidm server config — https://kanidm.github.io/kanidm/stable/server_configuration.html
+# Reference: https://github.com/kanidm/kanidm/blob/master/examples/server_container.toml
+# ${PUBLIC_DOMAIN} is substituted by Flux postBuild on this ConfigMap's data.
+
+version = "2"
+
+# Bind
+bindaddress = "[::]:8443"
+ldapbindaddress = "[::]:3636"
+
+# General
+db_path = "/data/kanidm.db"
+tls_chain = "/certs/tls.crt"
+tls_key = "/certs/tls.key"
+log_level = "info"
+domain = "idm.${PUBLIC_DOMAIN}"
+origin = "https://idm.${PUBLIC_DOMAIN}"
+adminbindpath = "/var/run/kanidmd.sock"
+db_path = "/data/kanidm.db"
+
+# Trust X-Forwarded-For from the in-cluster pod CIDR (Cilium native routing) so
+# audit logs and rate-limiting see real client IPs, not the envoy pod IP.
+[http_client_address_info]
+x-forward-for = ["${POD_CIDR}"]
+
+# DB dumps into the PVC
+[online_backup]
+path = "/data/kanidm/backups/"
+schedule = "45 1 * * *"
+versions = 7
