@@ -49,6 +49,9 @@ spec:
               KANIDM_DB_PATH: /data/kanidm.db
               KANIDM_TLS_CHAIN: /certs/tls.crt
               KANIDM_TLS_KEY: /certs/tls.key
+              # L1A XFF probe (kanidm-auth-audit-trail Phase 0): trust-all to surface the
+              # real client_address per path — REVERT before L1B (externally spoofable).
+              KANIDM_TRUST_X_FORWARDED_FOR: "true"
             probes:
               liveness: &probe
                 enabled: true
