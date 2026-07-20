@@ -15,6 +15,9 @@ spec:
       namespace: external-secrets
   interval: 1h
   path: ./kubernetes/apps/observability/grafana/instance
+  postBuild:
+    substitute:
+      APP: grafana
   prune: true
   sourceRef:
     kind: GitRepository
