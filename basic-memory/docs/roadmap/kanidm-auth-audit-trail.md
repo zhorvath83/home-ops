@@ -348,3 +348,140 @@ The `iam` area-ref "Rate Limiting on External Gateway" block says `rate-limit-ex
 "commented out due to Envoy Gateway v1.8.0 CRD regression". The live
 `gateway-policies.yaml` has `rate-limit` **enabled** (Local, 600/min; commit `1a7ac6cd5`).
 Refresh the `iam` area-ref's rate-limiting block to match reality.
+
+
+## Fact-based verification pass 2 — live cluster + v1.10.4 source (2026-07-20)
+
+Method: read-only live cluster inspection (`kubectl logs/exec`, Envoy `config_dump` via
+port-forward, VictoriaLogs LogsQL API) + a source-grounded pass over the kanidm **v1.10.4** git
+tag. This pass RESOLVES the Phase 0 blockers that Pass 1 left empirical, and **corrects several
+factual errors** in the sections above. Where this pass and an earlier section conflict, THIS
+pass is authoritative.
+
+### Corrections to the text above (verified wrong)
+
+1. **Env-var name was wrong (L1A, Risks #2/#8).** The XFF-trust env var is
+   **`KANIDM_TRUST_X_FORWARDED_FOR`** (with the "D"), a clap option `hide=true` (hence absent
+   from `--help`), field `trust_all_x_forwarded_for` → `HttpAddressInfo::XForwardForAllSourcesTrusted`
+   (`proto/src/cli.rs:93-99`, `server/core/src/config.rs:770-773`). The name used above
+   (`KANIDM_TRUST_X_FORWARD_FOR`, no "D") **does not exist**. The no-"D" spelling
+   `trust_x_forward_for` is a *legacy TOML key only* (file-only, `config.rs:299,853-854`) — the
+   two were conflated. The env var and the CLI flag `--trust-all-x-forwarded-for` are the SAME
+   clap field (identical effect).
+
+2. **No env→TOML overlay exists (Risk #5 mechanism).** `kanidmd` does NOT overlay arbitrary
+   `KANIDM_*` env vars onto `server.toml`; `ServerConfigUntagged::new()` reads the file only
+   (`config.rs:322-367`). The existing `KANIDM_DOMAIN/ORIGIN/BINDADDRESS/DB_PATH/TLS_*` work
+   because each is a clap `env=` option merged via `add_cli_config()`, NOT via file-env overlay.
+   Consequence: a mounted `server.toml` (carrying only `[http_client_address_info]`) and the
+   existing env config **coexist** — but the file MUST declare `version = "2"` to select the V2
+   parser, and `[http_client_address_info]` is applied only from that file
+   (`config.rs:395,937-938`). Validate with the built-in `kanidmd configtest` before rollout.
+
+3. **Config-path is `KANIDM_CONFIG` (Risk #5, resolved live).** `kanidmd server -c/--config-path`,
+   `[env: KANIDM_CONFIG=]` (confirmed from the live binary's `--help`; `server/daemon/src/opt.rs:117-118`).
+   The **container image's default config path is `/data/server.toml`** — but `/data` is the
+   kanidm PVC (non-declarative), so DO NOT use it. Mount a ConfigMap file (e.g. `/config/server.toml`,
+   precedent: the `theme` ConfigMap) and point `KANIDM_CONFIG` at it.
+
+4. **`Invalid identity: NotAuthenticated` is NOT an auth failure (L2/Risk #3, live).** It fires
+   on every pre-login `GET /ui/oauth2` authorise (normal unauthenticated state; observed on real
+   OIDC flows). Including it in `auth-failed` produces massive false positives — **remove it**.
+
+5. **`auth-failed` grep strings were guessed wrong (L2/Risk #3, source).** There is no literal
+   `"Auth result: Denied"`, `"Account is softlocked"`, or `"CredentialError"`. The correct anchor
+   is **`Result::Denied`** — emitted via `security_error!` at **ERROR** level, so denials are
+   visible at the current `info` config (no `debug` bump needed; Risk #3's debit-cost worry is
+   moot). Canonical strings (`server/lib/src/idm/authsession/mod.rs`): `Handler::Password -> Result::Denied - incorrect password`,
+   `Handler::Webauthn -> Result::Denied - webauthn error` (**the relevant one — this deployment is
+   passkey/Webauthn-first**), `Handler::PasswordMfa -> Result::Denied - ...`. Account-state cases
+   are lower severity: `account expired` (INFO) and `Account is temporarily locked` (softlock,
+   INFO/TRACE — `idm/server.rs:1341-1347`). Robust filter = `Result::Denied` + `account expired` +
+   `Account is temporarily locked`.
+
+6. **`oauth2-tokens` client_id: recover from the AUTHORISE event, not token-exchange (L2/R4, live+source).**
+   Confirmed each HTTP request gets its own `kopid` (`https/middleware/mod.rs:58-96`); authorise
+   and token-exchange are separate handlers with separate kopids (`https/oauth2.rs:158-193` vs
+   `:449-463`) → kopid does NOT bridge them. BUT the `GET /ui/oauth2?client_id=...` request line
+   carries `client_id` in its URI, and the `handle_oauth2_authorise` span records
+   `o2rs.name: "<client>"`. So `oauth2-tokens` should filter the **authorise** event for the RS
+   name; `POST /oauth2/token` alone cannot name the RS. (This is an L2 deliverable after all — no
+   L4 needed for it, contra R4's fallback framing.)
+
+### Phase 0 blockers — resolution status
+
+| Blocker | Status | Evidence |
+|---|---|---|
+| Risk #1 — client_address is the Envoy pod IP | **CONFIRMED (live)** | Every `client_address` = `::ffff:10.244.0.189` (=envoy-internal pod) or `::ffff:10.244.0.76` (=envoy-external pod); pod IPs verified via `get pods -o wide`. No real client IP ever appears (`http_client_address_info` unset). |
+| Risk #1 — does Envoy put the real client IP into upstream XFF? | **PARTIALLY RESOLVED — one true empirical gate remains** | Envoy `config_dump` (both gateways): **`use_remote_address: false`**; external = `original_ip_detection custom_header CF-Connecting-IP`; internal = XFF numTrustedHops 0, `skip_xff_append: false`. `use_remote_address:false` means Envoy does NOT reliably append the *detected* IP to upstream XFF the way Pass 1 assumed. The exact XFF chain kanidm receives per path must be observed empirically (see the L1A probe below). |
+| R2 — VictoriaLogs ingests security/kanidm | **RESOLVED — POSITIVE (strong)** | `kubernetes.pod_namespace:security` present; **8907 kanidm lines / 24h** in VictoriaLogs (14d retention). Durable filters proven: by `client_address`, by message (`"Initiating Authentication Session"` → real accounts over 7d). Stream selector: `{kubernetes.pod_namespace="security", kubernetes.pod_name="kanidm-0"}`, container `app`. |
+| R3 — does `person session status` show client_address? | **RESOLVED — NO (source)** | `UatStatus` Display prints only `account_id, session_id, state, issued_at, purpose` (`proto/src/v1/mod.rs:78-98`). No source IP, no label. |
+
+### Refined per-layer plan
+
+**L1 — client-IP fidelity (decisive path).**
+- The one remaining unknown is purely empirical and cheaply resolved. Phase-0 probe: add the
+  single env line `KANIDM_TRUST_X_FORWARDED_FOR: "true"` (L1A, trust-all — trivially revertible),
+  reconcile, then log in once via LAN and once via Cloudflare and read `client_address` in
+  `just kanidm logs`. This reveals, per path, whether the real IP reaches kanidm via XFF at all
+  and what the chain looks like.
+- Then ship **L1B** (the spoof-resistant endpoint): mount `config/server.toml`
+  (`version = "2"` + `[http_client_address_info] x-forward-for = ["10.244.0.0/16"]`) via a
+  ConfigMap (precedent: `theme`), set `KANIDM_CONFIG=/config/server.toml`, validate with
+  `kanidmd configtest`. L1B walks XFF from the right, trusting only the pod-CIDR proxy entries →
+  client-injected left-side XFF is never reached. **Do NOT ship L1A as the endpoint** —
+  `XForwardForAllSourcesTrusted` takes the leftmost (client-claimed) XFF entry → externally
+  spoofable (the ingress CCNPs block only *pod* spoofing, not external clients).
+- **If the LAN probe shows no real IP even with trust-all** (possible given `use_remote_address:false`),
+  the fix is Envoy-side first: on `envoy-internal` ensure the real downstream is appended to
+  upstream XFF; on `envoy-external` a `ClientTrafficPolicy`/`EnvoyPatchPolicy` to set upstream
+  XFF from `CF-Connecting-IP` and strip client-supplied XFF — then L1B. This Envoy dependency is
+  now more likely than Pass 1 implied (both gateways run `use_remote_address:false`).
+
+**L2 — stdout auth-event mining + durable history (forensic, post-hoc).**
+- `auth-tail` / `auth-recent <N>` filter pattern (corrected):
+  `Initiating Authentication Session|Auth result|Result::Denied|Issuing.*session|Persisting auth session|account expired|Account is temporarily locked`.
+- `auth-failed`: anchor on `Result::Denied` (+ `account expired`, `Account is temporarily locked`).
+  Drop `Invalid identity: NotAuthenticated`.
+- `oauth2-tokens`: filter `handle_oauth2_authorise` / `uri: /ui/oauth2?...client_id=` for the RS name.
+- **`vlogs-query` is now a first-class deliverable** (R2 positive). Query VictoriaLogs via
+  `kubectl exec`/port-forward to the vlogs Service (`:9428`, LogsQL `/select/logsql/query`) — NOT
+  the un-authed `logs.${PUBLIC_DOMAIN}` HTTPRoute → sidesteps Risk #6 entirely. This is the
+  14d durable path that survives pod restarts, largely closing the R6 completeness gap (vlogs
+  persists independently of the kanidm pod's stdout buffer).
+
+**L3 — live sessions (`who / when / purpose`, NOT `from where`).**
+- `session-status <user>` → `person session status`: shows session_id, state/expiry, issued_at,
+  purpose. Reframe the headline benefit: "from where" for a LIVE session is answerable ONLY by
+  correlating its `session_id` back to an L2 authorise/auth audit line — not from L3 itself.
+- `session-destroy <user> <uuid>` → `person session destroy`, `gum confirm`-gated.
+
+**L4 — OTLP (unchanged direction; hardening confirmed necessary).**
+- `KANIDM_OTEL_GRPC_URL` (gRPC/tonic, URL-supplied port, std 4317), honors `OTEL_SERVICE_NAME`
+  (default `kanidmd`) and the `authorization` header from `OTEL_EXPORTER_OTLP_HEADERS`
+  (`libs/sketching/src/pipeline.rs:72-134`). Sampler is **`AlwaysOn`** → exports the full
+  per-request spans incl. `client_address`, `uri`, and `security_*` auth events (user
+  identities). This confirms R5: OTLP is a full-fidelity auth-data channel — collector-side
+  auth (mTLS/header) + a tight kanidm→collector egress CCNP are mandatory, and the kanidm CNP's
+  "no legitimate outbound / no telemetry" comment must be rewritten in lockstep. Keep L4 a
+  separate sub-item with its own security-review.
+
+### Updated sequencing (supersedes both prior sequencing blocks)
+
+- **Phase 0 (blocking, mostly DONE here)**: R2 ✅ positive; R3 ✅ (no client_address); Risk #1 IP
+  ✅ confirmed. Remaining: the L1A trust-all **XFF probe login** (LAN + Cloudflare) to read the
+  actual per-path client_address — the sole empirical gate for L1.
+- **Phase 1**: L1B (server.toml + `KANIDM_CONFIG`, `configtest`-validated) → L2 (corrected
+  filters + `vlogs-query` via kubectl) → L3 (sessions; "from where" documented as L2-correlation).
+- **Phase 2 (only if the probe shows the real IP does not reach kanidm)**: Envoy-side XFF fix
+  (internal append / external CF-Connecting-IP → upstream XFF + strip), then re-verify L1B + spoof test.
+- **Phase 3 (optional, separate + security-review)**: L4 OTLP with collector hardening + egress CNP + CNP-comment rewrite, audited under AD-023.
+
+### Remaining true unknowns (honest)
+
+- The exact upstream XFF chain kanidm receives per path (the L1A probe resolves it in minutes).
+- Exact live denial strings on THIS passkey deployment (source gives `Handler::Webauthn ->
+  Result::Denied - webauthn error`; confirm by triggering one failed passkey attempt when
+  finalizing the `auth-failed` filter).
+- Whether a V2 `server.toml` carrying ONLY `[http_client_address_info]` cleanly composes with the
+  clap/env config in practice — gate on `kanidmd configtest` at implementation.
