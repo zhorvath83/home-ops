@@ -49,9 +49,9 @@ spec:
               KANIDM_DB_PATH: /data/kanidm.db
               KANIDM_TLS_CHAIN: /certs/tls.crt
               KANIDM_TLS_KEY: /certs/tls.key
-              # L1A XFF probe (kanidm-auth-audit-trail Phase 0): trust-all to surface the
-              # real client_address per path — REVERT before L1B (externally spoofable).
-              KANIDM_TRUST_X_FORWARDED_FOR: "true"
+              # Audit-trail L1B: V2 server.toml carries only the XFF trust set; the rest
+              # stays here as KANIDM_* clap env. kanidmd configtest-validated on deploy.
+              KANIDM_CONFIG: /config/server.toml
             probes:
               liveness: &probe
                 enabled: true
@@ -106,6 +106,14 @@ spec:
         globalMounts:
           - path: /hpkg/override.css
             subPath: override.css
+            readOnly: true
+      # server.toml (audit-trail L1B): XFF trust set for real client IP in audit logs.
+      config:
+        type: configMap
+        name: kanidm-config
+        globalMounts:
+          - path: /config/server.toml
+            subPath: server.toml
             readOnly: true
       tmpfs:
         type: emptyDir
