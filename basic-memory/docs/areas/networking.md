@@ -5,7 +5,7 @@ permalink: home-ops/docs/areas/networking
 area: networking
 status: current
 confidence: high
-verified_at: '2026-07-11'
+verified_at: '2026-07-20'
 summary: Gateway API with Envoy Gateway provides cluster ingress, split across two
   shared entrypoints (envoy-external for Cloudflare Tunnel public traffic, envoy-internal
   for LAN traffic on a Cilium L2-announced VIP). Single HTTPS listener per Gateway
@@ -21,6 +21,7 @@ verified_against:
 - kubernetes/apps/networking/envoy-gateway/config/gateway-internal.yaml
 - kubernetes/apps/networking/envoy-gateway/config/gateway-external.yaml
 - kubernetes/apps/networking/envoy-gateway/config/gateway-policies.yaml
+- kubernetes/apps/networking/envoy-gateway/config/validatingadmissionpolicy.yaml
 - kubernetes/apps/networking/envoy-gateway/config/security-headers.yaml
 - kubernetes/apps/networking/envoy-gateway/config/envoy.yaml
 - kubernetes/apps/networking/envoy-gateway/config/ciliumnetworkpolicy-external.yaml
@@ -119,6 +120,7 @@ and injected into every child Kustomization via Flux `postBuild.substituteFrom`.
 - [component] CiliumClusterwideNetworkPolicy baseline (AD-023 two-tier model; V3 flip landed in commit 953626966) — 6 CCNPs in kube-system/cilium/netpols/: allow-cluster-egress (flipped — toEndpoints {} + toEntities: cluster + toEntities: kube-apiserver; public internet no longer in baseline), allow-dns-egress (L7 DNS proxy), allow-world-egress (toCIDRSet 0.0.0.0/0 except RFC1918/100.64/10, gated by egress.home.arpa/allow-world label), ingress-from-gateways, ingress-from-prometheus, ingress-none. 5-label dictionary: egress.home.arpa/{custom-egress,allow-world} + ingress.home.arpa/{gateways,prometheus,none}. Per-app CNPs cover app-unique needs the flipped baseline does not grant — e.g. kube-prometheus-stack-prometheus LAN 192.168.1.1/32:9100 (kubernetes/apps/observability/kube-prometheus-stack/app/ciliumnetworkpolicy.yaml) plus AD-023 V5 narrow-world CNPs (external-dns, tuppr, victoria-logs, grafana, paperless-gpt). NOTE: the former coredns world:53 CNP was REMOVED 2026-07-11 (inert — the baseline covers the host-DNS forward; see the 2026-07-11 Update).
 
 ## Claims (verified against repo)
+- [claim] "The wildcard HTTPS listener's All-namespace attachment (allowedRoutes.from: All) is mitigated by a ValidatingAdmissionPolicy (native kube-apiserver CEL, no Kyverno) in envoy-gateway/config/validatingadmissionpolicy.yaml: only the security namespace may claim idm.${PUBLIC_DOMAIN}, and non-security namespaces may not claim a wildcard hostname (a *.${PUBLIC_DOMAIN} claim would cover idm and every other app). Hostname-scoped guard against route-collision / WebAuthn-origin-binding hijack of the IdP plane — closes the gap that the shared wildcard cert would otherwise present the same browser origin as Kanidm." (evidence: repo, ref: validatingadmissionpolicy.yaml, verified: 2026-07-20)
 
 - [claim] "envoy-internal Gateway is pinned to LAN VIP ${ENVOY_INTERNAL_IP} via lbipam.cilium.io/ips annotation" (evidence: repo, ref: gateway-internal.yaml, verified: 2026-06-14)
 - [claim] "k8s-gateway Service is pinned to LAN VIP ${K8S_GATEWAY_IP} via loadBalancerIP chart value" (evidence: repo, ref: k8s-gateway/app/helmrelease.yaml:32, verified: 2026-05-19)

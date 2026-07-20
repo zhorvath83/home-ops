@@ -24,6 +24,8 @@ The system implements a "Secure-by-Design" identity pipeline to prevent header i
 `User -> Envoy Gateway -> SecurityPolicy (OIDC) -> App`
 
 ### Critical Security Constraints
+- **Hostname admission guard**: A `ValidatingAdmissionPolicy` (native CEL, no Kyverno) in `envoy-gateway/config/validatingadmissionpolicy.yaml` gates HTTPRoute hostname claims — only the `security` namespace may claim `idm.${PUBLIC_DOMAIN}`, and non-security namespaces may not claim a wildcard (which would cover idm). Closes the route-collision / WebAuthn-origin-binding hijack path on the IdP plane. See [[networking]].
+
 - **Header Stripping**: Envoy Gateway `ClientTrafficPolicy` removes `Remote-User`, `Remote-Email`, `Remote-Groups`, `Remote-Name`, and `Remote-Sub` before request processing. This is a header-injection spoofing guard kept as defense-in-depth — those identity headers cannot be supplied by a client.
 - **Envoy-native OIDC**: The `gateway-oidc` component makes Envoy itself perform the OIDC authorization-code flow against Kanidm. An unauthenticated request is redirected to Kanidm login; only after a successful token exchange does the request reach the backend (Envoy sets the id-token/access-token cookies). Unauthenticated traffic is dropped/redirected at Envoy before it reaches the backend.
 - **Group authorization**: Per-app group access is enforced at Kanidm (per-client `allowed-groups`, default-deny), not in the SecurityPolicy — the `gateway-oidc` component carries no `authorization` block.
