@@ -68,7 +68,7 @@ options:
 | selfhosted | `baseline` now; `restricted` after L5 | wallos runs as root (`helmrelease.yaml:22-23`) → fails restricted (needs runAsNonRoot) but passes baseline |
 | media | **stays `privileged`/warn until calibre fixed** | `calibre-web-automated` adds caps [CHOWN,SETUID,SETGID,FOWNER,DAC_OVERRIDE] (`helmrelease.yaml:104-107`) + APE=true → **violates even baseline**; PSS has no per-pod in-namespace exception |
 | observability | `baseline` (→restricted where clean) | verify node-exporter/victoria-logs |
-| security | `restricted` | pocket-id/tinyauth are distroless nonroot |
+| security | `restricted` | kanidm is distroless nonroot |
 | networking | `baseline` | envoy/cloudflared |
 | kube-system, system-upgrade, volsync-system, cert-manager | `privileged` | legit privileged infra (cilium, csi, tuppr, kopia-maint) — do NOT enforce restricted |
 | external-secrets, flux-system | `baseline`/`restricted` | verify |

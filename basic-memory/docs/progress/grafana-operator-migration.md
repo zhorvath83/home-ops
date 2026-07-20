@@ -3,7 +3,7 @@ title: grafana-operator-migration
 type: progress
 permalink: home-ops/docs/progress/grafana-operator-migration
 topic: Execution state for the grafana-operator-migration roadmap (operator/instance
-  split, decentralized dashboard/datasource CRs, blackbox-exporter, Pocket-ID SSO)
+  split, decentralized dashboard/datasource CRs, blackbox-exporter, Kanidm SSO)
 status: done
 roadmap: '[[grafana-operator-migration]]'
 related_areas:
@@ -100,7 +100,7 @@ Next: P2 cutover — STOP and request explicit human approval (production Grafan
 - [P2] Atomic cutover: instance/ + datasource CRs, delete app/, replace 'grafana' KS doc with 'grafana-instance' (dependsOn grafana-operator + kube-prometheus-stack + onepassword-connect/external-secrets), CNP rewrite to envoy-internal-only. Requires explicit human approval (brief Grafana downtime).
 - [P3] Dashboard/folder CR fan-out (17 dashboards + cilium configMapRef + blackbox 7587). After P2 instance live.
 - [P4] blackbox-exporter app + kps probeSelectorNilUsesHelmValues: false.
-- [P5] Pocket-ID OIDC SSO — HUMAN GATE (client + groups + 1Password fields).
+- [P5] Kanidm OIDC SSO — HUMAN GATE (client + groups + 1Password fields).
 - [P6] BM docs: observability/iam area notes, cnp-per-app-audit, roadmap status → done.
 
 ### Open VERIFY items (carried to P2+)
@@ -110,7 +110,7 @@ Next: P2 cutover — STOP and request explicit human approval (production Grafan
 - cilium live dashboard ConfigMap names (P3 configMapRef sourcing).
 - volsync R1 VAR_REPLICATIONDESTNAME behavior (P3 vendored ConfigMap).
 - victoria-logs chart dashboards.grafanaOperator.* schema passthrough (P3, D13 caveat).
-- Pocket-ID OIDC discovery endpoint paths (P5).
+- Kanidm OIDC discovery endpoint paths (P5).
 
 
 ## Session 2 — P2 atomic cutover + verify (2026-07-09)
@@ -158,7 +158,7 @@ Next: P2 cutover — STOP and request explicit human approval (production Grafan
 - [follow-up] Grafana 13 background plugin installer startup burst: ~5 error log lines per pod start. Documented candidate to suppress = [plugins] disable_plugins (comma-list of the 5 bundled app plugin IDs) — Context7 confirms disable_plugins 'prevents loading incl. core plugins, hides from catalog' but does NOT confirm it stops the background installer's download ATTEMPTS. NOT shipped unverified (code-generation No-Assumptions). Revisit if the startup noise becomes undesirable; verify live before committing.
 - [follow-up] P3 dashboard fan-out (17 dashboards + cilium configMapRef + blackbox 7587) — gated, after P2 instance live (now satisfied).
 - [follow-up] P4 blackbox-exporter + kps probeSelectorNilUsesHelmValues: false.
-- [follow-up] P5 Pocket-ID OIDC SSO — HUMAN GATE.
+- [follow-up] P5 Kanidm OIDC SSO — HUMAN GATE.
 - [follow-up] P6 BM docs (observability/iam areas, cnp-per-app-audit, roadmap status -> done).
 
 ### Next (gated — awaiting approval)
@@ -204,7 +204,7 @@ Next: P2 cutover — STOP and request explicit human approval (production Grafan
 - [follow-up] Renovate grafana-operator grafanaCom dashboard revision bumping: no customManager exists for the new GrafanaDashboard grafanaCom{id,revision} shape; the old depName annotations were not functional. Add a customManager if dashboard revision auto-update is desired.
 - [follow-up] Grafana 13 background plugin installer hardening (Session 2, unchanged).
 - [follow-up] P4 blackbox-exporter + kps probeSelectorNilUsesHelmValues: false.
-- [follow-up] P5 Pocket-ID OIDC SSO — HUMAN GATE.
+- [follow-up] P5 Kanidm OIDC SSO — HUMAN GATE.
 - [follow-up] P6 BM docs (observability/iam areas, cnp-per-app-audit, roadmap status -> done).
 
 ### Next (gated)
@@ -242,17 +242,17 @@ Commits: ebdf73c5 (feat: blackbox-exporter + probeSelector), a8c08dbe (fix: bare
 
 **Follow-ups**: none new for P4.
 
-**Next**: P5 -- Pocket-ID OIDC SSO (HUMAN GATE: create Pocket-ID client "Grafana" + groups grafana_users/grafana_administrators + 1Password fields GRAFANA_OAUTH_CLIENT_ID/GRAFANA_OAUTH_CLIENT_SECRET, then extend instance/externalsecret + grafana.yaml auth.generic_oauth + instance CNP egress to id.<domain>).
+**Next**: P5 -- Kanidm OIDC SSO (HUMAN GATE: create Kanidm client "Grafana" + groups grafana_users/grafana_administrators + 1Password fields GRAFANA_OAUTH_CLIENT_ID/GRAFANA_OAUTH_CLIENT_SECRET, then extend instance/externalsecret + grafana.yaml auth.generic_oauth + instance CNP egress to idm.<domain>).
 
 
-## Session 5 — P5: Pocket-ID OIDC SSO (2026-07-09/10, commits 83bb79cc6, d3a4ecf44, 518aa4b03, 6598ada5f, f990d45e4, 703dd9e03)
+## Session 5 — P5: Kanidm OIDC SSO (2026-07-09/10, commits 83bb79cc6, d3a4ecf44, 518aa4b03, 6598ada5f, f990d45e4, 703dd9e03)
 
-**Scope**: close Grafana's IAM exception — make Grafana OIDC-native against Pocket-ID (iam Path A). HUMAN GATE items (Pocket-ID client + groups + 1Password fields) done by the human.
+**Scope**: close Grafana's IAM exception — make Grafana OIDC-native against Kanidm (iam Path A). HUMAN GATE items (Kanidm client + groups + 1Password fields) done by the human.
 
 ### Done (P5)
 
-- [done] Pocket-ID OIDC client "Grafana" created (client_id `777facef-f5f4-44d3-abaf-e00884bfa35a`), redirect `https://grafana.${PUBLIC_DOMAIN}/login/generic_oauth`.
-- [done] `instance/grafana.yaml`: added `spec.config.auth.generic_oauth` (enabled, name, scopes `openid email profile groups`, auth/token/userinfo at the public issuer `id.${PUBLIC_DOMAIN}` per AD-023, `email_attribute_name: email:primary`, `allow_sign_up: true`). Client id/secret injected via env `GF_AUTH_GENERIC_OAUTH_CLIENT_ID/SECRET` from `grafana-secret`.
+- [done] Kanidm OIDC client "Grafana" created (client_id `777facef-f5f4-44d3-abaf-e00884bfa35a`), redirect `https://grafana.${PUBLIC_DOMAIN}/login/generic_oauth`.
+- [done] `instance/grafana.yaml`: added `spec.config.auth.generic_oauth` (enabled, name, scopes `openid email profile groups`, auth/token/userinfo at the public issuer `idm.${PUBLIC_DOMAIN}` per AD-023, `email_attribute_name: email:primary`, `allow_sign_up: true`). Client id/secret injected via env `GF_AUTH_GENERIC_OAUTH_CLIENT_ID/SECRET` from `grafana-secret`.
 - [done] `instance/externalsecret.yaml`: template emits the OIDC keys; instance CNP already carries `egress.home.arpa/allow-gateways` for the token/userinfo hairpin through envoy.
 - [done] Role mapping: `role_attribute_path: contains(groups[*], 'grafana_admins') && 'Admin' || 'None'`, `role_attribute_strict: true`, `skip_org_role_sync: false`.
 
@@ -272,8 +272,8 @@ Commits: ebdf73c5 (feat: blackbox-exporter + probeSelector), a8c08dbe (fix: bare
 
 ### SSO "Login failed / Failed to get token from provider" — RESOLVED
 
-- [root-cause] The token exchange reached Pocket-ID and was rejected: grafana log `[auth.oauth.token.exchange] failed to exchange code to token: oauth2: "Invalid client secret"`; Pocket-ID log `invalid client secret` on `POST /api/oidc/token` from the grafana pod IP. NOT a network/CNP/hairpin issue (a different client's token exchange succeeded over the same path). The `OIDC_CLIENT_SECRET` value in 1Password did not match the Pocket-ID client secret.
-- [fix] Human re-synced the secret value (1Password ↔ Pocket-ID) + pod restart (ephemeral DB re-seeds admin from env). SSO login works.
+- [root-cause] The token exchange reached Kanidm and was rejected: grafana log `[auth.oauth.token.exchange] failed to exchange code to token: oauth2: "Invalid client secret"`; Kanidm log `invalid client secret` on `POST /api/oidc/token` from the grafana pod IP. NOT a network/CNP/hairpin issue (a different client's token exchange succeeded over the same path). The `OIDC_CLIENT_SECRET` value in 1Password did not match the Kanidm client secret.
+- [fix] Human re-synced the secret value (1Password ↔ Kanidm) + pod restart (ephemeral DB re-seeds admin from env). SSO login works.
 
 ### Plugin preinstall noise — RESOLVED (commit 4ba4c9ce8)
 
@@ -330,12 +330,12 @@ title: grafana-operator-migration
 type: roadmap
 permalink: home-ops/docs/roadmap/grafana-operator-migration
 topic: Re-implement Grafana with grafana-operator (operator/instance split, decentralized
-  dashboard/datasource CRs, Pocket-ID SSO) + blackbox-exporter probing nas.lan ICMP
+  dashboard/datasource CRs, Kanidm SSO) + blackbox-exporter probing nas.lan ICMP
   + NFS tcp/2049
 status: done
 priority: medium
 scope: Execution-grade roadmap. Contains the full YAML of every new/changed manifest,
-  the per-app dashboard placement table, CNP rewrites under AD-023, the Pocket-ID
+  the per-app dashboard placement table, CNP rewrites under AD-023, the Kanidm
   OIDC wiring, per-phase verify commands and acceptance criteria. An executor should
   work through P0-P6 without design decisions; live-state checks are marked VERIFY,
   human-only steps are marked HUMAN GATE, undecided items live under Follow-ups.
@@ -343,7 +343,7 @@ rationale: Aligns with bjw-s-labs/home-ops and onedr0p/home-ops best practice (o
   split, dashboards-as-CRs co-located with owning apps), removes the kiwigrid sidecars
   and the grafana pod's kube-apiserver egress, and turns dashboard/datasource state
   fully declarative. No Grafana plugins at all (VictoriaLogs stays in vmui, D13) -
-  zero startup internet dependency. SSO via Pocket-ID closes Grafana's IAM exception
+  zero startup internet dependency. SSO via Kanidm closes Grafana's IAM exception
   per the standing no-app-without-IAM policy. Blackbox-exporter adds LAN service probing
   (NAS + NFS) wired into the existing Alertmanager->Pushover path.
 options:
@@ -354,7 +354,7 @@ options:
 - 'P3: dashboard fan-out - co-located GrafanaDashboard/GrafanaFolder CRs per owning
   app'
 - 'P4: blackbox-exporter app + Probe CRs + kps probeSelector flag'
-- 'P5: SSO - Pocket-ID OIDC (HUMAN GATE: client + groups + 1Password fields)'
+- 'P5: SSO - Kanidm OIDC (HUMAN GATE: client + groups + 1Password fields)'
 - 'P6: BM docs updates (observability + iam areas, cnp-per-app-audit, progress note)'
 related_areas:
 - observability
@@ -387,9 +387,9 @@ tags:
 
 Replace the standalone `grafana` Helm chart deployment (`kubernetes/apps/observability/grafana/`) with the **grafana-operator** pattern used by bjw-s-labs/home-ops and onedr0p/home-ops: the operator deployed by HelmRelease, the Grafana instance as a `Grafana` CR, datasources/dashboards/folders as `GrafanaDatasource`/`GrafanaDashboard`/`GrafanaFolder` CRs **co-located with the app that owns them**. Add a **blackbox-exporter** app (prometheus-blackbox-exporter chart) with `Probe` CRs for nas.lan reachability (ICMP) and the NFS service (TCP 2049), modeled on bjw-s.
 
-The end state also closes Grafana's IAM exception: **SSO via Pocket-ID OIDC** (iam area "Path A"), per the standing policy that no app ships without an IAM policy (see docs/areas/iam §3).
+The end state also closes Grafana's IAM exception: **SSO via Kanidm OIDC** (iam area "Path A"), per the standing policy that no app ships without an IAM policy (see docs/areas/iam §3).
 
-An executor should be able to work through P0–P6 without making design decisions. Anything the executor must check against the live cluster or chart values is explicitly marked **VERIFY**. Anything undecided is under Open questions / Follow-ups. Steps requiring the human (Pocket-ID UI, 1Password fields) are marked **HUMAN GATE** — in agent mode these are escalation points.
+An executor should be able to work through P0–P6 without making design decisions. Anything the executor must check against the live cluster or chart values is explicitly marked **VERIFY**. Anything undecided is under Open questions / Follow-ups. Steps requiring the human (Kanidm UI, 1Password fields) are marked **HUMAN GATE** — in agent mode these are escalation points.
 
 ## Definitions (use these exact strings everywhere)
 
@@ -416,7 +416,7 @@ An executor should be able to work through P0–P6 without making design decisio
 - [decision] **D2 — stateless instance (NO PVC)**: diverges from bjw-s/onedr0p (both use 5Gi PVC). Rationale: current grafana is already stateless and GitOps-pure — every datasource/dashboard is declarative; anything worth keeping must become a CR in git. `grafana-data` stays an emptyDir (operator default when no `persistentVolumeClaim` is set — VERIFY after deploy). No VolSync wiring needed.
 - [decision] **D3 — dashboards/datasources co-located with the owning app** (bjw-s/onedr0p pattern; consistent with how ServiceMonitors are already distributed per platform). Full placement table in P3. Safe at bootstrap because the CRDs are in 00-crds.yaml.
 - [decision] **D4 — thematic GrafanaFolder CRs, one owner per namespace**: `folderRef` is namespace-scoped, so each folder CR lives in the namespace of the dashboards that reference it. Folder set: Kubernetes + System (in kube-prometheus-stack/app), Observability (in grafana/instance), Networking (in envoy-gateway/app), Flux (in flux-instance/app), Storage (in volsync/app), Cilium (in cilium/app), Cert Manager (in cert-manager/app). Never create two folders with the same title in different namespaces.
-- [decision] **D5 — SSO via Pocket-ID OIDC IS in scope (P5)**: Grafana becomes an OIDC-native app (iam Path A: Pocket-ID client + `grafana_users`/`grafana_administrators` groups + `auth.generic_oauth`). Role mapping: `grafana_administrators` → GrafanaAdmin, `grafana_users` → Viewer, `role_attribute_strict` (no mapped group = no access). The admin login form STAYS enabled as documented break-glass (`disable_login_form: false`) with creds from the existing `grafana-secret`. SSO lands as its own phase AFTER the cutover is verified, because it depends on a HUMAN GATE (Pocket-ID client creation + 1Password fields).
+- [decision] **D5 — SSO via Kanidm OIDC IS in scope (P5)**: Grafana becomes an OIDC-native app (iam Path A: Kanidm client + `grafana_users`/`grafana_administrators` groups + `auth.generic_oauth`). Role mapping: `grafana_administrators` → GrafanaAdmin, `grafana_users` → Viewer, `role_attribute_strict` (no mapped group = no access). The admin login form STAYS enabled as documented break-glass (`disable_login_form: false`) with creds from the existing `grafana-secret`. SSO lands as its own phase AFTER the cutover is verified, because it depends on a HUMAN GATE (Kanidm client creation + 1Password fields).
 - [decision] **D6 — standalone HTTPRoute manifest**, NOT the Grafana CR's `spec.httpRoute` field: we need `gethomepage.dev/*` annotations and both gateways; the CR field only exposes `spec`. Fixes the "Grafanaa" typo → `Grafana`.
 - [decision] **D7 — operator-managed default grafana image** (no image override, no MutatingAdmissionPolicy): grafana version follows operator releases, which Renovate tracks via the chart tag. docker.io pulls are fine in this cluster.
 - [decision] **D8 — intentionally NOT carried over**: kiwigrid sidecars (+ their kube-apiserver egress — security win), `downloadDashboards` init container, `deleteDatasources`, `rbac.pspEnabled`, `testFramework`, `GF_EXPLORE_ENABLED` (default true), `grafana.ini` `unified_alerting`/`alerting` blocks (Grafana 11+ defaults), empty `plugins: []`, dead `# renovate: depName=` dashboard annotations.
@@ -1149,7 +1149,7 @@ kube-prometheus-stack change (D10) — in kube-prometheus-stack/app/helmrelease.
         probeSelectorNilUsesHelmValues: false
 ```
 
-IAM note: blackbox-exporter has NO route/UI (scrape-only, like speedtest-exporter) — per docs/areas/iam §3 its IAM policy is satisfied by the CNP + prometheus-only ingress; no OIDC/forward-auth applies.
+IAM note: blackbox-exporter has NO route/UI (scrape-only, like speedtest-exporter) — per docs/areas/iam §3 its IAM policy is satisfied by the CNP + prometheus-only ingress; no OIDC.
 
 Commit (example): `✨ feat(blackbox-exporter): probe nas.lan ICMP + NFS tcp/2049`
 
@@ -1160,16 +1160,16 @@ Acceptance:
 - Test the alert path: block is optional — at minimum confirm the rule loaded: `kubectl -n observability get prometheusrule | grep blackbox`
 - Dashboard 7587 renders in the Observability folder
 
-## Phase P5 — SSO: Pocket-ID OIDC (iam Path A; after P2 is verified stable)
+## Phase P5 — SSO: Kanidm OIDC (iam Path A; after P2 is verified stable)
 
 **HUMAN GATE (before any commit):**
-1. Pocket-ID UI: create OIDC client `Grafana`, callback URL `https://grafana.<public-domain>/login/generic_oauth`.
-2. Pocket-ID UI: create groups `grafana_users` and `grafana_administrators`; add the admin user to `grafana_administrators`.
+1. Kanidm UI: create OIDC client `Grafana`, callback URL `https://grafana.<public-domain>/login/generic_oauth`.
+2. Kanidm UI: create groups `grafana_users` and `grafana_administrators`; add the admin user to `grafana_administrators`.
 3. 1Password: add `GRAFANA_OAUTH_CLIENT_ID` + `GRAFANA_OAUTH_CLIENT_SECRET` fields to the existing `grafana` item.
 
 Then, in one commit:
 
-1. **VERIFY Pocket-ID endpoint paths** from the discovery document (`curl -s https://id.<public-domain>/.well-known/openid-configuration | jq '{authorization_endpoint, token_endpoint, userinfo_endpoint}'`) and use those exact URLs below.
+1. **VERIFY Kanidm endpoint paths** from the client's discovery document (per-client, at the Kanidm OAuth2 client's issuer under `/.well-known/openid-configuration`) and use those exact URLs below.
 
 2. `instance/externalsecret.yaml` — extend the template:
 
@@ -1178,18 +1178,18 @@ Then, in one commit:
         oauth-client-secret: "{{ .GRAFANA_OAUTH_CLIENT_SECRET }}"
 ```
 
-3. `instance/grafana.yaml` — add to `spec.config` (URLs from step 1; shown with the expected Pocket-ID paths):
+3. `instance/grafana.yaml` — add to `spec.config` (URLs from step 1; shown with the expected Kanidm paths):
 
 ```yaml
     auth:
       disable_login_form: "false"   # break-glass admin login (D5)
     auth.generic_oauth:
       enabled: "true"
-      name: Pocket-ID
+      name: Kanidm
       scopes: "openid profile email groups"
-      auth_url: "https://id.${PUBLIC_DOMAIN}/authorize"
-      token_url: "https://id.${PUBLIC_DOMAIN}/api/oidc/token"
-      api_url: "https://id.${PUBLIC_DOMAIN}/api/oidc/userinfo"
+      auth_url: "https://idm.${PUBLIC_DOMAIN}/ui/oauth2"
+      token_url: "https://idm.${PUBLIC_DOMAIN}/oauth2/token"
+      api_url: "https://idm.${PUBLIC_DOMAIN}/oauth2/openid/grafana/userinfo"
       use_pkce: "true"
       email_attribute_path: email
       login_attribute_path: preferred_username
@@ -1219,9 +1219,9 @@ Then, in one commit:
 4. `instance/ciliumnetworkpolicy.yaml` — the token/userinfo/JWKS calls are server-side from the grafana pod to the public issuer host; add an egress rule:
 
 ```yaml
-    # Pocket-ID OIDC — server-side token/userinfo/JWKS calls to the public issuer host
+    # Kanidm OIDC — server-side token/userinfo/JWKS calls to the public issuer host
     - toFQDNs:
-        - matchName: "id.${PUBLIC_DOMAIN}"
+        - matchName: "idm.${PUBLIC_DOMAIN}"
       toPorts:
         - ports:
             - port: "443"
@@ -1230,17 +1230,17 @@ Then, in one commit:
 
    VERIFY after deploy: if login fails at the token exchange, run `hubble observe --pod observability/grafana --verdict DROPPED` — in-cluster the hostname resolves through k8s-gateway split DNS to the internal Envoy VIP; the toFQDNs rule covers whatever IP DNS returns, but confirm the hairpin path actually flows.
 
-Commit (example): `✨ feat(grafana): pocket-id oidc login (grafana_users/administrators groups)`
+Commit (example): `✨ feat(grafana): kanidm oidc login (grafana_users/administrators groups)`
 
 Acceptance:
-- Sign-in page shows "Sign in with Pocket-ID"; passkey login succeeds for a `grafana_administrators` member and lands with Grafana admin rights
-- A Pocket-ID user in NEITHER group is rejected (`role_attribute_strict`)
+- Sign-in page shows "Sign in with Kanidm"; passkey login succeeds for a `grafana_administrators` member and lands with Grafana admin rights
+- A Kanidm user in NEITHER group is rejected (`role_attribute_strict`)
 - Break-glass: direct admin login with the 1Password admin creds still works
 - ExternalSecret Ready with the two new keys; CNP still VALID
 
 ## Phase P6 — Docs & knowledge base
 
-1. Update BM `docs/areas/observability`: grafana section (operator model, stateless, CR contract, CNP changes, Pocket-ID SSO), new blackbox-exporter component, kps probeSelector line; bump `verified_at`.
+1. Update BM `docs/areas/observability`: grafana section (operator model, stateless, CR contract, CNP changes, Kanidm SSO), new blackbox-exporter component, kps probeSelector line; bump `verified_at`.
 1b. Update BM `docs/areas/iam`: Grafana joins the OIDC-native (Path A) app list with its group names and break-glass note.
 2. Add an entry to the AD-023 audit progress note (`docs/progress/cnp-per-app-audit`): two new custom-egress CNPs (grafana-operator, blackbox-exporter), grafana CNP narrowed (apiserver + raw.githubusercontent removed).
 3. Update BM `docs/areas/k8s-workloads` only if its app inventory lists grafana explicitly.
@@ -1261,14 +1261,14 @@ Acceptance:
 - [criterion] Grafana reachable at grafana.${PUBLIC_DOMAIN} on both gateways, admin login works, homepage tile OK
 - [criterion] Both datasources (Prometheus, Alertmanager) + all dashboards from the P3 table present and rendering; folder tree matches D4; zero plugins installed (D13)
 - [criterion] No pod in the cluster retains sidecar-era labels consumption (kiwigrid sidecars gone; grafana pod has NO kube-apiserver egress)
-- [criterion] SSO: Pocket-ID login works with group-based roles (`grafana_administrators` → GrafanaAdmin, `grafana_users` → Viewer, others rejected); break-glass admin form still functional — Grafana no longer an IAM exception (docs/areas/iam §3)
+- [criterion] SSO: Kanidm login works with group-based roles (`grafana_administrators` → GrafanaAdmin, `grafana_users` → Viewer, others rejected); break-glass admin form still functional — Grafana no longer an IAM exception (docs/areas/iam §3)
 - [criterion] blackbox-exporter probing nas.lan (icmp) + nas.lan:2049 (tcp): `probe_success == 1` for both; BlackboxProbeFailed alert loaded and routed severity=critical
 - [criterion] Renovate: Grafana Operator group bumps HR tag + 00-crds pin together; blackbox chart tracked via the oci:// manager
 - [criterion] BM notes updated (observability area, cnp-per-app-audit progress, this roadmap → status done via progress note)
 
 ## Follow-ups (explicitly OUT of scope)
 
-- [follow-up] Retire the break-glass admin login form (`disable_login_form: true`) once Pocket-ID SSO has proven stable over a few weeks
+- [follow-up] Retire the break-glass admin login form (`disable_login_form: true`) once Kanidm SSO has proven stable over a few weeks
 - [follow-up] Revisit persistence (PVC + VolSync) only if a concrete stateful need appears (user prefs, alert silences)
 - [follow-up] grafana-operator self-dashboard (chart `dashboard.enabled` + configMapRef CR) if operator observability becomes interesting
 - [follow-up] http_2xx blackbox module + probes for LAN HTTP endpoints (OMV UI, router) if desired later

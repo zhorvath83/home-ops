@@ -19,7 +19,7 @@ options:
 - 'Namespace: media (alongside plex-trakt-sync, another Plex automation sidecar) —
   recommended; alternative downloads alongside seerr'
 - 'Exposure: envoy-internal only (LAN, k8s-gateway split DNS) like the Arr stack —
-  recommended; alternative envoy-external behind TinyAuth forward-auth'
+  recommended; alternative envoy-external behind the gateway-oidc OIDC gate'
 - 'LLM provider: reuse Mistral (consistent with paperless-gpt, no new infra) — recommended;
   alternatives Ollama local (new component, node CPU/GPU), OpenRouter, or AI disabled
   (TMDB-only similarity)'
@@ -60,7 +60,7 @@ related_areas:
 ## Open decisions (options)
 
 - [option] Namespace — `media` (alongside `plex-trakt-sync`, another Plex automation sidecar) recommended; alternative `downloads` alongside `seerr`.
-- [option] Exposure — `envoy-internal` only (consistent with the Arr stack) recommended; alternative `envoy-external` behind TinyAuth forward-auth (`components/forward-auth`) if remote admin access is wanted.
+- [option] Exposure — `envoy-internal` only (consistent with the Arr stack) recommended; alternative `envoy-external` behind the gateway-oidc OIDC gate (`components/gateway-oidc`) if remote admin access is wanted.
 - [option] LLM provider — reuse Mistral (consistent with `paperless-gpt`, no new infra) recommended; alternatives Ollama local (new component, node CPU/GPU cost), OpenRouter, or AI disabled (TMDB-only similarity) for a zero-dependency first cut.
 - [option] Database — embedded SQLite on the config PVC (simplest, VolSync-backed) recommended; alternative external PostgreSQL/MySQL.
 

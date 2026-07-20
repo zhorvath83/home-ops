@@ -32,7 +32,7 @@ verified_against:
 - kubernetes/apps/downloads/subsyncarr/ks.yaml
 - kubernetes/components/volsync/
 - kubernetes/flux/cluster/ks.yaml
-- kubernetes/apps/security/tinyauth/app/referencegrant.yaml
+- kubernetes/components/gateway-oidc/securitypolicy.yaml
 - .claude/skills/k8s-workloads/SKILL.md
 - .claude/skills/k8s-workloads/references/app-scaffolding.md
 - .claude/skills/k8s-workloads/references/runtime-baselines.md
@@ -44,8 +44,8 @@ drift_risk: HelmRelease minimal-spec is enforced only by code review, not by an 
   baseline toward per-app CNPs. NFS server (${NAS_IP} from cluster-settings) is a
   single point of failure for /backups and media mounts across many apps; no automated
   fallback. Storage strategy is decided per app (PVC vs NFS vs emptyDir) but the contract
-  is documented only in CLAUDE.md. The tinyauth ReferenceGrant must be manually extended
-  when a new namespace starts using the forward-auth component.
+  is documented only in CLAUDE.md. The `gateway-oidc` gate needs no cross-namespace ReferenceGrant (the OIDC provider is a public URL, not an in-cluster Service); IAM wiring per app is the component + a Kanidm client,
+  extended per app, not per namespace.
 tags:
 - area-reference
 - k8s-workloads
@@ -88,7 +88,7 @@ Homepage dashboard metadata uses a stable set of groups defined in `kubernetes/a
 
 - [component] Arr Stack — `bazarr`, `prowlarr`, `radarr`, `seerr`, `sonarr`, `subsyncarr` (namespace: downloads, Homepage group: `Arr Stack`)
 - [component] Downloading — `qbittorrent` (namespace: downloads, Homepage group: `Downloading`; qbittorrent-p2pblocklist merged into qbittorrent as initContainer)
-- [component] Maintainerr — `maintainerr` (namespace: downloads, Homepage group: `Media`; uses the forward-auth component for tinyauth SecurityPolicy)
+- [component] Maintainerr — `maintainerr` (namespace: downloads, Homepage group: `Media`; uses the `gateway-oidc` component for its Envoy-native OIDC SecurityPolicy)
 
 **selfhosted namespace (kubernetes/apps/selfhosted/, 12 apps, everything else):**
 - [component] Selfhosted — `paperless`, `paperless-gpt`, `mealie`, `home-gallery` (Homepage group: `Selfhosted`)
@@ -141,13 +141,13 @@ Homepage dashboard metadata uses a stable set of groups defined in `kubernetes/a
 ## Drift Risk
 
 - [drift] HelmRelease minimal-spec is enforced **only by code review**. There is no automated lint that rejects `install.createNamespace`, `upgrade.remediation.retries`, `uninstall.keepHistory`, etc. on app HRs. Past K3s-era noise has been cleaned but can return with any new app.
-- [drift] Apps span three namespaces (media, downloads, selfhosted) under the AD-023 two-tier Cilium model (V3 flip landed, commit 953626966). The cluster-wide baseline `allow-cluster-egress` no longer grants `toEntities: world` — public internet egress is opt-in via the `egress.home.arpa/allow-world` pod label (backed by the `allow-world-egress` CCNP, toCIDRSet 0.0.0.0/0 except RFC1918/100.64/10) or a per-app CNP. Per-app CNPs cover app-unique upstreams the flipped baseline no longer grants (coredns world:53, kube-prometheus-stack-prometheus LAN 192.168.1.1/32:9100); crown-jewel apps (external-secrets, onepassword-connect, pocket-id, paperless, actual, cloudflare-tunnel, envoy-external/internal) carry their own CNPs. A compromised pod without the allow-world label or a matching CNP has cluster-only egress — the previous "coarse baseline" residual risk is closed.
+- [drift] Apps span three namespaces (media, downloads, selfhosted) under the AD-023 two-tier Cilium model (V3 flip landed, commit 953626966). The cluster-wide baseline `allow-cluster-egress` no longer grants `toEntities: world` — public internet egress is opt-in via the `egress.home.arpa/allow-world` pod label (backed by the `allow-world-egress` CCNP, toCIDRSet 0.0.0.0/0 except RFC1918/100.64/10) or a per-app CNP. Per-app CNPs cover app-unique upstreams the flipped baseline no longer grants (coredns world:53, kube-prometheus-stack-prometheus LAN 192.168.1.1/32:9100); crown-jewel apps (external-secrets, onepassword-connect, kanidm, paperless, actual, cloudflare-tunnel, envoy-external/internal) carry their own CNPs. A compromised pod without the allow-world label or a matching CNP has cluster-only egress — the previous "coarse baseline" residual risk is closed.
 - [drift] The NFS server (at `${NAS_IP}` from cluster-settings) is a single point of failure for /backups exports and media mounts across at least 11 apps. Mitigation landed 2026-07-11 (see Update below): the 11 NFS-mount Deployments are probe-gated to scale-to-zero via the `components/zeroscaler` component (nfs_probe external metric served by prometheus-adapter), so NAS-down CrashLoopBackOff noise is eliminated. Residual gap: the Paperless `document_exporter` CronJob is not HPA-gated, so scheduled exports still silently produce stale data when the NAS is offline — Restic/Backrest health checks only catch the backup-side failure 24h later.
 - [drift] Storage strategy (PVC vs NFS vs emptyDir) is decided per app and documented only in CLAUDE.md plus the runtime-baselines reference — there is no manifest-level enforcement. Apps that diverge from the documented baseline are visible only in code review.
 - [drift] The "always wire VolSync when the app has a PVC" rule is informal: 17 of 24 apps wire it, but the 7 that don't are not explicitly enumerated as "intentionally no backup" anywhere. Some may be ephemeral (homepage with configMapGenerator), others may be oversights.
 - [drift] APP_UID / APP_GID substitution is per-app — there is no central registry of which uid each app uses. Two apps accidentally picking the same uid against the same NFS export would silently overwrite each other.
 - [drift] HTTPRoute parentRefs to `envoy-external` and `envoy-internal` are added per-route — there is no central template. Apps that need both routes but forget the `envoy-internal` parentRef become public-only with no LAN exposure (the operator may not notice if Cloudflare Access is the gate).
-- [drift] The `tinyauth` ReferenceGrant in `kubernetes/apps/security/tinyauth/app/referencegrant.yaml` must be manually extended when a new namespace starts using the forward-auth component. Forgetting this leaves the SecurityPolicy `Invalid` and the affected HTTPRoute returns 500 until the ReferenceGrant is reconciled (observed during the namespace-reorg-downloads migration when the downloads namespace was added).
+- [drift] The `gateway-oidc` OIDC gate requires a matching Kanidm OAuth2 client (with `allowed-groups`) and a 1Password `${APP}_client_secret` field before a new app is reachable. Missing either fails closed (the app stays unreachable, not open) — verify OIDC login works after wiring a new app.
 
 ## Open Questions / Gaps
 

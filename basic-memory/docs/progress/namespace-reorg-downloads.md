@@ -57,7 +57,7 @@ All changes in one commit `♻️ refactor(apps): reorganize namespaces — cali
 - Updated `kubernetes/apps/kustomization.yaml`: added `- ./downloads`
 - Updated `kubernetes/apps/media/kustomization.yaml`: removed 8 app entries, added `- ./calibre-web-automated/ks.yaml`
 - Updated `kubernetes/apps/selfhosted/kustomization.yaml`: removed `- ./calibre-web-automated/ks.yaml`
-- Updated `kubernetes/apps/security/tinyauth/app/referencegrant.yaml`: added `downloads` to the `from` list (SecurityPolicy cross-namespace reference authorization)
+- Updated the security-namespace ReferenceGrant: added `downloads` to the `from` list (SecurityPolicy cross-namespace reference authorization)
 
 ### Phase 2 — Flux reconcile + end-to-end verification
 
@@ -73,21 +73,21 @@ Flux prune did NOT cascade-delete all owned resources because the HelmRelease co
 
 - `helm uninstall` per app in old namespaces (bypassed the HelmRelease finalizer, removed Deployment/Service/HTTPRoute/ConfigMap/Secret)
 - `kubectl delete replicationsource/externalsecret/pvc` per app in old namespaces
-- `kubectl -n media delete securitypolicy maintainerr-forward-auth` (orphaned SecurityPolicy from the forward-auth component, not owned by Helm)
+- `kubectl -n media delete securitypolicy` for the orphaned maintainerr SecurityPolicy (not owned by Helm)
 
-### Phase 2c — Maintainerr 500 fix (tinyauth ReferenceGrant)
+### Phase 2c — Maintainerr 500 fix (security-namespace ReferenceGrant)
 
-Symptom: `maintainerr.horvathzoltan.me` returned 500. Diagnosis: the SecurityPolicy `maintainerr-forward-auth` status showed `ExtAuth: backend ref to Service security/tinyauth not permitted by any ReferenceGrant`.
+Symptom: `maintainerr.horvathzoltan.me` returned 500. Diagnosis: the maintainerr SecurityPolicy status showed its ext-auth backend ref not permitted by any ReferenceGrant.
 
-Root cause: the cluster-live tinyauth ReferenceGrant `tinyauth-extauth` did NOT include the `downloads` namespace, even though the git HEAD `referencegrant.yaml` did. The `tinyauth` Flux Kustomization `interval: 1h` had not yet reconciled the new commit.
+Root cause: the cluster-live security-namespace ReferenceGrant did NOT include the `downloads` namespace, even though the git HEAD did. The security-namespace Flux Kustomization `interval: 1h` had not yet reconciled the new commit.
 
-Fix: `flux reconcile kustomization -n security tinyauth --with-source`. GitRepository fetched revision matched the HEAD; the ReferenceGrant live state was updated to include `downloads`; the SecurityPolicy status became `Accepted=True`; the maintainerr route returned 401 (forward-auth active).
+Fix: reconciled the security-namespace Flux Kustomization `--with-source`. GitRepository fetched revision matched the HEAD; the ReferenceGrant live state was updated to include `downloads`; the SecurityPolicy status became `Accepted=True`; the maintainerr route returned 401 (auth gate active).
 
 ### Phase 3 — BM docs update (this session)
 
 - Rewrote `docs/roadmap/namespace-split` to reflect the new three-namespace target state (status: done, scope: media=4/downloads=8/selfhosted=12)
 - Moved `docs/roadmap/namespace-split` → `docs/progress/namespace-split` (per the project convention "Fully implemented roadmap items → progress/", following the `pingvin-share-x-selfhosted-roadmap` pattern). Added "Originally at" note. Deleted the old `docs/roadmap/namespace-split`.
-- Updated `docs/areas/k8s-workloads` to fix drift: the previous note claimed calibre-web-automated was in selfhosted (it is now in media); the 8 arr-stack apps were listed as media (they are now in downloads). Reflected the post-migration three-namespace target state. `verified_at: 2026-06-17`. Added a new drift_risk entry about the tinyauth ReferenceGrant manual-extension requirement.
+- Updated `docs/areas/k8s-workloads` to fix drift: the previous note claimed calibre-web-automated was in selfhosted (it is now in media); the 8 arr-stack apps were listed as media (they are now in downloads). Reflected the post-migration three-namespace target state. `verified_at: 2026-06-17`. Added a new drift_risk entry about the security-namespace ReferenceGrant manual-extension requirement.
 - Created this progress note (`progress/namespace-reorg-downloads`).
 
 ## Outcome
@@ -95,7 +95,7 @@ Fix: `flux reconcile kustomization -n security tinyauth --with-source`. GitRepos
 - All 9 apps Running in new namespaces with restored PVC data
 - VolSync backups running in new namespaces (new ReplicationSources under `<app>@<new-ns>:/data`)
 - Old namespaces drained: media has 4 apps (calibre-web-automated, isponsorblocktv, plex, plex-trakt-sync), selfhosted has 12 apps (calibre-web-automated removed)
-- All HTTPRoutes responding (200/302/401 — forward-auth active on maintainerr)
+- All HTTPRoutes responding (200/302/401 — auth gate active on maintainerr)
 - Homepage dashboard: all tiles present
 - No failed HelmReleases
 
@@ -112,4 +112,4 @@ Per `gitlab-workflow` rule commit-doc-commit pattern:
 
 - continues [[namespace-split]] (now at `docs/progress/namespace-split`)
 - relates_to [[k8s-workloads]] (area-reference updated to reflect the three-namespace target state)
-- implements the tinyauth ReferenceGrant extension documented in `kubernetes/apps/security/tinyauth/app/referencegrant.yaml`
+- implements the security-namespace ReferenceGrant extension

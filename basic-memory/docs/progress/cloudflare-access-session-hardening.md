@@ -42,7 +42,7 @@ options:
 ## What to do
 
 1. Reduce session_duration on the unrestricted-users Access policy from 720h to a modest value (e.g. 24h).
-2. Layer cluster-side forward-auth on the sensitive apps (coordinated with forward-auth-coverage-external-data-apps).
+2. Layer a cluster-side OIDC gate on the sensitive apps (via the gateway-oidc component).
 3. Consider WARP/device-posture or shorter re-auth on the most sensitive hostnames.
 4. Verify: session expiry is enforced and sensitive apps prompt for the second gate.
 
@@ -55,7 +55,7 @@ options:
 
 - relates_to [[cloudflare]]
 - relates_to [[iam]]
-- relates_to [[forward-auth-coverage-external-data-apps]]
+- relates_to [[docs/areas/iam]] (OIDC gate model)
 
 ## Execution plan (research-backed)
 
@@ -68,7 +68,7 @@ options:
 
 ### Implementation steps
 1. **Shorten the session** on `access.tf:139` (and :159 for Photos): change `session_duration = "720h"` → `"24h"` (or `"8h"` for the most sensitive). This is a one-line change per app.
-2. **Layer the cluster-side second gate** on the sensitive data apps — implemented by `forward-auth-coverage-external-data-apps` (Pocket-ID/TinyAuth). Together they give two independent identity systems.
+2. **Layer the cluster-side second gate** on the sensitive data apps — implemented by the gateway-oidc component (Kanidm OIDC). Together they give two independent identity systems.
 3. **(Optional) Require device posture / WARP** on the most sensitive hostnames via an Access policy `require` block, or a shorter re-auth. Evaluate against family usability.
 4. `just cloudflare plan` → expect only the `session_duration` field to change. Commit: `🔒 fix(cloudflare): shorten Access session duration`.
 
@@ -78,10 +78,10 @@ options:
 
 ### Rollback & safety
 - Revert the field values, re-apply. No structural change.
-- **Risk:** very short sessions annoy family users (frequent re-login). 24h is a reasonable balance; tune up if painful. Passkey re-auth via Pocket-ID is quick.
+- **Risk:** very short sessions annoy family users (frequent re-login). 24h is a reasonable balance; tune up if painful. Passkey re-auth via Kanidm is quick.
 
 ### Gotchas & dependencies
-- The real defense-in-depth comes from pairing with `forward-auth-coverage-external-data-apps`; session shortening alone reduces window but not the single-gate dependency.
+- The real defense-in-depth comes from pairing with the cluster-side OIDC gate; session shortening alone reduces window but not the single-gate dependency.
 
 ### Effort
 S (~30 min for the session change; the second gate is tracked separately).
@@ -97,15 +97,15 @@ Moved from `docs/roadmap` on completion. The session-hardening deliverable — s
 
 ### Verification
 - `just cloudflare plan` at the session-hardening stage showed **only** `session_duration` diffs on the two original apps (`720h -> 24h`): 0 add / 2 change / 0 destroy — no structural drift.
-- The final committed change additionally adds the `paperless`/`mealie` apps and drops the service-token policy from the wildcard; that portion belongs to [[forward-auth-coverage-external-data-apps]] (step C).
+- The final committed change additionally adds the `paperless`/`mealie` apps and drops the service-token policy from the wildcard; that portion belongs to the cluster-side OIDC gate work (step C).
 
 ### Commit
-- `139ab76dd` — 🔒 fix(cloudflare): scope mobile service-token to docs/recipes (carries both this roadmap's session change and forward-auth step C). Unpushed at time of writing.
+- `139ab76dd` — 🔒 fix(cloudflare): scope mobile service-token to docs/recipes (carries both this roadmap's session change and the OIDC gate step C). Unpushed at time of writing.
 
 ### Operational note
 - Cloudflare is Terraform-applied, not Flux-reconciled: `just cloudflare apply` pushes the 24h sessions live. Already-open sessions keep their old TTL; the next login gets the 24h window.
 
 ### Scope boundary (why this is complete)
 - Step 1 (shorten session): **done**.
-- Step 2 (cluster-side forward-auth second gate): tracked separately in [[forward-auth-coverage-external-data-apps]]; partly advanced by the same commit's service-token scoping.
+- Step 2 (cluster-side OIDC second gate): tracked separately; partly advanced by the same commit's service-token scoping.
 - Step 3 (device posture / WARP): **optional**, deferred — evaluate against family usability later if desired.

@@ -55,7 +55,7 @@ options:
 ### Current state
 - Open egress is granted by label: `kubernetes/apps/kube-system/cilium/netpols/allow-world-egress.yaml:13-23` — pods labeled `egress.home.arpa/allow-world="true"` get `0.0.0.0/0` (LAN + CGNAT carved out via `except`). A second spec (lines 24-38) grants world to `flux-system`/`cert-manager` namespace pods (unlabelable vendored controllers).
 - Audit: allow-world apps include qbittorrent, prowlarr, sonarr, radarr, bazarr, maintainerr, seerr, plex, isponsorblocktv, mealie, wallos, homepage.
-- The **stricter pattern already exists**: apps that opt out of the baseline (`egress.home.arpa/custom-egress`) plus a per-app CNP with `toFQDNs`. Canonical example: `kubernetes/apps/security/pocket-id/app/ciliumnetworkpolicy.yaml:14-31` (maxmind + smtp2go FQDNs only). The L7 DNS proxy (`allow-dns-egress`, matchPattern:"*") makes toFQDNs resolvable for every pod.
+- The **stricter pattern already exists**: apps that opt out of the baseline (`egress.home.arpa/custom-egress`) plus a per-app CNP with `toFQDNs`. Canonical example: a per-app `ciliumnetworkpolicy.yaml` with `toFQDNs` (e.g. maxmind + smtp2go FQDNs only). The L7 DNS proxy (`allow-dns-egress`, matchPattern:"*") makes toFQDNs resolvable for every pod.
 
 ### Target state
 - Apps with bounded outbound needs use `toFQDNs` allow-lists instead of open world egress; only genuinely-open apps (torrent peer traffic) keep `allow-world`, documented as an accepted exception.
@@ -67,7 +67,7 @@ options:
    just k8s hubble-analyze k8s:app.kubernetes.io/name=<app> FORWARDED egress
    ```
    Bounded (convertible): mealie, wallos, homepage, isponsorblocktv, maintainerr, seerr (API/metadata endpoints). Keep-open: qbittorrent (DHT/peer swarm — unbounded IPs), arguably prowlarr/sonarr/radarr/bazarr (many indexer/tracker hosts — evaluate, may be large but enumerable).
-2. **Convert a bounded app.** In the app's `helmrelease.yaml` pod labels, replace `egress.home.arpa/allow-world: "true"` with `egress.home.arpa/custom-egress: "true"`. Then add `kubernetes/apps/<ns>/<app>/app/ciliumnetworkpolicy.yaml` modeled on pocket-id:
+2. **Convert a bounded app.** In the app's `helmrelease.yaml` pod labels, replace `egress.home.arpa/allow-world: "true"` with `egress.home.arpa/custom-egress: "true"`. Then add `kubernetes/apps/<ns>/<app>/app/ciliumnetworkpolicy.yaml` modeled on that pattern:
    ```yaml
    ---
    apiVersion: cilium.io/v2

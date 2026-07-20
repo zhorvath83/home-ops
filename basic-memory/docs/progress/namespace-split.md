@@ -43,9 +43,9 @@ Each namespace has its own `kubernetes/apps/<ns>/` subtree with its own `ks.yaml
 
 - `calibre-web-automated` moved `selfhosted → media` (PVC data migrated via VolSync cross-namespace restore using `sourceIdentity.sourceNamespace`).
 - 8 apps (`bazarr`, `maintainerr`, `prowlarr`, `qbittorrent`, `radarr`, `seerr`, `sonarr`, `subsyncarr`) moved `media → downloads` (PVC data migrated via VolSync cross-namespace restore for the 7 with PVCs; `subsyncarr` has no PVC, pure GitOps move).
-- The `tinyauth` ReferenceGrant in `kubernetes/apps/security/tinyauth/app/referencegrant.yaml` was extended to permit SecurityPolicy resources from the new `downloads` namespace to reference the `tinyauth` Service (forward-auth component).
+- A security-namespace ReferenceGrant was extended to permit cross-namespace SecurityPolicy resources from the new `downloads` namespace.
 - Pre-creation pattern: 8 ExternalSecrets + 8 bootstrap ReplicationDestinations were applied to the new namespaces with `kustomize.toolkit.fluxcd.io/ssa: IfNotPresent` so Flux adopts them and does not overwrite. Each bootstrap RD used `spec.kopia.sourceIdentity.sourceNamespace: <old-ns>` to restore from the old namespace's Kopia snapshots.
-- Orphaned-resource cleanup: the Kustomization finalizer did not run on suspended Flux Kustomizations, leaving HelmReleases, Helm release Secrets, Deployments, HTTPRoutes, ReplicationSources, ExternalSecrets, and PVCs stranded in the old namespaces. Manual cleanup required `helm uninstall` (HelmRelease finalizer was bypassed by suspend), `kubectl delete replicationsource`, `kubectl delete externalsecret`, `kubectl delete pvc`, and `kubectl delete securitypolicy` for the orphaned `maintainerr-forward-auth` in `media`.
+- Orphaned-resource cleanup: the Kustomization finalizer did not run on suspended Flux Kustomizations, leaving HelmReleases, Helm release Secrets, Deployments, HTTPRoutes, ReplicationSources, ExternalSecrets, and PVCs stranded in the old namespaces. Manual cleanup required `helm uninstall` (HelmRelease finalizer was bypassed by suspend), `kubectl delete replicationsource`, `kubectl delete externalsecret`, `kubectl delete pvc`, and `kubectl delete securitypolicy` for the orphaned maintainerr SecurityPolicy in `media`.
 
 ## Rationale
 
@@ -57,7 +57,7 @@ Improved repo navigation, per-namespace scoping for future RBAC/ResourceQuota, a
 - `kubernetes/apps/media/`, `kubernetes/apps/selfhosted/`, and `kubernetes/apps/downloads/` exist with proper namespace resources
 - Homepage group layout unchanged (Arr Stack, Media, Downloading, Selfhosted, PFM, Infrastructure, etc.) — only the K8s namespace changed; Homepage is namespace-agnostic via HTTPRoute annotations
 - All VolSync, ExternalSecret, and CiliumNetworkPolicy references updated to new namespaces
-- The `tinyauth` ReferenceGrant permits SecurityPolicy from `media`, `selfhosted`, `downloads`, `observability`, `networking` namespaces
+- The security-namespace ReferenceGrant permitted SecurityPolicy from `media`, `selfhosted`, `downloads`, `observability`, `networking` namespaces
 - cert-manager remains in its own namespace (unchanged)
 
 ## Related

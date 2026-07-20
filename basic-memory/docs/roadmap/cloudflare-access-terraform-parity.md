@@ -53,7 +53,7 @@ options:
 ## Execution plan (research-backed)
 
 ### Current state
-- `provision/cloudflare/access.tf` defines dedicated Access apps only for: Private Cloud (`*.domain`, :135), Photos (`fenykepek`, :156), www (:169), Flux webhook (:182), MTA-STS (:194), Share (:206). There is **no** app/policy for `auth.${domain}` (tinyauth) or `id.${domain}` (pocket-id), yet both are attached to envoy-external (live httproute). Their edge-authz is therefore undefined in code (they fall through the `*.domain` wildcard, which is circular for an IdP) — meaning either undocumented dashboard state or an untracked bypass.
+- `provision/cloudflare/access.tf` defines dedicated Access apps only for: Private Cloud (`*.domain`, :135), Photos (`fenykepek`, :156), www (:169), Flux webhook (:182), MTA-STS (:194), Share (:206). There is **no** app/policy for `idm.${domain}` (Kanidm), yet it is attached to envoy-external (live httproute). Its edge-authz is therefore undefined in code (it falls through the `*.domain` wildcard, which is circular for an IdP) — meaning either undocumented dashboard state or an untracked bypass.
 - Provider is cloudflare/cloudflare v5.22.0.
 
 ### Target state
@@ -88,7 +88,7 @@ options:
 
 ### Gotchas & dependencies
 - Needs live Cloudflare API access (token with Access:read) — if unavailable now, this item is blocked on obtaining it; that is the single unverifiable edge finding from the audit.
-- Dovetails with `forward-auth-coverage-external-data-apps` (service-token scoping) and `cloudflare-api-token-migration`.
+- Dovetails with `cloudflare-api-token-migration`.
 
 ### Effort
 M (~0.5 day incl. reconciliation + import + CI drift job).

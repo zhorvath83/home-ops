@@ -22,7 +22,7 @@ tags:
 
 Implemented [Pingvin Share X](https://github.com/smp46/pingvin-share-x) (v1.19.1) in the `selfhosted` namespace as a GitOps-managed HelmRelease using the bjw-s app-template chart, exposed via Gateway API HTTPRoute on both `envoy-external` and `envoy-internal` gateways at `share.${PUBLIC_DOMAIN}`.
 
-The implementation went beyond the original roadmap scope. In addition to the planned Round 2 work (config + secrets + init container), OIDC authentication via Pocket-ID was added (originally explicitly excluded), the built-in Caddy was disabled in favour of a split-port Service (3333 frontend + 8080 backend), and the NFS uploads mount was replaced with PVC-only storage. The workload is hardened with a per-app CiliumNetworkPolicy and `readOnlyRootFilesystem: true`.
+The implementation went beyond the original roadmap scope. In addition to the planned Round 2 work (config + secrets + init container), OIDC authentication via Kanidm was added (originally explicitly excluded), the built-in Caddy was disabled in favour of a split-port Service (3333 frontend + 8080 backend), and the NFS uploads mount was replaced with PVC-only storage. The workload is hardened with a per-app CiliumNetworkPolicy and `readOnlyRootFilesystem: true`.
 
 Live cluster state (verified 2026-06-16): `HelmRelease/pingvin-share-x` is Ready (chart app-template@5.0.1); pod `pingvin-share-x-87886bd8c-4z28h` is Running 1/1 with 0 restarts over 46h.
 
@@ -31,7 +31,7 @@ Live cluster state (verified 2026-06-16): `HelmRelease/pingvin-share-x` is Ready
 | Aspect | Original Roadmap Plan | Actual Implementation |
 |---|---|---|
 | Built-in Caddy | Enabled, single Service on port 3000 | **Disabled** (`CADDY_DISABLED: "true"`); split Service: 3333 (frontend) + 8080 (backend) |
-| OAuth/OIDC | Explicitly excluded ("only local SQLite + built-in auth") | **Added**: OIDC via Pocket-ID at `https://id.${PUBLIC_DOMAIN}`; `disablePassword: "true"`; `initUser.enabled: false` |
+| OAuth/OIDC | Explicitly excluded ("only local SQLite + built-in auth") | **Added**: OIDC via Kanidm at `https://idm.${PUBLIC_DOMAIN}`; `disablePassword: "true"`; `initUser.enabled: false` |
 | UID/GID | 10002/10002 | 10001/10001 (aligned with `open-webui` neighbour) |
 | Uploads storage | NFS mount `${NAS_IP}:/media/pingvinshare_uploads` to `/data/uploads` | **PVC-only** (NFS removed); `frontend-img` subPath mount added for logo upload |
 | Init container image | `ghcr.io/dmfrey/bash:5.2.26-alpine3.20` (bo0tzz reference) | `docker.io/nginx:stable-alpine` |
@@ -47,7 +47,7 @@ Live cluster state (verified 2026-06-16): `HelmRelease/pingvin-share-x` is Ready
 ## Scope Deviations Rationale
 
 - **Caddy disabled**: with the gateway terminating TLS and Envoy routing `/api/*` directly to port 8080, the in-container Caddy hop was redundant. Commit `ec75a93bd`.
-- **OIDC added**: aligned with the IAM platform (`docs/areas/iam`); `disablePassword: "true"` makes Pocket-ID the sole identity source. This superseded the original "built-in auth only" decision and the `initUser.enabled: true` permanent-on plan.
+- **OIDC added**: aligned with the IAM platform (`docs/areas/iam`); `disablePassword: "true"` makes Kanidm the sole identity source. This superseded the original "built-in auth only" decision and the `initUser.enabled: true` permanent-on plan.
 - **NFS to PVC**: NFS uploads mount removed in favour of PVC-only storage (commit `f08c90c56`); VolSync PVC snapshots cover durability.
 - **UID 10001**: aligned with `open-webui` (10001/10001) rather than the planned 10002; safe because democratic-csi-local-hostpath uses `fsGroupChangePolicy: OnRootMismatch` and the apps do not share PVCs.
 
@@ -69,7 +69,7 @@ None. The implementation is fully operational and stable in the cluster.
 - `kubectl -n selfhosted get helmrelease pingvin-share-x` returned Ready, "Helm upgrade succeeded for release selfhosted/pingvin-share-x.v33 with chart app-template@5.0.1"
 - `kubectl -n selfhosted get pods -l app.kubernetes.io/name=pingvin-share-x` returned `pingvin-share-x-87886bd8c-4z28h` Running 1/1, 0 restarts, 46h uptime
 - HTTPRoute `share.${PUBLIC_DOMAIN}` attached to both `envoy-external` and `envoy-internal` gateways
-- OIDC discovery URL: `https://id.${PUBLIC_DOMAIN}/.well-known/openid-configuration`
+- OIDC discovery URL: `https://idm.${PUBLIC_DOMAIN}/.well-known/openid-configuration`
 
 ## Original Roadmap Reference
 
@@ -80,7 +80,7 @@ Originally at `docs/roadmap/pingvin-share-x-selfhosted-roadmap`. Moved to `docs/
 - depends_on [[docs/areas/networking]] (Envoy Gateway HTTPRoute, gateway-policies)
 - depends_on [[docs/areas/external-secrets]] (ClusterSecretStore, ExternalSecret)
 - depends_on [[docs/areas/volsync-backup]] (PVC backup)
-- depends_on [[docs/areas/iam]] (Pocket-ID OIDC provider)
+- depends_on [[docs/areas/iam]] (Kanidm OIDC provider)
 - part_of [[docs/areas/k8s-workloads]]
 - relates_to [[docs/areas/flux-gitops]] (HelmRelease, Kustomization)
 - relates_to [[docs/roadmap/sso-implementation]] (OIDC integration)

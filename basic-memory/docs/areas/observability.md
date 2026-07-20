@@ -69,7 +69,7 @@ Re-verified 2026-07-05: the speedtest-exporter public route (speed.${PUBLIC_DOMA
 The cluster's observability stack lives under `kubernetes/apps/observability/` as four sub-Kustomizations:
 
 - `kube-prometheus-stack` — upstream chart `oci://ghcr.io/prometheus-community/charts/kube-prometheus-stack`, a "minified" single-node homelab variant: most `defaultRules` and the kube-apiserver / kubelet / etcd / kube-controller-manager / scheduler / proxy / coredns exporters are disabled; only the `k8s`, `kubernetesApps`, `kubeStateMetrics`, `prometheusOperator`, and `prometheus` rule groups survive. `cleanPrometheusOperatorObjectNames: true`. Prometheus retention is now explicit: 7d / 4500MB on a 5Gi `democratic-csi-local-hostpath` PVC. Alertmanager is enabled (see update section).
-- `grafana` — **operator-managed** (grafana-operator, `operator/`+`instance/` split). Stateless `Grafana` CR (emptyDir DB, no PVC), telemetry off, hardened (read-only rootfs, drop ALL, RuntimeDefault). Datasources (`Prometheus` default, `Alertmanager`), dashboards, and folders are declarative CRs (`GrafanaDatasource`/`GrafanaDashboard`/`GrafanaFolder`) co-located with the owning app; the operator provisions them via the Grafana API using the `grafana-secret` admin creds. **No plugins** (D13) + `preinstall_disabled` — zero grafana.com startup egress; no VictoriaLogs datasource (logs stay in the vmui). **SSO via Pocket-ID OIDC** (`auth.generic_oauth`), local login form hidden (`disable_login_form: true`). `root_url = https://grafana.${PUBLIC_DOMAIN}`, internal gateway only. Depends on grafana-operator + kube-prometheus-stack + onepassword-connect.
+- `grafana` — **operator-managed** (grafana-operator, `operator/`+`instance/` split). Stateless `Grafana` CR (emptyDir DB, no PVC), telemetry off, hardened (read-only rootfs, drop ALL, RuntimeDefault). Datasources (`Prometheus` default, `Alertmanager`), dashboards, and folders are declarative CRs (`GrafanaDatasource`/`GrafanaDashboard`/`GrafanaFolder`) co-located with the owning app; the operator provisions them via the Grafana API using the `grafana-secret` admin creds. **No plugins** (D13) + `preinstall_disabled` — zero grafana.com startup egress; no VictoriaLogs datasource (logs stay in the vmui). **SSO via Kanidm OIDC** (`auth.generic_oauth`), local login form hidden (`disable_login_form: true`). `root_url = https://grafana.${PUBLIC_DOMAIN}`, internal gateway only. Depends on grafana-operator + kube-prometheus-stack + onepassword-connect.
 - `speedtest-exporter` — bjw-s `app-template`, WAN throughput metrics on a 20m scrape interval, hardened (nonRoot 10001, read-only rootfs, drop ALL). No `dependsOn`.
 - `victoria-logs` — the logs plane, added since the previous pass. A single-node server (`victoria-logs-single`, 10Gi PVC, 14d retention) plus a per-node collector DaemonSet (`victoria-logs-collector`) that remote-writes to `http://victoria-logs-server.observability.svc.cluster.local:9428`. The collector `dependsOn` the server.
 
@@ -113,7 +113,7 @@ The namespace is `observability` and pulls in the shared `common` component (whi
 ## Open Questions / Gaps
 
 - [gap] Live-state validation not performed (Prometheus actually scraping all targets, victoria-logs collector ingesting every namespace, Grafana dashboards rendering) — repo evidence only.
-- [gap] Whether the cluster log pipeline indexes security-namespace audit logs (e.g. TinyAuth) into victoria-logs is unconfirmed — cross-reference docs/areas/iam.
+- [gap] Whether the cluster log pipeline indexes security-namespace audit logs (e.g. Kanidm) into victoria-logs is unconfirmed — cross-reference docs/areas/iam.
 - [gap] No .claude/skills/observability/ exists; procedural guidance lives only in this note + per-component manifest comments.
 
 
@@ -157,7 +157,7 @@ Implemented via `docs/progress/alertmanager-introduction` (status: done). Re-ver
 - [observation] 23 dashboards + 8 folders (one per owner namespace, D4) + 2 datasources are `Grafana*` CRs co-located with owning apps (D3). Chart-emitted dashboards (cilium ×2, external-secrets, tuppr, victoria-logs ×2) imported via `configMapRef`; the rest via **pinned URL imports** `url: .../api/dashboards/<id>/revisions/<rev>/download`, auto-updated by the home-operations `grafanaDashboards` Renovate preset (reviewed revision-bump PRs) — bjw-s-aligned; converted from `grafanaCom{id,revision}` on 2026-07-10.
 - [observation] kiwigrid sidecars removed → no kube-apiserver egress. No plugins (D13) + `preinstall_disabled: "true"` → no grafana.com startup egress (was previously blocked by CNP → HubblePolicyDeny; now suppressed at source).
 - [observation] New `blackbox-exporter` app (P4): Probe CRs for nas.lan ICMP + NFS tcp/2049; kps gained `probeSelectorNilUsesHelmValues: false`. BlackboxProbeFailed → Alertmanager → Pushover.
-- [observation] SSO via Pocket-ID OIDC (P5) — see [[iam]].
+- [observation] SSO via Kanidm OIDC (P5) — see [[iam]].
 - [observation] Grafana DB is ephemeral (emptyDir, D2): the operator re-provisions all dashboards/datasources on each pod start. A pod restart (e.g. `grafana-secret` change → operator `checksum/secrets` pod recreation) briefly empties the UI until the operator re-syncs. No PVC/VolSync by design.
 
 See [[grafana-operator-migration]] (progress) for the full execution log.
