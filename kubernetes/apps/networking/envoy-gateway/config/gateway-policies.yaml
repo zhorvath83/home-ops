@@ -29,7 +29,8 @@ spec:
   tcpKeepalive: {}
   timeout:
     http:
-      requestTimeout: 0s
+      # Finite to bound active-slow transfers; idle streams already capped by streamIdleTimeout (5m).
+      requestTimeout: 30m
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/gateway.envoyproxy.io/clienttrafficpolicy_v1alpha1.json
 # Cloudflare-fronted: trust CF-Connecting-IP (CF overwrites client-supplied
@@ -69,7 +70,7 @@ spec:
   tcpKeepalive: {}
   timeout:
     http:
-      requestReceivedTimeout: 0s
+      requestReceivedTimeout: 30m
   tls:
     # 1.3: only cloudflared (Go TLS, 1.3-capable) reaches this listener — no OIDC
     # hairpin lands here (CoreDNS routes id.* to envoy-internal), so no 1.2 floor.
@@ -111,7 +112,7 @@ spec:
   tcpKeepalive: {}
   timeout:
     http:
-      requestReceivedTimeout: 0s
+      requestReceivedTimeout: 30m
   tls:
     # 1.2 floor: SecurityPolicy.oidc token exchange hairpins to this listener and
     # Envoy's upstream TLS client caps at 1.2 (EG sets no tls_params on the cluster).
@@ -178,36 +179,25 @@ spec:
     kind: Gateway
     name: envoy-internal
   type: JSONPatch
-# NOTE: rate-limit-external BackendTrafficPolicy disabled — upstream Envoy
-# Gateway v1.8.0 ships a CRD regression (PR envoyproxy/gateway#8798): the
-# `Requests` field is declared as uint32 but kubebuilder emits
-# `format: int32 + maximum: 4294967295`, which K8s 1.36 strict OpenAPI
-# validation rejects with "Maximum boundary value must be of type integer
-# with format int32". Re-enable once envoy-gateway v1.9.0 GA lands and the
-# OCIRepository tag is bumped accordingly. Cloudflare WAF covers external
-# rate limiting in the meantime.
-# ---
-# apiVersion: gateway.envoyproxy.io/v1alpha1
-# kind: BackendTrafficPolicy
-# metadata:
-#   name: rate-limit-external
-#   namespace: networking
-# spec:
-#   targetRefs:
-#     - group: gateway.networking.k8s.io
-#       kind: Gateway
-#       name: envoy-external
-#   rateLimit:
-#     type: Global
-#     global:
-#       rules:
-#         - clientSelectors:
-#             - sourceCIDR:
-#                 value: 0.0.0.0/0
-#                 type: Distinct
-#           limit:
-#             requests: 300
-#             unit: Minute
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/gateway.envoyproxy.io/backendtrafficpolicy_v1alpha1.json
+# Local (not Global): no rate-limit backend deployed; single-node => one Envoy
+# pod/gateway => per-route Local aggregate is effectively global. CF WAF covers external.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: BackendTrafficPolicy
+metadata:
+  name: rate-limit
+spec:
+  targetSelectors:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+  rateLimit:
+    type: Local
+    local:
+      rules:
+        - limit:
+            requests: 600
+            unit: Minute
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/gateway.envoyproxy.io/securitypolicy_v1alpha1.json
 apiVersion: gateway.envoyproxy.io/v1alpha1
