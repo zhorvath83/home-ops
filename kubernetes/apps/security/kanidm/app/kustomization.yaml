@@ -6,12 +6,21 @@ resources:
   - ./certificate.yaml
   - ./helmrelease.yaml
   - ./backendtlspolicy.yaml
-# kanidm-theme ConfigMap from override.css; fixed name so the HR mount resolves,
-# reloader rolls the pod on change (subPath mounts don't live-update).
+# Theme assets, split by how they mount (fixed names so the HR mounts resolve;
+# reloader rolls the pod on change — subPath mounts don't live-update):
+#  - kanidm-theme: override.css + style.js, subPath-mounted onto individual
+#    files in kanidm's /hpkg (see helmrelease.yaml).
+#  - kanidm-icons: brand SVGs, dir-mounted at /hpkg/icons so any file added here
+#    is served at /pkg/icons/<name> with no extra mount.
 configMapGenerator:
   - name: kanidm-theme
     files:
-      - ./config/override.css
+      - ./theme/override.css
+      - ./theme/style.js
+  - name: kanidm-icons
+    files:
+      - ./theme/icons/brand/logo.svg
+      - ./theme/icons/brand/logo-nav.svg
   - name: kanidm-config
     files:
       - ./config/server.toml

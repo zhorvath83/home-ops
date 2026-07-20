@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <!-- Indigo Aurora hero mark: Tabler 'key' + radial halo. Adapts to the OS
+       colour scheme; kanidm's style.js drives data-bs-theme from the same
+       signal, so this stays in sync with the page. -->
+  <style>
+    .key { stroke: #4f46e5; }
+    .h0 { stop-color: #7c3aed; stop-opacity: .12; }
+    .h1 { stop-color: #4f46e5; stop-opacity: .05; }
+    .h2 { stop-color: #4f46e5; stop-opacity: 0; }
+    @media (prefers-color-scheme: dark) {
+      .key { stroke: #a5b4fc; }
+      .h0 { stop-color: #818cf8; stop-opacity: .20; }
+      .h1 { stop-color: #7c3aed; stop-opacity: .09; }
+      .h2 { stop-color: #7c3aed; stop-opacity: 0; }
+    }
+  </style>
+  <defs>
+    <radialGradient id="g" cx="50%" cy="46%" r="58%">
+      <stop offset="0" class="h0"/>
+      <stop offset=".5" class="h1"/>
+      <stop offset="1" class="h2"/>
+    </radialGradient>
+  </defs>
+  <circle cx="48" cy="48" r="47" fill="url(#g)"/>
+  <g class="key" transform="translate(20.4,20.4) scale(2.3)" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M16.555 3.843l3.602 3.602a2.877 2.877 0 0 1 0 4.069l-2.643 2.643a2.877 2.877 0 0 1 -4.069 0l-.301 -.301l-6.558 6.558a2 2 0 0 1 -1.239 .578l-.175 .008h-1.172a1 1 0 0 1 -.993 -.883l-.007 -.117v-1.172a2 2 0 0 1 .467 -1.284l.119 -.13l.414 -.414h2v-2h2v-2l2.144 -2.144l-.301 -.301a2.877 2.877 0 0 1 0 -4.069l2.643 -2.643a2.877 2.877 0 0 1 4.069 0"/>
+    <path d="M15 9h.01"/>
+  </g>
+</svg>

@@ -95,13 +95,25 @@ spec:
         defaultMode: 0400
         globalMounts:
           - path: /certs
-      # web-UI theme, served by kanidm at /pkg/override.css (loaded last in <head>)
+      # web-UI theme, served by kanidm at /pkg/* (loaded last in <head>).
+      # override.css + style.js are subPath-mounted onto individual files in
+      # kanidm's /hpkg; style.js overrides upstream's to keep <meta theme-color>
+      # in sync per mode. icons/ is dir-mounted so /pkg/icons/<name> resolves.
       theme:
         type: configMap
         name: kanidm-theme
         globalMounts:
           - path: /hpkg/override.css
             subPath: override.css
+            readOnly: true
+          - path: /hpkg/style.js
+            subPath: style.js
+            readOnly: true
+      theme-icons:
+        type: configMap
+        name: kanidm-icons
+        globalMounts:
+          - path: /hpkg/icons
             readOnly: true
       tmpfs:
         type: emptyDir
