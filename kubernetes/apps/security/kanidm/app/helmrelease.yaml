@@ -99,6 +99,7 @@ spec:
       # override.css + style.js are subPath-mounted onto individual files in
       # kanidm's /hpkg; style.js overrides upstream's to keep <meta theme-color>
       # in sync per mode. icons/ is dir-mounted so /pkg/icons/<name> resolves.
+      # https://github.com/kelchm/home-lab/tree/main/kubernetes/apps/identity/kanidm/app/theme
       theme:
         type: configMap
         name: kanidm-theme
