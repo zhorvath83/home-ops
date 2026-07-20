@@ -14,8 +14,10 @@ spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
       # AD-023 vocabulary: envoy-routed via both gateways (ingress enforced by the
-      # ingress-from-gateway-* CCNPs selecting these labels) + custom-egress opt-out,
-      # so the per-app CNP is the sole egress source (kanidm has no legitimate egress).
+      # ingress-from-gateway-* CCNPs selecting these labels) + custom-egress opt-out.
+      # kanidm has no legitimate egress, so no per-app CNP — the opt-out label excludes
+      # it from allow-cluster-egress and allow-world-egress, leaving DNS-only egress
+      # granted by the cluster-wide allow-dns-egress CCNP (default-deny already on).
       labels:
         egress.home.arpa/custom-egress: "true"
         ingress.home.arpa/allow-gateway-external: "true"
