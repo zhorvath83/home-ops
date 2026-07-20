@@ -15,7 +15,7 @@ dns_mx_records = {
 
 # Served via Cloudflare Workers
 mail_mta_sts_params = {
-  mode = "enforce" # Sending MTA policy application, https://tools.ietf.org/html/rfc8461#section-5
+  mode = "testing" # Sending MTA policy application, https://tools.ietf.org/html/rfc8461#section-5
   max_age = 604800 # 1 week
 }
 

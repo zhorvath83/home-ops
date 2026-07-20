@@ -49,11 +49,11 @@ resource "cloudflare_zero_trust_access_group" "restricted_users" {
 }
 
 resource "cloudflare_zero_trust_access_policy" "unrestricted_users_policy" {
-  account_id     = var.CF_ACCOUNT_ID
-  name           = "UnrestrictedUsersAuth"
-  decision       = "allow"
+  account_id = var.CF_ACCOUNT_ID
+  name       = "UnrestrictedUsersAuth"
+  decision   = "allow"
 
-  include =[ {
+  include = [{
     group = {
       id = cloudflare_zero_trust_access_group.unrestricted_users.id
     }
@@ -61,11 +61,11 @@ resource "cloudflare_zero_trust_access_policy" "unrestricted_users_policy" {
 }
 
 resource "cloudflare_zero_trust_access_policy" "restricted_user_policy" {
-  account_id     = var.CF_ACCOUNT_ID
-  name           = "RestrictedUsersAuth"
-  decision       = "allow"
+  account_id = var.CF_ACCOUNT_ID
+  name       = "RestrictedUsersAuth"
+  decision   = "allow"
 
-  include =[ {
+  include = [{
     group = {
       id = cloudflare_zero_trust_access_group.restricted_users.id
     }
@@ -73,11 +73,11 @@ resource "cloudflare_zero_trust_access_policy" "restricted_user_policy" {
 }
 
 resource "cloudflare_zero_trust_access_policy" "bypass_everyone_policy" {
-  account_id     = var.CF_ACCOUNT_ID
-  name           = "Bypass"
-  decision       = "bypass"
+  account_id = var.CF_ACCOUNT_ID
+  name       = "Bypass"
+  decision   = "bypass"
 
-  include =[ {
+  include = [{
     everyone = {}
   }]
 }
@@ -205,12 +205,25 @@ resource "cloudflare_zero_trust_access_application" "private_cloud_photos" {
   }]
 }
 
-## Private website www exclude from UserAuth
-resource "cloudflare_zero_trust_access_application" "private_website" {
-  zone_id          = cloudflare_zone.domain.id
-  name             = "Private website"
-  domain           = "www.${var.CF_DOMAIN_NAME}"
-  type             = "self_hosted"
+## Public subdomains carved out of the wildcard private_cloud app (no auth).
+## Cloudflare Access needs one app per hostname; for_each emits each bypass app.
+locals {
+  public_bypass_apps = {
+    "www"     = "Private website"
+    "mta-sts" = "MTA-STS policy"
+    "share"   = "Share"
+    "idm"     = "Kanidm"
+    "books"   = "Calibre"
+  }
+}
+
+resource "cloudflare_zero_trust_access_application" "public_bypass" {
+  for_each = local.public_bypass_apps
+
+  zone_id = cloudflare_zone.domain.id
+  name    = each.value
+  domain  = "${each.key}.${var.CF_DOMAIN_NAME}"
+  type    = "self_hosted"
 
   policies = [{
     id = cloudflare_zero_trust_access_policy.bypass_everyone_policy.id
@@ -220,48 +233,12 @@ resource "cloudflare_zero_trust_access_application" "private_website" {
 ## Flux webhook
 ## Protected by WAF and ZeroTrust too
 resource "cloudflare_zero_trust_access_application" "flux_webhook" {
-  zone_id          = cloudflare_zone.domain.id
-  name             = "Flux webhook"
-  domain           = "flux-webhook.${var.CF_DOMAIN_NAME}"
-  type             = "self_hosted"
+  zone_id = cloudflare_zone.domain.id
+  name    = "Flux webhook"
+  domain  = "flux-webhook.${var.CF_DOMAIN_NAME}"
+  type    = "self_hosted"
 
   policies = [{
     id = cloudflare_zero_trust_access_policy.bypass_github_cidr_policy.id
-  }]
-}
-
-## MTA-STS policy file exclude from UserAuth
-resource "cloudflare_zero_trust_access_application" "mta_sts_policy" {
-  zone_id          = cloudflare_zone.domain.id
-  name             = "MTA-STS policy"
-  domain           = "mta-sts.${var.CF_DOMAIN_NAME}"
-  type             = "self_hosted"
-
-  policies = [{
-    id = cloudflare_zero_trust_access_policy.bypass_everyone_policy.id
-  }]
-}
-
-## Share subdomain - no authentication required
-resource "cloudflare_zero_trust_access_application" "share" {
-  zone_id          = cloudflare_zone.domain.id
-  name             = "Share"
-  domain           = "share.${var.CF_DOMAIN_NAME}"
-  type             = "self_hosted"
-
-  policies = [{
-    id = cloudflare_zero_trust_access_policy.bypass_everyone_policy.id
-  }]
-}
-
-## Exchange rates exclude from UserAuth
-resource "cloudflare_zero_trust_access_application" "exchange-rates" {
-  zone_id          = cloudflare_zone.domain.id
-  name             = "Exchange rates"
-  domain           = "arfolyam.${var.CF_DOMAIN_NAME}"
-  type             = "self_hosted"
-
-  policies = [{
-    id = cloudflare_zero_trust_access_policy.bypass_everyone_policy.id
   }]
 }

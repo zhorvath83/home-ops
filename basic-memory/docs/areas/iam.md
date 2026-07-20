@@ -73,10 +73,10 @@ The system implements a "Secure-by-Design" identity pipeline to prevent header i
 ### gateway-oidc carries no authorization block
 Per-app group access is enforced at Kanidm (client `allowed-groups`, default-deny). Define the client's `allowed-groups` before exposing a new `gateway-oidc` app, or no authenticated user can reach it. (The nil-ACL fail-open trap is gone: the failure mode is now fail-closed, not fail-open.)
 
-### Rate Limiting on External Gateway (MEDIUM)
-- **Current**: `rate-limit-external` `BackendTrafficPolicy` is commented out due to Envoy Gateway v1.8.0 CRD regression (envoyproxy/gateway#8798).
-- **Interim coverage**: Cloudflare WAF provides external rate limiting.
-- **Action**: Re-enable once Envoy Gateway v1.9.0 GA lands and the OCIRepository tag is bumped.
+### Rate Limiting on External Gateway — enabled (2026-07-20)
+- **Current**: the `rate-limit` `BackendTrafficPolicy` is **enabled** (Local, 600 req/min, `kubernetes/apps/networking/envoy-gateway/config/gateway-policies.yaml:186-200`; commit `1a7ac6cd5` "enable Local rate-limit"). Local (not Global) is effective here because the single-node cluster runs one Envoy pod per gateway, so the per-route Local aggregate is effectively global.
+- **Complementary coverage**: Cloudflare WAF still provides edge rate limiting / brute-force protection ahead of the in-cluster Local limiter.
+- **History**: the limiter was previously disabled due to an Envoy Gateway v1.8.0 CRD regression (envoyproxy/gateway#8798); Local rate-limit is functional on the current EG version, so the regression no longer blocks it.
 
 ## SSO / OIDC endpoint convention (AD-023 rev4, 2026-07-10 — deployed)
 

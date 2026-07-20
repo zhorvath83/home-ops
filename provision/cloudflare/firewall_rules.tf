@@ -14,17 +14,31 @@ resource "cloudflare_list_item" "github_hooks_items" {
   comment    = "GitHub webhook IP"
 }
 
+locals {
+  # Proxied subdomains exempt from the country block below.
+  # Add a host here when a new service must accept non-HU traffic
+  # (e.g. a new webhook receiver, or an endpoint fetched by foreign peers).
+  country_block_exceptions = toset([
+    "flux-webhook.${var.CF_DOMAIN_NAME}", # GitHub webhook sender is non-HU
+    "mta-sts.${var.CF_DOMAIN_NAME}",      # foreign MX validators fetch the MTA-STS policy
+  ])
+  country_block_expression = join(" and ", concat(
+    [for host in local.country_block_exceptions : "not http.host eq \"${host}\""],
+    ["not ip.geoip.country eq \"HU\""],
+  ))
+}
+
 resource "cloudflare_ruleset" "zone_waf_rules" {
   zone_id     = cloudflare_zone.domain.id
   name        = "Zone custom WAF rules"
   description = "Custom firewall rules for zone-level request filtering"
   kind        = "zone"
   phase       = "http_request_firewall_custom"
-  depends_on  = [
+  depends_on = [
     cloudflare_list.github_hooks_cidr_list
   ]
 
-  rules =[
+  rules = [
     {
       action      = "block"
       enabled     = true
@@ -34,14 +48,8 @@ resource "cloudflare_ruleset" "zone_waf_rules" {
     {
       action      = "block"
       enabled     = true
-      description = "Block non-Hungary requests to share subdomain"
-      expression  = "(http.host eq \"share.${var.CF_DOMAIN_NAME}\" and not ip.geoip.country eq \"HU\")"
-    },
-    {
-      action      = "block"
-      enabled     = true
-      description = "Block empty path requests to share subdomain"
-      expression  = "(http.host eq \"share.${var.CF_DOMAIN_NAME}\" and http.request.uri.path eq \"/\")"
+      description = "Block non-Hungary requests to all subdomains except exempt hosts"
+      expression  = "(${local.country_block_expression})"
     }
   ]
 }
