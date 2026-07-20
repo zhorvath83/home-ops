@@ -1,0 +1,41 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/refs/heads/master/v1.36.0/validatingadmissionpolicy-admissionregistration-v1.json
+# Hostname-scoped IdP guard: only the security namespace may claim
+# idm.${PUBLIC_DOMAIN}; non-security namespaces may not claim a wildcard
+# either (a *.${PUBLIC_DOMAIN} claim would cover idm and every other app).
+# Native kube-apiserver CEL admission — no Kyverno. Closes the wildcard-bypass
+# of a literal-only hostname check.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: httproute-reserved-hostnames
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups:
+          - gateway.networking.k8s.io
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - httproutes
+        scope: Namespaced
+  validations:
+    - expression: >-
+        object.metadata.namespace == 'security'
+        || object.spec.hostnames.all(h, !(h in ['idm.${PUBLIC_DOMAIN}']) && !h.contains('*'))
+      reason: Forbidden
+      message: "idm.${PUBLIC_DOMAIN} is a reserved IdP hostname and wildcards are restricted; only the security namespace may claim them"
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/refs/heads/master/v1.36.0/validatingadmissionpolicybinding-admissionregistration-v1.json
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: httproute-reserved-hostnames
+spec:
+  policyName: httproute-reserved-hostnames
+  validationActions:
+    - Deny
