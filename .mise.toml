@@ -20,7 +20,7 @@ pipx.uvx = true
 # Core CLI tooling
 "aqua:siderolabs/talos" = "1.13.6"
 "aqua:helm/helm" = "4.2.3"
-"aqua:helmfile/helmfile" = "1.7.0"
+"aqua:helmfile/helmfile" = "1.7.1"
 "aqua:fluxcd/flux2" = "2.9.2"
 "aqua:casey/just" = "1.57.0"
 
