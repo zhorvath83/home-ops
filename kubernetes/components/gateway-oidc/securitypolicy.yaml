@@ -29,3 +29,6 @@ spec:
     cookieNames:
       idToken: ${APP}-id-token
       accessToken: ${APP}-access-token
+    cookieConfig:
+      # Strict: closes cross-site top-level GET forced-logout; safe, idm.* and app.* share eTLD+1.
+      sameSite: Strict
