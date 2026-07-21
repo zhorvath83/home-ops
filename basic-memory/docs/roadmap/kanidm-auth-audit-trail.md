@@ -485,3 +485,173 @@ pass is authoritative.
   finalizing the `auth-failed` filter).
 - Whether a V2 `server.toml` carrying ONLY `[http_client_address_info]` cleanly composes with the
   clap/env config in practice — gate on `kanidmd configtest` at implementation.
+
+## Pass 3 — XFF spoof-resistance empirical test (2026-07-21)
+
+Method: live cluster read-only inspection — sent a spoofed-XFF request through the
+external gateway and read the Envoy access log plus the live kanidm `server.toml`
+ConfigMap. This pass RESOLVES Risk #1 for the external path, confirms L1B is already
+live (so the roadmap's `status: proposed` / "Phase 0 L1A probe pending" framing is
+stale), and leaves exactly one small empirical gap.
+
+### Test
+
+    curl -H "X-Forwarded-For: 9.9.9.9" https://idm.horvathzoltan.me
+
+Sent twice (IPv4 and IPv6) from a host OFF the LAN, so the request traversed Cloudflare
+Tunnel → envoy-external → kanidm (NOT envoy-internal; the internal path was not tested
+this round — see Open).
+
+### Findings
+
+1. **Envoy forwards the spoof plus the real client to kanidm.** The `envoy-external`
+   access log (`kubectl -n networking logs envoy-external-... -c envoy`) shows:
+
+       "downstream_remote_address":"178.164.250.100:0",
+       "x_forwarded_for":"9.9.9.9,178.164.250.100"
+
+   (IPv6 variant: `x_forwarded_for":"9.9.9.9,2a00:1110:21d:4387:dde7:8419:48b2:6537"`.)
+   The client-supplied `9.9.9.9` is preserved on the LEFT; Envoy appends the real client
+   IP as the RIGHTMOST entry. `downstream_remote_address` = the real client public IP
+   (178.164.250.100), i.e. cloudflared conveys the original client to Envoy (PROXY
+   protocol, or the `CF-Connecting-IP` custom-header effective downstream remote).
+
+2. **Risk #1 RESOLVED for the external path — and it corrects R1 / Pass 2.** R1 and
+   Pass 2 assumed envoy-external appends the *cloudflared pod IP* to upstream XFF and
+   would need an Envoy-side `ClientTrafficPolicy`/`EnvoyPatchPolicy` to set XFF from
+   `CF-Connecting-IP`. Empirically Envoy ALREADY appends the real client IP as the
+   rightmost XFF entry → **no Envoy-side fix is needed for the external path.** Phase 2
+   (Envoy XFF rewrite for external) is not required; revisit only if the live-auth-event
+   check below fails.
+
+3. **L1B is ALREADY shipped — roadmap status is stale.** The live kanidm ConfigMap
+   `kanidm-config` (`server.toml`) contains:
+
+       [http_client_address_info]
+       x-forward-for = ["10.244.0.0/16"]
+
+   i.e. the L1B endpoint (mounted `server.toml` + pod-CIDR trust) is deployed. The
+   roadmap's `status: proposed`, the "Phase 0 L1A trust-all probe" framed as the sole
+   remaining gate, and the treatment of L1B as a future deliverable are all STALE —
+   L1B is live. Refresh the roadmap status: L1 = effectively done, pending only the
+   live-auth-event confirmation below (and the IPv6-dual-stack decision).
+
+4. **Spoof-resistance confirmed by config + algorithm analysis.** Kanidm
+   `XForwardFor([10.244.0.0/16])` walks XFF right→left, skips entries in the trusted
+   CIDR, and takes the first non-trusted entry as `client_address` (the MDN "trusted
+   proxy list" method; kanidm issue #3837 + server_configuration docs). For the observed
+   chain `9.9.9.9,178.164.250.100`: rightmost = 178.164.250.100, not in 10.244.0.0/16
+   → taken as the client. The spoofed 9.9.9.9 sits on the left and is never reached.
+   Because Envoy always appends the real downstream as the rightmost entry and an
+   external client cannot place a trusted (pod-CIDR) entry to its right, the spoof is
+   structurally ignored. → `client_address` will be the real client IP, not 9.9.9.9 and
+   not the Envoy pod IP. **L1B is spoof-resistant by design; this test passed.**
+
+### NOT yet confirmed (the one remaining empirical gap)
+
+The curls were unauthenticated `GET /` → kanidm returned 303 (redirect to login) and
+emitted NO auth-audit event, so the actual `client_address` value in a kanidm auth log
+line was NOT observed this round. The spoof-resistance above is established from config
++ algorithm + the Envoy XFF chain, not from a live auth-event line. Close this with one
+real (failed) login through the external gateway and read `client_address` in
+`just kanidm logs` / vlogs — expect the real public IP, not 9.9.9.9 and not 10.244.x.x.
+
+### Residual risk — IPv4-mapped IPv6 (kanidm issue #3837)
+
+The trusted CIDR `10.244.0.0/16` is IPv4. If an Envoy→kanidm connection ever goes IPv6,
+the peer appears as `::ffff:10.244.0.x` and the IPv4 CIDR does NOT match (a `rust-cidr`
+limitation) → kanidm stops trusting XFF and falls back to the TCP peer (the Envoy pod
+IP) → the real client is lost again, silently. The current path is IPv4
+(10.244.0.229 → 10.244.0.211:8443), so it works today. Mitigation when needed: add
+`::ffff:10.244.0.0/112` to the `x-forward-for` list (note the `/112` prefix for a `/16`
+range — see issue #3837), or constrain Envoy→kanidm to IPv4. Add as a Risk and a gated
+follow-up; it is the most likely way this setup silently regresses.
+
+### Open / next
+
+- Internal-gateway spoof test not run this round (the host was off-LAN). The logic is
+  symmetric (`numTrustedHops: 0`, Envoy appends the real LAN client as the rightmost XFF
+  entry); re-test from the LAN when convenient to close the internal half.
+- One live (failed) login through envoy-external to read `client_address` and confirm
+  it is the real IP (closes the last L1 empirical gap).
+- Decide on the IPv4-mapped-IPv6 mitigation above (proactive, before any IPv6 path
+  appears).
+- Other backends: the same spoofed XFF reaches every backend. Kanidm is safe; any
+  backend that parses XFF leftmost (or trusts without the rightmost-trusted walk) is
+  still spoofable. A gateway-side `earlyRequestHeaders.remove: [X-Forwarded-For]`
+  (defense-in-depth for the whole backend population) remains a separate, justified
+  task — not for kanidm, but for the other apps.
+
+### Pass 3 update — live auth-event confirmation (2026-07-21)
+
+A real kanidm login flow through BOTH gateways was captured in
+`kubectl -n security logs kanidm-0`. This closes the "NOT yet confirmed" gap from
+Pass 3 and resolves more of the Open/next list than expected — including the internal
+half and the IPv4-mapped-IPv6 residual risk.
+
+Decisive evidence — `client_address` is now the REAL client IP on both gateways:
+
+- External (envoy-external pod, `connection_address: [::ffff:10.244.0.229]:43312`):
+  `client_address: "178.164.250.100"` (the real public IP). Before L1B this was the Envoy
+  pod IP; now it is the real client.
+- Internal (envoy-internal pod, `connection_address: [::ffff:10.244.0.206]:...`):
+  `client_address: "192.168.1.100"` (the real LAN client IP). The internal half is now
+  empirically confirmed too — not just by symmetric-logic argument.
+
+The auth-audit events nest under the carrying `request` line (linked by `kopid`):
+`Initiating Authentication Session | username: aliz@idm.horvathzoltan.me`,
+`Auth result: Choose(passkey)`, `Continue (Passkey)`, `Success(Cookie)`. The parent
+request line carries the real `client_address`, so "who / when / from-where" is now
+answerable by kopid correlation — the L1 goal is fully, empirically met on both paths.
+
+IPv4-mapped-IPv6 residual risk — EMPIRICALLY NOT MANIFESTING (softens Pass 3 risk):
+`connection_address` is `[::ffff:10.244.0.229]` / `[::ffff:10.244.0.206]` — the
+IPv4-mapped IPv6 form is PRESENT on both Envoy→kanidm paths (kanidm binds `[::]:8443`
+dual-stack). Yet the trust gate passes and `client_address` is the real IP, not the
+Envoy pod IP. So this kanidm build matches the IPv4 CIDR `10.244.0.0/16` against the
+`::ffff:10.244.0.x` mapped form — the kanidm issue #3837 IPv4-mapped-IPv4 case is NOT a
+problem here. Narrow the residual risk to a PURE-IPv6 Envoy→kanidm path (a real IPv6
+peer, not IPv4-mapped), which is not the current setup. Drop the proactive
+`::ffff:10.244.0.0/112` mitigation from "required"; keep it only as a note if a
+pure-IPv6 upstream path is ever introduced.
+
+Caveats (honest):
+- The captured flow ended in `Auth result: Success(Cookie)` for `aliz` — a SUCCESS, not
+  a `Result::Denied`. No `Result::Denied` / softlock / `account expired` line appeared
+  in this window, so the exact `auth-failed` grep strings for L2 (Risk #3) are STILL
+  unconfirmed. That is an L2 task, not an L1 gap.
+- This login flow did not carry a client-injected `X-Forwarded-For: 9.9.9.9` (it was a
+  normal browser login), so this confirms real-IP FIDELITY, not spoof-RESISTANCE on an
+  auth event. Spoof-resistance remains established by the Pass 3 Envoy XFF chain +
+  kanidm rightmost-trusted algorithm analysis. A spoofed-header login would close that
+  last nuance if desired, but is not required given the structural argument.
+
+Net: L1 is DONE and empirically verified on both gateways. Remaining L1-adjacent items
+are the (optional) spoofed-header auth-event nuance and the (narrowed) pure-IPv6
+theoretical case; the `auth-failed` strings are an L2 task.
+
+### Pass 3 IPv6 precision (2026-07-21, follow-up)
+
+Clarifying what `connection_address: [::ffff:10.244.0.206]` does and does not test,
+since the `::ffff:` notation reads as IPv6:
+
+- `::ffff:10.244.0.206` is an IPv4-MAPPED IPv6 address: it is the IPv4 address
+  10.244.0.206 (the envoy-internal pod) represented in IPv6 notation, because kanidm
+  binds `[::]:8443` dual-stack and accepts the IPv4 upstream connection in mapped
+  form. This IS the kanidm issue #3837 scenario (IPv4 CIDR vs IPv4-mapped-IPv6 peer),
+  and it is TESTED above — trust passes, `client_address` is the real client IP. So
+  #3837 is tested-and-dismissed, not merely "narrowed".
+- A PURE-IPv6 Envoy→kanidm upstream path does NOT EXIST in this cluster: the pod CIDR
+  is IPv4-only (10.244.0.0/16) and observed pod IPs are IPv4; the mapped form on
+  kanidm socket confirms upstream arrives as IPv4. There is no pure-IPv6 peer case
+  to test — it is moot, not an open risk. This replaces the softer "narrow to
+  pure-IPv6 / not the current setup" wording in the block above.
+- One sub-case genuinely NOT yet observed in the kanidm pod buffer: kanidm recording a
+  real IPv6 CLIENT IP (e.g. the MBP public IPv6 2a00:1110:...) parsed from the XFF
+  rightmost entry. Envoy forwards it (the 19:26 IPv6 spoof curl showed
+  `x_forwarded_for: "9.9.9.9,2a00:1110:..."`), and kanidm parses XFF entries as
+  strings regardless of family, so it should record the IPv6 — but the kanidm pod
+  buffer has 0 `2a00` entries in 90m (the 19:26 line rotated out / was not captured).
+  One fresh IPv6 request (curl over IPv6, or a login over IPv6) and a grep for the IPv6
+  client_address would close this last sub-case. Mechanism is clear; this is
+  confirmation, not risk.
