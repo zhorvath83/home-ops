@@ -7,6 +7,16 @@ set shell := ['bash', '-euo', 'pipefail', '-c']
 app_dir := justfile_dir() + '/kubernetes/apps/security/kanidm'
 cluster_settings := justfile_dir() + '/kubernetes/components/common/vars/cluster-settings.yaml'
 
+# auth-audit event filters — empirically validated against 14d VictoriaLogs history
+# (roadmap: kanidm-auth-audit-trail, Pass 4). Keep in sync with live log shapes; the
+# denial anchors are real (not source-guessed): `invalid credential state` is the
+# passkey-failure path on this build, `denied ❌ ...` is authz, not auth.
+auth_event_re := "Initiating Authentication Session|Auth result|Issuing Cookie session|Persisting auth session|Credentials denied"
+auth_success_re := "Issuing Cookie session|Auth result: Success|uri: /ui/login/passkey"
+auth_failed_re := "Result::Denied|Auth result: Denied|Credentials denied"
+authz_denied_re := "identity access scope is not permitted"
+kanidm_stream := '{kubernetes.pod_namespace="security",kubernetes.pod_name=~"kanidm.*"}'
+
 [private]
 [script]
 default:
@@ -33,6 +43,95 @@ logs:
 [script]
 recover-account account:
     kubectl -n security exec -it statefulset/kanidm -- kanidmd recover-account "{{ account }}"
+
+# === audit ===
+#
+# Auth-audit trail (roadmap: kanidm-auth-audit-trail). L1 client-IP fidelity is live
+# — kanidm-config/server.toml trusts Envoy XFF via the pod CIDR, so client_address in
+# these events is the real user IP, not the Envoy pod IP. History recipes read
+# VictoriaLogs (14d durable, pod-restart-safe: the kanidm pod carries reloader.stakater.com/auto,
+# so the stdout buffer is lost on every secret rotation); auth-tail follows the live pod
+# buffer instead, which is forward-follow (not fragile to restart — start it, then trigger
+# the login). vlogs is reached via port-forward, NOT the un-authed logs.${PUBLIC_DOMAIN}
+# HTTPRoute (Risk #6). kopid correlation is local (awk two-pass) because vlogs query is
+# snapshot-only and LogsQL has no group-by-kopid — it joins a request line (client_address)
+# to its auth-event child spans via the kopid UUID that prefixes every _msg.
+
+[private]
+[script]
+_vlogs query limit="1000":
+    command -v curl >/dev/null 2>&1 || { echo "curl not found in PATH" >&2; exit 127; }
+    command -v jq >/dev/null 2>&1 || { echo "jq not found in PATH" >&2; exit 127; }
+    kubectl -n observability get pod victoria-logs-server-0 >/dev/null 2>&1 \
+      || { echo "victoria-logs-server-0 not found — is the observability stack running?" >&2; exit 1; }
+    pf=""
+    trap 'kill "$pf" 2>/dev/null || true' EXIT INT TERM
+    kubectl -n observability port-forward svc/victoria-logs-server 9428:9428 >/dev/null 2>&1 &
+    pf=$!
+    ready=""
+    for _ in $(seq 1 30); do
+      if curl -s -o /dev/null --max-time 1 'http://localhost:9428/select/logsql/query?query=' 2>/dev/null; then ready=1; break; fi
+      sleep 0.2
+    done
+    [ -n "$ready" ] || { echo "port-forward to victoria-logs-server:9428 failed — is port 9428 already in use?" >&2; exit 1; }
+    # raw JSONL to stdout; callers do their own jq/awk so kopid recipes can two-pass the same stream
+    curl -s 'http://localhost:9428/select/logsql/query' --data-urlencode "query=$1" --data-urlencode "limit=$2"
+
+[private]
+[script]
+_vlogs_kopid query correlate:
+    # pull a window of lines from vlogs, then keep every line whose kopid (awk $2 of
+    # `_time  <kopid> INFO ...`) matches the correlate regex — joins parent request
+    # lines (client_address) to their auth-event child spans. The caller builds the
+    # full LogsQL query (single-quoted, like the simple recipes) and passes it as $1;
+    # forwarding via `"$1"` preserves the inner double-quotes as literal data.
+    just kanidm _vlogs "$1" 2000 \
+      | jq -r '._time + "  " + (._msg // "")' \
+      | awk -v corr="$2" '
+          { lines[NR]=$0; kp[NR]=$2 }
+          $0 ~ corr { mark[$2]=1 }
+          END { for (i=1;i<=NR;i++) if (mark[kp[i]]) print lines[i] }
+        '
+
+[doc('Follow all auth events (success, failure, denied) from the live pod buffer — start it, then trigger the login')]
+[group('audit')]
+[script]
+auth-tail:
+    kubectl -n security logs statefulset/kanidm -f --tail=1000 --timestamps=true | grep --line-buffered -E '{{ auth_event_re }}'
+
+[doc('Successful logins from the 14d durable history — per login: client_address + user + success (kopid-correlated)')]
+[group('audit')]
+[script]
+auth-success:
+    just kanidm _vlogs_kopid '{{ kanidm_stream }} _msg:~"{{ auth_success_re }}"' 'Issuing Cookie session'
+
+[doc('Authentication denials from the 14d durable history (Result::Denied / incorrect password / invalid credential state)')]
+[group('audit')]
+[script]
+auth-failed:
+    just kanidm _vlogs '{{ kanidm_stream }} _msg:~"{{ auth_failed_re }}"' \
+      | jq -r '._time + "  " + (._msg // "")' | sort
+
+[doc('Authorization denials from the 14d durable history — an authenticated user hit a scope limit (not a failed login)')]
+[group('audit')]
+[script]
+authz-denied:
+    just kanidm _vlogs '{{ kanidm_stream }} _msg:~"{{ authz_denied_re }}"' \
+      | jq -r '._time + "  " + (._msg // "")' | sort
+
+[doc('All auth events for one user from the 14d durable history (kopid-correlated so Auth result child lines are included; recent ~1-2d window)')]
+[group('audit')]
+[script]
+auth-user user:
+    just kanidm _vlogs_kopid '{{ kanidm_stream }} _msg:~"{{ auth_event_re }}"' "username: $1@|for $1@"
+
+[doc('Run an arbitrary LogsQL query against VictoriaLogs (14d); empty = default kanidm auth-event view')]
+[group('audit')]
+[script]
+vlogs-query query="":
+    q="$1"
+    [ -n "$q" ] || q='{{ kanidm_stream }} _msg:~"{{ auth_event_re }}"'
+    just kanidm _vlogs "$q" 2000 | jq -r '._time + "  " + (._msg // "")'
 
 # === client ===
 #
