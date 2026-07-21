@@ -3,7 +3,7 @@ title: kanidm-auth-audit-trail
 type: roadmap
 permalink: home-ops/docs/roadmap/kanidm-auth-audit-trail
 topic: Make Kanidm authentication events observable and durable
-status: proposed
+status: in-progress
 priority: medium
 scope: Close the four gaps that make the IdP an audit black box today — (1) client-IP
   fidelity behind Envoy is lost, (2) auth events only live in the pod stdout buffer
@@ -33,7 +33,7 @@ options:
 ## Metadata (observation-form, schema validation)
 
 - [topic] Make Kanidm authentication events observable and durable
-- [status] proposed
+- [status] in-progress
 - [priority] medium
 - [areas] iam, observability, networking
 
@@ -655,3 +655,136 @@ since the `::ffff:` notation reads as IPv6:
   One fresh IPv6 request (curl over IPv6, or a login over IPv6) and a grep for the IPv6
   client_address would close this last sub-case. Mechanism is clear; this is
   confirmation, not risk.
+## Pass 4 — L2 shipped: vlogs-backed audit recipes (2026-07-22)
+
+Method: implemented the `audit` recipe group in `kubernetes/apps/security/kanidm/mod.just`
+(commit `7c26c1f37`), then smoke-tested every recipe against the live cluster + 14d
+VictoriaLogs history. This pass RESOLVES Risk #3 (empirical denial catalog), closes the
+R6 completeness gap by design (vlogs-first), and closes the last Pass 3 sub-case (real
+IPv6 client IP). L2 is DONE.
+
+### What shipped — 6 recipes, two helpers
+
+Two private helpers back the group:
+
+- `_vlogs <query> [limit]` — port-forward to `svc/victoria-logs-server:9428` + local
+  `curl` to `/select/logsql/query` (LogsQL). Reached via port-forward, NOT the un-authed
+  `logs.${PUBLIC_DOMAIN}` HTTPRoute → sidesteps Risk #6 entirely (the same call Pass 2
+  made, now the backbone of every history recipe). Returns raw JSONL; callers do their
+  own jq/awk so the kopid recipes can two-pass the same stream.
+- `_vlogs_kopid <query> <correlate>` — pulls a window from vlogs, then awk two-pass:
+  mark every line whose `_msg` matches the correlate regex, keep every line sharing a
+  marked kopid. This joins a parent `request` line (which carries `client_address`) to
+  its auth-event child spans (`Auth result`, `Issuing Cookie session`), which do NOT
+  carry `client_address`. LogsQL is snapshot-only with no group-by-kopid, so the
+  correlation is local awk (the kopid UUID prefixes every `_msg`, so it is awk `$2`
+  of the `_time  <kopid> INFO ...` line).
+
+The 6 recipes:
+
+| Recipe | Source | What it shows |
+|---|---|---|
+| `auth-tail` | live pod buffer (`kubectl logs -f --tail=1000`) | all auth events streamed forward — start it, then trigger the login |
+| `auth-success` | vlogs 14d (kopid-correlated) | per login: `client_address` + user + `Success(Cookie)` |
+| `auth-failed` | vlogs 14d | auth denials, chronologically sorted |
+| `authz-denied` | vlogs 14d | scope-limit denials (authenticated user hit a scope limit — not a failed login) |
+| `auth-user <u>` | vlogs 14d (kopid-correlated) | full auth flow for one user |
+| `vlogs-query [q]` | vlogs 14d | arbitrary LogsQL query (empty = default auth-event view) |
+
+### vlogs-first redesign (R6 closed by design)
+
+The original L2 plan read the pod stdout buffer (`kubectl logs`) for every recipe. R6
+flagged that the kanidm pod carries `reloader.stakater.com/auto: "true"` → every secret
+rotation recreates the pod and the stdout buffer is lost. Redesign: **every history
+recipe reads VictoriaLogs** (14d durable, persists independently of the kanidm pod).
+`auth-tail` is the ONLY pod-buffer recipe, and it is forward-follow (`-f`) — its
+purpose is "start it, then trigger the login", not backlog mining, so pod-restart
+fragility does not apply to it. This nearly fully closes R6: the only residual window
+is vlogs ingestion latency (seconds), not pod-buffer loss.
+
+### Empirical denial catalog — Risk #3 CLOSED
+
+Risk #3 / Pass 2 correction #5 guessed the passkey-denial string from source as
+`Handler::Webauthn -> Result::Denied - webauthn error`. The 14d vlogs history shows
+the REAL denial strings on this build (UI passkey cancellation does NOT trigger a
+`Result::Denied` — the WebAuthn API refuses a fake passkey client-side, so no
+server-side denial fires; the denials below come from password attempts and credential-
+state failures):
+
+- `Auth result: Denied: invalid credential state` — the passkey/credential-state failure path
+- `Handler::Password -> Result::Denied - incorrect password`
+- `Credentials denied | reason: incorrect password`
+- `Auth result: Denied: incorrect password`
+
+The shipped `auth_failed_re` filter is `Result::Denied|Auth result: Denied|Credentials denied`
+— empirically complete for this build. `Invalid identity: NotAuthenticated` is correctly
+excluded (Pass 2 correction #4: it fires on every pre-login authorise, normal state).
+`account expired` / `Account is temporarily locked` were not observed in 14d (no such
+event occurred) — the filter stays source-informed for those, empirically informed for
+the rest.
+
+`authz-denied` is split out as a SEPARATE recipe because `denied ❌ - identity access
+scope is not permitted to modify/delete` is an AUTHORIZATION denial (an authenticated
+user hit a scope limit), not an AUTHENTICATION failure — mixing them into `auth-failed`
+would conflate two different trust-boundary events.
+
+### auth-success rename + oauth2-tokens dropped (scope decisions)
+
+- `auth-recent <N>` (pod-buffer snapshot, original L2 plan) → renamed to **`auth-success`**
+  and moved to vlogs. It is now kopid-correlated so each login block shows the
+  `client_address` from the parent request line plus the `Issuing Cookie session ...
+  for <user>@` + `Auth result: Success(Cookie)` lines — the L1 client-IP payoff lands
+  directly in the success view.
+- **`oauth2-tokens` dropped** (per scope decision). Pass 2 correction #6 showed the RS
+  name is recoverable from the `handle_oauth2_authorise` event (`o2rs.name` /
+  `uri: /ui/oauth2?client_id=`), not the token-exchange line. That remains true, but the
+  token-issuance surface is not part of the delivered audit trail — it can be added later
+  as its own recipe if token-issuance auditing becomes a need. `vlogs-query` covers
+  ad-hoc exploration in the meantime.
+
+### IPv6 client-IP sub-case — CLOSED (Pass 3 last open item)
+
+Pass 3 IPv6 precision left one sub-case unobserved: kanidm recording a real IPv6 CLIENT
+IP (not IPv4-mapped) parsed from the XFF rightmost entry. `auth-success` smoke-test
+surfaced it empirically — a login over IPv6 produced:
+
+- `client_address: "2a00:1110:201:a1e8:2c90:4237:89da:fa58"` (real public IPv6)
+
+alongside the already-known `192.168.1.100` (LAN) and `::ffff:10.244.0.206`
+(cluster-internal login). Kanidm parses XFF entries as strings regardless of family, so
+the IPv6 client IP is recorded correctly. **This closes the last Pass 3 sub-case**: L1
+client-IP fidelity is empirically verified for IPv4 LAN, IPv4 public, AND IPv6 public,
+on both gateways, spoof-resistant by the rightmost-trusted algorithm.
+
+### Smoke-test results (all 6 verified)
+
+- `auth-tail` — 13 auth events from the backlog stream immediately (needed
+  `--line-buffered` on the grep so output flushes in the pipe, and `--tail=1000`
+  because the unfiltered 100-line buffer was often 0 auth events given the tombstone-purge
+  noise ratio — ~14 auth events vs ~488 tombstone-purge lines per 2000).
+- `auth-success` — per-login blocks with `client_address` (LAN / IPv6 / cluster-internal).
+- `auth-failed` — real denial strings, chronologically sorted.
+- `authz-denied` — scope-limit denials.
+- `auth-user aliz` — kopid-grouped full flow: Initiating → Choose(passkey) → Continue
+  (Passkey) → Issuing → Success.
+- `vlogs-query` — default view + custom queries.
+
+### Status
+
+- **L1 — DONE** (Pass 3, both gateways, IPv4+IPv6, spoof-resistant).
+- **L2 — DONE** (this pass; commit `7c26c1f37`). Forensic post-hoc audit trail is
+  operational: `just kanidm auth-tail|auth-success|auth-failed|authz-denied|auth-user|vlogs-query`.
+- **L3 — pending** (live sessions: `session-status` / `session-destroy`; "from where"
+  for a live session is L2-correlation only, per R3).
+- **L4 — optional, separate sub-item + security-review** (OTLP; R5 CNP-comment rewrite +
+  collector hardening + egress CNP, audited under AD-023).
+- Real-time brute-force detection remains the edge controls' job (R7: rate-limit
+  BackendTrafficPolicy + Cloudflare WAF); L2 is the after-the-fact record, not a
+  detection surface.
+
+### Remaining true unknowns
+
+- L3 `person session status` live output shape (R3 confirmed no `client_address` from
+  source; the recipe wiring + smoke-test is the L3 task).
+- L4 backend choice (Tempo vs VictoriaTraces) + collector hardening details — gated on a
+  separate decision.
