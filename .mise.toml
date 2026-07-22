@@ -6,7 +6,7 @@ MINIJINJA_CONFIG_FILE = "{{config_root}}/.minijinja.toml"
 GITHUB_TOKEN = "{{ exec(command='gh auth token') | trim }}"
 # Talos + Kubernetes versions consumed by kubernetes/talos templates and recipes.
 # renovate: datasource=custom.talos-factory depName=siderolabs/talos
-TALOS_VERSION = "v1.13.6"
+TALOS_VERSION = "v1.13.7"
 # renovate: datasource=docker depName=ghcr.io/siderolabs/kubelet
 KUBERNETES_VERSION = "v1.36.2"
 # Path to the NAS-share mount helper used by the openwrt/omv recipes.
@@ -18,7 +18,7 @@ pipx.uvx = true
 
 [tools]
 # Core CLI tooling
-"aqua:siderolabs/talos" = "1.13.6"
+"aqua:siderolabs/talos" = "1.13.7"
 "aqua:helm/helm" = "4.2.3"
 "aqua:helmfile/helmfile" = "1.7.1"
 "aqua:fluxcd/flux2" = "2.9.2"
@@ -41,7 +41,7 @@ kubectl = "1.36.2"
 "aqua:charmbracelet/gum" = "0.17.0"
 
 # Hooks
-"aqua:pre-commit/pre-commit" = "4.6.0"
+"aqua:pre-commit/pre-commit" = "4.6.1"
 
 # Terraform
 "aqua:hashicorp/terraform" = "1.15.8"
@@ -54,7 +54,7 @@ kubectl = "1.36.2"
 "aqua:terraform-linters/tflint" = "0.64.0"
 "npm:markdownlint-cli2" = "0.23.1"
 "pipx:yamllint" = "1.38.0"
-"aqua:zizmorcore/zizmor" = "1.27.0"
+"aqua:zizmorcore/zizmor" = "1.28.0"
 
 # Python tooling (pipx backend)
 "pipx:flux-local" = "8.4.0"
