@@ -54,7 +54,7 @@ spec:
           app:
             image:
               repository: ghcr.io/smp46/pingvin-share-x
-              tag: v1.21.1@sha256:9ed795a1f3970704a115ea7bafdcbbcfdbf6b18c37607fbdf399da5cc2d64d07
+              tag: v1.21.2@sha256:c881b09f0f2b01120cd50dc52bbf3d9ab4def8c1cbef9aab3f6df159644ae24e
             env:
               TZ: ${TIMEZONE}
               CADDY_DISABLED: "true"
