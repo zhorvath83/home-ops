@@ -48,9 +48,6 @@ spec:
       preinstall_disabled: "true"
     security:
       allow_embedding: "true"
-      # Non-human admin login for the grafana-operator provisioning API. Must NOT collide with
-      # any OIDC preferred_username (human logins come from Pocket ID). See AD-023 / IAM area.
-      admin_user: "provisioning"
     server:
       root_url: "https://grafana.${PUBLIC_DOMAIN}"
       enable_gzip: "true"
@@ -72,6 +69,14 @@ spec:
           containers:
             - name: grafana
               env:
+                # Non-human admin login for the grafana-operator provisioning API. Must NOT
+                # collide with any OIDC preferred_username (human logins come from Pocket ID).
+                # It lives here rather than in config.security.admin_user because the operator
+                # reads its own basic-auth credentials from this container's env; with the
+                # username only in grafana.ini it authenticates as "" and every provisioning
+                # call fails. See AD-023 / IAM area.
+                - name: GF_SECURITY_ADMIN_USER
+                  value: "provisioning"
                 - name: GF_SECURITY_ADMIN_PASSWORD
                   valueFrom:
                     secretKeyRef:
