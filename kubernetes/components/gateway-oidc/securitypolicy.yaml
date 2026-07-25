@@ -1,8 +1,10 @@
 ---
 # Reusable Envoy-native OIDC login gate.
 # Consumers set APP (+ optional APP_SUBDOMAIN, HTTPROUTE_NAME) via Flux
-# postBuild.substitute. Per-app group ACL is enforced at Kanidm (client
-# allowed-groups, default-deny) — this policy carries no authorization block.
+# postBuild.substitute. Per-app group ACL is enforced at Pocket ID (client
+# allowed_user_groups) — this policy carries no authorization block. That ACL
+# is fail-OPEN when a client has no group, so the guard is the Terraform
+# precondition in provision/pocket-id, not this file.
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: SecurityPolicy
 metadata:
@@ -14,8 +16,8 @@ spec:
       name: ${HTTPROUTE_NAME:=${APP}}
   oidc:
     provider:
-      # Kanidm uses per-client issuer URLs: /oauth2/openid/<client-id>.
-      issuer: "https://idm.${PUBLIC_DOMAIN}/oauth2/openid/${APP}"
+      # Pocket ID has one issuer for every client; the endpoints come from discovery.
+      issuer: "https://idm.${PUBLIC_DOMAIN}"
     clientIDRef:
       name: ${APP}-oidc-secret
     clientSecret:
