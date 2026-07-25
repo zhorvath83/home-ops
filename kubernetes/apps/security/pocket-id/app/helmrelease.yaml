@@ -116,23 +116,3 @@ spec:
               - path: /app/geolite
       tmp:
         type: emptyDir
-    route:
-      app:
-        annotations:
-          gethomepage.dev/enabled: "true"
-          gethomepage.dev/name: Pocket-ID
-          gethomepage.dev/group: Security
-          gethomepage.dev/icon: pocket-id.svg
-        hostnames:
-          - "id.${PUBLIC_DOMAIN}"
-        parentRefs:
-          - name: envoy-external
-            namespace: networking
-            sectionName: https
-          - name: envoy-internal
-            namespace: networking
-            sectionName: https
-        rules:
-          - backendRefs:
-              - identifier: app
-                port: *port
