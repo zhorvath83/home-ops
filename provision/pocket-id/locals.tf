@@ -12,8 +12,10 @@ locals {
       callback_url = "https://${c.subdomain}.${local.public_domain}${c.gate == "envoy" ? "/oauth2/callback" : c.callback_path}"
       logout_url   = "https://${c.subdomain}.${local.public_domain}/"
 
-      # Envoy Gateway v1.8 sends no code_challenge, so PKCE would break every gated flow.
-      pkce_enabled = c.gate != "envoy"
+      # Default-on: Envoy always sends a code_challenge, and leaving PKCE optional lets a
+      # stolen authorization code be redeemed without the verifier. Override per client
+      # only for an app that provably cannot send one.
+      pkce_enabled = try(c.pkce_enabled, true)
 
       groups = try(c.groups, [])
     }
