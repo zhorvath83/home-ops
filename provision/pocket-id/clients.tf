@@ -12,9 +12,9 @@ resource "pocketid_client" "this" {
   allowed_user_groups = [for g in each.value.groups : pocketid_group.this[g].id]
 
   lifecycle {
-    # The provider derives Pocket ID's is_group_restricted flag from this list, and an
-    # empty list turns the flag off — which lets every account authorize. Fail-open by
-    # default, so an empty list must never reach the API.
+    # Pocket ID itself denies everyone when a client is group-restricted with no groups.
+    # This provider does not expose that flag though — it derives it as "list is non-empty",
+    # so an empty list reaches the API as "not restricted" and lets every account in.
     precondition {
       condition     = length(each.value.groups) > 0
       error_message = "Pocket ID client '${each.key}' has no allowed group; that would let every account in."

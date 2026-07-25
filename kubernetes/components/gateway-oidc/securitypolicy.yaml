@@ -2,9 +2,7 @@
 # Reusable Envoy-native OIDC login gate.
 # Consumers set APP (+ optional APP_SUBDOMAIN, HTTPROUTE_NAME) via Flux
 # postBuild.substitute. Per-app group ACL is enforced at Pocket ID (client
-# allowed_user_groups) — this policy carries no authorization block. That ACL
-# is fail-OPEN when a client has no group, so the guard is the Terraform
-# precondition in provision/pocket-id, not this file.
+# allowed_user_groups) — this policy carries no authorization block.
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: SecurityPolicy
 metadata:
