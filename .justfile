@@ -12,9 +12,6 @@ mod cluster-bootstrap "kubernetes/bootstrap"
 [group('k8s')]
 mod k8s "kubernetes"
 
-[group('kanidm')]
-mod kanidm "kubernetes/apps/security/kanidm"
-
 [group('talos')]
 mod talos "kubernetes/talos"
 

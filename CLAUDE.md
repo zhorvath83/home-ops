@@ -57,6 +57,7 @@ home-ops
 ├── provision/        # provider-facing infrastructure (Terraform)
 │   ├── cloudflare/   # DNS, Tunnel, Access, WAF, R2, Workers
 │   ├── ovh/          # S3 backup storage
+│   ├── pocket-id/    # OIDC clients and groups in the cluster IdP
 │   ├── openmediavault/
 │   └── openwrt/
 ├── .claude/skills/   # repo-local AI skills
@@ -191,8 +192,8 @@ Examples:
 ## Just And Renovate Model
 
 - The root `.justfile` is the command index; prefer existing Just modules over ad-hoc shell flows.
-- Current Just modules (groups): `cluster-bootstrap`, `k8s`, `kanidm`, `talos`, `volsync`, `omv`, `cloudflare`, `ovh`. The `openwrt` group is a shim in the root `.justfile` that forwards to the private `my-scripts-and-configs` repo (`OpenWRT/provision/`).
-- Each module lives next to the area it operates on: `kubernetes/bootstrap/mod.just`, `kubernetes/mod.just`, `kubernetes/apps/security/kanidm/mod.just`, `kubernetes/talos/mod.just`, `kubernetes/volsync/mod.just`, `provision/openmediavault/mod.just`, `provision/cloudflare/mod.just`, `provision/ovh/mod.just`.
+- Current Just modules (groups): `cluster-bootstrap`, `k8s`, `talos`, `volsync`, `omv`, `cloudflare`, `ovh`, `pocket-id`. The `openwrt` group is a shim in the root `.justfile` that forwards to the private `my-scripts-and-configs` repo (`OpenWRT/provision/`).
+- Each module lives next to the area it operates on: `kubernetes/bootstrap/mod.just`, `kubernetes/mod.just`, `kubernetes/talos/mod.just`, `kubernetes/volsync/mod.just`, `provision/openmediavault/mod.just`, `provision/cloudflare/mod.just`, `provision/ovh/mod.just`, `provision/pocket-id/mod.just`.
 - Invoke recipes as `just <group> <recipe> [args]` (e.g. `just k8s sync-hr paperless default`, `just volsync list-snapshots actual`, `just talos apply-node k8s-cp0`).
 - Recipe arguments are **positional only** — Just does not parse `key=value` named arguments the way the previous Task system did. Pass values in order, omitting trailing defaults.
 - Pre-commit is invoked directly via the `pre-commit` CLI (no Just wrapper); the hook list is in `.pre-commit-config.yaml`.
@@ -242,7 +243,7 @@ Platform areas:
 | `docs/areas/volsync-backup` | Wire PVC backup/restore, change schedule/jitter/retention/Kopia maintenance | VolSync + Kopia for PVC backups, jitter policy, KopiaMaintenance, per-app component |
 | `docs/areas/resticprofile-backup` | Touch the file-level NAS `/backups` plane or Backrest browse UI | file-level NAS `/backups` plane + Backrest browse UI |
 | `docs/areas/observability` | Change Prometheus/Grafana/VictoriaLogs/exporters | kube-prometheus-stack + grafana + speedtest-exporter + victoria-logs |
-| `docs/areas/iam` | Wire SSO/OIDC gate, Kanidm OIDC, gateway-oidc, or per-app group ACLs | Kanidm OIDC provider + gateway-oidc Envoy-native OIDC gate, header-stripping spoofing guard, per-app group ACLs (apps/security) |
+| `docs/areas/iam` | Wire SSO/OIDC gate, Pocket ID clients/groups, gateway-oidc, or per-app group ACLs | Pocket ID OIDC provider + Terraform provisioning + gateway-oidc Envoy-native OIDC gate, header-stripping spoofing guard, per-app group ACLs |
 
 Provisioning areas:
 
