@@ -211,8 +211,8 @@ locals {
   public_bypass_apps = {
     "www"     = "Private website"
     "mta-sts" = "MTA-STS policy"
-    "share"   = "Share"
-    "idm"     = "Kanidm"
+    "share"   = "File share"
+    "idm"     = "Identity Management"
     "books"   = "Calibre"
   }
 }
