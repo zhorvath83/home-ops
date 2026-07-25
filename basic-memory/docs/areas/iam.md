@@ -5,105 +5,112 @@ permalink: home-ops/docs/areas/iam
 area: iam
 status: current
 confidence: high
-verified_at: '2026-07-20'
-summary: Centralized Identity and Access Management using Kanidm as the OIDC IdP and
-  the gateway-oidc Envoy-native OIDC gate for workloads that do not speak OIDC natively.
+verified_at: '2026-07-26'
+summary: Pocket ID is the cluster OIDC Identity Provider; its clients and groups are
+  Terraform-managed in provision/pocket-id, and workloads that do not speak OIDC are
+  gated by the shared gateway-oidc Envoy-native OIDC component.
 verified_against:
-- kubernetes/apps/security/kanidm/app/helmrelease.yaml
+- kubernetes/apps/security/pocket-id/app/helmrelease.yaml
+- kubernetes/apps/security/pocket-id/app/httproute.yaml
 - kubernetes/components/gateway-oidc/securitypolicy.yaml
 - kubernetes/components/gateway-oidc/externalsecret.yaml
-- kubernetes/apps/networking/envoy-gateway/config/gateway-policies.yaml
+- provision/pocket-id/clients.yaml
+- provision/pocket-id/clients.tf
+- provision/pocket-id/locals.tf
+- kubernetes/apps/observability/grafana/instance/grafana.yaml
+- kubernetes/apps/selfhosted/pingvin-share-x/app/config/config.yaml
 ---
 
 # Identity & Access Management (IAM)
 
-## 1. Trust Chain & Logic
-The system implements a "Secure-by-Design" identity pipeline to prevent header injection and unauthorized access.
+## 1. Components
 
-### Traffic Flow (OIDC-gated Apps)
+### Pocket ID — the IdP
+
+- **Role**: sole source of truth for users and groups; the single OIDC provider for every workload.
+- **Placement**: `kubernetes/apps/security/pocket-id/`, namespace `security`, exposed at `idm.${PUBLIC_DOMAIN}` on both `envoy-external` and `envoy-internal`.
+- **Authentication**: passkey-only. There is no password credential.
+- **Serving**: the pod terminates TLS itself on port 1411 (`TLS_CERT`/`TLS_KEY` are file paths to a cert-manager `Certificate`), and a `BackendTLSPolicy` makes envoy speak HTTPS upstream with `hostname: idm.${PUBLIC_DOMAIN}`.
+- **Metrics**: OTel Prometheus exporter on `:9464`, scraped through a `ServiceMonitor`.
+- **State**: SQLite on the `pocket-id` PVC, backed up by the shared `components/volsync` plane. The GeoLite2 mmdb lives on an `emptyDir` so it stays out of the backup.
+
+### gateway-oidc — the OIDC gate
+
+- **Role**: reusable Kustomize component (`kubernetes/components/gateway-oidc/`) that attaches an Envoy-native OIDC `SecurityPolicy` to an app's `HTTPRoute`, for apps that cannot speak OIDC themselves.
+- **Consumers** set `APP` (+ optional `APP_SUBDOMAIN`, `HTTPROUTE_NAME`) through Flux `postBuild.substitute`.
+- **Flow**: Envoy redirects to the IdP, exchanges the authorization code, sets the id-token/access-token cookies, then forwards the authenticated request to the backend.
+- **Cookies**: `${APP}-id-token` / `${APP}-access-token`, `sameSite: Strict` (safe because `idm.*` and `app.*` share the registrable domain), tokens encrypted by default.
+- **No authorization block**: group access is decided at the IdP, not in the policy.
+
+## 2. Trust chain
+
 `User -> Envoy Gateway -> SecurityPolicy (OIDC) -> App`
 
-### Critical Security Constraints
-- **Hostname admission guard**: A `ValidatingAdmissionPolicy` (native CEL, no Kyverno) in `envoy-gateway/config/validatingadmissionpolicy.yaml` gates HTTPRoute hostname claims — only the `security` namespace may claim `idm.${PUBLIC_DOMAIN}`, and non-security namespaces may not claim a wildcard (which would cover idm). Closes the route-collision / WebAuthn-origin-binding hijack path on the IdP plane. See [[networking]].
+- [observation] [security] **Hostname admission guard**: a `ValidatingAdmissionPolicy` (native CEL) in `envoy-gateway/config/validatingadmissionpolicy.yaml` gates HTTPRoute hostname claims — only the `security` namespace may claim `idm.${PUBLIC_DOMAIN}`, and non-security namespaces may not claim a wildcard covering it. This closes the route-collision / WebAuthn-origin-binding hijack path on the IdP plane. See [[networking]].
+- [observation] [security] **Header stripping**: the Envoy Gateway `ClientTrafficPolicy` removes `Remote-User`, `Remote-Email`, `Remote-Groups`, `Remote-Name`, `Remote-Sub` from inbound requests, so identity headers cannot be supplied by a client. Defense in depth; never narrow it.
+- [observation] [security] **PKCE is always on**. Envoy Gateway sends `code_challenge`/S256 on every gated flow and the behaviour is not configurable in the `SecurityPolicy`. Every client therefore carries `pkce_enabled = true` unless the app provably cannot send a challenge, because Pocket ID only *verifies* a challenge for clients that require it.
+- [observation] [security] **Admin API is not publicly reachable**: the `pocket-id-external` HTTPRoute returns 403 for any request carrying an `X-API-KEY` header, and also for `/setup`, `/signup`, `/api/signup`, `/st/`, `/healthz`, and `/internal/`. The `envoy-internal` route carries no such filters, so administration and provisioning run from the LAN.
 
-- **Header Stripping**: Envoy Gateway `ClientTrafficPolicy` removes `Remote-User`, `Remote-Email`, `Remote-Groups`, `Remote-Name`, and `Remote-Sub` before request processing. This is a header-injection spoofing guard kept as defense-in-depth — those identity headers cannot be supplied by a client.
-- **Envoy-native OIDC**: The `gateway-oidc` component makes Envoy itself perform the OIDC authorization-code flow against Kanidm. An unauthenticated request is redirected to Kanidm login; only after a successful token exchange does the request reach the backend (Envoy sets the id-token/access-token cookies). Unauthenticated traffic is dropped/redirected at Envoy before it reaches the backend.
-- **Group authorization**: Per-app group access is enforced at Kanidm (per-client `allowed-groups`, default-deny), not in the SecurityPolicy — the `gateway-oidc` component carries no `authorization` block.
+## 3. OIDC endpoint convention
 
-## 2. Components
+- [observation] [convention] Pocket ID serves **one issuer for every client**: `https://idm.${PUBLIC_DOMAIN}`. Clients resolve the rest through `/.well-known/openid-configuration`; there are no per-client issuer URLs.
+- [observation] [endpoint] authorize `/authorize` · token `/api/oidc/token` · userinfo `/api/oidc/userinfo` · end-session `/api/oidc/end-session` · JWKS `/.well-known/jwks.json`.
+- [observation] [scopes] `openid`, `profile`, `email`, `groups`, `offline_access`. The `groups` claim carries the group **name** verbatim — no realm or domain suffix — so role mappings match on the bare name.
+- [observation] [consequence] Every endpoint is the public issuer, per AD-023. The OIDC backchannel is therefore ordinary gateway traffic (client pod -> envoy VIP -> pocket-id). Baseline-egress clients need nothing; a client carrying `egress.home.arpa/custom-egress` MUST also carry `egress.home.arpa/allow-gateways` or its token exchange is dropped by its own CNP posture. Current carriers: grafana, pingvin-share-x.
+- [observation] [dns] The hairpin resolves through the coredns split-horizon zone: `${PUBLIC_DOMAIN}` forwards to `${K8S_GATEWAY_IP}` (k8s-gateway), so pods reach the envoy-internal VIP without the node-resolver -> router hop.
 
-### Kanidm (The IdP)
-- **Role**: Sole source of truth for users and groups.
-- **Protocol**: OIDC Provider (Kanidm per-client issuer URLs: `https://idm.${PUBLIC_DOMAIN}/oauth2/openid/<client-id>`).
-- **Access**: Exposed at `idm.${PUBLIC_DOMAIN}` on both `envoy-external` and `envoy-internal`.
-- **Security**: Passkey-first. No password fallback.
-- **Administration**: `just kanidm` module (ad-hoc `kanidm/tools` client pod in the `security` namespace); the `kanidm/server` image ships no client CLI and there is no macOS package. See `kubernetes/apps/security/kanidm/README.md`.
+## 4. Provisioning model
 
-### gateway-oidc (The OIDC Gate)
-- **Role**: Reusable Kustomize component that attaches an Envoy-native OIDC `SecurityPolicy` to an app's `HTTPRoute`.
-- **Auth Flow**: Envoy redirects to Kanidm -> exchanges the authorization code -> sets session cookies -> forwards the authenticated request to the backend.
-- **ACL Model**: Per-app group access is enforced at Kanidm via per-client `allowed-groups` (default-deny). The policy itself carries no authorization block.
-- **Secrets**: Per-app `${APP}-oidc-secret` `ExternalSecret` (1Password item `kanidm`, field `${APP}_client_secret`); the component ships the ExternalSecret template.
+- [observation] [terraform] Clients and groups are declared in `provision/pocket-id/clients.yaml` and applied with `just pocket-id apply`. Provider `trozz/pocketid` 2.1.0; state in HCP Terraform, organization `zhorvath83`, workspace `pocket-id`.
+- [observation] [terraform] The workspace runs in **local execution mode** deliberately — the admin API is only reachable from the LAN through `envoy-internal`, so a remote-executed plan can never reach it.
+- [observation] [terraform] `locals.tf` derives the callback URL per client (`/oauth2/callback` for gateway-gated apps, an app-specific path for native ones) and reads `PUBLIC_DOMAIN` from `kubernetes/components/common/vars/cluster-settings.yaml`, so the domain is not duplicated.
+- [observation] [terraform] `client_id` is set explicitly to the app name and is not secret, which is why manifests can carry it as a literal (`client-id: ${APP}`).
+- [observation] [scope] **Users are not Terraform-managed.** Accounts, passkey enrolment, and group membership are administered in the Pocket ID admin UI. Terraform owns groups and clients only.
 
-## 3. Implementation Guide for AI Agents
+### Group-restriction guard (security control)
 
-**CRITICAL: No application may be deployed without an associated IAM policy. Every app must be protected by either native OIDC or the `gateway-oidc` component.**
+- [observation] [security] Pocket ID itself is **not** permissive: `IsUserGroupAllowedToAuthorize` returns true immediately when `IsGroupRestricted` is false, and otherwise requires membership — a client marked restricted with an empty group list denies everyone.
+- [observation] [security] The gap is in the **Terraform provider**, which does not expose `isGroupRestricted` and instead derives it as "the `allowed_user_groups` list is non-empty". An empty list therefore reaches the API as *not restricted*, admitting every account.
+- [observation] [remediation] Three layers guard this: a `lifecycle.precondition` in `clients.tf` blocks an empty group list at apply time; `lint.sh` mirrors the check; and `just pocket-id audit` queries the running IdP for any client whose restriction is off, which is what catches a client created in the admin UI behind Terraform's back.
+- [observation] [limitation] The provider also omits `skipConsent` from its request body, so enabling "skip consent" in the admin UI is silently reverted the next time Terraform updates that client — invisibly, since the field is absent from the schema and never appears in a plan.
 
-### Path A: OIDC-Native App
-1. **Kanidm Registration**: Create an OAuth2 client in Kanidm (`just kanidm`).
-2. **Grouping**:
-   - Create `appname_users` group in Kanidm (Mandatory).
-   - Create `appname_admins` group in Kanidm (Optional, for admin roles).
-3. **Secrets**: Store the resulting `client_id` and `client_secret` in the 1Password item `kanidm` (field `${APP}_client_secret`).
-4. **ExternalSecret**: The per-app `ExternalSecret` (or the `gateway-oidc` component template) pulls these creds into `${APP}-oidc-secret`.
-5. **App Config**: Set the OIDC issuer/discovery URL to `https://idm.${PUBLIC_DOMAIN}` (Kanidm per-client issuer: `https://idm.${PUBLIC_DOMAIN}/oauth2/openid/<client-id>`).
+## 5. Secret delivery
 
-### Path B: OIDC-less App (gateway-oidc)
-1. **Kanidm Grouping**: Create `appname_users` group in Kanidm (Mandatory) and add it to the client's `allowed-groups`.
-2. **Component**: Add the `gateway-oidc` Kustomize component to the app's `ks.yaml`. Set `APP` (+ optional `APP_SUBDOMAIN`, `HTTPROUTE_NAME`) via `postBuild.substitute`.
-3. **No ReferenceGrant needed**: the OIDC provider is reached via the public issuer URL, not an in-cluster Service backendRef, so there is no cross-namespace `ReferenceGrant` to maintain.
+- [observation] [secret] Client secrets live in the 1Password item `HomeOps/pocket-id-clients`, one `<app>_client_secret` field per client. `just pocket-id apply` writes them from Terraform outputs; raw `terraform apply` skips that sync and leaves consumers stale.
+- [observation] [secret] A Pocket ID client secret is returned by the API **only at creation**. Terraform state and 1Password are the only two copies; losing both means recreating the client (`just pocket-id rotate <app>`).
+- [observation] [secret] `HomeOps/pocket-id` holds the IdP's own `ENCRYPTION_KEY` and the `POCKET_ID_PROVISIONING_API_KEY` used by Terraform.
+- [observation] [secret] Consumers pull their secret through an `ExternalSecret` backed by the `onepassword-connect` ClusterSecretStore. The `gateway-oidc` component ships the template for gated apps; native apps carry their own.
 
-### Mandatory Infrastructure Requirements (All Paths)
-- **Network Isolation**: Every app MUST have a `CiliumNetworkPolicy` (CNP).
-- **Ingress Analysis**: Analyze and document all required ingress paths (e.g., Prometheus, Kubelet, other internal services) to ensure the CNP is tight but functional.
-- **Verification**: Verify that the app is unreachable without identity and that group-based access is correctly enforced.
+## 6. Group taxonomy
 
-## 4. Known Limitations & Warnings
+| Group | Grants |
+|---|---|
+| `media_users` | the eight gateway-gated downloads apps |
+| `infra_admins` | hubble-ui, echo-server, and Grafana's Admin role |
+| `calibre-web-automated_users` / `_admins` | Calibre-Web Automated |
+| `pingvin-share-x_admins` | Pingvin Share admin access |
 
-### gateway-oidc carries no authorization block
-Per-app group access is enforced at Kanidm (client `allowed-groups`, default-deny). Define the client's `allowed-groups` before exposing a new `gateway-oidc` app, or no authenticated user can reach it. (The nil-ACL fail-open trap is gone: the failure mode is now fail-closed, not fail-open.)
+## 7. Client inventory
 
-### Rate Limiting on External Gateway — enabled (2026-07-20)
-- **Current**: the `rate-limit` `BackendTrafficPolicy` is **enabled** (Local, 600 req/min, `kubernetes/apps/networking/envoy-gateway/config/gateway-policies.yaml:186-200`; commit `1a7ac6cd5` "enable Local rate-limit"). Local (not Global) is effective here because the single-node cluster runs one Envoy pod per gateway, so the per-route Local aggregate is effectively global.
-- **Complementary coverage**: Cloudflare WAF still provides edge rate limiting / brute-force protection ahead of the in-cluster Local limiter.
-- **History**: the limiter was previously disabled due to an Envoy Gateway v1.8.0 CRD regression (envoyproxy/gateway#8798); Local rate-limit is functional on the current EG version, so the regression no longer blocks it.
+**Gateway-gated** (`components/gateway-oidc`, callback `/oauth2/callback`): bazarr (subs), sonarr (shows), radarr (movies), prowlarr (indexers), qbittorrent (bt), subsyncarr (subsync), maintainerr, seerr (reqs) — all `media_users`; hubble-ui (hubble) and echo-server (echo) — `infra_admins`.
 
-### gateway-oidc discovery-fetch fragility — Invalid policies don't self-heal (2026-07-20)
-- [observation] The envoy-gateway controller fetches the OIDC discovery doc (`https://idm.<PUBLIC_DOMAIN>/oauth2/openid/<app>/.well-known/openid-configuration`) on every SecurityPolicy generation bump. If that fetch times out (`context deadline exceeded`), the policy goes `Accepted=False/Invalid` and the controller sets a **500 direct-response** on the gated routes (log: `gatewayapi/securitypolicy.go:1075 setting 500 direct response in routes due to errors in SecurityPolicy`). From Invalid, the policy does NOT self-heal even once the endpoint is reachable again.
-- [observation] Triggers observed 2026-07-20: (a) a SecurityPolicy spec change (`sameSite: Strict`, commit `0e1c1daa5`) forced a re-fetch during an envoy-internal xDS reload; (b) a Kanidm restart made the discovery endpoint briefly unavailable mid-fetch. Both left all 10 OIDC SecurityPolicies stuck Invalid → 500s on every protected site.
-- [observation] The `cookieConfig.sameSite: Strict` field itself is schema-valid and NOT the cause — the 500 mechanism is the discovery timeout, not cookie behavior. `idm.*` and `app.*` share the registrable domain, so SameSite=Strict is functionally safe for the OIDC callback here.
-- [observation] CoreDNS commit `5cf7ab141` (2026-07-20) rewrote the split-horizon zone from `id.*` to `idm.*`, resolving `idm.<PUBLIC_DOMAIN>` to the `envoy-internal` **ClusterIP** (not the LB VIP) to fix the data-plane OIDC token-exchange hairpin (eTP:Local). This path works for the controller discovery fetch too (verified post-recovery). Not the cause, but it reshaped the resolution path on the same morning.
-- [remediation] Recovery: `kubectl rollout restart deployment/envoy-gateway -n networking` forces a clean re-fetch; all policies return to Accepted within ~4 min. Apply on any Kanidm restart or gateway-oidc spec change that leaves policies stuck Invalid.
-## SSO / OIDC endpoint convention (AD-023 rev4, 2026-07-10 — deployed)
+**Native OIDC**:
 
-- [observation] [convention] Every native OIDC client uses the PUBLIC issuer `https://idm.<PUBLIC_DOMAIN>` for ALL endpoints (auth/token/userinfo/discovery). Split configs (public auth_url + in-cluster token/userinfo — the former grafana pattern) are RETIRED: discovery-only clients (pingvin-share-x) cannot follow them, and the token endpoint is world-exposed by design so an in-cluster-only network path adds no boundary.
-- [observation] [consequence] The OIDC backchannel is ordinary gateway traffic (client pod -> envoy VIP -> kanidm). Baseline-egress clients need nothing. Clients with egress.home.arpa/custom-egress MUST also carry egress.home.arpa/allow-gateways (allow-gateways-egress CCNP, envoy :10443) or their token exchange is dropped. Current carriers: grafana, pingvin-share-x.
-- [observation] [dns] The hairpin resolves via the coredns split-horizon zone: ${PUBLIC_DOMAIN} forwards to ${K8S_GATEWAY_IP} (k8s-gateway) so pods get the envoy-internal VIP without the node-resolver -> router hop.
-- [observation] [status] Decided, implemented, and DEPLOYED 2026-07-10. Full verification in [[cnp-per-app-audit]] (docs/progress).
+- [observation] [client] **grafana** — `auth.generic_oauth` on the grafana-operator instance. Endpoints are the public issuer; `use_pkce: true`; `scopes: openid email profile groups`. `role_attribute_path` maps `infra_admins` -> Admin and everything else -> None, with `role_attribute_strict: true`. The local login form is hidden (`disable_login_form`); the retained admin credential is the grafana-operator's provisioning credential for the in-cluster API, not a human login path.
+- [observation] [client] **pingvin-share-x** — discovery-only client; `oidc-discoveryUri` points at `/.well-known/openid-configuration`, `oidc-rolePath: groups`, `oidc-roleAdminAccess: pingvin-share-x_admins`, password login disabled.
+- [observation] [client] **calibre-web-automated** — callback `/login/generic/authorized`. `pkce_enabled: false` because Calibre-Web's flask-dance generic OAuth exposes no PKCE toggle and sends no `code_challenge`; it is a confidential client, so the secret still guards the token exchange.
 
-## Relations addendum
+## 8. Operational notes
+
+- [observation] [onboarding] Adding a gated app is two edits plus an apply: a `clients.yaml` entry (`gate: envoy`, subdomain, groups) with `just pocket-id apply`, and the `gateway-oidc` component plus `APP`/`APP_SUBDOMAIN` in the app's `ks.yaml`. `just pocket-id lint` fails if either half is missing or the subdomains disagree.
+- [observation] [debt] Calibre-Web Automated's OIDC settings are entered in its admin UI, so its client secret lives in the app database rather than arriving through External Secrets. VolSync backs it up, but it is not reproducible from git — the one workload outside the uniform secret-delivery model.
+- [observation] [limitation] **SecurityPolicy discovery-fetch fragility**: the envoy-gateway controller fetches the discovery document on every SecurityPolicy generation bump. If that fetch times out, the policy goes `Accepted=False/Invalid` and the controller sets a 500 direct-response on the gated routes, and it does not self-heal once the endpoint returns. Remediation: `kubectl rollout restart deployment/envoy-gateway -n networking`, after which policies return to Accepted within a few minutes. With a single shared issuer this is one failure point for all gated apps at once.
+- [observation] [limitation] There is no auth-audit tooling for the IdP. Pocket ID runs with `LOG_JSON=true`, so a VictoriaLogs-backed audit trail is buildable, but none exists today.
+- [observation] [ratelimit] The external gateway carries a Local `BackendTrafficPolicy` rate limit (600 req/min), effectively global on this single-node cluster because one Envoy pod serves each gateway. Cloudflare WAF provides edge rate limiting ahead of it.
+
+## Relations
 
 - decided_in [[AD-023-cnp-threat-model-audit]]
-
-## 5. OIDC-Native Apps Registry
-
-### Grafana (added 2026-07-10, roadmap grafana-operator-migration P5)
-
-- **Path**: A (OIDC-native via `auth.generic_oauth`, grafana-operator-managed instance).
-- **Kanidm client**: "Grafana" at `grafana.${PUBLIC_DOMAIN}`, redirect `/login/generic_oauth`.
-- **Group -> role**: `grafana_admins` -> Admin; any other authenticated user -> None (no access). `role_attribute_strict: true`, `skip_org_role_sync: false`.
-- **Endpoints**: public issuer only (AD-023) — Kanidm per-client issuer `https://idm.${PUBLIC_DOMAIN}/oauth2/openid/grafana` for authorize | token | userinfo. The token/userinfo backchannel hairpins through envoy, so the grafana pod carries `egress.home.arpa/allow-gateways` in addition to `custom-egress`.
-- **Secret**: 1Password item `grafana`, keys `GRAFANA_OIDC_CLIENT_ID`/`GRAFANA_OIDC_CLIENT_SECRET` -> ExternalSecret `grafana-secret` -> env `GF_AUTH_GENERIC_OAUTH_CLIENT_ID`/`_SECRET`.
-- **Local login**: form hidden (`disable_login_form: true`). **DEVIATION from roadmap D5** (which planned to keep the form as documented break-glass). The `admin-user`/`admin-password` in `grafana-secret` are retained — they are NOT a human login path once the form is hidden, but the **grafana-operator's provisioning credential**: the operator authenticates to the Grafana API with them to push dashboard/datasource/folder CRs. Removing them breaks provisioning. Break-glass recovery = `grafana-cli admin reset-admin-password` in-pod, or temporarily flip `disable_login_form`.
-- **Gotcha (fixed 2026-07-10)**: the earlier config used `disable_login` (a non-existent grafana.ini key -> no-op, form stayed visible); the valid key is `disable_login_form`. Also an "Invalid client secret" login failure was a value mismatch between the 1Password field and the IdP client secret (not a network/CNP issue) — the token exchange reaches the IdP and is rejected; resync the secret + restart the pod (ephemeral DB re-seeds admin from env).
-- Closes Grafana's standing IAM exception (S3: no app without an IAM policy).
+- relates_to [[networking]]
+- relates_to [[external-secrets]]
+- relates_to [[observability]]
