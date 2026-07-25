@@ -11,4 +11,4 @@ spec:
       name: pocket-id
   validation:
     wellKnownCACertificates: System
-    hostname: id.${PUBLIC_DOMAIN}
+    hostname: idm.${PUBLIC_DOMAIN}

@@ -6,7 +6,7 @@ metadata:
   name: pocket-id-tls
 spec:
   dnsNames:
-    - id.${PUBLIC_DOMAIN}
+    - idm.${PUBLIC_DOMAIN}
   duration: 160h
   issuerRef:
     kind: ClusterIssuer

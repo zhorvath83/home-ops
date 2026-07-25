@@ -25,7 +25,7 @@ metadata:
     gethomepage.dev/icon: pocket-id.svg
 spec:
   hostnames:
-    - "id.${PUBLIC_DOMAIN}"
+    - "idm.${PUBLIC_DOMAIN}"
   parentRefs:
     - name: envoy-external
       namespace: networking
@@ -125,7 +125,7 @@ metadata:
   name: pocket-id-internal
 spec:
   hostnames:
-    - "id.${PUBLIC_DOMAIN}"
+    - "idm.${PUBLIC_DOMAIN}"
   parentRefs:
     - name: envoy-internal
       namespace: networking
