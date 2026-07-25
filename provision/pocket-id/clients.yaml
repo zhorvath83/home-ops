@@ -91,7 +91,7 @@ clients:
     groups:
       - pingvin-share-x_admins
   calibre-web-automated:
-    friendly_name: Calibre-Web Automated
+    friendly_name: Calibre-Web
     gate: native
     subdomain: books
     callback_path: /login/generic/authorized
