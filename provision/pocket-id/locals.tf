@@ -6,6 +6,9 @@ locals {
 
   clients = {
     for name, c in local.registry.clients : name => {
+      # The map key is the client_id; friendly_name is only the IdP's display label.
+      friendly_name = try(c.friendly_name, name)
+
       host = "${c.subdomain}.${local.public_domain}"
 
       # /oauth2/callback belongs to the Envoy OIDC filter, not to the IdP; native apps carry their own path.

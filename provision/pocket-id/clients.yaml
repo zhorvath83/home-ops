@@ -1,5 +1,7 @@
 ---
 # Source of truth for Pocket ID groups and OIDC clients. Apply: just pocket-id apply
+# The map key is the client_id (and the ExternalSecret field prefix); friendly_name is
+# only what the IdP shows to the user.
 # gate: envoy -> protected by components/gateway-oidc; native -> the app speaks OIDC itself.
 groups:
   media_users:
@@ -15,71 +17,81 @@ groups:
 
 clients:
   bazarr:
+    friendly_name: Bazarr
     gate: envoy
     subdomain: subs
     groups:
       - media_users
   sonarr:
+    friendly_name: Sonarr
     gate: envoy
     subdomain: shows
     groups:
       - media_users
   radarr:
+    friendly_name: Radarr
     gate: envoy
     subdomain: movies
     groups:
       - media_users
   prowlarr:
+    friendly_name: Prowlarr
     gate: envoy
     subdomain: indexers
     groups:
       - media_users
   qbittorrent:
+    friendly_name: qBittorrent
     gate: envoy
     subdomain: bt
     groups:
       - media_users
   subsyncarr:
+    friendly_name: Subsyncarr
     gate: envoy
     subdomain: subsync
     groups:
       - media_users
   maintainerr:
+    friendly_name: Maintainerr
     gate: envoy
     subdomain: maintainerr
     groups:
       - media_users
   seerr:
+    friendly_name: Seerr
     gate: envoy
     subdomain: reqs
     groups:
       - media_users
   hubble-ui:
+    friendly_name: Hubble UI
     gate: envoy
     subdomain: hubble
     groups:
       - infra_admins
   echo-server:
+    friendly_name: Echo Server
     gate: envoy
     subdomain: echo
     groups:
       - infra_admins
   grafana:
+    friendly_name: Grafana
     gate: native
     subdomain: grafana
     callback_path: /login/generic_oauth
     groups:
       - infra_admins
   pingvin-share-x:
+    friendly_name: Pingvin Share
     gate: native
     subdomain: share
     callback_path: /api/oauth/callback/oidc
-    # Pingvin Share exposes no PKCE toggle, so it sends no code_challenge.
-    # Confidential client, so the secret still guards token exchange.
-    pkce_enabled: false
     groups:
       - pingvin-share-x_admins
   calibre-web-automated:
+    friendly_name: Calibre-Web Automated
     gate: native
     subdomain: books
     callback_path: /login/generic/authorized

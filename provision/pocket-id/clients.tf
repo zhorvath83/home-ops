@@ -1,7 +1,7 @@
 resource "pocketid_client" "this" {
   for_each = local.clients
 
-  name                 = each.key
+  name                 = each.value.friendly_name
   client_id            = each.key
   callback_urls        = [each.value.callback_url]
   logout_callback_urls = [each.value.logout_url]
