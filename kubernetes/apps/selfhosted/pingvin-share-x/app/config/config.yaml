@@ -156,20 +156,20 @@ oauth:
 
   oidc-enabled: "true"
   #Discovery URI of the OpenID Connect OAuth app
-  oidc-discoveryUri: "https://idm.${PUBLIC_DOMAIN}/oauth2/openid/${APP}/.well-known/oauth-authorization-server"
+  oidc-discoveryUri: "https://idm.${PUBLIC_DOMAIN}/.well-known/openid-configuration"
   #Whether the "Sign out" button will sign out from the OpenID Connect provider
   oidc-signOut: "true"
   #Scopes which should be requested from the OpenID Connect provider.
   oidc-scope: openid email profile groups
   #Username claim in OpenID Connect ID token. Leave it blank if you don't know what this config is.
   oidc-usernameClaim: "preferred_username"
-  #JMESPath to the array of roles/groups in the OpenID Connect ID token. Kanidm exposes the groups claim with the `groups` scope.
+  #JMESPath to the array of roles/groups in the OpenID Connect ID token. Pocket ID exposes the groups claim with the `groups` scope.
   oidc-rolePath: "groups"
   #Role required for general access. Must be present in a user's roles for them to log in. Leave it blank if you don't know what this config is.
   oidc-roleGeneralAccess: ""
   #Role required for administrative access. Must be present in a user's roles for them to access the admin panel. Leave it blank if you don't know what this config is.
-  oidc-roleAdminAccess: "pingvin-share-x_admins@idm.${PUBLIC_DOMAIN}"
-  #Client ID equals the Kanidm OAuth2 client name, which is the ks-injected APP.
+  oidc-roleAdminAccess: "pingvin-share-x_admins"
+  #Client ID equals the Pocket ID client name, which is the ks-injected APP.
   oidc-clientId: "${APP}"
   #Client secret of the OpenID Connect OAuth app
   oidc-clientSecret: "$${PINGVINSHARE_OIDC_CLIENT_SECRET}"
