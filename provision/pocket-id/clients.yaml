@@ -74,6 +74,9 @@ clients:
     gate: native
     subdomain: share
     callback_path: /api/oauth/callback/oidc
+    # Pingvin Share exposes no PKCE toggle, so it sends no code_challenge.
+    # Confidential client, so the secret still guards token exchange.
+    pkce_enabled: false
     groups:
       - pingvin-share-x_admins
   calibre-web-automated:
