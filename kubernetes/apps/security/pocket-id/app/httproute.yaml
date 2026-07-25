@@ -72,6 +72,28 @@ spec:
             group: gateway.envoyproxy.io
             kind: HTTPRouteFilter
             name: pocket-id-deny-403
+    # No external consumer — kubelet probes hit the Service, not the gateway.
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /healthz
+      filters:
+        - type: ExtensionRef
+          extensionRef:
+            group: gateway.envoyproxy.io
+            kind: HTTPRouteFilter
+            name: pocket-id-deny-403
+    # Preemptive — /internal/telemetry/traces is unauthenticated under otlp export.
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /internal/
+      filters:
+        - type: ExtensionRef
+          extensionRef:
+            group: gateway.envoyproxy.io
+            kind: HTTPRouteFilter
+            name: pocket-id-deny-403
     # Standing admin API token — never usable from the public gateway.
     - matches:
         - path:
