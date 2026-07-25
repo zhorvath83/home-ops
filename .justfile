@@ -30,6 +30,9 @@ mod cloudflare "provision/cloudflare"
 [group('ovh')]
 mod ovh "provision/ovh"
 
+[group('pocket-id')]
+mod pocket-id "provision/pocket-id"
+
 [group('openwrt')]
 mod openwrt "provision/openwrt"
 

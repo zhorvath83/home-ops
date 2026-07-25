@@ -1,0 +1,85 @@
+---
+# Source of truth for Pocket ID groups and OIDC clients. Apply: just pocket-id apply
+# gate: envoy -> protected by components/gateway-oidc; native -> the app speaks OIDC itself.
+groups:
+  media_users:
+    friendly_name: Media users
+  infra_admins:
+    friendly_name: Infrastructure admins
+  calibre-web-automated_users:
+    friendly_name: Calibre users
+  calibre-web-automated_admins:
+    friendly_name: Calibre admins
+  pingvin-share-x_admins:
+    friendly_name: Pingvin Share admins
+
+clients:
+  bazarr:
+    gate: envoy
+    subdomain: subs
+    groups:
+      - media_users
+  sonarr:
+    gate: envoy
+    subdomain: shows
+    groups:
+      - media_users
+  radarr:
+    gate: envoy
+    subdomain: movies
+    groups:
+      - media_users
+  prowlarr:
+    gate: envoy
+    subdomain: indexers
+    groups:
+      - media_users
+  qbittorrent:
+    gate: envoy
+    subdomain: bt
+    groups:
+      - media_users
+  subsyncarr:
+    gate: envoy
+    subdomain: subsync
+    groups:
+      - media_users
+  maintainerr:
+    gate: envoy
+    subdomain: maintainerr
+    groups:
+      - media_users
+  seerr:
+    gate: envoy
+    subdomain: reqs
+    groups:
+      - media_users
+  hubble-ui:
+    gate: envoy
+    subdomain: hubble
+    groups:
+      - infra_admins
+  echo-server:
+    gate: envoy
+    subdomain: echo
+    groups:
+      - infra_admins
+  grafana:
+    gate: native
+    subdomain: grafana
+    callback_path: /login/generic_oauth
+    groups:
+      - infra_admins
+  pingvin-share-x:
+    gate: native
+    subdomain: share
+    callback_path: /api/oauth/callback/oidc
+    groups:
+      - pingvin-share-x_admins
+  calibre-web-automated:
+    gate: native
+    subdomain: books
+    callback_path: /login/generic/authorized
+    groups:
+      - calibre-web-automated_users
+      - calibre-web-automated_admins

@@ -6,6 +6,7 @@ This guide applies to everything under `provision/`. It is the routing layer for
 
 - `provision/cloudflare/` — Terraform-managed Cloudflare resources. See `docs/areas/cloudflare` in BM.
 - `provision/ovh/` — Terraform-managed OVH Cloud Project Storage (S3 backup buckets and the dedicated S3 user) used by the cluster backup planes. See `docs/areas/ovh-storage` in BM.
+- `provision/pocket-id/` — Terraform-managed Pocket ID identity objects (OIDC clients, groups) for the cluster IdP. See `docs/areas/iam` in BM.
 - `provision/openmediavault/` — `mod.just` recipes for the bare-metal OMV host; reserved for Phase 10 OMV Ansible playbooks (post-cutover, not yet present in repo).
 - OpenWRT router provisioning lives in the private `my-scripts-and-configs` repo (`OpenWRT/provision/`). The `just openwrt *` entry points still work from this repo via a shim in the root `.justfile`.
 
@@ -13,6 +14,7 @@ This guide applies to everything under `provision/`. It is the routing layer for
 
 - Cloudflare Terraform: [cloudflare/CLAUDE.md](cloudflare/CLAUDE.md)
 - OVH Terraform: [ovh/CLAUDE.md](ovh/CLAUDE.md)
+- Pocket ID Terraform: [pocket-id/CLAUDE.md](pocket-id/CLAUDE.md)
 
 ## Traversal Rule
 
@@ -25,13 +27,13 @@ For any work under `provision/`, apply guides in this order:
 ## Operating Rules
 
 - Treat this directory as the imperative and provider-facing side of the repo.
-- Keep operational commands aligned with the root `.justfile` and the relevant `mod.just` (`provision/cloudflare/mod.just`, `provision/ovh/mod.just`, `provision/openmediavault/mod.just`) instead of inventing ad-hoc command flows. The OpenWRT workflow lives in the private `my-scripts-and-configs` repo and is invoked here via the `openwrt` shim in the root `.justfile`.
+- Keep operational commands aligned with the root `.justfile` and the relevant `mod.just` (`provision/cloudflare/mod.just`, `provision/ovh/mod.just`, `provision/pocket-id/mod.just`, `provision/openmediavault/mod.just`) instead of inventing ad-hoc command flows. The OpenWRT workflow lives in the private `my-scripts-and-configs` repo and is invoked here via the `openwrt` shim in the root `.justfile`.
 - Prefer editing source configuration over generated state or local cache directories.
 - If a Just recipe already exists, use that workflow as the canonical entry point.
 
 ## Validation
 
-- For provisioning changes, run the smallest relevant Just-backed validation step available for the touched area (e.g. `just cloudflare plan`, `just ovh plan`).
+- For provisioning changes, run the smallest relevant Just-backed validation step available for the touched area (e.g. `just cloudflare plan`, `just ovh plan`, `just pocket-id lint`).
 - If a change touches credentials or secret sourcing, inspect the existing `op run`, `.env`, or 1Password lookup flow before changing command structure.
 - Use repo-local skills for detailed procedures:
   - Cloudflare Terraform: `.claude/skills/cloudflare-terraform/`
