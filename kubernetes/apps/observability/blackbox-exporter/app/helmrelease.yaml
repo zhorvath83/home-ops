@@ -12,6 +12,8 @@ spec:
   values:
     # Deterministic service name so the Probe CR prober URL is stable.
     fullnameOverride: prometheus-blackbox-exporter
+    # Prober has no Kubernetes API need; pin automount false against future chart default changes.
+    automountServiceAccountToken: false
     config:
       modules:
         http_2xx:
