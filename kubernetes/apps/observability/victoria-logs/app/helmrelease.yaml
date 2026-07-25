@@ -14,8 +14,10 @@ spec:
       image:
         registry: quay.io
     fullnameOverride: victoria-logs
-    # Log DB has no Kubernetes API need; chart default mounts an unused SA token (no RBAC). Unmount it.
+    # Log DB has no Kubernetes API need. create:true is required because the chart gates the pod
+    # automount field on name/create; automountToken:false then unmounts the unused token.
     serviceAccount:
+      create: true
       automountToken: false
     server:
       # AD-023 V5e: custom-egress sink (DNS-only; egress locked by ciliumnetworkpolicy.yaml) + envoy-internal route & prometheus scrape ingress via CCNPs.
