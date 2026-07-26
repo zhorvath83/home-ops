@@ -18,6 +18,37 @@ spec:
       brotli: {}
     - type: Gzip
       gzip: {}
+  # Local (not global): no rate-limit backend deployed; single-node => one Envoy
+  # pod/gateway => per-route Local aggregate is effectively global. CF WAF covers external.
+  rateLimit:
+    type: Local
+    local:
+      rules:
+        - limit:
+            requests: 600
+            unit: Minute
+  # Replace the oauth2 filter's "OAuth flow failed." 401 with a friendly page — kept here, not a separate BTP, because EG allows only one BTP per Gateway.
+  # source:Local matches only Envoy-local 401s (OIDC flow failure here; no JWT auth on these gateways).
+  # The inline script recovers error_description from the callback URL (EG can't server-side; no CSP on the gateway).
+  responseOverride:
+    - source: Local
+      match:
+        statusCodes:
+          - type: Value
+            value: 401
+      response:
+        contentType: text/html
+        body:
+          type: Inline
+          inline: |-
+            <!doctype html><html lang="hu"><head><meta charset="utf-8">
+            <meta name="viewport" content="width=device-width,initial-scale=1">
+            <title>Bejelentkezés sikertelen</title>
+            <style>body{font-family:system-ui,sans-serif;max-width:36rem;margin:4rem auto;padding:0 1rem;line-height:1.5}h1{font-size:1.3rem;margin-bottom:1rem}.hint{color:#555;margin-top:1.5rem;font-size:.9rem}</style></head>
+            <body><h1>Bejelentkezés sikertelen</h1>
+            <p id="msg">Nincs hozzáférésed ehhez a szolgáltatáshoz, vagy a munkameneted lejárt.</p>
+            <p class="hint" id="detail"></p>
+            <script>(function(){var p=new URLSearchParams(location.search),err=p.get("error"),desc=p.get("error_description"),msg=document.getElementById("msg"),detail=document.getElementById("detail");if(err==="access_denied"&&desc){msg.textContent="A hozzáférést az azonosítószolgáltató (Pocket ID) megtagadta: "+desc;}else if(err){detail.textContent="Hibakód: "+err+(desc?(" — "+desc):"");}})();</script></body></html>
   retry:
     numRetries: 2
     retryOn:
@@ -179,25 +210,6 @@ spec:
     kind: Gateway
     name: envoy-internal
   type: JSONPatch
----
-# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/gateway.envoyproxy.io/backendtrafficpolicy_v1alpha1.json
-# Local (not Global): no rate-limit backend deployed; single-node => one Envoy
-# pod/gateway => per-route Local aggregate is effectively global. CF WAF covers external.
-apiVersion: gateway.envoyproxy.io/v1alpha1
-kind: BackendTrafficPolicy
-metadata:
-  name: rate-limit
-spec:
-  targetSelectors:
-    - group: gateway.networking.k8s.io
-      kind: Gateway
-  rateLimit:
-    type: Local
-    local:
-      rules:
-        - limit:
-            requests: 600
-            unit: Minute
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/gateway.envoyproxy.io/securitypolicy_v1alpha1.json
 apiVersion: gateway.envoyproxy.io/v1alpha1
