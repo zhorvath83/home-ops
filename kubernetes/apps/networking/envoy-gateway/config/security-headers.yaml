@@ -28,3 +28,12 @@ spec:
             headers:add("referrer-policy", "strict-origin-when-cross-origin")
           end
         end
+    # Bot user-agent block (envoy_on_request), loaded from the
+    # envoy-external-extensions ConfigMap. Was a separate envoy-external ETP,
+    # conflicted because EG allows only one EnvoyExtensionPolicy per Gateway.
+    # Now applies to both gateways; no-op on envoy-internal (LAN, RFC1918-gated).
+    - type: ValueRef
+      valueRef:
+        name: envoy-external-extensions
+        kind: ConfigMap
+        group: v1
