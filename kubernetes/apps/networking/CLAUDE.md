@@ -30,6 +30,8 @@ Rules:
 - User-facing app routes should usually attach to both `envoy-external` and `envoy-internal`.
 - Technical / internet-only routes can stay `envoy-external`-only when no LAN reach is needed.
 - Gateway-level traffic policy (`BackendTrafficPolicy`, `ClientTrafficPolicy`, `EnvoyPatchPolicy`, `SecurityPolicy`) belongs here, not scattered into application trees.
+- One BackendTrafficPolicy and one EnvoyExtensionPolicy per Gateway target — EG rejects a second as `Conflicted` (neither attaches). To add a feature, extend the existing `envoy` BTP / `security-response-headers` EEP rather than creating a new policy.
+- After any gateway-policy change, verify the live policy is `Accepted=True`, not `Conflicted` — a Conflicted policy silently never takes effect.
 - If changing listener behavior, inspect related policy and certificate manifests together.
 - `envoy-internal` is protected by an RFC1918-only `SecurityPolicy`; do not weaken that without explicit security review.
 
