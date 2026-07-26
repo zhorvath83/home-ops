@@ -48,7 +48,7 @@ spec:
             <body><h1>Bejelentkezés sikertelen</h1>
             <p id="msg">Nincs hozzáférésed ehhez a szolgáltatáshoz, vagy a munkameneted lejárt.</p>
             <p class="hint" id="detail"></p>
-            <script>(function(){var p=new URLSearchParams(location.search),err=p.get("error"),desc=p.get("error_description"),msg=document.getElementById("msg"),detail=document.getElementById("detail");if(err==="access_denied"&&desc){msg.textContent="A hozzáférést az azonosítószolgáltató (Pocket ID) megtagadta: "+desc;}else if(err){detail.textContent="Hibakód: "+err+(desc?(" — "+desc):"");}})();</script></body></html>
+            <script>(function(){var p=new URLSearchParams(location.search),err=p.get("error"),desc=p.get("error_description"),msg=document.getElementById("msg"),detail=document.getElementById("detail");if(err==="access_denied"&&desc){msg.textContent="A hozzáférést az azonosítószolgáltató megtagadta: "+desc;}else if(err){detail.textContent="Hibakód: "+err+(desc?(" — "+desc):"");}})();</script></body></html>
   retry:
     numRetries: 2
     retryOn:
