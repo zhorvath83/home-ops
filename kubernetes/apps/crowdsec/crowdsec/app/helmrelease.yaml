@@ -37,11 +37,17 @@ spec:
             # The entrypoint seeds an empty /etc/crowdsec by rsyncing /staging, which
             # dies under `set -e` as uid 1000 on the root-owned 0600 credential files.
             # Pre-seed what is readable; the entrypoint then regenerates the credentials.
+            # The hub items under /staging are symlinks into a 0600 hub tree that uid 1000
+            # cannot copy, so the seeded links dangle and crowdsec ignores the whole tree —
+            # drop them and let cscli install the real items (busybox find has no -xtype).
             command:
               - "/bin/bash"
               - "-c"
             args:
-              - rsync -a --ignore-existing /staging/etc/crowdsec/ /etc/crowdsec/ || true; exec /bin/bash /docker_start.sh
+              - |
+                rsync -a --ignore-existing /staging/etc/crowdsec/ /etc/crowdsec/ || true
+                find /etc/crowdsec -type l -exec test ! -e {} \; -delete
+                exec /bin/bash /docker_start.sh
             env:
               TZ: "${TIMEZONE}"
               CUSTOM_HOSTNAME: crowdsec
@@ -52,6 +58,14 @@ spec:
                 yanis-kouidri/envoy
                 crowdsecurity/appsec-virtual-patching
                 crowdsecurity/appsec-generic-rules
+              # Not pulled by the envoy collection: syslog-logs carries the s00-raw
+              # `non-syslog` node that fills evt.Parsed.message, without which nothing
+              # parses at all; whitelists is the self-ban guard for private ranges.
+              PARSERS: >-
+                crowdsecurity/syslog-logs
+                crowdsecurity/dateparse-enrich
+                crowdsecurity/geoip-enrich
+                crowdsecurity/whitelists
             envFrom:
               - secretRef:
                   name: crowdsec-secret
