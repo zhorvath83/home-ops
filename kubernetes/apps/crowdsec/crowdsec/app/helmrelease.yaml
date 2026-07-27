@@ -55,6 +55,7 @@ spec:
               USE_WAL: "true"
               # Registers the Web UI's LAPI machine; password comes from crowdsec-secret.
               AGENT_USERNAME: crowdsec-web-ui
+              ENROLL_INSTANCE_NAME: home-ops
               COLLECTIONS: >-
                 yanis-kouidri/envoy
                 crowdsecurity/appsec-virtual-patching
