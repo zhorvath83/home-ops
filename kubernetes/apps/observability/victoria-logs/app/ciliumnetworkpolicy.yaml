@@ -32,3 +32,12 @@ spec:
         - ports:
             - port: "9428"
               protocol: TCP
+    # crowdsec — LogsQL live-tail of the envoy access logs; this is its only log source.
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: crowdsec
+            app.kubernetes.io/name: crowdsec
+      toPorts:
+        - ports:
+            - port: "9428"
+              protocol: TCP
