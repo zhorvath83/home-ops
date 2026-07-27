@@ -88,6 +88,7 @@ clients:
     gate: native
     subdomain: share
     callback_path: /api/oauth/callback/oidc
+    pkce_enabled: false
     groups:
       - pingvin-share-x_admins
   calibre-web-automated:
@@ -95,8 +96,6 @@ clients:
     gate: native
     subdomain: books
     callback_path: /login/generic/authorized
-    # Calibre-Web generic OAuth (flask-dance) exposes no PKCE toggle, so it sends no
-    # code_challenge. Confidential client, so the secret still guards token exchange.
     pkce_enabled: false
     groups:
       - calibre-web-automated_users
@@ -106,5 +105,6 @@ clients:
     gate: native
     subdomain: crowdsec
     callback_path: /api/auth/oidc/callback
+    pkce_enabled: false
     groups:
       - infra_admins
