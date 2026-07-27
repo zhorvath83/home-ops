@@ -212,6 +212,10 @@ spec:
   type: JSONPatch
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/gateway.envoyproxy.io/securitypolicy_v1alpha1.json
+# Carries both features on purpose: EG picks a single winner among same-level policies on
+# one target (oldest wins, feature-agnostic), so a second Gateway-level policy for the
+# bouncer would be silently Overridden. Route-level oidc still combines — that is parent
+# vs child, a different case.
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: SecurityPolicy
 metadata:
@@ -230,6 +234,22 @@ spec:
             - 10.0.0.0/8
             - 172.16.0.0/12
             - 192.168.0.0/16
+  # CrowdSec ext_authz. Fail-closed by design: a bouncer outage 5xx-es every route on this
+  # gateway, which the CrowdSecBouncerDown alert exists to catch. 503 rather than the default
+  # 403 keeps an outage distinguishable from a real ban. The cross-namespace backendRef is
+  # permitted by the ReferenceGrant the bouncer chart creates in the crowdsec namespace.
+  extAuth:
+    failOpen: false
+    statusOnError: 503
+    bodyToExtAuth:
+      maxRequestBytes: 65536
+    grpc:
+      backendRefs:
+        - group: ""
+          kind: Service
+          name: crowdsec-bouncer
+          namespace: crowdsec
+          port: 8080
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/gateway.networking.k8s.io/httproute_v1.json
 apiVersion: gateway.networking.k8s.io/v1
