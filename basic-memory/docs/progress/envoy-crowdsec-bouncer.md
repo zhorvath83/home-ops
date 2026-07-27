@@ -326,3 +326,86 @@ enrollment) → `764bbe76f` (Web UI metrics).
 - [followup] Manual Web UI admin setup + disable password login (see above).
 - [followup] Verify the metrics page renders after the last push.
 - [followup] The Gateway-level extAuth SecurityPolicy — unchanged, still gated on approval.
+
+
+## Session 3 — bouncer wiring, both gateways (2026-07-27/28)
+
+Stage 1 and Stage 2 are live and verified. Two findings here matter beyond crowdsec.
+
+### Finding A — bodyToExtAuth caps every upload at 64KB (live regression, caused and fixed)
+
+- [evidence] CRD, verbatim: *"Envoy will return HTTP 413 and will not initiate the
+  authorization process when buffer reaches the number set in this field. Note that this
+  setting will have precedence over failOpen mode."* There is no partial-message option in
+  the EG API.
+- [evidence] Measured on the live gateway minutes after Stage 1 landed: a 1KB POST to
+  grafana returned 401 (reached the backend), a **133KB POST returned 413**.
+- [observation] Every upload path on envoy-internal was in scope — pingvin-share, paperless,
+  calibre, grafana dashboard imports — because none of them carries a route-level policy.
+  It went unnoticed only because nobody uploaded anything in that window. With mergeType
+  (finding B) qbittorrent's torrent upload would have joined them.
+- [decision] Drop `bodyToExtAuth` from both policies. Raising the cap only moves the cliff.
+  The WAF keeps URL/query/path/header coverage; IP bans and the CAPI blocklist are untouched.
+- [decision] This **reverses the roadmap's "Phase 1 full WAF" locked decision**. The cost
+  accepted there was "a 64KB buffer and a bouncer round-trip per request" — not "uploads over
+  64KB fail". Same decision, different facts.
+- [verified] After the fix the 133KB POST returns 401 again, matching the 1KB control.
+
+### Finding B — route-level OIDC policies were silently excluding the Gateway policy
+
+- [evidence] After attaching Stage 1 the policy reported
+  `Overridden=True: This policy is being overridden by other securityPolicies for these
+  routes: [downloads/bazarr … kube-system/hubble-ui networking/echo-server]` — all ten
+  gateway-oidc consumers.
+- [evidence] CRD on `mergeType`: *"If unset, no merging occurs, and only the most specific
+  configuration takes effect."* The component set no `mergeType`.
+- [observation] **Pre-existing security gap, independent of crowdsec**: the
+  `envoy-internal-rfc1918` LAN allowlist had therefore never applied to any OIDC-gated route.
+  Not exploitable in practice (envoy-internal is only reachable on a LAN VIP, plus the Cilium
+  CNPs), but the policy did not do what its name and the networking guide imply.
+- [observation] This **disproves the roadmap's central wiring claim** that a Gateway-level
+  extAuth and a route-level oidc "combine cleanly — different level, different feature", and
+  its supporting claim that rfc1918 + oidc already coexisted that way. They did not.
+- [decision] `mergeType: StrategicMerge` in `kubernetes/components/gateway-oidc/securitypolicy.yaml`
+  — one line in the shared component, closing the crowdsec gap and the rfc1918 gap together
+  for all ten apps.
+- [verified] The condition flipped `Overridden=True` → **`Merged=True`** for all ten routes.
+
+### Stage 2 — envoy-external
+
+- [decision] A standalone Gateway-level policy (`envoy-external-crowdsec`); correct there
+  because envoy-external carries no other Gateway-level policy to merge into. It also covers
+  the Pocket ID login page, which has no route-level gate by nature.
+- [verified] `Accepted=True`, `Merged=True` for networking/echo-server.
+
+### Live verification
+
+- [verified] `bouncer_requests_total{action="allow"}` rose 173 → 3835 once both gateways were
+  attached; three requests to OIDC-gated hosts moved it by exactly +3, proving the merged
+  routes traverse the bouncer.
+- [verified] `bouncer_waf_requests_total 3812`, `bouncer_waf_errors_total 0`,
+  `bouncer_decision_cache_size{origin="CAPI"} 14998`, `bouncer_lapi_stream_connected 1`.
+- [verified] **Zero bans on legitimate traffic** — no `action="ban"` counter, and
+  `cscli decisions list` / `alerts list` are empty. No false positives so far.
+- [verified] OIDC still works through the merge: subs/bt/hubble/echo all 302 to
+  `idm.${PUBLIC_DOMAIN}/authorize` with a PKCE `code_challenge`.
+- [verified] Upload regression gone (133KB POST → 401).
+
+### Commits
+
+`50814b79b` (Stage 1) → `6d2c00f98` (413 regression fix) → `ee0990fd3` (mergeType + Stage 2).
+
+### Remaining
+
+- [followup] Web UI: create the initial admin, log in via Pocket ID, register a passkey,
+  then disable password login. Manual and unavoidable — upstream gates SSO behind
+  initial-administrator setup (`setupRequired`, a purely local check).
+- [followup] Soak: watch `bouncer_requests_total{action="ban"}` and the CrowdSec Console for
+  false positives now that ~15k CAPI decisions are enforced on the public edge.
+- [followup] Update `docs/areas/networking` — the gateway-policy inventory now includes the
+  merged envoy-internal policy and `envoy-external-crowdsec`, and the mergeType semantics are
+  worth recording there since they contradict the previous mental model.
+- [followup] Body-based WAF detection is now absent; the AppSec collections only see
+  URL/headers. Revisit only if EG gains a partial-message option.
+- [followup] Unchanged from before: console `ENROLL_KEY` is wired, appsec-crs still out,
+  VolSync for the Web UI PVC still pending a PSA-restricted check on the kopia mover.
