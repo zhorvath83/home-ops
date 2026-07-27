@@ -30,13 +30,12 @@ spec:
             - port: "8080"
               protocol: TCP
   egress:
-    # Hub index/items, hub datafiles (GeoLite2 mmdb — no MaxMind account needed),
-    # and the Central API for the community blocklist.
+    # One vendor domain covering every endpoint cscli reaches: cdn-hub (index/items),
+    # hub-data (GeoLite2 mmdb — no MaxMind account needed), version, and api/papi for the
+    # community blocklist. Enumerating them broke the startup hub update on version.crowdsec.net.
     - toFQDNs:
-        - matchName: "cdn-hub.crowdsec.net"
-        - matchName: "hub-data.crowdsec.net"
-        - matchName: "api.crowdsec.net"
-        - matchName: "papi.api.crowdsec.net"
+        - matchName: "crowdsec.net"
+        - matchPattern: "*.crowdsec.net"
       toPorts:
         - ports:
             - port: "443"

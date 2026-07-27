@@ -15,10 +15,15 @@ spec:
     replicaCount: 1
     image:
       tag: v0.6.3@sha256:85c9f802eca3ad32aa4a8cb5b63e5c5a5642b07cff623beca0bab634c2128020
-    # The chart's container securityContext is already restricted-clean; only seccomp is missing.
     podSecurityContext:
       seccompProfile:
         type: RuntimeDefault
+    # The chart drops capabilities as lowercase `all`, which PSS restricted does not accept
+    # (it matches the literal "ALL"); the rest of its container securityContext is fine.
+    securityContext:
+      capabilities:
+        drop:
+          - "ALL"
     config:
       server:
         logLevel: info

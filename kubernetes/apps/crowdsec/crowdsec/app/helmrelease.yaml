@@ -85,9 +85,9 @@ spec:
           lapi:
             port: *lapiPort
           appsec:
-            port: &appsecPort 7422
+            port: 7422
           metrics:
-            port: &metricsPort 6060
+            port: 6060
     serviceMonitor:
       app:
         serviceName: crowdsec
