@@ -22,12 +22,15 @@ spec:
               protocol: TCP
             - port: "7422"
               protocol: TCP
+    # 8080 is the LAPI; 6060 backs the Web UI's own metrics page (not the Prometheus scrape).
     - fromEndpoints:
         - matchLabels:
             app.kubernetes.io/name: crowdsec-web-ui
       toPorts:
         - ports:
             - port: "8080"
+              protocol: TCP
+            - port: "6060"
               protocol: TCP
   egress:
     # One vendor domain covering every endpoint cscli reaches: cdn-hub (index/items),
