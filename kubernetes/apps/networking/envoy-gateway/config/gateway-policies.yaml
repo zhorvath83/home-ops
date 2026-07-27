@@ -18,14 +18,28 @@ spec:
       brotli: {}
     - type: Gzip
       gzip: {}
-  # Local (not global): no rate-limit backend deployed; single-node => one Envoy
-  # pod/gateway => per-route Local aggregate is effectively global. CF WAF covers external.
+  # Local (no rate-limit backend deployed). Per-client buckets, not one shared per route:
+  # a single gallery visitor exhausted the old shared 600/min and 429'd everyone else on
+  # that route. Both address families are listed because an IPv4-only selector matches no
+  # IPv6 client and would silently leave them unlimited. Behavioural abuse detection is
+  # CrowdSec's job; this is only a volumetric backstop.
   rateLimit:
     type: Local
     local:
       rules:
-        - limit:
-            requests: 600
+        - clientSelectors:
+            - sourceCIDR:
+                value: 0.0.0.0/0
+                type: Distinct
+          limit:
+            requests: 3000
+            unit: Minute
+        - clientSelectors:
+            - sourceCIDR:
+                value: ::/0
+                type: Distinct
+          limit:
+            requests: 3000
             unit: Minute
   # Replace the oauth2 filter's "OAuth flow failed." 401 with a friendly page — kept here, not a separate BTP, because EG allows only one BTP per Gateway.
   # source:Local matches only Envoy-local 401s (OIDC flow failure here; no JWT auth on these gateways).
