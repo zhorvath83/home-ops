@@ -2,112 +2,111 @@
 title: main-branch-protection-and-commit-signing
 type: roadmap
 permalink: home-ops/docs/roadmap/main-branch-protection-and-commit-signing
-topic: Verifiable git→cluster trust — main branch protection, commit signing, Flux
-  source verify
+topic: Required commit signing on main — GitHub enforces signed commits to the cluster
+  source branch
 status: proposed
 priority: high
-scope: 'Make the main branch a tested, signed, non-bypassable gate for everything
-  Flux applies: required status checks (flux-local), enforced admin rules, commit
-  signing, and GitRepository.spec.verify.'
-rationale: Flux reconciles main as the cluster source of truth, so a verified main
-  becomes the single strongest guarantee that only reviewed, tested, cryptographically
-  attributable config ever reaches the cluster — the GitOps source turns into a real
-  trust anchor.
+scope: Require all commits pushed to main to be GPG/SSH-signed via GitHub required_signatures,
+  after the maintainer enables commit signing. Signing only — no required status checks,
+  no enforce_admins, no PR-review changes, no Flux-side spec.verify.
+rationale: A signed main makes every commit cryptographically attributable to the
+  maintainer's key; an unsigned or impersonated push (compromised token, forged author)
+  is rejected at the GitHub layer before it can reconcile. Renovate already signs
+  via the hosted GitHub App (verified=true observed on this repo), so enforcement
+  does not break Renovate auto-merge. The maintainer's own commits are currently unsigned
+  (verified=false) and must start signing first.
 related_areas:
 - flux-gitops
-options:
-- Single trusted signing key — simplest, one rotation point
-- Multi-key keyring in spec.verify — supports multiple committers / key rotation overlap
+options: []
+verified_at: '2026-07-27'
+tags:
+- roadmap
+- security
+- git
+- signing
 ---
 
-# Verifiable git→cluster trust — main branch protection, commit signing, Flux source verify
+# Required commit signing on main
 
 ## Metadata (observation-form, schema validation)
 
-- [topic] Verifiable git→cluster trust — main branch protection, commit signing, Flux source verify
+- [topic] Required commit signing on main — GitHub enforces signed commits to the cluster source branch
+- [area] flux-gitops
 - [status] proposed
 - [priority] high
+- [verified_at] 2026-07-27
 
 ## What we gain
 
-- Every change reaching the cluster is tested (flux-local), reviewed, and attributable to a signed author.
-- A stray or untrusted commit simply cannot reconcile — Flux rejects unverified revisions at the source.
-- Admin actions meet the same bar as everyone else; no silent bypass path.
-- Completes, on the git side, the same provenance story as signed images (see image-and-chart-signature-verification).
+- Every commit on `main` is cryptographically attributable to the maintainer's signing key.
+- An unsigned or impersonated push (compromised PAT, forged author) is rejected by GitHub before it can reach the cluster.
+- Renovate is unaffected — its commits are already signed by the hosted GitHub App (`verified=true` observed on this repo), so `required_signatures` does not break Renovate auto-merge.
+- Enforcement lives entirely at the GitHub layer; no Flux-side change.
 
 ## What to do
 
-1. Enable branch protection on main: mark the flux-local test/diff job a REQUIRED check; enable require_last_push_approval and dismiss_stale_reviews.
-2. Set enforce_admins: true so maintainer pushes are held to the rules.
-3. Adopt GPG or SSH commit signing for the maintainer key and enable required_signatures on GitHub.
-4. Add GitRepository.spec.verify (mode: HEAD) in flux-instance with a keyring of the trusted public key(s).
-5. Verify: an unsigned/failing PR is blocked from merge; Flux refuses an unverified revision.
+1. Enable commit signing for the maintainer (SSH signing given an existing ED25519 key, or GPG).
+2. Add the public key as a **Signing key** in GitHub → Settings → SSH and GPG keys.
+3. Enable `required_signatures` on `main`.
+4. Verify a signed push succeeds and an unsigned push is rejected.
 
-## Options
+Out of scope (intentionally dropped from the earlier draft): required status checks, `enforce_admins`, PR-review requirements, and Flux `spec.verify`. Signing only.
 
-1. Single trusted signing key — simplest, one rotation point
-2. Multi-key keyring in spec.verify — supports multiple committers / key rotation overlap
+## Current state (research-backed, 2026-07-27)
 
-## Related
+- `main` is `protected: true` but with **empty rules** — `required_status_checks.checks: []`, `enforce_admins: false`, `required_signatures.enabled: false`, no required PR review (read via admin scope: `gh api repos/zhorvath83/home-ops/branches/main/protection`).
+- Maintainer commits (Horváth Zoltán, `zhorvath83`) are `verified=false reason=unsigned` (last 20 commits sampled) — the maintainer does **not** sign today.
+- Renovate commits (`renovate[bot]`) are `verified=true reason=valid` — the hosted Renovate GitHub App signs via GitHub platform signing.
+- Reference repos: `onedr0p/home-ops` signs everything (incl. its `bot-ross` App, `verified=true`); `bjw-s-labs/home-ops` does **not** sign Renovate commits (`verified=false`) and therefore cannot enable `required_signatures`. This repo's Renovate already signs, so enforcement is viable.
 
-- relates_to [[flux-gitops]]
-- relates_to [[flux-components-common]]
-- relates_to [[image-and-chart-signature-verification]]
+## Target state
 
-## Execution plan (research-backed)
+- All commits pushed to `main` are GPG/SSH-signed; `required_signatures` enabled.
+- No other branch-protection rules are added in this item.
 
-### Current state
-- Flux syncs from a **floating branch**: `kubernetes/apps/flux-system/flux-instance/app/helmrelease.yaml:25-30` → `spec.sync` generates a GitRepository pointing at `url: https://github.com/zhorvath83/home-ops.git`, `ref: refs/heads/main`, `path: kubernetes/flux/cluster`, `interval: 1h`. The GitRepository is **operator-generated** (flux-operator FluxInstance), not a static manifest.
-- kustomize-controller + helm-controller run with cluster-admin (verified in the audit), so whatever lands on `main` is applied cluster-wide.
-- GitHub branch protection on `main` is weak: `enforce_admins=false`, `required_status_checks` not enabled, `required_signatures=false`, CODEOWNERS `* @zhorvath83` (self-approvable). PR #3987 merged with zero reviews.
-- CI check that must become required: the **flux-local** job in `.github/workflows/flux-local.yaml`.
+## Implementation steps
 
-### Target state
-- `main` cannot be updated except by a signed commit that passed the flux-local check; admin bypass off.
-- (Optional, gated) Flux refuses to reconcile an unverified revision.
-
-### Implementation steps
-1. **Make flux-local a required status check + tighten protection.** Run (needs a token with repo admin; `gh auth status` first):
-   ```bash
-   # inspect current job/check name first
-   gh api repos/zhorvath83/home-ops/commits/main/check-runs --jq '.check_runs[].name'
-   # set protection (replace CHECK_NAME with the exact flux-local check name)
-   gh api -X PUT repos/zhorvath83/home-ops/branches/main/protection \
-     -H "Accept: application/vnd.github+json" \
-     -f 'required_status_checks[strict]=true' \
-     -f 'required_status_checks[contexts][]=CHECK_NAME' \
-     -F 'enforce_admins=true' \
-     -F 'required_pull_request_reviews[required_approving_review_count]=1' \
-     -F 'required_pull_request_reviews[require_last_push_approval]=true' \
-     -F 'required_pull_request_reviews[dismiss_stale_reviews]=true' \
-     -f 'restrictions='  # null = no push restriction list
-   ```
-   (This is a GitHub API change, not a repo file. It is reversible and does not touch the cluster.)
-2. **Enable commit signing** for the maintainer. SSH signing is simplest given an existing key:
+1. **Configure local commit signing** (SSH, given an existing ED25519 key):
    ```bash
    git config --global gpg.format ssh
    git config --global user.signingkey ~/.ssh/id_ed25519.pub
    git config --global commit.gpgsign true
    ```
-   Add the same public key as a **Signing key** (not just Auth key) in GitHub → Settings → SSH and GPG keys. Then enable `required_signatures`:
+   Add the same public key as a **Signing key** (not just Auth key) in GitHub → Settings → SSH and GPG keys.
+2. **Confirm a signed push works** on a throwaway branch **before** enabling enforcement:
+   ```bash
+   git checkout -b signing-test && git commit -S -m "test" --allow-empty && git push -u origin signing-test
+   ```
+   The commit must show "Verified" on GitHub. Resolve the SSH-agent signing issue first (the audit observed the ED25519 key previously refused to sign — see `progress/hubble-ui-auth`); if signing fails here, do not proceed to step 3 or your own pushes will be rejected.
+3. **Enable required_signatures on main**:
    ```bash
    gh api -X POST repos/zhorvath83/home-ops/branches/main/protection/required_signatures -H "Accept: application/vnd.github+json"
    ```
-   Note: the audit observed the SSH agent previously refused the ED25519 key sign (see progress/hubble-ui-auth) — resolve agent/key setup before flipping required_signatures, or pushes will be rejected.
-3. **(Optional, verify CRD support first) Flux-side commit verification.** flux-operator's `FluxInstance.spec.sync` does **not** expose a `verify` field in current versions, so `spec.verify` cannot simply be added to `helmrelease.yaml`. Before planning this: `kubectl explain fluxinstance.spec.sync` and check flux-operator release notes. If unsupported, the options are (a) skip — branch protection + signing already gate the source, or (b) manage a standalone GitRepository with `spec.verify.mode: HEAD` + a `spec.verify.secretRef` keyring ConfigMap of allowed public keys, and point the sync at it. Treat (b) as a separate spike; do NOT hand-edit the generated GitRepository (Flux will revert it).
 
-### Verification
-- `gh api repos/zhorvath83/home-ops/branches/main/protection --jq '{admins:.enforce_admins.enabled, checks:.required_status_checks.contexts, sigs:.required_signatures.enabled}'` → admins true, flux-local in checks, sigs true.
-- Open a throwaway PR with a failing/absent flux-local → merge button blocked.
-- `git log --show-signature -1 origin/main` → shows a good signature after the next signed push.
+## Verification
 
-### Rollback & safety
-- All changes are GitHub settings or local git config — no cluster impact. Revert by re-running the API calls with the old values, or toggle in the GitHub UI.
-- Risk: if signing isn't working, `required_signatures=true` blocks your own pushes. Enable step 2 and confirm a signed commit pushes to a test branch **before** step's required_signatures POST.
+- `gh api repos/zhorvath83/home-ops/branches/main/protection/required_signatures --jq '.enabled'` → `true`.
+- `git log --show-signature -1 origin/main` after the next signed push → good signature.
+- An unsigned push to `main` (or an unsigned commit merged via PR) is rejected.
 
-### Gotchas & dependencies
-- Enables the "required check" that roadmap items `renovate-github-actions-merge-gate` and `ci-secret-and-iac-scanning` rely on.
-- Resolve the SSH-agent signing issue first (known from prior sessions).
+## Rollback & safety
 
-### Effort
-S–M (~1–2h for protection+signing; +0.5d spike if pursuing Flux-side verify).
+- Disable: `gh api -X DELETE repos/zhorvath83/home-ops/branches/main/protection/required_signatures`.
+- Local: `git config --global --unset commit.gpgsign` (optional).
+- No cluster impact — GitHub-layer setting only.
+- Risk: enabling `required_signatures` before confirming step 2 self-locks the maintainer out of pushing to `main`. Always verify a signed push first.
+
+## Gotchas
+
+- Renovate already signs (`verified=true`), so it is unaffected — no Renovate config change is needed.
+- The maintainer's own commits are the only unsigned path today; signing must be set up first.
+- SSH-agent must be able to sign with the ED25519 key (known prior-session issue); verify before flipping enforcement.
+
+## Effort
+
+S (~30 min: key config + GitHub signing key + one API call + verify a signed push).
+
+## Related
+
+- relates_to [[flux-gitops]]
+- relates_to [[image-and-chart-signature-verification]]

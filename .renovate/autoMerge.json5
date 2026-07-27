@@ -16,20 +16,11 @@
       ],
     },
     {
-      description: "Auto-merge coredns minor and patch updates",
-      matchDatasources: ["docker"],
-      automerge: true,
-      matchUpdateTypes: ["minor", "patch"],
-      matchPackagePrefixes: [
-        "ghcr.io/coredns",
-      ],
-    },
-    {
       description: "Auto-merge kube-prometheus-stack minor and patch updates",
       matchDatasources: ["docker", "helm"],
       automerge: true,
       matchUpdateTypes: ["minor", "patch"],
-      matchPackageNames: ["/kube-prometheus-stack/"],
+      matchPackageNames: ["/kube-prometheus-stack/", "/grafana/"],
     },
     {
       description: "Auto-merge pre-commit hook updates",

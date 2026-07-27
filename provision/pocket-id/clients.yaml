@@ -101,3 +101,10 @@ clients:
     groups:
       - calibre-web-automated_users
       - calibre-web-automated_admins
+  crowdsec-web-ui:
+    friendly_name: Crowdsec Web UI
+    gate: native
+    subdomain: crowdsec
+    callback_path: /api/auth/oidc/callback
+    groups:
+      - infra_admins

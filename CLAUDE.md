@@ -197,7 +197,7 @@ Examples:
 - Invoke recipes as `just <group> <recipe> [args]` (e.g. `just k8s sync-hr paperless default`, `just volsync list-snapshots actual`, `just talos apply-node k8s-cp0`).
 - Recipe arguments are **positional only** — Just does not parse `key=value` named arguments the way the previous Task system did. Pass values in order, omitting trailing defaults.
 - Pre-commit is invoked directly via the `pre-commit` CLI (no Just wrapper); the hook list is in `.pre-commit-config.yaml`.
-- Renovate configuration starts in `.renovaterc.json5` at the repo root and imports the fragments under `.renovate/` (`allowedVersions`, `autoMerge`, `customManagers`, `disabledDatasources`, `groups`, `overrides`, `prBodyNotes`, `semanticCommits`, `talosFactory`).
+- Renovate configuration starts in `.renovaterc.json5` at the repo root and imports the fragments under `.renovate/` (`autoMerge`, `customManagers`, `disabledDatasources`, `groups`, `overrides`, `prBodyNotes`, `semanticCommits`, `talosFactory`).
 - Preserve inline `# renovate:` annotations when touching versioned manifests.
 - If Renovate behavior changes, inspect the root config together with the touched fragment or annotation.
 

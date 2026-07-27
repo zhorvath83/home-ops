@@ -8,7 +8,6 @@ Use this reference when changing Renovate policy.
 
 ## Imported Fragments
 
-- `.renovate/allowedVersions.json5`
 - `.renovate/autoMerge.json5`
 - `.renovate/customManagers.json5`
 - `.renovate/disabledDatasources.json5`
@@ -38,8 +37,6 @@ Use this reference when changing Renovate policy.
 - Kubernetes YAML and Talos Jinja templates under `kubernetes/` are scanned by the Flux, Helm values, Kubernetes, and custom managers (`.yaml` and `.yaml.j2`)
 - `kubernetes/bootstrap/helmfile.d/*.yaml` is scanned by the helmfile manager
 - Flux controller images are explicitly disabled in `disabledDatasources.json5` (managed by FluxInstance)
-- Kubernetes core images and `kubernetes/kubernetes` are pinned to the `1.36.x` line in `allowedVersions.json5`
-- PostgreSQL images are capped at `<=18`
 - OCI URIs (`oci://...:VERSION`) are tracked by a custom regex manager
 - inline `# renovate: datasource=X depName=Y` annotations are tracked in `kubernetes/**/*.yaml(.j2)` and `mise.toml`
 - Talos installer images referenced by literal `factory.talos.dev/...:vX.Y.Z` URLs are tracked against the `custom.talos-factory` datasource (`https://factory.talos.dev/versions` — factory-buildable versions only, narrower than github-releases)
