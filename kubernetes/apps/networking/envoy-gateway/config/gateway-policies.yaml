@@ -251,6 +251,32 @@ spec:
           namespace: crowdsec
           port: 8080
 ---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/gateway.envoyproxy.io/securitypolicy_v1alpha1.json
+# Stage 2 of the CrowdSec rollout. Stands alone rather than merging into another policy
+# because envoy-external carries no other Gateway-level SecurityPolicy. Defense in depth
+# behind the Cloudflare WAF, and it covers the Pocket ID login page, which has no
+# route-level gate of its own.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: envoy-external-crowdsec
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: envoy-external
+  # No bodyToExtAuth here either — see the envoy-internal policy above.
+  extAuth:
+    failOpen: false
+    statusOnError: 503
+    grpc:
+      backendRefs:
+        - group: ""
+          kind: Service
+          name: crowdsec-bouncer
+          namespace: crowdsec
+          port: 8080
+---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/gateway.networking.k8s.io/httproute_v1.json
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute

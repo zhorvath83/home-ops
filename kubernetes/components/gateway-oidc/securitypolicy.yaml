@@ -12,6 +12,10 @@ spec:
     - group: gateway.networking.k8s.io
       kind: HTTPRoute
       name: ${HTTPROUTE_NAME:=${APP}}
+  # Without this the most specific policy simply wins and the Gateway-level policy stops
+  # applying to this route — which had been quietly excluding these routes from the
+  # envoy-internal RFC1918 allowlist, and would exclude them from the CrowdSec gate too.
+  mergeType: StrategicMerge
   oidc:
     provider:
       # Pocket ID has one issuer for every client; the endpoints come from discovery.
