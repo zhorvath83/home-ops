@@ -202,3 +202,127 @@ Add the two 1Password fields, push, then verify in-cluster in this order:
 - relates_to [[observability]]
 - relates_to [[k8s-workloads]]
 - depends_on [[external-secrets]]
+
+
+## Session 2 — first deploy, verification loop (2026-07-27)
+
+Pushed and verified against the live cluster. Six defects surfaced; all but the last two
+were mine. Recorded here because most of them are non-obvious consequences of the non-root
+decision.
+
+### What is proven working
+
+- [verified] **Gate 1 end-to-end.** After the parser-chain fix, real traffic through
+  envoy-internal produced `Lines read 8 | Lines parsed 8 | Lines unparsed - | Lines
+  whitelisted 8`. The LogsQL `copy`+`pack_json` reconstruction feeds the
+  `yanis-kouidri/envoy` parser correctly. The 8 whitelisted also prove the self-ban guard:
+  LAN traffic is dropped by `crowdsecurity/whitelists`.
+- [verified] **restricted PSA holds.** All three pods run non-root in a `restricted`
+  namespace with no admission denial.
+- [verified] **Credential auto-registration.** `Local agent already registered`,
+  `Machine 'crowdsec-web-ui' successfully added`; the bouncer streams decisions
+  (`envoy` → `/v1/decisions/stream`) and the Web UI polls alerts. No manual cscli step.
+- [verified] **Web UI OIDC is correctly wired**: `/api/auth/status` returns
+  `oidcEnabled: true`, and `/api/auth/oidc/login` 302s to
+  `https://idm.${PUBLIC_DOMAIN}/authorize?client_id=crowdsec-web-ui&...`, which requires a
+  successful discovery — so the IdP hairpin passes the network policy.
+- [verified] Console enrollment works; the engine appears under Engines after accept.
+
+### Defect 1 — bouncer rejected by PSA (`drop: [all]` vs `ALL`)
+
+- [evidence] `ReplicaFailure/FailedCreate`: *"violates PodSecurity restricted:v1.36:
+  unrestricted capabilities (container must set securityContext.capabilities.drop=[\"ALL\"])"`.
+  The kdwils chart drops capabilities as lowercase `all`; PSS matches the literal `ALL`.
+- [decision] Override `securityContext.capabilities.drop: ["ALL"]`; Helm's deep merge keeps
+  the chart's other values (runAsNonRoot, runAsUser 1000, readOnlyRootFilesystem).
+- [observation] My "the chart is restricted-clean, only seccomp is missing" claim was wrong —
+  taken from a values dump without checking the case.
+
+### Defect 2 — missing egress FQDN blocked the hub
+
+- [evidence] `cscli hub update: ... version.crowdsec.net ... connection timed out` → no
+  `/etc/crowdsec/hub/.index.json` → crashloop.
+- [decision] Enumerating endpoints was the wrong shape; allow `crowdsec.net` +
+  `*.crowdsec.net` (the pocket-id MaxMind rule's idiom).
+
+### Defect 3 — victoria-logs ingress (the only fix outside the crowdsec tree)
+
+- [evidence] hubble: **108 × `INGRESS POLICY_DENIED` on victoria-logs-server-0:9428 from the
+  crowdsec pod**, and zero egress drops on the crowdsec side — a one-sided drop at the
+  destination.
+- [observation] `victoria-logs`'s own CNP is ingress default-deny and listed only the
+  collector on 9428. A new log consumer has to be added there; nothing in the crowdsec tree
+  could have fixed it.
+- [decision] One explicit `fromEndpoints` entry mirroring the collector rule.
+
+### Defect 4 — the seeded symlinks (the deepest one)
+
+- [evidence] `cscli collections list` emitted `Ignoring file
+  /etc/crowdsec/parsers/s00-raw/syslog-logs.yaml: lstat .../hub/...: no such file or directory`
+  for the entire tree → **zero parsers loaded** → 29 lines read, 0 parsed.
+- [observation] `/staging/etc/crowdsec/{parsers,scenarios,collections,...}` are symlinks into
+  a hub tree whose files are 0600 root. uid 1000 copies the links but not their targets, so
+  the seeded tree dangles and crowdsec discards all of it.
+- [evidence] A second variant then appeared: `unable to open GeoLite2-City.mmdb: permission
+  denied` — `/var/lib/crowdsec/data` links into /staging whose targets *exist* but are
+  unreadable, so a broken-link test missed them.
+- [decision] Unified both into ONE predicate instead of two special cases: drop every seeded
+  symlink uid 1000 cannot read (`find … -type l -exec sh -c 'test -r "$1" || rm -f "$1"' _ {} \;`),
+  and let cscli fetch the real items. `test -r` fails for dangling and unreadable alike;
+  verified in the image that it drops both and keeps working links. busybox find has no
+  `-xtype`, which the first attempt assumed.
+
+### Defect 5 — the envoy collection does not pull the parser chain's root
+
+- [observation] `yanis-kouidri/envoy` pulls only `envoy-logs` + `base-http-scenarios`. The
+  `crowdsecurity/syslog-logs` s00-raw `non-syslog` node is what fills `evt.Parsed.message`;
+  without it the envoy parser structurally cannot match. This was in the research notes and
+  I failed to carry it into the manifest.
+- [decision] Explicit `PARSERS`: `syslog-logs dateparse-enrich geoip-enrich whitelists`.
+  `whitelists` also had to become explicit — the "it ships in the image so no self-ban config
+  is needed" claim was true in principle but false in this deployment, because of defect 4.
+
+### Defect 6 — Web UI metrics page (and its hidden CNP half)
+
+- [evidence] UI: *"Metrics are disabled because no metrics endpoint is configured."* The
+  engine already runs `prometheus.level: full`; only `CONFIG_INSTANCE_METRICS_URL` was missing.
+- [observation] The URL alone would still have timed out: metrics are on 6060 while the
+  crowdsec CNP allowed the Web UI only 8080. Fixed both together.
+
+### Not a defect — the empty Web UI and the setup screen
+
+- [observation] The Web UI showing no alerts/decisions is **correct**: `cscli alerts list` and
+  `cscli decisions list` both report none. The only traffic so far was LAN, which the
+  whitelist parser drops by design.
+- [observation] The Web UI asking to create a user instead of offering SSO is upstream's
+  designed first-run gate, not a misconfiguration:
+  `setupRequired = authEnabled && countAuthUsers() === 0` (`server/app-auth.ts:793`) — a
+  purely local check, no network involved, so no CNP can cause it. Docs: `auth.enabled: true`
+  *"Requires authentication and initial administrator setup"*.
+- [followup] Manual, one-time: create the initial admin, log in via Pocket ID, then
+  **disable password login** in Settings — otherwise a local password account persists,
+  contradicting the "only Pocket ID infra_admins" intent. Register a passkey first as a
+  lockout fallback.
+
+### Console enrollment (was a deferred follow-up, now done)
+
+- [evidence] `Machine is not enrolled in the console, can't synchronize with the console`.
+  CAPI registration happens on its own (that is what pulls the community blocklist) but does
+  NOT list the instance under Engines — enrollment does.
+- [decision] `ENROLL_KEY` from the 1Password `crowdsec` item. Safe to run every start:
+  already-enrolled logs a warning and returns nil (`cliconsole/console.go:104`). Pulled via an
+  explicit `remoteRef`, not the `extract` template, so a missing field fails the
+  ExternalSecret loudly instead of handing `cscli console enroll` a `<no value>` — which would
+  abort the entrypoint under `set -e`.
+
+### Commits
+
+`cd7ab20c2` (initial) → `f998b5416` (PSA + hub FQDN) → `418a598ed` (victoria-logs ingress)
+→ `dfbba6828` (parser chain) → `58d24cf9a` (unreadable symlinks) → `4e9c3a735` (console
+enrollment) → `764bbe76f` (Web UI metrics).
+
+### Still open
+
+- [followup] Manual Web UI admin setup + disable password login (see above).
+- [followup] Verify the metrics page renders after the last push.
+- [followup] The Gateway-level extAuth SecurityPolicy — unchanged, still gated on approval.
