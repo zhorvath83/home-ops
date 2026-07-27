@@ -602,3 +602,404 @@ against the chart sources and the live cluster; follow-ups resolved with the hum
     MaxMind key, OIDC client secret) go to 1Password. Added a verification step:
     `just pocket-id plan` to confirm the live client's callback URL matches the corrected
     `/api/auth/oidc/callback` (in case `apply` ran before the callback-path fix).
+
+## Review correction log — 2026-07-27 second pass (Gateway-level same-level conflict)
+
+A second evidence-based review on 2026-07-27 (live cluster + repo + EG 1.8.3 docs)
+found one blocking architectural flaw in the bouncer-wiring decision. This section is
+**authoritative and supersedes** the affected clauses in "Decisions (Bouncer wiring)",
+"Phase 1 — Engine + bouncer", "What we gain", and the "IdP protection" claim wherever
+they describe the `envoy-internal` bouncer as a *separate* Gateway-level policy living
+"alongside" `envoy-internal-rfc1918`. The `envoy-external` wiring is unaffected.
+
+### The flaw
+
+The original decision reasons that "EG does NOT merge multiple SecurityPolicies at the
+same hierarchy level on the same target" — but applies that rule only to the *route-level*
+case (a second route-level `extAuth` would `Conflicted` against the existing route-level
+`oidc`), and then "solves" it by attaching the bouncer at Gateway level. It does **not**
+re-apply the same rule to the *Gateway-level* case it creates.
+
+Today on `envoy-internal` there is already ONE Gateway-level SecurityPolicy:
+`envoy-internal-rfc1918` (`authorization`, `defaultAction: Deny`, RFC1918 allowlist,
+live 70d). The plan adds a **second** Gateway-level SecurityPolicy (`extAuth`, bouncer)
+on the **same** Gateway target. That is two policies at the **same hierarchy level on the
+same target** — exactly the conflict case the note itself describes.
+
+### EG 1.8.3 documented semantics (verified)
+
+- "When multiple SecurityPolicies target the same resource at the same hierarchy level
+  ... the oldest policy (earliest creationTimestamp) takes precedence" — **single-winner,
+  feature-agnostic**; there is no same-level feature merge.
+- `mergeType` (StrategicMerge / JSONMerge) is **parent-child only** — it can be set on
+  policies targeting HTTPRoute, **not** on Gateway-level policies. So two Gateway-level
+  policies cannot be merged via `mergeType`.
+
+Source: gateway.envoyproxy.io SecurityPolicy concepts; envoyproxy/gateway#4275, #8649.
+
+### Consequence if left unfixed
+
+`envoy-internal-rfc1918` is older, so it wins; the bouncer `extAuth` policy becomes
+`Overridden`/`Conflicted` and is **silently inert** on `envoy-internal` — Stage 1 of
+the 2-stage rollout reports a false green. (Or, if the bouncer somehow won, the rfc1918
+LAN allowlist would drop off the gateway — a security regression, only masked by the
+Cilium CNP at the network layer.) Either outcome is wrong.
+
+### Corrected design (supersedes the prior wiring)
+
+- **`envoy-internal`**: do NOT create a separate bouncer Gateway-level SecurityPolicy.
+  Instead, **merge the bouncer `extAuth` block INTO the existing
+  `envoy-internal-rfc1918` SecurityPolicy** — one Gateway-level policy carrying both
+  `authorization` (the existing RFC1918 rules) **and** `extAuth` (bouncer,
+  `failOpen: false`, `bodyToExtAuth.maxRequestBytes: 65536`,
+  `backendRefs -> crowdsec-bouncer.crowdsec.svc:8080`). This is the only EG-supported
+  way to get both features on the same Gateway target. The ReferenceGrant in the
+  `crowdsec` namespace (`fromNamespaces: [networking]`) still permits the
+  cross-namespace backendRef.
+- **`envoy-external`**: unchanged — a **separate** Gateway-level bouncer SecurityPolicy
+  is correct here, because there is **no** existing Gateway-level policy on
+  `envoy-external` (verified live 2026-07-27: only route-level oidc policies exist on
+  envoy-external-attached routes, e.g. echo-server-oidc). Route-level oidc + Gateway-level
+  extAuth is the supported **parent-child, different-feature** case and combines cleanly.
+- **Rollout (corrected Stage 1)**: Stage 1 is "merge `extAuth` into
+  `envoy-internal-rfc1918` and verify the merged policy's status shows no
+  `Conflicted`/`Overridden`", NOT "apply a second Gateway-level policy". Stage 2
+  (separate bouncer policy on `envoy-external`) is unchanged.
+
+### Corrected "precedent" framing
+
+The earlier claim that "this is exactly how the existing `envoy-internal-rfc1918`
+Gateway-level authorization + route-level oidc already coexist" is a **different-level**
+(parent Gateway + child HTTPRoute) case and is real (the 8 downloads oidc routes — bazarr,
+prowlarr, radarr, sonarr, seerr, maintainerr, qbittorrent, subsyncarr — attach to
+`envoy-internal` with route-level oidc, live-verified 2026-07-27). But that precedent
+does **not** justify a **same-level** dual-Gateway-policy on `envoy-internal`, which the
+bouncer would introduce. The two cases must not be conflated.
+
+### Corrected "What we gain" framing
+
+The bouncer on `envoy-external` is **defense-in-depth behind Cloudflare WAF** (the
+`networking` area-ref records that envoy-external rate-limiting is currently covered by
+Cloudflare WAF pending the EG 1.8.x CRD regression fix). The **primary** edge-protection
+gain is on `envoy-internal`, which is exposed on a Cilium L2 VIP with no WAF in front.
+
+### New verification step (append to "Verification steps")
+
+- [ ] After merging `extAuth` into `envoy-internal-rfc1918`:
+  `kubectl -n networking get securitypolicy envoy-internal-rfc1918 -o jsonpath='{.status.conditions}'`
+  shows `Accepted=True` with **no** `Conflicted`/`Overridden` condition; and a test
+  ban (`cscli decisions add -i 1.2.3.4`) 403s on an `envoy-internal` route while the
+  RFC1918 LAN allowlist still holds for a non-RFC1918 source (both features present in the
+  single merged policy). Also confirm the separate `envoy-external` bouncer policy is
+  `Accepted=True` (no same-level conflict there).
+
+### Net effect on the plan
+
+Effort and scope are essentially unchanged — the only implementation difference is one
+merged SecurityPolicy on `envoy-internal` instead of two separate Gateway-level policies.
+The fail-closed SPOF, trusted-IPs, self-ban whitelist, CNP, geoip, and Web UI sections are
+unaffected and remain as written.
+
+## Update 2026-07-27 — namespace rationale, OAuth callback resolved, PSA coordination
+
+### OAuth callback — RESOLVED (human-verified 2026-07-27)
+
+The live `crowdsec-web-ui` Pocket ID client's OAuth redirect URL is correct
+(`/api/auth/oidc/callback` -> `https://crowdsec.${PUBLIC_DOMAIN}/api/auth/oidc/callback`).
+The open `just pocket-id plan` / "verify the live client's callback URL" checks in
+Phase 2 and "Verification steps" are **resolved** — no `callback_path` diff to apply.
+(Closes the open check raised in the 2026-07-27 first-pass correction log item 12.)
+
+### Namespace design — rationale (why a single dedicated `crowdsec` namespace)
+
+Repo idiom (verified 2026-07-27): 12 app-group namespaces under `kubernetes/apps/<group>/`,
+one per domain (`downloads`, `media`, `selfhosted`, `security`, `networking`,
+`observability`, `cert-manager`, `volsync-system`, `system-upgrade`, `kube-system`,
+`external-secrets`, `flux-system`). Platform components get their own ns. The plan puts
+**all** crowdsec components — engine (LAPI + agent + AppSec) + bouncer + Web UI — in one
+new `crowdsec` namespace. Reasons:
+
+1. **One CiliumNetworkPolicy isolates the whole component.** LAPI (8080), AppSec (7422),
+   and bouncer gRPC (8080) ingress restricted to the allowed callers (bouncer, agent,
+   Web UI, and the envoy proxy pods on the critical path). A single namespaced CNP is
+   simpler and tighter than cross-ns ClusterwideCNPs split across namespaces.
+2. **Chart-generated credentials stay in-ns.** The bouncer API key, agent registration
+   token, and Web UI LAPI machine credential are GENERATED by the chart/LAPI into K8s
+   Secrets and consumed via `secretKeyRef` within `crowdsec` — no cross-namespace
+   secret references (which would need extra wiring and widen the access surface).
+3. **Distinct risk profile from the IdP.** `security` hosts pocket-id (the OIDC IdP,
+   distroless nonroot, restricted-clean). CrowdSec mixes a hostPath-mounting log agent
+   (privileged-ish), an AppSec WAF on the request critical path, and an internally-exposed
+   LAPI — a different blast radius. A dedicated ns keeps its CNP and (future) PSA profile
+   separate from the IdP rather than forcing one profile onto both.
+4. **Lifecycle coupling.** Bouncer + Web UI depend on LAPI; one Flux Kustomization tree
+   (`kubernetes/apps/crowdsec/`) keeps the dependency coherent.
+
+**The one deliberate cross-namespace boundary:** the Gateway-level `SecurityPolicy` MUST
+live in `networking` (EG constraint: a SecurityPolicy is in the same namespace as its
+Gateway target — verified: `envoy-internal-rfc1918` is in `networking`). The bouncer
+Service stays in `crowdsec`; `networking` references it cross-ns via a `ReferenceGrant`
+in `crowdsec` (`fromNamespaces: [networking]`). This is the **minimal** cross-ns surface:
+one CR (the SecurityPolicy in `networking`) + one ReferenceGrant (in `crowdsec`).
+
+**Rejected alternatives:**
+- **Bouncer in `networking`:** would create a cross-ns secret ref (bouncer -> LAPI API
+  key in `crowdsec`), split the isolating CNP across namespaces, and decouple the bouncer
+  lifecycle from LAPI. More complexity, no benefit.
+- **CrowdSec in `security` (with pocket-id):** forces one PSA/CNP profile onto two
+  components with different risk profiles (hostPath agent vs distroless IdP); see PSA note
+  below — the hostPath requirement makes `crowdsec` need `privileged` enforce, which
+  pocket-id must not carry.
+
+### PSA coordination — detail (why the `crowdsec` ns cannot be baseline/restricted)
+
+The crowdsec agent needs `hostVarLog: true` -> it mounts hostPath `/var/log` to read the
+envoy proxy pods' stdout logs from `/var/log/pods/...` (acquisition globs
+`envoy-external-*` / `envoy-internal-*`, `program: envoy`). PSS **`baseline` forbids
+hostPath mounts**, and PSS has **no per-pod in-namespace exception** (the
+`pod-security-admission-enforcement` roadmap states this explicitly: a single
+non-compliant pod blocks the whole namespace). Therefore:
+
+- The `crowdsec` namespace **cannot** be `enforce: baseline` (or `restricted`) while
+  the agent uses `hostVarLog` — the agent pod would be rejected at admission.
+- The `crowdsec` ns fits the **infra-namespace -> `privileged` enforce** pattern in the
+  PSA roadmap (`kube-system`, `system-upgrade`, `volsync-system`, `cert-manager` stay
+  `privileged` for legit privileged infra). The non-agent pods (LAPI, AppSec, bouncer,
+  Web UI) ARE restricted-clean (runAsNonRoot, drop ALL, seccomp RuntimeDefault,
+  readOnlyRootFS) — but they share the ns with the hostPath agent, so the ns-level label
+  must accommodate the agent.
+
+**Current cluster state (verified 2026-07-27):** NO `pod-security.kubernetes.io/*` labels
+on any app namespace except `flux-system` (`warn=restricted`, auto-applied by the
+flux-operator). So the repo idiom today is "no PSA labels"; the PSA roadmap proposes
+adding them. Consistent with that, the crowdsec roadmap does **NOT** add a PSA label to
+the `crowdsec` namespace now — the PSA roadmap owns that label and will classify
+`crowdsec` as `enforce: privileged` (with `warn`/`audit: restricted` to keep the non-agent
+pods honest).
+
+**Alternatives that would avoid the privileged profile** (not chosen for this single-node
+cluster — logged as PSA-roadmap coordination, not implemented here):
+1. Ship envoy access logs to the agent over network via a Fluent Bit / Vector sidecar or
+   DaemonSet (no hostPath) — adds a component and a hop.
+2. CrowdSec Kubernetes-audit / API-stream acquisition instead of file acquisition —
+   different detection surface (k8s audit events, not envoy HTTP logs); loses the WAF
+   feed value.
+3. Split: LAPI/AppSec/bouncer/Web UI in a `crowdsec` ns at `restricted` + the agent as
+   a DaemonSet in a dedicated privileged infra ns — cleanest separation but
+   over-engineered for a single-node cluster.
+
+**Coordination handoff:** when the `pod-security-admission-enforcement` roadmap lands,
+it must label `crowdsec` as `enforce: privileged` (NOT baseline/restricted) because of
+`hostVarLog`. This is the crowdsec roadmap's only PSA contribution — a documented
+constraint, not a label to add now.
+
+### HostPath-free acquisition — the victoria-logs pipeline option (2026-07-27)
+
+The `hostVarLog` hostPath requirement is NOT the only acquisition path. Evidence-backed
+alternatives exist that keep the `crowdsec` namespace hostPath-free, which reopens the
+PSA profile from `privileged` back to `restricted`.
+
+**Existing pipeline (live-verified 2026-07-27):** `victoria-logs-collector` is a DaemonSet
+in the `observability` ns mounting hostPath `/var/log` (readOnly) + `/var/lib` (ReadOnly),
+shipping all pod stdout logs to `victoria-logs-server.observability.svc:9428`. The envoy
+proxy pods' JSON access logs already flow through it (`envoy.yaml` `type: File -> /dev/stdout`
+-> `/var/log/pods/...` -> collector -> victoria-logs-server). This is the repo's only log
+shipper (no vector/fluent-bit/otel-collector DaemonSet besides it).
+
+**CrowdSec network acquisition sources (Context7-verified, doc.crowdsec.net):** the agent
+supports DataSource modules `file`, `http`, `syslog`, `kafka`, `kubernetes-audit`,
+`journald`, `docker`, `Loki`, `VictoriaLogs`, `Appsec`, `AWS`. So file/hostPath is NOT
+the only option — `http`, `syslog`, and a native `VictoriaLogs` source all receive logs
+over the network.
+
+**Ranked hostPath-free options:**
+1. **`victorialogs` source (RECOMMENDED, zero new infra):** the crowdsec agent reads envoy
+   access logs from `victoria-logs-server` via the native VictoriaLogs datasource. No new
+   component, no hostPath on `crowdsec`, one CNP egress rule (crowdsec agent ->
+   `victoria-logs-server.observability.svc:9428`). Verification point: the collector-stored
+   envoy log field format must match the `yanis-kouidri/envoy` parser (preserve the raw
+   envoy JSON line in the collector config, or write a crowdsec parser for the VL fields).
+2. **`http` source + collector sink:** add a second sink to the existing victoria-logs-collector
+   config that POSTs envoy log lines to the crowdsec agent's HTTP source. Reuses the
+   collector; +1 sink + CNP (collector -> crowdsec http port). Raw envoy JSON line passes
+   through -> existing parser stays.
+3. **`syslog` source + collector syslog sink:** equivalent to 2 over syslog TCP (Vector
+   supports a syslog sink).
+4. **EnvoyProxy `OpenTelemetry`/`ALS` sink (EG-native, NOT reuse):** EG 1.8.3 supports
+   `type: OpenTelemetry` (OTLP gRPC) and `type: ALS` (gRPC Access Log Service) access-log
+   sinks — both network, not file. But no OTel collector exists in the repo today, and the
+   OTLP AccessLog schema != the envoy JSON line the `yanis-koudri/envoy` parser expects
+   (needs a collector transform). More new infra + a format bridge -> less attractive than
+   1-3 on a single node.
+
+**Revised PSA implication:** the earlier conclusion ("`crowdsec` ns must be `enforce:
+privileged` because of `hostVarLog`") holds ONLY for the hostPath-agent path. With option
+1 (`victorialogs`) or 2 (`http`), the `crowdsec` ns can be `enforce: restricted` — the agent
+gets no hostPath, and the non-agent pods (LAPI/AppSec/bouncer/Web UI) are already
+restricted-clean. So the PSA-roadmap table row for `crowdsec` is conditional on the chosen
+acquisition path: hostVarLog -> `privileged`; victorialogs/http -> `restricted`.
+
+**Side finding (repo-wide, affects the PSA roadmap):** the `observability` ns ALREADY hosts
+hostPath-mounting DaemonSets — `victoria-logs-collector` (`/var/log`, `/var/lib`) and
+`kube-prometheus-stack-prometheus-node-exporter` (`/`, `/sys`, `/proc`). PSS `baseline`
+forbids hostPath, so `observability` cannot be `enforce: baseline` without exceptions — it
+must be `privileged`, like the other infra namespaces. The `pod-security-admission-
+enforcement` roadmap's "observability -> baseline" row is already blocked by the live
+cluster; that roadmap's per-namespace table needs correcting. The hostPath problem is
+repo-wide (any ns running node-level DaemonSets), not crowdsec-specific.
+
+**Recommendation:** on a single node, `hostVarLog` remains the pragmatic default (simplest,
+matches the crowdsec chart defaults, and is consistent with the existing `observability`
+hostPath-DaemonSet pattern — sets no new precedent). The `victorialogs` source is the clean
+upgrade when the PSA roadmap tightens, recorded here as the explicit alternative — not
+implemented now. If the goal is `crowdsec` ns `restricted` from day one, take option 1 and
+verify the collector's envoy-log field format as the first implementation step.
+
+## Locked decision — 2026-07-27 (human): `restricted` PSA + `victorialogs` acquisition
+
+Human-locked 2026-07-27. This section is **authoritative** and supersedes every prior
+clause about (a) the `crowdsec` namespace PSA profile, (b) envoy log acquisition, and
+(c) the acquisition-alternatives ranking. Specifically it supersedes:
+- the Phase 0 line "Do NOT add a pod-security.kubernetes.io/enforce label ... coordinate
+  with the pod-security-admission-enforcement roadmap";
+- the Phase 1 "Log acquisition" / agent `hostVarLog: true` hostPath plan;
+- the "PSA coordination — detail" conclusion that `crowdsec` must be `enforce: privileged`;
+- the "HostPath-free acquisition" ranked alternatives list (options 2-5 are DROPPED).
+
+### Decision 1 — `crowdsec` ns is `enforce: restricted` from day one
+
+The `crowdsec` namespace gets the strict PSA label **self-applied by this roadmap in Phase 0**
+(not deferred to the `pod-security-admission-enforcement` roadmap):
+```yaml
+metadata:
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: v1.36
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/warn-version: v1.36
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/audit-version: v1.36
+```
+Every pod in `crowdsec` must satisfy PSS `restricted`: `runAsNonRoot: true`,
+`allowPrivilegeEscalation: false`, `capabilities.drop: [ALL]` (no `add` except
+`NET_BIND_SERVICE`, and none is needed — LAPI 8080, AppSec 7422, bouncer gRPC 8080,
+Web UI 3000 are all unprivileged ports), `seccompProfile: RuntimeDefault`, and NO
+`hostPath`/`hostNetwork`/`hostPID`/`hostIPC`. `readOnlyRootFilesystem` is NOT required by
+`restricted` (SQLite PVCs on local-hostpath are fine).
+
+**Implementation blocker to verify BEFORE applying the label:** the crowdsec OCI chart
+0.24.0 (LAPI/agent/AppSec) and the kdwils bouncer chart 0.7.0 must support these
+securityContexts. The crowdsec image has historically run as root — confirm the chart
+exposes `securityContext` overrides AND the image runs non-root (or supports a non-root
+UID). The Web UI (bjw-s app-template) is already restricted-clean per the plan. If any
+chart forces root / privilege escalation, that is a **hard blocker** — resolve it (chart
+values, or a different image) before creating the namespace with the label, otherwise the
+pods are rejected at admission. Run `kubectl label --dry-run=server ns crowdsec
+pod-security.kubernetes.io/enforce=restricted` after a staged apply to preview rejections.
+
+### Decision 2 — acquisition via the crowdSec `victorialogs` datasource (no hostPath)
+
+The agent does NOT use `hostVarLog`, does NOT mount hostPath `/var/log`, does NOT read
+envoy proxy pod log files. Instead it uses CrowdSec's native **`victorialogs`** DataSource
+(Context7-verified, doc.crowdsec.net) to query envoy access logs from the existing
+`victoria-logs-server.observability.svc:9428`, where the `victoria-logs-collector` DaemonSet
+already ships all pod stdout logs (including the envoy proxy pods' JSON access logs —
+live-verified 2026-07-27). Configure the acquisition in the crowdsec chart's
+`config.yaml.local` override (a `victorialogs` source pointing at
+`victoria-logs-server.observability.svc:9428`, label `type: envoy`, collection
+`yanis-kouidri/envoy`).
+
+**CNP change:** add `crowdsec` agent egress to `victoria-logs-server.observability.svc:9428`
+(TCP) — copy the egress-label idiom used for the observability plane. The hostPath `/var/log`
+mount + its node RBAC concern are removed entirely. The agent's only egress is now: LAPI
+(in-ns), `victoria-logs-server:9428` (observability), MaxMind GeoLite2, CAPI (if enrolled).
+
+**Gate verification (FIRST implementation step, before anything else):** confirm the
+victoria-logs-collector stores the envoy access log such that the `yanis-kouidri/envoy`
+parser can parse it — i.e. the raw envoy JSON line is preserved as the log body in
+VictoriaLogs (not collapsed into unrelated structured fields). If the collector parses the
+envoy JSON into VL structured fields, either (a) adjust the collector config to preserve
+the raw line for envoy pods, or (b) write a small crowdsec parser for the VL field shape.
+Do not proceed to bouncer wiring until this gate passes — it is the load-bearing
+assumption of the whole acquisition change.
+
+### Dropped alternatives (NOT in the plan)
+
+Closed 2026-07-27 — option 1 (`victorialogs`) chosen; the rest are dropped:
+- `hostVarLog` hostPath agent reading envoy pod stdout from `/var/log/pods/...` (the
+  original Phase 1 plan) — DROPPED.
+- `http` source + a second collector sink POSTing to the crowdsec agent — DROPPED.
+- `syslog` source + collector syslog sink — DROPPED.
+- EnvoyProxy `OpenTelemetry` / `ALS` access-log sink + an OTel collector / custom ALS
+  receiver — DROPPED.
+
+### Updated implications
+
+- **PSA coordination:** the `crowdsec` row in the `pod-security-admission-enforcement`
+  roadmap's per-namespace table is now "`restricted`, self-applied by the crowdsec roadmap
+  in Phase 0" — the PSA roadmap must NOT re-label `crowdsec` (no drift). The repo-wide
+  side-finding (observability ns already blocked from `baseline` by its hostPath
+  DaemonSets) stands and is a PSA-roadmap correction, independent of this decision.
+- **Security review:** the hostPath trust-boundary concern is gone — the agent no longer
+  touches node `/var/log`. The `restricted` label is itself an admission guarantee that no
+  future crowdsec pod can regress to privileged/hostPath.
+- **Scope/effort:** roughly unchanged — +1 CNP egress rule (crowdsec -> victoria-logs-server),
+  -1 hostPath mount + its RBAC, +1 namespace label, +1 gate verification (envoy log format
+  match).
+
+### Updated verification steps (supersede the hostVarLog ones)
+
+- [ ] `crowdsec` ns labeled `enforce: restricted` (+warn/audit, *-version: v1.36);
+  every crowdsec pod (LAPI, agent, AppSec, bouncer, Web UI) admits and stays Running — no
+  PodSecurity admission denials (confirms all charts are restricted-clean).
+- [ ] **Gate:** envoy log field format match verified — a test request to a protected route
+  produces an envoy access-log line in VictoriaLogs that the `yanis-kouidri/envoy` parser
+  ingests (`cscli metrics` shows non-zero parsed envoy lines). This MUST pass before bouncer
+  wiring.
+- [ ] `victorialogs` source egress: crowdsec agent can reach `victoria-logs-server:9428`
+  (CNP egress rule); a pod outside the allowed set cannot.
+
+## Gate verification — 2026-07-27 (live)
+
+Both gates run live against the cluster (victoria-logs-server port-forward + LogsQL), the chart sources (helm pull), and the image registries (docker.io / ghcr.io config blobs). Results below supersede the optimistic assumptions in the locked decision.
+
+### Gate 1 — envoy log format vs yanis-kouidri/envoy parser: CONDITIONAL FAIL (rework needed)
+
+Evidence (live LogsQL, query kubernetes.pod_name:envoy-external* and envoy-internal*):
+- envoy-external / envoy-internal proxy access logs ARE collected into VL (container envoy, ns networking).
+- The victoria-logs-collector (vlagent v1.52.0) runs with --kubernetesCollector.msgField=message,msg,log . Envoy JSON access logs have NO message/msg/log field, so _msg is set to the literal placeholder "missing _msg field; see https://docs.victoriametrics.com/victorialogs/keyconcepts/#message-field".
+- The envoy access-log fields are decomposed into structured VL top-level fields: method, path, response_code, downstream_remote_address, x_forwarded_for, start_time, authority, bytes_received, bytes_sent, duration_ms, protocol, request_id, route_name, upstream_cluster, upstream_host, user_agent, response_code_details, response_flags.
+- CrowdSec victorialogs datasource (Context7-confirmed: source: victorialogs, mode: tail, query: <LogsQL>) tails VL and feeds log lines to parsers; the type label directs to the parser. CrowdSec parsers grok a log-line string (Str), not flat VL fields.
+
+Verdict: the raw envoy JSON access-log line is NOT preserved as _msg; the victorialogs + yanis-kouidri/envoy parser plan does NOT work as-is IF the datasource feeds only _msg (placeholder) to the parser -> acquisition would produce nothing. The structured fields are present in VL but unusable by a line-grok parser.
+
+Definitive verification requires a running crowdsec + cscli explain --log <VL-returned envoy line> --type envoy -v — not possible pre-deployment.
+
+Mitigation paths (pick before implementation):
+1. Adjust the envoy access log so a usable line reaches _msg — e.g. add a second access-log sink in the EnvoyProxy telemetry config that emits a raw text line the collector keeps verbatim, or add a message-style field to the JSON body. Touches shared envoy-gateway config (external + internal) — needs its own change evaluation.
+2. Reconfigure the collector to not decompose envoy JSON (keep the raw line as _msg) — needs a vlagent flag investigation; risks the shared observability pipeline (AD-023).
+3. Verify the victorialogs datasource actually returns the full VL record as a JSON line (not just _msg) — if so, the yanis-kouidri/envoy parser may grok the reconstructed envoy fields. Needs datasource source/docs dive or the post-deploy cscli explain.
+
+### Gate 2 — chart securityContext / non-root: SPLIT verdict
+
+Bouncer (oci://ghcr.io/kdwils/charts/envoy-proxy-bouncer, image ghcr.io/kdwils/envoy-proxy-bouncer):
+- Chart version 0.7.0 (locked decision) DOES NOT EXIST in the registry; latest is 0.6.0 (appVersion v0.6.0). Correction required.
+- Image USER=1000 (non-root).
+- Chart container securityContext defaults: runAsNonRoot:true, runAsUser:1000, allowPrivilegeEscalation:false, capabilities.drop:[all], readOnlyRootFilesystem:true. No hostPath/hostNetwork.
+- Only seccompProfile:RuntimeDefault missing — add via podSecurityContext (chart allows toYaml).
+- VERDICT: restricted-READY with one seccompProfile line. PASS.
+
+Crowdsec (oci://ghcr.io/crowdsecurity/helm-charts/crowdsec 0.24.0, image crowdsecurity/crowdsec:v1.7.8):
+- Image USER empty (root). Entrypoint [/bin/bash, /docker_start.sh], WorkingDir /.
+- LAPI entrypoint (docker-start-custom.sh) does chown -f ":$GID" <db_path> — explicitly assumes root (chown needs CAP_CHOWN). The GID env (default 1000) is a group-based DB-access mechanism for sidecar/non-root-group patterns, NOT full non-root support.
+- Chart container securityContext defaults: only allowPrivilegeEscalation:false, privileged:false — missing runAsNonRoot, runAsUser, capabilities.drop:[ALL], seccompProfile. All configurable via values.
+- agent DaemonSet/Deployment mounts /var/log hostPath (agent.hostVarLog:true default) + /var/lib/docker/containers if container_runtime:docker. With victorialogs acquisition: set agent.hostVarLog:false + non-docker runtime -> hostPath removed. LAPI + AppSec deployments are hostPath-free.
+- VERDICT: restricted-PSA NOT feasible out-of-the-box. restricted requires runAsNonRoot:true; the image runs as root, so the kubelet rejects the pod unless runAsUser:<nonzero> is set AND the crowdsec process functions as that UID. The entrypoint chown calls are guarded (fail gracefully) and writable paths are mounted volumes (emptyDir/PVC), so a non-root run with runAsUser:1000 + fsGroup:1000 is PLAUSIBLE but UNVERIFIED and not officially supported (docs always show a root container). Real crash-loop risk if any image-owned root path needs writing.
+
+### Impact on the locked decision — two revisions required
+
+1. restricted PSA on the crowdsec ns from day 1 is AT RISK. Revise to: start the crowdsec ns at baseline (hostPath already avoided via victorialogs), deploy crowdsec with runAsUser:1000, runAsNonRoot:true, fsGroup:1000, capabilities.drop:[ALL], seccompProfile:RuntimeDefault + agent.hostVarLog:false, confirm a non-root smoke test (LAPI ready, cscli works, no chown-permission crash-loop), THEN promote the ns to enforce: restricted. restricted is gated on the empirical non-root run, not applied blind.
+2. victorialogs acquisition is NOT implementation-ready as-is. Before building the crowdsec acquisition, resolve Gate 1: either verify the datasource returns a parser-grokable envoy line (post-deploy cscli explain), or adjust the envoy access-log / collector so a raw envoy line reaches _msg. The hostPath-free benefit of victorialogs stands; the parser-ingestion path does not.
+3. Chart version correction: bouncer chart is 0.6.0, not 0.7.0.
+
+Net: the locked decision two pillars (restricted from day 1; victorialogs works for envoy) both need the revisions above before this roadmap item is implementation-ready.
