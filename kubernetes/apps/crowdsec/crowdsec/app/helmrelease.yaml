@@ -37,16 +37,17 @@ spec:
             # The entrypoint seeds an empty /etc/crowdsec by rsyncing /staging, which
             # dies under `set -e` as uid 1000 on the root-owned 0600 credential files.
             # Pre-seed what is readable; the entrypoint then regenerates the credentials.
-            # The hub items under /staging are symlinks into a 0600 hub tree that uid 1000
-            # cannot copy, so the seeded links dangle and crowdsec ignores the whole tree —
-            # drop them and let cscli install the real items (busybox find has no -xtype).
+            # Seeding also leaves symlinks into /staging that uid 1000 cannot follow: hub
+            # items dangle (crowdsec then ignores the whole config tree) and datafiles like
+            # the GeoLite2 mmdb resolve to unreadable 0600 files. One rule covers both —
+            # drop every seeded link we cannot read and let cscli fetch the real thing.
             command:
               - "/bin/bash"
               - "-c"
             args:
               - |
                 rsync -a --ignore-existing /staging/etc/crowdsec/ /etc/crowdsec/ || true
-                find /etc/crowdsec -type l -exec test ! -e {} \; -delete
+                find /etc/crowdsec /var/lib/crowdsec/data -type l -exec sh -c 'test -r "$1" || rm -f "$1"' _ {} \;
                 exec /bin/bash /docker_start.sh
             env:
               TZ: "${TIMEZONE}"
