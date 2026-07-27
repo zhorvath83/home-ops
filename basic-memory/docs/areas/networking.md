@@ -200,3 +200,74 @@ See [[cnp-per-app-audit]] (progress) Sessions 16–21 for the execution log.
 - [gap] **Automated guard still missing**: a ValidatingAdmissionPolicy (native CEL, like the existing `envoy-gateway/config/validatingadmissionpolicy.yaml` for hostname claims) that rejects create/update of a BTP or EEP targeting a Gateway that already has one attached would prevent this class of silent failure before it reaches the cluster. Tracked as a follow-up — not yet implemented.
 
 See commits `4b4c36e66` (BTP merge) and `7e1e76000` (EEP merge) on main.
+
+## Update — 2026-07-28: SecurityPolicy parent-child merging + CrowdSec ext_authz on both gateways
+
+Companion to the 2026-07-26 exclusivity note. That one covers **same-level** conflicts (two
+BTPs/EEPs on one target → `Conflicted`, neither attaches). This is the **parent-child** case,
+which fails differently and more quietly: the child wins and the parent silently stops
+applying.
+
+- [observation] **EG parent-child rule (load-bearing)**: a route-level SecurityPolicy without
+  `mergeType` does not combine with the Gateway-level one — it *replaces* it for that route.
+  CRD, verbatim: *"MergeType determines how this configuration is merged with existing
+  SecurityPolicy configurations targeting a parent resource. … If unset, no merging occurs,
+  and only the most specific configuration takes effect."* The parent then reports
+  `Overridden=True` listing the routes. Unlike `Conflicted`, the child keeps working, so the
+  loss is invisible from the app side.
+- [observation] **Pre-existing silent gap, found by attaching CrowdSec**: every
+  `components/gateway-oidc` consumer set no `mergeType`, so
+  `SecurityPolicy/envoy-internal-rfc1918` had **never applied to any OIDC-gated route** —
+  downloads/{bazarr,maintainerr,prowlarr,qbittorrent,radarr,seerr,sonarr,subsyncarr},
+  kube-system/hubble-ui, networking/echo-server. Not exploitable in practice (envoy-internal
+  is only reachable on the LAN VIP, and `CiliumNetworkPolicy/envoy-internal` enforces RFC1918
+  independently at L3), but the policy did not do what its name implies.
+- [observation] **Correction to the Claim** *"envoy-internal is protected by
+  SecurityPolicy/envoy-internal-rfc1918 with defaultAction=Deny and clientCIDRs allowlist of
+  all three RFC1918 ranges"* (verified 2026-06-14): true for the Gateway, but until
+  2026-07-28 it excluded the ten OIDC-gated routes above. Now accurate for all routes.
+- [observation] **Fix**: `mergeType: StrategicMerge` added to
+  `kubernetes/components/gateway-oidc/securitypolicy.yaml` — one line in the shared component,
+  closing the RFC1918 gap and extending the CrowdSec gate to those routes at once. Verified
+  live: the condition flipped `Overridden=True` → `Merged=True` for all ten, and the OIDC flow
+  still redirects to `idm.${PUBLIC_DOMAIN}/authorize` with a PKCE `code_challenge`.
+- [observation] **`bodyToExtAuth` is unusable on these gateways.** CRD, verbatim: *"Envoy will
+  return HTTP 413 and will not initiate the authorization process when buffer reaches the
+  number set in this field. Note that this setting will have precedence over failOpen mode."*
+  There is no partial-message option in the EG API, so the cap is a hard ceiling on every
+  request body. Measured live with `maxRequestBytes: 65536`: a 1KB POST to grafana returned
+  401, a 133KB POST returned **413**. That silently capped every upload path on
+  envoy-internal (pingvin-share, paperless, calibre, grafana dashboard import) for the ~20
+  minutes it was live. Removed from both policies; the WAF keeps URL/query/path/header
+  coverage.
+- [component] **SecurityPolicy/envoy-internal-rfc1918 now carries two features**: the existing
+  `authorization` (defaultAction Deny + RFC1918 allowlist) **and** `extAuth` (CrowdSec gRPC
+  bouncer, `failOpen: false`, `statusOnError: 503`, no `bodyToExtAuth`). Merged into one
+  object on purpose — a second Gateway-level SecurityPolicy on the same target would lose the
+  same-level contest and sit inert. (gateway-policies.yaml)
+- [component] **SecurityPolicy/envoy-external-crowdsec** — new, standalone, correct here
+  because envoy-external carries no other Gateway-level SecurityPolicy to merge into. Same
+  extAuth shape. Covers the Pocket ID login page, which has no route-level gate by nature.
+  (gateway-policies.yaml)
+- [observation] The bouncer Service lives in the `crowdsec` namespace; the cross-namespace
+  `backendRefs` is permitted by a `ReferenceGrant` in `crowdsec` (`from: SecurityPolicy in
+  networking`), created by the bouncer chart.
+- [observation] **Fail-closed SPOF, accepted**: single bouncer replica, `failOpen: false`, so
+  its outage 5xx-es every route on both gateways. `statusOnError: 503` keeps that
+  distinguishable from a real 403 ban. The `CrowdSecBouncerDown` PrometheusRule (critical,
+  2m) is the compensating control; rollback is deleting the `extAuth` block from the affected
+  policy.
+- [observation] Live after both stages: `bouncer_requests_total{action="allow"}` 3835 with
+  **zero bans**, `bouncer_waf_errors_total` 0, `bouncer_decision_cache_size{origin="CAPI"}`
+  ~15000. Client IP comes from `trustedIPHeader: X-Envoy-External-Address`, i.e. the value the
+  existing ClientTrafficPolicies already resolve (CF-Connecting-IP externally, TCP source on
+  the LAN gateway) — no XFF walking, no proxy CIDR list to maintain.
+- [guardrail] Recorded in `kubernetes/apps/networking/CLAUDE.md`: a route-level SecurityPolicy
+  needs `mergeType` or it silently drops the Gateway-level policy for that route; and
+  `bodyToExtAuth` 413s any body over the cap.
+- [gap] The 2026-07-26 follow-up still stands and now covers a third case: a
+  ValidatingAdmissionPolicy could also reject a route-level SecurityPolicy that lacks
+  `mergeType` while a Gateway-level policy exists on its parent. Not implemented.
+
+See commits `50814b79b` (stage 1), `6d2c00f98` (413 fix), `ee0990fd3` (mergeType + stage 2)
+on main, and [[envoy-crowdsec-bouncer]] (progress) Session 3 for the execution log.

@@ -31,7 +31,10 @@ Rules:
 - Technical / internet-only routes can stay `envoy-external`-only when no LAN reach is needed.
 - Gateway-level traffic policy (`BackendTrafficPolicy`, `ClientTrafficPolicy`, `EnvoyPatchPolicy`, `SecurityPolicy`) belongs here, not scattered into application trees.
 - One BackendTrafficPolicy and one EnvoyExtensionPolicy per Gateway target — EG rejects a second as `Conflicted` (neither attaches). To add a feature, extend the existing `envoy` BTP / `security-response-headers` EEP rather than creating a new policy.
-- After any gateway-policy change, verify the live policy is `Accepted=True`, not `Conflicted` — a Conflicted policy silently never takes effect.
+- The same applies to `SecurityPolicy` at Gateway level: a second one on the same target loses the contest and sits inert, so `envoy-internal-rfc1918` carries both the RFC1918 `authorization` and the CrowdSec `extAuth`.
+- A **route**-level `SecurityPolicy` must set `mergeType: StrategicMerge`, or it replaces the Gateway-level policy for that route instead of combining with it. The parent reports `Overridden`, the child keeps working, and the parent's protections are lost silently — this is how the RFC1918 allowlist skipped every OIDC-gated route until 2026-07-28. The shared `components/gateway-oidc` sets it.
+- Never set `extAuth.bodyToExtAuth`: Envoy returns 413 once a body exceeds `maxRequestBytes` rather than buffering partially, and that outranks `failOpen` — it caps every upload behind the gateway.
+- After any gateway-policy change, verify the live policy is `Accepted=True` with no `Conflicted` or `Overridden` condition — both fail silently.
 - If changing listener behavior, inspect related policy and certificate manifests together.
 - `envoy-internal` is protected by an RFC1918-only `SecurityPolicy`; do not weaken that without explicit security review.
 
