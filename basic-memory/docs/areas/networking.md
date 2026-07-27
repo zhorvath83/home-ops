@@ -271,3 +271,38 @@ applying.
 
 See commits `50814b79b` (stage 1), `6d2c00f98` (413 fix), `ee0990fd3` (mergeType + stage 2)
 on main, and [[envoy-crowdsec-bouncer]] (progress) Session 3 for the execution log.
+
+## Update — 2026-07-28: gateway rate limit was one shared bucket per route
+
+Found while investigating 429s on the photo gallery; unrelated to CrowdSec except that the
+CrowdSec rollout is what makes the blunt limit less load-bearing.
+
+- [observation] The `envoy` BTP's Local rate limit rule carried no `clientSelectors`, and the
+  CRD's `shared` field defaults to false — *"If set to true, the rule is treated as a common
+  bucket and is shared across all policy targets (xRoutes)"*. So it was **one 600/min bucket
+  per route, shared by every client of that route**, not a per-client limit. One active
+  visitor could 429 everyone else on the same route.
+- [evidence] Live VictoriaLogs over 14 days: **2260 of 4740 requests to
+  `photos.${PUBLIC_DOMAIN}` returned 429** (48%), every one of them an
+  `image-preview-{320,480,640}.jpg` thumbnail.
+- [evidence] Measured per-minute peaks: photos **1600 from a single client**, idm 914 (split
+  across its two routes, hence no 429), books 576, recipes 479. So 600 was marginal for
+  several routes, not just photos — books sat at 96% of the limit.
+- [observation] The heaviest client is **IPv6** (`2a00:1110:…`). Relevant because a
+  `sourceCIDR: 0.0.0.0/0` selector matches no IPv6 client, and a non-matching rule means no
+  limit at all — an IPv4-only fix would have silently exempted exactly the client that
+  triggered the investigation.
+- [decision] Two `Distinct` source-CIDR rules (`0.0.0.0/0` and `::/0`) at 3000/min: per-client
+  buckets, ~2x the observed legitimate peak, still bounding one abuser to 50 req/s. Rules are
+  mutually exclusive by address family; the CRD resolves multi-rule matches by strictest
+  limit, so the pair is safe.
+- [observation] The role of this limit has shrunk: behavioural abuse detection is now
+  CrowdSec's (`http-probing`, `http-crawl-non_statics`, plus the CAPI blocklist), with
+  Cloudflare WAF in front of the public path. It only has to be a volumetric backstop.
+- [gap] **home-gallery barely caches**: 2431 × 200 against 46 × 304 over the same window, and
+  a single browser re-fetched 1600 thumbnails in one minute. Raising the limit hides this;
+  the root cause is response caching on the app side (`Cache-Control` on `/files/**`
+  previews, which are content-addressed and therefore immutable). Not a gateway-policy
+  question — tracked as a follow-up, not implemented.
+
+See commit `fc222f988` on main.
