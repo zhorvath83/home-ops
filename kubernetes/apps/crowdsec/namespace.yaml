@@ -1,0 +1,16 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: crowdsec
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+  labels:
+    # Every pod here is restricted-clean by construction (non-root, no hostPath —
+    # envoy logs arrive over the network from victoria-logs, not from /var/log).
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: v1.36
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/warn-version: v1.36
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/audit-version: v1.36

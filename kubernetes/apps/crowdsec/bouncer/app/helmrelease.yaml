@@ -1,0 +1,62 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: crowdsec-bouncer
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: crowdsec-bouncer
+  values:
+    nameOverride: crowdsec-bouncer
+    fullnameOverride: crowdsec-bouncer
+    replicaCount: 1
+    image:
+      tag: v0.6.3@sha256:85c9f802eca3ad32aa4a8cb5b63e5c5a5642b07cff623beca0bab634c2128020
+    # The chart's container securityContext is already restricted-clean; only seccomp is missing.
+    podSecurityContext:
+      seccompProfile:
+        type: RuntimeDefault
+    config:
+      server:
+        logLevel: info
+      # Envoy already resolved the client IP (CF-Connecting-IP externally, TCP source on
+      # the LAN gateway) and stamps it here, so no XFF walking or proxy CIDR list.
+      trustedIPHeader: X-Envoy-External-Address
+      # Cluster-internal callers only (pod + service CIDR): in-cluster probes and OIDC
+      # hairpins must never be evaluated. LAN clients stay in scope so the WAF applies
+      # to them on envoy-internal.
+      exemptIPs:
+        - 10.0.0.0/8
+      bouncer:
+        enabled: true
+        lapiURL: http://crowdsec.crowdsec.svc.cluster.local:8080
+        apiKeySecretRef:
+          name: crowdsec-bouncer-secret
+          key: BOUNCER_API_KEY
+      waf:
+        enabled: true
+        appSecURL: http://crowdsec.crowdsec.svc.cluster.local:7422
+        apiKeySecretRef:
+          name: crowdsec-bouncer-secret
+          key: BOUNCER_API_KEY
+      prometheus:
+        enabled: true
+        serviceMonitor:
+          enabled: true
+    grafana:
+      dashboard:
+        enabled: true
+    # Lets the SecurityPolicy in `networking` reference this Service cross-namespace.
+    referenceGrant:
+      create: true
+      fromNamespaces:
+        - networking
+    resources:
+      requests:
+        cpu: 20m
+        memory: 64Mi
+      limits:
+        memory: 128Mi

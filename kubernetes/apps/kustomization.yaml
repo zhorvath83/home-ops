@@ -10,6 +10,7 @@ resources:
   - ./networking
   - ./observability
   - ./security
+  - ./crowdsec
   - ./system-upgrade
   - ./volsync-system
   - ./media

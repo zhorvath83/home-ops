@@ -4,7 +4,7 @@
     {
       description: "Loose versioning for non-semver image tags",
       matchDatasources: ["docker"],
-      matchPackageNames: ["/plex/", "/qbittorrent/"],
+      matchPackageNames: ["/plex/", "/qbittorrent/", "/crowdsec-web-ui/"],
       versioning: "loose",
     },
     {

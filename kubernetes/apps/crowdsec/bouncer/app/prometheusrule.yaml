@@ -1,0 +1,23 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/monitoring.coreos.com/prometheusrule_v1.json
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: crowdsec-bouncer
+spec:
+  groups:
+    - name: crowdsec-bouncer
+      rules:
+        # The bouncer is a single-replica ext_authz service configured fail-closed, so
+        # while a SecurityPolicy is attached its outage 5xx-es every route on that gateway.
+        - alert: CrowdSecBouncerDown
+          expr: up{job="crowdsec-bouncer", namespace="crowdsec"} == 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: CrowdSec Envoy bouncer is down
+            description: |-
+              The ext_authz bouncer is unreachable. If a bouncer SecurityPolicy is attached
+              to a Gateway, every route on it now fails closed (5xx). Remove that
+              SecurityPolicy to restore traffic, then fix the bouncer.

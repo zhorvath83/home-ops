@@ -1,0 +1,43 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
+# LAPI/AppSec are only ever called by the bouncer and the Web UI; prometheus arrives
+# through the matching CCNP. Egress stays on the cluster baseline (envoy access logs are
+# pulled from victoria-logs in-cluster) plus the crowdsec hub/CAPI endpoints.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: crowdsec
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: crowdsec
+      app.kubernetes.io/instance: crowdsec
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: crowdsec-bouncer
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+            - port: "7422"
+              protocol: TCP
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: crowdsec-web-ui
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+  egress:
+    # Hub index/items, hub datafiles (GeoLite2 mmdb — no MaxMind account needed),
+    # and the Central API for the community blocklist.
+    - toFQDNs:
+        - matchName: "cdn-hub.crowdsec.net"
+        - matchName: "hub-data.crowdsec.net"
+        - matchName: "api.crowdsec.net"
+        - matchName: "papi.api.crowdsec.net"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP

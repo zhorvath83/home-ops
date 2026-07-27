@@ -1,0 +1,20 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ./ciliumnetworkpolicy.yaml
+  - ./externalsecret.yaml
+  - ./grafanadashboard.yaml
+  - ./grafanafolder.yaml
+  - ./helmrelease.yaml
+  - ./prometheusrule.yaml
+configMapGenerator:
+  - name: crowdsec-config-local
+    files:
+      - config.yaml.local
+  - name: crowdsec-acquis
+    files:
+      - acquis.yaml
+generatorOptions:
+  disableNameSuffixHash: true

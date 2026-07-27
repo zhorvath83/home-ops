@@ -1,0 +1,138 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: crowdsec
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  values:
+    defaultPodOptions:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      labels:
+        ingress.home.arpa/allow-prometheus: "true"
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+    controllers:
+      crowdsec:
+        strategy: Recreate
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              # renovate: datasource=docker depName=docker.io/crowdsecurity/crowdsec
+              repository: docker.io/crowdsecurity/crowdsec
+              tag: v1.7.8@sha256:2f527c9bb8b367120eb08b82890aa912ce96bfa1ada93dda0721700e4b4e0dde
+            # The entrypoint seeds an empty /etc/crowdsec by rsyncing /staging, which
+            # dies under `set -e` as uid 1000 on the root-owned 0600 credential files.
+            # Pre-seed what is readable; the entrypoint then regenerates the credentials.
+            command:
+              - "/bin/bash"
+              - "-c"
+            args:
+              - rsync -a --ignore-existing /staging/etc/crowdsec/ /etc/crowdsec/ || true; exec /bin/bash /docker_start.sh
+            env:
+              TZ: "${TIMEZONE}"
+              CUSTOM_HOSTNAME: crowdsec
+              USE_WAL: "true"
+              # Registers the Web UI's LAPI machine; password comes from crowdsec-secret.
+              AGENT_USERNAME: crowdsec-web-ui
+              COLLECTIONS: >-
+                yanis-kouidri/envoy
+                crowdsecurity/appsec-virtual-patching
+                crowdsecurity/appsec-generic-rules
+            envFrom:
+              - secretRef:
+                  name: crowdsec-secret
+            probes:
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: &lapiPort 8080
+                  initialDelaySeconds: 30
+                  periodSeconds: 30
+                  timeoutSeconds: 5
+                  failureThreshold: 5
+              readiness: *probes
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: {drop: ["ALL"]}
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                memory: 768Mi
+    service:
+      app:
+        controller: crowdsec
+        ports:
+          lapi:
+            port: *lapiPort
+          appsec:
+            port: &appsecPort 7422
+          metrics:
+            port: &metricsPort 6060
+    serviceMonitor:
+      app:
+        serviceName: crowdsec
+        endpoints:
+          - port: metrics
+            path: /metrics
+            interval: 1m
+            scrapeTimeout: 10s
+    # Keys are rendered as volumeMounts in alphabetical order and the kubelet mounts them
+    # in that order, so the /etc/crowdsec parent must sort before the files nested inside
+    # it — hence the `config`, `config-acquis`, `config-local` naming.
+    persistence:
+      # Holds the hub, the generated LAPI/CAPI credentials, and the mutated config.yaml —
+      # persisting it keeps CAPI registration and hub downloads one-shot.
+      config:
+        type: persistentVolumeClaim
+        accessMode: ReadWriteOnce
+        size: 1Gi
+        storageClass: democratic-csi-local-hostpath
+        globalMounts:
+          - path: /etc/crowdsec
+      data:
+        type: persistentVolumeClaim
+        accessMode: ReadWriteOnce
+        size: 2Gi
+        storageClass: democratic-csi-local-hostpath
+        globalMounts:
+          - path: /var/lib/crowdsec/data
+      config-acquis:
+        type: configMap
+        name: crowdsec-acquis
+        globalMounts:
+          - path: /etc/crowdsec/acquis.yaml
+            subPath: acquis.yaml
+            readOnly: true
+      config-local:
+        type: configMap
+        name: crowdsec-config-local
+        globalMounts:
+          - path: /etc/crowdsec/config.yaml.local
+            subPath: config.yaml.local
+            readOnly: true
+      varlog:
+        type: emptyDir
+        globalMounts:
+          - path: /var/log
+      tmp:
+        type: emptyDir

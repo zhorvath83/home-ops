@@ -1,0 +1,18 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/grafana.integreatly.org/grafanadashboard_v1beta1.json
+# The chart ships the dashboard as a ConfigMap; grafana-operator watches CRs, not the
+# grafana_dashboard sidecar label, so it is bridged here. The JSON picks its own
+# Prometheus datasource through a template variable — no datasources mapping needed.
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: crowdsec-bouncer
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
+  allowCrossNamespaceImport: true
+  folderRef: crowdsec
+  configMapRef:
+    name: crowdsec-bouncer-dashboard
+    key: bouncer.json
