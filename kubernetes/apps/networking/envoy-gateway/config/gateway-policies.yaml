@@ -238,11 +238,11 @@ spec:
   # gateway, which the CrowdSecBouncerDown alert exists to catch. 503 rather than the default
   # 403 keeps an outage distinguishable from a real ban. The cross-namespace backendRef is
   # permitted by the ReferenceGrant the bouncer chart creates in the crowdsec namespace.
+  # No bodyToExtAuth: Envoy answers 413 once a body exceeds maxRequestBytes instead of
+  # buffering partially, so WAF body inspection would cap every upload on this gateway.
   extAuth:
     failOpen: false
     statusOnError: 503
-    bodyToExtAuth:
-      maxRequestBytes: 65536
     grpc:
       backendRefs:
         - group: ""
