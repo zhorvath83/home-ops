@@ -53,8 +53,9 @@ spec:
               TZ: "${TIMEZONE}"
               CUSTOM_HOSTNAME: crowdsec
               USE_WAL: "true"
-              # Opt-in for console-pushed decisions; without it the subscribed
-              # blocklists never reach the engine.
+              # Opt-in for console-pushed decisions. Inert on the COMMUNITY plan (its PAPI
+              # transport answers 402); declared because the entrypoint only ever enables
+              # the flag, so Git has to carry what the engine already holds.
               ENABLE_CONSOLE_MANAGEMENT: "true"
               # Registers the Web UI's LAPI machine; password comes from crowdsec-secret.
               AGENT_USERNAME: crowdsec-web-ui
