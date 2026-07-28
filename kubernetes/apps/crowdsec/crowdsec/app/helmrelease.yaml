@@ -68,6 +68,9 @@ spec:
                 crowdsecurity/dateparse-enrich
                 crowdsecurity/geoip-enrich
                 crowdsecurity/whitelists
+              # Public clients reaching the gateway are largely IPv6, where a /128 ban is
+              # worthless — the same host rotates freely inside its /64.
+              POSTOVERFLOWS: crowdsecurity/ipv6_to_range
             envFrom:
               - secretRef:
                   name: crowdsec-secret
@@ -145,6 +148,13 @@ spec:
         globalMounts:
           - path: /etc/crowdsec/config.yaml.local
             subPath: config.yaml.local
+            readOnly: true
+      config-profiles:
+        type: configMap
+        name: crowdsec-profiles
+        globalMounts:
+          - path: /etc/crowdsec/profiles.yaml
+            subPath: profiles.yaml
             readOnly: true
       varlog:
         type: emptyDir

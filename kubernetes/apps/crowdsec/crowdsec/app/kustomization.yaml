@@ -16,5 +16,8 @@ configMapGenerator:
   - name: crowdsec-acquis
     files:
       - acquis.yaml
+  - name: crowdsec-profiles
+    files:
+      - profiles.yaml
 generatorOptions:
   disableNameSuffixHash: true
