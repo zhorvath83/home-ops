@@ -54,8 +54,6 @@ spec:
             image:
               repository: ghcr.io/home-operations/bazarr
               tag: 1.6.0@sha256:133a3064b0b9ea18ad66cc88b6863f91b9c05dc32212805843fcfce4c4b8eb05
-            env:
-              TZ: "${TIMEZONE}"
             probes:
               liveness:
                 enabled: true

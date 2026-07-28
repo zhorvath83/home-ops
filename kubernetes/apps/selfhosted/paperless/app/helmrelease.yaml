@@ -43,8 +43,7 @@ spec:
               tag: 2.20.15@sha256:835974fc3368fc6714aa38542db7a1f0f542d03244e39b981e519aefc100f355
             env:
               # Application settings
-              TZ: &tz "${TIMEZONE}"
-              PAPERLESS_TIME_ZONE: *tz
+              PAPERLESS_TIME_ZONE: "Europe/Budapest"
               PAPERLESS_URL: "https://docs.${PUBLIC_DOMAIN}"
               PAPERLESS_PORT: "8000"
               PAPERLESS_ENABLE_COMPRESSION: "false"
@@ -190,8 +189,7 @@ spec:
             resources: *resources
             securityContext: *paperlessSecurityContext
             env:
-              TZ: *tz
-              PAPERLESS_TIME_ZONE: *tz
+              PAPERLESS_TIME_ZONE: "Europe/Budapest"
               PAPERLESS_EXPORT_DIR: *exportDir
               PAPERLESS_DATA_DIR: *dataDir
               PAPERLESS_MEDIA_ROOT: *mediaRoot

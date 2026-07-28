@@ -38,7 +38,6 @@ spec:
               tag: v3.5.4
             env:
               SPEEDTEST_PORT: &port 9798
-              TZ: "${TIMEZONE}"
             probes:
               liveness:
                 enabled: true

@@ -50,7 +50,6 @@ spec:
                 find /etc/crowdsec /var/lib/crowdsec/data -type l -exec sh -c 'test -r "$1" || rm -f "$1"' _ {} \;
                 exec /bin/bash /docker_start.sh
             env:
-              TZ: "${TIMEZONE}"
               CUSTOM_HOSTNAME: crowdsec
               USE_WAL: "true"
               # Opt-in for console-pushed decisions. Inert on the COMMUNITY plan (its PAPI

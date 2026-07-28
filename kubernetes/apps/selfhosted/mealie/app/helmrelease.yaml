@@ -36,7 +36,6 @@ spec:
               repository: ghcr.io/mealie-recipes/mealie
               tag: v3.21.0@sha256:4e1e8d98b883009cb849851857e277109c21db1c2d857ae61e14de894f2169ff
             env:
-              TZ: "${TIMEZONE}"
               API_DOCS: "false"
               API_PORT: &port 9000
               PUID: "10001"

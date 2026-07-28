@@ -11,8 +11,6 @@ spec:
     name: metrics-server
   values:
     # Chart defaults: seccompProfile=RuntimeDefault, runAsNonRoot, readOnlyRootFS, drop ALL.
-    env:
-      TZ: "${TIMEZONE}"
     args:
       - --kubelet-insecure-tls
       - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname

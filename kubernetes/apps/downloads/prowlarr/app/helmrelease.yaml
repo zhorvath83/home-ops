@@ -34,8 +34,6 @@ spec:
             image:
               repository: ghcr.io/home-operations/prowlarr
               tag: 2.6.0.5494@sha256:f2db7fc93c2c26476de74695b565bfced0f39255cdba30fedf6d1ec45789f818
-            env:
-              TZ: "${TIMEZONE}"
             probes:
               liveness: &probes
                 enabled: true

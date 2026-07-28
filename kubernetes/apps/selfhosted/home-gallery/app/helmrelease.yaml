@@ -61,8 +61,6 @@ spec:
               repository: xemle/home-gallery
               tag: latest@sha256:e904e82660ed5c166b2ac575259c85ea340ac5aa73898d0c1dea3fb79b588a0b
             env:
-              - name: TZ
-                value: "${TIMEZONE}"
               # Disable browser opening (not needed in container)
               - name: GALLERY_OPEN_BROWSER
                 value: "false"

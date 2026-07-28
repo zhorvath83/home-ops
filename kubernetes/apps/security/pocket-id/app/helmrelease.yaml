@@ -37,7 +37,6 @@ spec:
               repository: ghcr.io/pocket-id/pocket-id
               tag: v2.11.0-distroless@sha256:446624a84743c29f93db2ffbbe19f9059fd9741e0cb2516d31efcc764e131835
             env:
-              TZ: "${TIMEZONE}"
               APP_URL: "https://idm.${PUBLIC_DOMAIN}"
               PORT: &port 1411
               HOST: 0.0.0.0

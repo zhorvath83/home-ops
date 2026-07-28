@@ -36,9 +36,8 @@ spec:
               repository: ghcr.io/theduffman85/crowdsec-web-ui
               tag: 2026.7.22@sha256:71d318d59b3a15ff7af35c9d6ca383d1bbce334b60714fbe7cceb194b6eca545
             env:
-              TZ: "${TIMEZONE}"
               CONFIG_SERVER_PORT: &port 3000
-              CONFIG_UI_TIME_ZONE: "${TIMEZONE}"
+              CONFIG_UI_TIME_ZONE: "Europe/Budapest"
               CONFIG_UPDATES_ENABLED: "false"
               CONFIG_INSTANCE_NAME: home-ops
               CONFIG_INSTANCE_LAPI_URL: http://crowdsec.crowdsec.svc.cluster.local:8080

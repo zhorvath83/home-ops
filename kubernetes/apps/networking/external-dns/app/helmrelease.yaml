@@ -16,8 +16,6 @@ spec:
     provider:
       name: cloudflare
     env:
-      - name: TZ
-        value: "${TIMEZONE}"
       - name: CF_API_TOKEN
         valueFrom:
           secretKeyRef:
