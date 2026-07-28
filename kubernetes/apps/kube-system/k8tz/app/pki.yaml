@@ -1,0 +1,9 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cert-manager.io/issuer_v1.json
+# Self-signed Issuer for the k8tz webhook serving certificate (scoped to kube-system).
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: k8tz-webhook-issuer
+spec:
+  selfSigned: {}
