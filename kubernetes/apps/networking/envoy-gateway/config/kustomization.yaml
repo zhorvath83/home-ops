@@ -12,6 +12,7 @@ resources:
   - ./ciliumnetworkpolicy-external.yaml
   - ./ciliumnetworkpolicy-internal.yaml
   - ./observability.yaml
+  - ./prometheusrule.yaml
 
 configMapGenerator:
   - name: envoy-external-extensions
