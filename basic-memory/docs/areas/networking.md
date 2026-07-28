@@ -5,7 +5,7 @@ permalink: home-ops/docs/areas/networking
 area: networking
 status: current
 confidence: high
-verified_at: '2026-07-20'
+verified_at: '2026-07-28'
 summary: Gateway API with Envoy Gateway provides cluster ingress, split across two
   shared entrypoints (envoy-external for Cloudflare Tunnel public traffic, envoy-internal
   for LAN traffic on a Cilium L2-announced VIP). Single HTTPS listener per Gateway
@@ -306,3 +306,41 @@ CrowdSec rollout is what makes the blunt limit less load-bearing.
   question — tracked as a follow-up, not implemented.
 
 See commit `fc222f988` on main.
+## Update — 2026-07-28: CrowdSec/envoy down alerts fixed (absent + count)
+
+The `CrowdSecBouncerDown` rule referenced above as the fail-closed SPOF's
+compensating control was itself broken: `up{...} == 0` only fires when a
+scrape ran and failed, but scale-to-0 / crashloop / a readiness-split pod
+drops the target from the scrape pool and the `up` series vanishes, so the
+alert never fired for the common outage shapes. Verified live 2026-07-28:
+with the bouncer deployment scaled to 0, `up{job="crowdsec-bouncer"} == 0`
+returned an empty vector while `absent(up{job="crowdsec-bouncer"})` returned
+1. Fix: `up{...} == 0 or absent(up{...})` on both `CrowdSecBouncerDown`
+(`for: 2m`) and `CrowdSecLAPIDown` (`for: 5m`). End-to-end test the same
+day: scaled both crowdsec deployments to 0, `CrowdSecBouncerDown` went
+pending→firing via the absent branch and reached Alertmanager
+`state=active` → Pushover (severity=critical route, `group_wait: 1m`);
+`CrowdSecLAPIDown` fired likewise. Restored, both cleared (`send_resolved`).
+
+- [component] **EnvoyProxyDown** PrometheusRule (new, `networking` ns,
+  `envoy-gateway/config/prometheusrule.yaml`): the envoy proxies are the
+  data plane — envoy-external (public) and envoy-internal (LAN), one replica
+  each, sharing one PodMonitor job `networking/envoy-proxy`. Either down
+  kills its path; both down kills all ingress (same blast-radius class as the
+  bouncer SPOF). The single-target `up == 0 or absent()` shape would miss
+  one proxy vanishing (absent needs every series gone), so the expr is
+  `count(up{job="networking/envoy-proxy",namespace="networking"} == 1) < 2`,
+  covering one-down, both-down, scrape failure, and all-vanished; `for: 2m`
+  skips a rolling-update blip on the single replica. The envoy-gateway
+  controller (control plane, job `envoy-gateway`) is a separate
+  ServiceMonitor and is not covered by this alert.
+- [observation] CNP isolation for the crowdsec namespace verified live
+  (Hubble, 2026-07-28): engine ingress only from bouncer/web-ui/prometheus +
+  kubelet health-probe (Cilium `enableEndpointHealthChecking` bypasses
+  policy, which is why the CNP need not list probes); bouncer ingress only
+  from the two envoy proxies + prometheus + kubelet; egress is in-cluster
+  (victoria-logs:9428 via the `allow-cluster-egress` CCNP baseline) plus
+  `crowdsec.net:443` (hub/CAPI/mmdb via the per-app CNP) — no world egress.
+- [observation] Commits on main: `be6982769` (crowdsec alert absent fix),
+  `572d4787f` (EnvoyProxyDown rule). See [[envoy-crowdsec-bouncer]]
+  (progress) Session 4 for the alert test log and self-ban cleanup.
