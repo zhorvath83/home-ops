@@ -21,17 +21,20 @@ spec:
               The CrowdSec LAPI is unreachable, so no decision can be issued or queried.
               Once the bouncer SecurityPolicy is attached this also fails requests closed
               on the affected gateway.
-        # Acquisition runs over a LogsQL query that reconstructs the envoy access log
-        # line; a VictoriaLogs field rename or collector change breaks it silently, and
-        # zero parse hits is the only symptom.
+        # Gate on envoy's own counter (prefix filter drops eg-ready-http, which ticks when idle):
+        # a broken LogsQL query reads zero lines, which no crowdsec metric can see. `hits_ok` is
+        # the only parse-success signal (`hits_total` counts entry); `or vector(0)` — absent till 1st hit.
         - alert: CrowdSecAcquisitionStalled
-          expr: sum(rate(cs_parser_hits_total{job="crowdsec", namespace="crowdsec"}[30m])) == 0
-          for: 1h
+          expr: |
+            sum(increase(envoy_http_downstream_rq_total{job="networking/envoy-proxy", namespace="networking", envoy_http_conn_manager_prefix=~"https?-.*"}[1h])) > 0
+              and
+            (sum(increase(cs_parser_hits_ok_total{job="crowdsec", namespace="crowdsec", acquis_type="envoy"}[1h])) or vector(0)) == 0
+          for: 10m
           labels:
             severity: warning
           annotations:
-            summary: CrowdSec has parsed no log line for an hour
+            summary: CrowdSec parses no envoy request
             description: |-
-              No parser hits for 1h — the victoria-logs acquisition query probably no longer
-              matches the envoy access-log fields. Check `cscli metrics` and re-run the
-              LogsQL query against victoria-logs.
+              Envoy served requests in the last hour but CrowdSec parsed none — the LogsQL
+              acquisition query or the envoy parser no longer matches. Check `cscli metrics`
+              and re-run the query in acquis.yaml against victoria-logs.
