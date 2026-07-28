@@ -10,8 +10,12 @@ spec:
       rules:
         # The bouncer is a single-replica ext_authz service configured fail-closed, so
         # while a SecurityPolicy is attached its outage 5xx-es every route on that gateway.
+        # `up == 0` only catches a scrape that ran and failed; scale-to-0, crashloop, or a
+        # readiness-split pod drops the target from the scrape pool and the `up` series
+        # vanishes, so `absent()` is the branch that fires for those — without it the alert
+        # never goes off for the common outage shapes.
         - alert: CrowdSecBouncerDown
-          expr: up{job="crowdsec-bouncer", namespace="crowdsec"} == 0
+          expr: up{job="crowdsec-bouncer", namespace="crowdsec"} == 0 or absent(up{job="crowdsec-bouncer", namespace="crowdsec"})
           for: 2m
           labels:
             severity: critical

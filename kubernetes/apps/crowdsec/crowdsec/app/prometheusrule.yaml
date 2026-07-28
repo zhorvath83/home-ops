@@ -8,8 +8,10 @@ spec:
   groups:
     - name: crowdsec
       rules:
+        # `absent()` covers scale-to-0 / crashloop / readiness-split, where the `up` series
+        # vanishes and `up == 0` alone would never fire — same shape as the bouncer rule.
         - alert: CrowdSecLAPIDown
-          expr: up{job="crowdsec", namespace="crowdsec"} == 0
+          expr: up{job="crowdsec", namespace="crowdsec"} == 0 or absent(up{job="crowdsec", namespace="crowdsec"})
           for: 5m
           labels:
             severity: critical
