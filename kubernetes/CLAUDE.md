@@ -51,6 +51,7 @@ Treat everything under `kubernetes/` as desired state for Flux, not as an impera
 - File-level backups for shared user data, documents, and media use the `resticprofile` workload (OVH Object Storage); Backrest is the browsing surface.
 - Critical apps may intentionally use both backup layers — PVC snapshots for the live volume AND a curated export into `/backups/...` for the file-level plane. Paperless is the canonical example.
 - The shared auth platform is Pocket ID (OIDC IdP) under `apps/security/`, with the `components/gateway-oidc` Envoy-native OIDC gate for consuming apps. Its clients and groups are Terraform-managed in `provision/pocket-id/`.
+- Container timezone is owned cluster-wide by the k8tz mutating webhook (`apps/kube-system/k8tz`, Europe/Budapest, kube-system excluded); do not set `TZ` env in manifests — k8tz injects it at admission. App-level display settings that are not the container clock (e.g. Paperless `PAPERLESS_TIME_ZONE`, crowdsec web-ui `CONFIG_UI_TIME_ZONE`) stay explicit.
 
 ## Default Patterns
 
@@ -73,7 +74,7 @@ Treat everything under `kubernetes/` as desired state for Flux, not as an impera
 - Conventional top-level field order is `apiVersion → kind → metadata → spec`; within `metadata`, the order is `name → annotations → labels`. App-level manifests under `kubernetes/apps/*/app/` **do not carry `metadata.namespace`** — the Flux Kustomization `spec.targetNamespace` in the owning `ks.yaml` is the single source of namespace placement. The same applies to `app/kustomization.yaml`: no top-level `namespace:` field.
 - Include `yaml-language-server` schema comments when the live sibling files already do so or when a stable schema URL is known.
 - **YAML anchor policy**:
-  - *Allowed*: anchors for **scalar values** reused several times in the same manifest — typical examples are port numbers (`&port 8080`, `&httpPort 3000`), hostnames (`&host dash.horvathzoltan.me`), env-derived paths (`&exportDir "/data/nas/export"`), timezone (`&tz "Europe/Budapest"`), shared resource blocks (`&resources`, `&probes`, `&image`). Naming follows **lowerCamelCase**.
+  - *Allowed*: anchors for **scalar values** reused several times in the same manifest — typical examples are port numbers (`&port 8080`, `&httpPort 3000`), hostnames (`&host dash.horvathzoltan.me`), env-derived paths (`&exportDir "/data/nas/export"`), shared resource blocks (`&resources`, `&probes`, `&image`). Naming follows **lowerCamelCase**.
   - *Forbidden*: anchors for **scalar app names** (`name: &app paperless`) or for `controllers`, `persistence`, `serviceAccount`, `bindings` map **keys** (`*app :`). These collapse to literals that future readers (and grep) can follow without indirection.
   - Rule of thumb: an anchor must save at least 2 reuses **and** name a value the chart values themselves understand. Anchors that exist only to deduplicate the app name are removed.
 - Keep YAML formatting close to neighboring files rather than reformatting entire manifests.
