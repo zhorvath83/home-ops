@@ -1,0 +1,22 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
+# seerr (AD-023): envoy-internal ingress via the ingress-from-gateway-internal CCNP; this CNP admits the suggestarr consumer (media ns) on the API port, so SuggestArr can push approved requests over the in-cluster service path (bypassing the OIDC gate).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: seerr
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: seerr
+      app.kubernetes.io/instance: seerr
+      app.kubernetes.io/controller: seerr
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: media
+            app.kubernetes.io/name: suggestarr
+      toPorts:
+        - ports:
+            - port: "5055"
+              protocol: TCP
