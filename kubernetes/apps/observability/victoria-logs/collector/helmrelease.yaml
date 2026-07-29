@@ -31,6 +31,10 @@ spec:
       runAsGroup: 10001
       fsGroup: 10001
       fsGroupChangePolicy: OnRootMismatch
+      # Host container logs are 0640 root:root; join group 0 so a non-root uid
+      # can read them. Keeps runAsNonRoot true (uid 10001 != 0) — PSS non-root.
+      supplementalGroups:
+        - 0
       seccompProfile:
         type: RuntimeDefault
     securityContext:
