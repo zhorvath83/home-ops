@@ -253,3 +253,80 @@ Both remaining items are **accepted exceptions** per operator experience — no 
 Token-hygiene goal fully achieved (no API-less workload mounts an unused token). Rootless achieved
 where images allow; wallos, cwa, maintainerr at image-imposed floors with documented rationale. These
 three are the PSS-enforcement blockers tracked in `docs/roadmap/pod-security-admission-enforcement`.
+
+## Session 2026-07-29 (f) — cluster seccomp sweep: volsync movers + kopia-maint + 4 chart gaps
+
+### Trigger: the user asked to re-scan the cluster for anything NOT covered by the earlier survey
+
+The earlier survey (sessions a–e) focused on **root / token / caps** of app Deployments. A new
+cluster-wide scan with a **refined detector** (pod- AND container-level seccomp/runAs, not pod-only)
+surfaced a different hardening dimension: **seccomp**. Pod-only checking had produced false-positive
+"widespread NO-SECCOMP" on external-secrets / flux / envoy / grafana / prometheus-adapter — those set
+seccomp at container level, which pod-only checking missed. After refining, the genuine gaps were:
+
+- **VolSync mover pods** (all `volsync-src-*` kopia movers) — operator-spawned, not covered by the
+  earlier app-Deployment survey. Root cause: the shared `components/volsync/` component's
+  `moverSecurityContext` set runAsUser/Group/fsGroup but **no seccompProfile**. The fork CRD supports
+  `kopia.moverSecurityContext.seccompProfile` (source-verified).
+- **4 chart-level workloads** with no seccomp: victoria-logs-server, grafana-operator,
+  prometheus-blackbox-exporter, kopia UI.
+- System/inherent pods (cilium, coredns, democratic-csi, control plane, node-exporter, vlagent
+  hostPath) — out of scope; accepted exceptions (wallos/cwa/maintainerr) confirmed still standing.
+
+### A — volsync mover seccomp (shared component, one place, whole fleet)
+
+`kubernetes/components/volsync/replicationsource.yaml` + `replicationdestination.yaml` — added
+`seccompProfile: { type: RuntimeDefault }` to `moverSecurityContext`. **seccomp only — no
+runAsNonRoot**: backrest overrides `APP_UID=0` (verified in `backrest/ks.yaml`), so a pod-level
+non-root gate would reject the backrest mover; RuntimeDefault is root-safe. Verified live: backrest
+ReplicationSource `moverSecurityContext={runAsUser:0,runAsGroup:0,fsGroup:0,seccompProfile:RuntimeDefault}`
+— confirms the no-runAsNonRoot decision was correct.
+
+### B — kopia-maint seccomp + re-verification of the token fix
+
+`kopiamaintenance.yaml` — added `podSecurityContext` with `seccompProfile: RuntimeDefault` +
+replicated operator defaults (`runAsNonRoot: true, runAsUser: 1000, fsGroup: 1000`). **Replace
+semantics** (source-verified in `kopiamaintenance_controller.go` `ensureCronJob`: CR
+podSecurityContext is used as-is when set, else operator defaults) — so the defaults must be
+replicated alongside seccomp to avoid regress. Container secctx left at operator defaults.
+
+**Live verification (triggered job `kopia-maint-seccomp-test` from the CronJob):**
+- pod secctx: `{fsGroup:1000, runAsNonRoot:true, runAsUser:1000, seccompProfile:{type:RuntimeDefault}}` ✅
+- container secctx: operator defaults preserved (drop ALL / APE false / roRoot true / runAsNonRoot) ✅
+- SA=`kopia-maintenance`; volumes only `tmp, kopia-cache, k8tz` — **no `kube-api-access-*` token** ✅
+- job **Succeeded** — seccomp did not break kopia maintenance ✅
+- contrast: a pre-change scheduled job pod (`...297552m4rr`) had SA=default + `kube-api-access-wvzpb`.
+
+### Clarification on the kopia-maint token fix (honest correction of a mid-turn misread)
+
+Mid-turn I flagged the token fix as "committed but unverified live" because the in-cluster **scheduled**
+completed jobs (12:30 / 18:30 UTC) still showed SA=default + a mounted token. That was a **misreading**:
+those scheduled jobs ran **before** the SA commit (`367a6b8e0` = 20:23 UTC; the 18:30 UTC job predates it)
+— they are historical completed jobs that the next scheduled run (00:30 UTC) will supersede. Session (c)
+verified the fix via a **triggered** one-off job (post-commit), which is the correct verification path, and
+**today's triggered job re-confirms it** (kopia-maintenance + no token). The fix was and is verified; the
+pre-change scheduled jobs are expected history, not a fix failure. Test job deleted after (own mess).
+
+### Commits (main)
+
+- `ae50b4452` `🔒 security(volsync): add seccompProfile to kopia mover pods` (shared component).
+- `4df63fff6` `🔒 security(kopia-maint): add seccompProfile to maintenance jobs` (CR podSecurityContext).
+
+### C — chart-level seccomp survey (surveyed, NOT yet implemented)
+
+All 4 are **values-fixable** (no postRenderer needed), each a small `seccompProfile` add to the HR:
+
+- **kopia UI** (`volsync-system/kopia`, bjw-s app-template): add to existing
+  `controllers.kopia.pod.securityContext` (already has pod secctx).
+- **prometheus-blackbox-exporter**: add to existing top-level `securityContext` (chart applies at pod
+  level); keeps the NET_RAW add for ICMP probing.
+- **victoria-logs-single**: chart exposes `server.podSecurityContext` (default
+  `{enabled:true, fsGroup:2000, runAsNonRoot:true, runAsUser:1000}`) — set it with defaults + seccomp.
+- **grafana-operator** (5.24.0, `helm show values`-verified): chart exposes `podSecurityContext: {}`
+  (default empty) and `securityContext` (container) — set `podSecurityContext: {seccompProfile:{type:RuntimeDefault}}`.
+
+### Roadmap status note
+
+This seccomp dimension was discovered **after** the token/rootless roadmap was closed (session e). It is a
+related but separate hardening theme (PSS `restricted` requires seccomp). C is surveyed for a follow-on
+decision; A and B are done and live-verified.
