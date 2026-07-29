@@ -88,3 +88,32 @@ related_areas:
 
 ### Effort
 M (~0.5 day; calibre is the uncertain part — may become its own isolate-namespace task).
+
+
+## Accepted exceptions
+
+### wallos — caps cannot be dropped (2026-07-29, accepted)
+
+The roadmap step 2 ("re-add a scoped capabilities.drop to wallos, keep only SETGID/SETUID/CHOWN")
+is a **dead end** and is dropped as a won't-do. Evidence:
+
+- The manifest already records the failure inline
+  (`kubernetes/apps/selfhosted/wallos/app/helmrelease.yaml:58`):
+  `ERROR: [pool www] failed to setgid(82): Operation not permitted (1)` — php-fpm's www pool
+  drops to gid 82 at startup, which needs CAP_SETGID. Dropping ALL caps (even with scoped re-adds
+  of SETGID/SETUID/CHOWN) was tried repeatedly by the operator and by others; the container
+  crashloops. Wallos must run as root with the default capability set.
+- Confirmed empirically ("már próbáltam, más is próbálta, gyakorlatilag semmiben nem lehet").
+
+Wallos is at its hardening floor already: root (runAsUser 0), but tokenless
+(`automountServiceAccountToken: false`), seccomp `RuntimeDefault`, `allowPrivilegeEscalation: false`,
+and `readOnlyRootFilesystem: false` is required (php-fpm writes `/var/log/startup.log`).
+No manifest change is made; the existing inline comment is the accurate record.
+
+### Implication for PSS
+
+wallos cannot pass `restricted` PSS (root + non-dropped caps) and cannot pass `baseline` either
+(baseline forbids added caps, but wallos needs the default cap set which includes SETGID — baseline
+allows the default set, only forbids *added* caps, so wallos is baseline-eligible on caps; the root
+uid is the restricted blocker). For namespace-wide `restricted` enforcement on `selfhosted`,
+wallos would need an isolated/privileged namespace exception, same as calibre-web-automated.

@@ -200,3 +200,28 @@ RBAC (no RoleBinding required).
 
 Roadmap item 1 (disable automount on API-less platform pods) is now **fully complete** across all
 three targets (1a/1b/1c). Remaining work is items 2–4 (rootless/caps hardening, not token hygiene).
+
+
+## Session 2026-07-29 (d) — wallos scoped caps: accepted exception (roadmap item 2)
+
+Investigated then **dropped as a won't-do** per operator + community evidence. The roadmap step 2
+(scoped `capabilities: { drop: [ALL], add: [SETGID,SETUID,CHOWN] }`) is a dead end: php-fpm's www pool
+drops to gid 82 at startup needing CAP_SETGID, and dropping ALL caps (even with scoped re-adds)
+crashloops the container. Confirmed empirically ("már próbáltam, más is próbálta, gyakorlatilag semmiben
+nem lehet") and by the manifest's own inline error note at
+`kubernetes/apps/selfhosted/wallos/app/helmrelease.yaml:58`
+(`ERROR: [pool www] failed to setgid(82): Operation not permitted (1)`).
+
+No manifest change — wallos is already at its hardening floor: root (runAsUser 0) but tokenless
+(`automountServiceAccountToken: false`), seccomp `RuntimeDefault`, `allowPrivilegeEscalation: false`,
+`readOnlyRootFilesystem: false` required (php-fpm writes /var/log/startup.log). The existing inline
+comment is the accurate record. Recorded as an accepted exception in the roadmap note.
+
+## Updated roadmap status
+
+- 1a victoria-logs-server — done.
+- 1b onepassword-connect — done.
+- 1c kopia-maint — done.
+- **2 wallos scoped caps — accepted exception / won't-do (root + default caps required by php-fpm setgid(82)).**
+- 3 calibre-web-automated non-root — decision pending.
+- 4 maintainerr roRoot — TODO (next, clean win).
