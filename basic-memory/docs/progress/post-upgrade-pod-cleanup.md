@@ -1,9 +1,9 @@
 ---
 title: post-upgrade-pod-cleanup
 type: roadmap
-permalink: home-ops/docs/roadmap/post-upgrade-pod-cleanup
+permalink: home-ops/docs/progress/post-upgrade-pod-cleanup
 topic: Stranded pod cleanup after Tuppr-driven Talos upgrade on single-node
-status: completed
+status: done
 priority: medium
 related_areas:
 - system-upgrade
