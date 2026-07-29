@@ -3,7 +3,7 @@ title: post-upgrade-pod-cleanup
 type: roadmap
 permalink: home-ops/docs/roadmap/post-upgrade-pod-cleanup
 topic: Stranded pod cleanup after Tuppr-driven Talos upgrade on single-node
-status: in-progress
+status: completed
 priority: medium
 related_areas:
 - system-upgrade
@@ -28,7 +28,7 @@ tags:
 ## Status
 
 - [topic] Stranded pod cleanup after Tuppr-driven Talos upgrade on single-node
-- [status] in-progress (Phase 1 change staged 2026-06-05; awaits next upgrade)
+- [status] completed (Phase 1 verified 2026-07-29 across 4 post-fix upgrades; Phase 2 not needed)
 - [priority] medium
 - [supersedes_hypothesis] kubelet GC after powercycle - incomplete; manual reboot with -m powercycle is observed clean
 
@@ -217,36 +217,41 @@ Option B (or both).
 - relates_to [[k8s-workloads]] - cluster inventory invariant
 - relates_to [[talos-cluster]] - reboot trigger
 
-## Pending verification (2026-06-05)
+## Verification result (2026-07-29)
+Phase 1 verified live. The fix (commit 9a9a93e84, 2026-06-05) has been through four Tuppr-driven Talos upgrades with zero stranded workload pods, so this roadmap is promoted to completed and Phase 2 is closed as not-needed.
 
-Phase 1 changes are staged in the working tree but **not committed yet**.
-Until the next Tuppr-driven Talos upgrade runs and the acceptance criteria
-are checked, this roadmap stays `in-progress`. Do not promote to
-`completed` or open Phase 2 work in the meantime.
+### Post-fix upgrade history (from TalosUpgrade .status.history)
 
-### Staged working-tree changes
+| toVersion | completedAt | note |
+|---|---|---|
+| v1.13.4 | 2026-06-10T20:16:47Z | first post-fix upgrade |
+| v1.13.5 | 2026-06-22T21:59:26Z | |
+| v1.13.6 | 2026-07-10T20:51:59Z | |
+| v1.13.7 | 2026-07-22T06:09:13Z | most recent (7d before check) |
 
-- `kubernetes/apps/system-upgrade/tuppr/upgrades/talosupgrade.yaml` -
-  `spec.drain.enabled: false` added (the actual fix). `rebootMode` kept
-  on `powercycle`. healthChecks unchanged.
-- `kubernetes/apps/system-upgrade/tuppr/app/helmrelease.yaml` -
-  explicit `values.image.tag: 0.2.1` with Renovate
-  `datasource=docker depName=ghcr.io/home-operations/tuppr` annotation.
-  Independent of the cleanup fix; bundled because of the same review pass.
-- `.renovate/groups.json5` - new "Tuppr" group so the chart (OCIRepository
-  tag) and the controller image (HR values.image.tag) are grouped into a
-  single Renovate PR on lockstep releases.
-- `basic-memory/docs/roadmap/post-upgrade-pod-cleanup.md` - this note
-  rewritten with the revised root-cause analysis.
+The two v1.13.3 runs on 2026-06-05 (17:32 and 20:58) predate the fix commit (22:58) and used the old drain config; the incident snapshot (13 Failed + 33 Succeeded of 111 pods) is from that pre-fix window.
 
-### What "pending" means here
+### Pod state check (2026-07-29, 7d after the v1.13.7 upgrade)
 
-- The TalosUpgrade CR change has no effect until Tuppr starts a fresh
-  upgrade run. Editing the CR alone does not retry the previous run.
-- The next Renovate-driven Talos version bump is the natural trigger.
-  No manual upgrade should be forced just to test this.
-- When that upgrade lands, run the Verification plan in this note
-  (`kubectl get pods -A --field-selector=status.phase=Failed/Succeeded`,
-  filter out Job-owned, count) and update the note with the result.
-- If 0 ghosts -> mark this note `completed` and close Phase 2 as
-  not-needed. If >0 -> open Phase 2 with the recorded ghost count.
+`kubectl get pods -A` phase summary: 75 Running, 5 Succeeded, 0 Failed.
+
+Non-Job Failed/Succeeded pods (the acceptance-criteria filter): 1 entry - `node-debugger-k8s-cp0-zph6d` in `default`, Succeeded, no ownerReferences. This is a `kubectl debug node` helper pod (standalone, no owner), not an upgrade ghost owned by a Deployment/StatefulSet/DaemonSet. Excluding it, the stranded-pod count is **0**.
+
+Job-owned Succeeded pods (intentional, filtered out): 4 - `paperless-backup-*` and three `kopia-maint-kopia-daily-maintenance-*`.
+
+### Acceptance criteria - result
+
+- Zero Failed or Succeeded pods owned by Deployment/StatefulSet/DaemonSet within 5 minutes of upgrade Completed: **MET** (zero at 7 days, and zero Failed overall).
+- No "drain failed" / "drain timed out" controller logs: **MET** - the drain step is skipped entirely (`drain.enabled: false`).
+- Workloads come back Ready in the normal post-reboot window: **MET** - 75 Running, no Pending, cilium/ESO/gateways reconciled normally.
+
+### Phase 2 - closed as not-needed
+
+Per the decision matrix, Phase 2 (Tuppr `hooks.post` cleanup or an in-cluster CronJob) was conditional on Phase 1 leaving >=5 ghost pods per upgrade. Phase 1 leaves zero, so Phase 2 is closed without implementation. The `just k8s cleanup-pods` recipe is also not needed (it was contingent on Phase 2 landing).
+
+### Resolved staging items (all committed, no longer pending)
+
+- `kubernetes/apps/system-upgrade/tuppr/upgrades/talosupgrade.yaml` - `spec.drain.enabled: false` committed in 9a9a93e84; Talos version since advanced to v1.13.7 via Renovate-driven Tuppr runs.
+- `kubernetes/apps/system-upgrade/tuppr/app/helmrelease.yaml` - `values.image.tag: 0.2.1` with Renovate annotation committed.
+- `.renovate/groups.json5` - Tuppr lockstep group committed.
+- This note - rewritten and now verified/completed.
