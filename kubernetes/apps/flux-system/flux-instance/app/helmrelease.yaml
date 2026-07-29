@@ -44,7 +44,7 @@ spec:
             target:
               kind: Deployment
               name: (kustomize-controller|helm-controller|source-controller)
-          # Increase the memory limits
+          # Raise CPU+memory limits above distribution default to match the 20-worker in-memory-build tuning
           - patch: |
               apiVersion: apps/v1
               kind: Deployment
@@ -57,6 +57,7 @@ spec:
                       - name: manager
                         resources:
                           limits:
+                            cpu: 2
                             memory: 2Gi
             target:
               kind: Deployment
