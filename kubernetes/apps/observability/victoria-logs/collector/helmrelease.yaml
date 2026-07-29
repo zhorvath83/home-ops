@@ -21,3 +21,28 @@ spec:
       enabled: true
     remoteWrite:
       - url: http://victoria-logs-server.observability.svc.cluster.local:9428
+    # Rootless baseline. The SA token stays mounted (serviceAccount.automount defaults
+    # true): --kubernetesCollector enriches logs via the API and the SA RBAC is minimal
+    # (get/list/watch on nodes/namespaces/pods) — disabling it would break log collection.
+    podSecurityContext:
+      enabled: true
+      runAsNonRoot: true
+      runAsUser: 10001
+      runAsGroup: 10001
+      fsGroup: 10001
+      fsGroupChangePolicy: OnRootMismatch
+      seccompProfile:
+        type: RuntimeDefault
+    securityContext:
+      enabled: true
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities:
+        drop:
+          - ALL
+    # vlagent scratch dir off the RW hostPath onto an emptyDir so readOnlyRootFilesystem
+    # holds without a writable host path (the only remaining hostPath mounts, /var/log
+    # and /var/lib, are read-only and intrinsic to kubernetesCollector).
+    persistence:
+      volume:
+        emptyDir: {}
