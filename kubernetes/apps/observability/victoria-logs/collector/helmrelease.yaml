@@ -40,9 +40,12 @@ spec:
       capabilities:
         drop:
           - ALL
-    # vlagent scratch dir off the RW hostPath onto an emptyDir so readOnlyRootFilesystem
-    # holds without a writable host path (the only remaining hostPath mounts, /var/log
-    # and /var/lib, are read-only and intrinsic to kubernetesCollector).
+    # tmpDataPath moved off /var/lib/vl-collector (chart default): that path sits under
+    # the read-only /var/lib hostPath mount, so non-root vlagent inherits the old root
+    # pod's root-owned persistent-queue and EACCES-purges. An emptyDir at a clean path
+    # is writable and free of that stale data.
+    extraArgs:
+      tmpDataPath: /vlagent-data
     persistence:
       volume:
         emptyDir: {}
