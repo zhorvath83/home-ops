@@ -36,12 +36,14 @@ spec:
     # One vendor domain covering every endpoint cscli reaches: cdn-hub (index/items),
     # hub-data (GeoLite2 mmdb — no MaxMind account needed), version, and api/papi for the
     # community blocklist. Enumerating them broke the startup hub update on version.crowdsec.net.
-    # matchPattern spans one label only, so the two-label PAPI host needs its own entry.
+    # matchPattern spans one label only, so the two-label papi.api and blocklists.api hosts
+    # each need their own entry; blocklists.api serves the CAPI community-blocklist files.
     # The 10s PAPI poller otherwise hangs on blocked connections instead of taking a clean
     # 402, and `cscli papi status` reports a timeout rather than the real reason.
     - toFQDNs:
         - matchName: "crowdsec.net"
         - matchName: "papi.api.crowdsec.net"
+        - matchName: "blocklists.api.crowdsec.net"
         - matchPattern: "*.crowdsec.net"
       toPorts:
         - ports:
