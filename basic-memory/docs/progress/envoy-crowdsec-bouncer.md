@@ -1540,3 +1540,25 @@ Net: the locked decision two pillars (restricted from day 1; victorialogs works 
   inside the crowdsec acquisition config; and the "Phase 1 full WAF"
   `bodyToExtAuth.maxRequestBytes: 65536` decision was reversed after a live 413
   regression on uploads over 64 KB.
+
+## Follow-up — 2026-07-29: CAPI blocklist egress gap (HubblePolicyDeny)
+
+- [defect] The CNP egress allowlist covered `crowdsec.net`, `papi.api.crowdsec.net`, and
+  `*.crowdsec.net`, but the CAPI community-blocklist pull fetches its blocklist files from
+  `blocklists.api.crowdsec.net` — a two-label subdomain the one-label `*.crowdsec.net`
+  wildcard does not match, and it had no explicit entry (unlike `papi.api.crowdsec.net`).
+- [evidence] crowdsec logs: every 2h at `:34:13` CEST `Starting community-blocklist update`,
+  then ~25s later `Error fetching blocklist https://blocklists.api.crowdsec.net/custom/...txt
+  ... dial tcp 18.66.102.108:443: connect: connection timed out`. The denied IPs
+  (18.66.102.108/.109/.114/.81) are `server-*.fra56.r.cloudfront.net` — CloudFront edge IPs
+  for `blocklists.api.crowdsec.net` (S3 pre-signed URL).
+- [evidence] Live CNP `toFQDNs` had no `blocklists.api.crowdsec.net`; Hubble raised
+  `HubblePolicyDeny` (critical) every 2h, ~5min window, FIRING:4 (one per CloudFront IP).
+- [impact] Functional, not just noise: the `crowdsecurity/community-blocklist` decisions
+  failed to refresh every cycle, so crowdsec lagged the latest community blocklists.
+- [fix] Added `matchName: blocklists.api.crowdsec.net` to the egress `toFQDNs`, mirroring
+  the `papi.api.crowdsec.net` entry and the comment's two-label rationale. Commit on main
+  (repo norm); Flux reconciles.
+- [verified] `kubectl apply --dry-run=server` passes the live CNP CRD; pre-commit
+  (yamlfmt/yamllint/gitleaks) green. Pending live confirmation: next `:34` CEST blocklist
+  pull must show no `dial tcp ... timed out` and no HubblePolicyDeny.
