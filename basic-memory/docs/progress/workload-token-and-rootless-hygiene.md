@@ -312,7 +312,7 @@ pre-change scheduled jobs are expected history, not a fix failure. Test job dele
 - `ae50b4452` `🔒 security(volsync): add seccompProfile to kopia mover pods` (shared component).
 - `4df63fff6` `🔒 security(kopia-maint): add seccompProfile to maintenance jobs` (CR podSecurityContext).
 
-### C — chart-level seccomp survey (surveyed, NOT yet implemented)
+### C — chart-level seccomp (implemented + live-verified)
 
 All 4 are **values-fixable** (no postRenderer needed), each a small `seccompProfile` add to the HR:
 
@@ -329,4 +329,30 @@ All 4 are **values-fixable** (no postRenderer needed), each a small `seccompProf
 
 This seccomp dimension was discovered **after** the token/rootless roadmap was closed (session e). It is a
 related but separate hardening theme (PSS `restricted` requires seccomp). C is surveyed for a follow-on
-decision; A and B are done and live-verified.
+decision; A, B, and C are all done and live-verified.
+
+### C — implementation + live verification
+
+Implemented as one commit (`cf478ad97` `🔒 security(observability): add seccompProfile to 4 chart-managed
+workloads`) — all 4 are values-fixable, no postRenderer. Each edit:
+
+- **kopia UI** (bjw-s app-template 5.0.1): `controllers.kopia.pod.securityContext.seccompProfile` (pod-level).
+- **prometheus-blackbox-exporter** (11.16.0): container `securityContext.seccompProfile` — the chart applies its
+  top-level `securityContext` at **container** level (live: pod secctx empty, container secctx holds caps+runAs);
+  keeps the `NET_RAW` add for ICMP probing.
+- **victoria-logs-single** (0.13.9): `server.podSecurityContext` replicating the chart default
+  (`enabled: true, fsGroup: 2000, runAsNonRoot: true, runAsUser: 1000`) + seccomp.
+- **grafana-operator** (5.24.0, `helm show values`-verified top-level `podSecurityContext: {}`): set
+  `podSecurityContext: {seccompProfile: RuntimeDefault}`; container secctx stays at chart defaults
+  (drop ALL / APE false / roRoot true / runAsNonRoot).
+
+**Live verification** (after `flux reconcile` of all 4 HRs + rollout):
+
+| workload | seccomp location | live value | pod health |
+|---|---|---|---|
+| kopia | pod | RuntimeDefault | Running, 0 restarts |
+| prometheus-blackbox-exporter | container | RuntimeDefault | Running, 0 restarts |
+| victoria-logs-server | pod | RuntimeDefault | Running, 0 restarts |
+| grafana-operator | pod | RuntimeDefault | Running, 0 restarts |
+
+All rollouts succeeded; seccomp did not break any workload. The 4 chart-level gaps are closed.
