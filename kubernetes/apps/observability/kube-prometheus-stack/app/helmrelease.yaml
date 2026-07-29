@@ -384,6 +384,17 @@ spec:
           memory: 30Mi
         limits:
           memory: 128Mi
+      # containerSecurityContext replaces the chart default ({readOnlyRootFilesystem:true}, caps
+      # commented → container ran with default caps). Add seccomp + drop ALL + APE false; node-exporter
+      # needs no caps (nobody uid, port 9100; permissionInitContainer chowns privileged host files).
+      containerSecurityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop:
+            - ALL
+        seccompProfile:
+          type: RuntimeDefault
       prometheus:
         monitor:
           metricRelabelings:
