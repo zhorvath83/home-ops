@@ -38,3 +38,22 @@ spec:
           limits:
             memory: 128M
       credentialsName: onepassword-connect-credentials-secret
+  # Connect (connect-api + connect-sync) never calls the K8s API — it serves ESO
+  # from its local encrypted cache — so it needs no ServiceAccount token. The
+  # connect chart exposes no automount value (verified in chart v2.4.1 source),
+  # so patch the rendered Deployment to drop the projected token at pod level.
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: Deployment
+              name: onepassword-connect
+            patch: |-
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                name: onepassword-connect
+              spec:
+                template:
+                  spec:
+                    automountServiceAccountToken: false
