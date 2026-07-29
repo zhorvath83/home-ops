@@ -87,3 +87,50 @@ a modest, intended privilege expansion for a log collector. Documented for any f
 - relates_to [[workload-token-and-rootless-hygiene]]
 - relates_to [[pod-security-admission-enforcement]]
 - relates_to [[k8s-workloads]]
+
+
+## Session 2026-07-29 (b) — onepassword-connect token-hygiene (roadmap item 1b)
+
+### What was done
+
+`kubernetes/apps/external-secrets/onepassword-connect/app/helmrelease.yaml` — stopped mounting the
+unused default-SA API token on the Connect pod via a Flux `postRenderers` kustomize patch.
+
+- Survey: the connect chart (v2.4.1, source-verified) exposes **no** `automountServiceAccountToken`
+  value (neither SA- nor pod-level), and sets `serviceAccountName` only when
+  `connect.serviceAccount.create: true` (default false → pod uses `default` SA). A dedicated SA
+  can't be made tokenless through values; creating one standalone + `create: true` would duplicate-
+  manage the SA object (Helm vs kustomize drift). So the only clean path is a pod-level override via
+  postRenderer — the HelmRelease minimal-spec policy's explicit exception ("chart leaves no other way").
+- Patch: strategic-merge on the rendered Deployment setting
+  `spec.template.spec.automountServiceAccountToken: false` (repo's first Flux postRenderer; styled
+  after the flux-instance full-resource patch). Validated independently by the weisssrv reference repo,
+  which applies the identical patch with the same rationale.
+
+### Why tokenless is safe
+
+Connect (connect-api + connect-sync) serves ESO from its local encrypted cache and never calls the K8s
+API. The default-SA token it mounted was unused.
+
+### Verification (live)
+
+- `flux reconcile helmrelease onepassword-connect --force` → applied revision 2.4.1 (UpgradeSucceeded).
+- New pod `onepassword-connect-ffd4f99f5-cc2jb` rolled out (new template hash; old pod replaced).
+- Live: pod `automountServiceAccountToken=false`; pod volumes are only `shared-data`,
+  `credentials`, `k8tz` — the auto-injected `kube-api-access-*` projected volume is **gone**; no
+  `serviceaccount` mount path in any container (token file no longer exists).
+- ClusterSecretStore `onepassword-connect` Ready=True, Valid; ESO ExternalSecrets across namespaces
+  (cert-manager, crowdsec, …) remain Ready=True — secret delivery unaffected.
+
+### Commit (main)
+
+- `28192be75` `🔒 fix(onepassword-connect): stop mounting unused API token` (postRenderers patch).
+
+## Updated roadmap status
+
+- 1a victoria-logs-server — done (already hardened).
+- **1b onepassword-connect — done (this session).**
+- 1c kopia-maint — TODO (dedicated tokenless SA for the KopiaMaintenance CR job).
+- 2 wallos scoped caps — TODO.
+- 3 calibre-web-automated non-root — decision pending.
+- 4 maintainerr roRoot — TODO.
