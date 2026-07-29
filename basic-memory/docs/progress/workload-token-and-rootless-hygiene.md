@@ -225,3 +225,31 @@ comment is the accurate record. Recorded as an accepted exception in the roadmap
 - **2 wallos scoped caps — accepted exception / won't-do (root + default caps required by php-fpm setgid(82)).**
 - 3 calibre-web-automated non-root — decision pending.
 - 4 maintainerr roRoot — TODO (next, clean win).
+
+
+## Session 2026-07-29 (e) — maintainerr roRoot + calibre-web-automated: accepted exceptions; roadmap closed
+
+Both remaining items are **accepted exceptions** per operator experience — no manifest changes:
+
+- **4 maintainerr readOnlyRootFilesystem** — won't-do. The image does not support a read-only rootfs
+  even with the existing emptyDir mounts for `/tmp` and `/opt/data/logs`; the app writes elsewhere and
+  crashloops under roRoot. maintainerr stays at its floor: rootless (runAsUser 10001), tokenless,
+  `drop: [ALL]`, APE false, seccomp RuntimeDefault, `readOnlyRootFilesystem: false` (required).
+  Corrects my earlier survey claim ("roRoot biztonságosan beállítható") — that was an unverified
+  assumption; the image does not support it.
+- **3 calibre-web-automated non-root** — won't-do ("cwa nem szigorítható"). S6-overlay root image
+  (runAsUser 0, APE=true, caps add [CHOWN,SETUID,SETGID,FOWNER,DAC_OVERRIDE]); cannot run non-root.
+  This is the roadmap's documented-exception option. cwa is the `media` namespace PSS blocker.
+
+## Final roadmap status — RESOLVED
+
+- 1a victoria-logs-server — done.
+- 1b onepassword-connect — done.
+- 1c kopia-maint — done.
+- 2 wallos scoped caps — accepted exception (php-fpm setgid(82)).
+- 3 calibre-web-automated non-root — accepted exception (S6-overlay root).
+- 4 maintainerr roRoot — accepted exception (no roRoot support).
+
+Token-hygiene goal fully achieved (no API-less workload mounts an unused token). Rootless achieved
+where images allow; wallos, cwa, maintainerr at image-imposed floors with documented rationale. These
+three are the PSS-enforcement blockers tracked in `docs/roadmap/pod-security-admission-enforcement`.

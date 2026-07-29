@@ -3,7 +3,7 @@ title: workload-token-and-rootless-hygiene
 type: roadmap
 permalink: home-ops/docs/roadmap/workload-token-and-rootless-hygiene
 topic: Token + rootless hygiene for the remaining workloads
-status: proposed
+status: done
 priority: low
 scope: Set automountServiceAccountToken:false on the platform pods that do not call
   the API, and bring the two root-running apps (wallos, calibre-web-automated) and
@@ -117,3 +117,38 @@ wallos cannot pass `restricted` PSS (root + non-dropped caps) and cannot pass `b
 allows the default set, only forbids *added* caps, so wallos is baseline-eligible on caps; the root
 uid is the restricted blocker). For namespace-wide `restricted` enforcement on `selfhosted`,
 wallos would need an isolated/privileged namespace exception, same as calibre-web-automated.
+
+
+### maintainerr — readOnlyRootFilesystem not supported (2026-07-29, accepted)
+
+Roadmap step "set readOnlyRootFilesystem on maintainerr" is a **won't-do**. The image does not support
+a read-only rootfs even though the manifest already provides emptyDir mounts for `/tmp` and
+`/opt/data/logs` (`kubernetes/apps/downloads/maintainerr/app/helmrelease.yaml:95-103`) — the app writes
+to other paths and crashloops under roRoot. Confirmed empirically (operator experience). maintainerr
+stays at its current floor: rootless (runAsUser 10001), `automountServiceAccountToken: false`,
+`capabilities.drop: [ALL]`, `allowPrivilegeEscalation: false`, seccomp `RuntimeDefault`, and
+`readOnlyRootFilesystem: false` (required). No manifest change.
+
+### calibre-web-automated — cannot be hardened (2026-07-29, accepted)
+
+Roadmap step 3 (non-root path for calibre-web-automated) is a **won't-do** — "cwa nem szigorítható".
+The image is an S6-overlay root image (runAsUser 0, APE=true, caps add
+[CHOWN,SETUID,SETGID,FOWNER,DAC_OVERRIDE] at `kubernetes/apps/media/calibre-web-automated/app/helmrelease.yaml`);
+it cannot run non-root. This is the roadmap's option (c): documented accepted exception. cwa is the
+`media` namespace PSS blocker — if `media` moves to baseline/restricted enforcement, cwa needs an
+isolated/privileged namespace exception (same conclusion as wallos for `selfhosted`).
+
+## Roadmap resolution (2026-07-29)
+
+All items resolved — implemented where the image allows, accepted-exception where it does not:
+
+- 1a/1b/1c (token hygiene) — **done** (this roadmap session series).
+- 2 wallos scoped caps — **accepted exception** (php-fpm setgid(82) needs root + default caps).
+- 3 calibre-web-automated non-root — **accepted exception** (S6-overlay root image).
+- 4 maintainerr roRoot — **accepted exception** (image does not support read-only rootfs).
+
+The token-hygiene goal (no API-less workload mounts an unused token) is fully achieved. The rootless
+goal is achieved where images allow; wallos, calibre-web-automated, and maintainerr stay at their
+image-imposed floors, each with a documented inline + BM rationale. These three are the PSS-enforcement
+blockers recorded in `docs/roadmap/pod-security-admission-enforcement` — namespace-wide `restricted`
+on `selfhosted` and `media` will require isolated/privileged namespace exceptions for wallos and cwa.
