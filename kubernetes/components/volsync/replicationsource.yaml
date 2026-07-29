@@ -25,6 +25,10 @@ spec:
       runAsUser: ${APP_UID:=10001}
       runAsGroup: ${APP_GID:=10001}
       fsGroup: ${APP_GID:=10001}
+      # seccomp only — no runAsNonRoot: backrest overrides APP_UID=0, so a pod-level
+      # non-root gate would reject the backrest mover. RuntimeDefault is root-safe.
+      seccompProfile:
+        type: RuntimeDefault
     # AD-023: kopia mover pushes backups to OVH S3 (world egress)
     moverPodLabels:
       egress.home.arpa/allow-world: "true"
