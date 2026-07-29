@@ -40,9 +40,6 @@ spec:
               LOG_LEVEL: info
               # SSO is enforced by the envoy-oidc gate; Cilium (allow-gateway-internal) makes the gate the only ingress path, so disabling SuggestArr's own login is safe.
               SUGGESTARR_AUTH_DISABLED: "true"
-            envFrom:
-              - secretRef:
-                  name: suggestarr-secret
             probes:
               liveness: &probes
                 enabled: true
