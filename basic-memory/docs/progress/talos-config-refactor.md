@@ -282,9 +282,7 @@ Talos v1.5+ default is true — already active in practice. But explicit declara
 - Verify kexec: `cat /proc/sys/kernel/kexec_load_disabled` should return 1
 
 ## Related
-
 - relates_to [[talos-cluster]]
-- relates_to [[drop-minijinja-templating]]
 
 ## Implementation — 2025-05-24
 
