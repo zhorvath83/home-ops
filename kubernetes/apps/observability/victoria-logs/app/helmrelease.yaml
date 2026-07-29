@@ -29,6 +29,15 @@ spec:
         enabled: true
         size: 10Gi
       retentionPeriod: 14d
+      # podSecurityContext replicates the chart default (enabled + fsGroup 2000 + runAsNonRoot/
+      # runAsUser 1000) and adds seccomp — the chart ships no seccomp default.
+      podSecurityContext:
+        enabled: true
+        fsGroup: 2000
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
       route:
         enabled: true
         extraRules:

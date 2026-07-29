@@ -17,6 +17,11 @@ spec:
     podLabels:
       ingress.home.arpa/allow-prometheus: "true"
       egress.home.arpa/custom-egress: "true"
+    # Chart default podSecurityContext is empty {}; add pod-level seccomp. Container secctx
+    # (drop ALL / APE false / roRoot true / runAsNonRoot) stays at chart defaults.
+    podSecurityContext:
+      seccompProfile:
+        type: RuntimeDefault
     resources:
       requests:
         cpu: 10m
