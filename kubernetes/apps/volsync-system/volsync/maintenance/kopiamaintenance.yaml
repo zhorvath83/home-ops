@@ -5,6 +5,11 @@ metadata:
   name: kopia-daily-maintenance
 spec:
   enabled: true
+  # Kopia maintenance jobs never call the K8s API (they talk to OVH S3 + the Kopia
+  # repo, auth from volsync-secret). Use a dedicated tokenless SA so no API token
+  # is mounted. Honored on the schedule-trigger (CronJob) path; the operator's
+  # manual-trigger Job path ignores serviceAccountName — we use trigger.schedule.
+  serviceAccountName: kopia-maintenance
   # AD-023: kopia maintenance pods talk to OVH S3 (world egress)
   moverPodLabels:
     egress.home.arpa/allow-world: "true"
