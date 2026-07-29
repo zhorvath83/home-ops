@@ -10,6 +10,7 @@ spec:
       app.kubernetes.io/name: suggestarr
   components:
     - ../../../../components/volsync
+    - ../../../../components/gateway-oidc
   dependsOn:
     - name: onepassword-connect
       namespace: external-secrets
