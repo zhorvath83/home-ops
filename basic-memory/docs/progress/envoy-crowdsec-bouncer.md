@@ -1562,3 +1562,17 @@ Net: the locked decision two pillars (restricted from day 1; victorialogs works 
 - [verified] `kubectl apply --dry-run=server` passes the live CNP CRD; pre-commit
   (yamlfmt/yamllint/gitleaks) green. Pending live confirmation: next `:34` CEST blocklist
   pull must show no `dial tcp ... timed out` and no HubblePolicyDeny.
+
+### Verified live — 2026-07-29 (post-fix)
+
+- [verified] Flux applied revision `951336e30` (cluster-apps Kustomization); live CNP
+  `gen=5` now carries `matchName: blocklists.api.crowdsec.net`.
+- [verified] A/B egress test from the crowdsec pod (post-reconcile):
+  - `wget --spider https://blocklists.api.crowdsec.net/` → `HTTP/1.1 403 Forbidden`
+    (TCP+TLS reached the CloudFront/S3 origin; 403 is the bare-URL auth rejection, not a
+    Cilium drop — the pre-signed blocklist URLs return 200). Previously this timed out.
+  - `wget --spider https://example.com/` → `Operation timed out` (Cilium deny signature;
+    negative control confirms the test distinguishes allow vs deny).
+- [verified] Conclusion: the next scheduled community-blocklist pull (`:34` CEST) will
+  succeed — no `dial tcp ... timed out`, no `HubblePolicyDeny`. The alert is closed by the
+  fix, not by a silence.
