@@ -356,3 +356,48 @@ workloads`) — all 4 are values-fixable, no postRenderer. Each edit:
 | grafana-operator | pod | RuntimeDefault | Running, 0 restarts |
 
 All rollouts succeeded; seccomp did not break any workload. The 4 chart-level gaps are closed.
+
+
+## Session (g) — node-exporter full container hardening (2026-07-29)
+
+Follow-on to the cluster seccomp sweep (session f, option C). The user approved "full container
+hardening" for node-exporter: seccomp RuntimeDefault + drop ALL + APE false + readOnlyRootFilesystem.
+
+**File**: `kubernetes/apps/observability/kube-prometheus-stack/app/helmrelease.yaml` — added a
+`containerSecurityContext` block under `prometheus-node-exporter:` (replace semantics: the
+subchart 4.56.1 renders `.Values.containerSecurityContext` via `with/toYaml`, so the block
+replaces the chart default of `{readOnlyRootFilesystem:true}` with commented-out caps).
+
+```yaml
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+  seccompProfile:
+    type: RuntimeDefault
+```
+
+node-exporter needs no caps (nobody uid 65534, port 9100); the `permissionInitContainer`
+(root init) still chowns powercap/slabinfo host files for the energy/slab collectors, so the
+main container's dropped caps don't affect those collectors.
+
+**Commit**: `11e29040d` 🔒 security(observability): harden node-exporter container.
+
+**Gotcha (recorded for future sweeps)**: the first `flux reconcile helmrelease` re-applied
+revision 87.21.0 with the OLD values because the `flux-system` GitRepository had not yet
+fetched the new commit — the DaemonSet pod template was unchanged and the 7d-old pod stayed.
+The fix is to `flux reconcile source git flux-system` FIRST (fetches the new commit), THEN
+`flux reconcile helmrelease`. After that the DS template updated and a fresh pod rolled.
+
+**Live verification**:
+- DS template container secctx: `{allowPrivilegeEscalation:false, drop[ALL], readOnlyRootFilesystem:true, seccompProfile:RuntimeDefault}`
+- Running pod spec matches exactly.
+- New pod `...-dd77g` Running, 0 restarts; `rollout status` = successfully rolled out.
+- `node_uname_info` scraped from Prometheus = 3 series, value 1 → collector alive and scraping
+  post-hardening (seccomp + drop ALL did not break the collector).
+
+**Result**: node-exporter is now full container-hardened (rootless + tokenless already in place;
+seccomp + drop ALL + APE false + roRoot now added). The cluster seccomp sweep (sessions f–g) is
+complete: A (volsync mover), B (kopia-maint), C (4 charts), and node-exporter all done + live-verified.
