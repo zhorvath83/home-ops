@@ -12,4 +12,4 @@ resources:
   - ./plex-trakt-sync/ks.yaml
   - ./calibre-web-automated/ks.yaml
   - ./isponsorblocktv/ks.yaml
-  - ./suggestarr/ks.yaml
+  # - ./suggestarr/ks.yaml

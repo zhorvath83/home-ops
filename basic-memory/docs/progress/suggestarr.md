@@ -1,10 +1,10 @@
 ---
 title: suggestarr
-type: roadmap
-permalink: home-ops/docs/roadmap/suggestarr
+type: progress
+permalink: home-ops/docs/progress/suggestarr
 topic: SuggestArr — AI media recommender that auto-requests Jellyseerr content from
   Plex watch history
-status: proposed
+status: done
 priority: low
 scope: Deploy SuggestArr (ciuse99/suggestarr) as a self-hosted recommender that pulls
   recently-watched history from Plex, finds similar titles via TMDB (optionally AI-ranked
@@ -37,7 +37,7 @@ related_areas:
 ## Metadata (observation-form, schema validation)
 
 - [topic] SuggestArr — AI media recommender that auto-requests Jellyseerr content from Plex watch history
-- [status] proposed
+- [status] done
 - [priority] low
 
 ## Scope
@@ -85,3 +85,27 @@ related_areas:
 - relates_to [[networking]]
 - relates_to [[external-secrets]]
 - relates_to [[observability]]
+
+
+## Execution (done, 2026-07-30)
+
+Deployed SuggestArr as a hardened app-template HelmRelease in the `media` namespace, LAN-only behind the envoy-oidc gate. Direct commits to `main` (repo norm; Flux watches `refs/heads/main`).
+
+### Built
+- [step] `kubernetes/apps/media/suggestarr/ks.yaml` + `app/helmrelease.yaml` — Flux KS (`components: [volsync, gateway-oidc]`, `targetNamespace: media`, UID/GID 1000/1001, VolSync 1Gi config PVC); app-template HR, image `ciuse99/suggestarr:v2.10.1` (renovate-tracked, digest-pinned), port 5000, rootless (runAsNonRoot, drop ALL, readOnlyRootFilesystem, seccomp RuntimeDefault), `SUGGESTARR_AUTH_DISABLED: "true"`, AD-023 labels, envoy-internal route, Homepage annotations (Media group).
+- [step] `kubernetes/apps/downloads/seerr/app/ciliumnetworkpolicy.yaml` — ingress CNP admitting the suggestarr consumer (media ns) on Seerr API port 5055, so SuggestArr pushes approved requests over `http://seerr.downloads.svc.cluster.local:5055` (in-cluster, bypassing the OIDC gate).
+
+### Decisions / deviations from spec
+- [decision] Exposure: `envoy-internal` + `gateway-oidc` SSO gate (Pocket IdP, `media_users`) — combines the roadmap's recommended internal exposure with its alternative OIDC-gate option. SuggestArr has no native OIDC (INSTALLATION.md), so envoy-oidc is the SSO path.
+- [decision] Auth: `SUGGESTARR_AUTH_DISABLED: "true"` — the gate is the single auth path, no SuggestArr user. Safe via the Cilium `allow-gateway-internal` label (gateway is the only pod ingress).
+- [decision] LLM: Gemini (user choice), but SuggestArr reads LLM config only from config.yaml + DB (`api_service/config/config.py`), never from env — the Gemini key is entered in web UI Settings > Advanced; no ExternalSecret/envFrom.
+- [decision] Non-root UID/GID 1000/1001 (rwlove reference), not the spec's 10001. Namespace `media` (matches recommendation).
+
+### Cornerstone requirement (manual approval)
+- [observation] No automatic/question-less downloads: web UI Settings > Advanced → "Approve requests before sending them to Seer" (global) + per-job "Pause while Seer requests are pending" (Jobs page). Both web-UI toggles; activate on first-run.
+
+### Open follow-up
+- [observation] `just pocket-id apply` (human, local-exec LAN-only admin API) to create the `suggestarr` Pocket ID client + sync `suggestarr_client_secret` into `HomeOps/pocket-id-clients`. Until then the gateway-oidc companion ExternalSecret is `SecretSyncedError` (expected transient).
+
+### Related
+- decision_link [[AD-023-cnp-threat-model-audit]]
