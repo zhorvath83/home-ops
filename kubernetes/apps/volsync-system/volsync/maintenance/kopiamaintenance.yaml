@@ -10,6 +10,15 @@ spec:
   # is mounted. Honored on the schedule-trigger (CronJob) path; the operator's
   # manual-trigger Job path ignores serviceAccountName — we use trigger.schedule.
   serviceAccountName: kopia-maintenance
+  # podSecurityContext replaces the operator default (replace, not merge — verified
+  # in kopiamaintenance_controller.go ensureCronJob), so replicate its runAsNonRoot/
+  # runAsUser/fsGroup 1000 and add seccomp. Container secctx stays at operator defaults.
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 1000
+    seccompProfile:
+      type: RuntimeDefault
   # AD-023: kopia maintenance pods talk to OVH S3 (world egress)
   moverPodLabels:
     egress.home.arpa/allow-world: "true"
