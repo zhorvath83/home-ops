@@ -134,3 +134,69 @@ API. The default-SA token it mounted was unused.
 - 2 wallos scoped caps — TODO.
 - 3 calibre-web-automated non-root — decision pending.
 - 4 maintainerr roRoot — TODO.
+
+
+## Session 2026-07-29 (c) — kopia-maint token-hygiene (roadmap item 1c)
+
+### What was done
+
+`kubernetes/apps/volsync-system/volsync/maintenance/` — stopped mounting the unused default-SA
+API token on Kopia maintenance job pods via a dedicated tokenless SA, referenced through the
+CRD-native `spec.serviceAccountName`.
+
+- New `serviceaccount.yaml`: `ServiceAccount/kopia-maintenance` in `volsync-system` with
+  `automountServiceAccountToken: false`; added to `maintenance/kustomization.yaml`.
+- `kopiamaintenance.yaml`: set `spec.serviceAccountName: kopia-maintenance`.
+
+### Source-verified operator behavior (perfectra1n/volsync fork)
+
+Before editing I confirmed the CRD field is honored — the CRD schema having a field does NOT
+guarantee the operator consumes it:
+
+- `api/v1alpha1/kopiamaintenance_types.go`: `KopiaMaintenanceSpec.ServiceAccountName *string`
+  (optional), doc "allows specifying a custom ServiceAccount for maintenance jobs".
+- `internal/controller/kopiamaintenance_controller.go` has TWO paths:
+  - **CronJob path** (`buildMaintenanceCronJob` + `ensureCronJob`): reads
+    `maintenance.Spec.ServiceAccountName`, defaults to `"default"` when nil, sets it on the pod
+    template, and updates an existing CronJob when it differs. ✅ honored.
+  - **manual Job path** (`ensureMaintenanceJob`): does NOT set ServiceAccountName — manual-trigger
+    jobs always use `default`, ignoring `spec.serviceAccountName`. ❌
+- Our CR uses `trigger.schedule` (not `trigger.manual`), so it goes through the CronJob path and
+  the field is honored. **Caveat logged**: if a future CR switches to `trigger.manual`, the SA field
+  would be silently ignored — keep schedule triggers for this hardening to hold.
+
+### Why tokenless is safe
+
+Kopia maintenance jobs talk to OVH S3 + the Kopia repo (auth from the `volsync-secret`
+ExternalSecret), never the K8s API. The default-SA token they mounted was unused; the job needs no
+RBAC (no RoleBinding required).
+
+### Verification (live)
+
+- Flux KS `volsync-maintenance` auto-reconciled on push → Applied revision @sha1 367a6b8e0.
+- `ServiceAccount/kopia-maintenance` present with `automount=false`; CR
+  `spec.serviceAccountName=kopia-maintenance`; the operator updated the CronJob's pod template
+  `ServiceAccountName` from `default` → `kopia-maintenance` (automount stays null on the template —
+  no pod-level override, so the pod inherits the SA's false).
+- Triggered a one-off verify job via `kubectl create job --from=cronjob/...`:
+  - Verify pod `serviceAccountName=kopia-maintenance`; volumes only `tmp`, `kopia-cache`, `k8tz` —
+    **no `kube-api-access-*` projected volume**, no `serviceaccount` mount path (token gone).
+  - Job ran real maintenance (logs: quick → full) and completed **Complete 1/1 in 3m5s** —
+    maintenance function fully intact under the tokenless SA.
+- Verify job deleted after (own mess); SA retained.
+
+### Commit (main)
+
+- `367a6b8e0` `🔒 fix(kopia-maint): stop mounting unused API token` (SA + kustomization + CR field).
+
+## Updated roadmap status
+
+- 1a victoria-logs-server — done.
+- 1b onepassword-connect — done.
+- **1c kopia-maint — done (this session).**
+- 2 wallos scoped caps — TODO.
+- 3 calibre-web-automated non-root — decision pending.
+- 4 maintainerr roRoot — TODO.
+
+Roadmap item 1 (disable automount on API-less platform pods) is now **fully complete** across all
+three targets (1a/1b/1c). Remaining work is items 2–4 (rootless/caps hardening, not token hygiene).
