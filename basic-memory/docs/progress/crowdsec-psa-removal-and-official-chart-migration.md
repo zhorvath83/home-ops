@@ -9,7 +9,7 @@ permalink: home-ops/docs/progress/crowdsec-psa-removal-and-official-chart-migrat
 ## Metadata (observation-form)
 
 - [topic] Execution state for the crowdsec PSA-relaxation (explicit privileged) + official-chart migration + file-datasource acquisition
-- [status] done — all Part 8 criteria PASS as of 2026-07-31 (criteria 4 and 5 verified live; see Session 2026-07-31 (b)). Two sub-criteria of criterion 3 still await a natural event (envoy-pod-recreation survival; the victoria-logs-replacement arm is structurally a non-event). All engineering follow-ups closed; the upstream victorialogs issue was dropped by human decision.
+- [status] done — ALL Part 8 criteria PASS as of 2026-07-31, nothing awaiting. Criteria 4 and 5 verified live (Session b); criterion 3's envoy-pod-recreation arm proven by a deliberate, human-approved envoy-internal restart and its victoria-logs arm is structurally a non-event (Session c). Every follow-up is resolved: closed, declined with evidence, or dropped by human decision. The CrowdSecAcquisitionStalled rule was back-tested against the real 2026-07-29 incident and would have fired ~4h in, 4h before the manual restart.
 - [roadmap] [[crowdsec-psa-removal-and-official-chart-migration]]
 - [priority] high
 - [area] k8s-workloads, networking, observability
@@ -252,3 +252,69 @@ have tidied the symptom and hidden the cause.
 - [verified] All three HelmReleases Ready=True (crowdsec v4, crowdsec-bouncer v5, crowdsec-web-ui v8).
   All five pods 1/1 Running, 0 restarts. The bouncer logged exactly 2 `no route to host` errors
   inside the LAPI rollout window and none after; `decisions/stream` returns 200 every 10s.
+
+## Session 2026-07-31 (c) — criterion 3 PASS; alert back-tested; both deferred follow-ups DECLINED
+
+### Criterion 3, envoy-pod-recreation arm — PASS (deliberately triggered, human-approved)
+
+- [verified] `kubectl -n networking rollout restart deployment/envoy-internal` (LAN-only gateway,
+  smallest blast radius; the criterion is about any envoy pod recreation). New pod
+  `envoy-internal-56b9c659c9-hjww9` replaced `envoy-internal-64c94974-xnvsm`.
+- [verified] The agent picked up the NEW log path with no intervention: a new
+  `cs_parser_hits_ok_total{acquis_type="containerd", source=".../envoy-internal-56b9c659c9-hjww9_...log"}`
+  series appeared and climbed from 0 to 18 on eight LAN requests, while the old pod's series
+  stopped at 435. Agent logs show it tailing only the new file. Zero errors or warnings.
+- [conclusion] The `poll_without_inotify: true` + fsnotify-on-literal-`/var/log/containers` design
+  works as intended across pod recreation. Criterion 3 is now PASS; its victoria-logs-replacement
+  arm remains structurally a non-event (that datasource is retired).
+
+### CrowdSecAcquisitionStalled — back-tested against the real 2026-07-29 incident
+
+Rather than manufacture a stall (which would mean up to ~6h of real protection loss to watch one
+alert), the current rule was replayed over the actual incident window using retained Prometheus data.
+
+- [evidence] Traffic gate, `sum(increase(envoy_http_downstream_rq_total{...}[6h]))`, across
+  07-29 20:00 to 07-30 08:00 UTC: 677, 775, 1313, 2210, 6502, 8182, 8184, 8191, 8100, 7544, 7522,
+  7517, 7423, 6884, 5947, 1301, 15, 553, 954, 948, 944 — never 0. The gate stayed OPEN for the
+  entire stall.
+- [evidence] Parse signal, `sum(increase(cs_parser_hits_ok_total{namespace="crowdsec"}[6h]))`, over
+  the same window: 521, 602, 688, 685 (flat through the 23:24 stall onset), then decaying as the 6h
+  window drained — 620, 169, 165, 86 — and reaching exactly 0 from 03:30 through 05:30.
+- [conclusion] `gate > 0 and parse == 0` was TRUE from 03:30. With `for: 10m` the alert would have
+  FIRED at about 03:40 — roughly 4h10m after the 23:24 stall onset, and about 4 hours BEFORE the
+  07:41 manual restart. The rule as written would have caught the incident that motivated this
+  entire roadmap item.
+- [measured] Detection latency is ~4h on this incident shape, an inherent consequence of the 6h
+  window: `increase()` drains gradually as pre-stall hits age out. The 6h window is a deliberate
+  trade of detection speed for false-positive resistance.
+- [verified] Both rules currently loaded, `health=ok`, `state=inactive`. Live gate 1775 requests /6h,
+  live parse signal 1654 hits /6h.
+
+### Heartbeat Probe — DECLINED (evidence, not deferral)
+
+- [finding] The follow-up's premise is obsolete. It was written against the ORIGINAL 1h-window rule,
+  whose gate was closed 21-39% of the time. The rule now uses symmetric 6h windows plus
+  `keep_firing_for: 3h`. Measured against live data: the 6h gate was OPEN 96.5% of the last 7d and
+  95.7% of the last 30d — a blind window of roughly 4%, not 21-39%.
+- [finding] Decisive: in the actual incident the gate was open the whole time (evidence above). A
+  heartbeat Probe would have contributed NOTHING to detecting it.
+- [decision] DECLINED. The Probe would add a blackbox-exporter Probe, an in-cluster route to
+  envoy-internal, and a crowdsec allowlist carve-out for the pod CIDR (the probe traffic would
+  otherwise look like a bot and risk a self-ban) — new machinery plus a security exception, to buy
+  about 4 percentage points of coverage on a failure mode where the gate was never the obstacle.
+- [note] The one thing a Probe would genuinely enable is SHORTENING the window (steady synthetic
+  traffic means the gate is never closed and the parse signal is never spuriously zero), cutting
+  detection latency from ~4h to minutes. That is a different, deliberate design decision about how
+  fast we want to learn about a stall — not this follow-up, and not currently justified now that the
+  stall class is gone. Recorded so the tradeoff is not rediscovered from scratch.
+
+### Auto-heal watchdog — DECLINED (evidence, not deferral)
+
+- [finding] The stall class it was meant to heal was the victorialogs tail-EOF bug, and that
+  datasource is retired — the failure mode cannot recur.
+- [finding] The replacement datasource was tested this session against the exact event that used to
+  break it: an envoy pod recreation. It survived cleanly (criterion 3 above).
+- [finding] And if an unknown stall class did appear, the alert demonstrably fires (back-test above).
+- [decision] DECLINED. A watchdog would auto-restart a workload on a condition that has no known
+  cause left and is already alerted. Auto-restarting on an unexplained condition also destroys the
+  evidence needed to diagnose it. Do not re-open without a NEW observed stall.
