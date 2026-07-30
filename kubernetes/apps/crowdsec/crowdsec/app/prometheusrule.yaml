@@ -21,20 +21,25 @@ spec:
               The CrowdSec LAPI is unreachable, so no decision can be issued or queried.
               Once the bouncer SecurityPolicy is attached this also fails requests closed
               on the affected gateway.
-        # Gate on envoy's own counter (prefix filter drops eg-ready-http, which ticks when idle):
-        # a broken LogsQL query reads zero lines, which no crowdsec metric can see. `hits_ok` is
-        # the only parse-success signal (`hits_total` counts entry); `or vector(0)` — absent till 1st hit.
+        # Symmetric 6h windows + keep_firing_for: measured over 7d the envoy counter has
+        # zero-traffic gaps (21% of 2h, 7% of 4h, 3.5% of 6h windows, longest 6h gap 2.9h),
+        # which is what made the 1h version self-resolve mid-stall; 12h misses an 8h stall.
+        # `hits_ok` is the only parse-success signal; `or vector(0)` — absent until the 1st hit.
         - alert: CrowdSecAcquisitionStalled
           expr: |
-            sum(increase(envoy_http_downstream_rq_total{job="networking/envoy-proxy", namespace="networking", envoy_http_conn_manager_prefix=~"https?-.*"}[1h])) > 0
+            sum(increase(envoy_http_downstream_rq_total{job="networking/envoy-proxy", namespace="networking", envoy_http_conn_manager_prefix=~"https?-.*"}[6h])) > 0
               and
-            (sum(increase(cs_parser_hits_ok_total{job="crowdsec", namespace="crowdsec", acquis_type="envoy"}[1h])) or vector(0)) == 0
+            (sum(increase(cs_parser_hits_ok_total{job="crowdsec", namespace="crowdsec", acquis_type="envoy"}[6h])) or vector(0)) == 0
           for: 10m
+          keep_firing_for: 3h
           labels:
             severity: warning
           annotations:
             summary: CrowdSec parses no envoy request
             description: |-
-              Envoy served requests in the last hour but CrowdSec parsed none — the LogsQL
-              acquisition query or the envoy parser no longer matches. Check `cscli metrics`
-              and re-run the query in acquis.yaml against victoria-logs.
+              Envoy served requests but CrowdSec parsed none, so no local decision is being
+              created. Known cause: the victorialogs tail dies silently when the
+              victoria-logs-server pod is replaced (upstream readResponse treats stream EOF
+              as success and never reopens the stream). Remediation: restart the crowdsec
+              deployment. If parsing stays at zero, re-run the acquis.yaml LogsQL query
+              against victoria-logs.
