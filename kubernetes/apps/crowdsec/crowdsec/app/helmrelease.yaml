@@ -56,6 +56,13 @@ spec:
     lapi:
       deployAnnotations:
         reloader.stakater.com/auto: "true"
+      # Pods stay root by design under the namespace's privileged PSA exception;
+      # seccomp + capability dropping are the hardening that's actually available.
+      securityContext:
+        allowPrivilegeEscalation: false
+        privileged: false
+        seccompProfile:
+          type: RuntimeDefault
       env:
         - name: USE_WAL
           value: "true"
@@ -96,6 +103,11 @@ spec:
     agent:
       isDeployment: false
       hostVarLog: true
+      securityContext:
+        allowPrivilegeEscalation: false
+        privileged: false
+        seccompProfile:
+          type: RuntimeDefault
       acquisition:
         - namespace: networking
           podName: envoy-external-*
@@ -122,8 +134,19 @@ spec:
       metrics:
         serviceMonitor:
           enabled: true
+      wait_for_lapi:
+        securityContext:
+          allowPrivilegeEscalation: false
+          privileged: false
+          seccompProfile:
+            type: RuntimeDefault
     appsec:
       enabled: true
+      securityContext:
+        allowPrivilegeEscalation: false
+        privileged: false
+        seccompProfile:
+          type: RuntimeDefault
       acquisitions:
         - source: appsec
           listen_addr: 0.0.0.0:7422
@@ -144,6 +167,12 @@ spec:
       metrics:
         serviceMonitor:
           enabled: true
+      wait_for_lapi:
+        securityContext:
+          allowPrivilegeEscalation: false
+          privileged: false
+          seccompProfile:
+            type: RuntimeDefault
   postRenderers:
     - kustomize:
         patches:
