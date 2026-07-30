@@ -9,7 +9,7 @@ permalink: home-ops/docs/progress/crowdsec-psa-removal-and-official-chart-migrat
 ## Metadata (observation-form)
 
 - [topic] Execution state for the crowdsec PSA-relaxation (explicit privileged) + official-chart migration + file-datasource acquisition
-- [status] implemented — Part 8 verified; two sub-criteria await a natural event (envoy-pod-recreation survival, victoria-logs-replacement non-event) and two await a Maestro action (local-decision origin trigger, OIDC live login)
+- [status] done — all Part 8 criteria PASS as of 2026-07-31 (criteria 4 and 5 verified live; see Session 2026-07-31 (b)). Two sub-criteria of criterion 3 still await a natural event (envoy-pod-recreation survival; the victoria-logs-replacement arm is structurally a non-event). All engineering follow-ups closed; the upstream victorialogs issue was dropped by human decision.
 - [roadmap] [[crowdsec-psa-removal-and-official-chart-migration]]
 - [priority] high
 - [area] k8s-workloads, networking, observability
@@ -160,3 +160,95 @@ No cluster changes in this session — documentation closeout of the follow-ups 
 - [open] **File the upstream victorialogs issue** — a GitHub-issue draft has been written to `/tmp/claude-501/victorialogs-issue-draft.md` this session (NOT filed, NOT in the repo, NOT in BM — filing is an outward-facing action that is the human's to approve). Covers the tail-stream EOF bug: `pkg/acquisition/modules/victorialogs/internal/vlclient/vl_client.go:204-207` `readResponse` treats `io.EOF` as normal completion and returns nil without closing `responseChan`, while `pkg/acquisition/modules/victorialogs/run.go:109-117` `StreamingAcquisition` blocks forever on that channel; acquisition silently stalls on every VictoriaLogs pod replacement. Byte-identical in v1.7.8 and master; no existing report among 94 victorialogs issues.
 - [open] **Acquisition glob over-matches** (k8tz + shutdown-manager sidecar logs) — human decision: record only, do not implement.
 - [open] **Deferred, still valid:** no heartbeat `Probe`; no auto-heal watchdog.
+
+## Session 2026-07-31 (b) — criteria 4 and 5 PASS; a real defect found and fixed
+
+This section SUPERSEDES the PENDING verdicts for criteria 4 and 5 in the Part 8 table above.
+
+### Criterion 4 — PASS (end-to-end, stronger than the criterion asked for)
+
+- [verified] The human sent a single request from a mobile-data connection to a public hostname
+  with the path `/core/skin/login.aspx`. Alert 3 was raised by `ltsich/http-w00tw00t`, kind
+  `crowdsec` (local, not CAPI), scope `Range:2a00:1110:141:daba::/64`, country HU, AS 5483.
+  The range scope (not a bare IP) is the `crowdsecurity/ipv6_to_range` postoverflow working.
+- [verified] Decision 30001, Source/origin `crowdsec`, action ban, ~4h expiry — the custom
+  `profiles.yaml` `duration_expr` producing the first-offence 4h.
+- [verified] Prometheus: `cs_active_decisions{origin="crowdsec",reason="ltsich/http-w00tw00t"} = 1`
+  alongside the two CAPI series. This is the literal criterion-4 wording, satisfied.
+- [verified] BEYOND the criterion: the bouncer actually ENFORCED it — bouncer log
+  `request denied ... action ban reason ltsich/http-w00tw00t` for that IPv6. So the whole chain is
+  proven live: envoy access log -> cri-logs -> envoy-logs -> http-logs -> scenario -> local
+  decision -> LAPI -> bouncer extAuth block.
+- [note] The decision was deleted afterwards (`cscli decisions delete --id 30001`) so the human's
+  mobile range is not left banned. The alert is kept as the evidence trail.
+- [note] Why ordinary traffic never triggered it: `crowdsecurity/http-crawl-non_statics` is a
+  leaky bucket whose capacity is far above the ~20 events real browsing produced, so the bucket
+  expired instead of overflowing. A `type: trigger` scenario is the right instrument for a
+  deliberate single-request test.
+
+### Criterion 5 — PASS
+
+- [verified] The Maestro drove the flow to the credential step: the web-ui login page offers only
+  "Continue with SSO", which redirects to the Pocket ID `/authorize` with `client_id=crowdsec-web-ui`,
+  the correct `redirect_uri` and scope `openid profile email groups`, and the IdP renders
+  "Sign in to Crowdsec Web UI".
+- [verified] The human completed the passkey/WebAuthn assertion and reported the login works.
+  Criterion 5 is PASS.
+
+### DEFECT FOUND AND FIXED — the postStart hook was clobbering the LAPI's own API credentials
+
+Found while verifying, before running the approved `cscli machines prune`. Pruning first would
+have tidied the symptom and hidden the cause.
+
+- [finding] `cscli machines add` writes its output to `/etc/crowdsec/local_api_credentials.yaml`
+  by DEFAULT (`-f, --file string   output file destination (defaults to ...)`). Our LAPI postStart
+  hook called `cscli machines add crowdsec-web-ui -p ... --force` with no `-f`, so registering the
+  web-ui machine OVERWROTE the LAPI's own API credentials.
+- [evidence] Live in the LAPI pod, that file's `login:` field read `crowdsec-web-ui` (only the
+  login/url lines were read; never the password).
+- [evidence] Upstream does exactly what we omitted: `docker_start.sh:217` runs
+  `cscli machines add "$lapi_login" -p "$lapi_password" -f /dev/null --force`.
+- [consequence] The LAPI's embedded agent authenticated as the `crowdsec-web-ui` machine; the
+  `crowdsec-lapi-*` entries were orphaned on every pod recreation; and because `/etc/crowdsec` is a
+  symlink onto the config PVC, the bad file SURVIVED pod recreation. The real danger was latent:
+  `docker_start.sh:217` re-registers the login found in that file with `--force` on every LAPI
+  start, so rotating `WEBUI_LAPI_PASSWORD` in 1Password would have had the LAPI reset the web-ui
+  machine back to the stale password and break the web-ui login in a very confusing way.
+- [correction] This is the true root cause of the "machine-list churn" follow-up's LAPI half. That
+  follow-up described it as cosmetic churn from pod-name-based registration; the agent/appsec half
+  IS that, but the LAPI half was this defect.
+- [fix] Commit `e54c621aa` 🐛 fix(crowdsec): stop the postStart hook clobbering LAPI creds — adds
+  `-f /dev/null` to the postStart `cscli machines add`, matching upstream. The retry-30-times and
+  exit-0 semantics are unchanged (a non-zero postStart restart-loops the LAPI — earlier lesson).
+- [repair] The already-clobbered PVC file was removed before the commit landed, so the single Flux
+  roll healed both at once. The new pod took the upstream first-run path — LAPI logs show
+  `Check if local agent needs to be registered` -> `Generate local agent credentials` ->
+  `Machine 'crowdsec-lapi-85fd6b78f5-qb89j' successfully added to the local API.` ->
+  `API credentials written to '/etc/crowdsec/local_api_credentials.yaml'`.
+- [verified] The file's `login:` is now the LAPI's own pod name, the LAPI heartbeats under its own
+  machine identity, and the REAL web-ui pod (10.244.0.247, UA `crowdsec-web-ui/2026.7.24`)
+  is what authenticates as the web-ui machine — not the LAPI over `::1` any more.
+- [note] The `::1` still shown in the web-ui row's IP column is registration provenance, not a
+  defect: `cscli` must run co-located with the LAPI, so the hook necessarily registers from there.
+- [note] The one `Machine is not enrolled in the console` error line at startup is transient
+  (`cscli console status` shows all five options active afterwards).
+
+### Machine-list churn follow-up — CLOSED
+
+- [closed] `cscli machines prune --force` (human-approved) deleted exactly the 5 stale entries and
+  kept the 4 live machines (web-ui, agent, appsec, lapi), all heartbeating. Combined with the
+  credential fix above, the LAPI half of this follow-up is structurally fixed rather than swept up;
+  the agent/appsec half remains inherent to pod-name-based registration, so an occasional prune
+  after a burst of rollouts is normal housekeeping, not a defect.
+
+### Upstream victorialogs issue — DROPPED
+
+- [closed] The human decided not to file it. The draft is not kept in the repo or in BM. The bug
+  analysis stays recorded in the roadmap note for provenance; we no longer depend on that
+  datasource. Do not re-open this as an action item.
+
+### Post-change health (live)
+
+- [verified] All three HelmReleases Ready=True (crowdsec v4, crowdsec-bouncer v5, crowdsec-web-ui v8).
+  All five pods 1/1 Running, 0 restarts. The bouncer logged exactly 2 `no route to host` errors
+  inside the LAPI rollout window and none after; `decisions/stream` returns 200 every 10s.
