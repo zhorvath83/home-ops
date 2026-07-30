@@ -5,7 +5,7 @@ permalink: home-ops/docs/roadmap/crowdsec-psa-removal-and-official-chart-migrati
 topic: Relax the crowdsec namespace PSA to an explicit privileged; migrate to the
   official crowdsecurity/crowdsec chart; replace the victorialogs tail with the file
   datasource on host container logs.
-status: proposed
+status: implemented
 priority: high
 scope: 'Replace the restricted PSA labels on the crowdsec namespace with an explicit
   enforce: privileged, migrate the CrowdSec workload from bjw-s app-template to the
@@ -54,7 +54,7 @@ and records a deliberate exception to [[pod-security-admission-enforcement]] for
 
 - [topic] Relax the crowdsec namespace PSA to privileged; migrate to the official crowdsecurity/crowdsec chart; replace the victorialogs tail with the file datasource on host container logs.
 - [area] k8s-workloads, networking, observability
-- [status] proposed
+- [status] implemented — Part 8 verified live 2026-07-30. Execution and verification recorded in memory://home-ops/docs/progress/crowdsec-psa-removal-and-official-chart-migration. Two sub-criteria remain: an envoy-pod-recreation survival check (awaits a natural event) and a local-decision trigger + OIDC live login (await a Maestro action). The analysis below is the original proposed spec, kept as history.
 - [priority] high
 - [confidence] high
 - [verified_at] 2026-07-30
