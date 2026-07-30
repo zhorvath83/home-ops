@@ -40,7 +40,7 @@ spec:
               CONFIG_UI_TIME_ZONE: "Europe/Budapest"
               CONFIG_UPDATES_ENABLED: "false"
               CONFIG_INSTANCE_NAME: home-ops
-              CONFIG_INSTANCE_LAPI_URL: http://crowdsec.crowdsec.svc.cluster.local:8080
+              CONFIG_INSTANCE_LAPI_URL: http://crowdsec-service.crowdsec.svc.cluster.local:8080
               CONFIG_INSTANCE_LAPI_AUTH_USERNAME: crowdsec-web-ui
               # Separate port from the LAPI; the engine already runs prometheus at level full.
               CONFIG_INSTANCE_METRICS_URL: http://crowdsec.crowdsec.svc.cluster.local:6060/metrics
