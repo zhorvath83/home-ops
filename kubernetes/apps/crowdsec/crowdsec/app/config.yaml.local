@@ -1,9 +1,0 @@
-api:
-  server:
-    # Admin-API callers: the Web UI needs this for decision delete/clean (else 403).
-    # Pod and Service CIDRs are both inside 10.0.0.0/8.
-    trusted_ips:
-      - 127.0.0.1
-      - ::1
-      - 10.0.0.0/8
-      - ${LAN_SUBNET}

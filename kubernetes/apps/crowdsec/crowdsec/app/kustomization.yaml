@@ -8,16 +8,5 @@ resources:
   - ./grafanadashboard.yaml
   - ./grafanafolder.yaml
   - ./helmrelease.yaml
+  - ./ocirepository.yaml
   - ./prometheusrule.yaml
-configMapGenerator:
-  - name: crowdsec-config-local
-    files:
-      - config.yaml.local
-  - name: crowdsec-acquis
-    files:
-      - acquis.yaml
-  - name: crowdsec-profiles
-    files:
-      - profiles.yaml
-generatorOptions:
-  disableNameSuffixHash: true

@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -8,160 +8,181 @@ spec:
   interval: 30m
   chartRef:
     kind: OCIRepository
-    name: app-template
+    name: crowdsec
   values:
-    defaultPodOptions:
-      automountServiceAccountToken: false
-      enableServiceLinks: false
-      labels:
-        ingress.home.arpa/allow-prometheus: "true"
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 1000
-        fsGroup: 1000
-        fsGroupChangePolicy: OnRootMismatch
-        seccompProfile:
-          type: RuntimeDefault
-    controllers:
-      crowdsec:
-        strategy: Recreate
-        annotations:
-          reloader.stakater.com/auto: "true"
-        containers:
-          app:
-            image:
-              # renovate: datasource=docker depName=docker.io/crowdsecurity/crowdsec
-              repository: docker.io/crowdsecurity/crowdsec
-              tag: v1.7.8@sha256:2f527c9bb8b367120eb08b82890aa912ce96bfa1ada93dda0721700e4b4e0dde
-            # The entrypoint seeds an empty /etc/crowdsec by rsyncing /staging, which
-            # dies under `set -e` as uid 1000 on the root-owned 0600 credential files.
-            # Pre-seed what is readable; the entrypoint then regenerates the credentials.
-            # Seeding also leaves symlinks into /staging that uid 1000 cannot follow: hub
-            # items dangle (crowdsec then ignores the whole config tree) and datafiles like
-            # the GeoLite2 mmdb resolve to unreadable 0600 files. One rule covers both —
-            # drop every seeded link we cannot read and let cscli fetch the real thing.
+    container_runtime: containerd
+    image:
+      # renovate: datasource=docker depName=docker.io/crowdsecurity/crowdsec
+      repository: docker.io/crowdsecurity/crowdsec
+      tag: v1.7.8@sha256:2f527c9bb8b367120eb08b82890aa912ce96bfa1ada93dda0721700e4b4e0dde
+    podLabels:
+      ingress.home.arpa/allow-prometheus: "true"
+    config:
+      config.yaml.local: |
+        api:
+          server:
+            trusted_ips:
+              - 127.0.0.1
+              - ::1
+              - 10.0.0.0/8
+              - ${LAN_SUBNET}
+            auto_registration:
+              enabled: true
+              token: $${REGISTRATION_TOKEN}
+              allowed_ranges:
+                - "127.0.0.1/32"
+                - "192.168.0.0/16"
+                - "10.0.0.0/8"
+                - "172.16.0.0/12"
+      profiles.yaml: |
+        # Repeat offender ban grows 4h -> 8h -> 12h; GetDecisionsCount counts CAPI too.
+        name: default_ip_remediation
+        filters:
+          - Alert.Remediation == true && Alert.GetScope() == "Ip"
+        decisions:
+          - type: ban
+            duration: 4h
+        duration_expr: "Sprintf('%dh', (GetDecisionsCount(Alert.GetValue()) + 1) * 4)"
+        on_success: break
+        ---
+        name: default_range_remediation
+        filters:
+          - Alert.Remediation == true && Alert.GetScope() == "Range"
+        decisions:
+          - type: ban
+            duration: 4h
+        duration_expr: "Sprintf('%dh', (GetDecisionsCount(Alert.GetValue()) + 1) * 4)"
+        on_success: break
+    lapi:
+      deployAnnotations:
+        reloader.stakater.com/auto: "true"
+      env:
+        - name: USE_WAL
+          value: "true"
+        - name: ENABLE_CONSOLE_MANAGEMENT
+          value: "true"
+        - name: ENROLL_INSTANCE_NAME
+          value: home-ops
+      envFrom:
+        - secretRef:
+            name: crowdsec-secret
+      persistentVolume:
+        config:
+          enabled: true
+          size: 1Gi
+          storageClassName: democratic-csi-local-hostpath
+        data:
+          enabled: true
+          size: 2Gi
+          storageClassName: democratic-csi-local-hostpath
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+        limits:
+          memory: 768Mi
+          cpu: null
+      # postStart must never exit non-zero (kubelet would restart-loop the LAPI): retry cscli until seeded, exit 0 either way.
+      lifecycle:
+        postStart:
+          exec:
             command:
-              - "/bin/bash"
-              - "-c"
-            args:
-              - |
-                rsync -a --ignore-existing /staging/etc/crowdsec/ /etc/crowdsec/ || true
-                find /etc/crowdsec /var/lib/crowdsec/data -type l -exec sh -c 'test -r "$1" || rm -f "$1"' _ {} \;
-                exec /bin/bash /docker_start.sh
-            env:
-              CUSTOM_HOSTNAME: crowdsec
-              USE_WAL: "true"
-              # Opt-in for console-pushed decisions. Inert on the COMMUNITY plan (its PAPI
-              # transport answers 402); declared because the entrypoint only ever enables
-              # the flag, so Git has to carry what the engine already holds.
-              ENABLE_CONSOLE_MANAGEMENT: "true"
-              # Registers the Web UI's LAPI machine; password comes from crowdsec-secret.
-              AGENT_USERNAME: crowdsec-web-ui
-              ENROLL_INSTANCE_NAME: home-ops
-              COLLECTIONS: >-
-                yanis-kouidri/envoy
-                crowdsecurity/appsec-virtual-patching
-                crowdsecurity/appsec-generic-rules
-              # Not pulled by the envoy collection: syslog-logs carries the s00-raw
-              # `non-syslog` node that fills evt.Parsed.message, without which nothing
-              # parses at all; whitelists is the self-ban guard for private ranges.
-              PARSERS: >-
-                crowdsecurity/syslog-logs
-                crowdsecurity/dateparse-enrich
-                crowdsecurity/geoip-enrich
-                crowdsecurity/whitelists
-              # Public clients reaching the gateway are largely IPv6, where a /128 ban is
-              # worthless — the same host rotates freely inside its /64.
-              POSTOVERFLOWS: crowdsecurity/ipv6_to_range
-            envFrom:
-              - secretRef:
-                  name: crowdsec-secret
-            probes:
-              liveness: &probes
-                enabled: true
-                custom: true
-                spec:
-                  httpGet:
-                    path: /health
-                    port: &lapiPort 8080
-                  initialDelaySeconds: 30
-                  periodSeconds: 30
-                  timeoutSeconds: 5
-                  failureThreshold: 5
-              readiness: *probes
-            securityContext:
-              allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: true
-              capabilities: {drop: ["ALL"]}
-            resources:
-              requests:
-                cpu: 100m
-                memory: 256Mi
-              limits:
-                memory: 768Mi
-    service:
-      app:
-        controller: crowdsec
-        ports:
-          lapi:
-            port: *lapiPort
-          appsec:
-            port: 7422
-          metrics:
-            port: 6060
-    serviceMonitor:
-      app:
-        serviceName: crowdsec
-        endpoints:
-          - port: metrics
-            path: /metrics
-            interval: 1m
-            scrapeTimeout: 10s
-    # Keys are rendered as volumeMounts in alphabetical order and the kubelet mounts them
-    # in that order, so the /etc/crowdsec parent must sort before the files nested inside
-    # it — hence the `config`, `config-acquis`, `config-local` naming.
-    persistence:
-      # Holds the hub, the generated LAPI/CAPI credentials, and the mutated config.yaml —
-      # persisting it keeps CAPI registration and hub downloads one-shot.
-      config:
-        type: persistentVolumeClaim
-        accessMode: ReadWriteOnce
-        size: 1Gi
-        storageClass: democratic-csi-local-hostpath
-        globalMounts:
-          - path: /etc/crowdsec
-      data:
-        type: persistentVolumeClaim
-        accessMode: ReadWriteOnce
-        size: 2Gi
-        storageClass: democratic-csi-local-hostpath
-        globalMounts:
-          - path: /var/lib/crowdsec/data
-      config-acquis:
-        type: configMap
-        name: crowdsec-acquis
-        globalMounts:
-          - path: /etc/crowdsec/acquis.yaml
-            subPath: acquis.yaml
-            readOnly: true
-      config-local:
-        type: configMap
-        name: crowdsec-config-local
-        globalMounts:
-          - path: /etc/crowdsec/config.yaml.local
-            subPath: config.yaml.local
-            readOnly: true
-      config-profiles:
-        type: configMap
-        name: crowdsec-profiles
-        globalMounts:
-          - path: /etc/crowdsec/profiles.yaml
-            subPath: profiles.yaml
-            readOnly: true
-      varlog:
-        type: emptyDir
-        globalMounts:
-          - path: /var/log
-      tmp:
-        type: emptyDir
+              - /bin/bash
+              - -c
+              - 'for i in $$(seq 30); do cscli machines add crowdsec-web-ui -p "$${AGENT_PASSWORD}" --force && exit 0; sleep 2; done; echo "web-ui machine registration failed" >&2; exit 0'
+      metrics:
+        serviceMonitor:
+          enabled: true
+    agent:
+      isDeployment: false
+      hostVarLog: true
+      acquisition:
+        - namespace: networking
+          podName: envoy-external-*
+          program: envoy
+          poll_without_inotify: true
+        - namespace: networking
+          podName: envoy-internal-*
+          program: envoy
+          poll_without_inotify: true
+      env:
+        - name: COLLECTIONS
+          value: yanis-kouidri/envoy
+        - name: PARSERS
+          value: crowdsecurity/cri-logs crowdsecurity/dateparse-enrich crowdsecurity/geoip-enrich crowdsecurity/whitelists
+        - name: POSTOVERFLOWS
+          value: crowdsecurity/ipv6_to_range
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+        limits:
+          memory: 512Mi
+          cpu: null
+      metrics:
+        serviceMonitor:
+          enabled: true
+    appsec:
+      enabled: true
+      acquisitions:
+        - source: appsec
+          listen_addr: 0.0.0.0:7422
+          path: /
+          appsec_config: crowdsecurity/appsec-default
+          labels:
+            type: appsec
+      env:
+        - name: COLLECTIONS
+          value: crowdsecurity/appsec-virtual-patching crowdsecurity/appsec-generic-rules
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+        limits:
+          memory: 512Mi
+          cpu: null
+      metrics:
+        serviceMonitor:
+          enabled: true
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: Deployment
+              name: crowdsec-lapi
+            patch: |-
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                name: crowdsec-lapi
+              spec:
+                template:
+                  spec:
+                    automountServiceAccountToken: false
+                    enableServiceLinks: false
+          - target:
+              kind: Deployment
+              name: crowdsec-appsec
+            patch: |-
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                name: crowdsec-appsec
+              spec:
+                template:
+                  spec:
+                    automountServiceAccountToken: false
+                    enableServiceLinks: false
+          - target:
+              kind: DaemonSet
+              name: crowdsec-agent
+            patch: |-
+              apiVersion: apps/v1
+              kind: DaemonSet
+              metadata:
+                name: crowdsec-agent
+              spec:
+                template:
+                  spec:
+                    automountServiceAccountToken: false
+                    enableServiceLinks: false
