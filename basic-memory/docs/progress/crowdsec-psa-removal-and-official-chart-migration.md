@@ -298,6 +298,32 @@ alert), the current rule was replayed over the actual incident window using reta
   95.7% of the last 30d — a blind window of roughly 4%, not 21-39%.
 - [finding] Decisive: in the actual incident the gate was open the whole time (evidence above). A
   heartbeat Probe would have contributed NOTHING to detecting it.
+- [correction 2026-07-31] An earlier version of this entry claimed the Probe would need a crowdsec
+  allowlist carve-out for the pod CIDR because the probe traffic would look like a bot (self-ban
+  risk). That was inherited from the roadmap and is WRONG. `crowdsecurity/whitelists` already covers
+  `10.0.0.0/8`, `192.168.0.0/16`, `172.16.0.0/12`, `127.0.0.0/8` and `::1`, so in-cluster probe
+  traffic is whitelisted by default. The real blocker is the opposite of a ban — see below.
+- [finding] FATAL to the naive design: whitelisting happens at the `s02-enrich` stage, AFTER the
+  parse counter, so whitelisted traffic still increments `cs_parser_hits_ok_total`. Verified during
+  the criterion-3 test: 8 LAN curls (a whitelisted private source) produced 18 parser hits on the
+  envoy-internal source. The alert's parse-signal side is a `sum()` over
+  `source=~"/var/log/containers/envoy-.*"`, so a probe on EITHER gateway would keep that sum
+  permanently above zero. The alert would become STRUCTURALLY UNABLE TO FIRE — the same shape as the
+  victorialogs `"VictoriaLogs channel closed"` branch this whole roadmap item was created to
+  eliminate. An alert that looks healthy and can never fire is worse than a slow one.
+- [measured] Gate-open fraction over 7d by window size: 15m 32%, 30m 42%, 1h 58%, 2h 76%, 6h 97%.
+  This is why the window is 6h — the traffic here is genuinely sparse.
+- [alternative] If detection latency ever needs to improve, the CHEAP path is not a probe: shorten
+  the window and lean on the `keep_firing_for: 3h` the rule already has. A stall during a zero-traffic
+  window is harmless by definition (nothing to protect), and as soon as real traffic resumes a short
+  window shows gate>0/parse==0 and fires within `for: 10m`. The original 1h rule's actual failure was
+  FLAPPING (self-resolving mid-stall), which `keep_firing_for` fixes. Back-test 1h and 2h against the
+  2026-07-29 incident before changing anything — the same replay method used above.
+- [alternative] The only semantically correct probe design is a DEDICATED CANARY METRIC: probe with a
+  distinctive marker, a custom crowdsec parser counting it into its own metric, and an alert on that
+  metric alone. It measures the real question (did crowdsec see the request I just made?) at minutes
+  resolution, and it does not contaminate the general parse signal. Cost: a custom parser we own
+  forever. Not justified while the stall class is gone.
 - [decision] DECLINED. The Probe would add a blackbox-exporter Probe, an in-cluster route to
   envoy-internal, and a crowdsec allowlist carve-out for the pod CIDR (the probe traffic would
   otherwise look like a bot and risk a self-ban) — new machinery plus a security exception, to buy
