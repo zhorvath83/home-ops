@@ -42,17 +42,21 @@ spec:
               CONFIG_INSTANCE_NAME: home-ops
               CONFIG_INSTANCE_LAPI_URL: http://crowdsec-service.crowdsec.svc.cluster.local:8080
               CONFIG_INSTANCE_LAPI_AUTH_USERNAME: crowdsec-web-ui
-              # One LAPI instance; three :6060 metrics endpoints (lapi/agent/appsec pods). Scalar
-              # instance fields stay shorthand; metrics uses indexed (no shorthand past index 0).
-              CONFIG_INSTANCES_0_METRICS_0_ID: lapi
-              CONFIG_INSTANCES_0_METRICS_0_NAME: LAPI
-              CONFIG_INSTANCES_0_METRICS_0_URL: http://crowdsec-service.crowdsec.svc.cluster.local:6060/metrics
-              CONFIG_INSTANCES_0_METRICS_1_ID: agent
-              CONFIG_INSTANCES_0_METRICS_1_NAME: Agent
-              CONFIG_INSTANCES_0_METRICS_1_URL: http://crowdsec-agent-service.crowdsec.svc.cluster.local:6060/metrics
-              CONFIG_INSTANCES_0_METRICS_2_ID: appsec
-              CONFIG_INSTANCES_0_METRICS_2_NAME: AppSec
-              CONFIG_INSTANCES_0_METRICS_2_URL: http://crowdsec-appsec-service.crowdsec.svc.cluster.local:6060/metrics
+              # Web-ui shows one endpoint at a time and cannot merge; Prometheus already
+              # scrapes all three, so index 0 is the federate aggregate (the UI default).
+              # The three direct :6060 endpoints stay as a real-time fallback.
+              CONFIG_INSTANCES_0_METRICS_0_ID: all
+              CONFIG_INSTANCES_0_METRICS_0_NAME: All (Prometheus)
+              CONFIG_INSTANCES_0_METRICS_0_URL: "http://kube-prometheus-stack-prometheus.observability.svc.cluster.local:9090/federate?match[]=%7B__name__%3D~%22cs_.*%22%7D"
+              CONFIG_INSTANCES_0_METRICS_1_ID: lapi
+              CONFIG_INSTANCES_0_METRICS_1_NAME: LAPI
+              CONFIG_INSTANCES_0_METRICS_1_URL: http://crowdsec-service.crowdsec.svc.cluster.local:6060/metrics
+              CONFIG_INSTANCES_0_METRICS_2_ID: agent
+              CONFIG_INSTANCES_0_METRICS_2_NAME: Agent
+              CONFIG_INSTANCES_0_METRICS_2_URL: http://crowdsec-agent-service.crowdsec.svc.cluster.local:6060/metrics
+              CONFIG_INSTANCES_0_METRICS_3_ID: appsec
+              CONFIG_INSTANCES_0_METRICS_3_NAME: AppSec
+              CONFIG_INSTANCES_0_METRICS_3_URL: http://crowdsec-appsec-service.crowdsec.svc.cluster.local:6060/metrics
               # App-level OIDC (like grafana) — this route deliberately carries no
               # gateway-oidc SecurityPolicy, which would double-gate the login.
               CONFIG_AUTH_OIDC_ISSUER_URL: "https://idm.${PUBLIC_DOMAIN}"
