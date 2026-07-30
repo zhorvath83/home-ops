@@ -93,13 +93,15 @@ spec:
           memory: 768Mi
           cpu: null
       # postStart must never exit non-zero (kubelet would restart-loop the LAPI): retry cscli until seeded, exit 0 either way.
+      # -f /dev/null is load-bearing: cscli machines add otherwise rewrites the LAPI's own
+      # local_api_credentials.yaml on the config PVC (docker_start.sh:217 does the same).
       lifecycle:
         postStart:
           exec:
             command:
               - /bin/bash
               - -c
-              - 'for i in $$(seq 30); do cscli machines add crowdsec-web-ui -p "$${AGENT_PASSWORD}" --force && exit 0; sleep 2; done; echo "web-ui machine registration failed" >&2; exit 0'
+              - 'for i in $$(seq 30); do cscli machines add crowdsec-web-ui -p "$${AGENT_PASSWORD}" -f /dev/null --force && exit 0; sleep 2; done; echo "web-ui machine registration failed" >&2; exit 0'
       metrics:
         serviceMonitor:
           enabled: true
