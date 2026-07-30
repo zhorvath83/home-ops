@@ -69,6 +69,7 @@ spec:
   # which Reloader does not read), and adds no config checksum to the pod template either — so a
   # bouncer ConfigMap change never rolls the pod. Inject the Reloader trigger the chart omits,
   # matching crowdsec-lapi and crowdsec-web-ui which both carry it on Deployment metadata.
+  # Chart exposes no service-account token-mount key either; harden the pod spec here too.
   postRenderers:
     - kustomize:
         patches:
@@ -82,3 +83,8 @@ spec:
                 name: crowdsec-bouncer
                 annotations:
                   reloader.stakater.com/auto: "true"
+              spec:
+                template:
+                  spec:
+                    automountServiceAccountToken: false
+                    enableServiceLinks: false
