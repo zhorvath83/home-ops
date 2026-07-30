@@ -1,346 +1,466 @@
 ---
 title: crowdsec-psa-removal-and-official-chart-migration
-type: progress_note
-permalink: home-ops/docs/progress/crowdsec-psa-removal-and-official-chart-migration
+type: roadmap
+permalink: home-ops/docs/roadmap/crowdsec-psa-removal-and-official-chart-migration
+topic: Relax the crowdsec namespace PSA to an explicit privileged; migrate to the
+  official crowdsecurity/crowdsec chart; replace the victorialogs tail with the file
+  datasource on host container logs.
+status: implemented
+priority: high
+scope: 'Replace the restricted PSA labels on the crowdsec namespace with an explicit
+  enforce: privileged, migrate the CrowdSec workload from bjw-s app-template to the
+  official crowdsecurity/crowdsec chart (LAPI + agent DaemonSet + AppSec), and replace
+  the silently-stalling victorialogs tail acquisition with the chart-native file datasource
+  on /var/log/containers.'
+rationale: The crowdsec image was not designed for the restricted-PSA rootless posture
+  the bjw-s chart was forced into, and the victorialogs tail datasource stops permanently
+  and silently on every VictoriaLogs pod replacement (upstream readResponse treats
+  stream EOF as success and never reopens). Relaxing PSA lets the official chart run
+  the image as designed and unlocks the hostPath the file datasource needs.
+related_areas:
+- k8s-workloads
+- networking
+- observability
+options:
+- 'Explicit enforce: privileged + official chart + chart-native file datasource (chosen
+  2026-07-30)'
+- 'Bare removal of all PSA labels (rejected: relies on the implicit cluster default)'
+- 'Keep the victorialogs tail plus a push pipeline via a Vector/Fluent-bit translator
+  (rejected: one new component, zstd and no-per-sink-filter blockers)'
+- 'Keep the tail plus an auto-heal watchdog (rejected: RBAC + moving part, treats
+  the symptom)'
+tags:
+- crowdsec
+- psa
+- helm
+- acquisition
+- resilience
+verified_at: '2026-07-30'
 ---
 
-# crowdsec-psa-removal-and-official-chart-migration — execution progress
+# CrowdSec: PSA relaxation, official chart migration, and acquisition resilience
 
-## Metadata (observation-form)
+Drop the `restricted` Pod Security Admission enforcement on the `crowdsec` namespace (down to an
+explicit `privileged`), migrate the CrowdSec workload off the bjw-s `app-template` chart (which was bent
+into a rootless posture the upstream image was not designed for) onto the official
+`crowdsecurity/crowdsec` chart, and — in the same move — retire the silently-stalling victorialogs tail
+acquisition for the chart-native `file` datasource on host container logs. The PSA relaxation is what
+unlocks the acquisition fix; they are one change, not two.
 
-- [topic] Execution state for the crowdsec PSA-relaxation (explicit privileged) + official-chart migration + file-datasource acquisition
-- [status] done — ALL Part 8 criteria PASS as of 2026-07-31, nothing awaiting. Criteria 4 and 5 verified live (Session b); criterion 3's envoy-pod-recreation arm proven by a deliberate, human-approved envoy-internal restart and its victoria-logs arm is structurally a non-event (Session c). Every follow-up is resolved: closed, declined with evidence, or dropped by human decision. The CrowdSecAcquisitionStalled rule was back-tested against the real 2026-07-29 incident and would have fired ~4h in, 4h before the manual restart.
-- [roadmap] [[crowdsec-psa-removal-and-official-chart-migration]]
-- [priority] high
+This item absorbs the former `crowdsec-acquisition-resilience` roadmap (merged and deleted 2026-07-30)
+and records a deliberate exception to [[pod-security-admission-enforcement]] for the `crowdsec` namespace.
+
+## Metadata (observation-form, schema validation)
+
+- [topic] Relax the crowdsec namespace PSA to privileged; migrate to the official crowdsecurity/crowdsec chart; replace the victorialogs tail with the file datasource on host container logs.
 - [area] k8s-workloads, networking, observability
-- [created] 2026-07-30
-- [last-updated] 2026-07-30 (post-step-4 closeout: step 3B landed + Part 8 verified live by the Maestro; docs commit in this step)
+- [status] implemented — Part 8 verified live 2026-07-30. Execution and verification recorded in memory://home-ops/docs/progress/crowdsec-psa-removal-and-official-chart-migration. Two sub-criteria remain: an envoy-pod-recreation survival check (awaits a natural event) and a local-decision trigger + OIDC live login (await a Maestro action). Follow-ups closed 2026-07-31 (docs session): bouncer SA-token mount (6eb636118), hardening pass — seccomp RuntimeDefault + all caps dropped (522d66e9a + 2a8aef0e6; readOnlyRootFilesystem DECLINED, not deferred), Grafana dashboard 21689 removed (0ac6787d8; premise corrected — never a job-split problem), ADR [[AD-024-crowdsec-namespace-psa-exception]] filed, and the crowdsec row added to [[pod-security-admission-enforcement]]. Closed 2026-07-31 (b): criterion 4 PASS (single ltsich/http-w00tw00t trigger from a mobile IP produced a local origin=crowdsec ban, enforced by the bouncer; decision deleted afterwards) and criterion 5 PASS (passkey login completed by the human). Machine-list churn closed (prune run) after fixing its true LAPI-side root cause: the postStart hook was clobbering the LAPI's own local_api_credentials.yaml because cscli machines add defaults to that path — fixed with -f /dev/null in e54c621aa, matching upstream docker_start.sh:217, and the PVC file repaired. The upstream victorialogs issue was DROPPED by human decision (not filed; analysis kept below for provenance). Closed 2026-07-31 (c): criterion 3's envoy-pod-recreation arm PASS (deliberate envoy-internal restart; the agent picked up the new log path and resumed parsing from 0 with no errors), so ALL Part 8 criteria now PASS. The two deferred items are DECLINED with evidence, not left open: the heartbeat Probe (the 6h gate is open 95.7% of the last 30d, and in the real incident it was open throughout — the Probe would have added nothing) and the auto-heal watchdog (its stall class is retired, the replacement datasource survived the exact triggering event, and the alert demonstrably fires). The CrowdSecAcquisitionStalled rule was back-tested against the 2026-07-29 incident: it would have fired ~4h10m after onset, 4h before the manual restart. The analysis below is the original proposed spec, kept as history.
+- [priority] high
+- [confidence] high
+- [verified_at] 2026-07-30
 
-> This note was rewritten at the post-3A checkpoint and again at the step-4 closeout. The earlier body was the pre-implementation ratified spec; that spec is now history. The sections below describe what actually landed, the Part 8 verification results, and what remains. A cold reader can resume from here without the session transcript.
+## Part 1 — the problem being eliminated
 
-## Commits that landed (all on main, direct commits — repo norm)
+### The incident (2026-07-29/30)
 
-- [step] 8977dd70e — Step 1: envoy access-log field renames. Renamed four JSON fields in both EnvoyProxy access-log blocks (path to x-envoy-origin-path, authority to :authority, x_forwarded_for to x-forwarded-for, user_agent to user-agent). Verified live: both EnvoyProxy CRs carry the new keys; live envoy config_dump access_log json_format carries the new names; envoy-external and envoy-internal pods Running 2/2, 0 restarts, no CrashLoop. Independent and reversible; landed first per the cutover sequence.
-- [step] 64f3881aa — Step 2: official chart migration + cutover. New ocirepository.yaml (official oci://ghcr.io/crowdsecurity/helm-charts/crowdsec tag 0.24.0) + full helmrelease.yaml rewrite (LAPI Deployment + agent DaemonSet + AppSec Deployment) + 6 supporting files: namespace (single enforce: privileged label), kustomization (added ocirepository, removed 3 configMapGenerator entries), deletion of acquis.yaml / config.yaml.local / profiles.yaml (content moved inline), ciliumnetworkpolicy (rewritten as 4 documents), prometheusrule (new job labels + new acquisition selector). Cutover happened automatically via GitHub webhook to Flux. Old app-template 5.0.1 release removed; old LAPI PVCs destroyed by reclaimPolicy Delete (DB lost — intended, human-accepted; CAPI/list decisions re-streamed, only local decisions lost). No ConfigMap ownership collision: the old crowdsec-profiles and crowdsec-config-local ConfigMaps were pruned before the new HelmRelease installed. 3 pods Running 1/1; agent+appsec auto-registered via the init-container REGISTRATION_TOKEN; CAPI blocklist ~15000 entries re-streamed; web-ui machine registered by the postStart hook.
-- [step] f603ef281 — Step 3A part 1: point bouncer and web-ui at the split services. Three one-line edits: bouncer lapiURL to crowdsec-service.crowdsec.svc.cluster.local:8080, bouncer appSecURL to crowdsec-appsec-service.crowdsec.svc.cluster.local:7422, web-ui CONFIG_INSTANCE_LAPI_URL to crowdsec-service.crowdsec.svc.cluster.local:8080. CONFIG_INSTANCE_METRICS_URL left untouched (deferred to step 3B). The HelmRelease upgrade rewrote the bouncer ConfigMap with the new URLs, but the bouncer pod was NOT restarted by it (see the Reloader finding).
-- [step] bd42ec51c — Step 3A part 2: durable Reloader fix. A postRenderer kustomize patch injecting reloader.stakater.com/auto: "true" onto the bouncer Deployment metadata.annotations (the chart exposes no such key). Durable for all future bouncer ConfigMap changes. Did NOT roll the running pod by itself (Reloader is event-driven — see below).
-- [step] 159f3b664 — Step 3B: fan web-ui metrics to the three split pods. Replaced the single dead CONFIG_INSTANCE_METRICS_URL (pointing at the gone `crowdsec` service) with three named metrics endpoints on instance 0 — LAPI / Agent / AppSec — each with a stable id (lapi/agent/appsec), name, and :6060 URL against crowdsec-service / crowdsec-agent-service / crowdsec-appsec-service. Single-instance deployment, so scalar instance fields stay on the CONFIG_INSTANCE_* shorthand (incl. LAPI auth, whose password still arrives via the unchanged CONFIG_INSTANCE_LAPI_AUTH_PASSWORD secret key); only the metrics array moves to the indexed CONFIG_INSTANCES_0_METRICS_<j>_* form. The README at image tag 2026.7.24 states the shorthand and indexed forms are equivalent and must not be set together, and the shorthand has no metrics index past 0, so "do not set equivalent forms together" forbids keeping both spellings of metrics[0] — hence the block-level move of the whole metrics array to indexed, with no shorthand surviving. Verified live: all nine CONFIG_INSTANCES_0_METRICS_* env vars on the Deployment, no surviving shorthand, new pod Running 1/1.
+- [observation] `cs_parser_hits_ok_total{acquis_type="envoy"}` froze at 1912 from 2026-07-29 23:24 CEST
+  until a manual restart at 07:41 — **8.2 hours** with no envoy log parsing.
+- [observation] Trigger: `victoria-logs-server-0` was **recreated** at 23:21 (image v1.52.0; `restartCount`
+  stayed 0, so a pod replacement, not a container restart).
+- [observation] The crowdsec pod stayed `1/1 Running`, 0 restarts, and emitted **not one log line** about
+  the loss. 20h of logs grepped for `victorialog|acquis|tail|EOF|error|warn` returned nothing.
+- [observation] Enforcement was unaffected (bouncer served 10 062 extAuth calls, AppSec inspected 8 091
+  requests), but every one of the 60 533 active bans came from `origin="CAPI"`/`origin="lists"` —
+  `origin="crowdsec"` (local decisions) was absent. Degraded defence, not dead.
 
-## Live-verified state (post step 3A, after the one-time rollout restart)
+### Root cause — upstream bug, unfixed in v1.7.8 and in master
 
-- [verified] Three crowdsec workloads Running 1/1, 0 restarts: crowdsec-lapi (Deployment), crowdsec-agent (DaemonSet), crowdsec-appsec (Deployment); plus crowdsec-bouncer and crowdsec-web-ui.
-- [verified] PSA: the crowdsec namespace carries exactly one PSA label, pod-security.kubernetes.io/enforce: privileged (the agent DaemonSet mounts hostPath /var/log). The kustomize.toolkit.fluxcd.io/prune: disabled annotation is preserved. This matches the roadmap chosen option (explicit privileged over bare label removal).
-- [verified] CPU-limit removal survived the full Flux/Helm/API round-trip: limits.cpu: null on lapi/agent/appsec rendered through to the live Deployment and DaemonSet — no CPU limit on any of the three. (Helm deletes a null key; the chart default 500m did not survive.)
-- [verified] Token-mount hygiene: automountServiceAccountToken: false and enableServiceLinks: false on crowdsec-lapi/appsec/agent via the postRenderer patches, and on web-ui via values. (Bouncer chart does not expose automountServiceAccountToken — see follow-ups.)
-- [verified] Agent file acquisition: agent tails envoy-external-* and envoy-internal-* pods in networking (program: envoy, poll_without_inotify: true). Note the glob actually matches 6 files not 2 — see follow-ups.
-- [verified] All machines authenticating to the LAPI: cscli machines list shows crowdsec-lapi, crowdsec-agent, crowdsec-appsec, crowdsec-web-ui all healthy with recent last-seen; LAPI access logs show web-ui heartbeat 200 and usage-metrics 201 every 30s, and the bouncer GET /v1/decisions/stream 200 every 10s.
-- [verified] Bouncer decision sync: bouncer logs "Using API key auth" and "initial decision sync complete"; LAPI returns 200 on the decisions/stream pull every 10s. The "no such host" errors are GONE.
-- [verified] postStart hook registered the web-ui machine — this was the roadmap riskiest open task (Part 7). Proven live: the crowdsec-web-ui machine exists (cscli) and the web-ui heartbeats with HTTP 200 (only possible if the machine exists). Correction 1 (postStart must exit 0) validated.
+- [evidence] `pkg/acquisition/modules/victorialogs/internal/vlclient/vl_client.go:204-207` (`readResponse`):
+  the tail stream's `io.EOF` is treated as normal completion (`finishedReading = true`), so it returns
+  `(n, latestTS, nil)` — no error, and `responseChan` is never closed (`close(c)` exists only in
+  `doQueryRange`, line 156).
+- [evidence] `pkg/acquisition/modules/victorialogs/run.go:109-117` (`StreamingAcquisition`): the consumer
+  selects on `resp, ok := <-respChan`. With the channel neither closed nor written again the goroutine
+  **blocks forever**; the `"VictoriaLogs channel closed"` warning branch is structurally unreachable.
+- [evidence] `max_failure_duration`/`shouldRetry()` guard only connection *establishment*, never stream loss.
+- [evidence] `vl_client.go` and `run.go` are byte-identical between v1.7.8 and master (verified by diff);
+  a search over 94 victorialogs-related issues found no existing report. `config.go` exposes only `tail`
+  and `cat` modes, so there is **no config-level workaround**.
+- [observation] This recurs on **every** VictoriaLogs pod replacement: Renovate bumps, node reboots,
+  Talos upgrades, evictions.
 
-## Step 3B live-verified state
+### Why the alert lied — and the fix that already landed
 
-- [verified] web-ui Deployment carries all nine indexed metrics env vars (CONFIG_INSTANCES_0_METRICS_0/1/2 _ID/_NAME/_URL) and NO surviving shorthand CONFIG_INSTANCE_METRICS_URL. Scalar instance fields (NAME, LAPI_URL, LAPI_AUTH_USERNAME) stay shorthand; the LAPI auth password secret key CONFIG_INSTANCE_LAPI_AUTH_PASSWORD is unchanged.
-- [verified] The new web-ui pod is Running 1/1; its three :6060 metric endpoints (lapi/agent/appsec) each return data — the metrics page is no longer empty.
-- [verified] The LAPI auth path is untouched: the ExternalSecret still renders CONFIG_INSTANCE_LAPI_AUTH_PASSWORD from .WEBUI_LAPI_PASSWORD, and the web-ui machine still heartbeats HTTP 200.
+The old rule gated on `increase(envoy_..._rq_total[1h]) > 0`. Measured over 7d at 5m resolution that gate
+is closed 21–39% of the time (envoy traffic here is low and bursty), so the single continuous 8.2h stall
+was reported as **two** fire/resolve cycles — the alert was structurally incapable of staying firing.
 
-## Design defects caught in Maestro review before they shipped (lessons, not just fixes)
-
-- [lesson] Crashlooping postStart hook. The first-draft postStart would exit non-zero when cscli machines add failed (it fails until /etc/crowdsec is seeded by the entrypoint, which races postStart). A non-zero postStart makes the kubelet restart-loop the LAPI. Correction 1: retry cscli 30 times (2s apart) and exit 0 either way; every dollar sign is Flux-escaped (doubled) so the registration token and AGENT_PASSWORD survive Flux substitution. Lesson: a postStart hook for non-fatal seeding must never exit non-zero — kubelet treats non-zero postStart as a pod failure and restart-loops it.
-- [lesson] Silently inherited 500m CPU limit. Helm deep-merges maps, so the chart default limits.cpu: 500m survived on all three components unless explicitly deleted. Correction 2: set limits.cpu: null on each (Helm deletes a null key). Lesson: chart-inherited resource values can silently override an intended no-CPU-limit policy; an explicit null is required to delete a map key, and the round-trip (Helm to Flux to API to live workload) must be checked, not assumed.
-
-## The Reloader finding (full — this costs an hour to rediscover)
-
-- [finding] The envoy-proxy-bouncer chart 0.6.3 exposes NO Deployment-metadata annotation key. Its templates/deployment.yaml metadata block has only name and labels (no annotations field at all); the only annotation hooks are podAnnotations (pod template), httproute.annotations, grafana.dashboard.annotations. Reloader reads reloader.stakater.com/auto off the workload metadata.annotations — NOT the pod template — so podAnnotations is useless for this.
-- [fix] Injected reloader.stakater.com/auto: "true" onto the bouncer Deployment metadata.annotations via a Flux postRenderer kustomize patch (commit bd42ec51c) — the documented use of postRenderers ("when an upstream chart leaves no other way to patch a manifest field"). Matches crowdsec-lapi and crowdsec-web-ui which carry it natively (lapi via chart deployAnnotations, web-ui via app-template controller annotations). Verified live: the annotation is on the Deployment metadata.
-- [finding] Reloader is EVENT-driven. It rolls an annotated Deployment on a ConfigMap/Secret CHANGE event (its logs: "Changes detected in <cm> ... updated <deploy>"). It stores NO hash on the pod template (crowdsec-lapi pod template carries only the chart own checksum annotations, no reloader.stakater.com/configmaps-hash) — so it does NOT retroactively roll.
-- [consequence] The bouncer ConfigMap changed at the 19:42 reconcile (commit f603ef281), BEFORE the reloader annotation existed (added at 19:48, bd42ec51c). Reloader skipped that change event; adding the annotation afterward did not replay it. The pod-template hash did not change either (the metadata-annotation patch does not touch the pod template), so k8s itself did not roll — confirmed by no new ReplicaSet (both RS date from 2 days prior).
-- [resolution] One-time, human-approved kubectl -n crowdsec rollout restart deployment/crowdsec-bouncer got the running pod onto the already-correct ConfigMap. This was the LAST manual nudge this gap needs: the durable annotation now handles every future change. Lesson: for Reloader to auto-roll a config change, the annotation must precede the change event; if it does not, a single bridge restart is needed and the durable annotation prevents recurrence.
-
-## Deviations from the roadmap and why
-
-- [deviation] docker.io image prefix. The roadmap Part 5 specified image.repository: crowdsecurity/crowdsec; the approved HelmRelease uses docker.io/crowdsecurity/crowdsec (the # renovate: depName was updated to match). Reason: explicit registry prefix for unambiguous digest/Renovate resolution. Approved in Maestro review.
-- [deviation] Bouncer/web-ui cross-refs deferred to step 3A. The roadmap cutover sequence (Part 6) bundled the bouncer/web-ui reference updates with the app rewrite. We split them into a separate step 3A (commits f603ef281 + bd42ec51c) AFTER the cutover, because the bouncer fails closed while the LAPI is down anyway and the split kept the cutover commit focused. Deliberate Maestro-driven sequencing.
-- [deviation] Web-ui metrics fan-out deferred to step 3B. The roadmap Part 5 included the indexed CONFIG_INSTANCES_0_METRICS_* fan-out in the web-ui update. Step 3A only fixed the LAPI URL; the metrics fan-out (and the agent/appsec :6060 CNP ingress it depends on) is step 3B — now landed in commit 159f3b664.
-- [note] Not a deviation: the PSA privileged choice matches the roadmap (which explicitly chose it over bare removal); the LAPI PVC/DB loss matches the roadmap Part 6 (intended, no rollback); no ConfigMap ownership collision because the old CMs were pruned before install.
-
-## Part 8 — verification against the roadmap acceptance criteria
-
-Verified live by the Maestro (port-forward to prometheus-operated) and by the worker (read-only kubectl / cscli), 2026-07-30. Criteria are not rounded up — PENDING is PENDING.
-
-| # | Criterion | Result | Evidence |
+| window | gate closed | longest blind run | behaviour during the real stall |
 |---|---|---|---|
-| 1 | lapi/agent/appsec 0 restarts; one PSA label; no PSA admission event | PASS | 3 pods Running 1/1 0 restarts; namespace carries exactly pod-security.kubernetes.io/enforce: privileged; `kubectl get events -n crowdsec` → no PodSecurity admission events |
-| 2 | cscli metrics: envoy file reads + cri-logs→envoy-logs→http-logs parser hits | PASS | envoy-external 14 reads/4 hits, envoy-internal 91 reads/27 hits; cri-logs/envoy-logs/http-logs parser hit counters all present |
-| 3 | ROOT: cs_parser_hits_ok_total{acquis_type="containerd", source=~"/var/log/containers/envoy-.*"} climbs continuously across an envoy pod recreation AND across a victoria-logs-server replacement | PARTIAL/PENDING | Counter EXISTS with the NEW label set — exactly 2 series, both job=crowdsec-agent-service acquis_type=containerd: source=envoy-external-… value=4, source=envoy-internal-… value=27. Real envoy access logs parsed end-to-end through cri-logs→envoy-logs. The across-an-envoy-pod-recreation climb is NOT yet proven (no recreation event occurred this session — deliberately not forced, it is cluster-mutating). The victoria-logs-server replacement arm is now structurally a non-event (the victorialogs datasource is gone from the acquisition). PENDING a natural envoy recreation (Renovate envoy-gateway bump, node reboot, Talos upgrade) — see Next. |
-| 4 | cs_active_decisions has origin="crowdsec" after a local trigger | PENDING | Only CAPI decisions present (~1912 + ~13088); no local origin=crowdsec decision. Producing one needs a deliberate Maestro-approved local trigger (adds a local ban) — see Next. |
-| 5 | bouncer extAuth + appsec serve; web-ui OIDC + LAPI machine | PASS/PENDING | appsec cs_appsec_reqs_total{source="10.244.0.214"}=1 (served); bouncer heartbeat 200 + decisions/stream 200; web-ui machine registered (cscli machines list) and heartbeats 200. OIDC live browser login through idm.horvathzoltan.me → crowdsec web-ui is PENDING a Maestro portal action — see Next. |
-| 6 | web-ui three :6060 endpoints return data | PASS | Step 3B live: all nine CONFIG_INSTANCES_0_METRICS_* env vars on the Deployment, no surviving shorthand, new pod Running 1/1; lapi/agent/appsec :6060 each return data |
-| 7 | prometheus: three ServiceMonitors + two PrometheusRules with the new job labels, against live targets | PASS | Maestro port-forward to prometheus-operated: up{namespace="crowdsec"} → job=crowdsec-service (pod crowdsec-lapi-748bd798cf-d4p4j) up=1, job=crowdsec-agent-service (pod crowdsec-agent-n69l4) up=1, job=crowdsec-appsec-service (pod crowdsec-appsec-778b798fd-pdtj7) up=1, job=crowdsec-bouncer up=1. The three job labels prometheusrule.yaml asserts are EXACTLY the ones Prometheus assigns — the roadmap "confirm against live targets" caveat is discharged. Alert rules CrowdSecLAPIDown, CrowdSecAcquisitionStalled, CrowdSecBouncerDown all loaded (health=ok, inactive). |
-| 8 | envoy renamed JSON fields + victoria-logs ingestion of envoy access logs | PASS | A live envoy access-log row carries all four renamed keys (x-envoy-origin-path, :authority, x-forwarded-for, user-agent); the old names are absent; a corresponding record is ingested into victoria-logs with all four renamed keys |
-| 9 | no API service-account token mounted in the three pods | PASS | automountServiceAccountToken: false via postRenderer patches (lapi/appsec/agent) and values (web-ui); no SA-token volume on any pod |
+| 2h | 21.0% | 6.9h | 2 episodes (flaps) |
+| 4h | 7.1% | 4.9h | 1 episode, 4.2h |
+| 6h | 3.5% | 2.9h | 1 episode, 2.2h |
+| 12h | 0.0% | 0.0h | **never — misses an 8h stall entirely** |
 
-## Notable findings from the Part 8 verification (record against the right follow-ups)
+- [decision] Landed 2026-07-30: symmetric **6h** windows plus **`keep_firing_for: 3h`** (covers the measured
+  2.9h longest blind run), `for: 10m` unchanged. This is **detection only — it does not stop the stall.**
 
-- [notable] cs_parser_hits_ok_total has exactly TWO series — both envoy. The k8tz and shutdown-manager sidecar log files that the agent acquisition glob also matches (6 files, not 2) produced ZERO parser hits. The over-matching is empirically harmless — the envoy parser needs a JSON line, which the sidecar text logs do not provide. This is evidence FOR the human's decision to record the glob over-match as a follow-up rather than fix it now.
-- [notable] A HubblePolicyDeny alert fired at 22:04 during the step-3A rollout restart. It was the OLD bouncer pod IP dying during the human-approved rollout restart of deployment/crowdsec-bouncer — transient, not a policy defect. A 20s Hubble capture afterward shows envoy-internal → crowdsec-bouncer:8080 FORWARDED and zero DROPPED flows.
-- [notable] cscli machines list (live, 2026-07-30T20:35Z): exactly 4 machines, all healthy, all recent heartbeats — crowdsec-web-ui (6s), crowdsec-lapi-748bd798cf-d4p4j (12s), crowdsec-agent-n69l4 (57s), crowdsec-appsec-778b798fd-pdtj7 (59s). The agent/appsec/lapi machine names are pod-name-based, so the machine list WILL grow on every pod recreation (the churn follow-up is structurally real); at the time no stale entries had accumulated, but `cscli machines prune` is now warranted as of 2026-07-31 (the list has grown to 8 entries) — see the upgraded follow-up and Session 2026-07-31.
+### Why the other exits are dead ends (research verdicts, keep for the record)
 
-## Follow-ups
+- [evidence] **Push pipeline into crowdsec's `http` source does not work.** vlagent hardcodes
+  `Content-Encoding: zstd` (`app/vlagent/remotewrite/client.go:315`, `pendinglogrows.go:147`) with no
+  disable flag; crowdsec's `http` source decodes gzip only (`pkg/acquisition/modules/http/run.go:76`)
+  and answers 400 to everything else. vlagent also has no per-sink filter (only the global
+  `-kubernetesCollector.excludeFilter`), so a second sink would fire every cluster pod log at crowdsec.
+  A translator component (Vector/Fluent-bit) would be required.
+- [evidence] **Envoy as the direct producer is a dead end.** Envoy Gateway 1.8.3 access-log sinks are
+  `File` | `ALS` (gRPC) | `OpenTelemetry`; CrowdSec v1.7.8 ships no ALS/gRPC/OTLP datasource.
+- [evidence] vlagent discards the raw line (`processor.go:226-250` forwards only `parser.Fields`, and
+  `RenameField(..., {"message","msg","log"}, "_msg")` finds no match in an envoy access log) — this is
+  where the "missing _msg" placeholder that forced the `copy`+`pack_json` hack originates.
 
-Inherited from the roadmap Part 9 (still open):
-- [follow-up] File the upstream victorialogs issue (and ideally the patch: on tail-stream EOF, close responseChan or reconnect). Zero local cost; no issue exists upstream. We no longer depend on it, but every other user does.
-- [follow-up] Hardening pass — re-harden the now-root pods (seccomp RuntimeDefault, readOnlyRootFilesystem, scoped capabilities), validating each against the chart root entrypoint. The explicit second step the human asked for.
-- [follow-up] ADR — record the PSA decision for the crowdsec namespace (reverses a human-locked restricted PSA; the namespace now runs root + hostPath by design under explicit enforce: privileged).
-- [follow-up] Add a crowdsec row to the [[pod-security-admission-enforcement]] per-namespace table (explicit privileged — agent DaemonSet needs hostPath /var/log).
-- [follow-up] Deferred, still valid: no heartbeat Probe (would remove the alert traffic gate, but needs an in-cluster route to envoy-internal and a crowdsec allowlist for the pod CIDR — self-ban risk); no auto-heal watchdog (the stall class it healed is what this migration removes).
+**Conclusion:** the `file` datasource on host container logs is the only translator-free exit, and it needs
+hostPath — which is what ties this to the PSA relaxation.
 
-New, from step 3A:
-- [follow-up] Acquisition glob over-matches — the chart renders <podName>_<namespace>_*.log, so the agent also tails the k8tz and shutdown-manager sidecar logs of the envoy pods and labels them program: envoy (6 files instead of 2). Empirically harmless (Part 8 notable: zero parser hits on the sidecar files — the envoy parser needs a JSON line), but it could be narrowed with additionalAcquisition. THE HUMAN EXPLICITLY DECIDED: record as a follow-up, do NOT implement it now.
-- [resolved-follow-up] Confirm the new Prometheus job labels (crowdsec-service, crowdsec-agent-service, crowdsec-appsec-service) actually resolve against live targets before trusting the two alerts — DISCHARGED in Part 8 criterion 7 (Maestro port-forward to prometheus: all three job labels match the asserted ones, all up=1).
-- [upgraded 2026-07-31] Machine-list churn — agent and appsec register per pod name, so the LAPI machine list grows on every pod recreation. `cscli machines prune` is now WARRANTED: the machine list has grown to 8 entries (agent/appsec register per pod name — every rollout adds one; the LAPI entry goes stale on lapi pod recreation because it reuses PVC-persisted creds and does not re-register, but keeps serving — self-heartbeat 200 from ::1). Still cosmetic, not a regression. See Session 2026-07-31.
-- [closed 2026-07-31] Grafana dashboard 21689 — REMOVED (commit 0ac6787d8). PREMISE CORRECTED: never a job-split problem; all 4 panels query `cs_lapi_decision` (not a CrowdSec metric), synthesized by the author via a VictoriaMetrics webhook+import pipeline we do not run. See the Session 2026-07-31 section for the full evidence.
-- [follow-up] Bouncer automountServiceAccountToken — the bouncer chart exposes no key for it (like the reloader annotation); consider a postRenderer patch for token-mount hygiene parity with the other three workloads.
+## Part 2 — decisions (locked with the human, 2026-07-30)
 
-## Next
+- [decision] **PSA: explicit `privileged`.** Replace the six `pod-security.kubernetes.io/*` labels in
+  `kubernetes/apps/crowdsec/namespace.yaml` with a single `pod-security.kubernetes.io/enforce: privileged`.
+  No `enforce-version` (the privileged profile has no checks to version), and no `warn`/`audit` — the
+  namespace is knowingly root + hostPath, so those would only emit noise on every deploy.
+- [decision] Chosen **over bare label removal**, which was the first draft's plan. Both work, but bare
+  removal leans on an implicit cluster default; the explicit label states the exception in Git and
+  survives any future change to that default.
+- [evidence] Bare removal *would* have worked: this cluster's effective default for an unlabeled
+  namespace is `privileged`. Verified by server-side dry-run — a pod with `hostPID: true`,
+  `privileged: true` and a `hostPath` volume was accepted in the unlabeled `default` namespace with no
+  warnings. Corroborated by the live `observability` namespace (no PSA labels), which runs
+  `victoria-logs-collector` (hostPath `/var/log`, `/var/lib`) and node-exporter (hostPath `/`).
+  The Talos machine config sets no `admissionControl` PodSecurity defaults (`machineconfig.yaml.j2:114-130`
+  has only `disablePodSecurityPolicy: true`). Recorded because it also means the crowdsec namespace is
+  currently the **only** namespace in the repo carrying PSA labels at all.
+- [decision] **Acquisition: chart-native `file` datasource** on `/var/log/containers`. The victorialogs
+  tail and its `copy`+`pack_json` reconstruction hack are deleted; the upstream bug becomes irrelevant.
+- [decision] **Hardening: first pass with NO additional hardening.** Strip the rootless-era
+  securityContext; let chart defaults apply (`allowPrivilegeEscalation: false`, `privileged: false`) and
+  the pods run as root with default caps and a writable rootfs. Re-hardening is a separate follow-up.
 
-This roadmap item is implemented; the Part 8 table above records what was proven and what was not. The remaining items are confirmations, not work — they can only happen at a future event or via a Maestro action:
+## Part 3 — verified facts about the target chart
 
-- [awaiting-natural-event] Criterion 3 across an envoy pod recreation — at the next natural envoy recreation (Renovate envoy-gateway bump, node reboot, Talos upgrade), with envoy traffic flowing, watch the agent `cs_parser_hits_ok_total` acquire a new `source=` label (the new pod log path) and climb from 0 without a gap. The `poll_without_inotify: true` + fsnotify-on-literal-`/var/log/containers` design should pick up the new envoy pod log symlink automatically.
-- [awaiting-natural-event] Criterion 3 across a victoria-logs-server replacement — the victorialogs datasource is gone, so this is now structurally a non-event; confirm at the next VL recreation that crowdsec acquisition is unaffected.
-- [awaiting-maestro] Criterion 4 — a deliberate local trigger to produce an `origin="crowdsec"` decision (needs Maestro approval; adds a local ban).
-- [awaiting-maestro] Criterion 5 OIDC live login — a browser login through idm.horvathzoltan.me → crowdsec web-ui (Maestro portal / live-product-verification lane).
+Chart pulled and read at `oci://ghcr.io/crowdsecurity/helm-charts/crowdsec` **0.24.0**
+(digest `sha256:a2c4fbf4f4692d9fca09d51d102c7e417fbe93b609356c4777f9cc31cb202458`, appVersion **v1.7.8** —
+same version we run today).
 
-No further code work is planned under this roadmap item. Follow-ups closed 2026-07-31 (docs session): bouncer SA-token mount, hardening pass (readOnlyRootFilesystem DECLINED — see Session 2026-07-31), Grafana dashboard 21689 (removed; premise corrected — never a job-split problem), ADR AD-024, and the PSA per-namespace crowdsec row. Still open: the upstream victorialogs issue (draft at /tmp/claude-501/victorialogs-issue-draft.md, NOT filed — filing is the human's to approve), the acquisition glob over-match (record only), and the deferred heartbeat-Probe / auto-heal-watchdog items. Criterion 4 (local origin="crowdsec" decision) and criterion 5 (OIDC live login) remain PENDING — narrowed/diagnosed in the Session 2026-07-31 section, not passed.
+- [evidence] The chart splits the single pod into three workloads:
+
+| Workload | Toggle | Kind | Pod labels | Service | Ports |
+|---|---|---|---|---|---|
+| LAPI | `lapi.enabled` | Deployment `crowdsec-lapi` | `k8s-app=crowdsec, type=lapi, version=v1` | `crowdsec-service` | 8080 lapi, 6060 metrics |
+| Agent | `agent.enabled`, `isDeployment: false` | DaemonSet `crowdsec-agent` | `k8s-app=crowdsec, type=agent, version=v1` | `crowdsec-agent-service` | 6060 metrics |
+| AppSec | `appsec.enabled` | Deployment `crowdsec-appsec` | `k8s-app=crowdsec, type=appsec, version=v1` | `crowdsec-appsec-service` | 7422 appsec, 6060 metrics |
+
+- [evidence] The chart sets **no** `app.kubernetes.io/*` labels — the existing CNP selector
+  (`app.kubernetes.io/name: crowdsec`) matches nothing after the migration and must be rewritten.
+- [evidence] `podLabels` (global) **wins over** `<component>.podLabels` — the templates use
+  `if .Values.podLabels ... else if .Values.<c>.podLabels`. Set the prometheus label once, globally.
+- [evidence] `env` is an **array** of `{name, value}` on all three components (not a map, unlike bjw-s).
+  Only `lapi` supports `envFrom`.
+- [evidence] LAPI runs the **chart's own** `/docker_start.sh` (ConfigMap `crowdsec-docker-start-script-configmap`
+  from `files/docker-start-custom.sh`), which is the image entrypoint with all agent-side config removed.
+  It handles `USE_WAL`, `ENROLL_KEY`/`ENROLL_INSTANCE_NAME`, `ENABLE_CONSOLE_MANAGEMENT` and the
+  `BOUNCER_KEY_*` registration loop — but **not** `COLLECTIONS`/`PARSERS` and **not**
+  `AGENT_USERNAME`/`AGENT_PASSWORD`. Agent and AppSec run the **image's** `./docker_start.sh`, which does
+  handle `COLLECTIONS`/`PARSERS`/`POSTOVERFLOWS`/`APPSEC_CONFIGS`.
+- [evidence] `secrets.username` / `secrets.password` are **dead values** — referenced by no template. There
+  is no chart path that registers the web-ui machine.
+- [evidence] With `lapi.persistentVolume.config.enabled: true`, `StoreCAPICredentialsInSecret` and
+  `StoreLAPICscliCredentialsInSecret` both resolve false → **no register Jobs, no Role/RoleBinding/SA, and
+  no `alpine/kubectl:latest` (mutable-tag) image is pulled.** Keep the config PVC enabled for this reason.
+- [evidence] LAPI command with the config PVC:
+  `cp -nR /staging/etc/crowdsec/* /etc/crowdsec_data/ && ln -s /etc/crowdsec_data /etc/crowdsec && bash /docker_start.sh`.
+  The data PVC mounts at `/var/lib/crowdsec/data` with `subPath: crowdsec`.
+- [evidence] Agent and AppSec register through an init container:
+  `cscli lapi register --machine "$USERNAME" -u "$LAPI_URL" --token "$REGISTRATION_TOKEN"` where
+  `USERNAME` = **pod name** — so every pod recreation adds a machine to the LAPI machine list.
+- [evidence] The LAPI's own `CUSTOM_HOSTNAME` is also the pod name, but with the persistent config PVC the
+  entrypoint finds the stored `local_api_credentials.yaml` and re-registers **that** login instead of
+  creating a new machine — so LAPI itself does not churn.
+- [evidence] `container_runtime: containerd` is required (default is `docker`, which adds a
+  `/var/lib/docker/containers` hostPath the Talos node does not have) and it is also what the acquisition
+  `labels.type` is set from — see Part 4.
+- [evidence] `agent.hostVarLog: true` (default) mounts hostPath `/var/log` read-only. The agent runs as root,
+  so no `supplementalGroups: [0]` is needed (host container logs are 0640 root:root — the trick
+  `victoria-logs-collector` needs only because it is rootless).
+- [evidence] The chart exposes **neither** `automountServiceAccountToken` **nor** `enableServiceLinks` —
+  a token-hygiene regression against the repo baseline. See Part 5.
+
+## Part 4 — the acquisition, corrected
+
+This is where the first draft of this plan was wrong. The parse path is the whole point, so it is
+spelled out with its evidence.
+
+- [evidence] `yanis-kouidri/envoy-logs` filters on **`evt.Parsed.program == 'envoy'`** (hub source), and its
+  JSON branch requires `TrimSpace(evt.Parsed.message) startsWith "{"`.
+- [evidence] `crowdsecurity/cri-logs` (s00-raw) filters on **`evt.Line.Labels.type == 'containerd'`**, groks
+  the containerd `<ts> stdout F <line>` prefix off `Line.Raw` into `evt.Parsed.message`, and sets
+  `program` from `evt.Line.Labels.program`.
+- [evidence] The chart's `acquis-configmap` renders each `agent.acquisition` entry as
+  `filenames: [/var/log/containers/<podName>_<namespace>_*.log]`, `force_inotify: true`,
+  `labels: {type: <container_runtime>, program: <program>}`.
+- [decision] **Use the chart-native `agent.acquisition`, not `additionalAcquisition` with `labels.type: envoy`.**
+  With `labels.type: envoy` (the first draft's proposal) `cri-logs` never fires, the CRI prefix stays on the
+  line, `message` does not start with `{`, and **nothing parses at all**. The correct chain is
+  `cri-logs` (type=containerd) → `envoy-logs` (program=envoy) → `http-logs` → enrichment.
+- [decision] **Split the pod glob.** `envoy-*` would also match `envoy-gateway-*` — the controller pod,
+  live in the `networking` namespace — feeding controller logs into the parser. Use two entries,
+  `envoy-external-*` and `envoy-internal-*`.
+- [decision] **`poll_without_inotify: true` is mandatory.** `/var/log/containers/*.log` are symlinks, and
+  crowdsec warns on exactly this (`pkg/acquisition/modules/file/run.go:255-262` v1.7.8): *"File %s is a
+  symlink, but inotify polling is enabled. Crowdsec will not be able to detect rotation."* With inotify
+  the watch binds the rotated-away inode; kubelet log rotation would then produce **the same class of
+  silent stall we are migrating away from**. Polling re-stats the path, re-resolves the symlink and
+  reopens.
+- [evidence] **Why pod recreation is survived:** `Configure()` (`file/config.go:95-108`) adds an fsnotify
+  watch on `filepath.Dir(pattern)` when `force_inotify` is set — here the literal, stable directory
+  `/var/log/containers` — and `monitorNewFiles()` (`file/run.go:128-170`) tails any newly created file
+  matching the glob. A new envoy pod creates a new symlink there and is picked up automatically.
+  **Corollary:** the glob's parent directory must be literal. `/var/log/pods/networking_envoy-*/envoy/*.log`
+  would break discovery (`watcher.Add` on a non-existent globbed dir fails).
+- [decision] **Rename four envoy JSON fields** in both access-log blocks of
+  `kubernetes/apps/networking/envoy-gateway/config/envoy.yaml`:
+  `path`→`x-envoy-origin-path`, `authority`→`:authority`, `x_forwarded_for`→`x-forwarded-for`,
+  `user_agent`→`user-agent`. Verified against a live log line: `start_time`, `method`,
+  `response_code` and `downstream_remote_address` already match what the parser reads; those four do not.
+  The only consumer of the current names in the repo is the acquis hack itself, so this is cosmetic for
+  victoria-logs.
+- [decision] **Drop `crowdsecurity/syslog-logs`.** It was needed only for the victorialogs source (its
+  `non-syslog` s00-raw node filled `evt.Parsed.message`). It is not a dependency of
+  `yanis-kouidri/envoy` → `base-http-scenarios` (verified). Worse, its `non-syslog` node
+  (`filter: type not in ['syslog','unifi']`) **also matches `containerd`**, and its statics would overwrite
+  `program` and `message`; the outcome would depend on s00-raw node evaluation order. Remove it rather
+  than depend on ordering.
+- [decision] **Declare `crowdsecurity/cri-logs` explicitly in `PARSERS`.** It is present today
+  (`cscli parsers list` on the live pod) as an **image default**, not as a dependency of anything we
+  install — and the entire parse path now rests on it. Declaring it is idempotent and self-documenting.
+- [evidence] The AppSec pod needs no `APPSEC_CONFIGS` env: `crowdsecurity/appsec-virtual-patching` already
+  lists `crowdsecurity/appsec-default` under its `appsec-configs` (hub source).
+- [note] The agent has no data PVC, so `geoip-enrich` re-downloads the GeoLite2 mmdb from
+  `hub-data.crowdsec.net` on **every** agent pod start. That is a startup cost and a hard egress
+  requirement (Part 5, CNP).
+
+**Resulting values (agent side):**
+
+```yaml
+agent:
+  acquisition:
+    - namespace: networking
+      podName: envoy-external-*
+      program: envoy
+      poll_without_inotify: true
+    - namespace: networking
+      podName: envoy-internal-*
+      program: envoy
+      poll_without_inotify: true
+```
+
+## Part 5 — file-by-file change plan
+
+### `kubernetes/apps/crowdsec/namespace.yaml`
+- Replace the six `pod-security.kubernetes.io/*` labels with the single
+  `pod-security.kubernetes.io/enforce: privileged`. Keep the `kustomize.toolkit.fluxcd.io/prune: disabled`
+  annotation. Replace the now-false "restricted-clean by construction" comment with a one-liner naming
+  the reason (the agent DaemonSet needs hostPath `/var/log`).
+
+### `.../crowdsec/app/ocirepository.yaml` (NEW)
+- OCIRepository for `oci://ghcr.io/crowdsecurity/helm-charts/crowdsec`, tag `0.24.0`, same shape as
+  `bouncer/app/ocirepository.yaml` (layerSelector + `# renovate: registryUrl=https://ghcr.io/crowdsecurity/helm-charts chart=crowdsec`).
+
+### `.../crowdsec/app/helmrelease.yaml` (REWRITE)
+- `image.repository: crowdsecurity/crowdsec`, `image.tag: v1.7.8@sha256:…` (tag+digest is a valid
+  reference for the chart's `{{ repo }}:{{ tag }}` interpolation); keep the renovate annotation.
+- `container_runtime: containerd`.
+- `podLabels.ingress.home.arpa/allow-prometheus: "true"` — **global**, covers all three pods.
+- `config.config.yaml.local`: the chart's `auto_registration` block **merged with** our
+  `api.server.trusted_ips` (127.0.0.1, ::1, 10.0.0.0/8, `${LAN_SUBNET}` — Flux substitutes this one).
+- `config.profiles.yaml`: the two `duration_expr` remediation profiles verbatim (LAPI-only mount).
+- `lapi`: `persistentVolume.config` (1Gi) + `persistentVolume.data` (2Gi) on
+  `democratic-csi-local-hostpath`; `deployAnnotations.reloader.stakater.com/auto: "true"`;
+  `metrics.serviceMonitor.enabled: true`; `env` (`USE_WAL`, `ENABLE_CONSOLE_MANAGEMENT`,
+  `ENROLL_INSTANCE_NAME: home-ops`); `envFrom` the `crowdsec-secret`; `lifecycle.postStart` for the
+  web-ui machine (Open tasks); LAPI-sized resources.
+- `agent`: `isDeployment: false`; `hostVarLog: true`; the two `acquisition` entries above;
+  `env` (`COLLECTIONS: yanis-kouidri/envoy`, `PARSERS: crowdsecurity/cri-logs crowdsecurity/dateparse-enrich crowdsecurity/geoip-enrich crowdsecurity/whitelists`,
+  `POSTOVERFLOWS: crowdsecurity/ipv6_to_range`); `metrics.serviceMonitor.enabled: true`.
+- `appsec`: `acquisitions` (`source: appsec`, `listen_addr: 0.0.0.0:7422`, `path: /`,
+  `appsec_config: crowdsecurity/appsec-default`, `labels.type: appsec`);
+  `env.COLLECTIONS: crowdsecurity/appsec-virtual-patching crowdsecurity/appsec-generic-rules`;
+  `metrics.serviceMonitor.enabled: true`.
+- `postRenderers` (the repo's sanctioned exception to the HelmRelease minimal-spec policy, precedent:
+  `onepassword-connect`): kustomize patches setting `automountServiceAccountToken: false` and
+  `enableServiceLinks: false` on `crowdsec-lapi`/`crowdsec-appsec` (Deployment) and `crowdsec-agent`
+  (DaemonSet) — none of the three touches the K8s API.
+- Drop: bjw-s `controllers`/`defaultPodOptions`/`persistence`/`service`/`serviceMonitor`, the rootless
+  securityContext, the `rsync`+symlink-cleanup command hack, the `varlog`/`tmp` emptyDirs, the custom probes.
+
+- [decision] **The chart's registration-token placeholder must be escaped for Flux.** Write it as
+  `$${REGISTRATION_TOKEN}` — a doubled dollar sign — inside the HelmRelease values. The
+  cluster-root Kustomization patches **every** child Kustomization with
+  `postBuild.substituteFrom: cluster-settings` (`kubernetes/flux/cluster/ks.yaml:63-69`) — verified live
+  (the `LAN_SUBNET` placeholder in today's `crowdsec-config-local` ConfigMap renders as `192.168.1.0/24`).
+  Unescaped, Flux would substitute the registration token to **empty** before crowdsec ever sees it,
+  silently killing agent and AppSec registration. The doubled form renders back to a literal placeholder
+  that crowdsec's own env expansion then resolves.
+
+### `.../crowdsec/app/kustomization.yaml`
+- Add `./ocirepository.yaml`; remove the three `configMapGenerator` entries.
+
+### `.../crowdsec/app/{acquis.yaml,config.yaml.local,profiles.yaml}` (DELETE)
+- Content moves inline into the HelmRelease values (chart-native). Keeping the files and using Flux
+  `valuesFrom` is possible but adds indirection for no gain — recommend inline.
+
+### `.../crowdsec/app/ciliumnetworkpolicy.yaml` (REWRITE — four documents)
+- `crowdsec`: selector `k8s-app: crowdsec` (all three pods), **egress only** — the existing
+  `crowdsec.net` / `papi.api.crowdsec.net` / `blocklists.api.crowdsec.net` / `*.crowdsec.net` FQDN
+  block on 443. **All three** pods need it now: LAPI for CAPI/PAPI/console, agent and AppSec for hub
+  downloads on every start (including the GeoLite2 mmdb).
+- `crowdsec-lapi`: selector `k8s-app: crowdsec, type: lapi`, ingress — bouncer→8080, web-ui→8080+6060,
+  **and `k8s-app: crowdsec`→8080** for the agent's and AppSec's registration and streaming. Omitting
+  that last rule breaks the whole engine; it did not exist before because everything lived in one pod.
+- `crowdsec-agent`: selector `k8s-app: crowdsec, type: agent`, ingress — web-ui→6060 (see the web-ui
+  metrics decision below). Without this document the agent has no CNP of its own, but the clusterwide
+  `ingress-from-prometheus` CCNP still selects it (via the global pod label) and therefore flips its
+  ingress to default-deny — the web-ui scrape would be dropped.
+- `crowdsec-appsec`: selector `k8s-app: crowdsec, type: appsec`, ingress — bouncer→7422, web-ui→6060.
+- Prometheus ingress to all three arrives via the clusterwide `ingress-from-prometheus` CCNP through the
+  global pod label; cluster-internal egress stays on the `allow-cluster-egress` CCNP baseline (crowdsec
+  carries no `egress.home.arpa/custom-egress` opt-out label).
+
+### `.../crowdsec/app/externalsecret.yaml` (UNCHANGED)
+- `BOUNCER_KEY_envoy` (chart's LAPI script keeps the `BOUNCER_KEY_*` loop), `AGENT_PASSWORD` (now
+  consumed by the postStart hook instead of the entrypoint) and `ENROLL_KEY` all stay in use.
+
+### `.../crowdsec/app/prometheusrule.yaml` (UPDATE — both rules)
+- `CrowdSecLAPIDown`: `up{job="crowdsec-service", namespace="crowdsec"}`.
+- `CrowdSecAcquisitionStalled`: the counter now comes from the **agent** and its labels change.
+  Verified live today: `cs_parser_hits_ok_total{acquis_type="envoy", source="http://victoria-logs-server…:9428", type="victorialogs"}`
+  — `acquis_type` is the acquisition's `labels.type`, so it becomes **`containerd`**, `type` becomes
+  `file`, and `source` becomes the log file path. New selector:
+  `cs_parser_hits_ok_total{job="crowdsec-agent-service", namespace="crowdsec", acquis_type="containerd", source=~"/var/log/containers/envoy-.*"}`.
+  (`source` churns on every envoy pod recreation — fine under `sum(increase(...))`.)
+- Rewrite the description: the cause is no longer the victorialogs tail. The 6h + `keep_firing_for` shape
+  stays valid — traffic-gate blindness is a property of low envoy traffic, not of the datasource.
+- [note] The `job` label is the **Service** name (prometheus-operator default when `jobLabel` is unset;
+  consistent with today's `job="crowdsec"`/`job="crowdsec-bouncer"`). Confirm against live targets after
+  cutover before trusting the alerts.
+
+### `.../bouncer/app/helmrelease.yaml` (UPDATE cross-refs)
+- `config.bouncer.lapiURL` → `http://crowdsec-service.crowdsec.svc.cluster.local:8080`.
+- `config.waf.appSecURL` → `http://crowdsec-appsec-service.crowdsec.svc.cluster.local:7422`.
+
+### `.../web-ui/app/helmrelease.yaml` (UPDATE cross-refs + metrics fan-out)
+- `CONFIG_INSTANCE_LAPI_URL` → `http://crowdsec-service.crowdsec.svc.cluster.local:8080`.
+- [decision] **Register all three metrics endpoints, not one.** Splitting the pod splits the `:6060`
+  surface: the LAPI process exposes API/decision/machine/bouncer counters, the agent process exposes the
+  acquisition/parser/bucket counters, the AppSec process its own. A single URL would therefore show a
+  partial picture in the web-ui's Metrics page.
+- [evidence] The web-ui accepts **zero or more** metrics endpoints per instance
+  (`instances[].metrics[]`, env form `CONFIG_INSTANCES_<INDEX>_METRICS_<METRIC_INDEX>_*`) — verified in
+  the README at the deployed tag `2026.7.24`, not just on `main`. So nothing is lost; this is a config
+  change, not a tradeoff.
+- Replace `CONFIG_INSTANCE_METRICS_URL` with the indexed form (the README states the shorthand and the
+  indexed form are equivalent and must not be set together):
+  `CONFIG_INSTANCES_0_METRICS_0_URL` = `http://crowdsec-service.crowdsec.svc.cluster.local:6060/metrics`,
+  `_1_URL` = `http://crowdsec-agent-service…:6060/metrics`,
+  `_2_URL` = `http://crowdsec-appsec-service…:6060/metrics`, each with a matching
+  `_NAME` (`LAPI` / `Agent` / `AppSec`) so the UI selector is readable.
+- This is what makes the `crowdsec-agent` and `crowdsec-appsec` CNP ingress rules above necessary.
+
+### `kubernetes/apps/networking/envoy-gateway/config/envoy.yaml` (RENAME fields)
+- The four renames in **both** the envoy-external and envoy-internal access-log JSON blocks
+  (lines ~50-62 and ~127-139). Afterwards verify both proxies reload the format and still emit logs.
+
+## Part 6 — cutover sequence (the migration is not a plain HelmRelease edit)
+
+- [evidence] **ConfigMap ownership collision.** The chart creates ConfigMaps named **`crowdsec-profiles`**
+  and **`crowdsec-config-local`** — byte-identical names to the ones our `configMapGenerator` owns today.
+  Helm refuses to adopt resources it does not own ("invalid ownership metadata"), so an in-place
+  HelmRelease swap can deadlock on them.
+- [evidence] **PVCs.** The chart creates `crowdsec-config-pvc` / `crowdsec-db-pvc`; the current release owns
+  `crowdsec-config` / `crowdsec-data`. No name collision, but `democratic-csi-local-hostpath` has
+  `reclaimPolicy: Delete`, so uninstalling the old release **destroys the old LAPI database**.
+  That is intended (fresh state, no rootless-era leftovers), and the cost is bounded: CAPI/list
+  decisions re-stream, the bouncer re-registers from `BOUNCER_KEY_envoy`, console re-enroll is a no-op —
+  only locally-generated decisions are lost. **There is no rollback to the old DB.**
+
+Order:
+1. Commit the envoy field renames first, and confirm envoy still logs (independent, reversible).
+2. Commit the crowdsec app rewrite in one commit: namespace label, kustomization (generators removed),
+   the three deleted config files, new ocirepository, new helmrelease, new CNP, updated PrometheusRule.
+3. Let Flux prune the old ConfigMaps/HelmRelease before the new release installs — verify
+   `crowdsec-profiles` and `crowdsec-config-local` are gone (or deleted by hand) **before** the new
+   HelmRelease reconciles; otherwise the install fails on ownership.
+4. Update the bouncer and web-ui references (they fail closed while LAPI is down anyway).
+5. Walk the verification criteria.
+
+## Part 7 — open tasks
+
+- [task] **Web-ui LAPI machine registration.** The chart's LAPI script ignores `AGENT_USERNAME`/
+  `AGENT_PASSWORD` (verified). Plan: `lapi.lifecycle.postStart.exec` running
+  `cscli machines add crowdsec-web-ui -p "$AGENT_PASSWORD" --force` in a retry loop (postStart races the
+  entrypoint; `cscli` needs `/etc/crowdsec` seeded). Fallback: a one-shot Job. Validate the web-ui logs in.
+- [task] **Confirm the `config.yaml.local` merge** renders our `trusted_ips` *alongside* the chart's
+  `auto_registration` block, and that the escaped registration-token placeholder survives Flux
+  substitution while `LAN_SUBNET` is substituted.
+- [task] **Machine-list churn.** Agent/AppSec register per pod name; check the machine list after a few
+  restarts and decide whether a periodic `cscli machines prune` is warranted.
+- [task] **Grafana dashboard 21689** is an upstream grafana.com dashboard; check its job/instance
+  variables still resolve with three jobs instead of one.
+
+## Part 8 — verification criteria
+
+- [criterion] `crowdsec-lapi`, `crowdsec-agent` (DaemonSet) and `crowdsec-appsec` Running, 0 restarts; the
+  namespace carries exactly one PSA label (`enforce: privileged`) and no PodSecurity admission events.
+- [criterion] `cscli metrics` on the agent shows the two `/var/log/containers/envoy-*` files as acquisition
+  sources with non-zero reads, and the parser chain `cri-logs`→`envoy-logs`→`http-logs` shows hits (not
+  just reads) — a real envoy log line parsed end to end.
+- [criterion] **The root criterion:** `cs_parser_hits_ok_total{acquis_type="containerd", source=~"/var/log/containers/envoy-.*"}`
+  climbs continuously **across an envoy pod recreation** — the acquisition survives by construction, not
+  by alert. Also verify across a `victoria-logs-server` replacement (must now be a non-event).
+- [criterion] `cs_active_decisions` shows an `origin="crowdsec"` series after a deliberate local trigger.
+- [criterion] Bouncer extAuth + AppSec still serve; web-ui logs in (OIDC + LAPI machine registered).
+- [criterion] The web-ui Metrics page lists all three endpoints (LAPI / Agent / AppSec) and each returns
+  data — proving both the indexed config and the new agent/appsec CNP ingress rules.
+- [criterion] Prometheus scrapes all three ServiceMonitors; `CrowdSecLAPIDown` and
+  `CrowdSecAcquisitionStalled` fire/resolve correctly with the new job labels.
+- [criterion] envoy-external/-internal still emit JSON access logs with the renamed fields and
+  victoria-logs still ingests them.
+- [criterion] No API token mounted in the three crowdsec pods (postRenderer applied).
+
+## Part 9 — follow-up
+
+- [follow-up] **File the upstream victorialogs issue** (and ideally the patch: on tail-stream EOF either
+  close `responseChan` or reconnect). Zero local cost, and no issue exists. We no longer depend on it,
+  but every other user does.
+- [follow-up] **Hardening pass** — re-harden the now-root pods (seccomp `RuntimeDefault`,
+  `readOnlyRootFilesystem`, scoped capabilities), validating each against the chart's root entrypoint.
+  The explicit second step the human asked for.
+- [follow-up] **ADR** — record the PSA decision for the `crowdsec` namespace: it reverses a human-locked
+  `restricted` PSA, and the namespace now runs root + hostPath by design under an explicit
+  `enforce: privileged`.
+- [follow-up] Add a `crowdsec` row to the [[pod-security-admission-enforcement]] per-namespace table
+  (explicit `privileged` — the agent DaemonSet needs hostPath `/var/log`, an inherent property of any
+  node log collector, exactly as recorded for `victoria-logs-collector`).
+- [follow-up] **Deferred, still valid:** no heartbeat `Probe` (would remove the alert's traffic gate, but
+  needs an in-cluster route to envoy-internal and a crowdsec allowlist for the pod CIDR — self-ban risk,
+  see [[envoy-crowdsec-bouncer]] Session 4); no auto-heal watchdog (a CronJob needs `delete pods` RBAC
+  and the stall class it healed is what this migration removes).
 
 ## Relations
 
-- relates_to [[crowdsec-psa-removal-and-official-chart-migration]]
 - exception_to [[pod-security-admission-enforcement]]
 - relates_to [[envoy-crowdsec-bouncer]]
+- relates_to [[cr-health-alerting]]
 - relates_to [[k8s-workloads]]
-
-
-## Session 2026-07-31 — follow-up closeout (documentation only)
-
-No cluster changes in this session — documentation closeout of the follow-ups opened in the roadmap Part 9 and the step-3A list. The commits below landed on `main` (direct-commit repo norm) and were verified live by the Maestro before this session; this session records them and closes the corresponding follow-ups.
-
-### Commits that landed this session window (all on main, verified live)
-
-- [step] 2a8aef0e6 — 🔒 security(crowdsec): drop all capabilities on the three workloads. `capabilities.drop: [ALL]` on lapi/agent/appsec plus the two agent/appsec `wait_for_lapi` init containers, applied through chart values (no postRenderer needed — the chart exposes those keys). Final object on all five targets: `allowPrivilegeEscalation: false`, `privileged: false`, `seccompProfile: RuntimeDefault`, `capabilities.drop: [ALL]`. `podSecurityContext` deliberately left `{}` and the namespace PSA label untouched.
-- [step] 522d66e9a — 🔒 security(crowdsec): add seccomp RuntimeDefault to the three workloads. Together with 2a8aef0e6 this is the roadmap "Hardening pass" follow-up, and CLOSES it. Applied through chart values on the same five targets.
-- [step] 0ac6787d8 — 🔥 remove(crowdsec): drop the dead 21689 dashboard. CLOSES the "Grafana dashboard 21689" follow-up — but see the premise correction below.
-- [step] 62fb59964 — ✨ feat(crowdsec): add an aggregated web-ui metrics endpoint. The chart split made the web-ui metrics tab a 3-way dropdown; the web-ui cannot merge endpoints (its server bundle fetches exactly one endpoint per request and renders a `<select>` when there is more than one). Prometheus already scrapes all three, so index 0 is now the federate aggregate (`http://kube-prometheus-stack-prometheus.observability.svc.cluster.local:9090/federate?match[]=%7B__name__%3D~%22cs_.*%22%7D`, id `all`, name `All (Prometheus)`); the three direct `:6060` endpoints stay at indices 1/2/3 as a real-time fallback. Proven safe before shipping: the real bundled parser was run over the real federate body — 340 samples, fully populated summary (bouncerRequests 556, machineRequests 1082, appsecRequests 695, parserProcessed 811, whitelistHits 1474), the `appsec_engine` label preserved; the missing HELP/TYPE lines and the trailing millisecond timestamp are both absorbed (the parser regex has an optional trailing `(?:\s+\d+)?`). Tradeoff accepted by the human: the metrics tab now depends on Prometheus availability and carries scrape lag; the operational pages (alerts/decisions) still hit the LAPI directly.
-- [step] 6eb636118 — 🔒 security(crowdsec): drop the bouncer API token mount. `automountServiceAccountToken: false` + `enableServiceLinks: false` merged into the bouncer's EXISTING postRenderer patch (one patch per target, matching the sibling HelmRelease). Evidence the token was unused: no Role/RoleBinding in the `crowdsec` namespace and no ClusterRoleBinding with a crowdsec-namespace subject — the bouncer never calls the K8s API. Live: the new pod's volumes are `bouncer-config` + `k8tz` only, no `kube-api-access-*`; 1/1 Running; "Using API key auth" + "initial decision sync complete"; extAuth still serving. CLOSES the "Bouncer automountServiceAccountToken" follow-up.
-- [note] cdbda380d — `limits` (a HUMAN commit, not ours): web-ui memory limit 256Mi → 384Mi. Recorded for accuracy; not a follow-up.
-
-### Follow-ups CLOSED this session
-
-- [closed 2026-07-31] **Bouncer automountServiceAccountToken** — commit 6eb636118 (see above).
-- [closed 2026-07-31] **Hardening pass** — commits 522d66e9a + 2a8aef0e6 (seccomp `RuntimeDefault` + all capabilities dropped on all five targets, via chart values). `readOnlyRootFilesystem` was DECLINED, not deferred — see "Declined options" below.
-- [closed 2026-07-31] **Grafana dashboard 21689** — commit 0ac6787d8. PREMISE CORRECTED: the original follow-up ("built for one job, not three") was wrong. All 4 panels of community dashboard 21689 query `cs_lapi_decision`, which is NOT a CrowdSec metric; its author synthesizes it by pushing alert records into VictoriaMetrics through a custom notification-webhook + import pipeline (freefd.github.io article `8_cyber_threat_insights_with_crowdsec_victoriametrics_and_grafana`). We do not run that pipeline, so the metric can never exist here — not a version issue and NOT a job-split issue. Independently confirmed: zero series in Prometheus, `prometheus.level` is already `full`, and the LAPI's own `:6060` exposes only `cs_active_decisions` among decision metrics. Dashboard 19011 was evaluated as a replacement and rejected (it wants `cs_bucket_overflowed_total` / syslog / cloudwatch source hits, which we do not emit). The crowdsec `GrafanaFolder` and the `crowdsec-bouncer` dashboard were deliberately kept.
-- [closed 2026-07-31] **ADR — record the PSA decision for the crowdsec namespace** — filed as [[AD-024-crowdsec-namespace-psa-exception]] (docs/decisions). Records the explicit `enforce: privileged`, the reason (agent DaemonSet hostPath `/var/log` + root entrypoint; the rootless bend broke acquisition and triggered the migration), the compensating controls (no SA token, seccomp RuntimeDefault, all caps dropped, APE false, CNPs), and the declined options (`readOnlyRootFilesystem`, rootless).
-- [closed 2026-07-31] **Add a crowdsec row to the [[pod-security-admission-enforcement]] per-namespace table** — row added: `enforce: privileged` (explicit), reason (agent DaemonSet hostPath `/var/log` + root entrypoint), pointer to [[AD-024-crowdsec-namespace-psa-exception]].
-
-### Declined options (with reasons — not future work)
-
-- [declined] **readOnlyRootFilesystem** — DECLINED, not deferred. Blocking evidence: the LAPI's container command creates `/etc/crowdsec` as a symlink on the root filesystem at runtime (`ln -s /etc/crowdsec_data /etc/crowdsec`); the agent and appsec copy credentials into `/staging/etc/crowdsec` on the root filesystem (an emptyDir there would hide the pre-baked hub/parsers/scenarios they also read) and open `/var/lib/crowdsec/data/crowdsec.db` read-write on the root filesystem (the chart gives them no PVC). Unlocking it would require rewriting the container command and volume mounts via postRenderer. The human's explicit instruction this session: "I do not want hardening that requires all sorts of workarounds."
-- [declined] **Rootless (runAsNonRoot uid 10001 + supplementalGroups [0], the victoria-logs-collector vlagent pattern)** — DECLINED, does not transfer. The crowdsec entrypoint requires root, and since the agent already runs as root it reads the 0640 `root:root` host container logs by ownership — the `supplementalGroups: [0]` trick vlagent needs only exists because vlagent is rootless.
-
-### Part 8 criteria — narrowed/diagnosed, still PENDING
-
-- [pending] **Criterion 5 (OIDC)** — now verified UP TO the credential step. The web-ui login page offers only "Continue with SSO", which redirects to the Pocket ID `/authorize` with `client_id=crowdsec-web-ui`, the correct `redirect_uri` and scope `openid profile email groups`, and the IdP renders "Sign in to Crowdsec Web Ui". The remaining step is a passkey/WebAuthn assertion that only the human can perform. Still PENDING — not marked passed.
-- [pending] **Criterion 4 (a local origin="crowdsec" decision)** — still PENDING, and now diagnosed exactly. The human generated real probing traffic from a mobile-data IP through envoy-external. The pipeline worked end to end: 132 lines read, 132 parsed, 20 poured to bucket; scenario `crowdsecurity/http-crawl-non_statics` reached Instantiated 4 / Poured 20 / Expired 4 / Overflows 0. The bucket EXPIRED instead of overflowing because that scenario's capacity is far above 20 events. So acquisition is proven; only the trigger threshold was not met. The identified minimal trigger is the installed `ltsich/http-w00tw00t` scenario (type: trigger, `labels.remediation: true`, groupby `evt.Meta.source_ip`, blackhole 5m), which fires on a SINGLE request whose path lowercases to `/core/skin/login.aspx`. Backup: `crowdsecurity/CVE-2017-9841` (also type: trigger, remediation: true). Still PENDING — not marked passed.
-
-### Follow-up upgraded
-
-- [upgraded 2026-07-31] **Machine-list churn** — the follow-up said `cscli machines prune` "may be warranted once stale entries accumulate". It has now MATERIALIZED: `cscli machines list` shows 8 entries instead of 4 — agent and appsec register per pod name so every rollout adds one, and the LAPI's own entry goes stale on lapi pod recreation because it reuses PVC-persisted credentials and does not re-register (it keeps serving; self-heartbeat 200 from `::1`). Cosmetic, not a regression, but `cscli machines prune` is now actually warranted — upgraded from "may be warranted" to "warranted now".
-
-### Follow-ups still open
-
-- [open] **File the upstream victorialogs issue** — a GitHub-issue draft has been written to `/tmp/claude-501/victorialogs-issue-draft.md` this session (NOT filed, NOT in the repo, NOT in BM — filing is an outward-facing action that is the human's to approve). Covers the tail-stream EOF bug: `pkg/acquisition/modules/victorialogs/internal/vlclient/vl_client.go:204-207` `readResponse` treats `io.EOF` as normal completion and returns nil without closing `responseChan`, while `pkg/acquisition/modules/victorialogs/run.go:109-117` `StreamingAcquisition` blocks forever on that channel; acquisition silently stalls on every VictoriaLogs pod replacement. Byte-identical in v1.7.8 and master; no existing report among 94 victorialogs issues.
-- [open] **Acquisition glob over-matches** (k8tz + shutdown-manager sidecar logs) — human decision: record only, do not implement.
-- [open] **Deferred, still valid:** no heartbeat `Probe`; no auto-heal watchdog.
-
-## Session 2026-07-31 (b) — criteria 4 and 5 PASS; a real defect found and fixed
-
-This section SUPERSEDES the PENDING verdicts for criteria 4 and 5 in the Part 8 table above.
-
-### Criterion 4 — PASS (end-to-end, stronger than the criterion asked for)
-
-- [verified] The human sent a single request from a mobile-data connection to a public hostname
-  with the path `/core/skin/login.aspx`. Alert 3 was raised by `ltsich/http-w00tw00t`, kind
-  `crowdsec` (local, not CAPI), scope `Range:2a00:1110:141:daba::/64`, country HU, AS 5483.
-  The range scope (not a bare IP) is the `crowdsecurity/ipv6_to_range` postoverflow working.
-- [verified] Decision 30001, Source/origin `crowdsec`, action ban, ~4h expiry — the custom
-  `profiles.yaml` `duration_expr` producing the first-offence 4h.
-- [verified] Prometheus: `cs_active_decisions{origin="crowdsec",reason="ltsich/http-w00tw00t"} = 1`
-  alongside the two CAPI series. This is the literal criterion-4 wording, satisfied.
-- [verified] BEYOND the criterion: the bouncer actually ENFORCED it — bouncer log
-  `request denied ... action ban reason ltsich/http-w00tw00t` for that IPv6. So the whole chain is
-  proven live: envoy access log -> cri-logs -> envoy-logs -> http-logs -> scenario -> local
-  decision -> LAPI -> bouncer extAuth block.
-- [note] The decision was deleted afterwards (`cscli decisions delete --id 30001`) so the human's
-  mobile range is not left banned. The alert is kept as the evidence trail.
-- [note] Why ordinary traffic never triggered it: `crowdsecurity/http-crawl-non_statics` is a
-  leaky bucket whose capacity is far above the ~20 events real browsing produced, so the bucket
-  expired instead of overflowing. A `type: trigger` scenario is the right instrument for a
-  deliberate single-request test.
-
-### Criterion 5 — PASS
-
-- [verified] The Maestro drove the flow to the credential step: the web-ui login page offers only
-  "Continue with SSO", which redirects to the Pocket ID `/authorize` with `client_id=crowdsec-web-ui`,
-  the correct `redirect_uri` and scope `openid profile email groups`, and the IdP renders
-  "Sign in to Crowdsec Web UI".
-- [verified] The human completed the passkey/WebAuthn assertion and reported the login works.
-  Criterion 5 is PASS.
-
-### DEFECT FOUND AND FIXED — the postStart hook was clobbering the LAPI's own API credentials
-
-Found while verifying, before running the approved `cscli machines prune`. Pruning first would
-have tidied the symptom and hidden the cause.
-
-- [finding] `cscli machines add` writes its output to `/etc/crowdsec/local_api_credentials.yaml`
-  by DEFAULT (`-f, --file string   output file destination (defaults to ...)`). Our LAPI postStart
-  hook called `cscli machines add crowdsec-web-ui -p ... --force` with no `-f`, so registering the
-  web-ui machine OVERWROTE the LAPI's own API credentials.
-- [evidence] Live in the LAPI pod, that file's `login:` field read `crowdsec-web-ui` (only the
-  login/url lines were read; never the password).
-- [evidence] Upstream does exactly what we omitted: `docker_start.sh:217` runs
-  `cscli machines add "$lapi_login" -p "$lapi_password" -f /dev/null --force`.
-- [consequence] The LAPI's embedded agent authenticated as the `crowdsec-web-ui` machine; the
-  `crowdsec-lapi-*` entries were orphaned on every pod recreation; and because `/etc/crowdsec` is a
-  symlink onto the config PVC, the bad file SURVIVED pod recreation. The real danger was latent:
-  `docker_start.sh:217` re-registers the login found in that file with `--force` on every LAPI
-  start, so rotating `WEBUI_LAPI_PASSWORD` in 1Password would have had the LAPI reset the web-ui
-  machine back to the stale password and break the web-ui login in a very confusing way.
-- [correction] This is the true root cause of the "machine-list churn" follow-up's LAPI half. That
-  follow-up described it as cosmetic churn from pod-name-based registration; the agent/appsec half
-  IS that, but the LAPI half was this defect.
-- [fix] Commit `e54c621aa` 🐛 fix(crowdsec): stop the postStart hook clobbering LAPI creds — adds
-  `-f /dev/null` to the postStart `cscli machines add`, matching upstream. The retry-30-times and
-  exit-0 semantics are unchanged (a non-zero postStart restart-loops the LAPI — earlier lesson).
-- [repair] The already-clobbered PVC file was removed before the commit landed, so the single Flux
-  roll healed both at once. The new pod took the upstream first-run path — LAPI logs show
-  `Check if local agent needs to be registered` -> `Generate local agent credentials` ->
-  `Machine 'crowdsec-lapi-85fd6b78f5-qb89j' successfully added to the local API.` ->
-  `API credentials written to '/etc/crowdsec/local_api_credentials.yaml'`.
-- [verified] The file's `login:` is now the LAPI's own pod name, the LAPI heartbeats under its own
-  machine identity, and the REAL web-ui pod (10.244.0.247, UA `crowdsec-web-ui/2026.7.24`)
-  is what authenticates as the web-ui machine — not the LAPI over `::1` any more.
-- [note] The `::1` still shown in the web-ui row's IP column is registration provenance, not a
-  defect: `cscli` must run co-located with the LAPI, so the hook necessarily registers from there.
-- [note] The one `Machine is not enrolled in the console` error line at startup is transient
-  (`cscli console status` shows all five options active afterwards).
-
-### Machine-list churn follow-up — CLOSED
-
-- [closed] `cscli machines prune --force` (human-approved) deleted exactly the 5 stale entries and
-  kept the 4 live machines (web-ui, agent, appsec, lapi), all heartbeating. Combined with the
-  credential fix above, the LAPI half of this follow-up is structurally fixed rather than swept up;
-  the agent/appsec half remains inherent to pod-name-based registration, so an occasional prune
-  after a burst of rollouts is normal housekeeping, not a defect.
-
-### Upstream victorialogs issue — DROPPED
-
-- [closed] The human decided not to file it. The draft is not kept in the repo or in BM. The bug
-  analysis stays recorded in the roadmap note for provenance; we no longer depend on that
-  datasource. Do not re-open this as an action item.
-
-### Post-change health (live)
-
-- [verified] All three HelmReleases Ready=True (crowdsec v4, crowdsec-bouncer v5, crowdsec-web-ui v8).
-  All five pods 1/1 Running, 0 restarts. The bouncer logged exactly 2 `no route to host` errors
-  inside the LAPI rollout window and none after; `decisions/stream` returns 200 every 10s.
-
-## Session 2026-07-31 (c) — criterion 3 PASS; alert back-tested; both deferred follow-ups DECLINED
-
-### Criterion 3, envoy-pod-recreation arm — PASS (deliberately triggered, human-approved)
-
-- [verified] `kubectl -n networking rollout restart deployment/envoy-internal` (LAN-only gateway,
-  smallest blast radius; the criterion is about any envoy pod recreation). New pod
-  `envoy-internal-56b9c659c9-hjww9` replaced `envoy-internal-64c94974-xnvsm`.
-- [verified] The agent picked up the NEW log path with no intervention: a new
-  `cs_parser_hits_ok_total{acquis_type="containerd", source=".../envoy-internal-56b9c659c9-hjww9_...log"}`
-  series appeared and climbed from 0 to 18 on eight LAN requests, while the old pod's series
-  stopped at 435. Agent logs show it tailing only the new file. Zero errors or warnings.
-- [conclusion] The `poll_without_inotify: true` + fsnotify-on-literal-`/var/log/containers` design
-  works as intended across pod recreation. Criterion 3 is now PASS; its victoria-logs-replacement
-  arm remains structurally a non-event (that datasource is retired).
-
-### CrowdSecAcquisitionStalled — back-tested against the real 2026-07-29 incident
-
-Rather than manufacture a stall (which would mean up to ~6h of real protection loss to watch one
-alert), the current rule was replayed over the actual incident window using retained Prometheus data.
-
-- [evidence] Traffic gate, `sum(increase(envoy_http_downstream_rq_total{...}[6h]))`, across
-  07-29 20:00 to 07-30 08:00 UTC: 677, 775, 1313, 2210, 6502, 8182, 8184, 8191, 8100, 7544, 7522,
-  7517, 7423, 6884, 5947, 1301, 15, 553, 954, 948, 944 — never 0. The gate stayed OPEN for the
-  entire stall.
-- [evidence] Parse signal, `sum(increase(cs_parser_hits_ok_total{namespace="crowdsec"}[6h]))`, over
-  the same window: 521, 602, 688, 685 (flat through the 23:24 stall onset), then decaying as the 6h
-  window drained — 620, 169, 165, 86 — and reaching exactly 0 from 03:30 through 05:30.
-- [conclusion] `gate > 0 and parse == 0` was TRUE from 03:30. With `for: 10m` the alert would have
-  FIRED at about 03:40 — roughly 4h10m after the 23:24 stall onset, and about 4 hours BEFORE the
-  07:41 manual restart. The rule as written would have caught the incident that motivated this
-  entire roadmap item.
-- [measured] Detection latency is ~4h on this incident shape, an inherent consequence of the 6h
-  window: `increase()` drains gradually as pre-stall hits age out. The 6h window is a deliberate
-  trade of detection speed for false-positive resistance.
-- [verified] Both rules currently loaded, `health=ok`, `state=inactive`. Live gate 1775 requests /6h,
-  live parse signal 1654 hits /6h.
-
-### Heartbeat Probe — DECLINED (evidence, not deferral)
-
-- [finding] The follow-up's premise is obsolete. It was written against the ORIGINAL 1h-window rule,
-  whose gate was closed 21-39% of the time. The rule now uses symmetric 6h windows plus
-  `keep_firing_for: 3h`. Measured against live data: the 6h gate was OPEN 96.5% of the last 7d and
-  95.7% of the last 30d — a blind window of roughly 4%, not 21-39%.
-- [finding] Decisive: in the actual incident the gate was open the whole time (evidence above). A
-  heartbeat Probe would have contributed NOTHING to detecting it.
-- [correction 2026-07-31] An earlier version of this entry claimed the Probe would need a crowdsec
-  allowlist carve-out for the pod CIDR because the probe traffic would look like a bot (self-ban
-  risk). That was inherited from the roadmap and is WRONG. `crowdsecurity/whitelists` already covers
-  `10.0.0.0/8`, `192.168.0.0/16`, `172.16.0.0/12`, `127.0.0.0/8` and `::1`, so in-cluster probe
-  traffic is whitelisted by default. The real blocker is the opposite of a ban — see below.
-- [finding] FATAL to the naive design: whitelisting happens at the `s02-enrich` stage, AFTER the
-  parse counter, so whitelisted traffic still increments `cs_parser_hits_ok_total`. Verified during
-  the criterion-3 test: 8 LAN curls (a whitelisted private source) produced 18 parser hits on the
-  envoy-internal source. The alert's parse-signal side is a `sum()` over
-  `source=~"/var/log/containers/envoy-.*"`, so a probe on EITHER gateway would keep that sum
-  permanently above zero. The alert would become STRUCTURALLY UNABLE TO FIRE — the same shape as the
-  victorialogs `"VictoriaLogs channel closed"` branch this whole roadmap item was created to
-  eliminate. An alert that looks healthy and can never fire is worse than a slow one.
-- [measured] Gate-open fraction over 7d by window size: 15m 32%, 30m 42%, 1h 58%, 2h 76%, 6h 97%.
-  This is why the window is 6h — the traffic here is genuinely sparse.
-- [alternative] If detection latency ever needs to improve, the CHEAP path is not a probe: shorten
-  the window and lean on the `keep_firing_for: 3h` the rule already has. A stall during a zero-traffic
-  window is harmless by definition (nothing to protect), and as soon as real traffic resumes a short
-  window shows gate>0/parse==0 and fires within `for: 10m`. The original 1h rule's actual failure was
-  FLAPPING (self-resolving mid-stall), which `keep_firing_for` fixes. Back-test 1h and 2h against the
-  2026-07-29 incident before changing anything — the same replay method used above.
-- [alternative] The only semantically correct probe design is a DEDICATED CANARY METRIC: probe with a
-  distinctive marker, a custom crowdsec parser counting it into its own metric, and an alert on that
-  metric alone. It measures the real question (did crowdsec see the request I just made?) at minutes
-  resolution, and it does not contaminate the general parse signal. Cost: a custom parser we own
-  forever. Not justified while the stall class is gone.
-- [decision] DECLINED. The Probe would add a blackbox-exporter Probe, an in-cluster route to
-  envoy-internal, and a crowdsec allowlist carve-out for the pod CIDR (the probe traffic would
-  otherwise look like a bot and risk a self-ban) — new machinery plus a security exception, to buy
-  about 4 percentage points of coverage on a failure mode where the gate was never the obstacle.
-- [note] The one thing a Probe would genuinely enable is SHORTENING the window (steady synthetic
-  traffic means the gate is never closed and the parse signal is never spuriously zero), cutting
-  detection latency from ~4h to minutes. That is a different, deliberate design decision about how
-  fast we want to learn about a stall — not this follow-up, and not currently justified now that the
-  stall class is gone. Recorded so the tradeoff is not rediscovered from scratch.
-
-### Auto-heal watchdog — DECLINED (evidence, not deferral)
-
-- [finding] The stall class it was meant to heal was the victorialogs tail-EOF bug, and that
-  datasource is retired — the failure mode cannot recur.
-- [finding] The replacement datasource was tested this session against the exact event that used to
-  break it: an envoy pod recreation. It survived cleanly (criterion 3 above).
-- [finding] And if an unknown stall class did appear, the alert demonstrably fires (back-test above).
-- [decision] DECLINED. A watchdog would auto-restart a workload on a condition that has no known
-  cause left and is already alerted. Auto-restarting on an unexplained condition also destroys the
-  evidence needed to diagnose it. Do not re-open without a NEW observed stall.
+- relates_to [[networking]]
+- relates_to [[observability]]
+- relates_to [[iam]]
