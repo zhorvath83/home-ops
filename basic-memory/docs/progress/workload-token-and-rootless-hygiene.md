@@ -2,7 +2,7 @@
 title: workload-token-and-rootless-hygiene
 type: progress-note
 permalink: home-ops/docs/progress/workload-token-and-rootless-hygiene
-status: in-progress
+status: done
 roadmap: home-ops/docs/roadmap/workload-token-and-rootless-hygiene
 related_areas:
 - k8s-workloads
@@ -11,7 +11,7 @@ related_areas:
 
 # Progress — Token + rootless hygiene for the remaining workloads
 
-Roadmap: [[workload-token-and-rootless-hygiene]] (proposed, low).
+Roadmap: [[workload-token-and-rootless-hygiene]] (done, low).
 
 ## Scope recap
 
