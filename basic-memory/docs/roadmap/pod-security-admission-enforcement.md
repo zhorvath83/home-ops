@@ -69,6 +69,7 @@ options:
 | media | **stays `privileged`/warn until calibre fixed** | `calibre-web-automated` adds caps [CHOWN,SETUID,SETGID,FOWNER,DAC_OVERRIDE] (`helmrelease.yaml:104-107`) + APE=true → **violates even baseline**; PSS has no per-pod in-namespace exception |
 | observability | `baseline` (→restricted where clean) | verify node-exporter/victoria-logs |
 | security | `restricted` | pocket-id is distroless nonroot |
+| crowdsec | `privileged` (explicit) | agent DaemonSet mounts hostPath `/var/log` + upstream entrypoint requires root; deliberate exception to `restricted` — see [[AD-024-crowdsec-namespace-psa-exception]] |
 | networking | `baseline` | envoy/cloudflared |
 | kube-system, system-upgrade, volsync-system, cert-manager | `privileged` | legit privileged infra (cilium, csi, tuppr, kopia-maint) — do NOT enforce restricted |
 | external-secrets, flux-system | `baseline`/`restricted` | verify |
