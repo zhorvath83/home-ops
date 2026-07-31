@@ -1,14 +1,13 @@
 ---
 name: Security Scan
 
-on:
+on: # yamllint disable-line rule:truthy
   workflow_dispatch:
   pull_request:
     branches:
       - main
-  push:
-    branches:
-      - main
+  schedule:
+    - cron: "17 4 * * *"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.number || github.ref }}
@@ -21,6 +20,9 @@ jobs:
   gitleaks:
     name: Gitleaks
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -53,5 +55,25 @@ jobs:
           tar -xzf "${archive}" gitleaks
 
       - name: Scan git history
-        run: |-
+        run: |
           "${RUNNER_TEMP}/gitleaks" git --no-banner --redact --exit-code 1 .
+
+      - name: Open an issue if the scheduled scan failed
+        if: ${{ failure() && github.event_name == 'schedule' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          ISSUE_TITLE: "Gitleaks found a secret on main"
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |-
+          # One open issue at a time — a daily schedule would otherwise file a duplicate
+          # every morning until the finding is dealt with. Skip only on a positive count, so a
+          # failed lookup files the issue rather than silently swallowing the alert.
+          open_count="$(gh issue list --state open --search "${ISSUE_TITLE} in:title" --json number --jq 'length' || true)"
+          if [[ "${open_count}" =~ ^[1-9][0-9]*$ ]]; then
+            echo "an open issue already tracks this; not filing another"
+            exit 0
+          fi
+          # shellcheck disable=SC2016
+          body="$(printf 'The scheduled gitleaks history scan failed, so a secret may be present in this public repository.\n\n[Failed run](%s)\n\nFindings are redacted in the run log. Reproduce locally:\n\n```\ngitleaks git --no-banner --redact --exit-code 1 .\n```\n' "${RUN_URL}")"
+          gh issue create --title "${ISSUE_TITLE}" --body "${body}" --assignee zhorvath83
