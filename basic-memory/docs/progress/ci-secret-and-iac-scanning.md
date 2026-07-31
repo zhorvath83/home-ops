@@ -7,13 +7,11 @@ permalink: home-ops/docs/progress/ci-secret-and-iac-scanning
 # ci-secret-and-iac-scanning — execution progress
 
 ## Metadata (observation-form)
-
-- [topic] Execution state for the ci-secret-and-iac-scanning roadmap
+- [topic] Server-side secret + IaC scanning in CI — roadmap item delivered (gitleaks-only)
 - [status] done
-- [roadmap] [[ci-secret-and-iac-scanning]] (docs/roadmap)
 - [priority] low
 - [created] 2026-07-31
-
+- [closed] 2026-07-31 — roadmap spec absorbed into this note; the docs/roadmap/ entry was removed
 ## Execution model (decided with human, 2026-07-31)
 
 - [decision] Scope: **gitleaks only**. The roadmap's companion trivy/IaC job was dropped
@@ -155,12 +153,8 @@ a secret *name* rather than a value:
   and `konflate`. Unrelated to this item but it affects the existing flux-local workflow.
 
 ## Relations
-
-- implements [[ci-secret-and-iac-scanning]]
 - relates_to [[flux-gitops]]
 - relates_to [[main-branch-protection-and-commit-signing]]
-
-
 ## GitHub native secret scanning enabled (2026-07-31, follow-up closed)
 
 Enabled via `gh api --method PATCH repos/zhorvath83/home-ops` with a
@@ -267,3 +261,31 @@ Two deviations from that existing pattern, both required by the daily cadence:
   in-cluster Alertmanager, so it would need the Pushover token duplicated as a GitHub Actions
   secret — a new copy of a credential in a new trust domain, to replace a channel that already
   works. Revisit only if issue notifications prove too quiet.
+
+
+## Original roadmap spec (absorbed 2026-07-31)
+
+This note was originally the execution companion to a `docs/roadmap/ci-secret-and-iac-scanning`
+spec. On close the roadmap entry was deleted and its essence is preserved here so this record
+stands alone.
+
+- [scope] Add gitleaks and an IaC security scanner (trivy config / tfsec) as CI jobs so secret
+  and misconfiguration checks are enforced server-side, not only in local pre-commit.
+- [rationale] A CI backstop makes the existing local checks non-bypassable and adds
+  Terraform/Kubernetes misconfiguration detection, catching issues that a `--no-verify` commit
+  or a fresh clone would otherwise miss.
+- [planned] (1) gitleaks CI job; (2) trivy/tfsec/checkov over `provision/` and `kubernetes/`;
+  (3) wire both as required checks (depends on [[main-branch-protection-and-commit-signing]]);
+  (4) verify with a planted secret / misconfig.
+
+### What was delivered vs. planned
+
+- [delivered] gitleaks-only — see "What shipped" and "Verification" above.
+- [dropped] The IaC half was dropped as inapplicable: no scanner covers this repo's only
+  providers (cloudflare, ovh, pocket-id), and `kubernetes/` has zero raw workload manifests
+  for KSV checks to bind to. Full evidence in "The roadmap's IaC premise was wrong" above. The
+  rendered-manifest signal (755 findings, 139 self-authored) was split into a future hardening
+  item, not a CI gate.
+- [followup] GitHub native secret scanning + push protection were enabled separately (see the
+  dedicated section above); required-status-check wiring still depends on
+  [[main-branch-protection-and-commit-signing]].
