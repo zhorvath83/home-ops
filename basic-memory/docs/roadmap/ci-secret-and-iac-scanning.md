@@ -3,7 +3,7 @@ title: ci-secret-and-iac-scanning
 type: roadmap
 permalink: home-ops/docs/roadmap/ci-secret-and-iac-scanning
 topic: Server-side secret + IaC scanning in CI
-status: proposed
+status: done
 priority: low
 scope: Add gitleaks and an IaC security scanner (trivy config / tfsec) as CI jobs
   so secret and misconfiguration checks are enforced server-side, not only in local
@@ -20,7 +20,7 @@ related_areas:
 ## Metadata (observation-form, schema validation)
 
 - [topic] Server-side secret + IaC scanning in CI
-- [status] proposed
+- [status] done
 - [priority] low
 
 ## What we gain
@@ -103,3 +103,25 @@ related_areas:
 
 ### Effort
 S–M (~2–3h incl. finding SHAs and triaging first-run findings).
+
+
+## Closed 2026-07-31 — delivered as gitleaks-only
+
+Execution and full evidence: [[ci-secret-and-iac-scanning]] (docs/progress).
+
+The secret-scanning half shipped and is live-verified. The IaC half was **dropped as
+inapplicable**, correcting this roadmap's premise:
+
+- Neither trivy 0.72.0 nor checkov 3.3.8 ships **cloudflare or ovh** provider checks, and those
+  (plus pocket-id) are this repo's only Terraform providers. `trivy config provision/` gave
+  153 successes / 0 failures; checkov gave 1 passed / 0 failed.
+- `kubernetes/` contains **zero** raw workload manifests (pure Flux CRs), so the KSV workload
+  checks have nothing to bind to: 18459 successes / 0 failures.
+- The claim above that this would have auto-flagged `backup-immutability-object-lock` and
+  `cloudflare-api-token-migration` is therefore **false** — no scanner covers those resources.
+- The real signal is in *rendered* manifests (755 findings, 616 of them inside third-party
+  charts, CRITICAL class context-blind). Split out as a future hardening item, not a CI gate.
+
+Also surfaced: **GitHub native secret scanning is disabled on this PUBLIC repo**, including
+push protection — a free and strictly stronger control than a post-hoc CI job. Left as a
+human decision (repo settings, not code).
