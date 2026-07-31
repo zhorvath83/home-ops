@@ -72,3 +72,21 @@ Prometheus LOADED the rule (not merely CR present) — proven via the rules API 
 Caveat on method (LESSON): the ALERTS metric is NOT a valid loaded-proof here. Prometheus only emits an ALERTS{alertstate="inactive"} series for a rule that has PREVIOUSLY fired; a never-fired rule (CrowdSecBanActive today, or the pre-existing CrowdSecLAPIDown) does NOT appear in ALERTS at all — count(ALERTS) showed only Watchdog + KubeHpaMaxedOut, both firing. The same empty ALERTS result that "proved not loaded" for CrowdSecBanActive was equally empty for the pre-existing CrowdSecLAPIDown — the non-vacuous control that exposed the method, not the rule. The rules API is the correct loaded-proof because it lists every loaded rule regardless of firing history.
 
 Status: committed + pushed + deploy-verified. AC1/AC2/AC5/AC6/AC7 verified; AC3/AC4 still PENDING the human's real-ban test (see "What the human must do to close AC3/AC4" above).
+## Annotation rewrite + live end-to-end verification
+
+Commit f0d92b32d (♻️ refactor(crowdsec): make the ban alert readable in the notification, pushed 5787529e7..f0d92b32d) rewrote the CrowdSecBanActive summary/description after the human called the original wording out — and they were right: the description IS the Pushover message body the recipient reads on their phone, but it was written as an internal design note ("routed to Pushover via the critical sub-route" — the medium announcing itself; "carries reason/origin/action labels for the notification body" — meta-commentary restating labels the Alertmanager template already renders in a <small> block). New text:
+- summary: "CrowdSec banned a source" (plainer, past tense — matches what happened)
+- description: "CrowdSec banned a source after the scenario below tripped. The ban lasts 4h and doubles for each repeat offence; no action is needed. If it was you, clear it with `cscli decisions delete <ip>`." (what happened -> how long -> whether to act -> how to undo; "the scenario below" points at the label block instead of duplicating it)
+
+LESSON (reusable — annotation-wording): annotations are the product surface. `description` is written FOR THE RECIPIENT — what happened, what it means, what (if anything) to do. Never about the alerting pipeline, and never restating labels the template already renders. The CODE comment above the rule (WHY the denylist is non-CAPI, the gauge Reset/keep_firing_for debounce) stays — that one is for maintainers, the right audience for a code comment.
+
+Deploy verification of the rewrite:
+- Flux reconciled crowdsec/crowdsec at Applied revision refs/heads/main@sha1:f0d92b32; the in-cluster PrometheusRule CR carries the new summary/description (kubectl jsonpath).
+- Prometheus reloaded it (rules API /api/v1/rules via port-forward): CrowdSecBanActive health=ok, state=firing, annotations = new text, lastEvaluation fresh. The operator->config-reloader->/-/reload chain lagged ~30s behind the CR update (old text was still served briefly); confirmed loaded only by re-querying the rules API until the new summary appeared.
+
+Live end-to-end verification (AC1/AC2/AC3 now VERIFIED — Maestro confirmed independently):
+- A REAL local ban is active: origin=crowdsec, reason=ltsich/http-w00tw00t, action=ban, severity=critical — the alert is firing (activeAt 2026-07-31T17:34:05Z), Alertmanager has it active (not inhibited/silenced), routed to the pushover receiver. AC1 (non-CAPI ban fires) + AC2 (labels carried) verified against the live firing alert's labels, not just the expr.
+- AC3 (end-to-end -> Pushover on the device): VERIFIED — the human confirmed the Pushover notification arrived on their phone. (The new description text goes out on Alertmanager's next repeat/flush now that Prometheus reloaded it.)
+- AC4 (resolved push when the ban expires/is deleted): still PENDING until the ban is cleared (`cscli decisions delete <ip>`) or expires (4h, doubling for repeats).
+
+Status: committed + pushed + deploy-verified + live-fired. AC1/AC2/AC3/AC5/AC6/AC7 VERIFIED; AC4 PENDING.
