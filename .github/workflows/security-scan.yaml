@@ -1,0 +1,57 @@
+---
+name: Security Scan
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  gitleaks:
+    name: Gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install gitleaks
+        run: |
+          # Version comes from the .mise.toml pin Renovate already maintains, so this scan
+          # and the local pre-commit hook can never drift apart.
+          version="$(sed -n 's/^"aqua:zricethezav\/gitleaks" = "\([^"]*\)".*/\1/p' .mise.toml)"
+          if [[ -z "${version}" ]]; then
+            echo "::error::could not read the gitleaks version pin from .mise.toml"
+            exit 1
+          fi
+          archive="gitleaks_${version}_linux_x64.tar.gz"
+          base="https://github.com/gitleaks/gitleaks/releases/download/v${version}"
+          cd "${RUNNER_TEMP}"
+          curl -fsSL -O "${base}/${archive}"
+          curl -fsSL -O "${base}/gitleaks_${version}_checksums.txt"
+          # Compared explicitly rather than piped into `sha256sum -c`: an empty pipe (asset
+          # renamed upstream) makes that pipeline exit 0 and skip verification silently.
+          expected="$(awk -v f="${archive}" '$2 == f {print $1}' "gitleaks_${version}_checksums.txt")"
+          actual="$(sha256sum "${archive}" | cut -d' ' -f1)"
+          if [[ -z "${expected}" || "${expected}" != "${actual}" ]]; then
+            echo "::error::checksum verification failed for ${archive}"
+            exit 1
+          fi
+          tar -xzf "${archive}" gitleaks
+
+      - name: Scan git history
+        run: |-
+          "${RUNNER_TEMP}/gitleaks" git --no-banner --redact --exit-code 1 .

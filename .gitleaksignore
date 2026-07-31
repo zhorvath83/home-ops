@@ -1,0 +1,9 @@
+# Accepted gitleaks findings, by fingerprint (commit:file:rule:line).
+# Both are generic-api-key false positives in files deleted long ago: each match is a
+# secret *name*, not a secret value. Verified 2026-07-31 against the full history.
+
+# Ansible 1Password lookup naming the item for an SSH *public* key.
+40450123849f1508f76616540b505644f2b67603:provision/kubernetes/inventory/group_vars/kubernetes/os.yml:generic-api-key:6
+
+# Longhorn `backupTargetCredentialSecret` naming a Kubernetes Secret, not its contents.
+ea47d33327ce30e929a5d8ee5a9edcd319e9d41e:cluster/core/longhorn-system/longhorn-system-helm-release.yaml:generic-api-key:52
