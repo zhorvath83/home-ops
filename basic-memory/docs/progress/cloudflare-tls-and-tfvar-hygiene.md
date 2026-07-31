@@ -1,7 +1,7 @@
 ---
 title: cloudflare-tls-and-tfvar-hygiene
 type: progress
-permalink: home-ops/docs/roadmap/cloudflare-tls-and-tfvar-hygiene
+permalink: home-ops/docs/progress/cloudflare-tls-and-tfvar-hygiene
 topic: Edge TLS floor + sensitive-variable hygiene (Cloudflare)
 status: done
 priority: low
