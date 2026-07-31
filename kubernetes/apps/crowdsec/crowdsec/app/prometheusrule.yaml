@@ -42,3 +42,20 @@ spec:
               /var/log/containers/envoy-* glob matches nothing (envoy pods recreated with
               new names mid-window), or the parser chain cri-logs -> envoy-logs broke.
               Remediation: check the agent DaemonSet and its acquisition, then restart it.
+        # Non-CAPI origin = a locally issued ban (agent scenario / appsec / cscli / console),
+        # excluding the noisy ~25k community blocklist (CAPI) and console blocklists (lists).
+        # The gauge is Reset() each scrape, so for/keep_firing_for debounce a resolve->refire
+        # without lagging a 4h ban's real end.
+        - alert: CrowdSecBanActive
+          expr: sum by (reason, origin, action) (cs_active_decisions{job="crowdsec-service", namespace="crowdsec", origin!~"CAPI|lists(:.*)?"}) > 0
+          for: 1m
+          keep_firing_for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: CrowdSec is actively banning a source
+            description: |-
+              A non-CAPI decision is active on the LAPI, so a locally issued ban exists —
+              routed to Pushover via the critical sub-route. The alert carries reason,
+              origin, and action labels for the notification body. It resolves when the
+              decision expires (default 4h) or is deleted via `cscli decisions delete <ip>`.
