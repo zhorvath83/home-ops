@@ -193,3 +193,77 @@ Two things did NOT get enabled, deliberately or by API limitation:
   failed to engage — the exact outcome the control exists to prevent. Enablement is verified via
   the API state instead. Friction risk is low: this repo delivers all secrets via 1Password/ESO,
   so no plaintext credential is ever committed.
+
+
+## Cadence changed to daily + failure notification (2026-07-31, human request)
+
+The human judged a per-push scan excessive. Cost was checked first and is **zero**:
+
+- [evidence] `GET /repos/.../actions/runs/{id}/timing` reports `billable.UBUNTU.total_ms: 0`
+  for both Security Scan runs (33s and 26s wall clock) **and** for a 5-job Flux Local run
+  (108s). Public repos get GitHub-hosted standard runners free with unlimited minutes, so no
+  quota is consumed. The frequency change is therefore a noise/ergonomics decision, not a
+  cost one.
+- [observation] Only ~7% of the job's wall clock is the actual scan (1.88s for 7604 commits /
+  7.72 MB); the rest is runner provisioning plus the binary download. Nothing worth optimising.
+
+### What changed
+
+- `push: branches: [main]` **removed**; `schedule: cron "17 4 * * *"` added (06:17 CEST,
+  deliberately off the `0 0` slot that update-cloudflare-networks already occupies).
+  `workflow_dispatch` and `pull_request` kept.
+- [decision] **Accepted tradeoff**: a generic-pattern secret can now sit in the public history
+  for up to 24h instead of being caught within a minute of the push. This is bounded by the
+  fact that GitHub push protection (enabled above) already blocks *provider-pattern* secrets
+  before they land — the daily job now covers only the generic high-entropy dimension that
+  push protection misses because non-provider patterns is API-unsettable.
+- [observation] `pull_request` was kept even though the repo norm is direct-to-main: PRs are
+  rare here so it costs nothing, and dropping it would leave the one reviewable path uncovered.
+- [observation] Rejected `paths:` filtering — a secret can land in any file, so a path filter
+  would be a straight security hole, not an optimisation.
+
+### Failure notification
+
+Follows the existing repo pattern (`scanning-deprecated-kube-resources.yaml`): on failure the
+job opens a GitHub issue assigned to zhorvath83, with `permissions: issues: write` scoped to
+the job rather than the whole workflow. Gated on `github.event_name == 'schedule'` — a PR
+failure is already visible as the PR's red check, and a dispatch failure is visible to whoever
+pressed the button. No new secret is introduced (uses `secrets.GITHUB_TOKEN`).
+
+Two deviations from that existing pattern, both required by the daily cadence:
+
+- [decision] **Duplicate guard.** The existing pattern files a fresh issue on every failure,
+  which is fine weekly but would file one every morning here. The new step first counts open
+  issues with the same title and exits early if any exist.
+- [decision] **The guard is fail-safe.** First draft used `if [[ "${open_count}" != "0" ]]`,
+  which is a **latent alert-swallowing bug**: a failed `gh issue list` yields an empty string,
+  and `[[ "" != "0" ]]` is true, so the step would take the skip branch and file nothing.
+  Caught by testing the lookup against a real API failure. Rewritten to skip only on a
+  *positive* count (`=~ ^[1-9][0-9]*$`), so an empty, garbled or failed lookup files the issue.
+  Better a duplicate than a missed secret alert.
+
+### Verification
+
+- [verified] Guard unit-tested across every lookup outcome: `0` → CREATE, `1` → SKIP,
+  `3` → SKIP, empty (failed lookup) → CREATE, garbage → CREATE.
+- [verified] Live dedup lookup against a real open issue ("Renovate Dashboard 🤖") returned
+  count 1 → SKIP; the alert title itself returned 0 → CREATE.
+- [verified] `actionlint`, `zizmor --offline`, `yamllint`, `yamlfmt -lint` and the full
+  `pre-commit run` all pass. `SC2016` on the `printf` body needed the same
+  `# shellcheck disable=SC2016` the existing workflow uses.
+- [verified] Push of the change did **not** trigger a run (trigger removed as intended); manual
+  `workflow_dispatch` run `30666566598` completed **success**.
+- [observation] The failure path was **not** exercised end-to-end — that would mean pushing a
+  real-looking secret to a public repo. The issue-creation step reuses a pattern already proven
+  in production by `scanning-deprecated-kube-resources.yaml`, and its two custom parts (guard,
+  body) were unit-tested above.
+- [observation] Not applicable here, but noted: GitHub disables scheduled workflows after 60
+  days of repository inactivity. This repo sees daily commits, so the schedule will not lapse.
+
+### Alternative not taken
+
+- [followup] Pushover would put the alert on the phone, and the cluster already runs an
+  Alertmanager → Pushover route. Rejected for now because a GitHub Action cannot reach the
+  in-cluster Alertmanager, so it would need the Pushover token duplicated as a GitHub Actions
+  secret — a new copy of a credential in a new trust domain, to replace a channel that already
+  works. Revisit only if issue notifications prove too quiet.
