@@ -53,9 +53,8 @@ spec:
           labels:
             severity: critical
           annotations:
-            summary: CrowdSec is actively banning a source
+            summary: CrowdSec banned a source
             description: |-
-              A non-CAPI decision is active on the LAPI, so a locally issued ban exists —
-              routed to Pushover via the critical sub-route. The alert carries reason,
-              origin, and action labels for the notification body. It resolves when the
-              decision expires (default 4h) or is deleted via `cscli decisions delete <ip>`.
+              CrowdSec banned a source after the scenario below tripped. The ban lasts 4h
+              and doubles for each repeat offence; no action is needed. If it was you,
+              clear it with `cscli decisions delete <ip>`.
