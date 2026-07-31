@@ -1,9 +1,9 @@
 ---
 title: cloudflare-tls-and-tfvar-hygiene
-type: roadmap
+type: progress
 permalink: home-ops/docs/roadmap/cloudflare-tls-and-tfvar-hygiene
 topic: Edge TLS floor + sensitive-variable hygiene (Cloudflare)
-status: proposed
+status: done
 priority: low
 scope: Raise the Cloudflare zone minimum TLS to 1.3 to match the origin, and mark
   the sensitive Cloudflare Terraform variables sensitive=true.
@@ -18,7 +18,7 @@ related_areas:
 ## Metadata (observation-form, schema validation)
 
 - [topic] Edge TLS floor + sensitive-variable hygiene (Cloudflare)
-- [status] proposed
+- [status] done
 - [priority] low
 
 ## What we gain
@@ -65,3 +65,27 @@ related_areas:
 
 ### Effort
 S (~30 min + a glance at TLS analytics).
+
+
+## Completion (2026-07-31)
+
+Moved from `docs/roadmap` on completion. One of the two deliverables shipped; the other was **declined** by explicit user decision, so the item is closed rather than half-open.
+
+### What shipped
+- `sensitive = true` added to the three secret-bearing Cloudflare Terraform variables in `provision/cloudflare/variables.tf`: `CF_ACCESS_GOOGLE_CL_SECRET` (:124), `CF_GLOBAL_APIKEY` (:140), `CF_TUNNEL_SECRET` (:146) — same shape as the pre-existing `PUSHOVER_CLOUDFLARE_EMAIL` (:160). Three inserted lines, no other file touched.
+- Concrete gain: the values stop printing in `terraform plan` / CI output. The sharpest case is `null_resource.store-tunnel-secret` (`tunnel.tf:11`), whose `local-exec` command string interpolates `CF_TUNNEL_SECRET` and previously rendered it in cleartext in plan output.
+
+### Declined — the TLS 1.3 floor
+- Step 1 of the execution plan (zone `min_tls_version` 1.2 → 1.3, `zone_settings.tf:14-16`) was **dropped by user decision** (2026-07-31). Not deferred — closed. The zone keeps the 1.2 floor with `tls_1_3` enabled, so 1.3 is negotiated wherever the client supports it and legacy clients keep working; the "no weaker leg" goal is therefore only partially met, by choice.
+- Reopen as a fresh roadmap item if the posture changes (would need a look at Cloudflare Analytics → Traffic → TLS version distribution first).
+
+### Verification
+- `terraform validate` in `provision/cloudflare/` → `Success! The configuration is valid.` (exit 0). No output or meta-argument reads the newly sensitive vars — `output "tunnel_info"` (`tunnel.tf:29-34`) exposes only tunnel id/name — so no "Output refers to sensitive values" breakage.
+- `terraform fmt -check variables.tf` exits 3 on **pre-existing** alignment drift only (`dns_mx_records` :9-11, `mail_mta_sts_params` :78-80), untouched here per "clean up only your own mess".
+- `just cloudflare plan` **not run** (user decision): marking a variable sensitive is not a resource diff, so the plan would carry no new evidence. The `(sensitive value)` masking gets observed at the next Cloudflare plan.
+
+### Commit
+- `fbe7690dc` — 🔒 fix(cloudflare): mark secret tfvars sensitive
+
+### Follow-up hook
+- `cloudflare-api-token-migration` replaces `CF_GLOBAL_APIKEY` with a scoped `CF_API_TOKEN` — declare that variable with `sensitive = true` from the start.
