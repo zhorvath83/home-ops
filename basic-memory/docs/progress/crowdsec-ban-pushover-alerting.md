@@ -54,3 +54,21 @@ trips crowdsecurity/http-bad-user-agent -> agent overflow -> LAPI alert + decisi
 ## Relations
 - implements [[crowdsec-ban-pushover-alerting]]
 - relates_to [[envoy-crowdsec-bouncer]]
+## Deploy verification (final, post-rebase)
+
+The earlier shas f55fd6661/b76adf958 (and the re-created a74b911a7/6c3a10884) are DEAD — superseded by a rebase onto e9bcac529 (an unrelated Renovate pocket-id image bump that landed on origin/main during this session, after the first push was rejected as non-fast-forward). The FINAL post-rebase shas are:
+- CODE: 5ec31c912 ✨ feat(crowdsec): alert on locally issued bans
+- DOCS: 6d9244f7e 📝 docs(crowdsec): record the ban-alerting rollout and its verification
+
+Push: confirmed `e9bcac529..6d9244f7e main -> main`; `git rev-list --left-right --count origin/main...main` = 0/0 (level); remote tip = 6d9244f7e237dad71aa78e92c28109563a569116.
+
+Flux: the crowdsec/crowdsec Kustomization reconciled at Applied revision refs/heads/main@sha1:6d9244f7e237dad71aa78e92c28109563a569116 — the PrometheusRule CR on the cluster carries the CrowdSecBanActive entry (kubectl get prometheusrule -n crowdsec crowdsec -o yaml).
+
+Prometheus LOADED the rule (not merely CR present) — proven via the rules API (/api/v1/rules, fetched by port-forward + curl since the distroless prometheus container has no curl/wget/ls/sh, only prometheus+promtool):
+- group=crowdsec, name=CrowdSecBanActive, state=inactive, health=ok, type=alerting
+- query / duration=60 / keepFiringFor=300 / severity=critical all loaded from the committed YAML
+- lastEvaluation fresh (2026-07-31T17:29:05Z) — the rule is evaluating, not stale
+
+Caveat on method (LESSON): the ALERTS metric is NOT a valid loaded-proof here. Prometheus only emits an ALERTS{alertstate="inactive"} series for a rule that has PREVIOUSLY fired; a never-fired rule (CrowdSecBanActive today, or the pre-existing CrowdSecLAPIDown) does NOT appear in ALERTS at all — count(ALERTS) showed only Watchdog + KubeHpaMaxedOut, both firing. The same empty ALERTS result that "proved not loaded" for CrowdSecBanActive was equally empty for the pre-existing CrowdSecLAPIDown — the non-vacuous control that exposed the method, not the rule. The rules API is the correct loaded-proof because it lists every loaded rule regardless of firing history.
+
+Status: committed + pushed + deploy-verified. AC1/AC2/AC5/AC6/AC7 verified; AC3/AC4 still PENDING the human's real-ban test (see "What the human must do to close AC3/AC4" above).
