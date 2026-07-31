@@ -11,5 +11,5 @@ spec:
     operation: copy
   ref:
     # renovate: registryUrl=https://quay.io/cilium/charts/ chart=cilium
-    tag: 1.19.6
+    tag: 1.20.0
   url: oci://quay.io/cilium/charts/cilium
