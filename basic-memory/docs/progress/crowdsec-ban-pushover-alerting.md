@@ -8,13 +8,13 @@ permalink: home-ops/docs/progress/crowdsec-ban-pushover-alerting
 
 ## Metadata (observation-form)
 - [topic] Execution state for the crowdsec-ban-pushover-alerting roadmap
-- [status] code committed; AC1/AC2/AC5/AC6/AC7 verified; AC3/AC4 PENDING the human's real-ban test
+- [status] deployed and live-verified; AC1/AC2/AC3/AC5/AC6/AC7 verified; AC4 (resolved push) pending the ban clearing or expiring
 - [roadmap] [[crowdsec-ban-pushover-alerting]] (docs/roadmap)
 - [area] observability, security
 - [created] 2026-07-31
 
 ## Code state
-Committed on main (code commit f55fd6661): adds the CrowdSecBanActive alert to the EXISTING crowdsec PrometheusRule group in kubernetes/apps/crowdsec/crowdsec/app/prometheusrule.yaml (no new file, no AlertmanagerConfig change, no new secret).
+Committed on main (code commit 5ec31c912): adds the CrowdSecBanActive alert to the EXISTING crowdsec PrometheusRule group in kubernetes/apps/crowdsec/crowdsec/app/prometheusrule.yaml (no new file, no AlertmanagerConfig change, no new secret).
 - expr: sum by (reason, origin, action) (cs_active_decisions{job="crowdsec-service", namespace="crowdsec", origin!~"CAPI|lists(:.*)?"}) > 0
 - for: 1m, keep_firing_for: 5m, severity: critical (routes via the existing critical -> Pushover sub-route; cannot be inhibited by the critical->warning inhibit rule).
 
@@ -56,7 +56,7 @@ trips crowdsecurity/http-bad-user-agent -> agent overflow -> LAPI alert + decisi
 - relates_to [[envoy-crowdsec-bouncer]]
 ## Deploy verification (final, post-rebase)
 
-The earlier shas f55fd6661/b76adf958 (and the re-created a74b911a7/6c3a10884) are DEAD — superseded by a rebase onto e9bcac529 (an unrelated Renovate pocket-id image bump that landed on origin/main during this session, after the first push was rejected as non-fast-forward). The FINAL post-rebase shas are:
+The shas were re-created twice during this session (a human soft-reset, then a rebase onto the Renovate commit e9bcac529 that landed on origin/main mid-push), so any dead predecessor found in git history is the same logical commit, not separate work. The FINAL shas are:
 - CODE: 5ec31c912 ✨ feat(crowdsec): alert on locally issued bans
 - DOCS: 6d9244f7e 📝 docs(crowdsec): record the ban-alerting rollout and its verification
 
@@ -86,7 +86,13 @@ Deploy verification of the rewrite:
 
 Live end-to-end verification (AC1/AC2/AC3 now VERIFIED — Maestro confirmed independently):
 - A REAL local ban is active: origin=crowdsec, reason=ltsich/http-w00tw00t, action=ban, severity=critical — the alert is firing (activeAt 2026-07-31T17:34:05Z), Alertmanager has it active (not inhibited/silenced), routed to the pushover receiver. AC1 (non-CAPI ban fires) + AC2 (labels carried) verified against the live firing alert's labels, not just the expr.
-- AC3 (end-to-end -> Pushover on the device): VERIFIED — the human confirmed the Pushover notification arrived on their phone. (The new description text goes out on Alertmanager's next repeat/flush now that Prometheus reloaded it.)
+- AC3 (end-to-end -> Pushover on the device): VERIFIED — the human confirmed the Pushover notification arrived on their phone. (The new description text goes out on Alertmanager's next 12h repeat (root route repeatInterval=12h, critical->pushover sub-route does not override), not minutes from now.)
 - AC4 (resolved push when the ban expires/is deleted): still PENDING until the ban is cleared (`cscli decisions delete <ip>`) or expires (4h, doubling for repeats).
 
 Status: committed + pushed + deploy-verified + live-fired. AC1/AC2/AC3/AC5/AC6/AC7 VERIFIED; AC4 PENDING.
+
+## Alertmanager independent verification (Maestro direct API check — stronger than rules API alone)
+
+The Alertmanager API directly holds the NEW annotation text (summary "CrowdSec banned a source", the rewritten description), updatedAt 2026-07-31T17:43:05Z, state active, receivers ["observability/alertmanager/pushover"]. That proves Prometheus is evaluating the reloaded rule AND propagating the new annotations downstream — the whole chain, not just the CR or the rules API.
+
+repeatInterval correction (Maestro accepted): the rewritten BODY only reaches the phone on the next 12h repeat (root route repeatInterval=12h; the critical->pushover sub-route does not override it), so anyone re-testing the wording must clear and re-trigger the ban (cscli decisions delete <ip>, then a fresh ban) rather than wait for a repeat. The human already received the OLD-text notification (the AC3 end-to-end delivery proof); the NEW text goes out on the next 12h repeat or on a fresh firing.
