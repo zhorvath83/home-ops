@@ -159,3 +159,37 @@ a secret *name* rather than a value:
 - implements [[ci-secret-and-iac-scanning]]
 - relates_to [[flux-gitops]]
 - relates_to [[main-branch-protection-and-commit-signing]]
+
+
+## GitHub native secret scanning enabled (2026-07-31, follow-up closed)
+
+Enabled via `gh api --method PATCH repos/zhorvath83/home-ops` with a
+`security_and_analysis` body. Verified state:
+
+- [done] `secret_scanning: enabled`
+- [done] `secret_scanning_push_protection: enabled` — blocks a matching secret at push time,
+  before it lands. This is now the strongest control in the chain; the gitleaks job is the
+  backstop behind it.
+- [verified] `GET /repos/zhorvath83/home-ops/secret-scanning/alerts` returns `[]` — the
+  endpoint is live (proving scanning is actually active) with zero alerts, consistent with the
+  gitleaks full-history result.
+
+Two things did NOT get enabled, deliberately or by API limitation:
+
+- [observation] `secret_scanning_non_provider_patterns` **cannot be set through the API** on
+  this user-owned repo. The repo PATCH returns HTTP 200 and silently leaves the field
+  `disabled` (retried twice, including after `secret_scanning` was already on, so it is not a
+  same-call ordering problem). Neither `repos/{owner}/{repo}/code-security-configuration` nor a
+  user-level `code-security/configurations` endpoint exists to carry it. It is UI-only:
+  Settings → Code security → Secret scanning. **Low impact**: generic high-entropy detection is
+  exactly what the gitleaks `generic-api-key` rule already covers in CI — it is the rule that
+  produced both historical findings in `.gitleaksignore`.
+- [decision] `secret_scanning_validity_checks` left **disabled**. It sends candidate secrets to
+  the issuing provider to test whether they are still live; that is an outbound-data decision,
+  not a free win, and it was never part of the agreed scope.
+
+- [observation] Push protection was **not** verified by attempting to push a planted secret.
+  Doing so on a PUBLIC repo risks writing a junk commit into permanent history if the control
+  failed to engage — the exact outcome the control exists to prevent. Enablement is verified via
+  the API state instead. Friction risk is low: this repo delivers all secrets via 1Password/ESO,
+  so no plaintext credential is ever committed.
