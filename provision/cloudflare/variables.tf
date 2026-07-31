@@ -121,6 +121,7 @@ variable "CF_ACCESS_GOOGLE_CL_ID" {
 variable "CF_ACCESS_GOOGLE_CL_SECRET" {
   description = "Google CL secret for Cloudflare Access."
   type        = string
+  sensitive   = true
 }
 
 variable "CF_DOMAIN_NAME" {
@@ -136,11 +137,13 @@ variable "CF_USERNAME" {
 variable "CF_GLOBAL_APIKEY" {
   description = "Cloudflare API key."
   type        = string
+  sensitive   = true
 }
 
 variable "CF_TUNNEL_SECRET" {
   description = "Cloudflare Tunnel Secret"
   type        = string
+  sensitive   = true
 }
 
 variable "CF_TUNNEL_NAME" {
