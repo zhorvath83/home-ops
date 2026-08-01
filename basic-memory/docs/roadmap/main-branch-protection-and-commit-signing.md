@@ -107,6 +107,4 @@ Out of scope (intentionally dropped from the earlier draft): required status che
 S (~30 min: key config + GitHub signing key + one API call + verify a signed push).
 
 ## Related
-
 - relates_to [[flux-gitops]]
-- relates_to [[image-and-chart-signature-verification]]
