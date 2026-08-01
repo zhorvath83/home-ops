@@ -1,0 +1,18 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/monitoring.coreos.com/scrapeconfig_v1alpha1.json
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: ScrapeConfig
+metadata:
+  name: openwrt
+spec:
+  # jobName controls the `job` label (the operator owns the rendered job_name); the
+  # grafana.com 18153 OpenWRT dashboard filters on job=openwrt.
+  jobName: openwrt
+  staticConfigs:
+    - targets:
+        - "${ROUTER_IP}:9100"
+  metricRelabelings:
+    - sourceLabels:
+        - __name__
+      regex: "^go_.*"
+      action: drop

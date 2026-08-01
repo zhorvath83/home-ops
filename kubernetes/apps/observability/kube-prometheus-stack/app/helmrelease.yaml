@@ -493,22 +493,12 @@ spec:
               resources:
                 requests:
                   storage: 5Gi
-        # Discover all ServiceMonitors, PodMonitors, and Probes
+        # Discover all ServiceMonitors, PodMonitors, Probes, and ScrapeConfigs
         serviceMonitorSelectorNilUsesHelmValues: false
         podMonitorSelectorNilUsesHelmValues: false
         ruleSelectorNilUsesHelmValues: false
         probeSelectorNilUsesHelmValues: false
+        scrapeConfigSelectorNilUsesHelmValues: false
         # Disable external labels
         prometheusExternalLabelNameClear: true
         replicaExternalLabelNameClear: true
-        # External scrape targets (outside cluster)
-        additionalScrapeConfigs:
-          - job_name: openwrt
-            static_configs:
-              - targets:
-                  - "${ROUTER_IP}:9100"
-            metric_relabel_configs:
-              - source_labels:
-                  - __name__
-                regex: "^go_.*"
-                action: drop

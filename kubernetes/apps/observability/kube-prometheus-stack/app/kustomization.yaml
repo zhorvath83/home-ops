@@ -9,6 +9,7 @@ resources:
   - ./externalsecret.yaml
   - ./alertmanagerconfig.yaml
   - ./prometheusrules
+  - ./scrapeconfigs
   - ./grafanadatasource.yaml
   - ./grafanadashboard.yaml
   - ./helmrelease.yaml

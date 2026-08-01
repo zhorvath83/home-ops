@@ -1,8 +1,8 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
 # kube-prometheus-stack prometheus (AD-023): V3 flip drops LAN from the baseline,
-# so the openwrt router node-exporter scrape (additionalScrapeConfigs job 'openwrt',
-# ${ROUTER_IP}:9100) needs an explicit LAN egress grant.
+# so the openwrt router node-exporter scrape (ScrapeConfig/openwrt, ${ROUTER_IP}:9100)
+# needs an explicit LAN egress grant.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
