@@ -111,8 +111,8 @@ Both drives are healthy, so **no alert in the planned set fires on day one** —
 
 ### Implementation state (2026-08-01)
 
-Files written in the working tree, **not yet committed** (pushing to `main` is what deploys, since
-Flux watches `refs/heads/main`):
+Files written in the working tree, **since committed and deployed** (pushing to `main` is what deploys, since
+Flux watches `refs/heads/main`). All commits are pushed and live — see Deployment outcome below:
 
 - [file] `kubernetes/apps/observability/smartctl-exporter/ks.yaml` — blackbox shape:
   `commonMetadata`, `dependsOn: kube-prometheus-stack`, `timeout: 5m`, `wait: false`.
@@ -205,3 +205,47 @@ The wear alerts are a deliberate addition — neither the chart nor bjw-s ships 
 - relates_to [[grafana-operator-migration]]
 - relates_to [[prometheus-adapter]]
 - relates_to [[pod-security-admission-enforcement]]
+
+## Deployment outcome (2026-08-01) — live and verified
+
+Stage 2 is **deployed**. Four commits on `main`:
+
+- [commit] `7c2101b9c` ✨ feat(observability): add smartctl-exporter for NVMe SMART health (7 files)
+- [commit] `d3809ddec` 📝 docs(roadmap): close blackbox half, record smartctl-exporter plan
+- [commit] `3a08e7e07` 🐛 fix(observability): match smartctl device filter on bare device name
+- [commit] `ddfc59969` ♻️ refactor(observability): drop smartctl alerts on nonexistent metrics
+
+### The gotcha that only live verification caught
+
+- [gotcha] **`device_include` matches the BARE device name, not the `/dev/` path.** The first deploy
+  was fully green — Kustomization Ready, HelmRelease `Helm install succeeded`, pod Running 1/1,
+  scrape target `up = 1` — and collected **nothing**. Pod log: `msg="Ignoring device" name=nvme0`,
+  `name=nvme1`, `msg="Number of devices found" count=0`. smartctl_exporter v0.14.0 matches
+  `--smartctl.device-include` against `nvme0`/`nvme1`, so `/dev/nvme.*` matched zero devices. The
+  chart's own `values.yaml` comment (`device_include: /dev/sd.*`) is misleading for this version.
+  Fixed to `nvme.*` in `3a08e7e07` → `msg="Found device" name=nvme0`, `name=nvme1`, `count=2`.
+  **Neither `kustomize build`, nor `pre-commit`, nor `helm template` can catch this class of bug** —
+  only reading the exporter's own log after deploy does.
+- [gotcha] Two alerts referenced metrics the exporter does **not** expose for NVMe:
+  `smartctl_device_interface_speed` and `smartctl_device_status` both return `count = 0` live. The
+  `SmartctlInterfaceSlow` alert was therefore vacuous and the `or smartctl_device_status != 1` half
+  of `SmartctlSmartStatusFailed` was dead. Removed in `ddfc59969`; 8 real alerts remain.
+- [observation] The 16 series the exporter DOES expose: `available_spare`,
+  `available_spare_threshold`, `block_size`, `bytes_read`, `bytes_written`, `capacity_blocks`,
+  `capacity_bytes`, `critical_warning`, `media_errors`, `num_err_log_entries`, `percentage_used`,
+  `power_cycle_count`, `power_on_seconds`, `smart_status`, `smartctl_exit_status`, `temperature`.
+
+### Live verification evidence
+
+- [evidence] `flux -n observability get ks smartctl-exporter` → Ready, `refs/heads/main@sha1:ddfc5996`.
+- [evidence] HelmRelease → `Helm upgrade succeeded … v2`, chart `prometheus-smartctl-exporter@0.17.1`.
+- [evidence] **The postRenderer works in the real cluster**: the live DaemonSet has
+  `automountServiceAccountToken=false` while `privileged=true`, and the running pod's volumes are
+  only `dev` + `k8tz` — **no `kube-api-access` token volume**. Zero RoleBindings in the namespace.
+- [evidence] Metrics land with `instance="k8s-cp0"` (the ServiceMonitor relabeling works) and
+  `device="nvme0"`/`"nvme1"`; values match the pre-deploy baseline exactly (wear 0/1, temp 50/52 C,
+  media_errors 0/0).
+- [evidence] `prometheus_rule_group_rules{rule_group=~".*smartctl.*"}` → **8**, with
+  `prometheus_rule_evaluation_failures_total` → **0**. No `Smartctl*` alert is firing.
+- [evidence] `GrafanaDashboard/smartctl-exporter` → `DashboardSynchronized=True`,
+  "Dashboard was successfully applied to 1 instances".
