@@ -24,6 +24,7 @@ metadata:
     gethomepage.dev/name: Pocket-ID
     gethomepage.dev/group: Security
     gethomepage.dev/icon: pocket-id.svg
+    gethomepage.dev/pod-selector: app.kubernetes.io/name=pocket-id
 spec:
   hostnames:
     - "idm.${PUBLIC_DOMAIN}"
