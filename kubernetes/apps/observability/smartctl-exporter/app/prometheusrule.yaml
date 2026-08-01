@@ -59,7 +59,7 @@ spec:
             summary: "NVMe wear critical on {{ $labels.device }} ({{ $labels.instance }})"
             description: "Drive {{ $labels.device }} on {{ $labels.instance }} percentage_used is above 90 (replace soon)."
         - alert: SmartctlTempHigh
-          expr: smartctl_device_temperature{temperature_type="current"} > 70
+          expr: smartctl_device_temperature{job!="nas-smartctl", temperature_type="current"} > 70
           for: 15m
           labels:
             severity: warning
@@ -67,10 +67,70 @@ spec:
             summary: "Drive temperature high on {{ $labels.device }} ({{ $labels.instance }})"
             description: "Drive {{ $labels.device }} on {{ $labels.instance }} is above 70°C."
         - alert: SmartctlTempCritical
-          expr: smartctl_device_temperature{temperature_type="current"} > 80
+          expr: smartctl_device_temperature{job!="nas-smartctl", temperature_type="current"} > 80
           for: 15m
           labels:
             severity: critical
           annotations:
             summary: "Drive temperature critical on {{ $labels.device }} ({{ $labels.instance }})"
             description: "Drive {{ $labels.device }} on {{ $labels.instance }} is above 80°C."
+    - name: smartctl-exporter-ata
+      rules:
+        - alert: SmartctlAtaPrefailBelowThreshold
+          # Normalized value <= its own threshold; thresh > 0 self-filters to prefail attributes.
+          expr: smartctl_device_attribute{job="nas-smartctl", attribute_value_type="value"} <= on(job, instance, device, attribute_id, attribute_name) (smartctl_device_attribute{job="nas-smartctl", attribute_value_type="thresh"} > 0)
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: "{{ $labels.attribute_name }} below threshold on {{ $labels.device }} ({{ $labels.instance }})"
+            description: "Drive {{ $labels.device }} on {{ $labels.instance }} has prefail SMART attribute {{ $labels.attribute_name }} whose normalized value reached or fell below its threshold — failure is imminent or underway."
+        - alert: SmartctlAtaReallocatedSectorsGrowing
+          expr: smartctl_device_attribute{job="nas-smartctl", attribute_name="Reallocated_Sector_Ct", attribute_value_type="raw"} > min_over_time(smartctl_device_attribute{job="nas-smartctl", attribute_name="Reallocated_Sector_Ct", attribute_value_type="raw"}[7d])
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Reallocated sectors growing on {{ $labels.device }} ({{ $labels.instance }})"
+            description: "Drive {{ $labels.device }} on {{ $labels.instance }} Reallocated_Sector_Ct is rising above its 7d minimum — the disk is reallocating failing sectors."
+        - alert: SmartctlAtaPendingSectors
+          expr: smartctl_device_attribute{job="nas-smartctl", attribute_name="Current_Pending_Sector", attribute_value_type="raw"} > 0
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Pending sectors on {{ $labels.device }} ({{ $labels.instance }})"
+            description: "Drive {{ $labels.device }} on {{ $labels.instance }} has Current_Pending_Sector > 0 — unstable sectors awaiting reallocation."
+        - alert: SmartctlAtaOfflineUncorrectable
+          expr: smartctl_device_attribute{job="nas-smartctl", attribute_name="Offline_Uncorrectable", attribute_value_type="raw"} > 0
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Offline uncorrectable sectors on {{ $labels.device }} ({{ $labels.instance }})"
+            description: "Drive {{ $labels.device }} on {{ $labels.instance }} has Offline_Uncorrectable > 0 — sectors that cannot be read or written, replace the disk."
+        - alert: SmartctlAtaCrcErrorsGrowing
+          expr: smartctl_device_attribute{job="nas-smartctl", attribute_name="UDMA_CRC_Error_Count", attribute_value_type="raw"} > min_over_time(smartctl_device_attribute{job="nas-smartctl", attribute_name="UDMA_CRC_Error_Count", attribute_value_type="raw"}[7d])
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "UDMA CRC errors growing on {{ $labels.device }} ({{ $labels.instance }})"
+            description: "Drive {{ $labels.device }} on {{ $labels.instance }} UDMA_CRC_Error_Count is rising above its 7d minimum — likely a bad SATA/USB cable or bridge."
+        - alert: SmartctlAtaTempHigh
+          # temperature_type="current" guard keeps this silent if a future exporter adds op_limit_max/etc.
+          expr: smartctl_device_temperature{job="nas-smartctl", temperature_type="current"} > 50
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "ATA drive temperature high on {{ $labels.device }} ({{ $labels.instance }})"
+            description: "Drive {{ $labels.device }} on {{ $labels.instance }} is above 50°C."
+        - alert: SmartctlAtaTempCritical
+          expr: smartctl_device_temperature{job="nas-smartctl", temperature_type="current"} > 55
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: "ATA drive temperature critical on {{ $labels.device }} ({{ $labels.instance }})"
+            description: "Drive {{ $labels.device }} on {{ $labels.instance }} is above 55°C."

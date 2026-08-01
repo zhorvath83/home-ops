@@ -166,3 +166,284 @@ tests:
             exp_annotations:
               summary: "Drive temperature critical on nvme1 (k8s-cp0)"
               description: "Drive nvme1 on k8s-cp0 is above 80°C."
+  # SmartctlAtaPrefailBelowThreshold: value <= thresh (thresh>0), for 15m. sdb 100<=10 no fire / sdc 5<=10 fires.
+  - interval: 1m
+    input_series:
+      - series: 'smartctl_device_attribute{job="nas-smartctl",instance="nas",device="sdb",attribute_id="5",attribute_name="Reallocated_Sector_Ct",attribute_value_type="value"}'
+        values: '100x21'
+      - series: 'smartctl_device_attribute{job="nas-smartctl",instance="nas",device="sdb",attribute_id="5",attribute_name="Reallocated_Sector_Ct",attribute_value_type="thresh"}'
+        values: '10x21'
+      - series: 'smartctl_device_attribute{job="nas-smartctl",instance="nas",device="sdc",attribute_id="5",attribute_name="Reallocated_Sector_Ct",attribute_value_type="value"}'
+        values: '5x21'
+      - series: 'smartctl_device_attribute{job="nas-smartctl",instance="nas",device="sdc",attribute_id="5",attribute_name="Reallocated_Sector_Ct",attribute_value_type="thresh"}'
+        values: '10x21'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: SmartctlAtaPrefailBelowThreshold
+        exp_alerts:
+          - exp_labels:
+              alertname: SmartctlAtaPrefailBelowThreshold
+              severity: critical
+              job: nas-smartctl
+              instance: nas
+              device: sdc
+              attribute_id: "5"
+              attribute_name: Reallocated_Sector_Ct
+            exp_annotations:
+              summary: "Reallocated_Sector_Ct below threshold on sdc (nas)"
+              description: "Drive sdc on nas has prefail SMART attribute Reallocated_Sector_Ct whose normalized value reached or fell below its threshold — failure is imminent or underway."
+  # SmartctlAtaReallocatedSectorsGrowing: raw > min_over_time[7d], for 30m. sdb flat 7 no fire / sdc 7->8 fires.
+  - interval: 1m
+    input_series:
+      - series: 'smartctl_device_attribute{job="nas-smartctl",instance="nas",device="sdb",attribute_id="5",attribute_name="Reallocated_Sector_Ct",attribute_value_type="raw"}'
+        values: '7x50'
+      - series: 'smartctl_device_attribute{job="nas-smartctl",instance="nas",device="sdc",attribute_id="5",attribute_name="Reallocated_Sector_Ct",attribute_value_type="raw"}'
+        values: '7+1x50'
+    alert_rule_test:
+      - eval_time: 40m
+        alertname: SmartctlAtaReallocatedSectorsGrowing
+        exp_alerts:
+          - exp_labels:
+              alertname: SmartctlAtaReallocatedSectorsGrowing
+              severity: warning
+              job: nas-smartctl
+              instance: nas
+              device: sdc
+              attribute_id: "5"
+              attribute_name: Reallocated_Sector_Ct
+              attribute_value_type: raw
+            exp_annotations:
+              summary: "Reallocated sectors growing on sdc (nas)"
+              description: "Drive sdc on nas Reallocated_Sector_Ct is rising above its 7d minimum — the disk is reallocating failing sectors."
+  # SmartctlAtaPendingSectors: Current_Pending_Sector raw > 0, for 15m. sdb 0 no fire / sdc 1 fires.
+  - interval: 1m
+    input_series:
+      - series: 'smartctl_device_attribute{job="nas-smartctl",instance="nas",device="sdb",attribute_id="197",attribute_name="Current_Pending_Sector",attribute_value_type="raw"}'
+        values: '0x21'
+      - series: 'smartctl_device_attribute{job="nas-smartctl",instance="nas",device="sdc",attribute_id="197",attribute_name="Current_Pending_Sector",attribute_value_type="raw"}'
+        values: '1x21'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: SmartctlAtaPendingSectors
+        exp_alerts:
+          - exp_labels:
+              alertname: SmartctlAtaPendingSectors
+              severity: critical
+              job: nas-smartctl
+              instance: nas
+              device: sdc
+              attribute_id: "197"
+              attribute_name: Current_Pending_Sector
+              attribute_value_type: raw
+            exp_annotations:
+              summary: "Pending sectors on sdc (nas)"
+              description: "Drive sdc on nas has Current_Pending_Sector > 0 — unstable sectors awaiting reallocation."
+  # SmartctlAtaOfflineUncorrectable: Offline_Uncorrectable raw > 0, for 15m. sdb 0 no fire / sdc 1 fires.
+  - interval: 1m
+    input_series:
+      - series: 'smartctl_device_attribute{job="nas-smartctl",instance="nas",device="sdb",attribute_id="198",attribute_name="Offline_Uncorrectable",attribute_value_type="raw"}'
+        values: '0x21'
+      - series: 'smartctl_device_attribute{job="nas-smartctl",instance="nas",device="sdc",attribute_id="198",attribute_name="Offline_Uncorrectable",attribute_value_type="raw"}'
+        values: '1x21'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: SmartctlAtaOfflineUncorrectable
+        exp_alerts:
+          - exp_labels:
+              alertname: SmartctlAtaOfflineUncorrectable
+              severity: critical
+              job: nas-smartctl
+              instance: nas
+              device: sdc
+              attribute_id: "198"
+              attribute_name: Offline_Uncorrectable
+              attribute_value_type: raw
+            exp_annotations:
+              summary: "Offline uncorrectable sectors on sdc (nas)"
+              description: "Drive sdc on nas has Offline_Uncorrectable > 0 — sectors that cannot be read or written, replace the disk."
+  # SmartctlAtaCrcErrorsGrowing: UDMA_CRC_Error_Count raw > min_over_time[7d], for 30m. sdb flat 0 no fire / sdc 0->1 fires.
+  - interval: 1m
+    input_series:
+      - series: 'smartctl_device_attribute{job="nas-smartctl",instance="nas",device="sdb",attribute_id="199",attribute_name="UDMA_CRC_Error_Count",attribute_value_type="raw"}'
+        values: '0x50'
+      - series: 'smartctl_device_attribute{job="nas-smartctl",instance="nas",device="sdc",attribute_id="199",attribute_name="UDMA_CRC_Error_Count",attribute_value_type="raw"}'
+        values: '0+1x50'
+    alert_rule_test:
+      - eval_time: 40m
+        alertname: SmartctlAtaCrcErrorsGrowing
+        exp_alerts:
+          - exp_labels:
+              alertname: SmartctlAtaCrcErrorsGrowing
+              severity: warning
+              job: nas-smartctl
+              instance: nas
+              device: sdc
+              attribute_id: "199"
+              attribute_name: UDMA_CRC_Error_Count
+              attribute_value_type: raw
+            exp_annotations:
+              summary: "UDMA CRC errors growing on sdc (nas)"
+              description: "Drive sdc on nas UDMA_CRC_Error_Count is rising above its 7d minimum — likely a bad SATA/USB cable or bridge."
+  # SmartctlAtaTempHigh: temperature{current} > 50, for 15m. sdb 38 no fire / sdc 51 fires.
+  - interval: 1m
+    input_series:
+      - series: 'smartctl_device_temperature{job="nas-smartctl",instance="nas",device="sdb",temperature_type="current"}'
+        values: '38x21'
+      - series: 'smartctl_device_temperature{job="nas-smartctl",instance="nas",device="sdc",temperature_type="current"}'
+        values: '51x21'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: SmartctlAtaTempHigh
+        exp_alerts:
+          - exp_labels:
+              alertname: SmartctlAtaTempHigh
+              severity: warning
+              job: nas-smartctl
+              instance: nas
+              device: sdc
+              temperature_type: current
+            exp_annotations:
+              summary: "ATA drive temperature high on sdc (nas)"
+              description: "Drive sdc on nas is above 50°C."
+  # SmartctlAtaTempCritical: temperature{current} > 55, for 15m. sdb 38 no fire / sdc 56 fires.
+  - interval: 1m
+    input_series:
+      - series: 'smartctl_device_temperature{job="nas-smartctl",instance="nas",device="sdb",temperature_type="current"}'
+        values: '38x21'
+      - series: 'smartctl_device_temperature{job="nas-smartctl",instance="nas",device="sdc",temperature_type="current"}'
+        values: '56x21'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: SmartctlAtaTempCritical
+        exp_alerts:
+          - exp_labels:
+              alertname: SmartctlAtaTempCritical
+              severity: critical
+              job: nas-smartctl
+              instance: nas
+              device: sdc
+              temperature_type: current
+            exp_annotations:
+              summary: "ATA drive temperature critical on sdc (nas)"
+              description: "Drive sdc on nas is above 55°C."
+  # Cross-firing High: NAS sdb 71 (ATA only, excluded from NVMe) + nvme0 71 (NVMe only, excluded from ATA).
+  - interval: 1m
+    input_series:
+      - series: 'smartctl_device_temperature{job="nas-smartctl",instance="nas",device="sdb",temperature_type="current"}'
+        values: '71x21'
+      - series: 'smartctl_device_temperature{job="smartctl-exporter",instance="k8s-cp0",device="nvme0",temperature_type="current"}'
+        values: '71x21'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: SmartctlTempHigh
+        exp_alerts:
+          - exp_labels:
+              alertname: SmartctlTempHigh
+              severity: warning
+              job: smartctl-exporter
+              instance: k8s-cp0
+              device: nvme0
+              temperature_type: current
+            exp_annotations:
+              summary: "Drive temperature high on nvme0 (k8s-cp0)"
+              description: "Drive nvme0 on k8s-cp0 is above 70°C."
+      - eval_time: 20m
+        alertname: SmartctlAtaTempHigh
+        exp_alerts:
+          - exp_labels:
+              alertname: SmartctlAtaTempHigh
+              severity: warning
+              job: nas-smartctl
+              instance: nas
+              device: sdb
+              temperature_type: current
+            exp_annotations:
+              summary: "ATA drive temperature high on sdb (nas)"
+              description: "Drive sdb on nas is above 50°C."
+  # Cross-firing Critical: NAS sdb 81 (ATA only) + nvme0 81 (NVMe only).
+  - interval: 1m
+    input_series:
+      - series: 'smartctl_device_temperature{job="nas-smartctl",instance="nas",device="sdb",temperature_type="current"}'
+        values: '81x21'
+      - series: 'smartctl_device_temperature{job="smartctl-exporter",instance="k8s-cp0",device="nvme0",temperature_type="current"}'
+        values: '81x21'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: SmartctlTempCritical
+        exp_alerts:
+          - exp_labels:
+              alertname: SmartctlTempCritical
+              severity: critical
+              job: smartctl-exporter
+              instance: k8s-cp0
+              device: nvme0
+              temperature_type: current
+            exp_annotations:
+              summary: "Drive temperature critical on nvme0 (k8s-cp0)"
+              description: "Drive nvme0 on k8s-cp0 is above 80°C."
+      - eval_time: 20m
+        alertname: SmartctlAtaTempCritical
+        exp_alerts:
+          - exp_labels:
+              alertname: SmartctlAtaTempCritical
+              severity: critical
+              job: nas-smartctl
+              instance: nas
+              device: sdb
+              temperature_type: current
+            exp_annotations:
+              summary: "ATA drive temperature critical on sdb (nas)"
+              description: "Drive sdb on nas is above 55°C."
+  # Baseline-quiet: literal measured sdb baseline, flat. All seven ATA alerts must stay silent (goes live quiet).
+  - interval: 1m
+    input_series:
+      - series: 'smartctl_device_attribute{job="nas-smartctl",instance="nas",device="sdb",attribute_id="5",attribute_name="Reallocated_Sector_Ct",attribute_value_type="value"}'
+        values: '100x41'
+      - series: 'smartctl_device_attribute{job="nas-smartctl",instance="nas",device="sdb",attribute_id="5",attribute_name="Reallocated_Sector_Ct",attribute_value_type="worst"}'
+        values: '100x41'
+      - series: 'smartctl_device_attribute{job="nas-smartctl",instance="nas",device="sdb",attribute_id="5",attribute_name="Reallocated_Sector_Ct",attribute_value_type="thresh"}'
+        values: '10x41'
+      - series: 'smartctl_device_attribute{job="nas-smartctl",instance="nas",device="sdb",attribute_id="5",attribute_name="Reallocated_Sector_Ct",attribute_value_type="raw"}'
+        values: '7x41'
+      - series: 'smartctl_device_attribute{job="nas-smartctl",instance="nas",device="sdb",attribute_id="196",attribute_name="Reallocated_Event_Count",attribute_value_type="raw"}'
+        values: '3x41'
+      - series: 'smartctl_device_attribute{job="nas-smartctl",instance="nas",device="sdb",attribute_id="191",attribute_name="G-Sense_Error_Rate",attribute_value_type="raw"}'
+        values: '1x41'
+      - series: 'smartctl_device_attribute{job="nas-smartctl",instance="nas",device="sdb",attribute_id="197",attribute_name="Current_Pending_Sector",attribute_value_type="raw"}'
+        values: '0x41'
+      - series: 'smartctl_device_attribute{job="nas-smartctl",instance="nas",device="sdb",attribute_id="198",attribute_name="Offline_Uncorrectable",attribute_value_type="raw"}'
+        values: '0x41'
+      - series: 'smartctl_device_attribute{job="nas-smartctl",instance="nas",device="sdb",attribute_id="199",attribute_name="UDMA_CRC_Error_Count",attribute_value_type="raw"}'
+        values: '0x41'
+      - series: 'smartctl_device_attribute{job="nas-smartctl",instance="nas",device="sdb",attribute_id="233",attribute_name="Helium_Condition_Lower",attribute_value_type="value"}'
+        values: '100x41'
+      - series: 'smartctl_device_attribute{job="nas-smartctl",instance="nas",device="sdb",attribute_id="233",attribute_name="Helium_Condition_Lower",attribute_value_type="thresh"}'
+        values: '75x41'
+      - series: 'smartctl_device_attribute{job="nas-smartctl",instance="nas",device="sdb",attribute_id="234",attribute_name="Helium_Condition_Upper",attribute_value_type="value"}'
+        values: '100x41'
+      - series: 'smartctl_device_attribute{job="nas-smartctl",instance="nas",device="sdb",attribute_id="234",attribute_name="Helium_Condition_Upper",attribute_value_type="thresh"}'
+        values: '75x41'
+      - series: 'smartctl_device_temperature{job="nas-smartctl",instance="nas",device="sdb",temperature_type="current"}'
+        values: '38x41'
+    alert_rule_test:
+      - eval_time: 40m
+        alertname: SmartctlAtaPrefailBelowThreshold
+        exp_alerts: []
+      - eval_time: 40m
+        alertname: SmartctlAtaReallocatedSectorsGrowing
+        exp_alerts: []
+      - eval_time: 40m
+        alertname: SmartctlAtaPendingSectors
+        exp_alerts: []
+      - eval_time: 40m
+        alertname: SmartctlAtaOfflineUncorrectable
+        exp_alerts: []
+      - eval_time: 40m
+        alertname: SmartctlAtaCrcErrorsGrowing
+        exp_alerts: []
+      - eval_time: 40m
+        alertname: SmartctlAtaTempHigh
+        exp_alerts: []
+      - eval_time: 40m
+        alertname: SmartctlAtaTempCritical
+        exp_alerts: []
