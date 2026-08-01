@@ -20,6 +20,7 @@ metadata:
   name: pocket-id-external
   annotations:
     gethomepage.dev/enabled: "true"
+    gethomepage.dev/href: https://idm.${PUBLIC_DOMAIN}
     gethomepage.dev/name: Pocket-ID
     gethomepage.dev/group: Security
     gethomepage.dev/icon: pocket-id.svg
@@ -31,6 +32,15 @@ spec:
       namespace: networking
       sectionName: https
   rules:
+    # Catch-all first: homepage derives its tile href from rules[0]. Gateway API
+    # ranks by prefix length, so the deny rules below still win.
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: pocket-id
+          port: 1411
     # Bootstrap / signup paths — first-run only, not needed once IdP is set up.
     - matches:
         - path:
@@ -109,14 +119,6 @@ spec:
             group: gateway.envoyproxy.io
             kind: HTTPRouteFilter
             name: pocket-id-deny-403
-    # Everything else (OIDC protocol, UI, admin UI cookie calls, self-service) → backend.
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /
-      backendRefs:
-        - name: pocket-id
-          port: 1411
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/gateway.networking.k8s.io/httproute_v1.json
 apiVersion: gateway.networking.k8s.io/v1
