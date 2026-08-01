@@ -1,0 +1,20 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/monitoring.coreos.com/scrapeconfig_v1alpha1.json
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: ScrapeConfig
+metadata:
+  name: nas-node
+spec:
+  jobName: nas-node
+  staticConfigs:
+    - targets:
+        - "${NAS_IP}:9100"
+  relabelings:
+    - targetLabel: instance
+      replacement: nas
+      action: replace
+  metricRelabelings:
+    - sourceLabels:
+        - __name__
+      regex: "^go_.*"
+      action: drop

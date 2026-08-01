@@ -20,6 +20,15 @@ spec:
         - ports:
             - port: "9100"
               protocol: TCP
+    # NAS host smartctl + node exporter scrape.
+    - toCIDRSet:
+        - cidr: 192.168.1.10/32
+      toPorts:
+        - ports:
+            - port: "9633"
+              protocol: TCP
+            - port: "9100"
+              protocol: TCP
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
 # alertmanager (AD-023): envoy + prometheus ingress via the matching CCNPs; this CNP adds the
