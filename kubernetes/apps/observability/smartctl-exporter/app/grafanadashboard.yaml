@@ -1,0 +1,17 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/grafana.integreatly.org/grafanadashboard_v1beta1.json
+# Same namespace as the Grafana instance → no cross-namespace import.
+# Dashboard 22604 binds its datasource via the DS_PROMETHEUS input (not DS_SIGNCL-PROMETHEUS).
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: smartctl-exporter
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
+  folderRef: observability
+  url: https://grafana.com/api/dashboards/22604/revisions/3/download
+  datasources:
+    - inputName: DS_PROMETHEUS
+      datasourceName: Prometheus

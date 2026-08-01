@@ -1,0 +1,90 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/monitoring.coreos.com/prometheusrule_v1.json
+# Picked up by the kube-prometheus-stack Prometheus once ruleSelector is match-all
+# (ruleSelectorNilUsesHelmValues: false). severity=critical routes to Pushover.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: smartctl-exporter
+spec:
+  groups:
+    - name: smartctl-exporter
+      rules:
+        - alert: SmartctlMediaErrors
+          expr: smartctl_device_media_errors != 0
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: "SMART media errors on {{ $labels.device }} ({{ $labels.instance }})"
+            description: "Drive {{ $labels.device }} on {{ $labels.instance }} reports non-zero media errors (uncorrectable ECC/CRC/LBA)."
+        - alert: SmartctlCriticalWarning
+          expr: smartctl_device_critical_warning != 0
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: "SMART critical warning on {{ $labels.device }} ({{ $labels.instance }})"
+            description: "Drive {{ $labels.device }} on {{ $labels.instance }} has a non-zero critical_warning field."
+        - alert: SmartctlSmartStatusFailed
+          expr: |
+            smartctl_device_smart_status != 1
+            or
+            smartctl_device_status != 1
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: "SMART self-test failed on {{ $labels.device }} ({{ $labels.instance }})"
+            description: "Drive {{ $labels.device }} on {{ $labels.instance }} did not pass its overall SMART status."
+        - alert: SmartctlAvailableSpareLow
+          expr: smartctl_device_available_spare_threshold > smartctl_device_available_spare
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Available spare below threshold on {{ $labels.device }} ({{ $labels.instance }})"
+            description: "Drive {{ $labels.device }} on {{ $labels.instance }} available_spare fell below its available_spare_threshold."
+        - alert: SmartctlWearHigh
+          expr: smartctl_device_percentage_used > 80
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "NVMe wear high on {{ $labels.device }} ({{ $labels.instance }})"
+            description: "Drive {{ $labels.device }} on {{ $labels.instance }} percentage_used is above 80 (plan replacement)."
+        - alert: SmartctlWearCritical
+          expr: smartctl_device_percentage_used > 90
+          for: 1h
+          labels:
+            severity: critical
+          annotations:
+            summary: "NVMe wear critical on {{ $labels.device }} ({{ $labels.instance }})"
+            description: "Drive {{ $labels.device }} on {{ $labels.instance }} percentage_used is above 90 (replace soon)."
+        - alert: SmartctlTempHigh
+          expr: smartctl_device_temperature{temperature_type="current"} > 70
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Drive temperature high on {{ $labels.device }} ({{ $labels.instance }})"
+            description: "Drive {{ $labels.device }} on {{ $labels.instance }} is above 70°C."
+        - alert: SmartctlTempCritical
+          expr: smartctl_device_temperature{temperature_type="current"} > 80
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Drive temperature critical on {{ $labels.device }} ({{ $labels.instance }})"
+            description: "Drive {{ $labels.device }} on {{ $labels.instance }} is above 80°C."
+        - alert: SmartctlInterfaceSlow
+          expr: |
+            smartctl_device_interface_speed{speed_type="current"}
+            != on(device, instance, namespace, pod)
+            smartctl_device_interface_speed{speed_type="max"}
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Interface link degraded on {{ $labels.device }} ({{ $labels.instance }})"
+            description: "Drive {{ $labels.device }} on {{ $labels.instance }} current interface speed is below its max."
