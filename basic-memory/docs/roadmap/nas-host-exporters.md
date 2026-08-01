@@ -4,7 +4,7 @@ type: roadmap
 permalink: home-ops/docs/roadmap/nas-host-exporters
 topic: Run smartctl_exporter + node_exporter on the OMV NAS host and scrape them from
   the cluster Prometheus
-status: planned
+status: implemented
 priority: high
 scope: Install prometheus-smartctl-exporter (:9633) and prometheus-node-exporter (:9100)
   on the OMV NAS host (nas.lan) from Debian packages, scrape both with ScrapeConfig
@@ -33,7 +33,8 @@ tags:
 ## Metadata (observation-form, schema validation)
 
 - [topic] Run smartctl_exporter + node_exporter on the OMV NAS host and scrape them from the cluster Prometheus
-- [status] planned
+- [status] implemented
+- [implemented] 2026-08-01 — execution, review findings and live verification in memory://home-ops/docs/progress/nas-host-exporters
 - [priority] high
 - [assessed] 2026-08-01 — full live verification pass against nas.lan (192.168.1.10) and the exporter source at v0.14.0
 
