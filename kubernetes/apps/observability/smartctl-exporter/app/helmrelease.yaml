@@ -11,9 +11,9 @@ spec:
     name: smartctl-exporter
   values:
     fullnameOverride: smartctl-exporter
-    # Both disks on this node are NVMe; limit smartctl probing to /dev/nvme*.
+    # Both disks are NVMe; the exporter matches the filter on the bare device name (nvme0), not the /dev path.
     config:
-      device_include: "/dev/nvme.*"
+      device_include: "nvme.*"
     # Exporter reads /dev and serves metrics — no Kubernetes API need.
     rbac:
       create: false
