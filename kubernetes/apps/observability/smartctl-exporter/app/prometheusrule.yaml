@@ -27,16 +27,13 @@ spec:
             summary: "SMART critical warning on {{ $labels.device }} ({{ $labels.instance }})"
             description: "Drive {{ $labels.device }} on {{ $labels.instance }} has a non-zero critical_warning field."
         - alert: SmartctlSmartStatusFailed
-          expr: |
-            smartctl_device_smart_status != 1
-            or
-            smartctl_device_status != 1
+          expr: smartctl_device_smart_status != 1
           for: 15m
           labels:
             severity: critical
           annotations:
             summary: "SMART self-test failed on {{ $labels.device }} ({{ $labels.instance }})"
-            description: "Drive {{ $labels.device }} on {{ $labels.instance }} did not pass its overall SMART status."
+            description: "Drive {{ $labels.device }} on {{ $labels.instance }} reports a failed SMART status (smart_status != 1)."
         - alert: SmartctlAvailableSpareLow
           expr: smartctl_device_available_spare_threshold > smartctl_device_available_spare
           for: 15m
@@ -77,14 +74,3 @@ spec:
           annotations:
             summary: "Drive temperature critical on {{ $labels.device }} ({{ $labels.instance }})"
             description: "Drive {{ $labels.device }} on {{ $labels.instance }} is above 80°C."
-        - alert: SmartctlInterfaceSlow
-          expr: |
-            smartctl_device_interface_speed{speed_type="current"}
-            != on(device, instance, namespace, pod)
-            smartctl_device_interface_speed{speed_type="max"}
-          for: 15m
-          labels:
-            severity: warning
-          annotations:
-            summary: "Interface link degraded on {{ $labels.device }} ({{ $labels.instance }})"
-            description: "Drive {{ $labels.device }} on {{ $labels.instance }} current interface speed is below its max."
