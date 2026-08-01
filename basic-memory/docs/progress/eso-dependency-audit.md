@@ -1,7 +1,7 @@
 ---
 title: eso-dependency-audit
 type: progress
-permalink: home-ops/progress/eso-dependency-audit
+permalink: home-ops/docs/progress/eso-dependency-audit
 tags:
 - progress
 - external-secrets

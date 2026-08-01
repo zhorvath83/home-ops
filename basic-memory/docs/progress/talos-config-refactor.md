@@ -1,7 +1,7 @@
 ---
 title: talos-config-refactor
 type: note
-permalink: home-ops/docs/roadmap/talos-config-refactor
+permalink: home-ops/docs/progress/talos-config-refactor
 topic: Talos machine config — consensus-driven refactor from community comparison
 status: implemented
 priority: medium

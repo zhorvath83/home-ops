@@ -1,7 +1,7 @@
 ---
 title: observability-probes-and-disk-health
 type: roadmap
-permalink: home-ops/docs/roadmap/observability-probes-and-disk-health
+permalink: home-ops/docs/progress/observability-probes-and-disk-health
 topic: blackbox-exporter app and smartctl-exporter delivered; HTTP probing split out
 status: done
 priority: medium

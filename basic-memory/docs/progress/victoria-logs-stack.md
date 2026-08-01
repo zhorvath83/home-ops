@@ -1,7 +1,7 @@
 ---
 title: victoria-logs-stack
 type: roadmap
-permalink: home-ops/docs/roadmap/victoria-logs-stack
+permalink: home-ops/docs/progress/victoria-logs-stack
 topic: Adopt VictoriaLogs as the cluster log-aggregation stack
 status: implemented
 priority: medium

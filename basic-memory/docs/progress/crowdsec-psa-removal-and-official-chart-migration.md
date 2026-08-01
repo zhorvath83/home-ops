@@ -1,7 +1,7 @@
 ---
 title: crowdsec-psa-removal-and-official-chart-migration
 type: roadmap
-permalink: home-ops/docs/roadmap/crowdsec-psa-removal-and-official-chart-migration
+permalink: home-ops/docs/progress/crowdsec-psa-removal-and-official-chart-migration
 topic: Relax the crowdsec namespace PSA to an explicit privileged; migrate to the
   official crowdsecurity/crowdsec chart; replace the victorialogs tail with the file
   datasource on host container logs.
