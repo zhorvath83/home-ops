@@ -5,7 +5,7 @@ permalink: home-ops/docs/areas/observability
 area: observability
 status: current
 confidence: high
-verified_at: '2026-07-11'
+verified_at: '2026-08-01'
 summary: Observability for the cluster splits into four workloads under kubernetes/apps/observability/
   — kube-prometheus-stack (operator + Prometheus + Alertmanager + kube-state-metrics
   + node-exporter, minimal single-node configuration), a standalone grafana (with
@@ -55,7 +55,7 @@ tags:
 - [area] observability
 - [status] current
 - [confidence] high
-- [verified_at] 2026-07-11
+- [verified_at] 2026-08-01
 
 ## Status
 
@@ -188,3 +188,10 @@ Three observability components the Summary/Components above pre-date — all OCI
 - relates_to [[prometheus-adapter]]
 - relates_to [[nfs-dependency-zeroscaler]]
 - relates_to [[silence-operator]]
+
+## Update — 2026-08-01: ScrapeConfig convention for external scrape targets
+
+- [convention] External Prometheus scrape targets are `ScrapeConfig` CRs under `kubernetes/apps/observability/kube-prometheus-stack/app/scrapeconfigs/`, never inline HelmRelease `additionalScrapeConfigs`. Rationale: inline `additionalScrapeConfigs` is brittle on chart upgrades (Renovate-adjacent — a values-schema change can clobber the block); `ScrapeConfig` CRs are Renovate-neutral and consistent with the ServiceMonitor/PodMonitor/Probe primitives already in use.
+- [convention] `scrapeConfigSelectorNilUsesHelmValues: false` on the prometheusSpec (`kube-prometheus-stack/app/helmrelease.yaml:501`) is what makes Prometheus discover `ScrapeConfig` CRs; all selectors (serviceMonitor/podMonitor/probe/rule/scrapeConfig) are `{}` match-all.
+- [observation] Current external (non-cluster-service) scrape inventory: `ScrapeConfig/openwrt` (job=openwrt, `${ROUTER_IP}:9100`) and the blackbox-exporter `Probe` CRs `devices` (icmp, nas.lan) + `nfs` (tcp/2049, nas.lan). In-cluster targets (node-exporter, smartctl-exporter, kube-state-metrics, etc.) are scraped via ServiceMonitor/PodMonitor. `prometheus.spec.additionalScrapeConfigs` is empty; the openwrt job is live `up=1`.
+- [observation] Execution record: [[prometheus-scrapeconfig-extraction]] (progress, done). The NAS exporters (`nas-smartctl` :9633, `nas-node` :9100) are split into [[nas-host-exporters]] (planned) — out of scope for the convention item.
