@@ -2,6 +2,8 @@
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
 # blackbox-exporter (AD-023): custom-egress opt-out, so this CNP is the sole egress source —
 # nas.lan (192.168.1.10) ICMP echo for the icmp module and tcp/2049 for the tcp_connect module.
+# The http_2xx module is the exception: its egress to envoy-internal is granted by the
+# allow-gateways pod label (cluster CCNP allow-gateways-egress), not this CNP.
 # allow-world does NOT cover 192.168/16 (RFC1918 is excepted), so a CIDR rule is required.
 # Prometheus scrape ingress (:9115) is handled by the cluster CCNP, not here.
 apiVersion: cilium.io/v2

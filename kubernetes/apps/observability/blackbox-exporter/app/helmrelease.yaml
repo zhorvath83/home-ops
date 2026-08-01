@@ -53,6 +53,8 @@ spec:
       labels:
         ingress.home.arpa/allow-prometheus: "true"
         egress.home.arpa/custom-egress: "true"
+        # http_2xx probe to idm hairpins through envoy-internal; allow-gateways grants that egress.
+        egress.home.arpa/allow-gateways: "true"
     serviceMonitor:
       # Exporter's own /metrics (blackbox_exporter_* used by dashboard 7587).
       selfMonitor:
