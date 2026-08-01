@@ -4,7 +4,7 @@ type: roadmap
 permalink: home-ops/docs/roadmap/prometheus-scrapeconfig-extraction
 topic: Extract external Prometheus scrape targets into ScrapeConfig CRs (openwrt done,
   M93p NAS pending)
-status: proposed
+status: in-progress
 priority: medium
 scope: Consolidate external scrape targets under kubernetes/apps/observability/kube-prometheus-stack/app/scrapeconfigs/
   as ScrapeConfig CRs (monitoring.coreos.com/v1alpha1) instead of inline HelmRelease
@@ -27,7 +27,7 @@ related_areas:
 ## Metadata (observation-form, schema validation)
 
 - [topic] Extract external Prometheus scrape targets into ScrapeConfig CRs (openwrt done, M93p NAS pending)
-- [status] proposed
+- [status] in-progress
 - [priority] medium
 
 ## Scope
@@ -46,7 +46,7 @@ Consolidate external scrape targets under `kubernetes/apps/observability/kube-pr
 ## Stage 2 — M93p NAS node_exporter scrape (PENDING, blocked)
 
 - [observation] PENDING: add a `ScrapeConfig` CR for the M93p `node_exporter` (`:9100`) under the same `app/scrapeconfigs/` directory.
-- [observation] Blocking external condition: the Phase 10 bare-metal OMV cutover. The M93p currently runs Debian 13 + Proxmox with OpenMediaVault as a VM on the same machine (README.md hardware table); Phase 10 retires the Proxmox hypervisor layer and runs OMV bare-metal. The M93p `node_exporter` is part of the OMV Ansible playbook and lands only after that cutover.
+- [observation] Blocking external condition: the Phase 10 bare-metal OMV cutover. The M93p currently runs Debian 13 + Proxmox with OpenMediaVault as a VM on the same machine (README.md hardware table); Phase 10 retires the Proxmox hypervisor layer and runs OMV bare-metal (mandated by [[AD-002-m93p-bare-metal-omv]]). The M93p `node_exporter` is part of the OMV Ansible playbook and lands only after that cutover.
 - [observation] No ZFS monitoring belongs here: the M93p DAS is 16 TB EXT4 (README.md) and the Talos cluster node has no ZFS (no `zfs` anywhere in `kubernetes/` manifests). Definitively out of scope — not a follow-up.
 
 ## Rationale
@@ -58,3 +58,4 @@ Inline `additionalScrapeConfigs` in the HelmRelease is brittle on chart upgrades
 - relates_to [[observability]]
 - relates_to [[flux-gitops]]
 - relates_to [[resticprofile-backup]]
+- relates_to [[AD-002-m93p-bare-metal-omv]]
