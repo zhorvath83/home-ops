@@ -2,6 +2,19 @@
 title: prometheus-scrapeconfig-extraction
 type: progress
 permalink: home-ops/docs/progress/prometheus-scrapeconfig-extraction
+topic: "External Prometheus scrape targets consolidated into ScrapeConfig CRs under app/scrapeconfigs/, retiring the inline HelmRelease additionalScrapeConfigs"
+status: done
+priority: medium
+scope: "The inline additionalScrapeConfigs.openwrt block was extracted into kube-prometheus-stack/app/scrapeconfigs/openwrt.yaml as a ScrapeConfig CR plus scrapeConfigSelectorNilUsesHelmValues: false on the prometheusSpec (commit b44c52cc9). The completeness proof shows openwrt was the ONLY target ever held inline across the whole git history (introduced 8263c7d2e, removed b44c52cc9). The NAS targets (nas-smartctl :9633, nas-node :9100) were split into nas-host-exporters and are out of scope."
+related_areas:
+- observability
+- flux-gitops
+tags:
+- progress
+- observability
+- prometheus
+- flux-gitops
+- convention
 ---
 
 # External Prometheus scrape targets consolidated into ScrapeConfig CRs
