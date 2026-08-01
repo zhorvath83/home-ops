@@ -72,7 +72,6 @@ function envoy_on_request(request_handle)
     "HenkBot",
     "ICC-Crawler",
     "ISSCyberRiskCrawler",
-    "IbouBot",
     "ImagesiftBot",
     "Kangaroo Bot",
     "Kimi-User",
