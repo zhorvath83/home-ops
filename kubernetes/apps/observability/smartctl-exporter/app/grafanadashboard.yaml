@@ -1,7 +1,8 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/grafana.integreatly.org/grafanadashboard_v1beta1.json
 # Same namespace as the Grafana instance → no cross-namespace import.
-# Dashboard 22604 binds its datasource via the DS_PROMETHEUS input (not DS_SIGNCL-PROMETHEUS).
+# Dashboard 24922 over 22604: it adds a SATA row driven by smartctl_device_attribute, so the
+# ATA disk on the NAS is covered alongside the NVMe drives. Datasource input is DS_PROMETHEUS.
 apiVersion: grafana.integreatly.org/v1beta1
 kind: GrafanaDashboard
 metadata:
@@ -11,7 +12,7 @@ spec:
     matchLabels:
       dashboards: grafana
   folderRef: observability
-  url: https://grafana.com/api/dashboards/22604/revisions/3/download
+  url: https://grafana.com/api/dashboards/24922/revisions/1/download
   datasources:
     - inputName: DS_PROMETHEUS
       datasourceName: Prometheus

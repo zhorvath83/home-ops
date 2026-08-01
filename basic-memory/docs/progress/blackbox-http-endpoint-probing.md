@@ -9,8 +9,13 @@ priority: medium
 scope: One http_2xx probe of https://idm.${PUBLIC_DOMAIN} (Pocket IdP), the allow-gateways
   pod label for the envoy-internal hairpin, a BlackboxTLSCertExpiringSoon rule scoped
   to the cluster's shortlived LE cert profile (threshold 1 day), and promtool unit
-  tests. Delivered direct to main.
+  tests. Delivered direct to main. Absorbs the former roadmap item docs/roadmap/blackbox-http-endpoint-probing
+  (deleted on merge).
 related_areas:
+- observability
+- networking
+- iam
+tags:
 - observability
 - networking
 - iam
@@ -18,13 +23,35 @@ related_areas:
 
 # Blackbox HTTP endpoint probing (idm) — delivered
 
+Active HTTP endpoint probing of the Pocket IdP via the already-deployed blackbox-exporter
+`http_2xx` module. This note now also absorbs the former roadmap item
+`docs/roadmap/blackbox-http-endpoint-probing` (the gap rationale and the design questions that
+preceded delivery); the roadmap note was deleted on merge, 2026-08-01.
+
+## Background — the gap (evidence)
+
+- [evidence] The `http_2xx` module IS fully configured in `kubernetes/apps/observability/blackbox-exporter/app/helmrelease.yaml:19-27` — `prober: http`, `timeout: 5s`, `valid_http_versions: [HTTP/1.1, HTTP/2.0]`, `follow_redirects: true`, `preferred_ip_protocol: ip4`.
+- [evidence] **Zero Probe CRs used it before this work.** `kubernetes/apps/observability/blackbox-exporter/app/probes.yaml` contained exactly two: `devices` (`module: icmp` → `nas.lan`) and `nfs` (`module: tcp_connect` → `nas.lan:2049`). A repo-wide grep for `http_2xx` returned a single hit — the module definition itself.
+- [evidence] Both pre-existing probes exist to serve the NFS-dependency zeroscaler HPA via `probe_success` (see [[nfs-dependency-zeroscaler]] and [[prometheus-adapter]]), not endpoint monitoring.
+- [observation] The parent item [[observability-probes-and-disk-health]] was recorded as having its blackbox half DONE because the app was deployed. That conflated *app deployed* with *capability delivered*; corrected on 2026-08-01. This item was split out to deliver the HTTP half the original rationale was written for.
+
 ## Metadata (observation-form, schema validation)
 
 - [topic] Active HTTP endpoint probing of the Pocket IdP via the blackbox-exporter http_2xx module
 - [status] done
 - [priority] medium
 - [created] 2026-08-01 — delivered direct to main (Flux GitOps watches refs/heads/main)
-- [roadmap] [[blackbox-http-endpoint-probing]]
+- [absorbed] 2026-08-01 — merged the former roadmap item docs/roadmap/blackbox-http-endpoint-probing into this progress note; roadmap deleted on merge
+
+## Design questions → resolutions
+
+The roadmap posed five open questions before implementation; this delivery settled them as follows.
+
+- [question] **Vantage point** (internal gateway direct vs public through the tunnel vs both as separate jobs) → [resolution] ONE job probing the public hostname `https://idm.${PUBLIC_DOMAIN}`, which coredns rewrites to envoy-internal so the probe hairpins through envoy on :10443. Tests the internal cluster path end-to-end without a second job. See *What shipped*.
+- [question] **Access/OIDC-gated apps** would not return 200 to an unauthenticated prober → [resolution] The idm `/` path has no gateway-level pre-auth, so a 200 comes from the backend itself and the `http_2xx` module is used AS IS (no `valid_status_codes` tuning). Enumerating and probing other gated routes remains open — see *Out of scope / follow-ups*.
+- [question] **Target list and its maintenance** (curated vs HTTPRoute-derived) → [resolution] A conscious curated choice of a single high-value target (the Pocket IdP, the shared OIDC failure point behind every OIDC-gated app). A broader HTTPRoute-derived list is still open — see *Out of scope / follow-ups*.
+- [question] **Alert semantics** — whether to reuse `BlackboxProbeFailed` or add HTTP-specific thresholds → [resolution] `BlackboxProbeFailed` (`probe_success == 0`, `for 2m`, critical, NOT job-scoped) covers the new probe automatically and was left untouched. A separate `BlackboxTLSCertExpiringSoon` rule was added for TLS expiry. See *What shipped* and *Correction 1*.
+- [question] **Cert expiry** — alert here or leave to cert-manager → [resolution] Alert here via `probe_ssl_earliest_cert_expiry`. No cert-manager PrometheusRules exist repo-wide (grep found zero), so this blackbox signal is the only TLS-expiry observation that exists, observing the cert as a real client sees it. Threshold `< 1 day` for the shortlived LE cert profile. See *Correction 1*.
 
 ## What shipped
 
@@ -67,12 +94,13 @@ related_areas:
 ## Out of scope / follow-ups
 
 - [followup] BlackboxProbeFailed has NO promtool unit test. That gap is owned by the separate roadmap item [[prometheusrule-unit-test-coverage]], not this change.
-- [followup] Only idm is probed today. The roadmap's broader target list (HTTPRoute-derived, Access-gated apps needing valid_status_codes tuning) is still open.
+- [followup] Only idm is probed today. The broader target list (HTTPRoute-derived, Access-gated apps needing valid_status_codes tuning) is still open — the design questions *Access/OIDC-gated apps* and *Target list* above resolve to this open follow-up for the non-idm routes.
 
 ## Related
 
-- implements [[blackbox-http-endpoint-probing]]
 - continues [[observability-probes-and-disk-health]]
 - relates_to [[observability]]
 - relates_to [[iam]]
 - relates_to [[networking]]
+- relates_to [[nfs-dependency-zeroscaler]]
+- relates_to [[prometheus-adapter]]
