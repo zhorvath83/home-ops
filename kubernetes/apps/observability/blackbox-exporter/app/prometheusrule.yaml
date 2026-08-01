@@ -18,8 +18,9 @@ spec:
           annotations:
             summary: "Blackbox probe failed ({{ $labels.instance }})"
             description: "Probe for {{ $labels.instance }} (job {{ $labels.job }}) has been failing for 2m."
+        # shortlived LE certs renew at ~2.22d; <1d means renewal failed ~29h, leaving ~24h before outage.
         - alert: BlackboxTLSCertExpiringSoon
-          expr: (probe_ssl_earliest_cert_expiry{job="idm_probe"} - time()) / 86400 < 14
+          expr: (probe_ssl_earliest_cert_expiry{job="idm_probe"} - time()) / 86400 < 1
           for: 1h
           labels:
             severity: warning
