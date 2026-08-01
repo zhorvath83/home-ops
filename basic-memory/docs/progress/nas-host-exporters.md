@@ -113,3 +113,13 @@ Exact commands, for the Ansible follow-up:
 - relates_to [[flux-gitops]]
 - relates_to [[networking]]
 - continues [[observability-probes-and-disk-health]]
+
+## Update — 2026-08-01: SmartctlAtaTempHigh changed to >= 50 (human decision)
+
+- [decision] The human asked to be alerted AT 50 C, not above it. SmartctlAtaTempHigh is now `>= 50`; the description reads "at or above 50°C" so it is not a lie at the boundary. Commit f8edc8fbd, live-verified in the cluster.
+- [decision] SmartctlAtaTempCritical was deliberately left at `> 55`. Only the 50 C boundary was asked for, and touching the critical rule was out of scope. The operator asymmetry between the sibling pair is intentional and was flagged to the human.
+- [risk] This partially reverses the original rationale. The drive measured `lifetime_max = 50`, meaning it has ALREADY reached 50 C once in normal service — so `>= 50` may fire on a hot summer day after the 15m for-duration, warning severity, routed to Pushover via the AlertmanagerConfig default receiver. Accepted knowingly. If it becomes noisy the non-destructive lever is a longer `for:` (30-60m, so only sustained heat pages), not a threshold walk-back.
+- [observation] The unit test was rewritten to pin the boundary: 49 silent, 50 fires (previously 51, which would have passed under BOTH `> 50` and `>= 50` — a test that could not fail). Under the old operator the new 50-fires assertion would fail, which is the property that makes it a real test.
+- [finding] The cross-firing High test block pinned the old annotation string and broke when the rule wording changed, even though its firing behaviour was unaffected. The delegation brief had said that block "must stay exactly as it is", reasoning only about firing behaviour — a Maestro-side brief defect, not a worker error. The worker stopped and escalated instead of either weakening the rule or silently editing a block it had been told not to touch. Only the stale description string was updated.
+- [evidence] Live after deploy: expr `smartctl_device_temperature{job="nas-smartctl", temperature_type="current"} >= 50` present in the cluster PrometheusRule; `count(ALERTS{alertname=~"SmartctlAta.*"})` => 0; sdb at 39 C.
+- [evidence] just k8s test-prom-rules: 15 rules, all promtool tests pass (re-run independently by the Maestro).
