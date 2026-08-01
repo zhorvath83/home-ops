@@ -3,7 +3,7 @@ title: blackbox-http-endpoint-probing
 type: roadmap
 permalink: home-ops/docs/roadmap/blackbox-http-endpoint-probing
 topic: Active HTTP endpoint probing with the already-deployed blackbox-exporter
-status: proposed
+status: done
 priority: medium
 scope: 'Add Probe CRs that actually use the http_2xx module already configured in
   the blackbox-exporter HelmRelease, plus a matching PrometheusRule. Split out of
@@ -33,7 +33,7 @@ related_areas:
 ## Metadata (observation-form, schema validation)
 
 - [topic] Active HTTP endpoint probing with the already-deployed blackbox-exporter
-- [status] proposed
+- [status] done
 - [priority] medium
 - [created] 2026-08-01 — split out of [[observability-probes-and-disk-health]] after an audit
   found the HTTP half of that item was never delivered
