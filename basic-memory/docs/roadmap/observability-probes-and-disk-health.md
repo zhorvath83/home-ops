@@ -2,17 +2,15 @@
 title: observability-probes-and-disk-health
 type: roadmap
 permalink: home-ops/docs/roadmap/observability-probes-and-disk-health
-topic: Add blackbox-exporter (active probes, DONE) and smartctl-exporter (disk health,
-  pending)
-status: proposed
+topic: blackbox-exporter app and smartctl-exporter delivered; HTTP probing split out
+status: done
 priority: medium
-scope: 'Two independent exporters. Stage 1 (blackbox-exporter — active HTTP/TCP/DNS/ICMP
-  probes) is DONE: delivered as phase P4 of docs/progress/grafana-operator-migration,
-  live at kubernetes/apps/observability/blackbox-exporter/. Stage 2 (smartctl-exporter
-  — SMART attribute scraping on the PC801/PC711 NVMe pair) is PENDING; delivery approach
-  decided 2026-08-01 (community prometheus-smartctl-exporter chart). Live testing
-  settled the privilege question: privileged: true is mandatory, so the only remaining
-  choice is whether to postRender away the unused ServiceAccount token.'
+scope: Two independent exporters, both now delivered. Stage 1 (blackbox-exporter)
+  is live but delivered only ICMP/TCP probes serving the NFS zeroscaler HPA — the
+  HTTP probing its rationale was written for was NEVER delivered and moved to docs/roadmap/blackbox-http-endpoint-probing
+  on 2026-08-01. Stage 2 (smartctl-exporter on the PC801/PC711 NVMe pair) is deployed
+  and live-verified. The stale docs/areas/observability note found during closure
+  moved to docs/roadmap/area-reference-staleness-audit.
 rationale: 'Stage 1 rationale is spent — active probing exists. Stage 2 stands: the
   PC801/PC711 NVMe pair is the single hardware failure boundary (etcd + every PVC),
   and node-exporter exposes no SMART attributes, so wear/media-error/critical-warning
@@ -32,12 +30,18 @@ related_areas:
 
 ## Metadata (observation-form, schema validation)
 
-- [topic] Add blackbox-exporter (active probes, DONE) and smartctl-exporter (disk health, pending)
-- [status] proposed
+- [topic] blackbox-exporter app and smartctl-exporter delivered; HTTP probing split out
+- [status] done
 - [priority] medium
 - [assessed] 2026-08-01 — currency review; Stage 1 found already delivered, Stage 2 approach decided and live-tested
 
-## Stage 1 — blackbox-exporter (DONE)
+## Stage 1 — blackbox-exporter (app delivered; HTTP probing NOT delivered)
+
+- [correction] This section originally read "DONE". That was wrong: it conflated *app deployed*
+  with *capability delivered*. The blackbox-exporter app is live, but the HTTP probing this
+  item's rationale was written for was never built — the `http_2xx` module is configured and
+  entirely unused. Corrected 2026-08-01; the HTTP half now lives in
+  [[blackbox-http-endpoint-probing]].
 
 Delivered as phase **P4** of [[grafana-operator-migration]], not as a separate work item — which
 is why no `docs/progress/blackbox-exporter` note exists. Already recorded as an observation in
@@ -54,8 +58,8 @@ is why no `docs/progress/blackbox-exporter` note exists. Already recorded as an 
 - [evidence] `probe_success` is consumed beyond alerting: it backs a prometheus-adapter External
   Metrics rule driving an HPA — see [[prometheus-adapter]] and [[nfs-dependency-zeroscaler]].
 
-The Stage 1 scope in the original plan is therefore fully superseded, and the plan's original
-recommended order (smartctl first, blackbox second) was inverted in practice.
+Only the ICMP/TCP part of the Stage 1 scope is superseded. The plan's original recommended order
+(smartctl first, blackbox second) was inverted in practice.
 
 ## Stage 2 — smartctl-exporter (PENDING)
 
@@ -249,3 +253,27 @@ Stage 2 is **deployed**. Four commits on `main`:
   `prometheus_rule_evaluation_failures_total` → **0**. No `Smartctl*` alert is firing.
 - [evidence] `GrafanaDashboard/smartctl-exporter` → `DashboardSynchronized=True`,
   "Dashboard was successfully applied to 1 instances".
+
+## Closure (2026-08-01)
+
+This item is closed. What it actually delivered, and what was split out rather than silently
+dropped:
+
+- [delivered] smartctl-exporter: deployed, live-verified, 8 alert rules with promtool unit tests.
+  See the Deployment outcome section above.
+- [delivered] blackbox-exporter app + `devices` (ICMP) and `nfs` (tcp/2049) probes + the
+  `BlackboxProbeFailed` alert + the 7587 Grafana board — all pre-existing, from
+  [[grafana-operator-migration]] phase P4.
+- [split_out] **HTTP endpoint probing was never delivered** and is now
+  [[blackbox-http-endpoint-probing]]. The `http_2xx` module sits configured and unused at
+  `kubernetes/apps/observability/blackbox-exporter/app/helmrelease.yaml:19-27`; zero Probe CRs
+  reference it. So the original rationale — catching a silent 5xx on cloudflared / an HTTPRoute /
+  an upstream chart — remains uncovered.
+- [split_out] The stale `docs/areas/observability` area-reference (summary still says "four
+  workloads" against eight live sub-Kustomizations, no mention of smartctl) is now
+  [[area-reference-staleness-audit]], which also records that all 11 area notes claim
+  `status: current` regardless of their `verified_at`.
+- [note] Per the project's Documentation Scope Rules a fully implemented roadmap item belongs in
+  `progress/[roadmap-item-name]` with the `docs/roadmap/` entry absorbed into it (the
+  [[ci-secret-and-iac-scanning]] precedent). That move is deliberately NOT done here: it removes a
+  note this session did not create, so it is left as an explicit decision for the human.
