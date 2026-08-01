@@ -1,0 +1,37 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/prometheus-test
+# promtool unit tests for app/prometheusrule.yaml, covering only BlackboxTLSCertExpiringSoon.
+# The rule does day-math — (probe_ssl_earliest_cert_expiry - time()) / 86400 < 14 — with a
+# printf-formatted $value; a sign or divisor slip would make it silently never fire. These
+# tests assert exp_annotations so the template AND the arithmetic are both exercised.
+# Run via `just k8s test-prom-rules` (recipe extracts .spec into ./_extracted_rules.yaml).
+rule_files:
+  - ./_extracted_rules.yaml
+evaluation_interval: 1m
+tests:
+  # Fire: cert ~10d out (expiry 867660, time()=3660 at 61m -> 10.0d < 14). for:1h holds across the window.
+  - interval: 1m
+    input_series:
+      - series: 'probe_ssl_earliest_cert_expiry{job="idm_probe",instance="https://idm.${PUBLIC_DOMAIN}"}'
+        values: '867660x62'
+    alert_rule_test:
+      - eval_time: 61m
+        alertname: BlackboxTLSCertExpiringSoon
+        exp_alerts:
+          - exp_labels:
+              alertname: BlackboxTLSCertExpiringSoon
+              severity: warning
+              job: idm_probe
+              instance: "https://idm.${PUBLIC_DOMAIN}"
+            exp_annotations:
+              summary: "Blackbox TLS certificate expiring soon (https://idm.${PUBLIC_DOMAIN})"
+              description: "TLS certificate for https://idm.${PUBLIC_DOMAIN} (job idm_probe) expires in 10.0 days."
+  # No-fire: cert ~30d out (expiry 2595660 -> 30.0d > 14 throughout). Stays quiet through the for:1h window.
+  - interval: 1m
+    input_series:
+      - series: 'probe_ssl_earliest_cert_expiry{job="idm_probe",instance="https://idm.${PUBLIC_DOMAIN}"}'
+        values: '2595660x62'
+    alert_rule_test:
+      - eval_time: 61m
+        alertname: BlackboxTLSCertExpiringSoon
+        exp_alerts: []
