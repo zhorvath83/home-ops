@@ -284,13 +284,15 @@ tests:
             exp_annotations:
               summary: "UDMA CRC errors growing on sdc (nas)"
               description: "Drive sdc on nas UDMA_CRC_Error_Count is rising above its 7d minimum — likely a bad SATA/USB cable or bridge."
-  # SmartctlAtaTempHigh: temperature{current} > 50, for 15m. sdb 38 no fire / sdc 51 fires.
+  # SmartctlAtaTempHigh: temperature{current} >= 50, for 15m. sdb 38 baseline / sdc 49 no fire / sdd 50 fires (boundary).
   - interval: 1m
     input_series:
       - series: 'smartctl_device_temperature{job="nas-smartctl",instance="nas",device="sdb",temperature_type="current"}'
         values: '38x21'
       - series: 'smartctl_device_temperature{job="nas-smartctl",instance="nas",device="sdc",temperature_type="current"}'
-        values: '51x21'
+        values: '49x21'
+      - series: 'smartctl_device_temperature{job="nas-smartctl",instance="nas",device="sdd",temperature_type="current"}'
+        values: '50x21'
     alert_rule_test:
       - eval_time: 20m
         alertname: SmartctlAtaTempHigh
@@ -300,11 +302,11 @@ tests:
               severity: warning
               job: nas-smartctl
               instance: nas
-              device: sdc
+              device: sdd
               temperature_type: current
             exp_annotations:
-              summary: "ATA drive temperature high on sdc (nas)"
-              description: "Drive sdc on nas is above 50°C."
+              summary: "ATA drive temperature high on sdd (nas)"
+              description: "Drive sdd on nas is at or above 50°C."
   # SmartctlAtaTempCritical: temperature{current} > 55, for 15m. sdb 38 no fire / sdc 56 fires.
   - interval: 1m
     input_series:
@@ -359,7 +361,7 @@ tests:
               temperature_type: current
             exp_annotations:
               summary: "ATA drive temperature high on sdb (nas)"
-              description: "Drive sdb on nas is above 50°C."
+              description: "Drive sdb on nas is at or above 50°C."
   # Cross-firing Critical: NAS sdb 81 (ATA only) + nvme0 81 (NVMe only).
   - interval: 1m
     input_series:

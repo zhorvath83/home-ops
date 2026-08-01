@@ -119,13 +119,13 @@ spec:
             description: "Drive {{ $labels.device }} on {{ $labels.instance }} UDMA_CRC_Error_Count is rising above its 7d minimum — likely a bad SATA/USB cable or bridge."
         - alert: SmartctlAtaTempHigh
           # temperature_type="current" guard keeps this silent if a future exporter adds op_limit_max/etc.
-          expr: smartctl_device_temperature{job="nas-smartctl", temperature_type="current"} > 50
+          expr: smartctl_device_temperature{job="nas-smartctl", temperature_type="current"} >= 50
           for: 15m
           labels:
             severity: warning
           annotations:
             summary: "ATA drive temperature high on {{ $labels.device }} ({{ $labels.instance }})"
-            description: "Drive {{ $labels.device }} on {{ $labels.instance }} is above 50°C."
+            description: "Drive {{ $labels.device }} on {{ $labels.instance }} is at or above 50°C."
         - alert: SmartctlAtaTempCritical
           expr: smartctl_device_temperature{job="nas-smartctl", temperature_type="current"} > 55
           for: 15m
