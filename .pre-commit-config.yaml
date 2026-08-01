@@ -52,6 +52,13 @@ repos:
         entry: mise lock
         pass_filenames: false
         files: '\.mise\.toml$'
+      - id: promtool-rule-tests
+        name: promtool-rule-tests
+        language: system
+        entry: just k8s test-prom-rules
+        pass_filenames: false
+        # Only run when a PrometheusRule or its sibling tests/ files change — never slow down unrelated commits.
+        files: 'prometheusrule\.yaml$|/tests/'
       - id: zizmor
         name: zizmor
         language: system

@@ -29,6 +29,8 @@ kubectl = "1.36.3"
 
 # Observability (Cilium Hubble) — CLI matches cluster cilium minor; -P auto port-forwards to hubble-relay
 "aqua:cilium/hubble" = "1.19.4"
+# Prometheus rule unit tests — promtool matches the cluster's bundled Prometheus (KPS 88.0.1 → v3.13.2)
+"aqua:prometheus/prometheus" = "3.13.2"
 
 # Templating + secrets
 "aqua:mitsuhiko/minijinja" = "2.21.0"

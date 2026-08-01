@@ -1,0 +1,168 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/prometheus-test
+# promtool unit tests for app/prometheusrule.yaml. The rule group has been live with 0 eval
+# failures but NO alert ever fired, so the annotation templates were never exercised — these
+# tests assert exp_annotations so a broken {{ $labels.* }} reference fails the suite.
+# Run via `just k8s test-prom-rules` (recipe extracts .spec into ./_extracted_rules.yaml).
+rule_files:
+  - ./_extracted_rules.yaml
+evaluation_interval: 1m
+tests:
+  # SmartctlMediaErrors: media_errors != 0 (for 15m). nvme0=0 no fire / nvme1=1 fires.
+  - interval: 1m
+    input_series:
+      - series: 'smartctl_device_media_errors{device="nvme0",instance="k8s-cp0"}'
+        values: '0x21'
+      - series: 'smartctl_device_media_errors{device="nvme1",instance="k8s-cp0"}'
+        values: '1x21'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: SmartctlMediaErrors
+        exp_alerts:
+          - exp_labels:
+              alertname: SmartctlMediaErrors
+              severity: critical
+              device: nvme1
+              instance: k8s-cp0
+            exp_annotations:
+              summary: "SMART media errors on nvme1 (k8s-cp0)"
+              description: "Drive nvme1 on k8s-cp0 reports non-zero media errors (uncorrectable ECC/CRC/LBA)."
+  # SmartctlCriticalWarning: critical_warning != 0 (for 15m). nvme0=0 no fire / nvme1=1 fires.
+  - interval: 1m
+    input_series:
+      - series: 'smartctl_device_critical_warning{device="nvme0",instance="k8s-cp0"}'
+        values: '0x21'
+      - series: 'smartctl_device_critical_warning{device="nvme1",instance="k8s-cp0"}'
+        values: '1x21'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: SmartctlCriticalWarning
+        exp_alerts:
+          - exp_labels:
+              alertname: SmartctlCriticalWarning
+              severity: critical
+              device: nvme1
+              instance: k8s-cp0
+            exp_annotations:
+              summary: "SMART critical warning on nvme1 (k8s-cp0)"
+              description: "Drive nvme1 on k8s-cp0 has a non-zero critical_warning field."
+  # SmartctlSmartStatusFailed: smart_status != 1 (for 15m). nvme0=1 healthy no fire / nvme1=0 fires.
+  - interval: 1m
+    input_series:
+      - series: 'smartctl_device_smart_status{device="nvme0",instance="k8s-cp0"}'
+        values: '1x21'
+      - series: 'smartctl_device_smart_status{device="nvme1",instance="k8s-cp0"}'
+        values: '0x21'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: SmartctlSmartStatusFailed
+        exp_alerts:
+          - exp_labels:
+              alertname: SmartctlSmartStatusFailed
+              severity: critical
+              device: nvme1
+              instance: k8s-cp0
+            exp_annotations:
+              summary: "SMART self-test failed on nvme1 (k8s-cp0)"
+              description: "Drive nvme1 on k8s-cp0 reports a failed SMART status (smart_status != 1)."
+  # SmartctlAvailableSpareLow: threshold > spare (for 15m). nvme0 50>100 no fire / nvme1 50>40 fires.
+  - interval: 1m
+    input_series:
+      - series: 'smartctl_device_available_spare_threshold{device="nvme0",instance="k8s-cp0"}'
+        values: '50x21'
+      - series: 'smartctl_device_available_spare{device="nvme0",instance="k8s-cp0"}'
+        values: '100x21'
+      - series: 'smartctl_device_available_spare_threshold{device="nvme1",instance="k8s-cp0"}'
+        values: '50x21'
+      - series: 'smartctl_device_available_spare{device="nvme1",instance="k8s-cp0"}'
+        values: '40x21'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: SmartctlAvailableSpareLow
+        exp_alerts:
+          - exp_labels:
+              alertname: SmartctlAvailableSpareLow
+              severity: critical
+              device: nvme1
+              instance: k8s-cp0
+            exp_annotations:
+              summary: "Available spare below threshold on nvme1 (k8s-cp0)"
+              description: "Drive nvme1 on k8s-cp0 available_spare fell below its available_spare_threshold."
+  # SmartctlWearHigh: percentage_used > 80 (for 1h). nvme0=80 no fire / nvme1=81 fires.
+  - interval: 1m
+    input_series:
+      - series: 'smartctl_device_percentage_used{device="nvme0",instance="k8s-cp0"}'
+        values: '80x62'
+      - series: 'smartctl_device_percentage_used{device="nvme1",instance="k8s-cp0"}'
+        values: '81x62'
+    alert_rule_test:
+      - eval_time: 61m
+        alertname: SmartctlWearHigh
+        exp_alerts:
+          - exp_labels:
+              alertname: SmartctlWearHigh
+              severity: warning
+              device: nvme1
+              instance: k8s-cp0
+            exp_annotations:
+              summary: "NVMe wear high on nvme1 (k8s-cp0)"
+              description: "Drive nvme1 on k8s-cp0 percentage_used is above 80 (plan replacement)."
+  # SmartctlWearCritical: percentage_used > 90 (for 1h). nvme0=90 no fire / nvme1=91 fires.
+  - interval: 1m
+    input_series:
+      - series: 'smartctl_device_percentage_used{device="nvme0",instance="k8s-cp0"}'
+        values: '90x62'
+      - series: 'smartctl_device_percentage_used{device="nvme1",instance="k8s-cp0"}'
+        values: '91x62'
+    alert_rule_test:
+      - eval_time: 61m
+        alertname: SmartctlWearCritical
+        exp_alerts:
+          - exp_labels:
+              alertname: SmartctlWearCritical
+              severity: critical
+              device: nvme1
+              instance: k8s-cp0
+            exp_annotations:
+              summary: "NVMe wear critical on nvme1 (k8s-cp0)"
+              description: "Drive nvme1 on k8s-cp0 percentage_used is above 90 (replace soon)."
+  # SmartctlTempHigh: temperature{current} > 70 (for 15m). nvme0=70 no fire / nvme1=71 fires.
+  - interval: 1m
+    input_series:
+      - series: 'smartctl_device_temperature{device="nvme0",instance="k8s-cp0",temperature_type="current"}'
+        values: '70x21'
+      - series: 'smartctl_device_temperature{device="nvme1",instance="k8s-cp0",temperature_type="current"}'
+        values: '71x21'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: SmartctlTempHigh
+        exp_alerts:
+          - exp_labels:
+              alertname: SmartctlTempHigh
+              severity: warning
+              device: nvme1
+              instance: k8s-cp0
+              temperature_type: current
+            exp_annotations:
+              summary: "Drive temperature high on nvme1 (k8s-cp0)"
+              description: "Drive nvme1 on k8s-cp0 is above 70°C."
+  # SmartctlTempCritical: temperature{current} > 80 (for 15m). nvme0=80 no fire / nvme1=81 fires.
+  - interval: 1m
+    input_series:
+      - series: 'smartctl_device_temperature{device="nvme0",instance="k8s-cp0",temperature_type="current"}'
+        values: '80x21'
+      - series: 'smartctl_device_temperature{device="nvme1",instance="k8s-cp0",temperature_type="current"}'
+        values: '81x21'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: SmartctlTempCritical
+        exp_alerts:
+          - exp_labels:
+              alertname: SmartctlTempCritical
+              severity: critical
+              device: nvme1
+              instance: k8s-cp0
+              temperature_type: current
+            exp_annotations:
+              summary: "Drive temperature critical on nvme1 (k8s-cp0)"
+              description: "Drive nvme1 on k8s-cp0 is above 80°C."

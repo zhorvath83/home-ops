@@ -329,3 +329,46 @@ show-cnp-matrix app="":
       | column -t -s $'\t' \
       | awk 'NR == 1 { hdr = $0; sep = $0; gsub(/[^│]/, "─", sep); gsub(/│/, "┼", sep); print; print sep; next }
              { if (prev != "" && $1 != prev) { print ""; print hdr; print sep } print; prev = $1 }'
+
+# === test ===
+#
+# promtool unit tests for PrometheusRule manifests. A module is testable when it has a tests/
+# dir (module-level, sibling of app/) containing *_test.yaml. For each such module: extract
+# .spec from every prometheusrule.yaml under the module root into tests/_extracted_rules.yaml
+# (gitignored — the test file references it via rule_files), check the rules, then run promtool
+# test rules on every *_test.yaml. Generalizes to any future rule module with the same layout.
+
+[doc('Run promtool unit tests for every PrometheusRule in a module that has a tests/ directory.')]
+[group('test')]
+[script]
+test-prom-rules:
+    command -v promtool >/dev/null 2>&1 || { echo "promtool not found — is the mise env active (aqua:prometheus/prometheus)?" >&2; exit 127; }
+    command -v yq >/dev/null 2>&1 || { echo "yq not found — is the mise env active?" >&2; exit 127; }
+    fail=0
+    # Discover module roots: any tests/ dir containing a *_test.yaml is a testable module.
+    mapfile -t test_dirs < <(find "{{ kubernetes_dir }}" -type d -name 'tests' | while read -r d; do
+        find "$d" -maxdepth 1 -type f -name '*_test.yaml' -print -quit | grep -q . && printf '%s\n' "$d"
+      done | sort)
+    for tests_dir in "${test_dirs[@]}"; do
+      module_root="$(dirname "$tests_dir")"
+      # Collect every PrometheusRule under this module root (typically app/prometheusrule.yaml).
+      mapfile -t specs < <(find "$module_root" -type f -name 'prometheusrule*.yaml' | sort)
+      [ "${#specs[@]}" -gt 0 ] || { just log warn "No prometheusrule.yaml under module" module "$module_root"; continue; }
+      just log info "Testing PrometheusRule" module "$module_root"
+      # Merge .spec.groups from every PrometheusRule in this module into one rules file the tests reference.
+      # mikefarah/yq has no --slurp; eval-all + ireduce is the multi-file merge idiom (single file is a no-op merge).
+      extracted="$tests_dir/_extracted_rules.yaml"
+      yq ea -o yaml '.spec as $item ireduce ({}; . *+ {"groups": ($item.groups // [])})' "${specs[@]}" > "$extracted"
+      # Validate the rules themselves, then run the unit tests; keep going on failure so all modules report.
+      promtool check rules "$extracted" || fail=1
+      mapfile -t test_files < <(find "$tests_dir" -maxdepth 1 -type f -name '*_test.yaml' | sort)
+      for tf in "${test_files[@]}"; do
+        promtool test rules "$tf" || fail=1
+      done
+      rm -f "$extracted"
+    done
+    if [ "$fail" -ne 0 ]; then
+      just log error "promtool rule tests failed" failures "$fail"
+      exit 1
+    fi
+    just log info "All promtool rule tests passed"
