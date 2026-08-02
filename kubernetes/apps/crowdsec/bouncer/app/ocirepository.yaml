@@ -11,5 +11,5 @@ spec:
     operation: copy
   ref:
     # renovate: registryUrl=https://ghcr.io/kdwils/charts chart=envoy-proxy-bouncer
-    tag: 0.6.3
+    tag: 0.7.0
   url: oci://ghcr.io/kdwils/charts/envoy-proxy-bouncer
