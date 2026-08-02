@@ -29,5 +29,11 @@
       changelogUrl: "https://github.com/VictoriaMetrics/helm-charts/blob/master/charts/victoria-logs-single/CHANGELOG.md",
       sourceUrl: "https://github.com/VictoriaMetrics/helm-charts",
     },
+    {
+      description: "Changelog URL for envoy-proxy-crowdsec-bouncer",
+      matchPackageNames: ["/kdwils/"],
+      changelogUrl: "https://github.com/kdwils/envoy-proxy-crowdsec-bouncer/releases",
+      sourceUrl: "https://github.com/kdwils/envoy-proxy-crowdsec-bouncer",
+    },
   ],
 }
