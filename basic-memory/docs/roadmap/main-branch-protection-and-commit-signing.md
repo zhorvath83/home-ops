@@ -330,3 +330,99 @@ Settings applied: `gpg.format=ssh`, `user.signingkey=<_git pubkey literal>`,
 GitHub a second time with Key type = "Signing key"), which is what turns these local signatures
 into "Verified" on the platform. Until Phase 2 lands, commits are signed locally but GitHub will
 still report them as unverified.
+
+
+## Phase 2 result — PASSED (executed 2026-08-03)
+
+The maintainer registered the `zhorvath83_git` public key on GitHub a second time with
+Key type = "Signing key" (web UI; the local `gh` token lacks `admin:ssh_signing_key` so the
+registration was not scriptable from here).
+
+- [evidence] End-to-end proof on a real pushed commit, not a synthetic probe: commit
+  `8b0894518aef` (the replan of this very note) pushed to main and reported by the GitHub API
+  as `verified=true reason=valid`, author "Horváth Zoltán".
+- [evidence] Same commit locally: `git log --show-signature` -> `Good "git" signature for
+  git@horvathzoltan.me with ED25519 key SHA256:QgBZaD3h...`.
+- [evidence] All pre-commit hooks passed on that commit, including gitleaks.
+
+=> The full chain is proven: 1Password agent -> op-ssh-sign -> git -> GitHub signing key ->
+"Verified". This was the first verified maintainer commit on the repo; every prior maintainer
+commit sampled was `verified=false reason=unsigned`.
+
+### Vigilant mode — recommended ON, and why the ordering mattered
+
+- [decision] Vigilant mode is enabled AFTER Phase 2 was proven, not before. Rationale: it is a
+  display-only setting that flags every unsigned commit as "Unverified"; flipping it before a
+  known-good signed commit existed would have made a key-registration fault and the mode's
+  intended effect indistinguishable.
+- [claim] Vigilant mode closes a gap `required_signatures` does NOT cover. The branch rule
+  protects `main` only; without vigilant mode, a commit forged with the maintainer's name and
+  email on any other branch or repo is visually indistinguishable from a genuine one (neither
+  carries a badge). Vigilant mode inverts the default so the ABSENCE of a signature becomes a
+  visible signal.
+- [evidence] Exposure is clean on this workstation: of the local repositories with a github.com
+  remote, 8 of 8 live inside the now-signed personal project tree and 0 sit outside it, so the
+  Phase 1 scoping leaves no blind spot on this machine.
+- [risk] Commits made from any OTHER machine will read "Unverified" until signing is configured
+  there too. GitHub web-UI edits are GitHub-signed and stay Verified. Where author differs from
+  committer (some rebases), GitHub may show "Partially verified".
+- [note] Vigilant mode blocks nothing — it is orthogonal to `required_signatures` enforcement
+  and is reversible by toggling it off.
+
+
+## Phase 3 result — DEPLOYED, PARTIALLY PROVEN (executed 2026-08-03)
+
+Delivered as direct commits to main (repo norm for CI-only changes, matching the
+`ci-secret-and-iac-scanning` precedent). Implemented by the worker subterminal; the diff was
+ratified BEFORE the commit, because on this repo a commit to main is effectively the deploy.
+
+- [evidence] `ca9405d60` — `sign-commits: true` added to the create-pull-request step in both
+  `update-ai-bots.yaml` and `update-cloudflare-networks.yaml`, and BOTH token expressions in each
+  file unified to `${{ secrets.GITHUB_TOKEN }}`. GitHub reports `verified=true reason=valid`.
+- [evidence] `478911d03` — follow-up: the vestigial `secrets.PAT ||` preference removed from
+  `scanning-deprecated-kube-resources.yaml` too. `verified=true reason=valid`. Zero `secrets.PAT`
+  occurrences remain repo-wide.
+- [evidence] That third workflow has no signing relevance (permissions `contents:read` +
+  `issues:write`, no create-pull-request, no git commit/push), so it was hygiene, not a
+  prerequisite. It also removed a self-inconsistency: its failure-issue step already used
+  `GITHUB_TOKEN` directly while its checkout preferred a PAT.
+- [evidence] Independent verification of the worker's diff (not its report): `git diff --stat`
+  showed 3 insertions / 2 deletions per file, zero `secrets.PAT` left, `sign-commits` inside the
+  create-pull-request `with:` block and NOT in Checkout, action pin
+  `5f6978f... # v8.1.1` preserved byte-for-byte, and actionlint/zizmor/yamlfmt/yamllint/gitleaks
+  re-run by the control lane, all Passed.
+
+### What is proven, and what is NOT
+
+- [claim] PROVEN: `sign-commits: true` is recognised by v8.1.1 — both dispatched runs echo
+  `sign-commits: true` in the action's resolved inputs, so it is not silently dropped as an
+  unknown input.
+- [claim] PROVEN: the PAT-to-GITHUB_TOKEN switch did not break either workflow. Both
+  `workflow_dispatch` runs completed `success` with the `Create pull request` step succeeding.
+- [claim] NOT PROVEN: that a bot-created branch commit is actually signed. Neither upstream source
+  had changed, so `pull-request-operation = none` and no PR or `github-action/*` branch was
+  created. There is no bot commit to inspect yet.
+- [correction] Do NOT misread the run output `pull-request-commits-verified = false` as a signing
+  failure. In a `none` operation the action reports it against main's HEAD
+  (`pull-request-head-sha = 478911d03`), a commit that GitHub independently reports as
+  `verified=true`. The flag is vacuous here. It IS the right signal to check once a real PR exists.
+
+=> Phase 3 acceptance stays OPEN until one of the two workflows actually opens a PR and its branch
+commit reads `verified=true`. Compare against the pre-fix baseline: PR 4093's branch commit was
+`verified=false reason=unsigned`.
+
+## Phase 4 DESIGN CORRECTION — the bot-PR source does not work on demand
+
+- [correction] The Phase 4 plan sources its bot-authored PR from `workflow_dispatch` on
+  update-ai-bots. That is NOT a reliable on-demand source: these workflows only open a PR when
+  their upstream data has changed, and a no-change run yields `pull-request-operation = none`.
+  Discovered by actually running both workflows rather than assuming.
+- [decision] Use a Renovate PR as the bot-authored specimen instead. Renovate PRs appear several
+  times a day here, are bot-authored, and their branch commits are already
+  `verified=true committer=GitHub` — which is exactly the decisive matrix cell (API squash of a
+  bot-authored PR with SIGNED commits by a non-author).
+- [risk] Retargeting an OPEN Renovate PR with `gh pr edit --base` may make Renovate react
+  (rebase/recreate/close). Prefer a freshly opened PR, retarget it onto the shadow base, run the
+  cell, then retarget back to main and confirm Renovate's state is undisturbed. If that proves
+  messy, the fallback is to wait for a bot PR from the two fixed workflows, which also settles
+  Phase 3 acceptance at the same time.
