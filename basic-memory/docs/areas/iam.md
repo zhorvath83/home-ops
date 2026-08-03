@@ -5,7 +5,7 @@ permalink: home-ops/docs/areas/iam
 area: iam
 status: current
 confidence: high
-verified_at: '2026-07-26'
+verified_at: '2026-08-03'
 summary: Pocket ID is the cluster OIDC Identity Provider; its clients and groups are
   Terraform-managed in provision/pocket-id, and workloads that do not speak OIDC are
   gated by the shared gateway-oidc Envoy-native OIDC component.
@@ -19,6 +19,13 @@ verified_against:
 - provision/pocket-id/locals.tf
 - kubernetes/apps/observability/grafana/instance/grafana.yaml
 - kubernetes/apps/selfhosted/pingvin-share-x/app/config/config.yaml
+- kubernetes/apps/networking/envoy-gateway/config/validatingadmissionpolicy.yaml
+- kubernetes/apps/networking/envoy-gateway/config/gateway-policies.yaml
+- kubernetes/apps/crowdsec/web-ui/
+- kubernetes/apps/security/pocket-id/app/backendtlspolicy.yaml
+- kubernetes/apps/security/pocket-id/app/certificate.yaml
+- provision/pocket-id/mod.just
+- provision/pocket-id/groups.tf
 ---
 
 # Identity & Access Management (IAM)
@@ -56,7 +63,7 @@ verified_against:
 - [observation] [convention] Pocket ID serves **one issuer for every client**: `https://idm.${PUBLIC_DOMAIN}`. Clients resolve the rest through `/.well-known/openid-configuration`; there are no per-client issuer URLs.
 - [observation] [endpoint] authorize `/authorize` · token `/api/oidc/token` · userinfo `/api/oidc/userinfo` · end-session `/api/oidc/end-session` · JWKS `/.well-known/jwks.json`.
 - [observation] [scopes] `openid`, `profile`, `email`, `groups`, `offline_access`. The `groups` claim carries the group **name** verbatim — no realm or domain suffix — so role mappings match on the bare name.
-- [observation] [consequence] Every endpoint is the public issuer, per AD-023. The OIDC backchannel is therefore ordinary gateway traffic (client pod -> envoy VIP -> pocket-id). Baseline-egress clients need nothing; a client carrying `egress.home.arpa/custom-egress` MUST also carry `egress.home.arpa/allow-gateways` or its token exchange is dropped by its own CNP posture. Current carriers: grafana, pingvin-share-x.
+- [observation] [consequence] Every endpoint is the public issuer, per AD-023. The OIDC backchannel is therefore ordinary gateway traffic (client pod -> envoy VIP -> pocket-id). Baseline-egress clients need nothing; a client carrying `egress.home.arpa/custom-egress` MUST also carry `egress.home.arpa/allow-gateways` or its token exchange is dropped by its own CNP posture. Current carriers: grafana, pingvin-share-x, calibre-web-automated. **The new native client `crowdsec-web-ui` carries NEITHER label** (kubernetes/apps/crowdsec/web-ui/app/helmrelease.yaml has no `egress.home.arpa` labels), so whether its token-exchange hairpin survives its CNP posture is an open cluster-runtime question.
 - [observation] [dns] The hairpin resolves through the coredns split-horizon zone: `${PUBLIC_DOMAIN}` forwards to `${K8S_GATEWAY_IP}` (k8s-gateway), so pods reach the envoy-internal VIP without the node-resolver -> router hop.
 
 ## 4. Provisioning model
@@ -85,17 +92,18 @@ verified_against:
 
 | Group | Grants |
 |---|---|
-| `media_users` | the eight gateway-gated downloads apps |
-| `infra_admins` | hubble-ui, echo-server, and Grafana's Admin role |
+| `media_users` | the nine gateway-gated clients (eight downloads apps + suggestarr, which lives in the `media` namespace) |
+| `infra_admins` | hubble-ui, echo-server, crowdsec-web-ui, and Grafana's Admin role |
 | `calibre-web-automated_users` / `_admins` | Calibre-Web Automated |
 | `pingvin-share-x_admins` | Pingvin Share admin access |
 
 ## 7. Client inventory
 
-**Gateway-gated** (`components/gateway-oidc`, callback `/oauth2/callback`): bazarr (subs), sonarr (shows), radarr (movies), prowlarr (indexers), qbittorrent (bt), subsyncarr (subsync), maintainerr, seerr (reqs) — all `media_users`; hubble-ui (hubble) and echo-server (echo) — `infra_admins`.
+**Gateway-gated** (`components/gateway-oidc`, callback `/oauth2/callback`): bazarr (subs), sonarr (shows), radarr (movies), prowlarr (indexers), qbittorrent (bt), subsyncarr (subsync), maintainerr, seerr (reqs) and suggestarr — all `media_users`; hubble-ui (hubble) and echo-server (echo) — `infra_admins`. That is 11 gateway-gated clients. NOTE: `suggestarr` is declared in Terraform AHEAD of a deployed workload — its `ks.yaml` wires the gateway-oidc component but the app is commented out of `kubernetes/apps/media/kustomization.yaml`.
 
 **Native OIDC**:
 
+- [observation] [client] **crowdsec-web-ui** — a 4th native OIDC client (`gate: native`, subdomain `crowdsec`, callback `/api/auth/oidc/callback`, `pkce_enabled: false`, group `infra_admins`) declared in provision/pocket-id/clients.yaml with its app at kubernetes/apps/crowdsec/web-ui/. PKCE is off, unlike grafana.
 - [observation] [client] **grafana** — `auth.generic_oauth` on the grafana-operator instance. Endpoints are the public issuer; `use_pkce: true`; `scopes: openid email profile groups`. `role_attribute_path` maps `infra_admins` -> Admin and everything else -> None, with `role_attribute_strict: true`. The local login form is hidden (`disable_login_form`); the retained admin credential is the grafana-operator's provisioning credential for the in-cluster API, not a human login path.
 - [observation] [client] **pingvin-share-x** — discovery-only client; `oidc-discoveryUri` points at `/.well-known/openid-configuration`, `oidc-rolePath: groups`, `oidc-roleAdminAccess: pingvin-share-x_admins`, password login disabled.
 - [observation] [client] **calibre-web-automated** — callback `/login/generic/authorized`. `pkce_enabled: false` because Calibre-Web's flask-dance generic OAuth exposes no PKCE toggle and sends no `code_challenge`; it is a confidential client, so the secret still guards the token exchange.
@@ -106,7 +114,7 @@ verified_against:
 - [observation] [debt] Calibre-Web Automated's OIDC settings are entered in its admin UI, so its client secret lives in the app database rather than arriving through External Secrets. VolSync backs it up, but it is not reproducible from git — the one workload outside the uniform secret-delivery model.
 - [observation] [limitation] **SecurityPolicy discovery-fetch fragility**: the envoy-gateway controller fetches the discovery document on every SecurityPolicy generation bump. If that fetch times out, the policy goes `Accepted=False/Invalid` and the controller sets a 500 direct-response on the gated routes, and it does not self-heal once the endpoint returns. Remediation: `kubectl rollout restart deployment/envoy-gateway -n networking`, after which policies return to Accepted within a few minutes. With a single shared issuer this is one failure point for all gated apps at once.
 - [observation] [limitation] There is no auth-audit tooling for the IdP. Pocket ID runs with `LOG_JSON=true`, so a VictoriaLogs-backed audit trail is buildable, but none exists today.
-- [observation] [ratelimit] The external gateway carries a Local `BackendTrafficPolicy` rate limit (600 req/min), effectively global on this single-node cluster because one Envoy pod serves each gateway. Cloudflare WAF provides edge rate limiting ahead of it.
+- [observation] [ratelimit] The external gateway carries a Local `BackendTrafficPolicy` rate limit of **3000 requests/minute PER CLIENT** — `clientSelectors.sourceCIDR` with `type: Distinct` on both `0.0.0.0/0` and `::/0`, so each source address gets its own bucket and IPv6 clients are not silently unlimited. This replaced an earlier shared 600/min limit after a single gallery visitor exhausted it and 429-ed everyone else on that route (rationale recorded in the manifest comment). Local type = no rate-limit backend deployed. Cloudflare WAF provides edge rate limiting ahead of it; behavioural abuse detection is CrowdSec's job, this is only a volumetric backstop (kubernetes/apps/networking/envoy-gateway/config/gateway-policies.yaml:26-43).
 
 ## Relations
 
@@ -114,3 +122,34 @@ verified_against:
 - relates_to [[networking]]
 - relates_to [[external-secrets]]
 - relates_to [[observability]]
+
+## Update 2026-08-03 — staleness re-verification
+
+Full re-verification against the live repo as part of the `area-reference-staleness-audit`
+roadmap item. Previous `verified_at` was 2026-07-26 (one week old). Verdict: MINOR-DRIFT —
+34 claims re-verified true, the summary and the whole trust chain held, every `verified_against`
+path still existed. What drifted was the client inventory and one number.
+
+- [correction] **The rate limit was wrong in a way that inverted its meaning.** The note said
+  600 req/min, "effectively global because one Envoy pod serves each gateway". It is now
+  **3000 req/min PER CLIENT** — `sourceCIDR` selectors with `type: Distinct` on both `0.0.0.0/0`
+  and `::/0`. The manifest comment records why: a single gallery visitor exhausted the old shared
+  600/min and 429-ed everyone else on that route. Both address families are listed so IPv6 clients
+  are not silently unlimited. "Effectively global" is exactly what it is no longer.
+- [correction] `media_users` grants NINE gateway-gated clients, not eight — `suggestarr` was added,
+  and it lives in the `media` namespace, so "the eight gateway-gated downloads apps" was doubly
+  wrong. Note that suggestarr is a **declared-but-undeployed** client: Terraform creates it while
+  the app is commented out of `kubernetes/apps/media/kustomization.yaml`.
+- [correction] A 4th native OIDC client exists: `crowdsec-web-ui` (`infra_admins`, PKCE OFF,
+  callback `/api/auth/oidc/callback`). It also joins `infra_admins`, which the group taxonomy did
+  not list.
+- [correction] The custom-egress/allow-gateways carrier list was incomplete: `calibre-web-automated`
+  carries both too. More interesting — **`crowdsec-web-ui` carries NEITHER label**, so whether its
+  token-exchange hairpin survives its own CNP posture is an open question that only cluster
+  observation can settle. Recorded rather than guessed.
+- [observation] A `idm.${PUBLIC_DOMAIN}` coredns override forwards that name straight to the
+  envoy-internal ClusterIP instead of the K8S_GATEWAY_IP VIP — a refinement of the split-horizon
+  claim that does not contradict it.
+- [observation] The passkey-only, token-encryption and SecurityPolicy-fragility claims remain
+  UNVERIFIABLE from the repo (IdP runtime / envoy-gateway controller behavior). Left as-is rather
+  than promoted to verified.
