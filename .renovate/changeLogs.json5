@@ -35,5 +35,11 @@
       changelogUrl: "https://github.com/kdwils/envoy-proxy-crowdsec-bouncer/releases",
       sourceUrl: "https://github.com/kdwils/envoy-proxy-crowdsec-bouncer",
     },
+    {
+      description: "Changelog URL for SuggestArr",
+      matchPackageNames: ["/suggestarr/"],
+      changelogUrl: "https://github.com/giuseppe99barchetta/SuggestArr",
+      sourceUrl: "https://github.com/giuseppe99barchetta/SuggestArr",
+    },
   ],
 }
