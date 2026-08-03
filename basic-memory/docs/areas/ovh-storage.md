@@ -5,7 +5,7 @@ permalink: home-ops/docs/areas/ovh-storage
 area: ovh-storage
 status: current
 confidence: high
-verified_at: '2026-06-20'
+verified_at: '2026-08-03'
 summary: Terraform in `provision/ovh/` provisions a set of OVH Cloud Project Object
   Storage buckets and one dedicated cloud-project user (`objectstore_operator` role)
   with an S3 credential and an inline bucket-scoped S3 policy. Buckets live in region
@@ -46,7 +46,7 @@ tags:
 - [area] ovh-storage
 - [status] current
 - [confidence] high
-- [verified_at] 2026-06-20
+- [verified_at] 2026-08-03
 
 ## Summary
 
@@ -70,6 +70,7 @@ The `just ovh apply` recipe is the single supported apply path: after `terraform
 - [component] Buckets — `ovh_cloud_project_storage.backup` `for_each` over `local.bucket_names` (parsed from comma-and-space-separated `S3_BUCKET_NAMES`), region pinned to `DE` (provision/ovh/buckets.tf:1-11)
 - [component] Endpoint output — `s3_endpoint` = `s3.de.io.cloud.ovh.net` (derived from `local.region`) (provision/ovh/buckets.tf:13-15)
 - [component] Object-store user — `ovh_cloud_project_user.object_store_user` with role `objectstore_operator` and `description` from `OVH_S3_USER` (provision/ovh/user.tf:1-5)
+- [component] Public Cloud project ID — `var.OVH_CLOUD_SERVICE_NAME` (provision/ovh/variables.tf:24-27) is the `service_name` on EVERY managed resource: the buckets (buckets.tf:8), the object-store user (user.tf:2) and the S3 policy (user.tf:13). Required TF_VAR from `.env`; without it nothing in this area resolves.
 - [component] S3 credential — `ovh_cloud_project_user_s3_credential.object_store_user` issued for the user (provision/ovh/user.tf:7-10)
 - [component] S3 policy — `ovh_cloud_project_user_s3_policy.object_store_user`, single statement `FullAccess`, `Effect=Allow`, `Action=["s3:*"]`, `Resource=[arn:aws:s3:::<bucket>, arn:aws:s3:::<bucket>/*]` for each bucket in `local.bucket_names` (provision/ovh/user.tf:12-29)
 - [component] Outputs — `s3_user_id`, `s3_username` (sensitive), `s3_user_description`, `s3_access_key` (sensitive), `s3_secret_key` (sensitive), `s3_endpoint` (provision/ovh/buckets.tf:13-15 + user.tf:31-54)
@@ -87,7 +88,7 @@ The `just ovh apply` recipe is the single supported apply path: after `terraform
 - [claim] "The S3 policy is a single Allow statement `s3:*` scoped to the same bucket set as `local.bucket_names` — both the bucket ARN and the object ARN are granted" (evidence: repo, ref: provision/ovh/user.tf:12-29, verified: 2026-06-20)
 - [claim] "`just ovh apply` does two things in sequence: (1) `terraform apply` via `op run`, (2) a single `op item edit ovh --vault HomeOps` that writes six fields (`ovh_s3_user_id`, `ovh_s3_username`, `ovh_s3_user_description`, `ovh_s3_access_key`, `ovh_s3_secret_key`, `ovh_s3_endpoint`) using outputs parsed from a single `terraform output -json` call" (evidence: repo, ref: provision/ovh/mod.just:26-50, verified: 2026-06-20)
 - [claim] "The post-apply 1Password sync uses `jq -er` so a missing or null output aborts the recipe rather than silently writing empty fields" (evidence: repo, ref: provision/ovh/mod.just:33-43, verified: 2026-06-20)
-- [claim] "The 1Password `HomeOps/ovh` item is the contract surface for the in-cluster consumers — VolSync/Kopia and resticprofile both read `ovh_s3_*` from this item via External Secrets; Terraform itself never reaches the cluster" (evidence: repo, ref: provision/ovh/CLAUDE.md:7-10,15-15, verified: 2026-06-20)
+- [claim] "The 1Password `HomeOps/ovh` item is the contract surface for the in-cluster consumers — VolSync/Kopia and resticprofile both read `ovh_s3_*` from this item via External Secrets; Terraform itself never reaches the cluster" (evidence: repo, ref: provision/ovh/CLAUDE.md:7-14,20, verified: 2026-08-03)
 - [claim] "Four operational entry points exist: `just ovh init|plan|apply|unlock`; `unlock` wraps `terraform force-unlock` for state recovery" (evidence: repo, ref: provision/ovh/mod.just:16-55, verified: 2026-06-20)
 
 ## Drift Risk
@@ -111,3 +112,19 @@ The `just ovh apply` recipe is the single supported apply path: after `terraform
 - relates_to [[resticprofile-backup]]
 - relates_to [[external-secrets]]
 - part_of [[home-ops-platform]]
+
+## Update 2026-08-03 — staleness re-verification
+
+Full re-verification against the HCL source as part of the `area-reference-staleness-audit`
+roadmap item. Previous `verified_at` was 2026-06-20. Verdict: MINOR-DRIFT — the cleanest note in
+the audit so far. Every `verified_against` path still existed, the whole summary was accurate, and
+13 of 14 claims re-verified true with zero wrong statements.
+
+- [correction] One evidence citation pointed at a blank line (`provision/ovh/CLAUDE.md:15-15`). The
+  supporting content is at :14 (downstream consumer chain) and :20 (the recipe-only credential-sync
+  contract). Citation fixed to `:7-14,20`.
+- [addition] `OVH_CLOUD_SERVICE_NAME` was never named in the note even though it is the
+  `service_name` on every single managed resource. Added as a component.
+- [observation] The concrete bucket list stays unverifiable by design: it arrives via
+  `TF_VAR_S3_BUCKET_NAMES` from the 1Password-backed `.env`, which this audit does not read. The
+  note already flagged that as a gap and the flag is still correct.
