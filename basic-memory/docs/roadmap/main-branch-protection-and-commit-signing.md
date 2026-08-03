@@ -426,3 +426,74 @@ commit reads `verified=true`. Compare against the pre-fix baseline: PR 4093's br
   cell, then retarget back to main and confirm Renovate's state is undisturbed. If that proves
   messy, the fallback is to wait for a bot PR from the two fixed workflows, which also settles
   Phase 3 acceptance at the same time.
+
+
+## Phase 4 result — the decisive cell was measured, and it changed the item (2026-08-03)
+
+Measured directly on main in a seconds-long enforcement window instead of on a shadow branch.
+
+- [correction] The shadow-branch design was ABANDONED as net-negative. It was conceived before
+  Phases 1-2 existed, when a self-lockout on main was the dominant risk. Once the maintainer's own
+  commits were signed and proven, pushes to main could no longer be blocked, so the only remaining
+  failure mode was a refused bot-PR merge — visible, non-destructive, and reversible with one API
+  call. The shadow route, by contrast, required retargeting a LIVE Renovate PR, which Renovate can
+  react to by marking it edited and abandoning it (and `prEditedNotification` is suppressed in this
+  repo, so that would have been silent). The plan was adjusted to the facts, not the reverse.
+
+### The decisive cell: API squash, bot-authored PR, non-author merger
+
+- [evidence] Specimen PR 4102 (`renovate[bot]`, `auto_merge=null` because ghcr.io/actualbudget is
+  outside the automerge prefixes, so a HUMAN merges it — exactly the exposed case). Its branch
+  commit `33bee48f2` was `verified=true committer=GitHub`.
+- [evidence] With `required_signatures=true` on main, `gh pr merge 4102 --squash` (no `--admin`,
+  no `--auto`, either of which would have voided the test) exited 0. Landed as `5410e6110`,
+  `author=renovate[bot] committer=GitHub verified=true reason=valid`, `merged_by=zhorvath83`.
+
+### The negative control overturned the item's core premise
+
+- [evidence] An intentionally unsigned local commit pushed to main while `required_signatures=true`
+  was NOT rejected. GitHub detected and then waived it:
+  `Bypassed rule violations for refs/heads/main: - Commits must have verified signatures.`
+- [evidence] Cause: `enforce_admins=false` and the maintainer holds `admin=true` on the repo.
+- [correction] The item's stated benefit — "an unsigned or impersonated push is rejected by GitHub
+  before it can reach the cluster" — is FALSE as originally scoped. The earlier decision to drop
+  `enforce_admins` from scope defeats the very threat the rationale names: the only human here is
+  an admin, so a stolen admin token bypasses the rule exactly as the maintainer just did.
+- [decision] Phase 5 now REQUIRES `enforce_admins=true` alongside `required_signatures`. Signing-only
+  was rejected once measurement showed it protects nothing against the primary actor.
+- [risk] Cost of `enforce_admins=true`: the self-lockout risk RETURNS. If signing ever breaks (the
+  1Password app not running, the agent locked, the key removed), the maintainer cannot push at all
+  until it is fixed. Rollback must be known before enabling:
+  `gh api -X DELETE repos/zhorvath83/home-ops/branches/main/protection/enforce_admins`.
+
+### The decisive-cell result is CONFOUNDED and must be re-measured
+
+- [correction] The successful squash happened while `enforce_admins=false`, i.e. while the admin
+  bypass was active. It therefore does NOT prove that API squash of a bot-authored PR is allowed
+  ON ITS MERITS — the same bypass that waived the unsigned push may have carried the merge. The
+  merge produced no remote message either way, and API merges do not surface the
+  "Bypassed rule violations" notice that a push does, so absence of that notice is not evidence.
+- [claim] There is a good reason to expect it passes legitimately: PR 4102's branch commit was
+  already `verified=true`, so there was no signature violation to waive. But that is reasoning,
+  not measurement.
+- [decision] Re-run this exact cell WITH `enforce_admins=true` on the next bot PR, as part of
+  Phase 5 verification. Until then the cell is recorded as SUGGESTIVE, not proven.
+
+### Incidental finding: enforce_admins does not govern all protections uniformly
+
+- [evidence] `allow_force_pushes=false` IS enforced against the admin: a force-push was rejected
+  with `GH006: Protected branch update failed ... Cannot force-push to this branch`, even though
+  `required_signatures` had just been bypassed by that same admin. So "admins bypass branch
+  protection" is too coarse a mental model — some settings are hard limits, others are
+  `enforce_admins`-gated rules.
+
+### Deliberate wart on main — do NOT "fix" this in a later session
+
+- [decision] Commit `282fd7f2e` ("negative control: unsigned commit, must be rejected") is an EMPTY,
+  unsigned commit left on main ON PURPOSE. It was created by the negative control above on the
+  mistaken assumption that the push would be rejected. Removing it would require temporarily
+  setting `allow_force_pushes=true` on main and rewriting the protection object via PUT (there is
+  no dedicated endpoint), which is poor value for an empty commit with zero content impact — Flux
+  sees no change. The maintainer decided to leave it.
+- [note] It will show as `verified=false` / "Unverified" on main, and it is the ONLY such commit
+  after this session. That is expected and documented, not drift to be repaired.
