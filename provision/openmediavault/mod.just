@@ -15,28 +15,9 @@ nas_share_mount_script_on_mac := env_var('NAS_MOUNT_SCRIPT')
 default:
     just -l omv
 
-[doc('Install / configure OMV via Ansible (idempotent)')]
+[doc('Run OMV package upgrade + apply changes over SSH, then re-mount NAS shares locally')]
 [script]
-install:
-    cd {{ omv_dir }} && \
-    ansible-playbook -i inventory/hosts.yml playbooks/site.yml
-
-[doc('Run only the package update role')]
-[script]
-update:
-    cd {{ omv_dir }} && \
-    ansible-playbook -i inventory/hosts.yml playbooks/update.yml
-
-[doc('Sanity check: ping host and verify NFS export list')]
-[script]
-check:
-    cd {{ omv_dir }} && \
-    ansible -i inventory/hosts.yml omv -m ping && \
-    showmount -e {{ omv_host }}
-
-[doc('Run OMV package upgrade + apply changes over SSH, then re-mount NAS shares locally (pre-Phase-10 path)')]
-[script]
-update-host host=omv_host user=omv_default_user:
+update host=omv_host user=omv_default_user:
     set -eu
 
     LOCAL_NAS_SHARE_MOUNT_SCRIPT_ON_MAC="{{ nas_share_mount_script_on_mac }}"
