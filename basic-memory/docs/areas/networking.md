@@ -5,7 +5,7 @@ permalink: home-ops/docs/areas/networking
 area: networking
 status: current
 confidence: high
-verified_at: '2026-07-28'
+verified_at: '2026-08-03'
 summary: Gateway API with Envoy Gateway provides cluster ingress, split across two
   shared entrypoints (envoy-external for Cloudflare Tunnel public traffic, envoy-internal
   for LAN traffic on a Cilium L2-announced VIP). Single HTTPS listener per Gateway
@@ -34,6 +34,20 @@ verified_against:
 - kubernetes/apps/kube-system/cilium/config/pool.yaml
 - kubernetes/apps/kube-system/cilium/netpols/
 - kubernetes/apps/networking/CLAUDE.md
+- kubernetes/apps/networking/envoy-gateway/ks.yaml
+- kubernetes/apps/networking/envoy-gateway/app/helmrelease.yaml
+- kubernetes/apps/networking/envoy-gateway/app/ocirepository.yaml
+- kubernetes/apps/networking/envoy-gateway/certificate/certificate.yaml
+- kubernetes/apps/networking/envoy-gateway/config/kustomization.yaml
+- kubernetes/apps/networking/envoy-gateway/config/observability.yaml
+- kubernetes/apps/networking/envoy-gateway/config/prometheusrule.yaml
+- kubernetes/apps/networking/envoy-gateway/config/resources/block-user-agents.lua
+- kubernetes/apps/networking/external-dns/app/helmrelease.yaml
+- kubernetes/apps/kube-system/cilium/config/l2-announcement-policy.yaml
+- kubernetes/apps/kube-system/cilium/netpols/kustomization.yaml
+- kubernetes/components/common/vars/cluster-settings.yaml
+- kubernetes/components/gateway-oidc/securitypolicy.yaml
+- kubernetes/apps/crowdsec/bouncer/app/helmrelease.yaml
 drift_risk: 'HSTS includeSubDomains with 2-year max-age is a one-way commitment —
   any future HTTP-only subdomain under PUBLIC_DOMAIN would be blocked from cached
   browsers; preload deliberately omitted. The listener hostname filter is
@@ -47,7 +61,7 @@ drift_risk: 'HSTS includeSubDomains with 2-year max-age is a one-way commitment 
   listener hostname filter. rate-limit-external BackendTrafficPolicy still
   disabled (envoy-gateway v1.8.0/v1.8.1 CRD regression, fix #8798 merged to main
   but not cherry-picked to release/v1.8) — Cloudflare WAF covers external rate
-  limiting in the meantime. The envoy v1.38.2 image tag is hardcoded in
+  limiting in the meantime. The envoy v1.39.0 image tag is hardcoded in
   EnvoyProxy spec, not chart-managed. EnvoyPatchPolicy listener naming uses the
   EG IR format gateway-namespace/gateway-name/listener-name (single `https`,
   plus `https-quic` on internal).'
@@ -60,7 +74,7 @@ drift_risk: 'HSTS includeSubDomains with 2-year max-age is a one-way commitment 
 - [area] networking
 - [status] current
 - [confidence] high
-- [verified_at] 2026-07-11
+- [verified_at] 2026-08-03
 
 ## Summary
 
@@ -90,7 +104,7 @@ HSTS and nosniff are gateway-authoritative (`replace`), Referrer-Policy is set
 only when absent so apps can supply a stricter value. Split DNS by `k8s-gateway`
 (LAN) and ExternalDNS (public Cloudflare). LAN clients reach the same public
 hostnames without hairpinning through Cloudflare.
-Cluster-wide substitution variables (`${PUBLIC_DOMAIN}`, `${TIMEZONE}`,
+Cluster-wide substitution variables (`${PUBLIC_DOMAIN}`,
 `${ENVOY_INTERNAL_IP}`, `${K8S_GATEWAY_IP}`, `${NAS_IP}`, etc.) are defined in the
 `cluster-settings` ConfigMap (`kubernetes/components/common/vars/cluster-settings.yaml`)
 and injected into every child Kustomization via Flux `postBuild.substituteFrom`.
@@ -98,17 +112,17 @@ and injected into every child Kustomization via Flux `postBuild.substituteFrom`.
 ## Components
 
 - [component] Envoy Gateway controller — GatewayClasses `envoy-external` and `envoy-internal` (kubernetes/apps/networking/envoy-gateway/app/)
-- [component] EnvoyProxy/envoy-external — ClusterIP Service, replicas=1, envoy v1.38.2, JSON access log to stdout (envoy.yaml first doc)
+- [component] EnvoyProxy/envoy-external — ClusterIP Service, replicas=1, envoy v1.39.0, JSON access log to stdout (envoy.yaml first doc)
 - [component] EnvoyProxy/envoy-internal — LoadBalancer Service with externalTrafficPolicy: Local, JSON access log to stdout (envoy.yaml second doc)
 - [component] Gateway/envoy-external — HTTP/80 (Same-ns, redirect only) + HTTPS/443 named `https` with hostname filter `*.${PUBLIC_DOMAIN}` (All-ns routes, single-label subdomains only), ExternalDNS target external.${PUBLIC_DOMAIN} (gateway-external.yaml)
 - [component] Gateway/envoy-internal — same listener layout as external, LAN VIP pinned to ${ENVOY_INTERNAL_IP} (gateway-internal.yaml)
-- [component] BackendTrafficPolicy/envoy — shared compression (Zstd/Brotli/Gzip), retry on reset, circuitBreaker (maxConnections/maxPendingRequests/maxParallelRequests=2048, maxParallelRetries=128), tcpKeepalive (gateway-policies.yaml)
+- [component] BackendTrafficPolicy/envoy — shared compression (Zstd/Brotli/Gzip), retry on reset, circuitBreaker (maxConnections/maxPendingRequests/maxParallelRequests=2048, maxParallelRetries=128), tcpKeepalive, PLUS `rateLimit` (Local, 3000/min per client via two Distinct sourceCIDR rules for 0.0.0.0/0 and ::/0), `responseOverride` (Envoy-local 401 -> inline Hungarian access-denied page) and `timeout.http.requestTimeout: 30m` — EG allows only ONE BTP per Gateway, so everything lands here (gateway-policies.yaml:26-78)
 - [component] ClientTrafficPolicy/envoy-external — CF-Connecting-IP client IP detection (failClosed=false), HTTP/2 hardening, TLS 1.3 floor, no HTTP/3 (gateway-policies.yaml)
-- [component] ClientTrafficPolicy/envoy-internal — numTrustedHops=0, HTTP/3 enabled, TLS 1.3 floor (gateway-policies.yaml)
-- [component] EnvoyExtensionPolicy/security-response-headers — inline Lua injects HSTS + nosniff (replace) + Referrer-Policy (add-if-absent) on every response, targets both Gateways (security-headers.yaml)
+- [component] ClientTrafficPolicy/envoy-internal — numTrustedHops=0, HTTP/3 enabled, TLS **1.2** floor (NOT 1.3): the `SecurityPolicy.oidc` token-exchange hairpin lands on this listener and Envoy's upstream TLS client caps at 1.2 because EG sets no `tls_params` on the cluster — the reason is recorded in the manifest comment (gateway-policies.yaml:161-164)
+- [component] EnvoyExtensionPolicy/security-response-headers — TWO lua entries: (1) inline Lua injecting HSTS + nosniff (replace) + Referrer-Policy (add-if-absent) on every response via `envoy_on_response`, (2) a `ValueRef` to the `envoy-external-extensions` ConfigMap running the bot-user-agent block via `envoy_on_request`. Targets both Gateways (security-headers.yaml:31-39)
 - [component] EnvoyPatchPolicy/envoy-external — zstd compressor fine-tuning on networking/envoy-external/https (no -quic, HTTP/3 disabled here) (gateway-policies.yaml)
 - [component] EnvoyPatchPolicy/envoy-internal — zstd compressor fine-tuning on networking/envoy-internal/{https,https-quic} (gateway-policies.yaml)
-- [component] SecurityPolicy/envoy-internal-rfc1918 — defaultAction Deny, allow 10.0.0.0/8 + 172.16.0.0/12 + 192.168.0.0/16 (gateway-policies.yaml)
+- [component] SecurityPolicy/envoy-internal-rfc1918 — TWO features: (1) `authorization` with defaultAction Deny and allow 10.0.0.0/8 + 172.16.0.0/12 + 192.168.0.0/16, (2) `extAuth` to the CrowdSec gRPC bouncer with `failOpen: false` and `statusOnError: 503` (gateway-policies.yaml:257-266)
 - [component] HTTPRoute/https-redirect — shared HTTP→HTTPS 301 redirect, attached to both Gateways at sectionName=http (gateway-policies.yaml)
 - [component] CiliumNetworkPolicy/envoy-external — ingress allowed only from cloudflare-tunnel pod (10080/10443 TCP) + prometheus + kubelet probe (ciliumnetworkpolicy-external.yaml)
 - [component] CiliumNetworkPolicy/envoy-internal — ingress restricted to RFC1918 fromCIDR + cluster/host/remote-node entities on data ports, prometheus + kubelet separately (ciliumnetworkpolicy-internal.yaml)
@@ -117,7 +131,7 @@ and injected into every child Kustomization via Flux `postBuild.substituteFrom`.
 - [component] k8s-gateway — LAN split-DNS for ${PUBLIC_DOMAIN}, watches HTTPRoutes filtered to GatewayClass envoy-internal, LAN VIP ${K8S_GATEWAY_IP} (k8s-gateway/app/helmrelease.yaml)
 - [component] CiliumLoadBalancerIPPool/default — LAN VIP allocation range ${LB_IP_POOL_START}–${LB_IP_POOL_STOP} (kube-system/cilium/config/pool.yaml)
 - [component] CiliumL2AnnouncementPolicy — L2 announcement for the pool (kube-system/cilium/config/l2-announcement-policy.yaml)
-- [component] CiliumClusterwideNetworkPolicy baseline (AD-023 two-tier model; V3 flip landed in commit 953626966) — 6 CCNPs in kube-system/cilium/netpols/: allow-cluster-egress (flipped — toEndpoints {} + toEntities: cluster + toEntities: kube-apiserver; public internet no longer in baseline), allow-dns-egress (L7 DNS proxy), allow-world-egress (toCIDRSet 0.0.0.0/0 except RFC1918/100.64/10, gated by egress.home.arpa/allow-world label), ingress-from-gateways, ingress-from-prometheus, ingress-none. 5-label dictionary: egress.home.arpa/{custom-egress,allow-world} + ingress.home.arpa/{gateways,prometheus,none}. Per-app CNPs cover app-unique needs the flipped baseline does not grant — e.g. kube-prometheus-stack-prometheus LAN 192.168.1.1/32:9100 (kubernetes/apps/observability/kube-prometheus-stack/app/ciliumnetworkpolicy.yaml) plus AD-023 V5 narrow-world CNPs (external-dns, tuppr, victoria-logs, grafana, paperless-gpt). NOTE: the former coredns world:53 CNP was REMOVED 2026-07-11 (inert — the baseline covers the host-DNS forward; see the 2026-07-11 Update).
+- [component] CiliumClusterwideNetworkPolicy baseline (AD-023 two-tier model; V3 flip landed in commit 953626966) — **8 CCNPs** in kube-system/cilium/netpols/: allow-cluster-egress (flipped — toEndpoints {} + toEntities: cluster + toEntities: kube-apiserver; public internet no longer in baseline), allow-dns-egress (L7 DNS proxy), allow-gateways-egress (NEW — lets `custom-egress` pods reach cluster services through their PUBLIC hostnames, canonically the OIDC token-exchange hairpin), allow-world-egress (toCIDRSet 0.0.0.0/0 except RFC1918/100.64/10 — gated by the `egress.home.arpa/allow-world` label AND, in a second spec, granted namespace-wide to `flux-system` + `cert-manager` via matchExpressions, because their vendored controller pods are not naturally labelable), ingress-from-gateway-external, ingress-from-gateway-internal (the former single `ingress-from-gateways` SPLIT into one CCNP per gateway), ingress-from-prometheus, ingress-none. **7-label dictionary**: egress.home.arpa/{custom-egress,allow-world,allow-gateways} + ingress.home.arpa/{allow-gateway-external,allow-gateway-internal,allow-prometheus,none}. Per-app CNPs cover app-unique needs the flipped baseline does not grant — e.g. kube-prometheus-stack-prometheus LAN 192.168.1.1/32:9100 (kubernetes/apps/observability/kube-prometheus-stack/app/ciliumnetworkpolicy.yaml) plus AD-023 V5 narrow-world CNPs (external-dns, tuppr, victoria-logs, grafana, paperless-gpt). NOTE: the former coredns world:53 CNP was REMOVED 2026-07-11 (inert — the baseline covers the host-DNS forward; see the 2026-07-11 Update).
 
 ## Claims (verified against repo)
 - [claim] "The wildcard HTTPS listener's All-namespace attachment (allowedRoutes.from: All) is mitigated by a ValidatingAdmissionPolicy (native kube-apiserver CEL, no Kyverno) in envoy-gateway/config/validatingadmissionpolicy.yaml: only the security namespace may claim idm.${PUBLIC_DOMAIN}, and non-security namespaces may not claim a wildcard hostname (a *.${PUBLIC_DOMAIN} claim would cover idm and every other app). Hostname-scoped guard against route-collision / WebAuthn-origin-binding hijack of the IdP plane — closes the gap that the shared wildcard cert would otherwise present the same browser origin as Kanidm." (evidence: repo, ref: validatingadmissionpolicy.yaml, verified: 2026-07-20)
@@ -139,7 +153,7 @@ and injected into every child Kustomization via Flux `postBuild.substituteFrom`.
 - [claim] "CiliumNetworkPolicy/envoy-internal restricts ingress on data ports to RFC1918 fromCIDR plus cluster/host/remote-node entities — defense-in-depth behind SecurityPolicy/envoy-internal-rfc1918" (evidence: repo, ref: ciliumnetworkpolicy-internal.yaml, verified: 2026-06-14)
 - [claim] "k8s-gateway watches HTTPRoute resources filtered to GatewayClass envoy-internal" (evidence: repo, ref: k8s-gateway/app/helmrelease.yaml:23-27, verified: 2026-05-19)
 - [claim] "Public domain managed by this stack is ${PUBLIC_DOMAIN} (from cluster-settings ConfigMap); ExternalDNS target on Gateway/envoy-external is external.${PUBLIC_DOMAIN}" (evidence: repo, ref: gateway-external.yaml + k8s-gateway/app/helmrelease.yaml:13, verified: 2026-06-14)
-- [claim] "Cilium baseline (AD-023 V3, commit 953626966) is 6 CCNPs in kube-system/cilium/netpols/: allow-cluster-egress (flipped — toEndpoints {} + cluster + kube-apiserver, no toEntities: world), allow-dns-egress (L7 DNS proxy), allow-world-egress (toCIDRSet 0.0.0.0/0 except RFC1918/100.64/10, gated by egress.home.arpa/allow-world), ingress-from-gateways, ingress-from-prometheus, ingress-none" (evidence: repo, ref: kube-system/cilium/netpols/ + kubernetes/apps/observability/kube-prometheus-stack/app/ciliumnetworkpolicy.yaml; the coredns per-app CNP was removed 2026-07-11, verified: 2026-07-11)
+- [claim] "Cilium baseline (AD-023 V3+) is 8 CCNPs in kube-system/cilium/netpols/: allow-cluster-egress (flipped — toEndpoints {} + cluster + kube-apiserver, no toEntities: world), allow-dns-egress (L7 DNS proxy), allow-gateways-egress (custom-egress pods reaching cluster services via public hostnames), allow-world-egress (toCIDRSet 0.0.0.0/0 except RFC1918/100.64/10, gated by egress.home.arpa/allow-world plus a namespace-wide spec for flux-system + cert-manager), ingress-from-gateway-external, ingress-from-gateway-internal, ingress-from-prometheus, ingress-none. The label dictionary is 7, not 5" (evidence: repo, ref: kube-system/cilium/netpols/kustomization.yaml:5-13 + the individual files, verified: 2026-08-03)
 - [claim] "envoy-gateway is split into three Kustomizations: certificate, app (controller), config" (evidence: repo, ref: kubernetes/apps/networking/envoy-gateway/{certificate,app,config}/, verified: 2026-05-19)
 
 ## Drift Risk
@@ -148,7 +162,7 @@ and injected into every child Kustomization via Flux `postBuild.substituteFrom`.
 - [drift] Listener hostname filter is `*.${PUBLIC_DOMAIN}` (single-label wildcard). Adding a multi-label hostname HTTPRoute (e.g. `foo.bar.${PUBLIC_DOMAIN}`) or an apex route would fail NoMatchingParent — either widen the listener pattern (split apex+wildcard with HTTPRoute parentRef migration) or adjust the route hostname. The hostname split was attempted in commit 6e890d8f7 and reverted because every HTTPRoute pinned `sectionName: https`; the current setup avoids that by keeping the listener name `https` and only adding the hostname filter. (ref: gateway-external.yaml, gateway-internal.yaml)
 - [drift] EnvoyPatchPolicy is a workaround for missing native Zstd compressor fine-tuning options on EnvoyProxy/BackendTrafficPolicy — drop both EnvoyPatchPolicy/envoy-external and envoy-internal when the EnvoyProxy CRD exposes `choose_first` and `remove_accept_encoding_header` on the compressor field. (ref: gateway-policies.yaml)
 - [drift] rate-limit-external BackendTrafficPolicy still disabled (commented out) — envoy-gateway v1.8.0 CRD regression (envoyproxy/gateway#8798: uint32 Requests field emits format: int32 + maximum: 4294967295, rejected by K8s 1.36 strict OpenAPI validation). The fix is merged to main but not cherry-picked to release/v1.8, so v1.8.1 is still affected. Re-enable when v1.9.0 GA lands or a v1.8.2 patch backport ships, then bump the OCIRepository tag. Cloudflare WAF covers external rate limiting in the meantime. (ref: gateway-policies.yaml)
-- [drift] envoy container image tag (v1.38.2) is hardcoded in EnvoyProxy spec rather than chart-managed — track manually via inline `# renovate:` annotation. (ref: envoy.yaml)
+- [drift] envoy container image tag (v1.39.0) is hardcoded in EnvoyProxy spec rather than chart-managed — track manually via inline `# renovate:` annotation. (ref: envoy.yaml:17)
 - [drift] cloudflare-tunnel ICMP egress is scoped to the Cloudflare edge CIDRGroup + 1.1.1.1/1.0.0.1, but cloudflared's ICMP-proxy forwards pings to arbitrary WARP-requested targets — a ping through the tunnel to a non-Cloudflare address would drop and re-trigger HubblePolicyDeny. If that recurs, extend the grant point-wise or disable the ICMP-proxy rather than widening egress broadly. (ref: cloudflare-tunnel/app/ciliumnetworkpolicy.yaml)
 
 ## Open Questions / Gaps
@@ -186,7 +200,7 @@ Edge bypass checklist — the public/internal separation can be silently defeate
 
 - [observation] **coredns per-app CNP REMOVED** (V5k, @6b621c68b + a one-time manual `kubectl delete` — the coredns ks is `prune: false`). Its only rule was `toEntities: world :53`, which was never the enforcement point: Talos `hostDNS.forwardKubeDNSToHost: true` makes coredns forward `.` to the host DNS on the node (→ `kube-apiserver` identity on the single node, already covered by the allow-cluster-egress baseline), and the rev4 split-horizon `${PUBLIC_DOMAIN}`→`${K8S_GATEWAY_IP}` forward is socket-LB DNAT'd to the in-cluster k8s-gateway pod:1053 (covered by baseline `toEndpoints`). Verified live: internal/external/split-horizon DNS resolve with zero coredns DROPPED.
 - [observation] **external-dns per-app CNP added** (V5h, @df71cdef5): dropped `egress.home.arpa/allow-world` → `egress.home.arpa/custom-egress` + `ingress.home.arpa/prometheus`; the per-app CNP is the sole egress source — `toFQDNs api.cloudflare.com:443` (DNS record sync) + `toEntities kube-apiserver:6443` (watches Ingress/HTTPRoute/Gateway sources). (`kubernetes/apps/networking/external-dns/app/ciliumnetworkpolicy.yaml`)
-- [observation] Other AD-023 V5 narrow-world per-app CNPs landed cluster-wide (not all under networking): tuppr (factory.talos.dev + apiserver/Talos-apid), victoria-logs server (DNS-only sink + closed ingress), grafana, paperless-gpt, plex-trakt-sync, calibre-web-automated. The `ingress.home.arpa/gateways` label gained users (e.g. victoria-logs server); the (m) split into `gateways-external`/`gateways-internal` is still pending.
+- [observation] Other AD-023 V5 narrow-world per-app CNPs landed cluster-wide (not all under networking): tuppr (factory.talos.dev + apiserver/Talos-apid), victoria-logs server (DNS-only sink + closed ingress), grafana, paperless-gpt, plex-trakt-sync, calibre-web-automated. The `ingress.home.arpa/gateways` label gained users (e.g. victoria-logs server); the (m) split into `gateways-external`/`gateways-internal` **has since LANDED** (see the 2026-08-03 update) — two CCNPs now, `ingress-from-gateway-external` and `ingress-from-gateway-internal`, each with its own label.
 - [observation] DNS-exfil detection (V5l): the Cilium Hubble `dns` metric gained `labelsContext=source_*` and a `HubbleDNSExfilSuspected` PrometheusRule was added — details in [[observability]].
 
 See [[cnp-per-app-audit]] (progress) Sessions 16–21 for the execution log.
@@ -344,3 +358,39 @@ pending→firing via the absent branch and reached Alertmanager
 - [observation] Commits on main: `be6982769` (crowdsec alert absent fix),
   `572d4787f` (EnvoyProxyDown rule). See [[envoy-crowdsec-bouncer]]
   (progress) Session 4 for the alert test log and self-ban cleanup.
+
+## Update 2026-08-03 — staleness re-verification
+
+Full re-verification against the live repo as part of the `area-reference-staleness-audit`
+roadmap item. Previous `verified_at` was 2026-07-28 (six days old); the body Metadata block still
+said 2026-07-11. Verdict: MINOR-DRIFT — 26 claims held and all 16 `verified_against` paths still
+existed, but the drift that DID exist was in the security model, so it matters more than the count.
+
+- [correction] **The Cilium baseline is 8 CCNPs, not 6, and the label dictionary is 7, not 5.**
+  `ingress-from-gateways` SPLIT into `ingress-from-gateway-external` and
+  `ingress-from-gateway-internal`, each with its own label — the note recorded that split as "still
+  pending" in its 2026-07-11 update. A new `allow-gateways-egress` CCNP also appeared, granting
+  `custom-egress` pods access to cluster services through their PUBLIC hostnames (the OIDC
+  token-exchange hairpin). Anyone labelling a new pod from this note would have used the retired
+  `ingress.home.arpa/gateways` label and got no policy at all.
+- [correction] `allow-world-egress` gained a SECOND spec granting world egress namespace-wide to
+  `flux-system` and `cert-manager` via matchExpressions, because their vendored controller pods are
+  not naturally labelable. That is a real widening of the world-egress surface beyond the
+  label-gated model the note described, and it was undocumented.
+- [correction] The internal ClientTrafficPolicy TLS floor is **1.2, not 1.3**. The manifest comment
+  records why: the `SecurityPolicy.oidc` token-exchange hairpin lands on this listener and Envoy's
+  upstream TLS client caps at 1.2 (EG sets no `tls_params` on the cluster). A deliberate, documented
+  concession — but the note asserted the stricter value, which would make a reviewer "fix" it.
+- [correction] envoy image is `v1.39.0`, not `v1.38.2` (three places in the note).
+- [correction] `${TIMEZONE}` was listed as a cluster-settings substitution variable. It does not
+  exist — k8tz owns timezone. Same defect as in the flux-gitops note; both are now fixed.
+- [correction] Three Components bullets had gone stale against their own later Update sections: the
+  `envoy` BTP also carries rateLimit + responseOverride + a 30m request timeout, the
+  `security-response-headers` EEP has a second lua entry (the bot-user-agent block), and
+  `SecurityPolicy/envoy-internal-rfc1918` also carries the CrowdSec `extAuth` gate. The Update
+  sections were right; the Components list they superseded was not updated. **That is a structural
+  lesson: appending a dated Update without reconciling the Components/Claims sections leaves two
+  contradictory answers in one note.**
+- [addition] Not covered anywhere: the `headers.earlyRequestHeaders.remove` spoofing guard in both
+  ClientTrafficPolicies (strips `Remote-User`/`-Email`/`-Groups`/`-Name`/`-Sub` before route
+  matching and auth), the BTP 30m request timeout, and the envoy-gateway Grafana dashboard/folder.
