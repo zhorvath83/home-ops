@@ -497,3 +497,49 @@ Measured directly on main in a seconds-long enforcement window instead of on a s
   sees no change. The maintainer decided to leave it.
 - [note] It will show as `verified=false` / "Unverified" on main, and it is the ONLY such commit
   after this session. That is expected and documented, not drift to be repaired.
+
+
+## Phase 5 — ENFORCEMENT LIVE (2026-08-03)
+
+```
+required_signatures = true
+enforce_admins      = true
+allow_force_pushes  = false
+allow_deletions     = false
+```
+
+`enforce_admins` is included per the Phase 4 correction: without it the rule waives itself for the
+maintainer, which is the only human on this repo.
+
+### Pre-flight run before flipping (all passed)
+
+- [evidence] The 1Password agent could sign at that moment — `git commit-tree -S` plus
+  `git verify-commit` gave `Good "git" signature ... SHA256:QgBZaD3h...`. Checked deliberately,
+  because with `enforce_admins=true` a broken agent means the maintainer cannot push at all.
+- [evidence] Working tree clean and in sync with origin/main.
+- [note] Rollback commands were established BEFORE enabling:
+  `gh api -X DELETE repos/zhorvath83/home-ops/branches/main/protection/enforce_admins` and the
+  same for `required_signatures`.
+
+### Still open: the confounded merge cell
+
+- [decision] The Phase 4 merge cell was NOT re-measured at enable time. Both open bot PRs (4105,
+  4056) are BREAKING updates (`feat(...)!` — paperless-ngx image major, renovate-presets major).
+  Merging a breaking change into a GitOps repo purely to exercise a merge rule would deploy real
+  cluster change for a test, so it was refused.
+- [decision] Re-measure on the next NON-BREAKING bot PR (a routine Renovate patch/minor, or a PR
+  from one of the two fixed workflows). Until then the cell stays SUGGESTIVE, and the practical
+  risk is known and bounded: if a human squash-merge of a bot PR is refused, the fallbacks are
+  enabling auto-merge on that PR (making the bot both author and merge-initiator) or, worst case,
+  the one-call `enforce_admins` rollback.
+
+### Watch items now that enforcement is live
+
+- [risk] Renovate automerge under enforcement is expected to work (Renovate picks squash, is the PR
+  author, and GitHub signs the squash commit) but has not been observed post-enforcement. If
+  Renovate PRs start piling up unmerged, that is the signal.
+- [risk] The two fixed workflows have not yet produced a PR, so `sign-commits: true` remains
+  unproven in practice. Their first PR under enforcement is now a double test: it settles Phase 3
+  acceptance AND exercises the bot-PR merge path.
+- [risk] Any commit made from another machine, or from this machine outside the personal project
+  tree, will now be REJECTED on push to main rather than merely unverified.
