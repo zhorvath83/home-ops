@@ -5,7 +5,7 @@ permalink: home-ops/docs/areas/external-secrets
 area: external-secrets
 status: current
 confidence: high
-verified_at: '2026-05-23'
+verified_at: '2026-08-03'
 summary: External Secrets Operator (ESO) plus 1Password Connect delivers all app-level
   runtime secrets. Two Flux Kustomizations under `kubernetes/apps/external-secrets/`
   layer the platform — `external-secrets` (operator) and `onepassword-connect` (Connect
@@ -25,6 +25,15 @@ verified_against:
 - kubernetes/apps/external-secrets/onepassword-connect/app/ocirepository.yaml
 - kubernetes/apps/external-secrets/CLAUDE.md
 - kubernetes/bootstrap/resources.yaml.j2
+- kubernetes/bootstrap/helmfile.d/01-apps.yaml
+- kubernetes/apps/external-secrets/kustomization.yaml
+- kubernetes/apps/external-secrets/external-secrets/app/kustomization.yaml
+- kubernetes/apps/external-secrets/external-secrets/app/ciliumnetworkpolicy.yaml
+- kubernetes/apps/external-secrets/external-secrets/app/grafanadashboard.yaml
+- kubernetes/apps/external-secrets/external-secrets/app/grafanafolder.yaml
+- kubernetes/apps/external-secrets/onepassword-connect/app/kustomization.yaml
+- kubernetes/apps/external-secrets/onepassword-connect/app/ciliumnetworkpolicy.yaml
+- kubernetes/components/common/kustomization.yaml
 - kubernetes/bootstrap/mod.just
 - kubernetes/mod.just
 - .claude/skills/external-secrets/references/platform-topology.md
@@ -49,7 +58,7 @@ tags:
 - [area] external-secrets
 - [status] current
 - [confidence] high
-- [verified_at] 2026-05-19
+- [verified_at] 2026-08-03
 
 ## Summary
 
@@ -62,14 +71,14 @@ Bootstrap-time secrets that ESO itself depends on (Connect credentials + access 
 
 ## Components
 
-- [component] external-secrets operator — HelmRelease in namespace `external-secrets`, chart `ghcr.io/external-secrets/charts/external-secrets` via OCIRepository, `installCRDs: true`, ServiceMonitor + Grafana dashboard enabled (external-secrets/app/helmrelease.yaml, external-secrets/app/ocirepository.yaml)
-- [component] 1Password Connect — HelmRelease in namespace `external-secrets`, chart `oci://ghcr.io/1password/connect`, two containers `api` (port 8080) and `sync`, Reloader auto annotation, `credentialsName: onepassword-connect-credentials-secret` (onepassword-connect/app/helmrelease.yaml, onepassword-connect/app/ocirepository.yaml)
+- [component] external-secrets operator — HelmRelease in namespace `external-secrets`, chart `ghcr.io/external-secrets/charts/external-secrets` via OCIRepository (tag `2.8.0`), `installCRDs: true`, ServiceMonitor + Grafana dashboard enabled at chart level, plus the consumer CRs `grafanadashboard.yaml` (reads the chart-emitted `external-secrets-dashboard` ConfigMap) and `grafanafolder.yaml` (`folderRef: external-secrets`) (external-secrets/app/helmrelease.yaml, ocirepository.yaml, grafanadashboard.yaml, grafanafolder.yaml, kustomization.yaml)
+- [component] 1Password Connect — HelmRelease in namespace `external-secrets`, chart `oci://ghcr.io/1password/connect` (tag `2.4.1`), two containers `api` (port 8080) and `sync`, Reloader auto annotation, `credentialsName: onepassword-connect-credentials-secret`, and a `postRenderers` kustomize patch that sets `automountServiceAccountToken: false` on the rendered Deployment — Connect serves ESO from its local cache and never calls the Kubernetes API, so the projected SA token is dropped (onepassword-connect/app/helmrelease.yaml:45-59, onepassword-connect/app/ocirepository.yaml, onepassword-connect/app/kustomization.yaml)
 - [component] ClusterSecretStore/onepassword-connect — single cluster-wide store, points at `http://onepassword-connect.external-secrets.svc.cluster.local:8080`, vault `HomeOps`, token from Secret `onepassword-connect-vault-secret` key `token` (onepassword-connect/app/clustersecretstore.yaml)
 - [component] ExternalSecret `onepassword-connect-credentials` — re-renders `1password-credentials.json` into Secret `onepassword-connect-credentials` from 1P item `1password-connect-kubernetes` (onepassword-connect/app/externalsecret.yaml:1-21)
 - [component] ExternalSecret `onepassword-connect-token` — re-renders `token` into Secret `onepassword-connect-token` from the same 1P item (onepassword-connect/app/externalsecret.yaml:22-40)
 - [component] Bootstrap shim — `kubernetes/bootstrap/resources.yaml.j2` ships placeholder Secrets `onepassword-connect-credentials-secret` and `onepassword-connect-vault-secret` in namespace `external-secrets`, rendered via `op inject` during the `just cluster-bootstrap cluster` chain (kubernetes/bootstrap/resources.yaml.j2, kubernetes/bootstrap/mod.just `resources` stage)
 - [component] Namespace marker — `kubernetes/apps/external-secrets/namespace.yaml` defines `metadata.name: _` with `kustomize.toolkit.fluxcd.io/prune: disabled`; the actual namespace name comes from the Flux Kustomization `spec.targetNamespace`. All namespaces use the `_` placeholder pattern (2026-05-23)
-- [component] alertmanager alerts component — pulled in via `kubernetes/apps/external-secrets/kustomization.yaml` `components` (Flux type:alertmanager Provider → in-cluster Alertmanager for reconciliation alerts)
+- [component] common components umbrella — `kubernetes/apps/external-secrets/kustomization.yaml:6-7` lists ONE component, `../../components/common`, which itself aggregates `./alerts`, `./repos` and `./vars`. The Flux `type:alertmanager` Provider/Alert therefore reaches this namespace TRANSITIVELY (components/common -> alerts -> alertmanager), not as a directly-listed alertmanager component
 - [component] Operational just recipe — `just k8s sync-es <name> <ns>` annotates an ExternalSecret with `force-sync=$(date +%s)` to trigger an out-of-band refresh (kubernetes/mod.just)
 
 ## Claims (verified against repo)
@@ -86,7 +95,7 @@ Bootstrap-time secrets that ESO itself depends on (Connect credentials + access 
 - [claim] "1Password Connect chart `oci://ghcr.io/1password/connect` pinned; chart-default security context (seccompProfile=RuntimeDefault, runAsNonRoot, readOnlyRootFilesystem, drop ALL caps, UID/GID 999) is intentionally left unchanged" (evidence: repo, ref: onepassword-connect/app/ocirepository.yaml:12-14 + onepassword-connect/app/helmrelease.yaml:13-14 + kubernetes/apps/external-secrets/CLAUDE.md:32-44, verified: 2026-05-19)
 - [claim] "Cross-app ExternalSecret pattern: `spec.refreshInterval: 12h` (vs chart default 1h), `secretStoreRef.kind: ClusterSecretStore`, `secretStoreRef.name: onepassword-connect`, `target.creationPolicy: Owner`, no `metadata.namespace` (the Flux Kustomization `spec.targetNamespace` places the ES at apply time)" (evidence: repo, ref: kubernetes/apps/external-secrets/CLAUDE.md:46-58, verified: 2026-05-19)
 - [claim] "Operational recipe `just k8s sync-es <name> <ns>` triggers an out-of-band ExternalSecret refresh by annotating with `force-sync=$(date +%s)` via the flux-client-side-apply field manager" (evidence: repo, ref: kubernetes/mod.just (sync-es recipe), verified: 2026-05-19)
-- [claim] "The `external-secrets` namespace gets the shared `alertmanager` alerts component via `kubernetes/apps/external-secrets/kustomization.yaml` components list — reconciliation failures here surface through the in-cluster Alertmanager (Flux type:alertmanager Provider), the same channel as the rest of the cluster" (evidence: repo, ref: kubernetes/apps/external-secrets/kustomization.yaml:10-11, verified: 2026-07-05)
+- [claim] "The `external-secrets` namespace reaches the shared alertmanager alerting plane TRANSITIVELY: `kubernetes/apps/external-secrets/kustomization.yaml:6-7` lists only `../../components/common`, and that umbrella Component aggregates `./alerts` which in turn contains `./alertmanager`. Reconciliation failures here surface through the in-cluster Alertmanager (Flux type:alertmanager Provider), the same channel as the rest of the cluster" (evidence: repo, ref: kubernetes/apps/external-secrets/kustomization.yaml:6-7 + kubernetes/components/common/kustomization.yaml + components/common/alerts/kustomization.yaml, verified: 2026-08-03)
 
 ## Drift Risk
 
@@ -104,7 +113,7 @@ Bootstrap-time secrets that ESO itself depends on (Connect credentials + access 
 
 ## Network Containment (per AD-023, added 2026-06-22)
 
-- [observation] [current] onepassword-connect carries a per-app CiliumNetworkPolicy: ingress from external-secrets (ESO) + prometheus on 8080 + kubelet probes (local-host fast-path, no explicit rule); egress restricted via `toFQDNs` to `1password.com` + `1passwordusercontent.com` only; the pod opts out of the baseline egress with `egress.home.arpa/custom-egress: "true"`. Verified live (DROPPED-clean, store Valid, sync complete)
+- [observation] [current] onepassword-connect carries a per-app CiliumNetworkPolicy declaring TWO things only: ingress from external-secrets (ESO) on 8080 (ciliumnetworkpolicy.yaml:13-21) and egress restricted via `toFQDNs` to `1password.com` + `1passwordusercontent.com` (ciliumnetworkpolicy.yaml:22-31). Prometheus scrape is NOT in this CNP — it rides the cluster-wide `ingress-from-prometheus` CCNP, opted into by the pod label `ingress.home.arpa/allow-prometheus: "true"` (helmrelease.yaml:18). Kubelet probes take the local-host fast-path (no explicit rule). The pod opts out of the baseline egress with `egress.home.arpa/custom-egress: "true"`. Verified live (DROPPED-clean, store Valid, sync complete)
 - [observation] [prerequisite] this requires CoreDNS `autopath` to be disabled — autopath rewrites query names and Cilium cannot correlate them to toFQDNs (see AD-023)
 - [observation] [current] external-secrets (ESO controller + webhook + cert-controller) carry per-component no-world CNPs (`external-secrets/app/ciliumnetworkpolicy.yaml`, commit 76ea396c9, 2026-06-24): egress in-cluster only — controller→onepassword-connect:8080 + kube-apiserver:6443, cert-controller→kube-apiserver:6443, webhook initiates nothing; DNS via the cluster-wide allow-dns-egress CCNP; world denied. All three pods carry the `egress.home.arpa/custom-egress: "true"` opt-out label (HelmRelease podLabels, same commit). The webhook ingress allows `kube-apiserver` explicitly on 10250/8081 (failurePolicy=Fail admission, not host fast-path). Allowlists derived from a live Hubble capture. Live-verified 2026-06-24: all 3 CNP Valid, controller egress no-world (connect:8080 + apiserver:6443 + DNS), cert-controller/webhook DROPPED-clean, webhook admission proven via server dry-run, store Valid, all ExternalSecrets SecretSynced. Expect a ~25s startup-transient "no route to host" to the connect ClusterIP on every no-world pod restart (socketLB endpoint-programming lag, self-heals). See roadmap cnp-per-app-audit Phase 2b
 - relates_to [[AD-023-cnp-threat-model-audit]]
@@ -128,8 +137,37 @@ Two intentional exceptions:
 
 2. **`flux-instance`** — contains a GitHub webhook ExternalSecret referencing ClusterSecretStore/onepassword-connect, but deliberately does NOT declare dependsOn onepassword-connect. This matches the bjw-s reference cluster pattern. Rationale: adding the dependency couples FluxInstance reconciliation to CSS availability, removing flux-instance as a fallback early-boot path. The ESO retry-loop on the github-webhook-token ExternalSecret is benign — it converges once the CSS becomes Ready. Bootstrap already sequences ESO + 1Password Connect before Flux Instance (see helmfile.d/01-apps.yaml).
 
-Additionally, 2 component-level ExternalSecrets (pushover and github alerts in `components/common/alerts/`) reference ClusterSecretStore/onepassword-connect but are applied at the cluster-apps Kustomization level, not as individual ks resources. They are implicitly sequenced by the Flux boot chain.
+Additionally there are 3 component-level ExternalSecrets — `components/common/alerts/github/externalsecret.yaml`, `components/gateway-oidc/externalsecret.yaml` and `components/volsync/externalsecret.yaml` — which reference ClusterSecretStore/onepassword-connect but are applied through the component mechanism rather than as individual ks resources. They are implicitly sequenced by the Flux boot chain. Pushover is NOT among them: it is an app-level ExternalSecret in `kubernetes/apps/observability/kube-prometheus-stack/app/externalsecret.yaml` (1Password key `pushover`).
 
-Audit result (2026-05-23): 18 app-level + 2 component-level ExternalSecret manifests surveyed (20 total). 16 ks-es declare dependsOn onepassword-connect. `onepassword-connect` is the bootstrap exception (N/A). `flux-instance` is intentionally exempt (bjw-s parity, retry-loop convergence is acceptable). Component-level ExternalSecrets are implicitly covered by the Flux boot chain. No gaps remain.
+Audit result (re-measured 2026-08-03): **23 app-level files carrying 24 ExternalSecret objects** under `kubernetes/apps`, plus **3 component-level** ones (github alerts, gateway-oidc, volsync). **31 `ks.yaml` files reference `name: onepassword-connect`** — 30 consumers plus the store's own ks. `onepassword-connect` is the bootstrap exception (N/A). `flux-instance` is intentionally exempt (bjw-s parity, retry-loop convergence is acceptable). ES-bearing Kustomizations without a direct `dependsOn` (e.g. crowdsec-bouncer, crowdsec-web-ui) reach the store transitively through their parent (`crowdsec/ks.yaml` declares it). Component-level ExternalSecrets are implicitly covered by the Flux boot chain. **No gaps remain** — the conclusion from the 2026-05-23 pass still holds; only the counts moved (app-level 18 -> 23 files, dependsOn 16 -> ~30).
 
 - [claim] "Every Flux Kustomization that contains an ExternalSecret manifest must transitively dependsOn the ks that gates on the referenced ClusterSecretStore Ready — for the current cluster, that ks is onepassword-connect in namespace external-secrets — with two intentional exceptions: onepassword-connect itself (bootstrap chicken-and-egg) and flux-instance (bjw-s parity, retry-loop convergence is acceptable for the github-webhook-token ExternalSecret)." (evidence: repo audit of 20 ExternalSecret manifests, ref: kubernetes/apps/flux-system/flux-instance/ks.yaml + bjw-s reference cluster, verified: 2026-05-23)
+
+## Update 2026-08-03 — staleness re-verification
+
+Full re-verification against the live repo as part of the `area-reference-staleness-audit`
+roadmap item. Previous `verified_at` was 2026-05-23. Verdict: MINOR-DRIFT — this note held up
+structurally (every `verified_against` path still existed, the whole `summary` was accurate,
+22 claims re-verified true). Corrections were factual details, not architecture.
+
+- [correction] The note claimed "2 component-level ExternalSecrets (pushover and github)". Pushover
+  is NOT component-level — it is an app-level ES in observability/kube-prometheus-stack, exactly as
+  this note's own 2026-07-05 gap-resolution already said. The note contradicted itself. There are
+  THREE component-level ES: github alerts, gateway-oidc, volsync.
+- [correction] The dependsOn audit numbers were a 2026-05-23 snapshot and had grown: app-level ES
+  18 -> 23 files (24 objects), component-level 2 -> 3, ks files referencing onepassword-connect
+  16 -> 31 (30 consumers + the store's own ks). Re-measured today. The CONCLUSION (no gaps,
+  transitive coverage holds, flux-instance intentionally exempt) still stands — only the counts moved.
+- [correction] The alertmanager wiring was described as a directly-listed component with a wrong line
+  ref (`kustomization.yaml:10-11` is the `resources:` block). The file lists exactly ONE component at
+  :6-7, `../../components/common`; alertmanager arrives transitively through it. Substance was right,
+  mechanism and evidence were not.
+- [correction] The onepassword-connect CNP does NOT contain a prometheus ingress rule. Scrape rides
+  the cluster-wide `ingress-from-prometheus` CCNP via the `ingress.home.arpa/allow-prometheus` pod
+  label. The note conflated two different mechanisms into one manifest.
+- [addition] Uncovered before: the Connect HelmRelease `postRenderers` patch setting
+  `automountServiceAccountToken: false` on the rendered Deployment (a real security control — Connect
+  serves ESO from local cache and never calls the K8s API), the GrafanaDashboard/GrafanaFolder consumer
+  CRs, the two `app/kustomization.yaml` gates, and the pinned chart tags (operator 2.8.0, Connect 2.4.1).
+- [observation] Chart-default Connect security context (seccomp/runAsNonRoot/readOnlyRootFilesystem/
+  drop ALL/UID 999) remains asserted from the chart, not rendered in-repo — still not repo-verifiable.
