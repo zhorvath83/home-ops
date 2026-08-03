@@ -163,8 +163,8 @@ Flux watches `refs/heads/main`). All commits are pushed and live — see Deploym
   privileged+hostNetwork+hostPID pod was admitted by server-side dry-run in both `observability`
   and `default`; node-exporter already runs `hostNetwork`/`hostPID`/hostPath `/` in the
   unlabeled `observability` namespace. So Stage 2 needs no new namespace and no PSA label. This
-  matches the rationale already recorded in [[AD-024-crowdsec-namespace-psa-exception]] and is
-  exactly what [[pod-security-admission-enforcement]] proposes to change — if that item lands,
+  matches the rationale already recorded in AD-024 (since deleted) and is
+  exactly what the (now-dropped) pod-security-admission-enforcement roadmap proposes to change — if that item lands,
   this exporter will need an explicit exception.
 - [observation] Talos exposes no native SMART path: `talosctl get disks`/`blockdevices` give
   inventory only, dmesg gives post-hoc kernel errors. Upstream feature request
@@ -208,7 +208,6 @@ The wear alerts are a deliberate addition — neither the chart nor bjw-s ships 
 - relates_to [[alertmanager-introduction]]
 - relates_to [[grafana-operator-migration]]
 - relates_to [[prometheus-adapter]]
-- relates_to [[pod-security-admission-enforcement]]
 
 ## Deployment outcome (2026-08-01) — live and verified
 

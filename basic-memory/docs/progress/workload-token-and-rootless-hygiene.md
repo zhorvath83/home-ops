@@ -85,7 +85,6 @@ a modest, intended privilege expansion for a log collector. Documented for any f
 ## Related
 
 - relates_to [[workload-token-and-rootless-hygiene]]
-- relates_to [[pod-security-admission-enforcement]]
 - relates_to [[k8s-workloads]]
 
 
@@ -252,7 +251,7 @@ Both remaining items are **accepted exceptions** per operator experience — no 
 
 Token-hygiene goal fully achieved (no API-less workload mounts an unused token). Rootless achieved
 where images allow; wallos, cwa, maintainerr at image-imposed floors with documented rationale. These
-three are the PSS-enforcement blockers tracked in `docs/roadmap/pod-security-admission-enforcement`.
+three are the PSS-enforcement blockers tracked in the (now-dropped) pod-security-admission-enforcement roadmap.
 
 ## Session 2026-07-29 (f) — cluster seccomp sweep: volsync movers + kopia-maint + 4 chart gaps
 

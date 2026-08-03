@@ -48,13 +48,13 @@ acquisition for the chart-native `file` datasource on host container logs. The P
 unlocks the acquisition fix; they are one change, not two.
 
 This item absorbs the former `crowdsec-acquisition-resilience` roadmap (merged and deleted 2026-07-30)
-and records a deliberate exception to [[pod-security-admission-enforcement]] for the `crowdsec` namespace.
+and records a deliberate exception to the (now-dropped) pod-security-admission-enforcement roadmap for the `crowdsec` namespace.
 
 ## Metadata (observation-form, schema validation)
 
 - [topic] Relax the crowdsec namespace PSA to privileged; migrate to the official crowdsecurity/crowdsec chart; replace the victorialogs tail with the file datasource on host container logs.
 - [area] k8s-workloads, networking, observability
-- [status] implemented — Part 8 verified live 2026-07-30. Execution and verification recorded in memory://home-ops/docs/progress/crowdsec-psa-removal-and-official-chart-migration. Two sub-criteria remain: an envoy-pod-recreation survival check (awaits a natural event) and a local-decision trigger + OIDC live login (await a Maestro action). Follow-ups closed 2026-07-31 (docs session): bouncer SA-token mount (6eb636118), hardening pass — seccomp RuntimeDefault + all caps dropped (522d66e9a + 2a8aef0e6; readOnlyRootFilesystem DECLINED, not deferred), Grafana dashboard 21689 removed (0ac6787d8; premise corrected — never a job-split problem), ADR [[AD-024-crowdsec-namespace-psa-exception]] filed, and the crowdsec row added to [[pod-security-admission-enforcement]]. Closed 2026-07-31 (b): criterion 4 PASS (single ltsich/http-w00tw00t trigger from a mobile IP produced a local origin=crowdsec ban, enforced by the bouncer; decision deleted afterwards) and criterion 5 PASS (passkey login completed by the human). Machine-list churn closed (prune run) after fixing its true LAPI-side root cause: the postStart hook was clobbering the LAPI's own local_api_credentials.yaml because cscli machines add defaults to that path — fixed with -f /dev/null in e54c621aa, matching upstream docker_start.sh:217, and the PVC file repaired. The upstream victorialogs issue was DROPPED by human decision (not filed; analysis kept below for provenance). Closed 2026-07-31 (c): criterion 3's envoy-pod-recreation arm PASS (deliberate envoy-internal restart; the agent picked up the new log path and resumed parsing from 0 with no errors), so ALL Part 8 criteria now PASS. The two deferred items are DECLINED with evidence, not left open: the heartbeat Probe (the 6h gate is open 95.7% of the last 30d, and in the real incident it was open throughout — the Probe would have added nothing) and the auto-heal watchdog (its stall class is retired, the replacement datasource survived the exact triggering event, and the alert demonstrably fires). The CrowdSecAcquisitionStalled rule was back-tested against the 2026-07-29 incident: it would have fired ~4h10m after onset, 4h before the manual restart. The analysis below is the original proposed spec, kept as history.
+- [status] implemented — Part 8 verified live 2026-07-30. Execution and verification recorded in memory://home-ops/docs/progress/crowdsec-psa-removal-and-official-chart-migration. Two sub-criteria remain: an envoy-pod-recreation survival check (awaits a natural event) and a local-decision trigger + OIDC live login (await a Maestro action). Follow-ups closed 2026-07-31 (docs session): bouncer SA-token mount (6eb636118), hardening pass — seccomp RuntimeDefault + all caps dropped (522d66e9a + 2a8aef0e6; readOnlyRootFilesystem DECLINED, not deferred), Grafana dashboard 21689 removed (0ac6787d8; premise corrected — never a job-split problem), ADR AD-024 (since deleted) filed, and the crowdsec row added to the (now-dropped) pod-security-admission-enforcement roadmap. Closed 2026-07-31 (b): criterion 4 PASS (single ltsich/http-w00tw00t trigger from a mobile IP produced a local origin=crowdsec ban, enforced by the bouncer; decision deleted afterwards) and criterion 5 PASS (passkey login completed by the human). Machine-list churn closed (prune run) after fixing its true LAPI-side root cause: the postStart hook was clobbering the LAPI's own local_api_credentials.yaml because cscli machines add defaults to that path — fixed with -f /dev/null in e54c621aa, matching upstream docker_start.sh:217, and the PVC file repaired. The upstream victorialogs issue was DROPPED by human decision (not filed; analysis kept below for provenance). Closed 2026-07-31 (c): criterion 3's envoy-pod-recreation arm PASS (deliberate envoy-internal restart; the agent picked up the new log path and resumed parsing from 0 with no errors), so ALL Part 8 criteria now PASS. The two deferred items are DECLINED with evidence, not left open: the heartbeat Probe (the 6h gate is open 95.7% of the last 30d, and in the real incident it was open throughout — the Probe would have added nothing) and the auto-heal watchdog (its stall class is retired, the replacement datasource survived the exact triggering event, and the alert demonstrably fires). The CrowdSecAcquisitionStalled rule was back-tested against the 2026-07-29 incident: it would have fired ~4h10m after onset, 4h before the manual restart. The analysis below is the original proposed spec, kept as history.
 - [priority] high
 - [confidence] high
 - [verified_at] 2026-07-30
@@ -447,9 +447,6 @@ Order:
 - [follow-up] **ADR** — record the PSA decision for the `crowdsec` namespace: it reverses a human-locked
   `restricted` PSA, and the namespace now runs root + hostPath by design under an explicit
   `enforce: privileged`.
-- [follow-up] Add a `crowdsec` row to the [[pod-security-admission-enforcement]] per-namespace table
-  (explicit `privileged` — the agent DaemonSet needs hostPath `/var/log`, an inherent property of any
-  node log collector, exactly as recorded for `victoria-logs-collector`).
 - [follow-up] **Deferred, still valid:** no heartbeat `Probe` (would remove the alert's traffic gate, but
   needs an in-cluster route to envoy-internal and a crowdsec allowlist for the pod CIDR — self-ban risk,
   see [[envoy-crowdsec-bouncer]] Session 4); no auto-heal watchdog (a CronJob needs `delete pods` RBAC
@@ -457,7 +454,6 @@ Order:
 
 ## Relations
 
-- exception_to [[pod-security-admission-enforcement]]
 - relates_to [[envoy-crowdsec-bouncer]]
 - relates_to [[cr-health-alerting]]
 - relates_to [[k8s-workloads]]
