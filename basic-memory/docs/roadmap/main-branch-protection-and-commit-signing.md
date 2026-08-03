@@ -243,12 +243,12 @@ rebase-merge at the repo level so a permanently-blocked strategy cannot be chose
 
 ### Verification criteria
 
-- [ ] the 1P agent actually signs (Phase 0)
-- [ ] a signed commit on a test branch shows "Verified" on GitHub
-- [ ] `git log --show-signature -1` shows a good signature
+- [x] the 1P agent actually signs (Phase 0) — op-ssh-sign exit 0, Good "git" signature
+- [x] a signed commit shows "Verified" on GitHub — 8b0894518 verified=true (on main, not a test branch: enforcement was still off, so no test branch was needed)
+- [x] `git log --show-signature -1` shows a good signature
 - [ ] both workflows produce `verified=true` branch commits after the fix
 - [ ] the Phase 4 matrix is recorded and the chosen merge path is proven
-- [ ] `required_signatures --jq '.enabled'` -> true
+- [x] `required_signatures --jq '.enabled'` -> true, plus enforce_admins=true and a two-sided control
 - [ ] a Renovate PR auto-merges successfully AFTER enforcement is live
 
 ### Rollback
@@ -588,3 +588,35 @@ the SAME test, one variable changed.
 - [note] Fallbacks if that merge turns out to be blocked: enable auto-merge on the PR so the bot
   is both author and merge-initiator, or roll back with
   `gh api -X DELETE repos/zhorvath83/home-ops/branches/main/protection/enforce_admins`.
+
+
+## Phase 6 — active half DONE, rebase-merge disabled (2026-08-03)
+
+- [decision] `allow_rebase_merge` set to `false` on the repository. Under `required_signatures`
+  rebase-and-merge can never succeed here: GitHub creates modified commit objects and cannot sign
+  them on the committer's behalf, so the rule rejects the result every time. Leaving the option
+  enabled protected nothing and only kept a footgun in the merge menu — an option capable of
+  producing a confusing rejection and nothing else.
+- [evidence] Before: `merge_commit=true squash=true rebase=true auto=true`.
+  After: `merge_commit=true squash=true rebase=false auto=true` — squash, merge-commit and
+  auto-merge deliberately untouched, so the maintainer's habit is unaffected.
+- [evidence] Renovate's auto-detection is unaffected: it picks `config.mergeMethod` by the priority
+  squash > merge > rebase from the allow_* flags, and squash is still allowed. GraphQL confirms
+  `squash=true merge=true rebase=false viewerDefaultMergeMethod=SQUASH`.
+- [note] Reversible with `gh api -X PATCH repos/zhorvath83/home-ops -F allow_rebase_merge=true`.
+
+### What remains in this item — three PASSIVE observations, no outstanding work
+
+All active work is complete. The remaining acceptance criteria cannot be forced; they resolve on
+their own when the right event arrives, and two of them share one trigger.
+
+1. Both fixed workflows must produce a `verified=true` branch commit, proving `sign-commits: true`
+   works in practice. Baseline to beat: PR 4093 was `verified=false reason=unsigned`.
+   Trigger: the first PR either workflow opens once its upstream data changes.
+2. Re-measure the confounded merge cell — a human squash-merge of a bot-authored PR with
+   `enforce_admins=true` — because the earlier success happened while the admin bypass was active.
+   Trigger: the next NON-BREAKING bot PR. The two open PRs (4105, 4056) are breaking and were
+   deliberately not used as test specimens.
+3. Observe a Renovate auto-merge succeeding under live enforcement. Expected to work (Renovate is
+   the PR author, picks squash, GitHub signs the squash commit) but not yet witnessed.
+   Signal that it is NOT working: Renovate PRs accumulating unmerged.
