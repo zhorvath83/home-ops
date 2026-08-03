@@ -5,6 +5,3 @@ metadata:
   name: crowdsec
   annotations:
     kustomize.toolkit.fluxcd.io/prune: disabled
-  labels:
-    # The agent DaemonSet mounts hostPath /var/log to read envoy container logs.
-    pod-security.kubernetes.io/enforce: privileged

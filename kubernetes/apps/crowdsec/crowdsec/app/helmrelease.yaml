@@ -56,8 +56,8 @@ spec:
     lapi:
       deployAnnotations:
         reloader.stakater.com/auto: "true"
-      # Pods stay root by design under the namespace's privileged PSA exception;
-      # seccomp + capability dropping are the hardening that's actually available.
+      # Pods stay root (upstream entrypoint); seccomp + capability dropping is the
+      # hardening that is actually available.
       securityContext:
         allowPrivilegeEscalation: false
         privileged: false
