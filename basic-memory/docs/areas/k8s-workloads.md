@@ -5,15 +5,16 @@ permalink: home-ops/docs/areas/k8s-workloads
 area: k8s-workloads
 status: current
 confidence: high
-verified_at: '2026-07-05'
+verified_at: '2026-08-03'
 summary: 'Non-platform Flux-managed application workloads live under kubernetes/apps/<group>/<app>/
   with a canonical ks.yaml + app/ shape. The repo hosts 4 apps in the media namespace
   (consumption: calibre-web-automated, isponsorblocktv, plex, plex-trakt-sync), 8
   apps in the downloads namespace (arr-stack + qbittorrent: bazarr, maintainerr, prowlarr,
-  qbittorrent, radarr, seerr, sonarr, subsyncarr), and 12 apps in the selfhosted namespace
-  (Selfhosted, PFM, Infrastructure, AI/search, Sharing groups) plus cert-manager.
+  qbittorrent, radarr, seerr, sonarr, subsyncarr), and 10 apps in the selfhosted namespace
+  (Selfhosted, PFM, Infrastructure, Sharing groups) plus cert-manager. A disabled
+  media/suggestarr directory exists on disk but is commented out of the namespace kustomization.
   Apps follow a strict minimal-spec policy for HelmRelease, a hardened security baseline,
-  the shared VolSync component for PVC backups (17 of 24 apps wire it across media,
+  the shared VolSync component for PVC backups (18 of 22 deployed apps wire it across media,
   downloads, and selfhosted namespaces), and the Gateway API split between envoy-external
   and envoy-internal. Per-app secret delivery is always the onepassword-connect ClusterSecretStore
   with 12h refresh.'
@@ -59,11 +60,11 @@ tags:
 - [area] k8s-workloads
 - [status] current
 - [confidence] high
-- [verified_at] 2026-06-17
+- [verified_at] 2026-08-03
 
 ## Summary
 
-This area covers non-platform application workloads under `kubernetes/apps/` — anything that is **not** the networking, external-secrets, flux-system, volsync-system, talos, or observability subtree. Apps are organized into three namespace groups: `kubernetes/apps/media/` (4 apps — consumption: calibre-web-automated, isponsorblocktv, plex, plex-trakt-sync), `kubernetes/apps/downloads/` (8 apps — arr-stack + qbittorrent: bazarr, maintainerr, prowlarr, qbittorrent, radarr, seerr, sonarr, subsyncarr), and `kubernetes/apps/selfhosted/` (12 apps — Selfhosted, PFM, Infrastructure, AI/search, Sharing groups). The only other non-platform subtree is `kubernetes/apps/cert-manager/`.
+This area covers non-platform application workloads under `kubernetes/apps/` — anything that is **not** the networking, external-secrets, flux-system, volsync-system, talos, observability, crowdsec, security or system-upgrade subtree. Apps are organized into three namespace groups: `kubernetes/apps/media/` (4 deployed apps — consumption: calibre-web-automated, isponsorblocktv, plex, plex-trakt-sync), `kubernetes/apps/downloads/` (8 apps — arr-stack + qbittorrent: bazarr, maintainerr, prowlarr, qbittorrent, radarr, seerr, sonarr, subsyncarr), and `kubernetes/apps/selfhosted/` (10 apps — actual, backrest, home-gallery, homepage, mealie, paperless, paperless-gpt, pingvin-share-x, resticprofile, wallos). That is **22 deployed workloads**. A 23rd directory, `kubernetes/apps/media/suggestarr/`, is fully shaped (it wires volsync + gateway-oidc) but is COMMENTED OUT of `kubernetes/apps/media/kustomization.yaml:15`, so Flux never reconciles it. The only other non-platform subtree is `kubernetes/apps/cert-manager/`.
 
 Apps follow a canonical shape per the k8s-workloads skill: each app lives in `kubernetes/apps/<group>/<app>/` with a `ks.yaml` Flux entry point and an `app/` directory holding `kustomization.yaml`, `ocirepository.yaml`, `helmrelease.yaml`, optional `externalsecret.yaml`, and optional `ciliumnetworkpolicy.yaml` or `config/` static files. App manifests carry **no** `metadata.namespace` and **no** redundant `labels:` blocks — the Flux Kustomization `spec.targetNamespace` + `spec.commonMetadata.labels` are the single source of placement and labeling. HelmRelease `spec` is intentionally minimal (`chartRef`, `interval`, `values`, very rarely `postRenderers`) — the cluster-root `kubernetes/flux/cluster/ks.yaml` injects install/upgrade/rollback defaults into every HelmRelease through a kustomize patch.
 
@@ -88,9 +89,9 @@ Homepage dashboard metadata uses a stable set of groups defined in `kubernetes/a
 
 - [component] Arr Stack — `bazarr`, `prowlarr`, `radarr`, `seerr`, `sonarr`, `subsyncarr` (namespace: downloads, Homepage group: `Arr Stack`)
 - [component] Downloading — `qbittorrent` (namespace: downloads, Homepage group: `Downloading`; qbittorrent-p2pblocklist merged into qbittorrent as initContainer)
-- [component] Maintainerr — `maintainerr` (namespace: downloads, Homepage group: `Media`; uses the `gateway-oidc` component for its Envoy-native OIDC SecurityPolicy)
+- [component] Maintainerr — `maintainerr` (namespace: downloads, Homepage group: `Media`). NOTE: `gateway-oidc` is no longer maintainerr-specific — see the OIDC coverage claim below.
 
-**selfhosted namespace (kubernetes/apps/selfhosted/, 12 apps, everything else):**
+**selfhosted namespace (kubernetes/apps/selfhosted/, 10 apps, everything else):**
 - [component] Selfhosted — `paperless`, `paperless-gpt`, `mealie`, `home-gallery` (Homepage group: `Selfhosted`)
 - [component] PFM (personal finance) — `actual`, `wallos` (Homepage group: `PFM`)
 - [component] Infrastructure — `backrest`, `homepage`, `resticprofile` (Homepage group: `Infrastructure` for those with a UI)
@@ -108,7 +109,7 @@ Homepage dashboard metadata uses a stable set of groups defined in `kubernetes/a
 - [component] Shared OCIRepository component — bjw-s `app-template` OCIRepository is provided by `kubernetes/components/common/repos/app-template/` and consumed via Kustomize component; new apps using `app-template` no longer need a per-app `ocirepository.yaml`. Apps using other charts still carry their own OCIRepository pairing in the app directory
 - [component] App-managed Secret pattern — ExternalSecret with `refreshInterval: 12h`, `secretStoreRef` to ClusterSecretStore `onepassword-connect`, `creationPolicy: Owner`, no `metadata.namespace` (.claude/skills/k8s-workloads/references/app-scaffolding.md:84-91)
 - [component] VolSync per-app wiring — `ks.yaml` attaches the `components/volsync` Kustomize component with `postBuild.substitute` providing `APP`, `APP_UID`, `APP_GID`, and optional `VOLSYNC_CAPACITY`, `VOLSYNC_CACHE`, `VOLSYNC_RETAIN_*` overrides (canonical example: kubernetes/apps/selfhosted/paperless/ks.yaml:11-29)
-- [component] Apps with shared VolSync wiring — media (4/4): `calibre-web-automated`, `isponsorblocktv`, `plex`, `plex-trakt-sync`; downloads (7/8): `bazarr`, `maintainerr`, `prowlarr`, `qbittorrent`, `radarr`, `seerr`, `sonarr`; selfhosted (6/12): `actual`, `backrest`, `mealie`, `paperless`, `paperless-gpt`, `wallos`; not wired: `subsyncarr` (downloads, emptyDir + NFS), `home-gallery` (selfhosted, standalone PVC, no VolSync), `homepage` (selfhosted, configMapGenerator), `open-webui`, `searxng`, `pingvin-share-x`, `resticprofile` (selfhosted, backup tool itself)
+- [component] Apps with shared VolSync wiring — media (4/4): `calibre-web-automated`, `isponsorblocktv`, `plex`, `plex-trakt-sync`; downloads (7/8): `bazarr`, `maintainerr`, `prowlarr`, `qbittorrent`, `radarr`, `seerr`, `sonarr`; selfhosted (7/10): `actual`, `backrest`, `mealie`, `paperless`, `paperless-gpt`, `pingvin-share-x`, `wallos`; NOT wired (4): `subsyncarr` (downloads, emptyDir + NFS), `home-gallery` (selfhosted, standalone PVC, no VolSync), `homepage` (selfhosted, configMapGenerator), `resticprofile` (selfhosted, backup tool itself). The disabled `media/suggestarr` also wires volsync but is not deployed.
 - [component] Apps with file-level /backups/<app> export — `paperless` (canonical pattern: NFS mount of `${NAS_IP}:/backups/paperless` at `/data/nas/export`, scheduled `document_exporter` job)
 - [component] Apps with NFS mounts — media: `calibre-web-automated`, `plex`; downloads: `bazarr`, `qbittorrent`, `radarr`, `sonarr`, `subsyncarr`; selfhosted: `backrest`, `home-gallery`, `paperless`, `resticprofile`; all mount paths from `${NAS_IP}` (mix of read-only media mounts and read-write workspace mounts); all 11 are now probe-gated to scale-to-zero via the `components/zeroscaler` component (nfs_probe external metric through prometheus-adapter) — NAS-down scales them to 0 instead of CrashLoopBackOff (see Update 2026-07-11)
 - [component] Security baseline — pod-level `runAsNonRoot: true`, aligned `runAsUser/Group/fsGroup`, `fsGroupChangePolicy: OnRootMismatch`, `seccompProfile: RuntimeDefault`; container-level `allowPrivilegeEscalation: false`, `readOnlyRootFilesystem: true`, drop ALL caps, `automountServiceAccountToken: false` (.claude/skills/k8s-workloads/references/runtime-baselines.md:6-22)
@@ -121,10 +122,10 @@ Homepage dashboard metadata uses a stable set of groups defined in `kubernetes/a
 
 ## Claims (verified against repo)
 
-- [claim] "The cluster hosts 24 application workloads across three namespaces: `media` (4 apps — calibre-web-automated, isponsorblocktv, plex, plex-trakt-sync), `downloads` (8 apps — bazarr, maintainerr, prowlarr, qbittorrent, radarr, seerr, sonarr, subsyncarr), and `selfhosted` (12 apps — Paperless, Homepage, Mealie, PFM, Infrastructure, AI/search, Sharing groups)" (evidence: repo, ref: `ls kubernetes/apps/media/` + `ls kubernetes/apps/downloads/` + `ls kubernetes/apps/selfhosted/` + `grep gethomepage.dev/group` across helmrelease.yaml files, verified: 2026-06-17)
+- [claim] "The cluster hosts 22 DEPLOYED application workloads across three namespaces: `media` (4 apps — calibre-web-automated, isponsorblocktv, plex, plex-trakt-sync), `downloads` (8 apps — bazarr, maintainerr, prowlarr, qbittorrent, radarr, seerr, sonarr, subsyncarr), and `selfhosted` (10 apps — actual, backrest, home-gallery, homepage, mealie, paperless, paperless-gpt, pingvin-share-x, resticprofile, wallos). The former AI/search group (`open-webui`, `searxng`) was deleted in commit `ce310f0f6`; no reference to either survives anywhere under kubernetes/. A 23rd directory `media/suggestarr` exists but is commented out of the namespace kustomization" (evidence: repo, ref: kubernetes/apps/media/kustomization.yaml:8-15 + downloads/kustomization.yaml + selfhosted/kustomization.yaml, verified: 2026-08-03)
 - [claim] "Apps follow a strict canonical shape: `ks.yaml` at the app root + an `app/` subdirectory holding kustomization.yaml, ocirepository.yaml, helmrelease.yaml, optional externalsecret.yaml. `metadata.namespace` is forbidden on app manifests — Flux `spec.targetNamespace` is the only source of placement" (evidence: repo, ref: kubernetes/CLAUDE.md "Editing And Validation" + .claude/skills/k8s-workloads/references/app-scaffolding.md:64-67, verified: 2026-05-19)
 - [claim] "HelmRelease `spec` is minimal — only `chartRef`, `interval`, `values` and rare `postRenderers`. Install/upgrade/rollback defaults are injected globally via a kustomize patch on the cluster-root Kustomization at `kubernetes/flux/cluster/ks.yaml`. Per-HR overrides of those fields are repo-wide anti-pattern" (evidence: repo, ref: kubernetes/CLAUDE.md "HelmRelease minimal-spec policy" + kubernetes/flux/cluster/ks.yaml:16-51, verified: 2026-05-19)
-- [claim] "17 of 24 apps attach the shared VolSync component via `ks.yaml` `components: - ../../../../components/volsync` for PVC backups — media (4/4): `calibre-web-automated`, `isponsorblocktv`, `plex`, `plex-trakt-sync`; downloads (7/8): `bazarr`, `maintainerr`, `prowlarr`, `qbittorrent`, `radarr`, `seerr`, `sonarr`; selfhosted (6/12): `actual`, `backrest`, `mealie`, `paperless`, `paperless-gpt`, `wallos`" (evidence: repo, ref: `grep -rl 'components/volsync' kubernetes/apps/media/ kubernetes/apps/downloads/ kubernetes/apps/selfhosted/`, verified: 2026-06-17)
+- [claim] "18 of 22 deployed apps attach the shared VolSync component via `ks.yaml` `components: - ../../../../components/volsync` for PVC backups — media (4/4): `calibre-web-automated`, `isponsorblocktv`, `plex`, `plex-trakt-sync`; downloads (7/8): `bazarr`, `maintainerr`, `prowlarr`, `qbittorrent`, `radarr`, `seerr`, `sonarr`; selfhosted (7/10): `actual`, `backrest`, `mealie`, `paperless`, `paperless-gpt`, `pingvin-share-x`, `wallos`. A repo-wide grep returns 19 ks.yaml files — the 19th is the disabled `media/suggestarr`" (evidence: repo, ref: `grep -rl 'components/volsync' kubernetes/apps/media/ kubernetes/apps/downloads/ kubernetes/apps/selfhosted/ --include=ks.yaml`, verified: 2026-08-03)
 - [claim] "Paperless is the canonical dual-coverage pattern: VolSync backs up the app PVC AND a scheduled `document_exporter` writes to NFS `/backups/paperless` so resticprofile captures a second file-level copy. The pattern is referenced from `kubernetes/CLAUDE.md` and `kubernetes/apps/selfhosted/CLAUDE.md`" (evidence: repo, ref: kubernetes/apps/selfhosted/paperless/app/helmrelease.yaml (PAPERLESS_EXPORT_DIR, nas-export nfs mount, manage.py document_exporter sidecar), verified: 2026-06-13)
 - [claim] "App ExternalSecrets uniformly use `refreshInterval: 12h` (vs. ESO chart default 1h), `secretStoreRef.kind: ClusterSecretStore`, `secretStoreRef.name: onepassword-connect`, `target.creationPolicy: Owner`, and omit `metadata.namespace` — the Flux Kustomization targetNamespace places the resource" (evidence: repo, ref: kubernetes/apps/external-secrets/CLAUDE.md:46-58 + .claude/skills/k8s-workloads/references/app-scaffolding.md:84-91, verified: 2026-06-13)
 - [claim] "`APP_UID` and `APP_GID` come from `ks.yaml` `postBuild.substitute` and are reused in the pod securityContext, PUID/PGID env vars, and the VolSync mover securityContext — the substitution is the single source of truth for the app's runtime user" (evidence: repo, ref: kubernetes/apps/selfhosted/paperless/ks.yaml:23-24 + kubernetes/components/volsync/replicationsource.yaml:24-27, verified: 2026-06-13)
@@ -138,13 +139,16 @@ Homepage dashboard metadata uses a stable set of groups defined in `kubernetes/a
 - [claim] "CronJobs are written as bjw-s `app-template` with `type: cronjob` and `concurrencyPolicy: Forbid`, not as raw Kubernetes CronJob manifests" (evidence: repo, ref: .claude/skills/k8s-workloads/references/publication-and-jobs.md:47-55, verified: 2026-05-19)
 - [claim] "YAML anchor policy: anchors are allowed only for repeated scalar values (`&port`, `&host`, `&exportDir`, `&tz`, `&resources`, `&probes`, `&image`) in lowerCamelCase, and forbidden as map keys for controllers/persistence/serviceAccount/bindings or on scalar app names" (evidence: repo, ref: kubernetes/CLAUDE.md "YAML anchor policy", verified: 2026-05-19)
 
+- [claim] "`gateway-oidc` is no longer a single-app pattern. Inside this area it is wired into ALL EIGHT downloads apps (bazarr, maintainerr, prowlarr, qbittorrent, radarr, seerr, sonarr, subsyncarr) — the downloads namespace is OIDC-gated as a whole — plus the disabled media/suggestarr. Outside this area it is also used by `networking/echo-server` and by `kube-system/cilium` (targeting the hubble-ui HTTPRoute), so a repo-wide grep returns 11 ks.yaml files" (evidence: repo, ref: `grep -rl 'components/gateway-oidc' kubernetes/apps --include=ks.yaml`, verified: 2026-08-03)
+- [claim] "Four app-shaped subtrees under kubernetes/apps are outside this area's inventory and belong to other areas: `crowdsec/` (crowdsec + bouncer + web-ui), `security/pocket-id/` (the IAM provider, see docs/areas/iam), `system-upgrade/tuppr/` (see docs/areas/talos-cluster), and the platform subtrees. `crowdsec/web-ui` and `security/pocket-id` are what carry the new `Security` Homepage group" (evidence: repo, ref: `ls kubernetes/apps`, verified: 2026-08-03)
+
 ## Drift Risk
 
 - [drift] HelmRelease minimal-spec is enforced **only by code review**. There is no automated lint that rejects `install.createNamespace`, `upgrade.remediation.retries`, `uninstall.keepHistory`, etc. on app HRs. Past K3s-era noise has been cleaned but can return with any new app.
 - [drift] Apps span three namespaces (media, downloads, selfhosted) under the AD-023 two-tier Cilium model (V3 flip landed, commit 953626966). The cluster-wide baseline `allow-cluster-egress` no longer grants `toEntities: world` — public internet egress is opt-in via the `egress.home.arpa/allow-world` pod label (backed by the `allow-world-egress` CCNP, toCIDRSet 0.0.0.0/0 except RFC1918/100.64/10) or a per-app CNP. Per-app CNPs cover app-unique upstreams the flipped baseline no longer grants (coredns world:53, kube-prometheus-stack-prometheus LAN 192.168.1.1/32:9100); crown-jewel apps (external-secrets, onepassword-connect, pocket-id, paperless, actual, cloudflare-tunnel, envoy-external/internal) carry their own CNPs. A compromised pod without the allow-world label or a matching CNP has cluster-only egress — the previous "coarse baseline" residual risk is closed.
 - [drift] The NFS server (at `${NAS_IP}` from cluster-settings) is a single point of failure for /backups exports and media mounts across at least 11 apps. Mitigation landed 2026-07-11 (see Update below): the 11 NFS-mount Deployments are probe-gated to scale-to-zero via the `components/zeroscaler` component (nfs_probe external metric served by prometheus-adapter), so NAS-down CrashLoopBackOff noise is eliminated. Residual gap: the Paperless `document_exporter` CronJob is not HPA-gated, so scheduled exports still silently produce stale data when the NAS is offline — Restic/Backrest health checks only catch the backup-side failure 24h later.
 - [drift] Storage strategy (PVC vs NFS vs emptyDir) is decided per app and documented only in CLAUDE.md plus the runtime-baselines reference — there is no manifest-level enforcement. Apps that diverge from the documented baseline are visible only in code review.
-- [drift] The "always wire VolSync when the app has a PVC" rule is informal: 17 of 24 apps wire it, but the 7 that don't are not explicitly enumerated as "intentionally no backup" anywhere. Some may be ephemeral (homepage with configMapGenerator), others may be oversights.
+- [drift] The "always wire VolSync when the app has a PVC" rule is informal: 18 of 22 deployed apps wire it, and the 4 that do not (`subsyncarr`, `home-gallery`, `homepage`, `resticprofile`) are still not explicitly enumerated as "intentionally no backup" anywhere. Some are clearly ephemeral (homepage with configMapGenerator) or self-referential (resticprofile is the backup tool), but `home-gallery` holds a standalone PVC with no backup and no recorded decision.
 - [drift] APP_UID / APP_GID substitution is per-app — there is no central registry of which uid each app uses. Two apps accidentally picking the same uid against the same NFS export would silently overwrite each other.
 - [drift] HTTPRoute parentRefs to `envoy-external` and `envoy-internal` are added per-route — there is no central template. Apps that need both routes but forget the `envoy-internal` parentRef become public-only with no LAN exposure (the operator may not notice if Cloudflare Access is the gate).
 - [drift] The `gateway-oidc` OIDC gate requires a matching Pocket ID client (with `allowed_user_groups`) and a 1Password `${APP}_client_secret` field before a new app is reachable. A missing secret fails closed, but a missing group list does NOT — the Terraform precondition in provision/pocket-id is what keeps that from reaching the IdP — verify OIDC login works after wiring a new app.
@@ -166,3 +170,33 @@ Implemented via `docs/progress/nfs-dependency-zeroscaler` (done) + `docs/progres
 - [observation] Behavior: NAS/NFS down → `probe_success{job=nfs_probe}` → 0 → HPA scales the app to 0; NAS recovers → scales back to 1. CrashLoopBackOff noise during NAS-down is eliminated for the 11 Deployments.
 - [observation] The zeroscaler HPAs (max=1, min=0) are permanently "maxed out" while the probe is healthy, so the kubernetes-apps `KubeHpaMaxedOut` rule guard `max != min` does not exclude them → 11 constant firing warnings, silenced via the giantswarm silence-operator + a global `Silence` CR (see [[silence-operator]]).
 - [follow-up] The Paperless `document_exporter` CronJob is NOT HPA-gated (CronJobs have no HPA target), so it still silently produces stale exports during NAS-down — the residual unguarded slice of the NFS SPOF (reflected in the updated Drift Risk bullet above).
+
+## Update 2026-08-03 — staleness re-verification
+
+Full re-verification against the live repo as part of the `area-reference-staleness-audit`
+roadmap item. Previous `verified_at` was 2026-07-05 (body block still said 2026-06-17).
+Verdict on arrival: MAJOR-DRIFT — every `verified_against` path still existed, but the inventory
+itself, which is the whole point of this note, was wrong.
+
+- [correction] **The app count was wrong: 22 deployed, not 24.** The entire AI/search group
+  (`open-webui`, `searxng`) was deleted in commit `ce310f0f6 cleanup`; no reference to either
+  survives anywhere under `kubernetes/`. selfhosted is 10 apps, not 12.
+- [correction] VolSync coverage is 18 of 22, not 17 of 24: `pingvin-share-x` now wires it, and two
+  of the previously-unwired apps no longer exist. The genuine "no backup" list shrank from 7 to 4
+  (`subsyncarr`, `home-gallery`, `homepage`, `resticprofile`) — of which only `home-gallery` holds a
+  standalone PVC with no backup and no recorded decision, which is now stated in the drift entry.
+- [correction] `gateway-oidc` was documented as a maintainerr-specific example. It now gates ALL
+  EIGHT downloads apps — the namespace is OIDC-gated as a whole. The reviewer also found two uses
+  the worker's namespace-scoped grep missed: `networking/echo-server` and `kube-system/cilium`
+  (targeting the hubble-ui HTTPRoute). 11 ks.yaml files wire the component repo-wide.
+- [correction] The Homepage group list named 14 groups; only 8 are actually carried by an app
+  (Selfhosted, Media, Arr Stack, Downloading, Infrastructure, PFM, Observability, and a NEW
+  `Security` group). The other 7 (eMail, Cloud Storage, Bank, Investment, Funds, SaaS & PaaS, IoT)
+  are empty layout slots in `homepage/app/config/settings.yaml` with no app behind them.
+- [addition] A 23rd app directory exists: `kubernetes/apps/media/suggestarr/`. It is fully shaped
+  and wires volsync + gateway-oidc, but it is COMMENTED OUT of
+  `kubernetes/apps/media/kustomization.yaml:15`, so Flux never reconciles it. Whether that is
+  intentional or a stalled rollout is not derivable from the manifests — flagged for the human.
+- [addition] Four app-shaped subtrees appeared that this note never mentioned: `crowdsec/`,
+  `security/pocket-id/`, `system-upgrade/tuppr/`. Each is claimed by another area; recorded here so
+  the inventory boundary is explicit rather than an unexplained absence.
