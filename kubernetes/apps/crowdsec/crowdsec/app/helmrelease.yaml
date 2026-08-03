@@ -128,6 +128,8 @@ spec:
       env:
         - name: COLLECTIONS
           value: yanis-kouidri/envoy
+        - name: SCENARIOS
+          value: crowdsecurity/http-backdoors-attempts crowdsecurity/http-bad-user-agent crowdsecurity/http-cve-probing crowdsecurity/http-generic-bf
         - name: PARSERS
           value: crowdsecurity/cri-logs crowdsecurity/dateparse-enrich crowdsecurity/geoip-enrich crowdsecurity/whitelists
         - name: POSTOVERFLOWS
