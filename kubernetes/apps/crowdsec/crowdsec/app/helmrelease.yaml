@@ -127,11 +127,22 @@ spec:
           poll_without_inotify: true
       env:
         - name: COLLECTIONS
-          value: yanis-kouidri/envoy
+          value: >-
+            yanis-kouidri/envoy
+            crowdsecurity/http-dos
+            crowdsecurity/base-http-scenarios
         - name: SCENARIOS
-          value: crowdsecurity/http-backdoors-attempts crowdsecurity/http-bad-user-agent crowdsecurity/http-cve-probing crowdsecurity/http-generic-bf
+          value: >-
+            crowdsecurity/http-backdoors-attempts
+            crowdsecurity/http-bad-user-agent
+            crowdsecurity/http-cve-probing
+            crowdsecurity/http-generic-bf
         - name: PARSERS
-          value: crowdsecurity/cri-logs crowdsecurity/dateparse-enrich crowdsecurity/geoip-enrich crowdsecurity/whitelists
+          value: >-
+            crowdsecurity/cri-logs
+            crowdsecurity/dateparse-enrich
+            crowdsecurity/geoip-enrich
+            crowdsecurity/whitelists
         - name: POSTOVERFLOWS
           value: crowdsecurity/ipv6_to_range
       resources:
