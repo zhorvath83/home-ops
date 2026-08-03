@@ -32,7 +32,7 @@ tags:
 
 - [topic] Required commit signing on main — GitHub enforces signed commits to the cluster source branch
 - [area] flux-gitops
-- [status] planned
+- [status] in-progress
 - [priority] high
 - [effort] M (replanned 2026-08-03; the earlier S estimate covered only the signing config)
 - [verified_at] 2026-08-03
@@ -543,3 +543,48 @@ maintainer, which is the only human on this repo.
   acceptance AND exercises the bot-PR merge path.
 - [risk] Any commit made from another machine, or from this machine outside the personal project
   tree, will now be REJECTED on push to main rather than merely unverified.
+
+
+## Phase 5 verification — the hole is measurably closed (2026-08-03)
+
+Two controls were run after enforcement went live. Together they form a clean A/B experiment:
+the SAME test, one variable changed.
+
+### Positive control — the maintainer is not locked out
+
+- [evidence] A signed commit pushed to main under `enforce_admins=true` succeeded:
+  `e03dbb075..db788ab27`, `exit=0`, and GitHub reports `db788ab27` as
+  `verified=true reason=valid`. Normal workflow is intact under enforcement.
+
+### Negative control — an unsigned push is now genuinely rejected
+
+- [evidence] With `required_signatures=true` AND `enforce_admins=true`, pushing a deliberately
+  unsigned commit was REJECTED:
+  `GH006: Protected branch update failed for refs/heads/main. - Commits must have verified
+  signatures. Found 1 violation: fe29ae0ee...` / `[remote rejected] ... protected branch hook
+  declined`, `exit=1`.
+- [evidence] `origin/main` was UNCHANGED afterwards (still `db788ab27`), so unlike the Phase 4
+  attempt this control left no artefact behind. The local commit was reset away.
+
+### Why this pair is the strongest evidence in this item
+
+- [claim] The two runs differ in EXACTLY ONE variable, `enforce_admins`:
+  `false` -> `Bypassed rule violations ... Commits must have verified signatures`, push ACCEPTED.
+  `true`  -> `GH006 ... Found 1 violation`, push REJECTED, ref unmoved.
+  So the Phase 4 correction is confirmed by measurement, not inference: `required_signatures`
+  alone is inert against an admin, and `enforce_admins` is what makes it bite.
+
+### Item state
+
+- [status] Enforcement is LIVE and verified on the push axis in both directions.
+- [note] Two acceptance items remain open, both waiting on the same trigger — the next
+  NON-BREAKING bot PR:
+  1. Phase 3 acceptance: a bot-created branch commit must read `verified=true`, proving
+     `sign-commits: true` works in practice (pre-fix baseline: PR 4093 was
+     `verified=false reason=unsigned`).
+  2. The confounded Phase 4 merge cell: re-measure the human squash-merge of a bot-authored PR
+     with `enforce_admins=true`, since the earlier success occurred while the admin bypass was
+     active and therefore proves nothing on its own.
+- [note] Fallbacks if that merge turns out to be blocked: enable auto-merge on the PR so the bot
+  is both author and merge-initiator, or roll back with
+  `gh api -X DELETE repos/zhorvath83/home-ops/branches/main/protection/enforce_admins`.
