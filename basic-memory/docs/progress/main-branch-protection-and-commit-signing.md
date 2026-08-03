@@ -1,26 +1,9 @@
 ---
 title: main-branch-protection-and-commit-signing
-type: roadmap
-permalink: home-ops/docs/roadmap/main-branch-protection-and-commit-signing
-topic: Required commit signing on main — GitHub enforces signed commits to the cluster
-  source branch
-status: proposed
-priority: high
-scope: Require all commits pushed to main to be GPG/SSH-signed via GitHub required_signatures,
-  after the maintainer enables commit signing. Signing only — no required status checks,
-  no enforce_admins, no PR-review changes, no Flux-side spec.verify.
-rationale: A signed main makes every commit cryptographically attributable to the
-  maintainer's key; an unsigned or impersonated push (compromised token, forged author)
-  is rejected at the GitHub layer before it can reconcile. Renovate already signs
-  via the hosted GitHub App (verified=true observed on this repo), so enforcement
-  does not break Renovate auto-merge. The maintainer's own commits are currently unsigned
-  (verified=false) and must start signing first.
-related_areas:
-- flux-gitops
-options: []
-verified_at: '2026-07-27'
+type: note
+permalink: home-ops/docs/progress/main-branch-protection-and-commit-signing
 tags:
-- roadmap
+- progress
 - security
 - git
 - signing
@@ -32,7 +15,7 @@ tags:
 
 - [topic] Required commit signing on main — GitHub enforces signed commits to the cluster source branch
 - [area] flux-gitops
-- [status] in-progress
+- [status] done
 - [priority] high
 - [effort] M (replanned 2026-08-03; the earlier S estimate covered only the signing config)
 - [verified_at] 2026-08-03
@@ -620,3 +603,56 @@ their own when the right event arrives, and two of them share one trigger.
 3. Observe a Renovate auto-merge succeeding under live enforcement. Expected to work (Renovate is
    the PR author, picks squash, GitHub signs the squash commit) but not yet witnessed.
    Signal that it is NOT working: Renovate PRs accumulating unmerged.
+
+
+## CLOSED 2026-08-03 — what was proven, and what was accepted unproven
+
+Closed by maintainer decision. Enforcement is live and the security goal is met. Two acceptance
+criteria were deliberately closed WITHOUT proof rather than forced; recorded here so this note
+never claims more than was measured.
+
+### Proven by measurement
+
+- [evidence] The 1Password agent signs, and `op-ssh-sign` works on the real git code path
+  (Phase 0), with namespace binding and tamper detection confirmed by negative controls.
+- [evidence] Signing is scoped to the personal project tree via `~/.gitconfig.personal`, and is
+  structurally ABSENT from the top-level `~/.gitconfig`, so no other context inherits this key.
+- [evidence] GitHub reports the maintainer's commits as `verified=true`. Independently reconfirmed
+  outside this session's tooling: the maintainer's OWN interactive commits `4994efac8` and the merge
+  commit `d6042d23a` are both `verified=true reason=valid`. So signing works in the real daily
+  workflow, including merge commits, not only in scripted invocations.
+- [evidence] `required_signatures` + `enforce_admins` are live on main, verified in BOTH directions:
+  a signed push succeeds, an unsigned push is rejected with `GH006` and the ref does not move.
+- [evidence] Renovate auto-merge WORKS under live enforcement. PR 4106 (flux-local v8.4.0) was
+  created and merged by `renovate[bot]` itself while both rules were active: rewritten SHA,
+  `parents=1` (squash), `committer=GitHub`, `verified=true`. This was previously only an inference
+  from Renovate's squash>merge>rebase priority; it is now observed.
+- [evidence] `allow_rebase_merge` disabled, removing a merge option that could only ever fail.
+
+### Closed WITHOUT proof — accepted risk
+
+- [risk] `sign-commits: true` is NOT proven in practice. It is proven RECOGNISED (both dispatched
+  runs echo it in the action's resolved inputs) and the token switch is proven non-breaking, but no
+  bot-created branch commit has been inspected, because neither upstream source changed during the
+  session. Forcing it would have required injecting an artificial change into the Envoy blocklist
+  and two Flux reconciles; the maintainer declined, which is a reasonable trade. First real PR from
+  either workflow settles it. Baseline to beat: PR 4093 was `verified=false reason=unsigned`.
+- [risk] The human (non-author) squash-merge of a bot-authored PR is NOT proven under
+  `enforce_admins=true`. The Phase 4 success occurred while the admin bypass was active and is
+  therefore confounded. The intended specimen (a forced zizmor lockfile PR) never materialised —
+  Renovate un-ticked the dashboard checkbox and created no PR, plausibly because a maintainer commit
+  to `.renovate/changeLogs.json5` made it re-evaluate, and because the pending item was lockfile-only
+  while `.mise.toml` already sat at the target version. PR 4107 was available as an equivalent
+  specimen but merging it would have deployed a real container update purely to run a test.
+- [note] Residual exposure of that second gap is LOW and self-revealing: the very next bot PR the
+  maintainer merges by hand is the measurement. If it is refused, the documented fallbacks are to
+  enable auto-merge on that PR (making the bot both author and merge-initiator, the path PR 4106
+  already proved works) or to roll back with
+  `gh api -X DELETE repos/zhorvath83/home-ops/branches/main/protection/enforce_admins`.
+
+### Standing notes for future sessions
+
+- [note] Commit `282fd7f2e` is an empty, unsigned commit left on main ON PURPOSE (see the Phase 4
+  section). Do NOT try to repair it.
+- [note] Non-personal contexts are deliberately unnamed throughout this note; the repo is treated as
+  potentially public.
