@@ -144,7 +144,7 @@ cluster:
     extraArgs:
       auto-compaction-mode: periodic
       auto-compaction-retention: "1h"
-      listen-metrics-urls: http://0.0.0.0:2381
+      listen-metrics-urls: http://127.0.0.1:2381
   proxy:
     disabled: true
     image: registry.k8s.io/kube-proxy:{{ ENV.KUBERNETES_VERSION }}
