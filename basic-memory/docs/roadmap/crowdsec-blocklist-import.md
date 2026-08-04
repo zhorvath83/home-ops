@@ -135,13 +135,13 @@ exits).
 | List | Env flag | Approx size | Precision (what a listing asserts) | Tier | FP risk |
 |------|----------|-------------|------------------------------------|------|---------|
 | Spamhaus DROP | `ENABLE_SPAMHAUS` | 1.5k | netblock is hijacked / wholly criminal-controlled | **A** | Low |
-| Abuse.ch (Feodo + URLhaus) | `ENABLE_ABUSE_CH` | ~10k | verified malware C2 / malware-hosting host | **A** | Low |
+| Abuse.ch (Feodo + URLhaus) | `ENABLE_ABUSE_CH` | ~1.3k IP | verified malware C2 / malware-hosting host — URLhaus is a URL feed, only ~8% IP-literal (1284/15985); the 8642 domain hosts are the run's benign "8747 parsing errors", not lost IPs | **A** | Low |
 | Emerging Threats | `ENABLE_EMERGING_THREATS` | 0.5k | host observed compromised and used for attacks | **A** | Low |
 | Binary Defense | `ENABLE_BINARY_DEFENSE` | 1.3k | malware / botnet infrastructure, vetted | **A** | Low |
 | DShield (ISC top attackers) | `ENABLE_DSHIELD` | 20 | top attack sources by volume across ISC sensors | **A** | Very low |
-| Bruteforce Blocker | `ENABLE_BRUTEFORCE_BLOCKER` | 0.5k | host observed performing SSH/RDP brute force | **A** | Low |
+| Bruteforce Blocker | `ENABLE_BRUTEFORCE_BLOCKER` | 0.5k | host observed performing SSH/RDP brute force; 97.5% redundant with earlier feeds (14 net-new of 560) | **A** | Low |
 | Cybercrime Tracker | `ENABLE_CYBERCRIME_TRACKER` | small | tracked C2 panel / fraud infrastructure | **A** | Low |
-| Monty Security C2 | `ENABLE_MONTY_SECURITY_C2` | small | identified C2 server | **A** | Low |
+| Monty Security C2 | `ENABLE_MONTY_SECURITY_C2` | DEAD | upstream removed `data/all.txt` (404); feed disabled — `ENABLE_MONTY_SECURITY_C2="false"` | **A** | Low |
 | VX Vault | `ENABLE_VXVAULT` | small | malware distribution host | **A** | Low |
 | Botvrij | `ENABLE_BOTVRIJ` | 4 | verified botnet C2 | **A** | Very low |
 | Firehol Level 1 | `ENABLE_FIREHOL_LEVEL1` | 4.5k | composite of high-confidence feeds (largely the same sources as Tier A) | **B** | Low |
@@ -158,7 +158,7 @@ exits).
 | Scanners (Shodan/Censys) | `ENABLE_SCANNERS` | 47 | known internet-measurement infrastructure | **C** | Moderate (blocks legitimate research; rotating IPs make it futile) |
 | StopForumSpam | `ENABLE_STOPFORUMSPAM` | 53 | forum-spam submitter | **C** | Low (irrelevant: no public forum) |
 
-**Tier meanings.** **A** = confirmed malicious infrastructure, adopt now (~12–15k IPs).
+**A** = confirmed malicious infrastructure, adopt now — ~5.2k decisions covering ~15M IPv4 addresses (1689/5200 entries are CIDR netblocks; Spamhaus DROP alone is 1664 netblocks, measured 14,971,063 addresses).
 **B** = reputation aggregate; adopt only on evidence from the observation window (below).
 **C** = never for this cluster, for the reason stated in the row.
 
