@@ -43,11 +43,12 @@ spec:
               new names mid-window), or the parser chain cri-logs -> envoy-logs broke.
               Remediation: check the agent DaemonSet and its acquisition, then restart it.
         # Non-CAPI origin = a locally issued ban (agent scenario / appsec / cscli / console),
-        # excluding the noisy ~25k community blocklist (CAPI) and console blocklists (lists).
+        # excluding the noisy ~25k community blocklist (CAPI), console blocklists (lists),
+        # and the blocklist-import CronJob (its decisions are expected and high-volume).
         # The gauge is Reset() each scrape, so for/keep_firing_for debounce a resolve->refire
         # without lagging a 4h ban's real end.
         - alert: CrowdSecBanActive
-          expr: sum by (reason, origin, action) (cs_active_decisions{job="crowdsec-service", namespace="crowdsec", origin!~"CAPI|lists(:.*)?"}) > 0
+          expr: sum by (reason, origin, action) (cs_active_decisions{job="crowdsec-service", namespace="crowdsec", origin!~"CAPI|lists(:.*)?|blocklist-import"}) > 0
           for: 1m
           keep_firing_for: 5m
           labels:

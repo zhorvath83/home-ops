@@ -1,0 +1,39 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
+# Egress-only: the CronJob pulls Tier A blocklists (443) and reads/writes the LAPI (8080).
+# Telemetry (bouncer-telemetry.ms2738.workers.dev) is deliberately absent and
+# TELEMETRY_ENABLED=false in the release — defence in depth.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: blocklist-import
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: blocklist-import
+  egress:
+    # LAPI — read existing decisions (bouncer key) and write new ones (machine JWT).
+    - toEndpoints:
+        - matchLabels:
+            k8s-app: crowdsec
+            type: lapi
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+    # Tier A feed sources — confirmed-malicious infrastructure blocklists only.
+    - toFQDNs:
+        - matchName: "www.spamhaus.org"
+        - matchName: "feodotracker.abuse.ch"
+        - matchName: "urlhaus.abuse.ch"
+        - matchName: "rules.emergingthreats.net"
+        - matchName: "www.binarydefense.com"
+        - matchName: "www.dshield.org"
+        - matchName: "feeds.dshield.org"
+        - matchName: "danger.rulez.sk"
+        - matchName: "raw.githubusercontent.com"
+        - matchName: "www.botvrij.eu"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP

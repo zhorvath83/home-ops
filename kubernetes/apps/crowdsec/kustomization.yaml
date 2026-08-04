@@ -10,3 +10,4 @@ resources:
   - ./crowdsec/ks.yaml
   - ./bouncer/ks.yaml
   - ./web-ui/ks.yaml
+  - ./blocklist-import/ks.yaml
