@@ -72,3 +72,34 @@ The roadmap asked for the `blocklist` user UID. Verified from the GHCR amd64 ima
 - Phase 4: the 3-week observation window (decision volume, feed health, alert noise) — separate change.
 - Phase 5: Tier B/C feeds (evidence-gated) — separate change.
 - Roadmap note FQDN-list inaccuracies to correct later: `sentinel.tdmdn.com` is a typo (real host is `view.sentinel.turris.cz`), redundant `github.com`/`api.github.com`/`gist`/`crowdsecurity.github.io` entries, and the abuseipdb feeds actually use `raw.githubusercontent.com` + `api.abuseipdb.com`. Not blocking; flagged for a roadmap-note cleanup.
+
+
+## Fix round (Maestro independent verification)
+
+Independent verification of the round-1 manifests found one real blocker (B1), a pre-existing same-class item traced to a false positive (N7), and documentation/wording fixes. All applied on the same branch; PR stays DRAFT.
+
+### B1 — BLOCKER, fixed
+
+`crowdsec/app/externalsecret.yaml` fetched `BLOCKLIST_IMPORT_MACHINE_PASSWORD` in `spec.data` but never emitted it in `spec.target.template.data`. ESO `mergePolicy` defaults to `Replace`, so the rendered `crowdsec-secret` contained only the templated keys and the LAPI postStart hook ran `cscli machines add blocklist-import -p ""` (empty credential → the CronJob 401s at `/v1/watchers/login`, or the 30×2s retry blocks postStart ~60s on every LAPI restart). Fixed by emitting `BLOCKLIST_IMPORT_MACHINE_PASSWORD: "{{ .BLOCKLIST_IMPORT_MACHINE_PASSWORD }}"` in `template.data`. Final rendered `crowdsec-secret` key set (5 keys): `BOUNCER_KEY_envoy`, `AGENT_PASSWORD`, `ENROLL_KEY`, `BOUNCER_KEY_blocklist_import`, `BLOCKLIST_IMPORT_MACHINE_PASSWORD`.
+
+### N7 — traced, FALSE POSITIVE, no fix
+
+`helmrelease.yaml:31` `token: $\${REGISTRATION_TOKEN}` (double `$`) is NOT a 1Password field and is NOT missing from the ESO template. Trace: the root `ks.yaml` injects `postBuild.substituteFrom: cluster-settings` into every child Kustomization, so `\${LAN_SUBNET}` (single `$`, line 28) is a Flux postBuild substitution from the `cluster-settings` ConfigMap, while `$$` is the Flux postBuild ESCAPE — the literal `\${REGISTRATION_TOKEN}` reaches `config.yaml.local` and CrowdSec's own config loader expands it from the `REGISTRATION_TOKEN` env var. That env var is chart-generated: the repo sets no `secrets.externalSecret.name`, so the chart creates `crowdsec-lapi-secrets` itself (`templates/lapi-secrets.yaml`) with an auto-generated `registrationToken` (randAlphaNum 48, persisted via lookup) and injects `REGISTRATION_TOKEN` on the LAPI pod from it (`templates/lapi-deployment.yaml`). Verified by `helm template`: `crowdsec-lapi-secrets` has the `registrationToken` key and the LAPI pod env wires `REGISTRATION_TOKEN` → `secretKeyRef: crowdsec-lapi-secrets / registrationToken`. `auto_registration.token` is NOT empty. No 1Password field is needed; no manifest change. (The Maestro HARD RULE held: no field invented.)
+
+### N3 — human-ratified DEVIATION from the roadmap Design
+
+Deleted `blocklist-import/app/prometheusrule.yaml` and removed it from `app/kustomization.yaml`. The roadmap Design section named a per-app `PrometheusRule` (`CrowdSecBlocklistImportFailed` on `kube_job_status_failed > 0`); this is a deliberate, human-ratified deviation. Reason: the built-in `KubeJobFailed` alert (kube-prometheus-stack, `kubernetesApps: true`) already covers CronJob failure, and `kube_job_status_failed > 0` never self-resolves — `failedJobsHistory: 3` keeps the failed Job object queryable, so the alert keeps firing through subsequent successful runs. A second rule is pure duplication. KEPT: the `CrowdSecBanActive` regex change in `crowdsec/app/prometheusrule.yaml` (`origin!~"CAPI|lists(:.*)?|blocklist-import"`) — verified correct.
+
+### N8 — diff-size correction
+
+Round-1 report said "11 files, +260/-3". Accurate figures: the code commit (b5e19f361) is 11 files, +260/-3; the full branch diff vs main (code + docs commit d3e53c954) is 12 files, +334/-3. The +1 file / +74 lines is the BM progress note itself (the docs commit). The round-1 report understated by quoting the code-commit figure instead of the full branch figure.
+
+### Gate note — promtool-rule-tests is a NO-OP here
+
+`kubernetes/mod.just:349-351` only runs `promtool test rules` for modules that have a `tests/` directory; crowdsec has none. So "pre-commit Passed" is NOT evidence for the `CrowdSecBanActive` rule change. Run `promtool check rules` directly on `crowdsec/app/prometheusrule.yaml` instead (gate output in the session report).
+
+## Follow-ups (out of scope, logged — do NOT implement in this PR)
+
+- **N2 fail-open**: upstream `_run_once` returns 0 whenever at least ONE source succeeded, so 9 of 10 Tier A feeds being blocked still yields a successful Job and no alert. The delivered observability cannot detect a silently degraded import. Needs its own issue.
+- **N5**: `raw.githubusercontent.com` also serves 4 disabled Tier B/C feeds, so at that host the Tier A restriction is enforced by env flags only, not by the network policy.
+- **N6**: UID 999 is build-time-derived from `useradd -r`; safe while digest-pinned, but must be re-verified on any Renovate digest bump.

@@ -291,7 +291,11 @@ trouble; a Postgres LAPI is a follow-up only if measurements demand it, and is o
   `ExternalSecret`.
 - **Acceptance**: `kubectl -n crowdsec get externalsecret` reports `SecretSynced`;
   `kubectl -n crowdsec exec deploy/crowdsec-lapi -- cscli bouncers list` and `cscli machines list`
-  both show `blocklist-import`.
+  both show the registration, with a deliberate naming split: `cscli bouncers list` shows
+  `blocklist_import` (UNDERSCORE — the LAPI `docker_start.sh` derives bouncer names via
+  `cut -d_ -f3-` and bash `compgen -A variable` cannot see hyphenated env-var names), while
+  `cscli machines list` shows `blocklist-import` (HYPHEN — registered by the postStart hook).
+  Seeing `blocklist-import` in `cscli bouncers list` would be a failure.
 
 ### Phase 2 — CronJob with Tier A, dry run first
 - Add `kubernetes/apps/crowdsec/blocklist-import/{ks.yaml,app/*}` (app-template, cronjob
@@ -299,6 +303,12 @@ trouble; a Postgres LAPI is a follow-up only if measurements demand it, and is o
 - **Acceptance**: `kubectl -n crowdsec create job --from=cronjob/blocklist-import bli-dryrun` →
   `kubectl -n crowdsec logs job/bli-dryrun` shows every Tier A feed fetched, a deduplicated count,
   and no write attempt; `cscli decisions list --origin blocklist-import` still empty.
+- **Auth gate (does NOT depend on dry-run)**: the `DRY_RUN: "false"` run below is the
+  credential gate — a 401 at `/v1/watchers/login` (machine JWT) or `/v1/decisions` (bouncer key)
+  fails the Job loudly, catching an empty or templated-out machine password or bouncer key. Under
+  `DRY_RUN=true` upstream skips the auth check, `can_write()`, the health check and the
+  existing-decisions fetch, so a green dry-run is NOT sufficient evidence and its dedup count is
+  vacuous against an empty existing-decisions set.
 - Then flip `DRY_RUN: "false"`, re-run manually, and confirm
   `cscli decisions list --origin blocklist-import | wc -l` is in the expected ~10–20k range and
   `MAX_DECISIONS` was not hit.
