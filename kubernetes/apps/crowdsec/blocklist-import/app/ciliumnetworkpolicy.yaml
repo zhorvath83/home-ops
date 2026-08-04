@@ -28,6 +28,7 @@ spec:
         - matchName: "urlhaus.abuse.ch"
         - matchName: "rules.emergingthreats.net"
         - matchName: "www.binarydefense.com"
+        - matchName: "binarydefense.com" # 301 redirect target of www.binarydefense.com/banlist.txt
         - matchName: "www.dshield.org"
         - matchName: "feeds.dshield.org"
         - matchName: "danger.rulez.sk"
