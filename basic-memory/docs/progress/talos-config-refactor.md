@@ -18,7 +18,7 @@ related_areas:
 ## Metadata (observation-form, schema validation)
 
 - [topic] Talos machine config — consensus-driven refactor from community comparison
-- [status] proposed
+- [status] implemented
 - [priority] medium
 
 ## Sources
@@ -26,13 +26,15 @@ related_areas:
 | Source | Cluster | Nodes | Tool |
 |--------|---------|-------|------|
 | billimek | home | 1 CP + 7 workers | talhelper |
-| bjw-s | home-ops | 3 CP | minijinja + patch |
+| bjw-s | home-ops | 1 CP | minijinja + patch |
 | buroa | k8s-gitops | 3 CP | minijinja + patch |
 | onedr0p | home-ops | 3 CP | minijinja + patch |
 | szinn | k8s-homelab | 3 CP + 3 workers | minijinja + patch |
 | **us** | main | 1 CP | minijinja + patch |
 
 All clusters: Talos v1.13.2, K8s v1.36.1, Cilium CNI, no kube-proxy, no CoreDNS.
+
+> Only the bjw-s row was re-verified 2026-08-04 (1 CP: a single controlplane node `delta` with a single-member bond0 and a SATA-only Samsung 870 install disk). The other rows are unverified as of the note's original date.
 
 ## Consensus Matrix
 
@@ -45,7 +47,7 @@ All clusters: Talos v1.13.2, K8s v1.36.1, Cilium CNI, no kube-proxy, no CoreDNS.
 | listen-metrics-urls=0.0.0.0:2381 | YES | YES | YES | YES | YES | YES | 5/5 |
 | advertisedSubnets | YES | YES | YES | YES | YES | YES | 5/5 |
 
-**Verdict**: auto-compaction is only billimek (1/5), but the reasoning is sound. The others likely haven't hit disk pressure yet. Worth adopting for single-node with shared NVMe.
+**Verdict**: auto-compaction is only billimek (1/5). The setting IS present and live in our machineconfig (machineconfig.yaml.j2:145-146, commit a08f84c91) but functionally redundant: kube-apiserver compacts the keyspace every 5m by default (`--etcd-compaction-interval`, default 5m0s — the flag is absent from both the live apiserver command line and machineconfig.yaml.j2, so the default applies; confirmed empirically by etcd logging "finished scheduled compaction" on an exact 5-minute grid across 12 consecutive intervals). Our etcd-side 1h compactor is a no-op: it targeted revision 46,322,920 while the apiserver had already compacted to 46,355,468 — ~32,548 revisions (~40 min) behind; its calls complete in 392us-9ms with no DB-size change. Kept as a zero-cost fallback if the apiserver compactor were ever disabled. Measured state (2026-08-04): etcd_mvcc_db_total_size_in_bytes 169 MB, in_use 64 MB → ~105 MB free pages (62%) is a defrag matter (compaction returns pages to bbolt's freelist but never shrinks the file), not a compaction concern; 7.9% of the 2 GiB quota; `talosctl etcd alarm list` empty; no alarms.
 
 ### Kubelet
 
@@ -169,14 +171,14 @@ All clusters: Talos v1.13.2, K8s v1.36.1, Cilium CNI, no kube-proxy, no CoreDNS.
 
 ### 1. etcd auto-compaction (HIGH value)
 
-**Only billimek (1/5), but strong reasoning.**
+**Only billimek (1/5). Adopted, but the value is a fallback, not the primary compactor.**
 
-Default: etcd never compacts. On our PC801 NVMe (1 TB, shared OS + etcd + EPHEMERAL), unbounded growth is a real disk-pressure risk. Others likely haven't hit this yet.
+The setting is present and live (machineconfig.yaml.j2:145-146, commit a08f84c91), but kube-apiserver already compacts the keyspace every 5m by default (`--etcd-compaction-interval`, default 5m0s — the flag is absent from both the live apiserver command line and machineconfig.yaml.j2, so the default applies; confirmed empirically by etcd logging "finished scheduled compaction" on an exact 5-minute grid across 12 consecutive intervals). Our etcd-side 1h compactor is therefore a no-op: it targeted revision 46,322,920 while the apiserver had already compacted to 46,355,468 — ~32,548 revisions (~40 min) behind; its calls complete in 392us-9ms with no DB-size change, while the apiserver's real compactions take ~69 ms. The 1h retention value is moot while the apiserver default stands. Kept (zero cost) as the sole fallback if the apiserver compactor were ever disabled.
 
 - `auto-compaction-mode: periodic`
 - `auto-compaction-retention: "1h"`
 
-1h retention is safe. K8s watchers re-list if they request a compacted revision. etcd project recommends periodic compaction for production.
+Measured state (2026-08-04): etcd_mvcc_db_total_size_in_bytes 169 MB, in_use 64 MB → ~105 MB free pages (62%); 7.9% of the 2 GiB etcd_server_quota_backend_bytes; compact-revision ~3,568 revs (~4.3 min) behind; `talosctl etcd alarm list` empty; 0 "database space exceeded" in apiserver and etcd logs. The ~105 MB of free pages is a DEFRAG matter, not compaction — compaction returns pages to bbolt's freelist but never shrinks the file; no action needed at 7.9% quota with no alarms.
 
 ### 2. Kubelet imageGC thresholds (MEDIUM value)
 
@@ -306,3 +308,7 @@ All 7 consensus-driven settings adopted and verified live on k8s-cp0.
 | 7 | rbac=true | ✅ talosctl version shows RBAC: Enabled |
 
 Applied via `just talos apply-node k8s-cp0` — node rebooted and came back healthy.
+
+## Correction — 2026-08-04
+
+The etcd auto-compaction framing above was factually wrong and has been corrected in place. kube-apiserver compacts the keyspace every 5m by default (`--etcd-compaction-interval`, default 5m0s; the flag is absent from both the live apiserver command line and machineconfig.yaml.j2, so the default applies — confirmed empirically by etcd logging "finished scheduled compaction" on an exact 5-minute grid across 12 consecutive intervals). Our etcd-side 1h compactor (machineconfig.yaml.j2:145-146, commit a08f84c91) is a no-op: it targeted revision 46,322,920 while the apiserver had already compacted to 46,355,468 — ~32,548 revisions (~40 min) behind; its calls complete in 392us-9ms with no DB-size change, while the apiserver's real compactions take ~69 ms. The setting IS present and live but functionally redundant; the 1h retention value is moot while the apiserver default stands. Kept (zero cost) as the sole fallback if the apiserver compactor were ever disabled. This is a documentation correction only — the machineconfig is NOT changed for this. Measured state: etcd_mvcc_db_total_size_in_bytes 169 MB, in_use 64 MB → ~105 MB free pages (62%), 7.9% of the 2 GiB quota, no alarms; the ~105 MB of free pages is a defrag matter (compaction returns pages to bbolt's freelist but never shrinks the file), not a compaction concern. Also corrected: the Sources table bjw-s row (1 CP, not 3 CP — re-verified 2026-08-04; other rows unverified) and the observation-block status line (implemented, matching frontmatter).
