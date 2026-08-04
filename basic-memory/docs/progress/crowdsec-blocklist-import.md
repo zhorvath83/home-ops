@@ -67,13 +67,6 @@ The roadmap asked for the `blocklist` user UID. Verified from the GHCR amd64 ima
 - After the fields exist and the PR merges: the reloader restarts the LAPI → postStart registers the machine. Observe the first 04:00 run (DRY_RUN=true, logs only), then flip `DRY_RUN` to `"false"` in the HR for the next cycle.
 - **PR is DRAFT and must NOT be merged by the worker** — control-lane decision.
 
-## Follow-ups (out of scope, logged)
-
-- Phase 4: the 3-week observation window (decision volume, feed health, alert noise) — separate change.
-- Phase 5: Tier B/C feeds (evidence-gated) — separate change.
-- Roadmap note FQDN-list inaccuracies to correct later: `sentinel.tdmdn.com` is a typo (real host is `view.sentinel.turris.cz`), redundant `github.com`/`api.github.com`/`gist`/`crowdsecurity.github.io` entries, and the abuseipdb feeds actually use `raw.githubusercontent.com` + `api.abuseipdb.com`. Not blocking; flagged for a roadmap-note cleanup.
-
-
 ## Fix round (Maestro independent verification)
 
 Independent verification of the round-1 manifests found one real blocker (B1), a pre-existing same-class item traced to a false positive (N7), and documentation/wording fixes. All applied on the same branch; PR stays DRAFT.
@@ -92,7 +85,7 @@ Deleted `blocklist-import/app/prometheusrule.yaml` and removed it from `app/kust
 
 ### N8 — diff-size correction
 
-Round-1 report said "11 files, +260/-3". Accurate figures: the code commit (b5e19f361) is 11 files, +260/-3; the full branch diff vs main (code + docs commit d3e53c954) is 12 files, +334/-3. The +1 file / +74 lines is the BM progress note itself (the docs commit). The round-1 report understated by quoting the code-commit figure instead of the full branch figure.
+Round-1 report said "11 files, +260/-3". Accurate figures: the code commit (b5e19f361) is 11 files, +260/-3; the full branch diff vs main at current HEAD (feat/crowdsec-blocklist-import) is 12 files, +355/-4 (verified: `git diff --shortstat main..HEAD`). The +1 file vs the code commit is the BM progress note; the line count grew across the docs commits. The round-1 report understated by quoting the code-commit figure instead of the full branch figure.
 
 ### Gate note — promtool-rule-tests is a NO-OP here
 
@@ -100,6 +93,11 @@ Round-1 report said "11 files, +260/-3". Accurate figures: the code commit (b5e1
 
 ## Follow-ups (out of scope, logged — do NOT implement in this PR)
 
+- Phase 4: the 3-week observation window (decision volume, feed health, alert noise) — separate change.
+- Phase 5: Tier B/C feeds (evidence-gated) — separate change.
+- Roadmap note FQDN-list inaccuracies to correct later: `sentinel.tdmdn.com` is a typo (real host is `view.sentinel.turris.cz`), redundant `github.com`/`api.github.com`/`gist`/`crowdsecurity.github.io` entries, and the abuseipdb feeds actually use `raw.githubusercontent.com` + `api.abuseipdb.com`. Not blocking; flagged for a roadmap-note cleanup.
 - **N2 fail-open**: upstream `_run_once` returns 0 whenever at least ONE source succeeded, so 9 of 10 Tier A feeds being blocked still yields a successful Job and no alert. The delivered observability cannot detect a silently degraded import. Needs its own issue.
 - **N5**: `raw.githubusercontent.com` also serves 4 disabled Tier B/C feeds, so at that host the Tier A restriction is enforced by env flags only, not by the network policy.
 - **N6**: UID 999 is build-time-derived from `useradd -r`; safe while digest-pinned, but must be re-verified on any Renovate digest bump.
+
+- **D4 — stale comment on main (pre-existing, own issue)**: `kubernetes/apps/crowdsec/crowdsec/app/externalsecret.yaml:17-18` claims the extra machine comes from `AGENT_USERNAME`/`AGENT_PASSWORD`, but the crowdsec chart 0.24.0 `docker-start-custom.sh` has zero `AGENT_USERNAME`/`AGENT_PASSWORD` references — the extra machine is registered by the LAPI postStart hook, not the entrypoint. Out of scope for this PR; own issue.

@@ -252,9 +252,8 @@ trouble; a Postgres LAPI is a follow-up only if measurements demand it, and is o
   - `kubernetes/apps/crowdsec/blocklist-import/app/helmrelease.yaml`
   - `kubernetes/apps/crowdsec/blocklist-import/app/externalsecret.yaml`
   - `kubernetes/apps/crowdsec/blocklist-import/app/ciliumnetworkpolicy.yaml`
-  - `kubernetes/apps/crowdsec/blocklist-import/app/prometheusrule.yaml`
 - **CronJob spec**: Deployed via `bjw-s/app-template` (repo idiom). Schedule: `0 4 * * *` (daily). `concurrencyPolicy: Forbid`, `restartPolicy: OnFailure`, `backoffLimit: 3`. CronJob pod resources: requests `cpu: 50m`, `memory: 64Mi`; limits `memory: 256Mi` (the importer's own working set — unrelated to the bouncer's cache sizing).
-- **Secret flow**: The tool requires a bouncer key (read) and machine credentials (write). These will be generated manually via `cscli` and stored in the existing 1Password `crowdsec` item. An `ExternalSecret` will sync them to a Kubernetes Secret named `crowdsec-blocklist-import-secret`. The HelmRelease will mount these via `envFrom`.
+- **Secret flow**: The tool requires a bouncer key (read) and machine credentials (write). These will be generated manually via `cscli` and stored in the existing 1Password `crowdsec` item. An `ExternalSecret` will sync them to a Kubernetes Secret named `blocklist-import-secret`. The HelmRelease will mount these via `envFrom`.
 - **Egress network policy**: A CiliumNetworkPolicy must allow egress from the CronJob pod to:
   - `http://crowdsec-service.crowdsec.svc.cluster.local:8080` (LAPI)
   - External blocklist FQDNs for the BROAD selection:
@@ -276,7 +275,7 @@ trouble; a Postgres LAPI is a follow-up only if measurements demand it, and is o
     - `api.abuseipdb.com`
     - `sentinel.tdmdn.com`
   - `bouncer-telemetry.ms2738.workers.dev` must NOT be allowed (`TELEMETRY_ENABLED=false` in addition, defence in depth).
-- **Observability**: A PrometheusRule will alert on `CronJobJobFailed`. The existing `CrowdSecBanActive` alert in `kubernetes/apps/crowdsec/crowdsec/app/prometheusrule.yaml` must exclude the new `blocklist-import` origin, otherwise it fires continuously.
+- **Observability**: CronJob failure is covered by the built-in `KubeJobFailed` alert (kube-prometheus-stack, `kubernetesApps: true`), so no per-app `PrometheusRule` ships — a deliberate, human-ratified deviation (a second `kube_job_status_failed > 0` rule would be pure duplication, and never self-resolves because `failedJobsHistory: 3` keeps the failed Job queryable). The only rule change is the `CrowdSecBanActive` origin-regex extension in `kubernetes/apps/crowdsec/crowdsec/app/prometheusrule.yaml` (exclude `blocklist-import`), so the high-volume expected decisions do not page.
 - **Pod security**: Image provenance pinned to `ghcr.io/wolffcatskyy/crowdsec-blocklist-import:3.7.1@sha256:78ec83464827a129128e2e1cba0bc23562988bec177745334a9f2896c817860c` (OCI image index, multi-arch). The Dockerfile creates a non-root system user (`blocklist`) without a fixed UID. The pod security context will set `runAsNonRoot: true` and `readOnlyRootFilesystem: true`. `capabilities: {drop: ["ALL"]}`.
 - **Renovate**: The image will be tracked via `renovate: datasource=docker depName=ghcr.io/wolffcatskyy/crowdsec-blocklist-import` annotation.
 - **Allowlist**: The `ALLOWLIST` env var complements (does not replace) the existing `crowdsecurity/whitelists` parser which already whitelists LAN traffic.
@@ -318,11 +317,11 @@ trouble; a Postgres LAPI is a follow-up only if measurements demand it, and is o
   `bouncer-telemetry.ms2738.workers.dev` explicitly not allowed. Add the LAPI-side ingress entry
   for the new pod. Extend `CrowdSecBanActive` in
   `kubernetes/apps/crowdsec/crowdsec/app/prometheusrule.yaml:50` to exclude the
-  `blocklist-import` origin, and add a job-failure alert for the CronJob.
+  `blocklist-import` origin.
 - **Acceptance**: `just k8s hubble-live-capture 120` during a manual run, then
   `just k8s hubble-analyze k8s:app.kubernetes.io/name=blocklist-import DROPPED egress` shows no
   unexpected drops and no flow to the telemetry FQDN; `flux get ks -A` reconciled;
-  the new alert rules appear in Prometheus and `CrowdSecBanActive` is not firing.
+  the `CrowdSecBanActive` rule shows the extended `origin` regex (excluding `blocklist-import`) in Prometheus and is not firing; a failing blocklist-import Job surfaces via the built-in `KubeJobFailed` alert (no per-app rule ships).
 
 ### Phase 4 — observation window (3 weeks) and review gate
 - Measure at the end of the window:
