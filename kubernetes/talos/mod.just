@@ -148,7 +148,7 @@ download-image:
     sid="$(just talos gen-schematic-id)"
     out="{{ talos_dir }}/talos-${TALOS_VERSION}-${sid:0:8}.iso"
     just log info "Downloading Talos installer ISO" version "${TALOS_VERSION}" schematic "${sid}" out "${out}"
-    curl -fsSL -o "${out}" \
+    curl -fsSL --remove-on-error --retry 5 --retry-delay 5 --retry-all-errors -o "${out}" \
       "https://factory.talos.dev/image/${sid}/${TALOS_VERSION}/metal-amd64.iso"
 
 [doc('Burn Talos installer ISO to USB (interactive picker if no device given)')]

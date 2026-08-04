@@ -74,8 +74,11 @@ machine:
     defaultRuntimeSeccompProfileEnabled: true
     disableManifestsDirectory: true
     extraConfig:
+      crashLoopBackOff:
+        maxContainerRestartPeriod: 60s
       imageGCHighThresholdPercent: 70
       imageGCLowThresholdPercent: 50
+      imageMaximumGCAge: 168h
       maxPods: 150
       serializeImagePulls: false
     image: ghcr.io/siderolabs/kubelet:{{ ENV.KUBERNETES_VERSION }}

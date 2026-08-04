@@ -1,0 +1,67 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/prometheus-test
+# promtool unit tests for app/prometheusrule.yaml (FluxInstance dead-man alerts).
+# Two Prometheus-evaluated rules that live OUTSIDE the notification-controller ->
+# Alertmanager failure domain: FluxInstanceAbsent (series gone) and
+# FluxInstanceNotReady (ready label flipped off "True"). Both use for: 15m, so every
+# fire case evals past 15m. ready!="True" is intentionally kept broad (also matches a
+# series with no `ready` label) — the correct dead-man semantic; do not narrow it.
+# Run via `just k8s test-prom-rules` (recipe extracts .spec into ./_extracted_rules.yaml).
+rule_files:
+  - ./_extracted_rules.yaml
+evaluation_interval: 1m
+tests:
+  # (a) FluxInstanceAbsent fires when the series is gone. absent(matcher) carries the
+  # matcher's labels into the result vector, so the alert carries exported_namespace +
+  # name in addition to alertname + severity.
+  - interval: 1m
+    input_series: []
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: FluxInstanceAbsent
+        exp_alerts:
+          - exp_labels:
+              alertname: FluxInstanceAbsent
+              severity: critical
+              exported_namespace: flux-system
+              name: flux
+            exp_annotations:
+              summary: "FluxInstance has disappeared from Prometheus"
+              description: 'flux_instance_info for the FluxInstance (exported_namespace="flux-system", name="flux") has been absent for 15m — the FluxInstance CR or its scrape target is gone, so GitOps reconciliation is not running. The notification-controller alert path cannot report this itself.'
+  # (b) FluxInstanceAbsent stays quiet when the healthy ready="True" series is present.
+  - interval: 1m
+    input_series:
+      - series: 'flux_instance_info{exported_namespace="flux-system",name="flux",ready="True"}'
+        values: '1x17'
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: FluxInstanceAbsent
+        exp_alerts: []
+  # (c) FluxInstanceNotReady fires when ready flips to "False". exp_labels carry the
+  # input series labels plus alertname + severity.
+  - interval: 1m
+    input_series:
+      - series: 'flux_instance_info{exported_namespace="flux-system",name="flux",ready="False"}'
+        values: '1x17'
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: FluxInstanceNotReady
+        exp_alerts:
+          - exp_labels:
+              alertname: FluxInstanceNotReady
+              severity: critical
+              exported_namespace: flux-system
+              name: flux
+              ready: "False"
+            exp_annotations:
+              summary: "FluxInstance is not Ready"
+              description: 'The FluxInstance (exported_namespace="flux-system", name="flux") has ready != "True" for 15m. Flux reconciliation is degraded; check the FluxInstance status and the flux-operator pod.'
+  # (d) FluxInstanceNotReady stays quiet when ready="True" (ready!="True" does not match).
+  - interval: 1m
+    input_series:
+      - series: 'flux_instance_info{exported_namespace="flux-system",name="flux",ready="True"}'
+        values: '1x17'
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: FluxInstanceNotReady
+        exp_alerts: []

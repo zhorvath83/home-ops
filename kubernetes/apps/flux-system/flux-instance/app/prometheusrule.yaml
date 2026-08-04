@@ -1,0 +1,34 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/monitoring.coreos.com/prometheusrule_v1.json
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: flux-instance
+spec:
+  groups:
+    - name: flux-instance
+      rules:
+        # Prometheus-evaluated dead-man alerts for the Flux control plane. The existing
+        # Flux alerting path runs through notification-controller -> Alertmanager, so if
+        # the FluxInstance or notification-controller is gone/unready NO alert can be
+        # emitted through it. These rules live outside that failure domain.
+        # ready!="True" intentionally also matches a series with no `ready` label at all
+        # — that is the correct dead-man semantic; do not "narrow" it to ready="False".
+        - alert: FluxInstanceAbsent
+          expr: absent(flux_instance_info{exported_namespace="flux-system", name="flux"})
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: "FluxInstance has disappeared from Prometheus"
+            description: |-
+              flux_instance_info for the FluxInstance (exported_namespace="flux-system", name="flux") has been absent for 15m — the FluxInstance CR or its scrape target is gone, so GitOps reconciliation is not running. The notification-controller alert path cannot report this itself.
+        - alert: FluxInstanceNotReady
+          expr: flux_instance_info{exported_namespace="flux-system", name="flux", ready!="True"}
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: "FluxInstance is not Ready"
+            description: |-
+              The FluxInstance (exported_namespace="flux-system", name="flux") has ready != "True" for 15m. Flux reconciliation is degraded; check the FluxInstance status and the flux-operator pod.
