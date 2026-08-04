@@ -7,4 +7,5 @@ resources:
   - ./helmrelease.yaml
   - ./grafanafolder.yaml
   - ./grafanadashboard.yaml
+  - ./prometheusrule.yaml
   - ./github
