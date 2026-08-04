@@ -65,6 +65,15 @@ spec:
         - ports:
             - port: "8080"
               protocol: TCP
+    # blocklist-import CronJob reads existing decisions (bouncer key) and writes new
+    # ones (machine JWT) over 8080; like the agent, it had no rule before the split.
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: blocklist-import
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
 # Single-rule doc on purpose: the clusterwide ingress-from-prometheus CCNP selects these

@@ -1,0 +1,106 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: blocklist-import
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  values:
+    defaultPodOptions:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        # blocklist user is UID/GID 999 in the pinned image (verified from /etc/passwd).
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+    controllers:
+      blocklist-import:
+        type: cronjob
+        cronjob:
+          schedule: "0 4 * * *"
+          concurrencyPolicy: Forbid
+          backoffLimit: 3
+          successfulJobsHistory: 1
+          failedJobsHistory: 3
+        pod:
+          restartPolicy: OnFailure
+        containers:
+          app:
+            image:
+              # renovate: datasource=docker depName=ghcr.io/wolffcatskyy/crowdsec-blocklist-import
+              repository: ghcr.io/wolffcatskyy/crowdsec-blocklist-import
+              tag: 3.7.1@sha256:78ec83464827a129128e2e1cba0bc23562988bec177745334a9f2896c817860c
+            env:
+              CROWDSEC_LAPI_URL: http://crowdsec-service.crowdsec.svc.cluster.local:8080
+              CROWDSEC_MACHINE_ID: blocklist-import
+              # DRY_RUN starts true; flip to false after the Phase 2 dry-run is reviewed.
+              DRY_RUN: "true"
+              # Tier A only — confirmed-malicious infrastructure. Tier B/C stay disabled
+              # and out of this change (roadmap Phase 5, evidence-gated).
+              ENABLE_SPAMHAUS: "true"
+              ENABLE_ABUSE_CH: "true"
+              ENABLE_EMERGING_THREATS: "true"
+              ENABLE_BINARY_DEFENSE: "true"
+              ENABLE_DSHIELD: "true"
+              ENABLE_BRUTEFORCE_BLOCKER: "true"
+              ENABLE_CYBERCRIME_TRACKER: "true"
+              ENABLE_MONTY_SECURITY_C2: "true"
+              ENABLE_VXVAULT: "true"
+              ENABLE_BOTVRIJ: "true"
+              # v3.7.1 exposes a single ENABLE_FIREHOL master, not per-level keys.
+              ENABLE_FIREHOL: "false"
+              ENABLE_IPSUM: "false"
+              ENABLE_BLOCKLIST_DE: "false"
+              ENABLE_CI_ARMY: "false"
+              ENABLE_GREENSNOW: "false"
+              ENABLE_ABUSE_IPDB: "false"
+              ENABLE_SENTINEL: "false"
+              ENABLE_TOR: "false"
+              ENABLE_SCANNERS: "false"
+              ENABLE_STOPFORUMSPAM: "false"
+              DECISION_DURATION: "24h"
+              DECISION_ORIGIN: "blocklist-import"
+              MAX_DECISIONS: "50000"
+              BATCH_SIZE: "500"
+              CONSOLIDATE_ALERTS: "true"
+              ALLOWLIST: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+              # Defence in depth: telemetry is also blocked at the CNP (FQDN absent).
+              TELEMETRY_ENABLED: "false"
+              METRICS_ENABLED: "false"
+              LOG_LEVEL: "INFO"
+            envFrom:
+              - secretRef:
+                  name: blocklist-import-secret
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                  - "ALL"
+            resources:
+              requests:
+                cpu: 50m
+                memory: 64Mi
+              limits:
+                memory: 256Mi
+            probes:
+              liveness:
+                enabled: false
+              readiness:
+                enabled: false
+              startup:
+                enabled: false
+    persistence:
+      tmp:
+        type: emptyDir
+        globalMounts:
+          - path: /tmp
