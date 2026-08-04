@@ -9,7 +9,7 @@ permalink: home-ops/docs/progress/crowdsec-blocklist-import
 ## Metadata (observation-form)
 
 - [topic] GitOps manifests for the crowdsec-blocklist-import CronJob (roadmap phases 1-3 only); DRY_RUN starts true
-- [status] draft PR open, manifest-only — no live cluster change; awaiting human-created 1Password fields + merge
+- [status] phases 1-3 delivered and live-verified (PR #4119 merged, Flux main@0a5f86df); Phase 4 observation window open 2026-08-05 → review ~2026-08-26
 - [branch] feat/crowdsec-blocklist-import
 - [area] crowdsec, flux-gitops, external-secrets, networking (Cilium), observability
 - [created] 2026-08-04
@@ -109,6 +109,28 @@ Two intentional deviations from the roadmap spec (human-ratified):
 
 Gates: pre-commit clean (yamlfmt, yamllint, gitleaks); `kustomize build kubernetes/apps/crowdsec/blocklist-import/app` exit 0 (renders CiliumNetworkPolicy, ExternalSecret, HelmRelease; CNP shows the new `binarydefense.com` apex); `helm template` (app-template 5.0.1, real values) renders the CronJob with `egress.home.arpa/custom-egress: "true"`, `ingress.home.arpa/none: "true"`, `DRY_RUN: "false"`, `ENABLE_MONTY_SECURITY_C2: "false"`, `LOG_LEVEL: DEBUG`, `memory: 512Mi`.
 
+## Closing — live verification (post-merge, PR #4119)
+
+PR #4119 merged; Flux reconciled main@0a5f86df. The third independent verification found ZERO blockers; the Maestro's P1 (DNS) and P2 (labels-override) suspicions were both disproven with evidence — the rendered pod-template labels block co-contains `app.kubernetes.io/name: blocklist-import` and the two AD-023 labels (so `defaultPodOptions.labels` merges, not replaces), and `allow-dns-egress` is a separate `endpointSelector: {}` CCNP that is the documented prerequisite for `toFQDNs`. The sibling `external-dns` has run the same label shape in production for 7 days.
+
+Human-created 1Password fields (in the `crowdsec` item): `BLOCKLIST_IMPORT_BOUNCER_KEY` and `BLOCKLIST_IMPORT_MACHINE_PASSWORD`, 48 alphanumeric chars each. Field names match the ExternalSecret `remoteRef.property` values character-for-character — verified before merge.
+
+LIVE evidence from the first real (non-dry-run) execution — Phase 2/3 acceptance proof:
+
+- Live CronJob confirmed `DRY_RUN=false`, `memory limit 512Mi`, and all 5 pod labels present (`app.kubernetes.io/{name,instance,controller}` + `egress.home.arpa/custom-egress` + `ingress.home.arpa/none`) — `defaultPodOptions.labels` merges, does not replace.
+- Manual Job `bli-live-1` at 2026-08-04 23:58: `Complete=True`, pod `Completed exit=0` — no OOMKilled; 512Mi was adequate.
+- `Obtained machine JWT token` — the machine write credential works. This was the single dry-run-blind risk (`can_write()`, `health_check()` and `get_existing_ips()` are all gated behind `if not config.dry_run`); resolved in production.
+- `Sources: 11 successful, 0 unavailable` — the M1 dead-feed disable removed the nightly spurious WARNING.
+- `Imported 4660 new IPs`; LAPI confirms via `cscli metrics show decisions`: `external/blocklist (all sources) | blocklist-import | ban | 4660` alongside CAPI's 33,827 (24773 http:scan + 7714 ssh:bruteforce + 1340 generic:scan). 4660 < the dry-run's 5198 because `get_existing_ips()` now dedups against decisions CAPI already holds — expected, not a loss.
+- `LOG_LEVEL=DEBUG` delivers the per-source breakdown the Phase 4 gate needs (e.g. `Cybercrime Tracker: 373 total IPs, 325 unique new`, `VXVault: 68 total, 66 unique new`, `DShield Top Attackers: 14 total, 9 unique new, 14 parse errors`).
+- 8746 parsing errors — benign and fully attributed (URLhaus is a URL feed: domain hosts, never IPs; DShield metadata columns).
+- Hubble re-verified AFTER the label change (the dry-run ran without `custom-egress`, so this was genuinely new): 504 pod-associated flows, 0 DROPPED from the pod (the one DROPPED row is an unrelated ICMPv6 router-solicitation the recipe's label filter does not scope out), 0 telemetry flows across 89 MB.
+- Bouncer consumes without a restart: `cscli bouncers list` shows `envoy@10.244.0.210` pulling seconds after the write.
+
+### Phase 4 observation window (open)
+
+Window OPENS 2026-08-05; review due ~2026-08-26 (3 weeks). The concrete measurements to take are specified in the roadmap note's Phase 4 section — reference them there, do not re-derive here. The `LOG_LEVEL=DEBUG` per-source log lines (e.g. `Cybercrime Tracker: N total IPs, M unique new`) are the data source for the feed-pruning / promotion decision — that is what DEBUG was enabled for. A future session picks the gate up from the roadmap Phase 4 criteria plus these per-source DEBUG logs.
+
 ## Follow-ups (out of scope, logged — do NOT implement in this PR)
 
 - Phase 4: the 3-week observation window (decision volume, feed health, alert noise) — separate change.
@@ -124,3 +146,5 @@ Gates: pre-commit clean (yamlfmt, yamllint, gitleaks); `kustomize build kubernet
 - **Final-round (b) — feed-rot structurally undetectable**: the Monty C2 dead-feed discovery this round (upstream `data/all.txt` 404) proves N2's mechanism in practice — a fully-dead feed is invisible to the job's exit code because `_run_once` returns 0 as long as ≥1 source succeeded. Monty was found by a manual upstream check, not by any job signal.
 - **Final-round (c) — job pod resource usage UNVERIFIED**: the CronJob pod is scaled to 0 between runs and `METRICS_ENABLED=false`, so the 512Mi limit is a reasoned estimate (single unpaginated decision fetch), not a measured high-water mark. Verify on the first non-dry-run run.
 - **Final-round (d)**: the previously logged N2/N5/N6 and D4 items above remain open (no change this round).
+
+- **Closing (C4) — bouncer-key path fails silently**: upstream `health_check()` returns `response.status_code in (200, 403)` (True for 403 — "200 = OK, 403 = unauthorized but reachable") and `get_existing_ips()` logs an error on 403 and returns `[]`. So an invalid or revoked BOUNCER key does not fail the run — it silently skips dedup, and `max_new` widens to the full `MAX_DECISIONS` (50000). The write-path gate we validated (manual Job `bli-live-1`) covers only the MACHINE credential, not the bouncer key. Same "fails without a signal" family as N2 — needs its own issue. (Verified against `blocklist_import.py` main.)

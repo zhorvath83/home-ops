@@ -158,7 +158,7 @@ exits).
 | Scanners (Shodan/Censys) | `ENABLE_SCANNERS` | 47 | known internet-measurement infrastructure | **C** | Moderate (blocks legitimate research; rotating IPs make it futile) |
 | StopForumSpam | `ENABLE_STOPFORUMSPAM` | 53 | forum-spam submitter | **C** | Low (irrelevant: no public forum) |
 
-**A** = confirmed malicious infrastructure, adopt now — ~5.2k decisions covering ~15M IPv4 addresses (1689/5200 entries are CIDR netblocks; Spamhaus DROP alone is 1664 netblocks, measured 14,971,063 addresses).
+**Tier meanings.** **A** = confirmed malicious infrastructure, adopt now — ~5.2k decisions covering ~15M IPv4 addresses (1689/5200 entries are CIDR netblocks; Spamhaus DROP alone is 1664 netblocks, measured 14,971,063 addresses).
 **B** = reputation aggregate; adopt only on evidence from the observation window (below).
 **C** = never for this cluster, for the reason stated in the row.
 
@@ -172,7 +172,7 @@ ENABLE_BINARY_DEFENSE: "true"
 ENABLE_DSHIELD: "true"
 ENABLE_BRUTEFORCE_BLOCKER: "true"
 ENABLE_CYBERCRIME_TRACKER: "true"
-ENABLE_MONTY_SECURITY_C2: "true"
+ENABLE_MONTY_SECURITY_C2: "false"
 ENABLE_VXVAULT: "true"
 ENABLE_BOTVRIJ: "true"
 ENABLE_FIREHOL: "false"
@@ -196,10 +196,10 @@ CONSOLIDATE_ALERTS: "true"
 ALLOWLIST: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
 TELEMETRY_ENABLED: "false"
 METRICS_ENABLED: "false"
-LOG_LEVEL: "INFO"
+LOG_LEVEL: "DEBUG"
 ```
 
-`MAX_DECISIONS: 50000` is a safety cap on what one import run may push (Tier A ~15k plus ample
+`MAX_DECISIONS: 50000` is a safety cap on what one import run may push (Tier A ~5.2k plus ample
 headroom), so a feed that suddenly balloons fails the run instead of flooding the LAPI. It is not a
 cap on total LAPI decisions. `METRICS_ENABLED: "false"` because the cluster runs no Prometheus
 Pushgateway — LAPI-side metrics are the observability path. `ALLOWLIST` complements, and does not
@@ -226,8 +226,8 @@ The memory number is a **consequence** of the list decision, not an independent 
 - Attributing the whole 32Mi to the cache gives a deliberately conservative ~1.6 KiB per decision
   (the real per-decision cost is lower, since a Go process has a baseline footprint). One data
   point — this is an **extrapolation**, not a measurement of scaling.
-- Tier A (~15k decisions) on top of CAPI (~20k) ≈ 35k decisions → ~56Mi by the conservative
-  estimate. That fits inside the **existing** 128Mi limit with ~2.3x headroom.
+- Tier A (~5.2k decisions — covering ~15M IPv4 addresses; the bouncer cache and SQLite LAPI pay per **decision**, never per address) on top of CAPI (~20k) ≈ ~25k decisions → ~40Mi by the conservative
+  estimate. That fits inside the **existing** 128Mi limit with ~3.2x headroom.
 
 **Recommendation now: change nothing.** Keep `requests.memory: 64Mi` / `limits.memory: 128Mi`. A
 raise is not free: the bouncer is fail-closed (`failOpen: false`), so restarting it to apply a new
@@ -349,7 +349,7 @@ trouble; a Postgres LAPI is a follow-up only if measurements demand it, and is o
 ## Risks and blast radius
 
 - **False positives**: Blocking a legitimate IP could lock out a user. The `ALLOWLIST` includes private IP ranges to prevent self-bans. The 24h TTL ensures any false positives expire within a day.
-- **Database bloat**: Every imported IP is a row in the SQLite LAPI and an entry in the bouncer's in-memory cache. Tier A (~15k) on top of CAPI (~20k) is well within today's limits (see Sizing); `MAX_DECISIONS: 50000` caps what a single import run may push, so a ballooning feed fails the run instead of flooding the LAPI.
+- **Database bloat**: Every imported IP is a row in the SQLite LAPI and an entry in the bouncer's in-memory cache. Tier A (~5.2k) on top of CAPI (~20k) is well within today's limits (see Sizing); `MAX_DECISIONS: 50000` caps what a single import run may push, so a ballooning feed fails the run instead of flooding the LAPI.
 - **Egress policy complexity**: The CronJob requires egress to external FQDNs. If any FQDN changes, the job will fail to fetch that list, though it will continue with others. The CiliumNetworkPolicy must be maintained.
 - **Telemetry**: The tool sends anonymous telemetry by default. This will be disabled (`TELEMETRY_ENABLED=false`) and the telemetry FQDN will be blocked by the CNP.
 - **Dependency, not scope — client-IP resolution**: the value the bouncer matches decisions against is produced by the existing gateway/bouncer implementation. This plane inherits it and is only as accurate as that resolution. If the cluster ever leaves Cloudflare, revisiting client-IP handling belongs to [[envoy-crowdsec-bouncer]], and should be handled there before the exposure change; no work in this roadmap item depends on it.
