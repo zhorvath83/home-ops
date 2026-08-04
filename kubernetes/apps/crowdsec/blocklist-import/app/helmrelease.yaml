@@ -13,6 +13,11 @@ spec:
     defaultPodOptions:
       automountServiceAccountToken: false
       enableServiceLinks: false
+      # AD-023 vocabulary: custom-egress opts out of the blanket allow-cluster-egress CCNP
+      # so the per-app CNP is the sole egress source; ingress-none (no Service/route/probes).
+      labels:
+        egress.home.arpa/custom-egress: "true"
+        ingress.home.arpa/none: "true"
       securityContext:
         runAsNonRoot: true
         # blocklist user is UID/GID 999 in the pinned image (verified from /etc/passwd).
@@ -42,8 +47,8 @@ spec:
             env:
               CROWDSEC_LAPI_URL: http://crowdsec-service.crowdsec.svc.cluster.local:8080
               CROWDSEC_MACHINE_ID: blocklist-import
-              # DRY_RUN starts true; flip to false after the Phase 2 dry-run is reviewed.
-              DRY_RUN: "true"
+              # Flipped to false after the Phase 2 dry-run was reviewed live (PR #4114 merged).
+              DRY_RUN: "false"
               # Tier A only — confirmed-malicious infrastructure. Tier B/C stay disabled
               # and out of this change (roadmap Phase 5, evidence-gated).
               ENABLE_SPAMHAUS: "true"
@@ -53,7 +58,8 @@ spec:
               ENABLE_DSHIELD: "true"
               ENABLE_BRUTEFORCE_BLOCKER: "true"
               ENABLE_CYBERCRIME_TRACKER: "true"
-              ENABLE_MONTY_SECURITY_C2: "true"
+              # Upstream removed data/all.txt (404); keep raw.githubusercontent.com for Cybercrime + VXVault.
+              ENABLE_MONTY_SECURITY_C2: "false"
               ENABLE_VXVAULT: "true"
               ENABLE_BOTVRIJ: "true"
               # v3.7.1 exposes a single ENABLE_FIREHOL master, not per-level keys.
@@ -76,7 +82,7 @@ spec:
               # Defence in depth: telemetry is also blocked at the CNP (FQDN absent).
               TELEMETRY_ENABLED: "false"
               METRICS_ENABLED: "false"
-              LOG_LEVEL: "INFO"
+              LOG_LEVEL: "DEBUG"
             envFrom:
               - secretRef:
                   name: blocklist-import-secret
@@ -91,7 +97,7 @@ spec:
                 cpu: 50m
                 memory: 64Mi
               limits:
-                memory: 256Mi
+                memory: 512Mi
             probes:
               liveness:
                 enabled: false

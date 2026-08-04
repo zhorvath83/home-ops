@@ -91,6 +91,24 @@ Round-1 report said "11 files, +260/-3". Accurate figures: the code commit (b5e1
 
 `kubernetes/mod.just:349-351` only runs `promtool test rules` for modules that have a `tests/` directory; crowdsec has none. So "pre-commit Passed" is NOT evidence for the `CrowdSecBanActive` rule change. Run `promtool check rules` directly on `crowdsec/app/prometheusrule.yaml` instead (gate output in the session report).
 
+## Final round (post-merge hardening — branch feat/crowdsec-blocklist-import-hardening)
+
+PR #4114 merged; Flux reconciled main@8a51e2ee. LIVE Phase 1-3 outcome (verified on the merged cluster): both ExternalSecrets (`crowdsec`, `blocklist-import`) `SecretSynced`; bouncer `blocklist_import` (underline) and machine `blocklist-import` (hyphen) registered with the LAPI; the dry-run wrote no decisions; `hubble-live-capture` (89 MB) showed 0 dropped egress and 0 flow to the telemetry FQDN.
+
+This round's manifest changes (single code commit, 2 files, +12/-5):
+
+- **M1 — dead feed disabled**: `ENABLE_MONTY_SECURITY_C2: "false"` with a comment referencing the upstream `data/all.txt` removal (404, verified). `raw.githubusercontent.com` is KEPT in the CNP — Cybercrime Tracker and VXVault both fetch `raw.githubusercontent.com/firehol/blocklist-ipsets/master/...`, so the FQDN is still load-bearing.
+- **M2 — AD-023 pod labels**: `defaultPodOptions.labels` adds `egress.home.arpa/custom-egress: "true"` (opts out of the blanket `allow-cluster-egress` CCNP, whose `endpointSelector` is `egress.home.arpa/custom-egress` `DoesNotExist`, so the per-app CNP becomes the sole egress source) and `ingress.home.arpa/none: "true"` (near-deny ingress via the `ingress-none` CCNP — no Service/route/probes, `METRICS_ENABLED=false`). Verified before editing: (a) the opt-out label removes the pod from the blanket CCNP; (b) `ingress-none` is the correct no-ingress label for a consumer-less workload (matches the `resticprofile` sibling); (c) the LAPI-side ingress rule in `crowdsec/app/ciliumnetworkpolicy.yaml` (`fromEndpoints: app.kubernetes.io/name: blocklist-import`) still matches — `matchLabels` only checks the listed key, and extra pod labels do not remove the match.
+- **M3 — binarydefense apex**: added `- matchName: "binarydefense.com"` to the CNP `toFQDNs`; `https://www.binarydefense.com/banlist.txt` 301-redirects to `https://binarydefense.com/banlist.txt` (verified), and Cilium FQDN policy is per-DNS-name so the redirect target needs its own allow entry.
+- **M4 — ratified config**: `DRY_RUN: "false"` (flipped after the Phase 2 dry-run was reviewed live), `LOG_LEVEL: "DEBUG"` (per-source `logger.debug`; ~12 extra lines/run, keeps VictoriaLogs), memory limit `256Mi` → `512Mi`.
+
+Two intentional deviations from the roadmap spec (human-ratified):
+
+1. **Memory 512Mi vs roadmap 256Mi**: the first non-dry-run run executes `get_existing_ips()` — a single unpaginated `GET /v1/decisions` + `response.json()`; the LAPI holds ~33.8k decisions (~6.8 MB JSON). 256Mi was the roadmap's pre-measurement estimate; 512Mi covers the unpaginated fetch. See follow-up (a).
+2. **DRY_RUN flipped in the same PR**: the auth path is exercised for the FIRST time by this flip — `can_write()` (JWT `/v1/watchers/login`), `health_check()` and `get_existing_ips()` are all behind `if not config.dry_run`, so the green dry-run proved nothing about authentication. Flipping here ratifies the credential flow on the first real run.
+
+Gates: pre-commit clean (yamlfmt, yamllint, gitleaks); `kustomize build kubernetes/apps/crowdsec/blocklist-import/app` exit 0 (renders CiliumNetworkPolicy, ExternalSecret, HelmRelease; CNP shows the new `binarydefense.com` apex); `helm template` (app-template 5.0.1, real values) renders the CronJob with `egress.home.arpa/custom-egress: "true"`, `ingress.home.arpa/none: "true"`, `DRY_RUN: "false"`, `ENABLE_MONTY_SECURITY_C2: "false"`, `LOG_LEVEL: DEBUG`, `memory: 512Mi`.
+
 ## Follow-ups (out of scope, logged — do NOT implement in this PR)
 
 - Phase 4: the 3-week observation window (decision volume, feed health, alert noise) — separate change.
@@ -101,3 +119,8 @@ Round-1 report said "11 files, +260/-3". Accurate figures: the code commit (b5e1
 - **N6**: UID 999 is build-time-derived from `useradd -r`; safe while digest-pinned, but must be re-verified on any Renovate digest bump.
 
 - **D4 — stale comment on main (pre-existing, own issue)**: `kubernetes/apps/crowdsec/crowdsec/app/externalsecret.yaml:17-18` claims the extra machine comes from `AGENT_USERNAME`/`AGENT_PASSWORD`, but the crowdsec chart 0.24.0 `docker-start-custom.sh` has zero `AGENT_USERNAME`/`AGENT_PASSWORD` references — the extra machine is registered by the LAPI postStart hook, not the entrypoint. Out of scope for this PR; own issue.
+
+- **Final-round (a) — get_existing_ips unpaginated**: the upstream `get_existing_ips` issues a single unpaginated `GET /v1/decisions` and `response.json()`s the whole body; with ~33.8k decisions (~6.8 MB JSON today) this is the rationale for the 512Mi limit. Does not scale — a paginated fetch is its own issue.
+- **Final-round (b) — feed-rot structurally undetectable**: the Monty C2 dead-feed discovery this round (upstream `data/all.txt` 404) proves N2's mechanism in practice — a fully-dead feed is invisible to the job's exit code because `_run_once` returns 0 as long as ≥1 source succeeded. Monty was found by a manual upstream check, not by any job signal.
+- **Final-round (c) — job pod resource usage UNVERIFIED**: the CronJob pod is scaled to 0 between runs and `METRICS_ENABLED=false`, so the 512Mi limit is a reasoned estimate (single unpaginated decision fetch), not a measured high-water mark. Verify on the first non-dry-run run.
+- **Final-round (d)**: the previously logged N2/N5/N6 and D4 items above remain open (no change this round).
