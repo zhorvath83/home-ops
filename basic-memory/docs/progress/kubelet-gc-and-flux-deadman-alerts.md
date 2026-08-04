@@ -1,14 +1,14 @@
 ---
-title: adopt-upstream-hardening
+title: kubelet-gc-and-flux-deadman-alerts
 type: progress-note
-permalink: home-ops/docs/progress/adopt-upstream-hardening
+permalink: home-ops/docs/progress/kubelet-gc-and-flux-deadman-alerts
 ---
 
-# adopt-upstream-hardening — execution progress
+# kubelet-gc-and-flux-deadman-alerts — execution progress
 
 ## Metadata (observation-form)
 
-- [topic] Adopt three upstream hardening ideas (kubelet image-GC + crashloop backoff, Flux dead-man alerts, Talos ISO download hardening) and correct one BM note
+- [topic] kubelet image-GC + crashloop backoff cap, Flux dead-man alerts, Talos ISO download resilience, and one BM note correction
 - [status] done — code merged via PR #4111 (68b7c8f93); item B applied to k8s-cp0 on 2026-08-04; item C live in cluster
 - [branch] chore/adopt-upstream-hardening
 - [area] talos-cluster, flux-gitops, observability
