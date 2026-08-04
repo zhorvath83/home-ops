@@ -1,6 +1,6 @@
 ---
 title: adopt-upstream-hardening
-type: progress_note
+type: progress-note
 permalink: home-ops/docs/progress/adopt-upstream-hardening
 ---
 
@@ -9,7 +9,7 @@ permalink: home-ops/docs/progress/adopt-upstream-hardening
 ## Metadata (observation-form)
 
 - [topic] Adopt three upstream hardening ideas (kubelet image-GC + crashloop backoff, Flux dead-man alerts, Talos ISO download hardening) and correct one BM note
-- [status] implemented (code committed; machineconfig NOT applied to the cluster)
+- [status] done — code merged via PR #4111 (68b7c8f93); item B applied to k8s-cp0 on 2026-08-04; item C live in cluster
 - [branch] chore/adopt-upstream-hardening
 - [area] talos-cluster, flux-gitops, observability
 - [created] 2026-08-04
@@ -30,7 +30,7 @@ Evidence: node `k8s-cp0` imageFs is 7.5% used (76,381,360,128 of 1,021,764,960,2
 
 Caveat: the unused-image age timer RESETS on every kubelet restart, so a 168h window only completes in quiet stretches (every `apply-node`, Talos upgrade, K8s upgrade restarts kubelet). It still strictly dominates today's "never GC" state.
 
-**Committed but NOT applied.** The machineconfig is outside Flux; applying requires `just talos apply-node k8s-cp0` (cluster-mUTATING, human approval) — deliberately not run in this branch.
+**Applied to k8s-cp0 on 2026-08-04.** After PR #4111 merged, the machineconfig was applied under separate human approval: `just --yes talos apply-node k8s-cp0` reported "Applied configuration without a reboot"; node k8s-cp0 stayed Ready, 78d uptime preserved. Verified live from the node's own configz endpoint (`kubectl get --raw /api/v1/nodes/k8s-cp0/proxy/configz`): `imageMaximumGCAge: 168h0m0s` and `crashLoopBackOff: {maxContainerRestartPeriod: 1m0s}` are live, and the four pre-existing keys survived unchanged (`imageGCHighThresholdPercent: 70`, `imageGCLowThresholdPercent: 50`, `maxPods: 150`, `serializeImagePulls: false`). The machineconfig is outside Flux, so it took an explicit apply rather than reconciling automatically. Future check: `imageFs.usedBytes` was 76,381,360,128 bytes (7.5% of the disk) at adoption time, so the 168h age-GC effect should be visible as a drop from that figure in roughly 8 days (modulo the kubelet-restart reset caveat above).
 
 ### Item C — Flux control-plane dead-man alerts
 
@@ -53,6 +53,8 @@ NOT adopted: `HelmReleaseReconciliationFailure` / `KustomizationReconciliationFa
 
 Implementation note (deviation from the work order's test spec): the work order stated `absent()` yields an empty-label vector and the `FluxInstanceAbsent` test should expect only `{alertname, severity}`. promtool proved this wrong — `absent(matcher)` carries the matcher's labels (`exported_namespace`, `name`) into the result vector. The test was corrected to expect those labels; the rule itself is unaffected.
 
+**Verified live (2026-08-04):** `PrometheusRule flux-instance` exists in `flux-system` with exactly `FluxInstanceAbsent` and `FluxInstanceNotReady`, both `for: 15m`, `severity: critical`; the rules are also present in the operator-rendered `prometheus-kube-prometheus-stack-rulefiles-0` ConfigMap in `observability` — which is what proves Prometheus actually loads them, not just that the CR exists.
+
 ### Item D — harden Talos installer-ISO download
 
 File: `kubernetes/talos/mod.just` (`download-image` recipe curl).
@@ -71,7 +73,7 @@ Method note: this BM build does NOT expose `edit_note` (only `read_note`/`write_
 
 ## Validation results
 
-- pre-commit on all five touched files: PASSED (yamlfmt, yamllint, just-fmt, gitleaks, promtool-rule-tests, secrets checks).
+- pre-commit on all seven touched files (5 code + 2 basic-memory/): PASSED (yamlfmt, yamllint, just-fmt, gitleaks, promtool-rule-tests, secrets checks).
 - Item B: `just talos render-config k8s-cp0` (op inject, real secrets) piped to `talosctl validate -m metal` → `is valid for metal mode`, exit 0. Rendered content was NEVER printed (Q6 condition 1); the trap-cleaned mktemp + the validate tempfile were confirmed gone afterward (Q6 condition 2); `op inject` succeeded, no placeholder substitution needed (Q6 condition 3).
 - Item C: `just k8s test-prom-rules` → all promtool rule tests passed (4 cases: FluxInstanceAbsent fire/no-fire, FluxInstanceNotReady fire/no-fire). `kubectl kustomize kubernetes/apps/flux-system/flux-instance/app` → builds clean.
 - Item D: just-fmt + shellcheck via pre-commit → PASSED.
@@ -82,6 +84,7 @@ Method note: this BM build does NOT expose `edit_note` (only `read_note`/`write_
 2. BM `docs/areas/talos-cluster` claims in three places that the cluster runs "without CoreDNS (Cilium DNS)". Only the Talos-managed CoreDNS is disabled; CoreDNS is Flux-deployed and live (`kube-system/coredns`, chart 1.47.0). Needs a correction pass. Report only — do NOT edit in this branch.
 3. `flux-instance/app/helmrelease.yaml` carries a duplicate `--concurrent` flag (a shared `=10` plus a controller-specific override) — effective value depends on pflag last-wins rather than being stated once. Readability wart only; measured throttling is 2.57% peak and `CPUThrottlingHigh` is not firing, so nothing to fix functionally.
 4. notification-controller still has `limits.cpu: 1` because it falls outside the resources patch's target regex, while the patch is named as if it covered everything. It has never throttled (0 in every window) — naming/intent inconsistency, not a problem.
+5. **Repo-wide BM `type:` inconsistency** (audit 2026-08-04): progress notes use a mix of `progress` (18), `note` (10), `roadmap` (5), `progress_note` (4), and `progress-note` (2). The reserved `progress/[branch]` anchor type per the global memory model is `progress-note` (hyphen); this note was corrected to it. A repo-wide normalization is its own task and is NOT authorized here — recorded as an observation only.
 
 ## Report-only flag
 
