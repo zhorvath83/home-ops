@@ -101,4 +101,6 @@ spec:
               blocklist-import MAX_DECISIONS cap (75000). When the cap is reached the importer
               logs "skipping remaining sources" and exits 0, so KubeJobFailed never fires and
               the tail feeds (Cybercrime Tracker, VXVault) drop silently. Raise MAX_DECISIONS
-              or prune a feed before that happens. Self-resolves when the count drops back.
+              or prune a feed before that happens. keep_firing_for: 48h latches the alert: once
+              the count drops below the threshold it stays firing for ~48h (≥ the daily 24h-TTL
+              sawtooth) before resolving — not minutes — so a peak crossing does not flap.

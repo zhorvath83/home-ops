@@ -144,7 +144,9 @@ tests:
                 blocklist-import MAX_DECISIONS cap (75000). When the cap is reached the importer
                 logs "skipping remaining sources" and exits 0, so KubeJobFailed never fires and
                 the tail feeds (Cybercrime Tracker, VXVault) drop silently. Raise MAX_DECISIONS
-                or prune a feed before that happens. Self-resolves when the count drops back.
+                or prune a feed before that happens. keep_firing_for: 48h latches the alert: once
+                the count drops below the threshold it stays firing for ~48h (≥ the daily 24h-TTL
+                sawtooth) before resolving — not minutes — so a peak crossing does not flap.
   # (3) `for` not yet met: same 63751 series at eval 29m, before 30m elapses — pins for:30m.
   - interval: 1m
     input_series:
@@ -177,7 +179,9 @@ tests:
                 blocklist-import MAX_DECISIONS cap (75000). When the cap is reached the importer
                 logs "skipping remaining sources" and exits 0, so KubeJobFailed never fires and
                 the tail feeds (Cybercrime Tracker, VXVault) drop silently. Raise MAX_DECISIONS
-                or prune a feed before that happens. Self-resolves when the count drops back.
+                or prune a feed before that happens. keep_firing_for: 48h latches the alert: once
+                the count drops below the threshold it stays firing for ~48h (≥ the daily 24h-TTL
+                sawtooth) before resolving — not minutes — so a peak crossing does not flap.
   # (5) Negative, current operating region: CAPI 58000 + blocklist-import 4948 = 62948 < 63750 — no
   # fire at 31m. Mirrors today's ~39k live total (well under the alert).
   - interval: 1m
@@ -200,3 +204,29 @@ tests:
       - eval_time: 31m
         alertname: CrowdSecDecisionBudgetNearCap
         exp_alerts: []
+  # (7) keep_firing_for pin: 63751 for 40m (fires at 31m), then 0 for 30m. At eval 60m the
+  # condition has been false since 41m, so WITHOUT keep_firing_for the alert would have
+  # resolved and returned got:[] — it stays firing here ONLY because keep_firing_for: 48h
+  # latches it for 48h after the condition drops. This is the one mutation the suite did not
+  # catch (removing keep_firing_for left the other 12 cases green); pinned by mutation test.
+  - interval: 1m
+    input_series:
+      - series: 'cs_active_decisions{job="crowdsec-service",namespace="crowdsec",origin="CAPI"}'
+        values: '63751x40 0x30'
+    alert_rule_test:
+      - eval_time: 60m
+        alertname: CrowdSecDecisionBudgetNearCap
+        exp_alerts:
+          - exp_labels:
+              alertname: CrowdSecDecisionBudgetNearCap
+              severity: warning
+            exp_annotations:
+              summary: CrowdSec decisions approaching the MAX_DECISIONS cap
+              description: |-
+                Total active LAPI decisions (all origins, CAPI included) are above 85% of the
+                blocklist-import MAX_DECISIONS cap (75000). When the cap is reached the importer
+                logs "skipping remaining sources" and exits 0, so KubeJobFailed never fires and
+                the tail feeds (Cybercrime Tracker, VXVault) drop silently. Raise MAX_DECISIONS
+                or prune a feed before that happens. keep_firing_for: 48h latches the alert: once
+                the count drops below the threshold it stays firing for ~48h (≥ the daily 24h-TTL
+                sawtooth) before resolving — not minutes — so a peak crossing does not flap.
