@@ -34,9 +34,16 @@ spec:
       pod-garbage-collector:
         annotations:
           helm.sh/resource-policy: keep
+      # Dedicated SA for the sweep CronJob — distinct name avoids collision with the
+      # adopted KCM bootstrap SA above; bound to the least-priv ClusterRole in rbac.yaml.
+      # forceRename pins the name (with >1 SA the chart appends the identifier to fullname).
+      pod-gc-sweeper:
+        forceRename: pod-gc-sweeper
     controllers:
       pod-garbage-collector:
         type: cronjob
+        serviceAccount:
+          identifier: pod-gc-sweeper
         cronjob:
           schedule: "*/15 * * * *"
           concurrencyPolicy: Forbid
