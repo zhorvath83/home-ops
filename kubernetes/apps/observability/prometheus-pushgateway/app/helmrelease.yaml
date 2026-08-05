@@ -3,14 +3,13 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: pushgateway
+  name: prometheus-pushgateway
 spec:
   interval: 30m
   chartRef:
     kind: OCIRepository
-    name: pushgateway
+    name: prometheus-pushgateway
   values:
-    fullnameOverride: pushgateway
     replicaCount: 1
     # StatefulSet + PVC so pushed metrics survive a pod restart — otherwise a restart
     # blanks the blocklist-import freshness signal and false-fires CrowdSecBlocklistImportMetricsAbsent.

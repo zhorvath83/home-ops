@@ -107,7 +107,7 @@ App speaks OIDC itself against Pocket ID; no gateway-oidc SecurityPolicy (would 
 |---|---|---|---|---|
 | grafana | grafana.horvathzoltan.me | internal | `auth.generic_oauth` in `kubernetes/apps/observability/grafana/instance/grafana.yaml:21`; PKCE on; `role_attribute_path` maps infra_admins→Admin | local login form hidden (`disable_login_form`); operator provisioning cred is not a human path |
 | pingvin-share-x | share.horvathzoltan.me | external+internal | `oauth:` block in `kubernetes/apps/selfhosted/pingvin-share-x/app/config/config.yaml:148`; discovery-only; password disabled | — |
-| crowdsec-web-ui | crowdsec.horvathzoltan.me | internal | `CONFIG_AUTH_OIDC_*` in `kubernetes/apps/crowdsec/web-ui/app/helmrelease.yaml:60`; `UNMATCHED_ROLE: deny`; PKCE off | no `egress.home.arpa` labels — token-hairpin CNP posture open (see [[iam]]); PKCE off accepted (non-public client) |
+| crowdsec-web-ui | crowdsec.horvathzoltan.me | internal | `CONFIG_AUTH_OIDC_*` in `kubernetes/apps/crowdsec/crowdsec-web-ui/app/helmrelease.yaml:60`; `UNMATCHED_ROLE: deny`; PKCE off | no `egress.home.arpa` labels — token-hairpin CNP posture open (see [[iam]]); PKCE off accepted (non-public client) |
 | calibre-web-automated | books.horvathzoltan.me | external+internal | registered `gate: native` in `provision/pocket-id/clients.yaml:100`; callback `/login/generic/authorized`; PKCE off | **app-side OIDC config lives in the app database permanently** — the chart exposes no ENV-based OIDC config; accepted as-is (decided 2026-08-05), not a debt to migrate |
 
 ### C. Excluded by individual judgment (3) — documented exceptions, NOT a category

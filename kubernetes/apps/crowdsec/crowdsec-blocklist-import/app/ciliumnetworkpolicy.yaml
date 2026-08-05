@@ -7,11 +7,11 @@
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
-  name: blocklist-import
+  name: crowdsec-blocklist-import
 spec:
   endpointSelector:
     matchLabels:
-      app.kubernetes.io/name: blocklist-import
+      app.kubernetes.io/name: crowdsec-blocklist-import
   egress:
     # LAPI — read existing decisions (bouncer key) and write new ones (machine JWT).
     - toEndpoints:

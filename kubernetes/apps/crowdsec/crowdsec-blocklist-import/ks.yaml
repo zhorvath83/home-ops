@@ -3,16 +3,19 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: crowdsec-bouncer
+  name: crowdsec-blocklist-import
 spec:
   commonMetadata:
     labels:
-      app.kubernetes.io/name: crowdsec-bouncer
+      app.kubernetes.io/name: crowdsec-blocklist-import
   dependsOn:
+    - name: onepassword-connect
+      namespace: external-secrets
+    # LAPI must be up and the blocklist-import bouncer/machine registered first.
     - name: crowdsec
       namespace: crowdsec
   interval: 1h
-  path: ./kubernetes/apps/crowdsec/bouncer/app
+  path: ./kubernetes/apps/crowdsec/crowdsec-blocklist-import/app
   prune: true
   sourceRef:
     kind: GitRepository

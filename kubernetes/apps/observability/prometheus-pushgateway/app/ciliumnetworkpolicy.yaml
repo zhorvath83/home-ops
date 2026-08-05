@@ -7,7 +7,7 @@
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
-  name: pushgateway
+  name: prometheus-pushgateway
 spec:
   endpointSelector:
     matchLabels:
@@ -16,7 +16,7 @@ spec:
     - fromEndpoints:
         - matchLabels:
             k8s:io.kubernetes.pod.namespace: crowdsec
-            app.kubernetes.io/name: blocklist-import
+            app.kubernetes.io/name: crowdsec-blocklist-import
       toPorts:
         - ports:
             - port: "9091"

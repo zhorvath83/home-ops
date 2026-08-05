@@ -21,7 +21,7 @@ verified_against:
 - kubernetes/apps/selfhosted/pingvin-share-x/app/config/config.yaml
 - kubernetes/apps/networking/envoy-gateway/config/validatingadmissionpolicy.yaml
 - kubernetes/apps/networking/envoy-gateway/config/gateway-policies.yaml
-- kubernetes/apps/crowdsec/web-ui/
+- kubernetes/apps/crowdsec/crowdsec-web-ui/
 - kubernetes/apps/security/pocket-id/app/backendtlspolicy.yaml
 - kubernetes/apps/security/pocket-id/app/certificate.yaml
 - provision/pocket-id/mod.just
@@ -63,7 +63,7 @@ verified_against:
 - [observation] [convention] Pocket ID serves **one issuer for every client**: `https://idm.${PUBLIC_DOMAIN}`. Clients resolve the rest through `/.well-known/openid-configuration`; there are no per-client issuer URLs.
 - [observation] [endpoint] authorize `/authorize` · token `/api/oidc/token` · userinfo `/api/oidc/userinfo` · end-session `/api/oidc/end-session` · JWKS `/.well-known/jwks.json`.
 - [observation] [scopes] `openid`, `profile`, `email`, `groups`, `offline_access`. The `groups` claim carries the group **name** verbatim — no realm or domain suffix — so role mappings match on the bare name.
-- [observation] [consequence] Every endpoint is the public issuer, per AD-023. The OIDC backchannel is therefore ordinary gateway traffic (client pod -> envoy VIP -> pocket-id). Baseline-egress clients need nothing; a client carrying `egress.home.arpa/custom-egress` MUST also carry `egress.home.arpa/allow-gateways` or its token exchange is dropped by its own CNP posture. Current carriers: grafana, pingvin-share-x, calibre-web-automated. **The new native client `crowdsec-web-ui` carries NEITHER label** (kubernetes/apps/crowdsec/web-ui/app/helmrelease.yaml has no `egress.home.arpa` labels), so whether its token-exchange hairpin survives its CNP posture is an open cluster-runtime question.
+- [observation] [consequence] Every endpoint is the public issuer, per AD-023. The OIDC backchannel is therefore ordinary gateway traffic (client pod -> envoy VIP -> pocket-id). Baseline-egress clients need nothing; a client carrying `egress.home.arpa/custom-egress` MUST also carry `egress.home.arpa/allow-gateways` or its token exchange is dropped by its own CNP posture. Current carriers: grafana, pingvin-share-x, calibre-web-automated. **The new native client `crowdsec-web-ui` carries NEITHER label** (kubernetes/apps/crowdsec/crowdsec-web-ui/app/helmrelease.yaml has no `egress.home.arpa` labels), so whether its token-exchange hairpin survives its CNP posture is an open cluster-runtime question.
 - [observation] [dns] The hairpin resolves through the coredns split-horizon zone: `${PUBLIC_DOMAIN}` forwards to `${K8S_GATEWAY_IP}` (k8s-gateway), so pods reach the envoy-internal VIP without the node-resolver -> router hop.
 
 ## 4. Provisioning model
@@ -103,7 +103,7 @@ verified_against:
 
 **Native OIDC**:
 
-- [observation] [client] **crowdsec-web-ui** — a 4th native OIDC client (`gate: native`, subdomain `crowdsec`, callback `/api/auth/oidc/callback`, `pkce_enabled: false`, group `infra_admins`) declared in provision/pocket-id/clients.yaml with its app at kubernetes/apps/crowdsec/web-ui/. PKCE is off, unlike grafana.
+- [observation] [client] **crowdsec-web-ui** — a 4th native OIDC client (`gate: native`, subdomain `crowdsec`, callback `/api/auth/oidc/callback`, `pkce_enabled: false`, group `infra_admins`) declared in provision/pocket-id/clients.yaml with its app at kubernetes/apps/crowdsec/crowdsec-web-ui/. PKCE is off, unlike grafana.
 - [observation] [client] **grafana** — `auth.generic_oauth` on the grafana-operator instance. Endpoints are the public issuer; `use_pkce: true`; `scopes: openid email profile groups`. `role_attribute_path` maps `infra_admins` -> Admin and everything else -> None, with `role_attribute_strict: true`. The local login form is hidden (`disable_login_form`); the retained admin credential is the grafana-operator's provisioning credential for the in-cluster API, not a human login path.
 - [observation] [client] **pingvin-share-x** — discovery-only client; `oidc-discoveryUri` points at `/.well-known/openid-configuration`, `oidc-rolePath: groups`, `oidc-roleAdminAccess: pingvin-share-x_admins`, password login disabled.
 - [observation] [client] **calibre-web-automated** — callback `/login/generic/authorized`. `pkce_enabled: false` because Calibre-Web's flask-dance generic OAuth exposes no PKCE toggle and sends no `code_challenge`; it is a confidential client, so the secret still guards the token exchange.

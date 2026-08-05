@@ -74,7 +74,7 @@ related_areas:
 |---|---|
 | `kubernetes/apps/crowdsec/crowdsec/app/prometheusrule.yaml` | `CrowdSecLAPIDown`, `CrowdSecAcquisitionStalled`, `CrowdSecBanActive` |
 | `kubernetes/apps/volsync-system/volsync/app/prometheusrule.yaml` | `VolSyncComponentAbsent`, `VolSyncVolumeOutOfSync` |
-| `kubernetes/apps/crowdsec/bouncer/app/prometheusrule.yaml` | `CrowdSecBouncerDown` |
+| `kubernetes/apps/crowdsec/crowdsec-bouncer/app/prometheusrule.yaml` | `CrowdSecBouncerDown` |
 | `kubernetes/apps/networking/envoy-gateway/config/prometheusrule.yaml` | `EnvoyProxyDown` |
 | `kubernetes/apps/observability/blackbox-exporter/app/prometheusrule.yaml` | `BlackboxProbeFailed` |
 | `.../kube-prometheus-stack/app/prometheusrules/dns-exfil.yaml` | `HubbleDNSExfilSuspected` |

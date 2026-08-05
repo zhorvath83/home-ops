@@ -1,6 +1,6 @@
 ---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
-# Modeled on crowdsec/blocklist-import (app-template cronjob + dedicated SA) and
+# Modeled on crowdsec/crowdsec-blocklist-import (app-template cronjob + dedicated SA) and
 # observability/smartctl-exporter (co-located PrometheusRule). De-facto sweep spec
 # comes from the `just k8s prune-pods` recipe; this automates a safer gated subset.
 apiVersion: helm.toolkit.fluxcd.io/v2

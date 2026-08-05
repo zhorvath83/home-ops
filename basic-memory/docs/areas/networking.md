@@ -47,7 +47,7 @@ verified_against:
 - kubernetes/apps/kube-system/cilium/netpols/kustomization.yaml
 - kubernetes/components/common/vars/cluster-settings.yaml
 - kubernetes/components/gateway-oidc/securitypolicy.yaml
-- kubernetes/apps/crowdsec/bouncer/app/helmrelease.yaml
+- kubernetes/apps/crowdsec/crowdsec-bouncer/app/helmrelease.yaml
 drift_risk: 'HSTS includeSubDomains with 2-year max-age is a one-way commitment —
   any future HTTP-only subdomain under PUBLIC_DOMAIN would be blocked from cached
   browsers; preload deliberately omitted. The listener hostname filter is

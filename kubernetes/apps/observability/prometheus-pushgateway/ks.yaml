@@ -3,24 +3,21 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: blocklist-import
+  name: prometheus-pushgateway
 spec:
   commonMetadata:
     labels:
-      app.kubernetes.io/name: blocklist-import
+      app.kubernetes.io/name: prometheus-pushgateway
+  # ServiceMonitor CRD comes from kube-prometheus-stack.
   dependsOn:
-    - name: onepassword-connect
-      namespace: external-secrets
-    # LAPI must be up and the blocklist-import bouncer/machine registered first.
-    - name: crowdsec
-      namespace: crowdsec
+    - name: kube-prometheus-stack
   interval: 1h
-  path: ./kubernetes/apps/crowdsec/blocklist-import/app
+  path: ./kubernetes/apps/observability/prometheus-pushgateway/app
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  targetNamespace: crowdsec
+  targetNamespace: observability
   timeout: 5m
   wait: false
