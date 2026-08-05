@@ -47,6 +47,8 @@ verified_against:
 - kubernetes/apps/observability/kube-prometheus-stack/app/prometheusrules/dns-exfil.yaml
 - kubernetes/apps/kube-system/cilium/app/helmrelease.yaml
 - kubernetes/CLAUDE.md ("Current Reality" section)
+- kubernetes/apps/observability/prometheus-pushgateway/ks.yaml
+- kubernetes/apps/observability/prometheus-pushgateway/app/helmrelease.yaml
 drift_risk: The minified kube-prometheus-stack disables most default rules and exporters
   (tuned for one node) and ships Alertmanager enabled (pushover default receiver; Flux
   reconciliation failures route through the same Alertmanager via a Flux
@@ -267,3 +269,15 @@ Verdict on arrival: MAJOR-DRIFT — 8 wrong, 3 obsolete, 3 incomplete.
   registry is `gsoci.azurecr.io` — the note had a typo (`gsci`), which would break a copy-paste.
 - [correction] blackbox-exporter has THREE Probe CRs, not two — `idm` (http_2xx) was added — plus a
   `BlackboxTLSCertExpiringSoon` alert.
+
+
+## Update — 2026-08-06: prometheus-pushgateway (push metrics for blocklist-import freshness)
+
+The ninth observability workload (added in #4129, predates this update). The Summary/Components above predate it; this section records the app so a reader sees the workload count is now NINE, not EIGHT.
+
+- [observation] **prometheus-pushgateway** (`kubernetes/apps/observability/prometheus-pushgateway/`): chart `oci://ghcr.io/prometheus-community/charts/prometheus-pushgateway` 3.7.0 from a per-app OCIRepository (app/ocirepository.yaml:13-14). dependsOn kube-prometheus-stack (the ServiceMonitor CRD lives there — ks.yaml:11-13).
+- [observation] **StatefulSet + 1Gi PVC** (`democratic-csi-local-hostpath`) via `runAsStatefulSet: true` + `persistentVolume.enabled` (app/helmrelease.yaml:13-20). Rationale: without persistence a pod restart blanks the pushed `blocklist_import_source_status` series and false-fires `CrowdSecBlocklistImportMetricsAbsent` (comment at helmrelease.yaml:14-15).
+- [observation] **ServiceMonitor** in the release namespace `observability` with `honorLabels: true` (app/helmrelease.yaml:45-53). The chart defaults `serviceMonitor.namespace` to `monitoring`, which does not exist here — a Helm upgrade would fail without the override. `honorLabels` preserves the pushed `job="crowdsec-blocklist-import"` label so the `CrowdSecBlocklistImport*` PrometheusRule selectors match; without it Prometheus overwrites `job` with the scrape target's and the alerts never fire.
+- [observation] **Consumer**: the `crowdsec-blocklist-import` CronJob pushes per-source freshness metrics (`blocklist_import_source_status`) to `http://prometheus-pushgateway.observability.svc.cluster.local:9091` (kubernetes/apps/crowdsec/crowdsec-blocklist-import/app/helmrelease.yaml:89).
+- [observation] **CNP** (app/ciliumnetworkpolicy.yaml): ingress default-deny with one allow — push from the crowdsec-namespace `crowdsec-blocklist-import` pod on :9091 (`fromEndpoints` matching `k8s:io.kubernetes.pod.namespace: crowdsec` + `app.kubernetes.io/name: crowdsec-blocklist-import`). The Prometheus scrape ingress is NOT this CNP — it comes from the clusterwide `ingress-from-prometheus` CCNP via the `ingress.home.arpa/allow-prometheus` pod label (helmrelease.yaml:24-25), so the push from crowdsec needs its own allow here.
+- [observation] **Name-label caveat** (cross-reference the [[k8s-workloads]] CNP label-selector convention): this is a non-app-template chart, so the pod `app.kubernetes.io/name` label is the CHART name `prometheus-pushgateway`, not the release name — a release rename or `fullnameOverride` change does NOT move it. The app CNP endpointSelector (ciliumnetworkpolicy.yaml:14) matches `app.kubernetes.io/name: prometheus-pushgateway`, which equals both the chart name and (since the #4132 rename) the release name.
