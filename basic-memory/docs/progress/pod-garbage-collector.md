@@ -65,10 +65,28 @@ S2 deleted one real dead pod (default/node-debugger-k8s-cp0-9qhcx, a Succeeded >
 - CronJob pod-garbage-collector (kube-system): schedule */15 * * * *, ACTIVE 0.
 - RBAC: ClusterRole pod-garbage-collector (pods list/delete) + ClusterRoleBinding to chart-generated SA pod-garbage-collector.
 
-## Follow-up — pre-existing orphan RBAC (NOT introduced by this work; needs Maestro decision)
+## Follow-up — SA collision with the in-tree KCM pod-GC controller (resolved)
+The first diagnosis recorded here — that `system:controller:pod-garbage-collector` ClusterRole/Binding was a "false-controller orphan from a prior ~2026-05-18 experiment" to be cleaned up with `kubectl delete` — was WRONG. Acting on it would have deleted live Kubernetes bootstrap RBAC and disrupted the in-tree kube-controller-manager pod-GC (podgc) controller. This section corrects the record to protect future sessions from the same mistake.
 
-Verify-don't-trust surfaced a leftover from a prior (~2026-05-18) experiment with the same release name: ClusterRole system:controller:pod-garbage-collector + ClusterRoleBinding system:controller:pod-garbage-collector (the system:controller: prefix is NOT a Kubernetes built-in — it is a false-controller orphan). The binding references the same chart-generated SA, so the CronJob pod currently also holds this leftover role's permissions: pods watch, nodes get/list/watch, pods/status patch (on top of the intended pods list/delete). Impact is low (read-only on nodes + pods watch + a pods/status patch write; no secrets, no node mutation, no pod delete beyond the intended role), but it violates least-privilege. This is a pre-existing cluster condition, not introduced by this commit. Recommended cleanup (separate, Maestro-approved, cluster-mutating): kubectl delete clusterrole system:controller:pod-garbage-collector clusterrolebinding system:controller:pod-garbage-collector. Not done here (out of commit scope, cluster-mutating).
+**Real facts:**
+- `system:controller:pod-garbage-collector` ClusterRole + ClusterRoleBinding are Kubernetes BOOTSTRAP RBAC, not experiment leftovers. They carry the `kubernetes.io/bootstrapping: rbac-defaults` label and the `rbac.authorization.kubernetes.io/autoupdate: true` annotation — the apiserver re-creates them if deleted. They belong to the in-tree KCM podgc controller.
+- The KCM runs with `--use-service-account-credentials`, so the podgc controller authenticates as the `kube-system/pod-garbage-collector` ServiceAccount (bound to that bootstrap ClusterRole). The `system:controller:` prefix IS a Kubernetes built-in convention for controller identities, not a false-controller marker.
+- The bjw-s app-template chart generates a default ServiceAccount named after the release. The release name `pod-garbage-collector` matched the pre-existing KCM bootstrap SA name, so Helm ADOPTED the bootstrap SA instead of creating a fresh one. The CronJob pod therefore inherited the bootstrap-bound privileges (nodes get/list/watch, pods watch, pods/status patch) on top of the intended pods list/delete — the least-privilege violation the original note correctly surfaced, but mis-attributed to a "prior experiment".
+- Prune risk: with `prune: true` on the Flux Kustomization, removing the HelmRelease would have told Helm to delete the adopted SA, invalidating the KCM podgc controller's bound token until KCM restart.
 
+**2-step fix (no control-plane blip):**
+- LÉPÉS 1 (commit `0e9bf606d`): `helm.sh/resource-policy: keep` annotation on the adopted `pod-garbage-collector` SA, so Helm cannot delete it on upgrade/removal. Live-verified: `kubectl -n kube-system get sa pod-garbage-collector -o jsonpath={.metadata.annotations}` includes `helm.sh/resource-policy:keep`.
+- LÉPÉS 2 (commit `0c6728593`): dedicated, non-colliding SA `pod-gc-sweeper` (chart-generated via `forceRename`, since with >1 SA the chart appends the identifier to the fullname). CronJob `serviceAccountName: pod-gc-sweeper`; rbac.yaml ClusterRoleBinding subject → `pod-gc-sweeper`; ClusterRole unchanged (pods list/delete only). The adopted `pod-garbage-collector` SA is kept (not bound) and protected by the keep-policy.
+
+**can-i evidence (live, 2026-08-05)** — `kubectl auth can-i --as=system:serviceaccount:kube-system:pod-gc-sweeper`:
+- `delete pods -A`: **yes** (intended)
+- `get nodes`: **no**
+- `patch pods/status -A`: **no**
+- `watch pods -A`: **no**
+
+The new SA is least-privilege; the bootstrap-inherited privileges are gone. Smoke run `pgc-smoke-2` (2026-08-05T20:06:34Z) completed cleanly with the new SA (S1/S2/S3 ran, no auth errors). The `pod-garbage-collector` SA still exists (AGE 79d, keep-policy protected) — the KCM podgc controller keeps its identity.
+
+**EXPLICIT PROHIBITION — never delete:** the `system:controller:pod-garbage-collector` ClusterRole/ClusterRoleBinding and the `kube-system/pod-garbage-collector` ServiceAccount are in-tree KCM podgc controller identity. They must NEVER be deleted. The apiserver autoupdate re-creates the RBAC, but deleting the SA invalidates the bound token until KCM restart. The `helm.sh/resource-policy: keep` annotation on the SA is the guardrail — do not remove it.
 ## Relations
 
 - implements [[pod-garbage-collector]]
