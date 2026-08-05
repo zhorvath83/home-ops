@@ -77,7 +77,8 @@ spec:
               DECISION_ORIGIN: "blocklist-import"
               # TOTAL cap across all origins (CAPI included), not per-run.
               MAX_DECISIONS: "75000"
-              BATCH_SIZE: "500"
+              # Alert-record granularity (decisions per POST /v1/alerts), not throughput.
+              BATCH_SIZE: "5000"
               CONSOLIDATE_ALERTS: "true"
               ALLOWLIST: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
               # Defence in depth: telemetry is also blocked at the CNP (FQDN absent).
