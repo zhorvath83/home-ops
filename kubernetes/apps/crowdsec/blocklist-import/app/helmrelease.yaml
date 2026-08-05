@@ -75,7 +75,8 @@ spec:
               ENABLE_STOPFORUMSPAM: "false"
               DECISION_DURATION: "24h"
               DECISION_ORIGIN: "blocklist-import"
-              MAX_DECISIONS: "50000"
+              # TOTAL cap across all origins (CAPI included), not per-run.
+              MAX_DECISIONS: "75000"
               BATCH_SIZE: "500"
               CONSOLIDATE_ALERTS: "true"
               ALLOWLIST: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"

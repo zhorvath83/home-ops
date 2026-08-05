@@ -85,3 +85,18 @@ spec:
               CrowdSec banned a source after the scenario below tripped. The ban lasts 4h
               and doubles for each repeat offence; no action is needed. If it was you,
               clear it with `cscli decisions delete <ip>`.
+        # MAX_DECISIONS is a TOTAL cap (CAPI included); on budget exhaustion the importer
+        # exits 0 (KubeJobFailed never fires), so this predicts silent truncation. 85% of 75000.
+        - alert: CrowdSecDecisionBudgetNearCap
+          expr: sum(cs_active_decisions{job="crowdsec-service", namespace="crowdsec"}) > 63750
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: CrowdSec decisions approaching the MAX_DECISIONS cap
+            description: |-
+              Total active LAPI decisions (all origins, CAPI included) are above 85% of the
+              blocklist-import MAX_DECISIONS cap (75000). When the cap is reached the importer
+              logs "skipping remaining sources" and exits 0, so KubeJobFailed never fires and
+              the tail feeds (Cybercrime Tracker, VXVault) drop silently. Raise MAX_DECISIONS
+              or prune a feed before that happens. Self-resolves when the count drops back.
