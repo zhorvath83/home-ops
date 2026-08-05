@@ -42,3 +42,4 @@ __pycache__/
 !.claude/skills/
 .claude/settings.local.json
 .mcp.json
+basic-memory/raw
