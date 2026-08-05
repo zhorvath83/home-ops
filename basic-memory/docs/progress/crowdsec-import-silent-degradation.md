@@ -47,17 +47,25 @@ Pushgateway -> observability namespace (nem crowdsec). Indoklas: standard Promet
 - Phase 4 observation window (roadmap) es Phase 5 Tier B/C promotion — erintetlen.
 
 ## Resumption state
-Implementation COMPLETE (2026-08-05). All 5 AC met. Code commit on the feature branch (10 files: 5 new pushgateway, 5 modified). Docs commit + push + DRAFT PR vs main pending.
+Implementation COMPLETE. Code commit landed on main (pushed by human). HIBA 2 (live Helm install failure) found in independent review and fixed on the feat branch. DRAFT PR #4129 open vs main. Live verification of the runtime chain pending PR merge + Flux reconcile + next 04:00 CronJob run.
 
+### HIBA 2 — live Helm install failure and fix
+The pushgateway HelmRelease went Stalled / Ready=False in the live cluster: the prometheus-pushgateway chart's serviceMonitor.namespace default ("monitoring") does not exist in this cluster, so Helm server-side-apply failed creating the ServiceMonitor (UpgradeFailed, MissingRollbackTarget). Fix: helmrelease sets serviceMonitor.namespace=observability (release namespace) and honorLabels=true (explicit, critical — without honorLabels Prometheus overwrites the pushed job label with the scrape target name and the CrowdSecBlocklistImport* rule selectors never match). Verified by helm template: the ServiceMonitor renders with namespace=observability, honorLabels=true, port=http, namespaceSelector.matchNames=[observability], selector app.kubernetes.io/name=prometheus-pushgateway. Live kubectl confirmed the failure (Stalled/UpgradeFailed, the namespace-not-found message) and that no ServiceMonitor exists yet for pushgateway in either namespace; the other 12 ServiceMonitors all live in observability, confirming the pattern the fix follows.
+
+### promtool run method — explicit lesson
+Run the tests via `just k8s test-prom-rules`, NOT a direct `promtool test rules prometheusrule_test.yaml`. The test file references ./_extracted_rules.yaml, which the recipe regenerates from the PrometheusRule spec on every run and removes afterwards; a stale leftover _extracted_rules.yaml from a prior run makes a direct promtool call return got:[] (false failures). The recipe is the only correct runner. crowdsec module: SUCCESS, 8 rules found; all 4 modules green. (Direct promtool produced a false failure during review — the defectus was in the run method, not the tests.)
+
+### Shared-worktree incident and branch cleanup
+A parallel terminal in the shared working directory staged its own pod-garbage-collector work; an unfenced `git commit` (without -o pathspec) pulled those files into my fix commit on the remote — a constraint violation (the human had marked pod-gc files off-limits). Local reset --soft + recommit with explicit pathspec produced a clean fix commit (pushgateway helmrelease only). force-with-lease push replaced the bad commit on origin/feat and in DRAFT PR #4129. Lesson: in a shared working directory, `git commit -o <pathspec>` per file is mandatory — never bare `git commit` (it commits the whole index, including another terminal's staged work).
+
+### Open (carried forward, unchanged)
+Roadmap members (b) bouncer-key 403, (d) frozen-mirror-200-stale (the "unreachable feed" half of d IS covered via source_status=0; the "frozen mirror serving stale content with a healthy response" half is NOT — v3.7.1 metrics lack per-source Last-Modified), (e) job-pod resource limit verification, (f) unpaginated get_existing_ips. Phase 4 observation window and Phase 5 Tier B/C promotion untouched.
+
+### Live verification status (what is and is not proven)
+Proven (static chain): both-direction CNP wiring (blocklist-import egress to pushgateway + pushgateway ingress from blocklist-import on the push port; Prometheus scrape via the blanket ingress-from-prometheus CCNP and the allow-prometheus pod label — live pod labels confirmed matching on both endpoints); in-cluster DNS reachable (headless Service, ClusterIP None, port-forward returns a healthy response); helm template renders the corrected ServiceMonitor with honorLabels. NOT yet proven (needs merge + reconcile + first push): ServiceMonitor actually created live; Prometheus target UP; blocklist_import_source_status metric present with the pushed job label matching the rule selector. The live blocklist-import CronJob is still on the old main config (METRICS_ENABLED is on the feat branch, not merged), so the pushgateway currently holds zero blocklist_import_* series — the first pushed metrics will appear after the next 04:00 run once the config is live. The human owns the merge.
 ### Validation (all green)
 - kustomize build for pushgateway, blocklist-import, crowdsec app, observability parent: all exit 0.
 - promtool check rules + test rules via the repo recipe: crowdsec module SUCCESS, 8 rules; test rules SUCCESS; all 4 modules green. Key fix: the test group interval must equal the file evaluation interval (1m), otherwise the for-timer never satisfies for 48h and the alert never fires.
 - pre-commit on all 10 files: all hooks passed.
 - helm template of the pushgateway chart with the release values: the ServiceMonitor renders with the expected selector and port, so scrape wiring is confirmed.
 - CNP wiring verified: push ingress from blocklist-import via a per-app CNP, plus Prometheus scrape via the blanket ingress-from-prometheus CCNP and the allow-prometheus pod label.
-
-### Open (carried forward, unchanged)
-Roadmap members (b), (d) frozen-mirror-stale, (e), (f), Phase 4/5 remain open — see Open/residual gaps above.
-
-### Next
-Docs commit for the basic-memory tree, push the branch, open a DRAFT PR vs main covering (a+d) with the open items and the namespace decision rationale.
