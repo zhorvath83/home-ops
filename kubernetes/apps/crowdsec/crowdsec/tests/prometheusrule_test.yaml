@@ -108,3 +108,95 @@ tests:
       - eval_time: 6m
         alertname: CrowdSecAppsecDown
         exp_alerts: []
+  # === CrowdSecDecisionBudgetNearCap ===
+  # expr is sum() with NO by(), so every label is aggregated away — exp_labels carry ONLY
+  # alertname + severity (no job/namespace, unlike every sibling case above). Annotations are
+  # static (no $labels/$value), asserted verbatim. for:30m + evaluation_interval:1m -> fire at 31m.
+  # The 63750 threshold is hand-computed 85% of MAX_DECISIONS (75000), which lives in a different
+  # file (blocklist-import/app/helmrelease.yaml) with nothing linking them — these tests are the
+  # only artifact pinning the relationship (crowdsec's first threshold alert).
+  # (1) Boundary NO-fire: total exactly 63750. `>` is strict, so 63750 > 63750 is false; no fire
+  # even after for:30m (eval at 31m).
+  - interval: 1m
+    input_series:
+      - series: 'cs_active_decisions{job="crowdsec-service",namespace="crowdsec",origin="CAPI"}'
+        values: '63750x40'
+    alert_rule_test:
+      - eval_time: 31m
+        alertname: CrowdSecDecisionBudgetNearCap
+        exp_alerts: []
+  # (2) Boundary FIRE: total 63751 (one above threshold). Fires at 31m; labels = alertname + severity only.
+  - interval: 1m
+    input_series:
+      - series: 'cs_active_decisions{job="crowdsec-service",namespace="crowdsec",origin="CAPI"}'
+        values: '63751x40'
+    alert_rule_test:
+      - eval_time: 31m
+        alertname: CrowdSecDecisionBudgetNearCap
+        exp_alerts:
+          - exp_labels:
+              alertname: CrowdSecDecisionBudgetNearCap
+              severity: warning
+            exp_annotations:
+              summary: CrowdSec decisions approaching the MAX_DECISIONS cap
+              description: |-
+                Total active LAPI decisions (all origins, CAPI included) are above 85% of the
+                blocklist-import MAX_DECISIONS cap (75000). When the cap is reached the importer
+                logs "skipping remaining sources" and exits 0, so KubeJobFailed never fires and
+                the tail feeds (Cybercrime Tracker, VXVault) drop silently. Raise MAX_DECISIONS
+                or prune a feed before that happens. Self-resolves when the count drops back.
+  # (3) `for` not yet met: same 63751 series at eval 29m, before 30m elapses — pins for:30m.
+  - interval: 1m
+    input_series:
+      - series: 'cs_active_decisions{job="crowdsec-service",namespace="crowdsec",origin="CAPI"}'
+        values: '63751x40'
+    alert_rule_test:
+      - eval_time: 29m
+        alertname: CrowdSecDecisionBudgetNearCap
+        exp_alerts: []
+  # (4) CROSS-ORIGIN SUM: CAPI 60000 + blocklist-import 4948 = 64948 > 63750. Proves the rule
+  # aggregates across origins — the entire justification for a total-cap threshold (CAPI alone at
+  # 60000 would not fire). Fires at 31m.
+  - interval: 1m
+    input_series:
+      - series: 'cs_active_decisions{job="crowdsec-service",namespace="crowdsec",origin="CAPI"}'
+        values: '60000x40'
+      - series: 'cs_active_decisions{job="crowdsec-service",namespace="crowdsec",origin="blocklist-import"}'
+        values: '4948x40'
+    alert_rule_test:
+      - eval_time: 31m
+        alertname: CrowdSecDecisionBudgetNearCap
+        exp_alerts:
+          - exp_labels:
+              alertname: CrowdSecDecisionBudgetNearCap
+              severity: warning
+            exp_annotations:
+              summary: CrowdSec decisions approaching the MAX_DECISIONS cap
+              description: |-
+                Total active LAPI decisions (all origins, CAPI included) are above 85% of the
+                blocklist-import MAX_DECISIONS cap (75000). When the cap is reached the importer
+                logs "skipping remaining sources" and exits 0, so KubeJobFailed never fires and
+                the tail feeds (Cybercrime Tracker, VXVault) drop silently. Raise MAX_DECISIONS
+                or prune a feed before that happens. Self-resolves when the count drops back.
+  # (5) Negative, current operating region: CAPI 58000 + blocklist-import 4948 = 62948 < 63750 — no
+  # fire at 31m. Mirrors today's ~39k live total (well under the alert).
+  - interval: 1m
+    input_series:
+      - series: 'cs_active_decisions{job="crowdsec-service",namespace="crowdsec",origin="CAPI"}'
+        values: '58000x40'
+      - series: 'cs_active_decisions{job="crowdsec-service",namespace="crowdsec",origin="blocklist-import"}'
+        values: '4948x40'
+    alert_rule_test:
+      - eval_time: 31m
+        alertname: CrowdSecDecisionBudgetNearCap
+        exp_alerts: []
+  # (6) Selector pin: the metric on the wrong job (crowdsec-agent-service) does not match the
+  # job="crowdsec-service" matcher — 70000 must not fire. Pins the job matcher.
+  - interval: 1m
+    input_series:
+      - series: 'cs_active_decisions{job="crowdsec-agent-service",namespace="crowdsec",origin="CAPI"}'
+        values: '70000x40'
+    alert_rule_test:
+      - eval_time: 31m
+        alertname: CrowdSecDecisionBudgetNearCap
+        exp_alerts: []

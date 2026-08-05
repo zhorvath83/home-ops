@@ -87,9 +87,11 @@ spec:
               clear it with `cscli decisions delete <ip>`.
         # MAX_DECISIONS is a TOTAL cap (CAPI included); on budget exhaustion the importer
         # exits 0 (KubeJobFailed never fires), so this predicts silent truncation. 85% of 75000.
+        # keep_firing_for 48h ≥ the daily 24h-TTL sawtooth, so a peak crossing does not resolve/refire.
         - alert: CrowdSecDecisionBudgetNearCap
           expr: sum(cs_active_decisions{job="crowdsec-service", namespace="crowdsec"}) > 63750
           for: 30m
+          keep_firing_for: 48h
           labels:
             severity: warning
           annotations:
