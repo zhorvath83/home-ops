@@ -28,6 +28,12 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
+    serviceAccount:
+      # Helm adopted the in-tree KCM pod-GC bootstrap SA (same name as the release);
+      # keep stops Helm deleting it when the CronJob later moves to a dedicated SA.
+      pod-garbage-collector:
+        annotations:
+          helm.sh/resource-policy: keep
     controllers:
       pod-garbage-collector:
         type: cronjob
