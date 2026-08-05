@@ -92,3 +92,8 @@ The new SA is least-privilege; the bootstrap-inherited privileges are gone. Smok
 - implements [[pod-garbage-collector]]
 - relates_to [[observability]]
 - relates_to [[kubelet-gc-and-flux-deadman-alerts]]
+## Related — post-upgrade pod cleanup (2026-08-05)
+
+The [[post-upgrade-pod-cleanup]] note documents one specific, already-solved source of dead-pod creation: the Tuppr controller's `kubectl drain` step on the single node, fixed by Phase 1 (`drain.enabled: false` in the TalosUpgrade CR, verified across 4 post-fix upgrades with zero stranded pods). This sweeper is NOT the implementation of that note's deferred Phase 2, and does not replace the Phase 1 root-cause fix — it is a generic, root-cause-independent safety net that removes dead pods (Failed/Succeeded >1h, finalizer-less stuck-Terminating >10min) from ANY cause, not only Tuppr-driven drains.
+
+- relates_to [[post-upgrade-pod-cleanup]]

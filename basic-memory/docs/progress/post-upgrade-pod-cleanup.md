@@ -255,3 +255,8 @@ Per the decision matrix, Phase 2 (Tuppr `hooks.post` cleanup or an in-cluster Cr
 - `kubernetes/apps/system-upgrade/tuppr/app/helmrelease.yaml` - `values.image.tag: 0.2.1` with Renovate annotation committed.
 - `.renovate/groups.json5` - Tuppr lockstep group committed.
 - This note - rewritten and now verified/completed.
+## Related — generic pod sweeper (2026-08-05)
+
+The Phase 2 idea deferred here (an in-cluster cleanup hook/CronJob) now exists in a generic, root-cause-independent form: the kube-system `pod-garbage-collector` CronJob (bjw-s app-template, `*/15 * * * *`, sweeps Failed/Succeeded pods >1h excluding Job-owned, plus finalizer-less stuck-Terminating pods >10min — see [[pod-garbage-collector]]). This is NOT because the Phase 1 fix (`drain.enabled: false`) proved insufficient — it did not, verified across 4 upgrades with zero stranded pods — but a defense-in-depth safety net for dead pods from any cause (manual reboots, unexpected power loss, admission-rejected pods after node reboots). Phase 2 as scoped here (Tuppr-coupled `hooks.post`) remains closed as not-needed; the generic sweeper covers the broader class without lifecycle coupling to the upgrade run.
+
+- relates_to [[pod-garbage-collector]]
