@@ -43,5 +43,12 @@ spec:
         memory: 32Mi
       limits:
         memory: 128Mi
+    # namespace: chart defaults serviceMonitor.namespace to "monitoring", which does not
+    # exist here -> Helm upgrade fails (HIBA 2). Release namespace instead.
+    # honorLabels: retain the pushed job="crowdsec-blocklist-import" label so the
+    # CrowdSecBlocklistImport* rule selectors match; without it Prometheus overwrites
+    # job with the scrape target's and the alerts never fire.
     serviceMonitor:
       enabled: true
+      namespace: observability
+      honorLabels: true
