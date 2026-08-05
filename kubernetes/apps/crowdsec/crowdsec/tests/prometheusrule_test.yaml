@@ -230,3 +230,111 @@ tests:
                 or prune a feed before that happens. keep_firing_for: 48h latches the alert: once
                 the count drops below the threshold it stays firing for ~48h (≥ the daily 24h-TTL
                 sawtooth) before resolving — not minutes — so a peak crossing does not flap.
+  # === CrowdSecBlocklistImportSourceFailing ===
+  # expr aggregates max by(source) so exp_labels carry alertname + severity + source (job/instance
+  # dropped). for:48h; the test group interval MUST equal the file's evaluation_interval (1m) —
+  # promtool advances the `for` timer on the global evaluation_interval ticks, so a coarser group
+  # interval (1h/30m) never satisfies for:48h and the alert never fires. The Pushgateway retains
+  # the last pushed value between daily runs, so 0xN is a continuous N-minute failure; 48h = 2880m
+  # = 2 consecutive failed daily runs (24h schedule). keep_firing_for:24h latches past recovery.
+  # (8) FIRE: source_status 0 for 48h1m (2 failed daily runs). max by(source)==0 holds 2881m ->
+  # fires at 48h1m (for:48h + 1m, same for+1m pattern as CrowdSecDecisionBudgetNearCap case 2).
+  - interval: 1m
+    input_series:
+      - series: 'blocklist_import_source_status{job="crowdsec-blocklist-import",source="Cybercrime Tracker"}'
+        values: '0x2882'
+    alert_rule_test:
+      - eval_time: 48h1m
+        alertname: CrowdSecBlocklistImportSourceFailing
+        exp_alerts:
+          - exp_labels:
+              alertname: CrowdSecBlocklistImportSourceFailing
+              severity: warning
+              source: Cybercrime Tracker
+            exp_annotations:
+              summary: A blocklist-import feed failed to fetch
+              description: |-
+                blocklist-import source Cybercrime Tracker reported fetch status 0 (failed) for
+                ~2 consecutive daily runs. The job exits 0 as long as ≥1 source succeeds, so
+                feed-rot is invisible to KubeJobFailed. Check the importer logs and the feed URL;
+                prune or disable the feed if it is dead.
+  # (9) NO-FIRE: source_status 1 (healthy) for 48h1m — max by(source)==1, condition false, stays quiet.
+  - interval: 1m
+    input_series:
+      - series: 'blocklist_import_source_status{job="crowdsec-blocklist-import",source="Cybercrime Tracker"}'
+        values: '1x2882'
+    alert_rule_test:
+      - eval_time: 48h1m
+        alertname: CrowdSecBlocklistImportSourceFailing
+        exp_alerts: []
+  # (10) NO-FIRE transient: 0 for 24h (one failed run) then 1 (recovered next run). The condition
+  # never holds 48h continuously and is false at 48h1m — a single transient fetch failure does not page.
+  - interval: 1m
+    input_series:
+      - series: 'blocklist_import_source_status{job="crowdsec-blocklist-import",source="Cybercrime Tracker"}'
+        values: '0x1440 1x1442'
+    alert_rule_test:
+      - eval_time: 48h1m
+        alertname: CrowdSecBlocklistImportSourceFailing
+        exp_alerts: []
+  # (11) keep_firing_for pin: 0 for 50h (fires at 48h1m), then 1 for 23h. At eval 73h the condition has
+  # been false since 50h (23h < 24h keep_firing_for), so it stays firing — removing keep_firing_for:24h
+  # would resolve it and return got:[]. Mutation pin, same pattern as case (7).
+  - interval: 1m
+    input_series:
+      - series: 'blocklist_import_source_status{job="crowdsec-blocklist-import",source="Cybercrime Tracker"}'
+        values: '0x3000 1x1381'
+    alert_rule_test:
+      - eval_time: 73h
+        alertname: CrowdSecBlocklistImportSourceFailing
+        exp_alerts:
+          - exp_labels:
+              alertname: CrowdSecBlocklistImportSourceFailing
+              severity: warning
+              source: Cybercrime Tracker
+            exp_annotations:
+              summary: A blocklist-import feed failed to fetch
+              description: |-
+                blocklist-import source Cybercrime Tracker reported fetch status 0 (failed) for
+                ~2 consecutive daily runs. The job exits 0 as long as ≥1 source succeeds, so
+                feed-rot is invisible to KubeJobFailed. Check the importer logs and the feed URL;
+                prune or disable the feed if it is dead.
+  # === CrowdSecBlocklistImportMetricsAbsent ===
+  # absent() carries the selector's job label into the result -> exp_labels carry alertname +
+  # severity + job. for:1h with interval:1m -> fire at 61m. Pins the "whole freshness signal dead" case.
+  # (12) FIRE: no source_status series at all. absent() returns {job="crowdsec-blocklist-import"}=1;
+  # fires at 61m.
+  - interval: 1m
+    input_series: []
+    alert_rule_test:
+      - eval_time: 61m
+        alertname: CrowdSecBlocklistImportMetricsAbsent
+        exp_alerts:
+          - exp_labels:
+              alertname: CrowdSecBlocklistImportMetricsAbsent
+              severity: warning
+              job: crowdsec-blocklist-import
+            exp_annotations:
+              summary: blocklist-import freshness metrics are absent
+              description: |-
+                No blocklist_import_source_status series has been scraped for 1h — the per-source
+                freshness signal is dead. Likely causes: METRICS_ENABLED disabled, the Pushgateway
+                unreachable or down, or the importer crashing before its metrics push. The
+                CrowdSecBlocklistImportSourceFailing alert cannot fire while this is absent, so
+                treat as a monitoring outage of the feed-rot detection plane.
+  # (13) NO-FIRE: a source_status series is present (value 1) — absent() is empty, stays quiet at 61m.
+  - interval: 1m
+    input_series:
+      - series: 'blocklist_import_source_status{job="crowdsec-blocklist-import",source="Spamhaus DROP"}'
+        values: '1x62'
+    alert_rule_test:
+      - eval_time: 61m
+        alertname: CrowdSecBlocklistImportMetricsAbsent
+        exp_alerts: []
+  # (14) NO-FIRE for-not-met: no series but eval at 30m (< for:1h) — pending, does not fire. Pins for:1h.
+  - interval: 1m
+    input_series: []
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: CrowdSecBlocklistImportMetricsAbsent
+        exp_alerts: []

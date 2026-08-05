@@ -1,0 +1,23 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
+# Push ingress from the blocklist-import CronJob (crowdsec ns) on 9091. Prometheus
+# scrape ingress is granted by the ingress-from-prometheus CCNP via the allow-prometheus
+# pod label, not this CNP — the allow-prometheus label makes ingress default-deny except
+# prometheus, so the push from crowdsec needs its own allow here.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: pushgateway
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: prometheus-pushgateway
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: crowdsec
+            app.kubernetes.io/name: blocklist-import
+      toPorts:
+        - ports:
+            - port: "9091"
+              protocol: TCP

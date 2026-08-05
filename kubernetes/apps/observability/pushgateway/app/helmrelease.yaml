@@ -1,0 +1,47 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: pushgateway
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: pushgateway
+  values:
+    fullnameOverride: pushgateway
+    replicaCount: 1
+    # StatefulSet + PVC so pushed metrics survive a pod restart — otherwise a restart
+    # blanks the blocklist-import freshness signal and false-fires CrowdSecBlocklistImportMetricsAbsent.
+    runAsStatefulSet: true
+    persistentVolume:
+      enabled: true
+      size: 1Gi
+      storageClass: democratic-csi-local-hostpath
+    automountServiceAccountToken: false
+    serviceAccount:
+      create: false
+    podLabels:
+      ingress.home.arpa/allow-prometheus: "true"
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 65534
+      runAsGroup: 65534
+      fsGroup: 65534
+      seccompProfile:
+        type: RuntimeDefault
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities:
+        drop:
+          - ALL
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        memory: 128Mi
+    serviceMonitor:
+      enabled: true

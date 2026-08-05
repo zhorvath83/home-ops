@@ -83,7 +83,10 @@ spec:
               ALLOWLIST: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
               # Defence in depth: telemetry is also blocked at the CNP (FQDN absent).
               TELEMETRY_ENABLED: "false"
-              METRICS_ENABLED: "false"
+              # Per-source freshness metrics (source_status, etc.) pushed to the in-cluster
+              # Pushgateway; scraped by Prometheus for the CrowdSecBlocklistImport* alerts.
+              METRICS_ENABLED: "true"
+              METRICS_PUSHGATEWAY_URL: "http://pushgateway.observability.svc.cluster.local:9091"
               LOG_LEVEL: "DEBUG"
             envFrom:
               - secretRef:

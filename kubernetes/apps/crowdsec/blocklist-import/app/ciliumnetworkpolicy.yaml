@@ -1,8 +1,9 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
-# Egress-only: the CronJob pulls Tier A blocklists (443) and reads/writes the LAPI (8080).
-# Telemetry (bouncer-telemetry.ms2738.workers.dev) is deliberately absent and
-# TELEMETRY_ENABLED=false in the release — defence in depth.
+# Egress-only: the CronJob pulls Tier A blocklists (443), reads/writes the LAPI (8080),
+# and pushes freshness metrics to the Pushgateway (9091). Telemetry
+# (bouncer-telemetry.ms2738.workers.dev) is deliberately absent and TELEMETRY_ENABLED=false
+# in the release — defence in depth.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -20,6 +21,16 @@ spec:
       toPorts:
         - ports:
             - port: "8080"
+              protocol: TCP
+    # Pushgateway (observability) — push per-source freshness metrics for the
+    # CrowdSecBlocklistImport* alerts. Pod label is the chart name, not fullnameOverride.
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: observability
+            app.kubernetes.io/name: prometheus-pushgateway
+      toPorts:
+        - ports:
+            - port: "9091"
               protocol: TCP
     # Tier A feed sources — confirmed-malicious infrastructure blocklists only.
     - toFQDNs:
