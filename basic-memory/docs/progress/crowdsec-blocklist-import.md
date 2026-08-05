@@ -9,7 +9,7 @@ permalink: home-ops/docs/progress/crowdsec-blocklist-import
 ## Metadata (observation-form)
 
 - [topic] GitOps manifests for the crowdsec-blocklist-import CronJob (roadmap phases 1-3 only); DRY_RUN starts true
-- [status] phases 1-3 delivered and live-verified (PR #4119 merged, Flux main@0a5f86df); Phase 4 observation window open 2026-08-05 → review ~2026-08-26
+- [status] phases 1-3 delivered and live-verified (PR #4119 merged); cap raised to 75k + CrowdSecDecisionBudgetNearCap alert pending in Draft PR #4120; Phase 4 observation window open 2026-08-05 → review ~2026-08-26
 - [branch] feat/crowdsec-blocklist-import
 - [area] crowdsec, flux-gitops, external-secrets, networking (Cilium), observability
 - [created] 2026-08-04
@@ -131,6 +131,56 @@ LIVE evidence from the first real (non-dry-run) execution — Phase 2/3 acceptan
 
 Window OPENS 2026-08-05; review due ~2026-08-26 (3 weeks). The concrete measurements to take are specified in the roadmap note's Phase 4 section — reference them there, do not re-derive here. The `LOG_LEVEL=DEBUG` per-source log lines (e.g. `Cybercrime Tracker: N total IPs, M unique new`) are the data source for the feed-pruning / promotion decision — that is what DEBUG was enabled for. A future session picks the gate up from the roadmap Phase 4 criteria plus these per-source DEBUG logs.
 
+## Cap + alert round (Draft PR #4120 — pending merge)
+
+A measurement round found a time-sensitive operational defect: `MAX_DECISIONS` is a TOTAL cap (CAPI included), not per-run — `max_new = max(0, MAX_DECISIONS - len(existing))` where `existing` is the full `GET /v1/decisions` result (verified against v3.7.1 `blocklist_import.py`). On budget exhaustion the importer logs `MAX_DECISIONS budget reached ... — skipping remaining sources` and still exits 0, so `KubeJobFailed` never fires and the tail sources (Cybercrime Tracker, VXVault) drop silently. CAPI grew 15,273 → 34,445 in 5 days (deltas +2,146/+2,100/+970/+1,341, ~1.5k/day); the live `cs_active_decisions` total is 39,393 (CAPI 34,445 + blocklist-import 4,948), so the current budget under the 50k cap is only 10,607 — ~7 days to truncation. This round raises the cap and adds a predictive alert.
+
+### R1 — cap raised 50k → 75k (manifest: `helmrelease.yaml`)
+
+`MAX_DECISIONS: "75000"` with a 1-line comment ("TOTAL cap across all origins (CAPI included), not per-run"). New budget at the live 39,393 = 35,607; ~24 days to truncation at ~1.5k/day. Memory justification (NOT in the manifest — recorded here): the live bouncer `envoy-proxy-bouncer` working set is 36Mi at 39,393 cached decisions (limit 128Mi, uptime 2d18h) — ~0.93 KiB/decision total working set. Linear extrapolation to 75k ≈ ~70Mi, ~55% of the 128Mi limit; no bouncer memory raise and no bouncer restart is needed (`MAX_DECISIONS` is an env var on the importer CronJob only, not the bouncer). Caveat: the 07-30 49.5Mi peak (measured when CAPI was ~15k) shows non-linear transient spikes that exceed steady-state — a refresh spike at 75k is unmeasured, but the 07-30 spike was at a lower decision count, so it is not decision-count-scaled; 75k steady-state (~70Mi) leaves headroom for a similar-magnitude spike under 128Mi.
+
+### R2 — predictive truncation alert (manifest: `crowdsec/app/prometheusrule.yaml`)
+
+Added `CrowdSecDecisionBudgetNearCap` to the EXISTING crowdsec `PrometheusRule` (same group, same `cs_active_decisions{job="crowdsec-service", namespace="crowdsec"}` metric as `CrowdSecBanActive`): `sum(cs_active_decisions{...}) > 63750` (85% of 75000), `for: 30m`, `severity: warning`. Threshold lead time: current 39,393 → 63,750 at ~1.5k/day is ~16 days to fire; fire → 75,000 cap is 11,250 decisions / ~1.5k = ~7.5 days of action window (raise the cap again or prune a feed). `for: 30m` rides out single-scrape noise; the daily sawtooth (blocklist-import's 24h-duration decisions decay between 04:00 runs, amplitude ~4,948) is smaller than the 11,250 fire-to-cap gap, so the alert stays fired once the daily trough crosses 63,750 and self-resolves when the count drops back.
+
+**Not a reversal of the N3 deletion.** N3 deleted the per-app `CrowdSecBlocklistImportFailed` (`kube_job_status_failed > 0`) because the built-in `KubeJobFailed` already covers CronJob FAILURE. This new alert covers a DIFFERENT condition — a silent budget exhaustion that EXITS 0 — which has NO built-in coverage. A future reader must not read the pair as flip-flopping.
+
+### R3 — pruning decision: PRUNE NOTHING (but record leave-one-out)
+
+No feed is disabled. The naive per-run figures mislead because `_run_once` banks shared IPs to whichever source runs first.
+
+- **Emerging Threats ≈ Bruteforce Blocker**: intersection 546 of 554/560. The run log's ET 484 / BFB 9 split is a processing-ORDER artifact (ET runs first, banks the shared 546). Leave-one-out: ET-only 8, BFB-only 14, JOINTLY 481 unique. At most ONE of them may ever be pruned.
+- **Leave-one-out unique-lost** (the metric Phase 4 decides on): Spamhaus 1662, URLhaus 1263, Binary Defense 794, Cybercrime Tracker 325, VXVault 66, DShield 37, BFB 9, DShield Top 9, Feodo 5, ET 5, Botvrij 4.
+- **Botvrij**: 182 days stale (Last-Modified 2026-02-03), 4 entries, own gate + own FQDN — the only clean prune candidate if we ever prune.
+- **Feodo (5, dead) is NOT independently prunable**: shares `ENABLE_ABUSE_CH` with URLhaus's 1,263. **DShield Top** shares `ENABLE_DSHIELD` with DShield. Do not try to prune them alone.
+- **Cybercrime Tracker is a FROZEN mirror**: `Source File Date: Tue Jul 7` against a documented 12-hour update frequency (28 days stale). Review trigger, not a prune: re-read that header in ~30 days; if it has not advanced, prune it then.
+
+### R4 — Phase 4 hit-attribution gap RESOLVED (roadmap updated)
+
+The bouncer does NOT expose a per-origin block counter. Verified against the live bouncer `/metrics` (pod proxy): 15 metric families; `bouncer_requests_total{action="allow"}` is labelled by `action` ONLY (no `origin`); `bouncer_decision_cache_size{origin=...}` exists (CAPI 34,445 / blocklist-import 4,948) but counts CACHE, not hits. Therefore the roadmap's VictoriaLogs fallback — correlating `cscli decisions list --origin blocklist-import -o json` against bouncer/Envoy-denied 403s — is MANDATORY, not optional. Roadmap Phase 4 + "Open questions / evidence gaps" updated to mark the gap RESOLVED.
+
+### R6 — Phase 4 candidate decision table (documentation only, no config change)
+
+Net-new measured against the live union (CAPI ∪ blocklist-import ≈ 39,393):
+
+- **DEFER (ranked by risk-adjusted value)**: (1) `ENABLE_CI_ARMY` 13,369 net-new, 0 Tor overlap, 0 broad blocks, needs NEW FQDN `cinsscore.com`; weakness: no published removal process. (2) `ENABLE_SENTINEL` 7,935, 2 Tor, NEW FQDN `view.sentinel.turris.cz`; weakness: greylist semantics. (3) `ENABLE_BLOCKLIST_DE` 18,989, 53 Tor, NEW FQDN `lists.blocklist.de`; the ONLY candidate with a documented delist path.
+- **DISQUALIFIED on measured false-positive risk (not size)**: `ENABLE_ABUSE_IPDB` mirror (498 Tor exits = 21.3% of all known exits, +3,014 cloud/CDN hits — bans privacy users at scale, unaudited user-submitted mirror); `ENABLE_IPSUM` (300 Tor, reputation-by-count, no verification); `ENABLE_GREENSNOW` (1.4% Tor density); `ENABLE_SCANNERS` (Censys/Shodan static /23+/24 presets block legitimate research; scanner IPs rotate); `ENABLE_STOPFORUMSPAM` (60 entries → 124,780 addresses of whole hosting ranges; irrelevant, no public forum); `ENABLE_TOR` (Tor by definition); `ENABLE_FIREHOL` (single master gate forces L1+L2+L3, 25,878 net-new incl. Tier C).
+- **Cap arithmetic for the strongest candidate**: 4,660 + 13,369 = 18,029 + CAPI 33,827 = 51,856 — EXCEEDED the old 50,000 cap, i.e. CI Army could not have been added without this round's raise. Under 75,000 it fits.
+- **CGNAT is a NON-ISSUE by construction**: the parser strips `100.64.0.0/10` itself.
+- **Measured 30-day yield**: `bouncer_requests_total{action="ban"}` = 19 vs `action="allow"` = 52,630 (0.036%); all 19 ban events PREDATE blocklist-import.
+- **Genuine coverage gap**: cloud-hosted scanners/C2 — Tier A holds almost nothing in major cloud ranges (URLhaus 5, Cybercrime 39, Binary Defense 71). This is exactly what Phase 4 should test and what CI Army would close.
+- **Caveat (honest)**: the cloud/CDN prefix set used for these measurements was hand-picked coarse ranges, not authoritative provider lists — directionally valid, not exact. Per-candidate ASN composition is UNMEASURED.
+
+### Gates
+
+pre-commit clean (incl. `promtool-rule-tests` — see premise drift below); `kustomize build` both `blocklist-import/app` and `crowdsec/app` exit 0; `promtool check rules` on the extracted `spec.groups` → `SUCCESS: 6 rules found` (the 6th is `CrowdSecDecisionBudgetNearCap`); `helm template` renders `MAX_DECISIONS: "75000"` in the CronJob env.
+
+### Premise drift found this round (flagged to control lane)
+
+- **`tests/` dir now exists**: the brief said the `promtool-rule-tests` hook is a NO-OP for crowdsec (no `tests/` dir), but a `prom` commit on main (merged into this branch) added `kubernetes/apps/crowdsec/crowdsec/tests/prometheusrule_test.yaml` (covers `CrowdSecAgentDown` + `CrowdSecAppsecDown` only — not the new alert). So the hook now PASSES (not a no-op); `just k8s test-prom-rules` reports the crowdsec module as `SUCCESS: 6 rules found`. The new alert's correctness still rests on `promtool check rules` + the threshold math, not on that test file.
+- **R5 verified against the pinned v3.7.1, not `main`**: `main`-branch `blocklist_import.py` already has `ENABLE_FIREHOL_LEVEL1/2/3` per-level overrides, but the DEPLOYED image is `3.7.1@sha256:...`, whose source has only the single `ENABLE_FIREHOL` master gate (all three levels share `enabled_key="enable_firehol"`). The brief's R5 describes the deployed version correctly; the per-level override is a newer-main feature.
+- **Bouncer memory decomposition**: recorded my own live numbers (36Mi @ 39,393 → ~70Mi @ 75k) rather than the brief's "62-80Mi cache + 21Mi baseline" split, which does not fully reconcile against the single live sample. The conclusion (75k fits under 128Mi, no bouncer raise/restart) is unchanged and independently confirmed.
+
 ## Follow-ups (out of scope, logged — do NOT implement in this PR)
 
 - Phase 4: the 3-week observation window (decision volume, feed health, alert noise) — separate change.
@@ -148,3 +198,5 @@ Window OPENS 2026-08-05; review due ~2026-08-26 (3 weeks). The concrete measurem
 - **Final-round (d)**: the previously logged N2/N5/N6 and D4 items above remain open (no change this round).
 
 - **Closing (C4) — bouncer-key path fails silently**: upstream `health_check()` returns `response.status_code in (200, 403)` (True for 403 — "200 = OK, 403 = unauthorized but reachable") and `get_existing_ips()` logs an error on 403 and returns `[]`. So an invalid or revoked BOUNCER key does not fail the run — it silently skips dedup, and `max_new` widens to the full `MAX_DECISIONS` (50000). The write-path gate we validated (manual Job `bli-live-1`) covers only the MACHINE credential, not the bouncer key. Same "fails without a signal" family as N2 — needs its own issue. (Verified against `blocklist_import.py` main.)
+
+- **Cap+alert round — egress policy observation (ABUSE_IPDB/FIREHOL/IPSUM/maltrail)**: four of the highest-volume disabled gates (`ABUSE_IPDB`, `FIREHOL`, `IPSUM`, and maltrail under `SCANNERS`) need NO CNP change to enable, because `raw.githubusercontent.com` is already allowed (for `cybercrime.ipset` + `vxvault.ipset`). So the FQDN allowlist will NOT catch an accidental Tier B/C enablement of those — the `ENABLE_*` env gates are the only control there. Logged only; not implemented.

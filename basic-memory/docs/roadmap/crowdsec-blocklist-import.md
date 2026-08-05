@@ -3,7 +3,7 @@ title: crowdsec-blocklist-import
 type: roadmap
 permalink: home-ops/docs/roadmap/crowdsec-blocklist-import
 topic: Adoption of crowdsec-blocklist-import for enhanced threat intelligence
-status: proposed
+status: in-progress
 priority: medium
 scope: Block known-malicious source IPs at the Envoy gateway before a request reaches
   any application, by importing a precision-tiered set of third-party threat-intelligence
@@ -50,7 +50,7 @@ related_areas:
 ## Metadata (observation-form, schema validation)
 
 - [topic] Adoption of crowdsec-blocklist-import for enhanced threat intelligence
-- [status] proposed
+- [status] in-progress
 - [priority] medium
 - [verification] The list-selection and integration-shape assessment was produced by an Ollama agent and independently spot-verified by the Maestro against repo files. The remaining numbers marked "approx" come from the upstream docs and the blog.lrvt.de/enhancing-crowdsec article, not from a local measurement.
 
@@ -138,22 +138,22 @@ exits).
 | Abuse.ch (Feodo + URLhaus) | `ENABLE_ABUSE_CH` | ~1.3k IP | verified malware C2 / malware-hosting host — URLhaus is a URL feed, only ~8% IP-literal (1284/15985); the 8642 domain hosts are the run's benign "8747 parsing errors", not lost IPs | **A** | Low |
 | Emerging Threats | `ENABLE_EMERGING_THREATS` | 0.5k | host observed compromised and used for attacks | **A** | Low |
 | Binary Defense | `ENABLE_BINARY_DEFENSE` | 1.3k | malware / botnet infrastructure, vetted | **A** | Low |
-| DShield (ISC top attackers) | `ENABLE_DSHIELD` | 20 | top attack sources by volume across ISC sensors | **A** | Very low |
-| Bruteforce Blocker | `ENABLE_BRUTEFORCE_BLOCKER` | 0.5k | host observed performing SSH/RDP brute force; 97.5% redundant with earlier feeds (14 net-new of 560) | **A** | Low |
+| DShield (ISC top attackers) | `ENABLE_DSHIELD` | 40 + 14 | DShield (40) + DShield Top (14); top attack sources by volume across ISC sensors | **A** | Very low |
+| Bruteforce Blocker | `ENABLE_BRUTEFORCE_BLOCKER` | 0.5k | host observed performing SSH/RDP brute force; 97.5% redundant with Emerging Threats specifically (546 of 554 shared; 14 net-new of 560; at most one of ET/BFB may be pruned) | **A** | Low |
 | Cybercrime Tracker | `ENABLE_CYBERCRIME_TRACKER` | small | tracked C2 panel / fraud infrastructure | **A** | Low |
 | Monty Security C2 | `ENABLE_MONTY_SECURITY_C2` | DEAD | upstream removed `data/all.txt` (404); feed disabled — `ENABLE_MONTY_SECURITY_C2="false"` | **A** | Low |
 | VX Vault | `ENABLE_VXVAULT` | small | malware distribution host | **A** | Low |
-| Botvrij | `ENABLE_BOTVRIJ` | 4 | verified botnet C2 | **A** | Very low |
+| Botvrij | `ENABLE_BOTVRIJ` | 4 | verified botnet C2; 182 days stale (Last-Modified 2026-02-03) — only clean prune candidate | **A** | Very low |
 | Firehol Level 1 | `ENABLE_FIREHOL_LEVEL1` | 4.5k | composite of high-confidence feeds (largely the same sources as Tier A) | **B** | Low |
 | IPsum | `ENABLE_IPSUM` | 19k | appeared on ≥3 other blocklists — reputation, not verification | **B** | Moderate |
 | Blocklist.de (+ SSH/Apache/mail sub-lists) | `ENABLE_BLOCKLIST_DE` | 27k (+31k) | someone reported abuse from this IP | **B** | Moderate–High |
 | CI Army | `ENABLE_CI_ARMY` | 15k | "poor reputation" score, vague criterion | **B** | Moderate |
 | GreenSnow | `ENABLE_GREENSNOW` | 4.3k | attack attempts seen by GreenSnow sensors, limited vetting | **B** | Moderate |
 | AbuseIPDB (public mirror) | `ENABLE_ABUSE_IPDB` | unknown | user-submitted reports, mirror quality unverified | **B** | Moderate |
-| Sentinel (Turris) | `ENABLE_SENTINEL` | unknown | Turris sensor observations, precision undocumented here | **B** | Unknown |
+| Sentinel (Turris) | `ENABLE_SENTINEL` | 10,367 | Turris sensor greylist (observation, not confirmation); 2 Tor exits | **B** | Moderate |
 | Firehol Level 2 | `ENABLE_FIREHOL_LEVEL2` | 19k | aggregate of aggregates | **C** | Moderate |
 | Firehol Level 3 | `ENABLE_FIREHOL_LEVEL3` | >30k | most aggressive aggregation level | **C** | High |
-| Firehol (meta flag) | `ENABLE_FIREHOL` | — | enables the Firehol group; leave off, use the per-level flags | **C** | — |
+| Firehol (meta flag) | `ENABLE_FIREHOL` | — | v3.7.1 single master gate; on → forces L1+L2+L3 (25,878 net-new incl. Tier C); leave off | **C** | — |
 | Tor exit nodes | `ENABLE_TOR` | 1.3k + 2.4k | this IP is a Tor exit — not a malice signal | **C** | High (privacy-using legitimate visitors) |
 | Scanners (Shodan/Censys) | `ENABLE_SCANNERS` | 47 | known internet-measurement infrastructure | **C** | Moderate (blocks legitimate research; rotating IPs make it futile) |
 | StopForumSpam | `ENABLE_STOPFORUMSPAM` | 53 | forum-spam submitter | **C** | Low (irrelevant: no public forum) |
@@ -175,10 +175,8 @@ ENABLE_CYBERCRIME_TRACKER: "true"
 ENABLE_MONTY_SECURITY_C2: "false"
 ENABLE_VXVAULT: "true"
 ENABLE_BOTVRIJ: "true"
+# v3.7.1 exposes a single ENABLE_FIREHOL master, not per-level keys.
 ENABLE_FIREHOL: "false"
-ENABLE_FIREHOL_LEVEL1: "false"
-ENABLE_FIREHOL_LEVEL2: "false"
-ENABLE_FIREHOL_LEVEL3: "false"
 ENABLE_IPSUM: "false"
 ENABLE_BLOCKLIST_DE: "false"
 ENABLE_CI_ARMY: "false"
@@ -190,7 +188,7 @@ ENABLE_SCANNERS: "false"
 ENABLE_STOPFORUMSPAM: "false"
 DECISION_DURATION: "24h"
 DECISION_ORIGIN: "blocklist-import"
-MAX_DECISIONS: "50000"
+MAX_DECISIONS: "75000"
 BATCH_SIZE: "500"
 CONSOLIDATE_ALERTS: "true"
 ALLOWLIST: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
@@ -199,9 +197,7 @@ METRICS_ENABLED: "false"
 LOG_LEVEL: "DEBUG"
 ```
 
-`MAX_DECISIONS: 50000` is a safety cap on what one import run may push (Tier A ~5.2k plus ample
-headroom), so a feed that suddenly balloons fails the run instead of flooding the LAPI. It is not a
-cap on total LAPI decisions. `METRICS_ENABLED: "false"` because the cluster runs no Prometheus
+`MAX_DECISIONS: 75000` is a TOTAL cap across all origins (CAPI included), not per-run — `max_new = max(0, MAX_DECISIONS - len(existing))` where `existing` is the full `GET /v1/decisions` result. On budget exhaustion the importer logs "skipping remaining sources" and exits 0, so `KubeJobFailed` never fires and the tail feeds (Cybercrime Tracker, VXVault) drop silently; raised from 50000 to 75000 after CAPI grew to ~34.4k (measured ~1.5k/day). Tier A ~5.2k plus ample headroom remains against a ballooning feed. `METRICS_ENABLED: "false"` because the cluster runs no Prometheus
 Pushgateway — LAPI-side metrics are the observability path. `ALLOWLIST` complements, and does not
 replace, the existing `crowdsecurity/whitelists` parser.
 
@@ -209,8 +205,10 @@ replace, the existing `crowdsecurity/whitelists` parser.
 window (Phase 4) shows Tier A + CAPI leaving a real gap — i.e. attack traffic reaching the services
 from IPs that a specific Tier B feed lists. Enable one feed, keep the same window length, and check
 both directions: did anything new get blocked, and did any legitimate user get locked out. Note that
-Firehol Level 1 largely re-derives the Tier A sources, so it is the *least* likely Tier B feed to
-add coverage despite being the safest.
+v3.7.1 exposes a single `ENABLE_FIREHOL` master gate (no per-level keys), so Firehol L1 cannot be
+enabled alone — the gate forces L1+L2+L3 (25,878 net-new incl. Tier C), making the L1-only promotion
+path UNIMPLEMENTABLE as a Tier B feed in this version. L1 also largely re-derives the Tier A
+sources, so it is the *least* likely Tier B feed to add coverage regardless.
 
 Per the repo's priority order (Security > Clarity > Performance), resource headroom must never be
 the reason a defensive feed is dropped — only false-positive risk or genuine irrelevance may
@@ -220,14 +218,15 @@ disable one. Equally, "we may raise memory" is permission, not an obligation to 
 
 The memory number is a **consequence** of the list decision, not an independent choice.
 
-- Measured: bouncer at 32Mi resident while caching ~20k CAPI decisions
-  (`bouncer_decision_cache_size{origin="CAPI"} = 19956`), request 64Mi, limit 128Mi
-  (`kubernetes/apps/crowdsec/bouncer/app/helmrelease.yaml:62-67`).
-- Attributing the whole 32Mi to the cache gives a deliberately conservative ~1.6 KiB per decision
-  (the real per-decision cost is lower, since a Go process has a baseline footprint). One data
-  point — this is an **extrapolation**, not a measurement of scaling.
-- Tier A (~5.2k decisions — covering ~15M IPv4 addresses; the bouncer cache and SQLite LAPI pay per **decision**, never per address) on top of CAPI (~20k) ≈ ~25k decisions → ~40Mi by the conservative
-  estimate. That fits inside the **existing** 128Mi limit with ~3.2x headroom.
+- Measured (2026-08-05): bouncer `envoy-proxy-bouncer` working set 36Mi at 39,393 cached decisions
+  (CAPI 34,445 + blocklist-import 4,948; CAPI grew ~20k → ~34.4k at ~1.5k/day), request 64Mi,
+  limit 128Mi (`kubernetes/apps/crowdsec/bouncer/app/helmrelease.yaml:62-67`).
+- Steady state is ~0.93 KiB/decision; the 07-30 peak of 49.5Mi (CAPI ~15k) shows non-linear
+  transient refresh spikes that exceed steady state, so the earlier ~1.6 KiB/decision single-point
+  figure (from 32Mi @ ~20k CAPI) is an **extrapolation**, not a measurement of scaling — the
+  2-point steady-state range is ~0.9-1.6 KiB/decision.
+- Tier A (~5.2k decisions — covering ~15M IPv4 addresses; the bouncer cache and SQLite LAPI pay per **decision**, never per address) on top of CAPI (~34.4k, growing ~1.5k/day) ≈ ~40k decisions → ~36Mi measured; at the 75k cap
+  linear extrapolation ≈ ~70Mi, ~1.8x headroom inside the **existing** 128Mi limit.
 
 **Recommendation now: change nothing.** Keep `requests.memory: 64Mi` / `limits.memory: 128Mi`. A
 raise is not free: the bouncer is fail-closed (`failOpen: false`), so restarting it to apply a new
@@ -329,11 +328,13 @@ trouble; a Postgres LAPI is a follow-up only if measurements demand it, and is o
     — verified to exist (`prometheusrule.yaml:50` already uses this metric).
   - bouncer cache size: `bouncer_decision_cache_size` by origin — verified in use
     (`docs/progress/envoy-crowdsec-bouncer`).
-  - **hits** (requests actually blocked, by origin): NOT verified to exist as a metric. Acceptance
-    criterion: first verify whether the bouncer exposes a per-origin block counter (inspect
-    `/metrics` on the bouncer pod and the bouncer Grafana dashboard); if it does not, fall back to
-    counting bouncer-denied requests in VictoriaLogs (bouncer + Envoy access logs, 403s attributed
-    to extAuth) and correlating the source IPs against `cscli decisions list --origin blocklist-import -o json`.
+  - **hits** (requests actually blocked, by origin): RESOLVED (2026-08-05) — the bouncer does NOT
+    expose a per-origin block counter. Verified against live `/metrics` (pod proxy): 15 metric
+    families; `bouncer_requests_total{action="..."}` is labelled by `action` ONLY (no `origin`);
+    `bouncer_decision_cache_size{origin=...}` exists (CAPI 34,445 / blocklist-import 4,948) but
+    counts CACHE, not hits. The VictoriaLogs fallback is therefore MANDATORY: count
+    bouncer-denied requests in VictoriaLogs (bouncer + Envoy access logs, 403s attributed to
+    extAuth) and correlate the source IPs against `cscli decisions list --origin blocklist-import -o json`.
 - Decision rule: prune any Tier A feed with zero correlated hits **and** no unique coverage; do not
   promote a Tier B feed unless the logs show attack traffic that Tier A + CAPI missed and that feed
   lists. Record the numbers in the progress note — a null result is a valid, publishable outcome.
@@ -349,7 +350,7 @@ trouble; a Postgres LAPI is a follow-up only if measurements demand it, and is o
 ## Risks and blast radius
 
 - **False positives**: Blocking a legitimate IP could lock out a user. The `ALLOWLIST` includes private IP ranges to prevent self-bans. The 24h TTL ensures any false positives expire within a day.
-- **Database bloat**: Every imported IP is a row in the SQLite LAPI and an entry in the bouncer's in-memory cache. Tier A (~5.2k) on top of CAPI (~20k) is well within today's limits (see Sizing); `MAX_DECISIONS: 50000` caps what a single import run may push, so a ballooning feed fails the run instead of flooding the LAPI.
+- **Database bloat**: Every imported IP is a row in the SQLite LAPI and an entry in the bouncer's in-memory cache. Tier A (~5.2k) on top of CAPI (~34.4k, growing ~1.5k/day) is within today's limits (see Sizing); `MAX_DECISIONS: 75000` is a TOTAL cap across all origins (CAPI included), not per-run, so on budget exhaustion the importer exits 0 (silent truncation, `KubeJobFailed` never fires) rather than failing the run.
 - **Egress policy complexity**: The CronJob requires egress to external FQDNs. If any FQDN changes, the job will fail to fetch that list, though it will continue with others. The CiliumNetworkPolicy must be maintained.
 - **Telemetry**: The tool sends anonymous telemetry by default. This will be disabled (`TELEMETRY_ENABLED=false`) and the telemetry FQDN will be blocked by the CNP.
 - **Dependency, not scope — client-IP resolution**: the value the bouncer matches decisions against is produced by the existing gateway/bouncer implementation. This plane inherits it and is only as accurate as that resolution. If the cluster ever leaves Cloudflare, revisiting client-IP handling belongs to [[envoy-crowdsec-bouncer]], and should be handled there before the exposure change; no work in this roadmap item depends on it.
@@ -374,6 +375,8 @@ trouble; a Postgres LAPI is a follow-up only if measurements demand it, and is o
    judge, short enough to act on). (c) 4 weeks.
 
 ## Open questions / evidence gaps
+
+- RESOLVED (2026-08-05): Phase 4 hit attribution — the bouncer exposes NO per-origin block counter. Verified against live `/metrics` (pod proxy): 15 metric families; `bouncer_requests_total{action="..."}` is labelled by `action` ONLY (no `origin`); `bouncer_decision_cache_size{origin=...}` exists (CAPI 34,445 / blocklist-import 4,948) but counts CACHE, not hits. The VictoriaLogs fallback is therefore MANDATORY: count bouncer-denied requests and correlate source IPs against `cscli decisions list --origin blocklist-import -o json`.
 
 - EVIDENCE GAP: The exact UID of the `blocklist` user in the Docker image. The Dockerfile uses `useradd -r` without a fixed UID. The security context will rely on `runAsNonRoot: true` without an explicit `runAsUser` unless the UID is verified.
 
