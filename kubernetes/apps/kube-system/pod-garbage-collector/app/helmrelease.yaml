@@ -1,0 +1,148 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+# Modeled on crowdsec/blocklist-import (app-template cronjob + dedicated SA) and
+# observability/smartctl-exporter (co-located PrometheusRule). De-facto sweep spec
+# comes from the `just k8s prune-pods` recipe; this automates a safer gated subset.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: pod-garbage-collector
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  values:
+    defaultPodOptions:
+      # kubectl needs the SA token to talk to the API; the SA is bound to a
+      # least-priv ClusterRole (list/delete pods) in rbac.yaml.
+      automountServiceAccountToken: true
+      enableServiceLinks: false
+      labels:
+        ingress.home.arpa/none: "true"
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+    controllers:
+      pod-garbage-collector:
+        type: cronjob
+        cronjob:
+          schedule: "*/15 * * * *"
+          concurrencyPolicy: Forbid
+          backoffLimit: 3
+          successfulJobsHistory: 1
+          failedJobsHistory: 2
+          ttlSecondsAfterFinished: 3600
+        pod:
+          restartPolicy: OnFailure
+        containers:
+          app:
+            image:
+              # renovate: datasource=docker depName=alpine/k8s
+              repository: alpine/k8s
+              tag: 1.36.2@sha256:1af42341bac2392c9af30f79019aa94dd9d3be018c970383debfb3d6f76acf87
+            env:
+              # kubectl writes its HTTP cache under HOME; point it at the writable emptyDir.
+              - name: HOME
+                value: /tmp
+            command:
+              - /bin/sh
+              - -c
+              - |
+                set -eu
+                echo "=== pod-garbage-collector run $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
+
+                # S1: Failed pods older than 1h. Admission-rejected pods (UnexpectedAdmissionError,
+                # OutOfcpu/OutOfmemory) can be phase=Failed with no startTime; jq errors on null
+                # under `set -eu`, so they are logged+skipped here, never age-checked or deleted.
+                FAILED_NO_START=$(kubectl get pods --all-namespaces --field-selector=status.phase=Failed -o json \
+                  | jq -r '.items[] | select(.status.startTime == null) | "\(.metadata.namespace) \(.metadata.name)"')
+                NO_START_N=$(printf '%s\n' "$FAILED_NO_START" | grep -c . || true)
+                if [ -n "$FAILED_NO_START" ]; then
+                  printf '%s\n' "$FAILED_NO_START" | while read -r ns pod; do
+                    [ -n "$pod" ] || continue
+                    echo "  skip (no startTime): $ns/$pod"
+                  done
+                fi
+                FAILED=$(kubectl get pods --all-namespaces --field-selector=status.phase=Failed -o json \
+                  | jq -r '.items[] | select(.status.startTime != null) | select((now - (.status.startTime | fromdateiso8601)) > 3600) | "\(.metadata.namespace) \(.metadata.name)"')
+                FAILED_N=$(printf '%s\n' "$FAILED" | grep -c . || true)
+                echo "S1 Failed>1h: found=$FAILED_N (no-startTime skipped=$NO_START_N)"
+                if [ -n "$FAILED" ]; then
+                  printf '%s\n' "$FAILED" | while read -r ns pod; do
+                    [ -n "$pod" ] || continue
+                    echo "  delete $ns/$pod"
+                    kubectl delete pod "$pod" -n "$ns" --ignore-not-found=true
+                  done
+                fi
+
+                # S2: Succeeded pods older than 1h, excluding Job-owned (left to history limits / ttlSecondsAfterFinished).
+                # Same null-startTime guard as S1 for set -eu safety; Succeeded-with-no-startTime is
+                # implausible but logged+skipped rather than age-checked or deleted.
+                SUCCEEDED_NO_START=$(kubectl get pods --all-namespaces --field-selector=status.phase=Succeeded -o json \
+                  | jq -r '.items[] | select(.status.startTime == null) | "\(.metadata.namespace) \(.metadata.name)"')
+                SUCC_NO_START_N=$(printf '%s\n' "$SUCCEEDED_NO_START" | grep -c . || true)
+                if [ -n "$SUCCEEDED_NO_START" ]; then
+                  printf '%s\n' "$SUCCEEDED_NO_START" | while read -r ns pod; do
+                    [ -n "$pod" ] || continue
+                    echo "  skip (no startTime): $ns/$pod"
+                  done
+                fi
+                SUCCEEDED=$(kubectl get pods --all-namespaces --field-selector=status.phase=Succeeded -o json \
+                  | jq -r '.items[] | select(.status.startTime != null) | select((now - (.status.startTime | fromdateiso8601)) > 3600) | select(.metadata.ownerReferences // [] | all(.kind != "Job")) | "\(.metadata.namespace) \(.metadata.name)"')
+                SUCC_N=$(printf '%s\n' "$SUCCEEDED" | grep -c . || true)
+                echo "S2 Succeeded>1h (non-Job): found=$SUCC_N (no-startTime skipped=$SUCC_NO_START_N)"
+                if [ -n "$SUCCEEDED" ]; then
+                  printf '%s\n' "$SUCCEEDED" | while read -r ns pod; do
+                    [ -n "$pod" ] || continue
+                    echo "  delete $ns/$pod"
+                    kubectl delete pod "$pod" -n "$ns" --ignore-not-found=true
+                  done
+                fi
+
+                # S3: pods stuck Terminating >10min with NO finalizers. The finalizer filter is
+                # load-bearing: force-deleting a finalizer-blocked pod (VolSync/ESO/PVC-detach)
+                # orphans the underlying resource, so finalizer-bearing pods are skipped on purpose
+                # and surface via the PodStuckTerminating PrometheusRule instead.
+                STUCK=$(kubectl get pods --all-namespaces -o json \
+                  | jq -r '.items[] | select(.metadata.deletionTimestamp != null) | select((now - (.metadata.deletionTimestamp | fromdateiso8601)) > 600) | select((.metadata.finalizers // []) | length == 0) | "\(.metadata.namespace) \(.metadata.name)"')
+                STUCK_N=$(printf '%s\n' "$STUCK" | grep -c . || true)
+                echo "S3 stuck-Terminating>10m (no finalizers): found=$STUCK_N"
+                if [ -n "$STUCK" ]; then
+                  printf '%s\n' "$STUCK" | while read -r ns pod; do
+                    [ -n "$pod" ] || continue
+                    echo "  force-delete $ns/$pod"
+                    kubectl delete pod "$pod" -n "$ns" --grace-period=0 --force --ignore-not-found=true
+                  done
+                fi
+
+                echo "=== cleanup complete ==="
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                  - "ALL"
+            resources:
+              requests:
+                cpu: 10m
+                memory: 32Mi
+              limits:
+                memory: 64Mi
+            probes:
+              liveness:
+                enabled: false
+              readiness:
+                enabled: false
+              startup:
+                enabled: false
+    persistence:
+      tmp:
+        type: emptyDir
+        globalMounts:
+          - path: /tmp

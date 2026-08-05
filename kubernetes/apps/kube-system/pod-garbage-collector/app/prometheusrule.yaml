@@ -1,0 +1,25 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/monitoring.coreos.com/prometheusrule_v1.json
+# Picked up by the kube-prometheus-stack Prometheus (ruleSelector match-all).
+# Warning reaches Pushover via the alertmanager default route. Targets the pods
+# S3 deliberately skips: stuck Terminating with finalizers the sweep will not force-delete.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: pod-garbage-collector
+spec:
+  groups:
+    - name: pod-garbage-collector
+      rules:
+        - alert: PodStuckTerminating
+          # kube_pod_deletion_timestamp is emitted by kube-state-metrics only for pods
+          # with a deletionTimestamp; age > 15m means the pod-garbage-collector S3 sweep
+          # (every 15m, no-finalizer force-delete at >10m) has run at least once and could
+          # not remove it — i.e. it is finalizer-blocked. for:15m debounces the sweep race.
+          expr: (time() - kube_pod_deletion_timestamp) > 900
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Pod {{ $labels.pod }} stuck Terminating >15m in {{ $labels.namespace }}"
+            description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} has been terminating for over 15m — likely blocked by a finalizer the pod-garbage-collector intentionally skips. Investigate VolSync/external-secrets/PVC finalizers."
