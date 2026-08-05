@@ -66,7 +66,7 @@ related_areas:
 - [decision] **Bar**: every alert gets a positive AND a negative case (negative expressed as a
   second series that must NOT appear in `exp_alerts`, which promtool matches exactly), plus
   `exp_annotations` asserting the fully rendered summary and description. Threshold alerts are
-  tested on the boundary pair (e.g. 80 does not fire / 81 does).
+  tested on the boundary pair (e.g. 80 does not fire / 81 does). **Latch corollary** (added 2026-08-05, from the crowdsec-blocklist-import closing round): alerts that carry `keep_firing_for` — `CrowdSecBanActive` (5m), `CrowdSecAcquisitionStalled` (3h), and the newly-added `CrowdSecDecisionBudgetNearCap` (48h) — need an ADDITIONAL case that evaluates PAST the latch window with the condition already false, asserting the alert stays firing; otherwise removing `keep_firing_for` leaves the suite green and the latch is untested. The `CrowdSecDecisionBudgetNearCap` 7th case (`values: 63751x40 0x30`, eval 60m) is the template — verified by mutation that removing `keep_firing_for: 48h` fails exactly that case while the other 12 stay green. `CrowdSecBanActive` and `CrowdSecAcquisitionStalled` do not yet have such a case; add one each when those work-list rows are implemented.
 
 ## Work list — 11 alerts across 8 files
 
