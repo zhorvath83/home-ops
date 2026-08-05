@@ -46,6 +46,10 @@ spec:
       plugin_admin_enabled: "false"
       # D13: no plugins — don't fetch the default preinstall apps from grafana.com at startup.
       preinstall_disabled: "true"
+      # D13: skip the plugin signature key manifest fetch (plugin.signature.key_retriever)
+      # from grafana.com/api/plugins/ci/keys. No plugins → nothing to verify; fall back to the
+      # bundled hardcoded key. Closes the recurring HubblePolicyDeny on this endpoint.
+      public_key_retrieval_disabled: "true"
     security:
       allow_embedding: "true"
     server:
