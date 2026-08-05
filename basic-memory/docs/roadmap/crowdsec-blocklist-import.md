@@ -340,6 +340,7 @@ trouble; a Postgres LAPI is a follow-up only if measurements demand it, and is o
   lists. Record the numbers in the progress note — a null result is a valid, publishable outcome.
 
 ### Phase 5 — conditional Tier B promotion (only if Phase 4 justifies it)
+- **HARD PRECONDITION — recompute the truncation alert threshold (from the Cap+alert round, Draft PR #4120)**: ANY feed-set expansion REQUIRES recomputing `CrowdSecDecisionBudgetNearCap`'s `> 63750` threshold FIRST. Truncation onset is `MAX_DECISIONS − F` (F = the feed-set's full size), NOT the total cap, so adding a feed grows F and lowers the onset. Concrete: CI Army (+13,369 → F ≈ 18,000) moves onset to `CAPI > 57,000`, which is BELOW the alert's own sustained trigger level (`CAPI > 59,090` = 63,750 − 4,660) — the alert would fire only AFTER truncation had already begun. Before enabling any new feed: recompute `threshold = 0.85 × MAX_DECISIONS` and verify `threshold − F_low > sustained_trigger_margin` (the low-phase `need` ≈ fresh-per-run). This is a GATE on Phase 5, not a note.
 - Enable one Tier B feed, together with the memory raise from the Sizing section and the matching
   `MAX_DECISIONS` bump and CNP FQDN additions, in a single change so the bouncer restarts once.
 - **Acceptance**: after the restart, `kubectl -n crowdsec get pod -l app.kubernetes.io/name=crowdsec-bouncer -o jsonpath='{.items[*].status.containerStatuses[*].lastState.terminated.reason}'`
