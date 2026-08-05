@@ -21,6 +21,32 @@ spec:
               The CrowdSec LAPI is unreachable, so no decision can be issued or queried.
               Once the bouncer SecurityPolicy is attached this also fails requests closed
               on the affected gateway.
+        # DaemonSet down: `absent()` covers scale-to-0 / crashloop / evicted where `up` vanishes
+        # — same shape as CrowdSecLAPIDown. AcquisitionStalled catches the slower "blind" case.
+        - alert: CrowdSecAgentDown
+          expr: up{job="crowdsec-agent-service", namespace="crowdsec"} == 0 or absent(up{job="crowdsec-agent-service", namespace="crowdsec"})
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: CrowdSec agent is down
+            description: |-
+              The crowdsec-agent DaemonSet has no scrapeable target, so envoy container logs
+              are not parsed and no local decisions are issued. CAPI blocklists still apply via
+              the LAPI, but scenario-based detection is stopped. Check the crowdsec-agent DaemonSet.
+        # AppSec Deployment down: in-band appsec evaluation stops. `absent()` covers crashloop /
+        # scale-to-0 / evicted, same shape as the LAPI/agent rules.
+        - alert: CrowdSecAppsecDown
+          expr: up{job="crowdsec-appsec-service", namespace="crowdsec"} == 0 or absent(up{job="crowdsec-appsec-service", namespace="crowdsec"})
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: CrowdSec AppSec is down
+            description: |-
+              The crowdsec-appsec Deployment has no scrapeable target, so in-band AppSec rule
+              evaluation is not running. Requests routed through appsec are no longer inspected
+              for app-level signals. Check the crowdsec-appsec Deployment.
         # Symmetric 6h windows + keep_firing_for: measured over 7d the envoy counter has
         # zero-traffic gaps (21% of 2h, 7% of 4h, 3.5% of 6h windows, longest 6h gap 2.9h),
         # which is what made the 1h version self-resolve mid-stall; 12h misses an 8h stall.

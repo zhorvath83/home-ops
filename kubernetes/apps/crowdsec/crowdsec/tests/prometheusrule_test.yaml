@@ -1,0 +1,110 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/prometheus-test
+# promtool unit tests for app/prometheusrule.yaml, covering CrowdSecAgentDown and
+# CrowdSecAppsecDown only. Both follow the CrowdSecLAPIDown shape: `up == 0 or absent(up{...})`,
+# so the `absent()` branch covers scale-to-0 / crashloop / evicted where the `up` series
+# vanishes — that is the branch the tests exercise most, since `up == 0` alone would never
+# fire for those outage shapes. for:5m, so every fire case evals past 5m (eval at 6m).
+# Run via `just k8s test-prom-rules` (recipe extracts .spec into ./_extracted_rules.yaml).
+rule_files:
+  - ./_extracted_rules.yaml
+evaluation_interval: 1m
+tests:
+  # === CrowdSecAgentDown ===
+  # (a) Fire: series absent (DaemonSet gone / scaled to 0). absent() carries the matcher labels
+  # (job, namespace) into the result vector; fires after 5m for.
+  - interval: 1m
+    input_series: []
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: CrowdSecAgentDown
+        exp_alerts:
+          - exp_labels:
+              alertname: CrowdSecAgentDown
+              severity: critical
+              job: crowdsec-agent-service
+              namespace: crowdsec
+            exp_annotations:
+              summary: CrowdSec agent is down
+              description: |-
+                The crowdsec-agent DaemonSet has no scrapeable target, so envoy container logs
+                are not parsed and no local decisions are issued. CAPI blocklists still apply via
+                the LAPI, but scenario-based detection is stopped. Check the crowdsec-agent DaemonSet.
+  # (b) Fire: up == 0 (scrape ran and failed) — the left branch of the `or`. exp_labels carry
+  # job + namespace from the up series.
+  - interval: 1m
+    input_series:
+      - series: 'up{job="crowdsec-agent-service",namespace="crowdsec"}'
+        values: '0x7'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: CrowdSecAgentDown
+        exp_alerts:
+          - exp_labels:
+              alertname: CrowdSecAgentDown
+              severity: critical
+              job: crowdsec-agent-service
+              namespace: crowdsec
+            exp_annotations:
+              summary: CrowdSec agent is down
+              description: |-
+                The crowdsec-agent DaemonSet has no scrapeable target, so envoy container logs
+                are not parsed and no local decisions are issued. CAPI blocklists still apply via
+                the LAPI, but scenario-based detection is stopped. Check the crowdsec-agent DaemonSet.
+  # (c) No-fire: up == 1 — `up == 0` is empty and the series is present so absent() is empty too.
+  - interval: 1m
+    input_series:
+      - series: 'up{job="crowdsec-agent-service",namespace="crowdsec"}'
+        values: '1x7'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: CrowdSecAgentDown
+        exp_alerts: []
+  # === CrowdSecAppsecDown ===
+  # (d) Fire: series absent — same shape as (a); job label is the appsec ServiceMonitor name.
+  - interval: 1m
+    input_series: []
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: CrowdSecAppsecDown
+        exp_alerts:
+          - exp_labels:
+              alertname: CrowdSecAppsecDown
+              severity: critical
+              job: crowdsec-appsec-service
+              namespace: crowdsec
+            exp_annotations:
+              summary: CrowdSec AppSec is down
+              description: |-
+                The crowdsec-appsec Deployment has no scrapeable target, so in-band AppSec rule
+                evaluation is not running. Requests routed through appsec are no longer inspected
+                for app-level signals. Check the crowdsec-appsec Deployment.
+  # (e) Fire: up == 0 — left branch of the `or`.
+  - interval: 1m
+    input_series:
+      - series: 'up{job="crowdsec-appsec-service",namespace="crowdsec"}'
+        values: '0x7'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: CrowdSecAppsecDown
+        exp_alerts:
+          - exp_labels:
+              alertname: CrowdSecAppsecDown
+              severity: critical
+              job: crowdsec-appsec-service
+              namespace: crowdsec
+            exp_annotations:
+              summary: CrowdSec AppSec is down
+              description: |-
+                The crowdsec-appsec Deployment has no scrapeable target, so in-band AppSec rule
+                evaluation is not running. Requests routed through appsec are no longer inspected
+                for app-level signals. Check the crowdsec-appsec Deployment.
+  # (f) No-fire: up == 1 — both branches empty, stays quiet through for:5m.
+  - interval: 1m
+    input_series:
+      - series: 'up{job="crowdsec-appsec-service",namespace="crowdsec"}'
+        values: '1x7'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: CrowdSecAppsecDown
+        exp_alerts: []
