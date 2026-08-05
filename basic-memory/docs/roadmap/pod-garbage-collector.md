@@ -4,7 +4,7 @@ type: roadmap
 permalink: home-ops/docs/roadmap/pod-garbage-collector
 topic: Periodic cleanup of dead (Failed/Succeeded) and stuck (Terminating) pods via
   a kube-system CronJob, adapted from the clouddrop pod-garbage-collector reference
-status: proposed
+status: implemented
 priority: low
 scope: A single kube-system CronJob that reclaims accumulated dead pods and force-deletes
   pods stuck in Terminating past a threshold, reducing etcd/object-store noise and
