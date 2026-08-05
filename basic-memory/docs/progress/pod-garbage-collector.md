@@ -1,10 +1,58 @@
 ---
 title: pod-garbage-collector
-type: progress-note
+type: progress_note
 permalink: home-ops/docs/progress/pod-garbage-collector
+status: done
 ---
 
 # pod-garbage-collector
+
+## Planning context (from roadmap)
+
+Captures the spec/decisions from the original roadmap note, preserved when the item was marked done and the roadmap note was removed.
+
+### Source
+
+Reference manifest: clouddrop pod-garbage-collector — https://github.com/cyberglitchlabs/clouddrop/blob/main/kubernetes/apps/kube-system/pod-garbage-collector/app/cronjob.yaml (cyberglitchlabs/clouddrop). Adapted, not copied.
+
+### Upstream design (reference)
+
+A kube-system CronJob running every 10 minutes with cluster-wide list/delete RBAC on pods, performing three sweeps:
+
+1. Failed pods older than 1h (`status.phase=Failed`, `status.startTime` >3600s).
+2. Succeeded pods older than 1h, excluding Job-owned (`status.phase=Succeeded`, >1h, no ownerReferences of kind==Job — Job-owned left to Job controller / `ttlSecondsAfterFinished`).
+3. Pods stuck Terminating >10min (`deletionTimestamp` >600s), force-deleted (`--grace-period=0 --force`).
+
+Schedule `*/10 * * * *`, `concurrencyPolicy: Forbid`, `successfulJobsHistoryLimit: 1`, `failedJobsHistoryLimit: 2`, `ttlSecondsAfterFinished: 3600`, image `alpine/k8s:1.36.2`, requests 10m/32Mi, limit 64Mi.
+
+### Relevance to this cluster (decision rationale)
+
+- **CronJob/Job self-cleanup already exists.** CronJobs clean their own job/pod history via history limits; Jobs support `ttlSecondsAfterFinished` natively. The Failed and Succeeded sweeps overlap with native mechanisms and mainly add value for standalone/orphaned pods.
+- **Storage backend differs.** democratic-csi local-hostpath (hostpath, not FUSE) + VolSync/restic. The upstream's stated root cause for stuck-Terminating (FUSE/NFS D-sleep) does not apply; stuck-Terminating here is finalizer-driven. Force-deleting a finalizer-blocked pod orphans the underlying resource — different risk profile.
+- **Talos + single node.** Force-deleting a genuinely stuck pod leaves kubelet with stale state on an immutable OS; blast radius is the whole node. The upstream 10-min threshold is a guess to tune, not inherit.
+- **Adjacent work.** [[kubelet-gc-and-flux-deadman-alerts]] already touches kubelet GC and deadman alerting; this item composes with, not duplicates, that effort.
+
+### Options considered
+
+- Direct CronJob manifest in kube-system (upstream reference shape).
+- **bjw-s app-template HelmRelease — chosen** (the repo's canonical workload shape; composes with the existing kube-system HelmRelease set). Adopted: v5.0.1.
+- Rely on native cleanup only (tune `ttlSecondsAfterFinished` + history limits; skip custom CronJob). Rejected: dead pods still accumulate after node reboots (admission-rejected Failed pods with null startTime).
+- Adopt only the stuck-Terminating force-delete. Rejected: S1/S2 add value for orphaned/standalone pods post-reboot.
+
+### Open decisions → resolutions
+
+1. **Which functions** → all three adopted, with S3 restricted to finalizer-less pods (finalizer-bearing pods surface via the PodStuckTerminating PrometheusRule instead of force-delete).
+2. **Thresholds/schedule** → 1h / 10min / `*/15 * * * *` (schedule widened from upstream's `*/10`).
+3. **Force-delete safety** → finalizer filter is load-bearing (see "What was deliberately left out, and why"); alert-and-skip for finalizer-bearing pods.
+4. **Placement/image** → bjw-s app-template; image `alpine/k8s:1.36.2` pinned by digest with `# renovate:` annotation.
+5. **RBAC scope** → cluster-wide pods list/delete only (least-privilege, verified via `kubectl auth can-i`).
+6. **Observability** → co-located `prometheusrule.yaml` (PodStuckTerminating, expr `(time() - kube_pod_deletion_timestamp) > 900`, for 15m, warning).
+7. **GitOps delivery** → direct commits to `main` (Flux watches `refs/heads/main`).
+
+### Out of scope
+
+- Changing kubelet/Talos-level GC knobs (kube-controller-manager flags, Kubelet config) — belongs to bootstrap/talos config, not a workload CronJob.
+- Modifying existing workload finalizers or VolSync wiring to reduce stuck-Terminating at the source — separate concern.
 
 ## Scope
 
@@ -89,7 +137,6 @@ The new SA is least-privilege; the bootstrap-inherited privileges are gone. Smok
 **EXPLICIT PROHIBITION — never delete:** the `system:controller:pod-garbage-collector` ClusterRole/ClusterRoleBinding and the `kube-system/pod-garbage-collector` ServiceAccount are in-tree KCM podgc controller identity. They must NEVER be deleted. The apiserver autoupdate re-creates the RBAC, but deleting the SA invalidates the bound token until KCM restart. The `helm.sh/resource-policy: keep` annotation on the SA is the guardrail — do not remove it.
 ## Relations
 
-- implements [[pod-garbage-collector]]
 - relates_to [[observability]]
 - relates_to [[kubelet-gc-and-flux-deadman-alerts]]
 ## Related — post-upgrade pod cleanup (2026-08-05)
