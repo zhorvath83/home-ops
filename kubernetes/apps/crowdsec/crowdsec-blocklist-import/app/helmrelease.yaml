@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: blocklist-import
+  name: crowdsec-blocklist-import
 spec:
   interval: 30m
   chartRef:
@@ -28,7 +28,7 @@ spec:
         seccompProfile:
           type: RuntimeDefault
     controllers:
-      blocklist-import:
+      crowdsec-blocklist-import:
         type: cronjob
         cronjob:
           schedule: "0 4 * * *"
@@ -86,11 +86,11 @@ spec:
               # Per-source freshness metrics (source_status, etc.) pushed to the in-cluster
               # Pushgateway; scraped by Prometheus for the CrowdSecBlocklistImport* alerts.
               METRICS_ENABLED: "true"
-              METRICS_PUSHGATEWAY_URL: "http://pushgateway.observability.svc.cluster.local:9091"
+              METRICS_PUSHGATEWAY_URL: "http://prometheus-pushgateway.observability.svc.cluster.local:9091"
               LOG_LEVEL: "DEBUG"
             envFrom:
               - secretRef:
-                  name: blocklist-import-secret
+                  name: crowdsec-blocklist-import-secret
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true

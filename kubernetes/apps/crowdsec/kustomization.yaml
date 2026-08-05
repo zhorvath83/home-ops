@@ -8,6 +8,6 @@ components:
 resources:
   - ./namespace.yaml
   - ./crowdsec/ks.yaml
-  - ./bouncer/ks.yaml
-  - ./web-ui/ks.yaml
-  - ./blocklist-import/ks.yaml
+  - ./crowdsec-bouncer/ks.yaml
+  - ./crowdsec-web-ui/ks.yaml
+  - ./crowdsec-blocklist-import/ks.yaml

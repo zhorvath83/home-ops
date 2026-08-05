@@ -12,7 +12,7 @@ spec:
     - name: crowdsec
       namespace: crowdsec
   interval: 1h
-  path: ./kubernetes/apps/crowdsec/web-ui/app
+  path: ./kubernetes/apps/crowdsec/crowdsec-web-ui/app
   prune: true
   sourceRef:
     kind: GitRepository
