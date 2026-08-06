@@ -6,7 +6,7 @@ area: observability
 status: current
 confidence: high
 verified_at: '2026-08-01'
-summary: Observability for the cluster splits into EIGHT workloads under kubernetes/apps/observability/
+summary: Observability for the cluster splits into NINE workloads under kubernetes/apps/observability/
   — kube-prometheus-stack (operator + Prometheus + Alertmanager + kube-state-metrics
   + node-exporter, minimal single-node configuration), an operator-managed grafana
   (grafana-operator + a Grafana CR, LAN-only on envoy-internal), a speedtest-exporter for
@@ -81,7 +81,7 @@ Re-verified 2026-07-05: the speedtest-exporter public route (speed.${PUBLIC_DOMA
 
 ## Summary
 
-The cluster's observability stack lives under `kubernetes/apps/observability/` as EIGHT sub-Kustomization entries (eleven Flux Kustomizations — grafana, victoria-logs and silence-operator each define two):
+The cluster's observability stack lives under `kubernetes/apps/observability/` as NINE sub-Kustomization entries (twelve Flux Kustomizations — grafana, victoria-logs and silence-operator each define two):
 
 - `kube-prometheus-stack` — upstream chart `oci://ghcr.io/prometheus-community/charts/kube-prometheus-stack`, a "minified" single-node homelab variant: most `defaultRules` and the kube-apiserver / kubelet / etcd / kube-controller-manager / scheduler / proxy / coredns exporters are disabled; only the `k8s`, `kubernetesApps`, `kubeStateMetrics`, `prometheusOperator`, and `prometheus` rule groups survive. `cleanPrometheusOperatorObjectNames: true`. Prometheus retention is now explicit: 7d / 4500MB on a 5Gi `democratic-csi-local-hostpath` PVC. Alertmanager is enabled (see update section).
 - `grafana` — **operator-managed** (grafana-operator, `operator/`+`instance/` split). Stateless `Grafana` CR (emptyDir DB, no PVC), telemetry off, hardened (read-only rootfs, drop ALL, RuntimeDefault). Datasources (`Prometheus` default, `Alertmanager`), dashboards, and folders are declarative CRs (`GrafanaDatasource`/`GrafanaDashboard`/`GrafanaFolder`) co-located with the owning app; the operator provisions them via the Grafana API using the `grafana-secret` admin creds. **No plugins** (D13) + `preinstall_disabled` — zero grafana.com startup egress; no VictoriaLogs datasource (logs stay in the vmui). **SSO via Pocket ID OIDC** (`auth.generic_oauth`), local login form hidden (`disable_login_form: true`). `root_url = https://grafana.${PUBLIC_DOMAIN}`, internal gateway only. Depends on grafana-operator + kube-prometheus-stack + onepassword-connect.
@@ -106,7 +106,7 @@ The namespace is `observability` and pulls in the shared `common` component (whi
 
 ## Claims (verified against repo)
 
-- [claim] "The observability area deploys EIGHT sub-Kustomization entries (eleven Flux Kustomizations): kube-prometheus-stack; grafana (grafana-operator + grafana-instance, the instance dependsOn grafana-operator + kube-prometheus-stack + onepassword-connect); speedtest-exporter (no dependsOn); victoria-logs (server + collector DaemonSet, collector dependsOn server); blackbox-exporter, smartctl-exporter, prometheus-adapter and silence-operator (all dependOn kube-prometheus-stack; silence-operator-silences dependsOn silence-operator)" (evidence: repo, ref: kubernetes/apps/observability/kustomization.yaml:9-18 + each ks.yaml, verified: 2026-08-03)
+- [claim] "The observability area deploys NINE sub-Kustomization entries (twelve Flux Kustomizations): kube-prometheus-stack; grafana (grafana-operator + grafana-instance, the instance dependsOn grafana-operator + kube-prometheus-stack + onepassword-connect); speedtest-exporter (no dependsOn); victoria-logs (server + collector DaemonSet, collector dependsOn server); blackbox-exporter, smartctl-exporter, prometheus-adapter, prometheus-pushgateway and silence-operator (all dependOn kube-prometheus-stack; silence-operator-silences dependsOn silence-operator)" (evidence: repo, ref: kubernetes/apps/observability/kustomization.yaml:9-18 + each ks.yaml, verified: 2026-08-06)
 - [claim] "kube-prometheus-stack is a minified single-node variant — the kube-apiserver/kubelet/etcd/kube-controller-manager/scheduler/proxy/coreDns exporters are disabled and `cleanPrometheusOperatorObjectNames: true`. The enabled defaultRules set is WIDER than the original minified set: k8s, kubernetesApps, kubeStateMetrics, prometheusOperator, prometheus, plus general, node, nodeExporterAlerting, nodeExporterRecording, kubernetesResources, kubernetesStorage, k8sPodOwner and k8sContainerMemoryCache" (evidence: repo, ref: kube-prometheus-stack/app/helmrelease.yaml:19,23-54, verified: 2026-08-03)
 - [claim] "Prometheus retention is explicit: 7d / 4500MB on a 5Gi democratic-csi-local-hostpath PVC" (evidence: repo, ref: kube-prometheus-stack/app/helmrelease.yaml:424-443, verified: 2026-06-20)
 - [claim] "Grafana has telemetry disabled (GF_ANALYTICS_* false), admin password from ExternalSecret-backed grafana-secret, read-only rootfs + drop ALL caps + RuntimeDefault, and serves a Prometheus (default) datasource plus an Alertmanager datasource — there is NO VictoriaLogs datasource; logs are read in the vmui" (evidence: repo, ref: grafana/instance/grafana.yaml + kube-prometheus-stack/app/grafanadatasource.yaml, verified: 2026-08-03)
@@ -273,7 +273,7 @@ Verdict on arrival: MAJOR-DRIFT — 8 wrong, 3 obsolete, 3 incomplete.
 
 ## Update — 2026-08-06: prometheus-pushgateway (push metrics for blocklist-import freshness)
 
-The ninth observability workload (added in #4129, predates this update). The Summary/Components above predate it; this section records the app so a reader sees the workload count is now NINE, not EIGHT.
+The ninth observability workload (added in #4129, predates this update). The Summary, frontmatter and inventory [claim] above now reflect NINE; the Components list still predates this workload — this section records the app's specifics.
 
 - [observation] **prometheus-pushgateway** (`kubernetes/apps/observability/prometheus-pushgateway/`): chart `oci://ghcr.io/prometheus-community/charts/prometheus-pushgateway` 3.7.0 from a per-app OCIRepository (app/ocirepository.yaml:13-14). dependsOn kube-prometheus-stack (the ServiceMonitor CRD lives there — ks.yaml:11-13).
 - [observation] **StatefulSet + 1Gi PVC** (`democratic-csi-local-hostpath`) via `runAsStatefulSet: true` + `persistentVolume.enabled` (app/helmrelease.yaml:13-20). Rationale: without persistence a pod restart blanks the pushed `blocklist_import_source_status` series and false-fires `CrowdSecBlocklistImportMetricsAbsent` (comment at helmrelease.yaml:14-15).
