@@ -11,13 +11,6 @@ spec:
     name: prometheus-pushgateway
   values:
     replicaCount: 1
-    # StatefulSet + PVC so pushed metrics survive a pod restart — otherwise a restart
-    # blanks the blocklist-import freshness signal and false-fires CrowdSecBlocklistImportMetricsAbsent.
-    runAsStatefulSet: true
-    persistentVolume:
-      enabled: true
-      size: 1Gi
-      storageClass: democratic-csi-local-hostpath
     automountServiceAccountToken: false
     serviceAccount:
       create: false
