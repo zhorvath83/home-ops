@@ -281,3 +281,15 @@ The ninth observability workload (added in #4129, predates this update). The Sum
 - [observation] **Consumer**: the `crowdsec-blocklist-import` CronJob pushes per-source freshness metrics (`blocklist_import_source_status`) to `http://prometheus-pushgateway.observability.svc.cluster.local:9091` (kubernetes/apps/crowdsec/crowdsec-blocklist-import/app/helmrelease.yaml:89).
 - [observation] **CNP** (app/ciliumnetworkpolicy.yaml): ingress default-deny with one allow — push from the crowdsec-namespace `crowdsec-blocklist-import` pod on :9091 (`fromEndpoints` matching `k8s:io.kubernetes.pod.namespace: crowdsec` + `app.kubernetes.io/name: crowdsec-blocklist-import`). The Prometheus scrape ingress is NOT this CNP — it comes from the clusterwide `ingress-from-prometheus` CCNP via the `ingress.home.arpa/allow-prometheus` pod label (helmrelease.yaml:24-25), so the push from crowdsec needs its own allow here.
 - [observation] **Name-label caveat** (cross-reference the [[k8s-workloads]] CNP label-selector convention): this is a non-app-template chart, so the pod `app.kubernetes.io/name` label is the CHART name `prometheus-pushgateway`, not the release name — a release rename or `fullnameOverride` change does NOT move it. The app CNP endpointSelector (ciliumnetworkpolicy.yaml:14) matches `app.kubernetes.io/name: prometheus-pushgateway`, which equals both the chart name and (since the #4132 rename) the release name.
+
+
+## Update — 2026-08-06: promtool unit tests are a repo-wide convention
+
+- [observation] promtool unit tests are no longer smartctl-only. Every hand-written PrometheusRule is
+  paired with a `<basename>_test.yaml` beside it (11 rule files, 35 alerts + 1 recording rule), run by
+  `just k8s test-prom-rules`, which executes promtool in a temp dir and writes nothing under
+  `kubernetes/`. The bar per alert and the reasoning behind it live in the ADR
+  `docs/decisions/promtool-unit-test-bar`; the editor-facing convention is in `kubernetes/CLAUDE.md`.
+  A `_test.yaml` is a test fixture and must never appear in a `kustomization.yaml`.
+
+- relates_to [[prometheusrule-unit-test-coverage]]

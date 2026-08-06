@@ -3,9 +3,9 @@
 # promtool unit tests for app/prometheusrule.yaml. The rule group has been live with 0 eval
 # failures but NO alert ever fired, so the annotation templates were never exercised — these
 # tests assert exp_annotations so a broken {{ $labels.* }} reference fails the suite.
-# Run via `just k8s test-prom-rules` (recipe extracts .spec into ./_extracted_rules.yaml).
+# Run via `just k8s test-prom-rules` (recipe copies this test + .extracted_prometheus_rules.yaml into a temp dir).
 rule_files:
-  - ./_extracted_rules.yaml
+  - ./.extracted_prometheus_rules.yaml
 evaluation_interval: 1m
 tests:
   # SmartctlMediaErrors: media_errors != 0 (for 15m). nvme0=0 no fire / nvme1=1 fires.
@@ -307,11 +307,12 @@ tests:
             exp_annotations:
               summary: "ATA drive temperature high on sdd (nas)"
               description: "Drive sdd on nas is at or above 50°C."
-  # SmartctlAtaTempCritical: temperature{current} > 55, for 15m. sdb 38 no fire / sdc 56 fires.
+  # SmartctlAtaTempCritical: temperature{current} > 55, for 15m. sdb 55 no fire / sdc 56 fires
+  # (operator-adjacent boundary pair, matching SmartctlAtaTempHigh's 49/50 pair below a `>= 50`).
   - interval: 1m
     input_series:
       - series: 'smartctl_device_temperature{job="nas-smartctl",instance="nas",device="sdb",temperature_type="current"}'
-        values: '38x21'
+        values: '55x21'
       - series: 'smartctl_device_temperature{job="nas-smartctl",instance="nas",device="sdc",temperature_type="current"}'
         values: '56x21'
     alert_rule_test:

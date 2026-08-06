@@ -8,16 +8,10 @@ spec:
   groups:
     - name: envoy-proxy
       rules:
-        # The envoy proxies are the data plane: envoy-external carries public traffic
-        # (Cloudflare Tunnel), envoy-internal carries LAN. Either one down kills its
-        # path; both down kills all ingress. Two single-replica proxies share one
-        # PodMonitor job, so `up == 0 or absent()` (single-target shape) would miss one
-        # proxy vanishing — `absent()` needs every series gone to fire. Counting up==1
-        # against the expected 2 covers one-down, both-down, scrape failure, and the
-        # all-vanished (scale-to-0 / crashloop) case. `for: 2m` skips a rolling-update
-        # blip on the single replica.
+        # count() over an empty vector (both proxies down, or all vanished) returns empty, not 0 —
+        # `or vector(0)` makes those states fire instead of staying silent in the worst outages.
         - alert: EnvoyProxyDown
-          expr: count(up{job="networking/envoy-proxy", namespace="networking"} == 1) < 2
+          expr: (count(up{job="networking/envoy-proxy", namespace="networking"} == 1) or vector(0)) < 2
           for: 2m
           labels:
             severity: critical

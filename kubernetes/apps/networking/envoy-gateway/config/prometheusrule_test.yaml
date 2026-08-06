@@ -1,0 +1,85 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/prometheus.rules.test.json
+# promtool unit tests for config/prometheusrule.yaml, covering EnvoyProxyDown. The expr
+# `count(up{job="networking/envoy-proxy", namespace="networking"} == 1) < 2` aggregates away
+# all labels, so exp_labels are alertname + severity only — it fires whenever fewer than 2
+# envoy-proxy targets are up: one-down, both-down, and all-vanished (count of an empty vector
+# is 0). The 2-up case is the no-fire boundary at count 2 vs 1. for:2m, so every fire case
+# evals past 2m (eval at 3m). exp_annotations asserted so the data-plane/control-plane text
+# is exercised.
+# Run via `just k8s test-prom-rules` (recipe copies this test + .extracted_prometheus_rules.yaml into a temp dir).
+rule_files:
+  - ./.extracted_prometheus_rules.yaml
+evaluation_interval: 1m
+tests:
+  # === EnvoyProxyDown ===
+  # (a) No-fire: both proxies up (count == 2, not < 2).
+  - interval: 1m
+    input_series:
+      - series: 'up{job="networking/envoy-proxy",namespace="networking",pod="envoy-external"}'
+        values: '1x4'
+      - series: 'up{job="networking/envoy-proxy",namespace="networking",pod="envoy-internal"}'
+        values: '1x4'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: EnvoyProxyDown
+        exp_alerts: []
+  # (b) Fire: one proxy down (count == 1 < 2). count() strips labels → alertname + severity only.
+  - interval: 1m
+    input_series:
+      - series: 'up{job="networking/envoy-proxy",namespace="networking",pod="envoy-external"}'
+        values: '1x4'
+      - series: 'up{job="networking/envoy-proxy",namespace="networking",pod="envoy-internal"}'
+        values: '0x4'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: EnvoyProxyDown
+        exp_alerts:
+          - exp_labels:
+              alertname: EnvoyProxyDown
+              severity: critical
+            exp_annotations:
+              summary: Envoy Gateway data plane (proxy) is down
+              description: |-
+                Fewer than 2 envoy-proxy targets are up — at least one of envoy-external
+                (public) or envoy-internal (LAN) is unreachable. The down proxy's traffic
+                path is dead. This is the data plane; the envoy-gateway controller (control
+                plane) is a separate ServiceMonitor not covered here.
+  # (c) Fire: both proxies down (count == 0 < 2).
+  - interval: 1m
+    input_series:
+      - series: 'up{job="networking/envoy-proxy",namespace="networking",pod="envoy-external"}'
+        values: '0x4'
+      - series: 'up{job="networking/envoy-proxy",namespace="networking",pod="envoy-internal"}'
+        values: '0x4'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: EnvoyProxyDown
+        exp_alerts:
+          - exp_labels:
+              alertname: EnvoyProxyDown
+              severity: critical
+            exp_annotations:
+              summary: Envoy Gateway data plane (proxy) is down
+              description: |-
+                Fewer than 2 envoy-proxy targets are up — at least one of envoy-external
+                (public) or envoy-internal (LAN) is unreachable. The down proxy's traffic
+                path is dead. This is the data plane; the envoy-gateway controller (control
+                plane) is a separate ServiceMonitor not covered here.
+  # (d) Fire: all targets vanished (count of empty vector == 0 < 2) — the scale-to-0 / crashloop case.
+  - interval: 1m
+    input_series: []
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: EnvoyProxyDown
+        exp_alerts:
+          - exp_labels:
+              alertname: EnvoyProxyDown
+              severity: critical
+            exp_annotations:
+              summary: Envoy Gateway data plane (proxy) is down
+              description: |-
+                Fewer than 2 envoy-proxy targets are up — at least one of envoy-external
+                (public) or envoy-internal (LAN) is unreachable. The down proxy's traffic
+                path is dead. This is the data plane; the envoy-gateway controller (control
+                plane) is a separate ServiceMonitor not covered here.

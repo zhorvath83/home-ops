@@ -6,9 +6,9 @@
 # FluxInstanceNotReady (ready label flipped off "True"). Both use for: 15m, so every
 # fire case evals past 15m. ready!="True" is intentionally kept broad (also matches a
 # series with no `ready` label) — the correct dead-man semantic; do not narrow it.
-# Run via `just k8s test-prom-rules` (recipe extracts .spec into ./_extracted_rules.yaml).
+# Run via `just k8s test-prom-rules` (recipe copies this test + .extracted_prometheus_rules.yaml into a temp dir).
 rule_files:
-  - ./_extracted_rules.yaml
+  - ./.extracted_prometheus_rules.yaml
 evaluation_interval: 1m
 tests:
   # (a) FluxInstanceAbsent fires when the series is gone. absent(matcher) carries the

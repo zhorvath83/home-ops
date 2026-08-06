@@ -1,13 +1,18 @@
 ---
 # yaml-language-server: $schema=https://json.schemastore.org/prometheus.rules.test.json
-# promtool unit tests for app/prometheusrule.yaml, covering CrowdSecAgentDown and
-# CrowdSecAppsecDown only. Both follow the CrowdSecLAPIDown shape: `up == 0 or absent(up{...})`,
-# so the `absent()` branch covers scale-to-0 / crashloop / evicted where the `up` series
-# vanishes — that is the branch the tests exercise most, since `up == 0` alone would never
-# fire for those outage shapes. for:5m, so every fire case evals past 5m (eval at 6m).
-# Run via `just k8s test-prom-rules` (recipe extracts .spec into ./_extracted_rules.yaml).
+# promtool unit tests for app/prometheusrule.yaml, covering CrowdSecLAPIDown,
+# CrowdSecAgentDown, CrowdSecAppsecDown, CrowdSecBanActive, CrowdSecAcquisitionStalled,
+# CrowdSecDecisionBudgetNearCap, CrowdSecBlocklistImportSourceFailing, and
+# CrowdSecBlocklistImportMetricsAbsent. The three `*Down` alerts share the shape
+# `up == 0 or absent(up{...})`, so the `absent()` branch covers scale-to-0 / crashloop /
+# evicted where the `up` series vanishes — that is the branch the tests exercise most,
+# since `up == 0` alone would never fire for those outage shapes. for:5m, so every fire
+# case evals past 5m (eval at 6m). CrowdSecBanActive and CrowdSecAcquisitionStalled carry
+# keep_firing_for latches; each has a past-latch case mutation-verified (remove
+# keep_firing_for from the rule -> exactly that case fails with got:[]).
+# Run via `just k8s test-prom-rules` (recipe copies this test + .extracted_prometheus_rules.yaml into a temp dir).
 rule_files:
-  - ./_extracted_rules.yaml
+  - ./.extracted_prometheus_rules.yaml
 evaluation_interval: 1m
 tests:
   # === CrowdSecAgentDown ===
@@ -360,3 +365,215 @@ tests:
                 METRICS_ENABLED disabled, the Pushgateway unreachable, or the importer crashing before
                 its metrics push. The CrowdSecBlocklistImportSourceFailing alert cannot fire while this
                 is absent, so treat as a monitoring outage of the feed-rot detection plane.
+  # === CrowdSecLAPIDown === `up == 0 or absent(up{job="crowdsec-service",namespace="crowdsec"})`,
+  # for:5m. Same shape as the already-covered CrowdSecAgentDown / CrowdSecAppsecDown; the
+  # exp_annotations (with the bouncer SecurityPolicy follow-on) are the reason this file exists.
+  # (15) Fire: series absent (LAPI pod gone / scaled to 0). absent() carries job+namespace; fires at 6m.
+  - interval: 1m
+    input_series: []
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: CrowdSecLAPIDown
+        exp_alerts:
+          - exp_labels:
+              alertname: CrowdSecLAPIDown
+              severity: critical
+              job: crowdsec-service
+              namespace: crowdsec
+            exp_annotations:
+              summary: CrowdSec LAPI is down
+              description: |-
+                The CrowdSec LAPI is unreachable, so no decision can be issued or queried.
+                Once the bouncer SecurityPolicy is attached this also fails requests closed
+                on the affected gateway.
+  # (16) Fire: up == 0 (scrape ran and failed) — the left branch of the `or`.
+  - interval: 1m
+    input_series:
+      - series: 'up{job="crowdsec-service",namespace="crowdsec"}'
+        values: '0x7'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: CrowdSecLAPIDown
+        exp_alerts:
+          - exp_labels:
+              alertname: CrowdSecLAPIDown
+              severity: critical
+              job: crowdsec-service
+              namespace: crowdsec
+            exp_annotations:
+              summary: CrowdSec LAPI is down
+              description: |-
+                The CrowdSec LAPI is unreachable, so no decision can be issued or queried.
+                Once the bouncer SecurityPolicy is attached this also fails requests closed
+                on the affected gateway.
+  # (17) No-fire: up == 1 — `up == 0` empty and present so absent() empty too.
+  - interval: 1m
+    input_series:
+      - series: 'up{job="crowdsec-service",namespace="crowdsec"}'
+        values: '1x7'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: CrowdSecLAPIDown
+        exp_alerts: []
+  # === CrowdSecBanActive === sum by(reason,origin,action)(cs_active_decisions{...,origin!~"CAPI|
+  # lists(:.*)?|blocklist-import"}) > 0, for:1m, keep_firing_for:5m. `sum by` keeps reason/origin/
+  # action and drops job/namespace, so exp_labels = alertname + severity + reason + origin + action.
+  # Annotations are static (no $labels/$value), asserted verbatim. The gauge is Reset() each scrape,
+  # so for + keep_firing_for debounce a resolve->refire without lagging a 4h ban's real end.
+  # (18) FIRE: non-CAPI origin (cscli) value 1, for:1m met, eval at 2m. Asserts the by() label set.
+  - interval: 1m
+    input_series:
+      - series: 'cs_active_decisions{job="crowdsec-service",namespace="crowdsec",origin="cscli",reason="ip",action="ban"}'
+        values: '1x3'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: CrowdSecBanActive
+        exp_alerts:
+          - exp_labels:
+              alertname: CrowdSecBanActive
+              severity: critical
+              reason: ip
+              origin: cscli
+              action: ban
+            exp_annotations:
+              summary: CrowdSec banned a source
+              description: |-
+                CrowdSec banned a source after the scenario below tripped. The ban lasts 4h
+                and doubles for each repeat offence; no action is needed. If it was you,
+                clear it with `cscli decisions delete <ip>`.
+  # (19) No-fire, origin exclusion load-bearing: CAPI origin (excluded by origin!~"CAPI|...") with a
+  # high value must NOT fire — the ~25k community blocklist is expected noise, not a paged ban.
+  - interval: 1m
+    input_series:
+      - series: 'cs_active_decisions{job="crowdsec-service",namespace="crowdsec",origin="CAPI",reason="ip",action="ban"}'
+        values: '100x3'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: CrowdSecBanActive
+        exp_alerts: []
+  # (20) No-fire, threshold: value 0, `> 0` strict false even past for:1m.
+  - interval: 1m
+    input_series:
+      - series: 'cs_active_decisions{job="crowdsec-service",namespace="crowdsec",origin="cscli",reason="ip",action="ban"}'
+        values: '0x3'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: CrowdSecBanActive
+        exp_alerts: []
+  # (21) keep_firing_for:5m past-latch pin (mutation-verified). value 1 for t=0..9m (fires ~1m once
+  # for:1m met), then 0 from t=10m. At eval 13m the condition has been false for 3m (< the 5m latch),
+  # so the alert STAYS firing here ONLY because keep_firing_for:5m latches it — removing
+  # keep_firing_for resolves it and returns got:[] (mutation proof pasted in the completion signal).
+  # Modeled on the CrowdSecDecisionBudgetNearCap case (7) latch pattern.
+  - interval: 1m
+    input_series:
+      - series: 'cs_active_decisions{job="crowdsec-service",namespace="crowdsec",origin="cscli",reason="ip",action="ban"}'
+        values: '1x10 0x4'
+    alert_rule_test:
+      - eval_time: 13m
+        alertname: CrowdSecBanActive
+        exp_alerts:
+          - exp_labels:
+              alertname: CrowdSecBanActive
+              severity: critical
+              reason: ip
+              origin: cscli
+              action: ban
+            exp_annotations:
+              summary: CrowdSec banned a source
+              description: |-
+                CrowdSec banned a source after the scenario below tripped. The ban lasts 4h
+                and doubles for each repeat offence; no action is needed. If it was you,
+                clear it with `cscli decisions delete <ip>`.
+  # === CrowdSecAcquisitionStalled === envoy 6h increase > 0 AND parser 6h increase == 0, for:10m,
+  # keep_firing_for:3h. Both halves are sum() with NO by(), so exp_labels = alertname + severity
+  # only. The `or vector(0)` makes parser absence read as 0 (== 0 true); the parser-constant-0
+  # cases below cover the present-but-stalled shape. 6h = 360m. Annotations static, verbatim.
+  # (22) FIRE: envoy incrementing (0+1x15 -> increase[6h] > 0 from t=1m), parser constant 0.
+  # Condition true from t=1m; for:10m -> fires at 11m; eval 12m. Asserts both halves hold.
+  - interval: 1m
+    input_series:
+      - series: 'envoy_http_downstream_rq_total{job="networking/envoy-proxy",namespace="networking",envoy_http_conn_manager_prefix="https-default"}'
+        values: '0+1x15'
+      - series: 'cs_parser_hits_ok_total{job="crowdsec-agent-service",namespace="crowdsec",acquis_type="containerd",source="/var/log/containers/envoy-external-abc"}'
+        values: '0x15'
+    alert_rule_test:
+      - eval_time: 12m
+        alertname: CrowdSecAcquisitionStalled
+        exp_alerts:
+          - exp_labels:
+              alertname: CrowdSecAcquisitionStalled
+              severity: warning
+            exp_annotations:
+              summary: CrowdSec parses no envoy request
+              description: |-
+                Envoy served requests but the agent parsed none, so no local decision is being
+                created. Likely causes: the agent DaemonSet is down or crash-looping, the
+                /var/log/containers/envoy-* glob matches nothing (envoy pods recreated with
+                new names mid-window), or the parser chain cri-logs -> envoy-logs broke.
+                Remediation: check the agent DaemonSet and its acquisition, then restart it.
+  # (23) No-fire, envoy half load-bearing: quiet cluster — envoy 0 (no traffic), parser 0. LHS
+  # (envoy increase > 0) is false -> `and` empty -> no fire. A silent cluster is not a stall.
+  - interval: 1m
+    input_series:
+      - series: 'envoy_http_downstream_rq_total{job="networking/envoy-proxy",namespace="networking",envoy_http_conn_manager_prefix="https-default"}'
+        values: '0x15'
+      - series: 'cs_parser_hits_ok_total{job="crowdsec-agent-service",namespace="crowdsec",acquis_type="containerd",source="/var/log/containers/envoy-external-abc"}'
+        values: '0x15'
+    alert_rule_test:
+      - eval_time: 12m
+        alertname: CrowdSecAcquisitionStalled
+        exp_alerts: []
+  # (24) No-fire, parser half load-bearing: envoy incrementing AND parser incrementing. Parser
+  # increase[6h] > 0 -> RHS `== 0` false -> `and` empty -> no fire. Proves parsing happening = healthy.
+  - interval: 1m
+    input_series:
+      - series: 'envoy_http_downstream_rq_total{job="networking/envoy-proxy",namespace="networking",envoy_http_conn_manager_prefix="https-default"}'
+        values: '0+1x15'
+      - series: 'cs_parser_hits_ok_total{job="crowdsec-agent-service",namespace="crowdsec",acquis_type="containerd",source="/var/log/containers/envoy-external-abc"}'
+        values: '0+1x15'
+    alert_rule_test:
+      - eval_time: 12m
+        alertname: CrowdSecAcquisitionStalled
+        exp_alerts: []
+  # (25) for:10m pin: stall condition true (envoy incr, parser 0) but eval at 8m (< 10m) -> pending,
+  # not firing. Pins for:10m (without it this would fire at 8m).
+  - interval: 1m
+    input_series:
+      - series: 'envoy_http_downstream_rq_total{job="networking/envoy-proxy",namespace="networking",envoy_http_conn_manager_prefix="https-default"}'
+        values: '0+1x10'
+      - series: 'cs_parser_hits_ok_total{job="crowdsec-agent-service",namespace="crowdsec",acquis_type="containerd",source="/var/log/containers/envoy-external-abc"}'
+        values: '0x10'
+    alert_rule_test:
+      - eval_time: 8m
+        alertname: CrowdSecAcquisitionStalled
+        exp_alerts: []
+  # (26) keep_firing_for:3h past-latch pin (mutation-verified). envoy incrementing throughout
+  # (0+1x301 -> increase[6h] > 0 always). parser 0 for t=0..199m then incrementing from t=200m:
+  # the stall holds t=1m..200m (parser increase[6h] == 0), so the alert fires (~11m); the parser
+  # increment enters the 6h window at t=201m (parser increase[6h] > 0) -> condition false from
+  # t=201m. At eval 300m (5h) the condition has been false for 99m (< the 3h=180m latch), so the
+  # alert STAYS firing ONLY because keep_firing_for:3h latches it — removing keep_firing_for
+  # resolves it and returns got:[] (mutation proof pasted in the completion signal). The 6h-window
+  # arithmetic is modeled on the CrowdSecBlocklistImportSourceFailing 50h-window case (8).
+  - interval: 1m
+    input_series:
+      - series: 'envoy_http_downstream_rq_total{job="networking/envoy-proxy",namespace="networking",envoy_http_conn_manager_prefix="https-default"}'
+        values: '0+1x301'
+      - series: 'cs_parser_hits_ok_total{job="crowdsec-agent-service",namespace="crowdsec",acquis_type="containerd",source="/var/log/containers/envoy-external-abc"}'
+        values: '0x200 0+1x101'
+    alert_rule_test:
+      - eval_time: 300m
+        alertname: CrowdSecAcquisitionStalled
+        exp_alerts:
+          - exp_labels:
+              alertname: CrowdSecAcquisitionStalled
+              severity: warning
+            exp_annotations:
+              summary: CrowdSec parses no envoy request
+              description: |-
+                Envoy served requests but the agent parsed none, so no local decision is being
+                created. Likely causes: the agent DaemonSet is down or crash-looping, the
+                /var/log/containers/envoy-* glob matches nothing (envoy pods recreated with
+                new names mid-window), or the parser chain cri-logs -> envoy-logs broke.
+                Remediation: check the agent DaemonSet and its acquisition, then restart it.

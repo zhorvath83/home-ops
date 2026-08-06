@@ -1,0 +1,62 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/prometheus.rules.test.json
+# promtool unit tests for app/prometheusrule.yaml, covering CrowdSecBouncerDown. Same shape
+# as CrowdSecAgentDown: `up == 0 or absent(up{...})`, so the `absent()` branch covers
+# scale-to-0 / crashloop / readiness-split where the `up` series vanishes — without it the
+# alert never fires for the common outage shapes. for:2m, so every fire case evals past 2m
+# (eval at 3m). exp_annotations asserted so the fail-closed remediation text is exercised.
+# Run via `just k8s test-prom-rules` (recipe copies this test + .extracted_prometheus_rules.yaml into a temp dir).
+rule_files:
+  - ./.extracted_prometheus_rules.yaml
+evaluation_interval: 1m
+tests:
+  # === CrowdSecBouncerDown ===
+  # (a) Fire: series absent (scaled to 0 / crashloop / evicted). absent() carries the matcher
+  # labels (job, namespace) into the result vector; fires after 2m for.
+  - interval: 1m
+    input_series: []
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: CrowdSecBouncerDown
+        exp_alerts:
+          - exp_labels:
+              alertname: CrowdSecBouncerDown
+              severity: critical
+              job: crowdsec-bouncer
+              namespace: crowdsec
+            exp_annotations:
+              summary: CrowdSec Envoy bouncer is down
+              description: |-
+                The ext_authz bouncer is unreachable. If a bouncer SecurityPolicy is attached
+                to a Gateway, every route on it now fails closed (5xx). Remove that
+                SecurityPolicy to restore traffic, then fix the bouncer.
+  # (b) Fire: up == 0 (scrape ran and failed) — the left branch of the `or`. exp_labels carry
+  # job + namespace from the up series.
+  - interval: 1m
+    input_series:
+      - series: 'up{job="crowdsec-bouncer",namespace="crowdsec"}'
+        values: '0x4'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: CrowdSecBouncerDown
+        exp_alerts:
+          - exp_labels:
+              alertname: CrowdSecBouncerDown
+              severity: critical
+              job: crowdsec-bouncer
+              namespace: crowdsec
+            exp_annotations:
+              summary: CrowdSec Envoy bouncer is down
+              description: |-
+                The ext_authz bouncer is unreachable. If a bouncer SecurityPolicy is attached
+                to a Gateway, every route on it now fails closed (5xx). Remove that
+                SecurityPolicy to restore traffic, then fix the bouncer.
+  # (c) No-fire: up == 1 — `up == 0` is empty and the series is present so absent() is empty too.
+  - interval: 1m
+    input_series:
+      - series: 'up{job="crowdsec-bouncer",namespace="crowdsec"}'
+        values: '1x4'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: CrowdSecBouncerDown
+        exp_alerts: []

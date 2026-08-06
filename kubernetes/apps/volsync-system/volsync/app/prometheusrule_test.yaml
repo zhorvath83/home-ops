@@ -1,0 +1,83 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/prometheus.rules.test.json
+# promtool unit tests for app/prometheusrule.yaml, covering VolSyncComponentAbsent and
+# VolSyncVolumeOutOfSync. ComponentAbsent is bare `absent(up{job="volsync-metrics"})` — no
+# `up == 0` branch, so it fires only when the series vanishes (an up==0 scrape failure is a
+# present series and must NOT fire). VolumeOutOfSync is `== 1` strict equality, so the
+# boundary pair is 1 fire / 0 no-fire / 2 no-fire (2 proves it is ==, not >=). Both for:15m,
+# so every fire case evals past 15m (eval at 16m). exp_annotations asserted so the
+# $labels.obj_namespace/obj_name template is exercised.
+# Run via `just k8s test-prom-rules` (recipe copies this test + .extracted_prometheus_rules.yaml into a temp dir).
+rule_files:
+  - ./.extracted_prometheus_rules.yaml
+evaluation_interval: 1m
+tests:
+  # === VolSyncComponentAbsent ===
+  # (a) Fire: series absent (volsync-metrics gone from discovery). absent() carries the
+  # matcher label (job) into the result vector; fires after 15m for.
+  - interval: 1m
+    input_series: []
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: VolSyncComponentAbsent
+        exp_alerts:
+          - exp_labels:
+              alertname: VolSyncComponentAbsent
+              severity: critical
+              job: volsync-metrics
+            exp_annotations:
+              summary: VolSync component has disappeared from Prometheus target discovery.
+  # (b) No-fire: up == 1 — the series is present so absent() is empty.
+  - interval: 1m
+    input_series:
+      - series: 'up{job="volsync-metrics"}'
+        values: '1x17'
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: VolSyncComponentAbsent
+        exp_alerts: []
+  # (c) No-fire: up == 0 (scrape failed but present) — absent() is empty because the series exists.
+  - interval: 1m
+    input_series:
+      - series: 'up{job="volsync-metrics"}'
+        values: '0x17'
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: VolSyncComponentAbsent
+        exp_alerts: []
+  # === VolSyncVolumeOutOfSync ===
+  # (d) Fire: out_of_sync == 1 (boundary low). exp_labels carry obj_namespace + obj_name;
+  # summary renders them via $labels.
+  - interval: 1m
+    input_series:
+      - series: 'volsync_volume_out_of_sync{obj_namespace="backup",obj_name="paperless"}'
+        values: '1x17'
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: VolSyncVolumeOutOfSync
+        exp_alerts:
+          - exp_labels:
+              alertname: VolSyncVolumeOutOfSync
+              severity: critical
+              obj_namespace: backup
+              obj_name: paperless
+            exp_annotations:
+              summary: backup/paperless volume is out of sync.
+  # (e) No-fire: out_of_sync == 0 — strict == 1 does not match 0.
+  - interval: 1m
+    input_series:
+      - series: 'volsync_volume_out_of_sync{obj_namespace="backup",obj_name="paperless"}'
+        values: '0x17'
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: VolSyncVolumeOutOfSync
+        exp_alerts: []
+  # (f) No-fire: out_of_sync == 2 — proves the alert is == 1, not >= 1.
+  - interval: 1m
+    input_series:
+      - series: 'volsync_volume_out_of_sync{obj_namespace="backup",obj_name="paperless"}'
+        values: '2x17'
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: VolSyncVolumeOutOfSync
+        exp_alerts: []

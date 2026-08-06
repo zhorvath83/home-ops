@@ -1,0 +1,115 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/prometheus.rules.test.json
+# promtool unit tests for prometheusrules/oomkilled.yaml, covering OOMKilled.
+# expr: (kube_pod_container_status_restarts_total - kube_pod_container_status_restarts_total
+# offset 10m >= 1) and ignoring (reason) min_over_time(kube_pod_container_status_last_terminated_reason
+# {reason="OOMKilled"}[10m]) == 1. No `for`. The `and` means BOTH halves must hold, so the negative
+# cases kill each half independently. The rule has no `by()` and no static labels beyond
+# severity:critical, so the alert INHERITS the restarts series labels (namespace/pod/container/uid)
+# plus alertname + severity — exp_labels assert that full set. $value is the LEFT operand's value
+# (the restart delta), rendered via {{ $value }} in the description.
+#
+# Restart-delta arithmetic (1m eval interval, eval at 20m, offset 10m): delta = value(20m) -
+# value(10m). `5x11 6x10` = 5 for t=0..10m then 6 for t=11..20m → value(20m)=6, value(10m)=5,
+# delta=1 (the inclusive `>= 1` boundary). `5x21` = steady → delta=0. `5x11 7x10` → delta=2.
+# min_over_time(...{reason="OOMKilled"}[10m]) == 1 holds when every PRESENT sample in the 10m
+# window is 1 — steps with NO sample are simply not in the window, not counted as 0. The positive
+# case (a) holds the gauge at 1 across the whole window; case (d) has the gauge ABSENT 0..14m
+# then present at 1 from 15..20m (absence modelled with the promtool `_` token — no sample — NOT
+# a NaN-valued sample) and STILL fires, because min_over_time sees only the present 1-samples.
+#
+# Live-verified KSM assumption (case d): this cluster's kube-state-metrics emits
+# kube_pod_container_status_last_terminated_reason ONLY for the actual last-terminated reason,
+# always value 1, and never a 0-valued sibling for the other reasons. So a partway-present
+# {reason="OOMKilled"} series carries only 1-valued samples → min_over_time == 1 → fires. This
+# is the most common real shape (an OOM that just happened, not one steady for 10m). If a future
+# KSM version starts emitting 0-valued sibling series, this assumption breaks and case (d) would
+# need reworking — the partway gauge would then have 0-samples and min would be 0, no fire.
+# Side note (recorded, NOT acted on — Guard B): given that metric shape, min_over_time(...) == 1
+# is functionally just "an OOMKilled series existed in the last 10m"; the aggregation is
+# redundant but harmless, and the rule expression is left unchanged.
+# Run via `just k8s test-prom-rules` (recipe copies this test + .extracted_prometheus_rules.yaml into a temp dir).
+rule_files:
+  - ./.extracted_prometheus_rules.yaml
+evaluation_interval: 1m
+tests:
+  # === OOMKilled ===
+  # (a) Positive / `>= 1` inclusive boundary FIRE: restart delta == 1 (5x11 6x10) AND the OOMKilled
+  # gauge == 1 across the whole 10m window (min_over_time[10m]==1). Fires at 20m; $value=1 (the
+  # restart delta, left operand of `and`). Proves both halves hold AND that delta=1 satisfies `>= 1`.
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_container_status_restarts_total{namespace="media",pod="plex-xyz",container="main",uid="abc"}'
+        values: '5x11 6x10'
+      - series: 'kube_pod_container_status_last_terminated_reason{namespace="media",pod="plex-xyz",container="main",uid="abc",reason="OOMKilled"}'
+        values: '1x21'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: OOMKilled
+        exp_alerts:
+          - exp_labels:
+              alertname: OOMKilled
+              severity: critical
+              namespace: media
+              pod: plex-xyz
+              container: main
+              uid: abc
+            exp_annotations:
+              description: Container main in pod media/plex-xyz has been OOMKilled 1 times in the last 10 minutes.
+  # (b) Negative, FIRST half fails / `>= 1` boundary NO-fire: steady restarts (delta == 0) while
+  # the OOMKilled gauge IS present. `>= 1` false → left operand empty → `and` empty → no fire.
+  # Proves the restart-delta half is load-bearing (an OOM reason alone, without a fresh restart,
+  # does not page) and that delta=0 does not satisfy `>= 1`.
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_container_status_restarts_total{namespace="media",pod="plex-xyz",container="main",uid="abc"}'
+        values: '5x21'
+      - series: 'kube_pod_container_status_last_terminated_reason{namespace="media",pod="plex-xyz",container="main",uid="abc",reason="OOMKilled"}'
+        values: '1x21'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: OOMKilled
+        exp_alerts: []
+  # (c) Negative, SECOND half fails: restart delta == 1 but the last termination was a NON-OOM
+  # reason (Error) — NO OOMKilled series exists, so the {reason="OOMKilled"} selector is empty,
+  # min_over_time is empty, `== 1` is empty, and `and` is empty → no fire. Proves the reason filter
+  # is load-bearing and that a plain crashloop (Error) does not page as an OOM.
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_container_status_restarts_total{namespace="media",pod="plex-xyz",container="main",uid="abc"}'
+        values: '5x11 6x10'
+      - series: 'kube_pod_container_status_last_terminated_reason{namespace="media",pod="plex-xyz",container="main",uid="abc",reason="Error"}'
+        values: '1x21'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: OOMKilled
+        exp_alerts: []
+  # (d) Partway-present OOMKilled gauge — the most common real shape (an OOM that JUST happened,
+  # not one steady for 10m). The gauge is ABSENT 0..14m then appears at 1 from 15..20m. Absence is
+  # modelled with the promtool `_` token (no sample at that step), NOT a NaN-valued sample: `nan`
+  # would mean the series exists with a NaN float, which only happens to be skipped by
+  # min_over_time as an implementation detail — `_` is genuine absence and is what the
+  # live-verified KSM shape below actually describes. The restart delta is 1 (5x15 6x6:
+  # value(20m)=6, value(10m)=5). At eval 20m the min_over_time[10m] window [10m,20m] contains no
+  # gauge samples at 10..14m (absent) and 1-samples at 15..20m → min == 1 → `== 1` holds → `and`
+  # fires, $value=1. Proves the live-verified KSM shape (partway-present, only-1-valued series)
+  # still pages, and that absent steps do NOT count as 0 against the min.
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_container_status_restarts_total{namespace="media",pod="plex-xyz",container="main",uid="abc"}'
+        values: '5x15 6x6'
+      - series: 'kube_pod_container_status_last_terminated_reason{namespace="media",pod="plex-xyz",container="main",uid="abc",reason="OOMKilled"}'
+        values: '_x15 1x6'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: OOMKilled
+        exp_alerts:
+          - exp_labels:
+              alertname: OOMKilled
+              severity: critical
+              namespace: media
+              pod: plex-xyz
+              container: main
+              uid: abc
+            exp_annotations:
+              description: Container main in pod media/plex-xyz has been OOMKilled 1 times in the last 10 minutes.

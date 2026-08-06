@@ -87,3 +87,11 @@ Treat everything under `kubernetes/` as desired state for Flux, not as an impera
   - shared secret delivery: `.claude/skills/external-secrets/`
   - backup policy and restore flow: `.claude/skills/volsync/`
 - After edits, read the touched `ks.yaml`, `kustomization.yaml`, and primary manifests together, check dependency and naming consistency against sibling trees, and run the smallest relevant validation the environment allows.
+
+## PrometheusRule Unit Tests
+
+- Each PrometheusRule `<basename>.yaml` is unit-tested by a sibling `<basename>_test.yaml` in the same directory (e.g. `app/prometheusrule_test.yaml` beside `app/prometheusrule.yaml`); rules under `prometheusrules/` follow the same pairing (e.g. `dns-exfil_test.yaml` beside `dns-exfil.yaml`).
+- Run the whole suite with `just k8s test-prom-rules`. The recipe copies each test and an extracted `.extracted_prometheus_rules.yaml` into a `mktemp -d` scratch dir and runs `promtool` there — it writes nothing under `kubernetes/`, so nothing pollutes the working tree even on failure.
+- Bar for every alert: a positive case (fires) + a negative case (does not fire) + asserted `exp_annotations` (a broken `{{ $labels.* }}` or `$value` template must fail the suite). Threshold alerts (`> N`, `< N`, `== N`) add a boundary pair matching the operator's strictness. `keep_firing_for: Xh` alerts add a past-latch case (condition false for >X past the fire, alert still firing).
+- A `_test.yaml` is a test fixture, never a manifest: it MUST NOT appear in any `kustomization.yaml` resources list (Flux would try to apply it).
+- The reasoned record behind this bar (the evidence that produced it, GUARD A/B, the EnvoyProxyDown worked example) is BM ADR `docs/decisions/promtool-unit-test-bar`; read it before relaxing any of the above.

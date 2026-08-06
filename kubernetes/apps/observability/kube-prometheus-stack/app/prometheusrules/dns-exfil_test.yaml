@@ -1,0 +1,67 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/prometheus.rules.test.json
+# promtool unit tests for prometheusrules/dns-exfil.yaml, covering HubbleDNSExfilSuspected.
+# expr: sum by (source_namespace, source_workload, source_pod) (rate(hubble_dns_queries_total
+# {source_workload!="coredns"}[5m])) > 30, for:10m. The `sum by` aggregates away every label
+# except the three source labels, so exp_labels carry alertname + severity + source_namespace +
+# source_workload + source_pod (the input series carry extra labels — destination/cluster/job/
+# instance — to prove the `sum by` drops them). The description renders {{ printf "%.0f" $value }},
+# so the fire case asserts the rendered integer — the $value rendering path is the whole reason
+# this file exists.
+#
+# rate[5m] arithmetic (1m eval interval): `0+1800x21` steps the counter by 1800 per 60s sample →
+# 1800/60 = 30.0 queries/s. At eval 20m the window [15m,20m] has first=1800*15 at 15m (window
+# start) and last=1800*20 at 20m (window end), so elapsed == range and Prometheus does NOT
+# extrapolate → rate is exactly 30.0 (a perfectly linear counter makes any extrapolation exact
+# anyway). 30 > 30 is false → no fire. `0+1860x21` → 1860/60 = 31.0 q/s → fire, $value=31.
+# for:10m: the rate is >30 from t=5m (when the window first fills) through 20m = 15m, so eval at
+# 20m is well past the 10m gate; the for-pin case evals at 8m (condition true < 10m) → no fire.
+# Run via `just k8s test-prom-rules` (recipe copies this test + .extracted_prometheus_rules.yaml into a temp dir).
+rule_files:
+  - ./.extracted_prometheus_rules.yaml
+evaluation_interval: 1m
+tests:
+  # === HubbleDNSExfilSuspected ===
+  # (1) Boundary NO-fire: rate == 30 q/s. `>` is strict, 30 > 30 false → no fire even past for:10m.
+  # 30 q/s is the starter threshold (~4x the cluster's ~7/s); a sustained exactly-threshold rate
+  # must not page. Extra input labels (destination/cluster/job/instance) prove `sum by` drops them.
+  - interval: 1m
+    input_series:
+      - series: 'hubble_dns_queries_total{source_namespace="media",source_workload="plex",source_pod="plex-xyz",destination="1.1.1.1",cluster="home",job="hubble",instance="k8s-cp0:9965"}'
+        values: '0+1800x21'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: HubbleDNSExfilSuspected
+        exp_alerts: []
+  # (2) Boundary FIRE: rate == 31 q/s (just above threshold). Fires at 20m (for:10m met). Asserts
+  # the full rendered description — {{ printf "%.0f" $value }} → "31", both $labels paths, and the
+  # two-line description including the `Inspect:` hubble command. exp_labels = the `sum by` set.
+  - interval: 1m
+    input_series:
+      - series: 'hubble_dns_queries_total{source_namespace="media",source_workload="plex",source_pod="plex-xyz",destination="1.1.1.1",cluster="home",job="hubble",instance="k8s-cp0:9965"}'
+        values: '0+1860x21'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: HubbleDNSExfilSuspected
+        exp_alerts:
+          - exp_labels:
+              alertname: HubbleDNSExfilSuspected
+              severity: warning
+              source_namespace: media
+              source_workload: plex
+              source_pod: plex-xyz
+            exp_annotations:
+              summary: High DNS query rate — possible DNS exfiltration
+              description: |-
+                media/plex-xyz (plex) is issuing 31 DNS queries/s, sustained >=10m (normal cluster-wide rate is ~7/s). Investigate for DNS tunneling / data exfiltration.
+                Inspect: hubble observe --from-pod media/plex-xyz --protocol dns --last 200
+  # (3) for:10m pin: rate == 31 q/s but eval at 8m — the condition has been true for < 10m, so the
+  # alert is still pending, not firing. Pins for:10m (without it, this would fire at 8m).
+  - interval: 1m
+    input_series:
+      - series: 'hubble_dns_queries_total{source_namespace="media",source_workload="plex",source_pod="plex-xyz"}'
+        values: '0+1860x9'
+    alert_rule_test:
+      - eval_time: 8m
+        alertname: HubbleDNSExfilSuspected
+        exp_alerts: []
