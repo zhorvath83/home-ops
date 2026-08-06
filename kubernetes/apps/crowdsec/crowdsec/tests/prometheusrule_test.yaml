@@ -231,20 +231,19 @@ tests:
                 the count drops below the threshold it stays firing for ~48h (≥ the daily 24h-TTL
                 sawtooth) before resolving — not minutes — so a peak crossing does not flap.
   # === CrowdSecBlocklistImportSourceFailing ===
-  # expr aggregates max by(source) so exp_labels carry alertname + severity + source (job/instance
-  # dropped). for:48h; the test group interval MUST equal the file's evaluation_interval (1m) —
-  # promtool advances the `for` timer on the global evaluation_interval ticks, so a coarser group
-  # interval (1h/30m) never satisfies for:48h and the alert never fires. The Pushgateway retains
-  # the last pushed value between daily runs, so 0xN is a continuous N-minute failure; 48h = 2880m
-  # = 2 consecutive failed daily runs (24h schedule). keep_firing_for:24h latches past recovery.
-  # (8) FIRE: source_status 0 for 48h1m (2 failed daily runs). max by(source)==0 holds 2881m ->
-  # fires at 48h1m (for:48h + 1m, same for+1m pattern as CrowdSecDecisionBudgetNearCap case 2).
+  # expr: max by(source)(max_over_time(blocklist_import_source_status{...}[50h])) == 0 — TSDB-sourced,
+  # no `for:`. exp_labels carry alertname + severity + source (job/instance dropped). The group
+  # interval MUST equal the file evaluation_interval (1m): keep_firing_for ticks on those ticks.
+  # 50h = 3000m. A fresh all-0 series fires at t=0 (partial window all-0), so the meaningful cases
+  # model a HEALTHY prefix (1xN) then a failure — only then does the 50h window gate the fire.
+  # (8) FIRE: healthy 50h, then 0 for 50h1m. max_over_time[50h]==0 first holds at t=100h (50h after
+  # the failure starts, when the last healthy 1 ages out of the window); eval at 100h1m -> firing.
   - interval: 1m
     input_series:
       - series: 'blocklist_import_source_status{job="crowdsec-blocklist-import",source="Cybercrime Tracker"}'
-        values: '0x2882'
+        values: '1x3000 0x3001'
     alert_rule_test:
-      - eval_time: 48h1m
+      - eval_time: 100h1m
         alertname: CrowdSecBlocklistImportSourceFailing
         exp_alerts:
           - exp_labels:
@@ -255,37 +254,39 @@ tests:
               summary: A blocklist-import feed failed to fetch
               description: |-
                 blocklist-import source Cybercrime Tracker reported fetch status 0 (failed) for
-                ~2 consecutive daily runs. The job exits 0 as long as ≥1 source succeeds, so
-                feed-rot is invisible to KubeJobFailed. Check the importer logs and the feed URL;
-                prune or disable the feed if it is dead.
-  # (9) NO-FIRE: source_status 1 (healthy) for 48h1m — max by(source)==1, condition false, stays quiet.
+                every scrape across ~2 consecutive daily runs (max_over_time[50h] == 0). The job
+                exits 0 as long as ≥1 source succeeds, so feed-rot is invisible to KubeJobFailed.
+                Check the importer logs and the feed URL; prune or disable the feed if it is dead.
+  # (9) NO-FIRE: healthy (1) for 100h1m — max_over_time[50h]=1, condition false, stays quiet.
   - interval: 1m
     input_series:
       - series: 'blocklist_import_source_status{job="crowdsec-blocklist-import",source="Cybercrime Tracker"}'
-        values: '1x2882'
+        values: '1x6001'
     alert_rule_test:
-      - eval_time: 48h1m
+      - eval_time: 100h1m
         alertname: CrowdSecBlocklistImportSourceFailing
         exp_alerts: []
-  # (10) NO-FIRE transient: 0 for 24h (one failed run) then 1 (recovered next run). The condition
-  # never holds 48h continuously and is false at 48h1m — a single transient fetch failure does not page.
+  # (10) NO-FIRE transient: healthy 50h, then 0 for 24h (one failed run), then 1 (recovered). The
+  # 24h failure can never fill a 50h all-0 window while prior healthy 1s are still in it, so
+  # max_over_time[50h] stays 1 and the alert never fires — a single transient fetch failure does not page.
   - interval: 1m
     input_series:
       - series: 'blocklist_import_source_status{job="crowdsec-blocklist-import",source="Cybercrime Tracker"}'
-        values: '0x1440 1x1442'
+        values: '1x3000 0x1440 1x1561'
     alert_rule_test:
-      - eval_time: 48h1m
+      - eval_time: 100h1m
         alertname: CrowdSecBlocklistImportSourceFailing
         exp_alerts: []
-  # (11) keep_firing_for pin: 0 for 50h (fires at 48h1m), then 1 for 23h. At eval 73h the condition has
-  # been false since 50h (23h < 24h keep_firing_for), so it stays firing — removing keep_firing_for:24h
-  # would resolve it and return got:[]. Mutation pin, same pattern as case (7).
+  # (11) keep_firing_for pin: healthy 50h, then 0 for 50h1m (fires at t=100h when the window fills),
+  # then 1 (recovered at 100h1m). At eval 123h the condition has been false since 100h1m (~23h <
+  # 24h keep_firing_for), so it stays firing — removing keep_firing_for:24h would resolve it and
+  # return got:[]. Mutation pin, same pattern as case (7).
   - interval: 1m
     input_series:
       - series: 'blocklist_import_source_status{job="crowdsec-blocklist-import",source="Cybercrime Tracker"}'
-        values: '0x3000 1x1381'
+        values: '1x3000 0x3001 1x1380'
     alert_rule_test:
-      - eval_time: 73h
+      - eval_time: 123h
         alertname: CrowdSecBlocklistImportSourceFailing
         exp_alerts:
           - exp_labels:
@@ -296,18 +297,19 @@ tests:
               summary: A blocklist-import feed failed to fetch
               description: |-
                 blocklist-import source Cybercrime Tracker reported fetch status 0 (failed) for
-                ~2 consecutive daily runs. The job exits 0 as long as ≥1 source succeeds, so
-                feed-rot is invisible to KubeJobFailed. Check the importer logs and the feed URL;
-                prune or disable the feed if it is dead.
+                every scrape across ~2 consecutive daily runs (max_over_time[50h] == 0). The job
+                exits 0 as long as ≥1 source succeeds, so feed-rot is invisible to KubeJobFailed.
+                Check the importer logs and the feed URL; prune or disable the feed if it is dead.
   # === CrowdSecBlocklistImportMetricsAbsent ===
-  # absent() carries the selector's job label into the result -> exp_labels carry alertname +
-  # severity + job. for:1h with interval:1m -> fire at 61m. Pins the "whole freshness signal dead" case.
-  # (12) FIRE: no source_status series at all. absent() returns {job="crowdsec-blocklist-import"}=1;
-  # fires at 61m.
+  # expr: absent_over_time(blocklist_import_source_status{...}[26h]) — TSDB-sourced, no `for:`.
+  # absent_over_time carries the selector's job label -> exp_labels carry alertname + severity + job.
+  # 26h = 1560m > one 24h daily run. With no series at all the range is empty at any eval (fires
+  # immediately); the 26h window gates only the "was present, then stopped" case (14).
+  # (12) FIRE: no source_status series at all. absent_over_time[26h] returns {job=...}=1; fires.
   - interval: 1m
     input_series: []
     alert_rule_test:
-      - eval_time: 61m
+      - eval_time: 26h1m
         alertname: CrowdSecBlocklistImportMetricsAbsent
         exp_alerts:
           - exp_labels:
@@ -317,24 +319,44 @@ tests:
             exp_annotations:
               summary: blocklist-import freshness metrics are absent
               description: |-
-                No blocklist_import_source_status series has been scraped for 1h — the per-source
-                freshness signal is dead. Likely causes: METRICS_ENABLED disabled, the Pushgateway
-                unreachable or down, or the importer crashing before its metrics push. The
-                CrowdSecBlocklistImportSourceFailing alert cannot fire while this is absent, so
-                treat as a monitoring outage of the feed-rot detection plane.
-  # (13) NO-FIRE: a source_status series is present (value 1) — absent() is empty, stays quiet at 61m.
+                No blocklist_import_source_status sample has been scraped for ~26h (absent_over_time[26h]),
+                so the per-source freshness signal is dead — a daily run was missed. Likely causes:
+                METRICS_ENABLED disabled, the Pushgateway unreachable, or the importer crashing before
+                its metrics push. The CrowdSecBlocklistImportSourceFailing alert cannot fire while this
+                is absent, so treat as a monitoring outage of the feed-rot detection plane.
+  # (13) NO-FIRE: a source_status series is present (value 1) across the 26h window — absent_over_time
+  # is empty, stays quiet at 26h1m.
   - interval: 1m
     input_series:
       - series: 'blocklist_import_source_status{job="crowdsec-blocklist-import",source="Spamhaus DROP"}'
-        values: '1x62'
+        values: '1x1562'
     alert_rule_test:
-      - eval_time: 61m
+      - eval_time: 26h1m
         alertname: CrowdSecBlocklistImportMetricsAbsent
         exp_alerts: []
-  # (14) NO-FIRE for-not-met: no series but eval at 30m (< for:1h) — pending, does not fire. Pins for:1h.
+  # (14) 26h-window-boundary pin: a single sample at t=0, then nothing. At eval 25h the sample is
+  # still inside the [t-26h,t] window -> absent_over_time empty -> no fire. At eval 27h the sample
+  # has aged out -> absent_over_time=1 -> fires. Pins the 26h range window (successor to for:1h pin).
   - interval: 1m
-    input_series: []
+    input_series:
+      - series: 'blocklist_import_source_status{job="crowdsec-blocklist-import",source="Spamhaus DROP"}'
+        values: '1x1'
     alert_rule_test:
-      - eval_time: 30m
+      - eval_time: 25h
         alertname: CrowdSecBlocklistImportMetricsAbsent
         exp_alerts: []
+      - eval_time: 27h
+        alertname: CrowdSecBlocklistImportMetricsAbsent
+        exp_alerts:
+          - exp_labels:
+              alertname: CrowdSecBlocklistImportMetricsAbsent
+              severity: warning
+              job: crowdsec-blocklist-import
+            exp_annotations:
+              summary: blocklist-import freshness metrics are absent
+              description: |-
+                No blocklist_import_source_status sample has been scraped for ~26h (absent_over_time[26h]),
+                so the per-source freshness signal is dead — a daily run was missed. Likely causes:
+                METRICS_ENABLED disabled, the Pushgateway unreachable, or the importer crashing before
+                its metrics push. The CrowdSecBlocklistImportSourceFailing alert cannot fire while this
+                is absent, so treat as a monitoring outage of the feed-rot detection plane.
