@@ -11,7 +11,7 @@ summary: Observability for the cluster splits into NINE workloads under kubernet
   + node-exporter, minimal single-node configuration), an operator-managed grafana
   (grafana-operator + a Grafana CR, LAN-only on envoy-internal), a speedtest-exporter for
   WAN throughput metrics, victoria-logs (single-node server + per-node collector DaemonSet)
-  for the logs plane, plus blackbox-exporter, smartctl-exporter, prometheus-adapter and
+  for the logs plane, plus blackbox-exporter, smartctl-exporter, prometheus-adapter, prometheus-pushgateway and
   silence-operator. Three PrometheusRules and three ScrapeConfigs ARE centralized here now;
   platform subtrees (volsync-system, external-secrets, etc.) still publish their own too. Pushover
   alerting routes through the in-cluster Alertmanager (pushover default
