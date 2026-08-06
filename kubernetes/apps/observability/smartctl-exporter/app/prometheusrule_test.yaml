@@ -3,9 +3,9 @@
 # promtool unit tests for app/prometheusrule.yaml. The rule group has been live with 0 eval
 # failures but NO alert ever fired, so the annotation templates were never exercised — these
 # tests assert exp_annotations so a broken {{ $labels.* }} reference fails the suite.
-# Run via `just k8s test-prom-rules` (recipe extracts .spec into ./_extracted_rules.yaml).
+# Run via `just k8s test-prom-rules` (recipe copies this test + .extracted_prometheus_rules.yaml into a temp dir).
 rule_files:
-  - ./_extracted_rules.yaml
+  - ./.extracted_prometheus_rules.yaml
 evaluation_interval: 1m
 tests:
   # SmartctlMediaErrors: media_errors != 0 (for 15m). nvme0=0 no fire / nvme1=1 fires.

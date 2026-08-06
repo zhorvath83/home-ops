@@ -332,40 +332,35 @@ show-cnp-matrix app="":
 
 # === test ===
 #
-# promtool unit tests for PrometheusRule manifests. A module is testable when it has a tests/
-# dir (module-level, sibling of app/) containing *_test.yaml. For each such module: extract
-# .spec from every prometheusrule.yaml under the module root into tests/_extracted_rules.yaml
-# (gitignored — the test file references it via rule_files), check the rules, then run promtool
-# test rules on every *_test.yaml. Generalizes to any future rule module with the same layout.
+# promtool unit tests for PrometheusRule manifests. Each `<basename>_test.yaml` lives beside
+# its rule file `<basename>.yaml`; the recipe pairs them, extracts .spec.groups into a
+# temp-dir .extracted_prometheus_rules.yaml, copies the test in, and runs promtool there —
+# nothing is ever written under kubernetes/.
 
-[doc('Run promtool unit tests for every PrometheusRule in a module that has a tests/ directory.')]
+[doc('Run promtool unit tests for every *_test.yaml beside a PrometheusRule.')]
 [group('test')]
 [script]
 test-prom-rules:
     command -v promtool >/dev/null 2>&1 || { echo "promtool not found — is the mise env active (aqua:prometheus/prometheus)?" >&2; exit 127; }
     command -v yq >/dev/null 2>&1 || { echo "yq not found — is the mise env active?" >&2; exit 127; }
     fail=0
-    # Discover module roots: any tests/ dir containing a *_test.yaml is a testable module.
-    mapfile -t test_dirs < <(find "{{ kubernetes_dir }}" -type d -name 'tests' | while read -r d; do
-        find "$d" -maxdepth 1 -type f -name '*_test.yaml' -print -quit | grep -q . && printf '%s\n' "$d"
-      done | sort)
-    for tests_dir in "${test_dirs[@]}"; do
-      module_root="$(dirname "$tests_dir")"
-      # Collect every PrometheusRule under this module root (typically app/prometheusrule.yaml).
-      mapfile -t specs < <(find "$module_root" -type f -name 'prometheusrule*.yaml' | sort)
-      [ "${#specs[@]}" -gt 0 ] || { just log warn "No prometheusrule.yaml under module" module "$module_root"; continue; }
-      just log info "Testing PrometheusRule" module "$module_root"
-      # Merge .spec.groups from every PrometheusRule in this module into one rules file the tests reference.
+    # Discover every beside-rule test file; pair with its same-basename .yaml rule file.
+    mapfile -t test_files < <(find "{{ kubernetes_dir }}" -type f -name '*_test.yaml' | sort)
+    [ "${#test_files[@]}" -gt 0 ] || { just log error "No *_test.yaml found under" dir "{{ kubernetes_dir }}"; exit 1; }
+    just log info "Discovered PrometheusRule tests" count "${#test_files[@]}"
+    for tf in "${test_files[@]}"; do
+      rule_file="${tf%_test.yaml}.yaml"
+      [ -f "$rule_file" ] || { just log error "No rule file beside test" test "$tf" expected "$rule_file"; fail=1; continue; }
+      just log info "Testing PrometheusRule" test "$tf"
+      tmp="$(mktemp -d)"
+      # Merge .spec.groups from the rule file into one rules file the test references via rule_files.
       # mikefarah/yq has no --slurp; eval-all + ireduce is the multi-file merge idiom (single file is a no-op merge).
-      extracted="$tests_dir/_extracted_rules.yaml"
-      yq ea -o yaml '.spec as $item ireduce ({}; . *+ {"groups": ($item.groups // [])})' "${specs[@]}" > "$extracted"
-      # Validate the rules themselves, then run the unit tests; keep going on failure so all modules report.
-      promtool check rules "$extracted" || fail=1
-      mapfile -t test_files < <(find "$tests_dir" -maxdepth 1 -type f -name '*_test.yaml' | sort)
-      for tf in "${test_files[@]}"; do
-        promtool test rules "$tf" || fail=1
-      done
-      rm -f "$extracted"
+      yq ea -o yaml '.spec as $item ireduce ({}; . *+ {"groups": ($item.groups // [])})' "$rule_file" > "$tmp/.extracted_prometheus_rules.yaml"
+      cp "$tf" "$tmp/$(basename "$tf")"
+      # Validate the rules themselves, then run the unit tests; keep going on failure so all tests report.
+      ( cd "$tmp" && promtool check rules .extracted_prometheus_rules.yaml ) || fail=1
+      ( cd "$tmp" && promtool test rules "$(basename "$tf")" ) || fail=1
+      rm -rf "$tmp"
     done
     if [ "$fail" -ne 0 ]; then
       just log error "promtool rule tests failed" failures "$fail"

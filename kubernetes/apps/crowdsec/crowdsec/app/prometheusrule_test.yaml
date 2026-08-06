@@ -1,13 +1,13 @@
 ---
 # yaml-language-server: $schema=https://json.schemastore.org/prometheus.rules.test.json
 # promtool unit tests for app/prometheusrule.yaml, covering CrowdSecAgentDown and
-# CrowdSecAppsecDown only. Both follow the CrowdSecLAPIDown shape: `up == 0 or absent(up{...})`,
+# CrowdSecAppsecDown. Both follow the CrowdSecLAPIDown shape: `up == 0 or absent(up{...})`,
 # so the `absent()` branch covers scale-to-0 / crashloop / evicted where the `up` series
 # vanishes — that is the branch the tests exercise most, since `up == 0` alone would never
 # fire for those outage shapes. for:5m, so every fire case evals past 5m (eval at 6m).
-# Run via `just k8s test-prom-rules` (recipe extracts .spec into ./_extracted_rules.yaml).
+# Run via `just k8s test-prom-rules` (recipe copies this test + .extracted_prometheus_rules.yaml into a temp dir).
 rule_files:
-  - ./_extracted_rules.yaml
+  - ./.extracted_prometheus_rules.yaml
 evaluation_interval: 1m
 tests:
   # === CrowdSecAgentDown ===

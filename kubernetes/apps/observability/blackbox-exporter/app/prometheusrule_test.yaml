@@ -4,9 +4,9 @@
 # The rule does day-math — (probe_ssl_earliest_cert_expiry - time()) / 86400 < 1 — with a
 # printf-formatted $value; a sign or divisor slip would make it silently never fire. These
 # tests assert exp_annotations so the template AND the arithmetic are both exercised.
-# Run via `just k8s test-prom-rules` (recipe extracts .spec into ./_extracted_rules.yaml).
+# Run via `just k8s test-prom-rules` (recipe copies this test + .extracted_prometheus_rules.yaml into a temp dir).
 rule_files:
-  - ./_extracted_rules.yaml
+  - ./.extracted_prometheus_rules.yaml
 evaluation_interval: 1m
 tests:
   # Fire: cert ~0.5d out (expiry 46860, time()=3660 at 61m -> 0.5d < 1). for:1h holds across the window.
