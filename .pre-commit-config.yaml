@@ -80,6 +80,16 @@ repos:
         pass_filenames: false
         types:
           - terraform
+      - id: renovate-config-validator
+        name: renovate-config-validator
+        language: node
+        entry: bash -c 'env -u GITHUB_TOKEN renovate-config-validator .renovaterc.json5 .renovate/*.json5'
+        additional_dependencies:
+          - "renovate@44.14.1"
+        files: '^(\.renovaterc\.json5|\.renovate/.*\.json5)$'
+        pass_filenames: false
+        # No token -> validator skips `github>` preset resolution -> deterministic offline validation.
+        # Root does not read local fragments, so all fragments are validated standalone here.
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
