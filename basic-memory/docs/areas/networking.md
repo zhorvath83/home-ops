@@ -394,3 +394,43 @@ existed, but the drift that DID exist was in the security model, so it matters m
 - [addition] Not covered anywhere: the `headers.earlyRequestHeaders.remove` spoofing guard in both
   ClientTrafficPolicies (strips `Remote-User`/`-Email`/`-Groups`/`-Name`/`-Sub` before route
   matching and auth), the BTP 30m request timeout, and the envoy-gateway Grafana dashboard/folder.
+
+
+## Update — 2026-08-06: EnvoyProxyDown could not detect total ingress loss (found by a unit test)
+
+Corrects the `[component] EnvoyProxyDown` entry in the "Update — 2026-07-28: CrowdSec/envoy down
+alerts fixed (absent + count)" section above. That entry recorded the expression
+`count(up{job="networking/envoy-proxy",namespace="networking"} == 1) < 2` as "covering one-down,
+both-down, scrape failure, and all-vanished". **The both-down and all-vanished half of that claim was
+false**, and the expression has since changed.
+
+- [correction] `count()` over an empty instant vector returns an EMPTY result, not 0. When BOTH proxies
+  are down (or every `up` series has vanished — scale-to-0, crashloop, PodMonitor removed), `up == 1`
+  selects nothing, so `count(...)` is empty and `< 2` has nothing to compare. The alert therefore fired
+  **only when exactly one proxy was up**, and stayed silent in the two worst states: both proxies dead
+  (all ingress gone) and all targets vanished. A `critical` alert guarding the entire data plane could
+  not detect total ingress loss.
+- [fix] Commit `eb60131ad` (branch `test/prometheusrule-unit-test-coverage`):
+  `expr: (count(up{job="networking/envoy-proxy", namespace="networking"} == 1) or vector(0)) < 2`.
+  `or vector(0)` gives the empty case a 0 to compare, so both-down and all-vanished now fire.
+  `vector(0)` carries no labels, which is safe here because this alert's annotations are static.
+- [observation] The still-valid part of the original rationale is UNCHANGED and remains the reason for
+  the counting shape: envoy-external (Cloudflare Tunnel public) and envoy-internal (LAN) are two
+  single-replica proxies sharing ONE PodMonitor job `networking/envoy-proxy`, so a single-target
+  `up == 0 or absent()` shape would miss one proxy vanishing — `absent()` only fires once EVERY series
+  is gone. Counting `up == 1` against the expected 2 is still correct; it just needed the empty-vector
+  guard. `for: 2m` still skips a rolling-update blip.
+- [evidence] Found by a promtool unit test, NOT by an incident. Every conventional signal was green:
+  `promtool check rules` passed, the rule group loaded, `prometheus_rule_evaluation_failures_total`
+  was 0. The alert had simply never fired for those states, so nothing ever exercised them.
+- [observation] The same false claim had been recorded in TWO places — this area note and the rule's own
+  code comment — each reinforcing the other. Two mutually-confirming sources, both wrong. This is the
+  strongest evidence produced by the `prometheusrule-unit-test-coverage` work: manifest review,
+  `yamllint`, `kustomize build`, `pre-commit` and `promtool check rules` all pass over a rule that
+  cannot do what its documentation says.
+- [observation] All four states are now pinned by
+  `kubernetes/apps/networking/envoy-gateway/config/prometheusrule_test.yaml` (2-up no-fire, one-down
+  fire, both-down fire, all-vanished fire). Reverting the expression makes exactly the both-down and
+  all-vanished cases fail — mutation-verified in both directions.
+
+- relates_to [[prometheusrule-unit-test-coverage]]
