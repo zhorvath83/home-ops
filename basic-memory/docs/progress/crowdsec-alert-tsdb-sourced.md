@@ -1,28 +1,20 @@
 ---
 title: crowdsec-alert-tsdb-sourced
-type: roadmap
-permalink: home-ops/docs/roadmap/crowdsec-alert-tsdb-sourced
-topic: Source the CrowdSec blocklist-import freshness alerts from the Prometheus TSDB
-  with range-vector queries so they are immune to Pushgateway relay restarts, then
-  revert the Pushgateway to stateless.
-status: done
-priority: medium
-area: observability, security
-created: 2026-08-06
-relates_to: '[[crowdsec-blocklist-import]]'
+type: note
+permalink: home-ops/docs/progress/crowdsec-alert-tsdb-sourced
 ---
 
-# crowdsec-alert-tsdb-sourced — roadmap
+# crowdsec-alert-tsdb-sourced — execution progress
 
-## Metadata (observation-form, schema validation)
-
-- [topic] Source the CrowdSec blocklist-import freshness alerts from the Prometheus TSDB with range-vector queries so they are immune to Pushgateway relay restarts; revert the Pushgateway to stateless.
-- [status] done
-- [priority] medium
+## Metadata (observation-form)
+- [topic] Execution state for the crowdsec-alert-tsdb-sourced roadmap
+- [status] DONE — P1+P2+P3 all shipped, deployed, live-verified; orphaned PVC cleanup complete. Roadmap note merged into this note (docs/roadmap note deleted on closure). All four acceptance criteria closed: AC1/AC2/AC3 by code + unit tests + pre-commit green and the post-reconcile live check; AC4 live-verified (Pushgateway restart no longer false-fires, both CrowdSecBlocklistImport* alerts inactive post-reconcile).
+- [roadmap] merged into this note — the docs/roadmap/crowdsec-alert-tsdb-sourced note was deleted on closure; all design rationale now lives in the section below
 - [area] observability, security
 - [created] 2026-08-06
-- [relates_to] [[crowdsec-blocklist-import]]
+- [closed] 2026-08-06
 
+## Design rationale (merged from roadmap)
 ## Background — the false fire (2026-08-06)
 
 - [evidence] `CrowdSecBlocklistImportMetricsAbsent` (job=crowdsec-blocklist-import, severity=warning) fired even though the 04:00 importer run had pushed metrics successfully. Job log `[2026-08-06 04:00:19] [INFO] Metrics pushed to Pushgateway at http://prometheus-pushgateway.observability.svc.cluster.local:9091` and `[INFO] Sources: 11 successful, 0 unavailable` — the push SUCCEEDED; the importer did NOT crash before its metrics push and METRICS_ENABLED is on.
@@ -139,3 +131,9 @@ The gate question: does anything OTHER than crowdsec-blocklist-import push to th
 - [done] Post-delete verify: pod prometheus-pushgateway-65b7764b85-zwggm still 1/1 Running, 0 restarts; Service endpoints 10.244.0.4:9091 still ready (Prometheus target up); no PV matching 101fe562/pushgateway remains; no pushgateway PVC in observability. No other kubectl mutations were run.
 - [correction] My P3 Delivery bullet above recorded the PV reclaim policy as "Retain" — that was wrong. I conflated the StatefulSet persistentVolumeClaimRetentionPolicy (whenDeleted: Retain, which is why the PVC was not garbage-collected on StatefulSet removal — still correct) with the live PV persistentVolumeReclaimPolicy, which is Delete. Corrected in the bullet above (PV reclaimPolicy=Delete). Consequence captured: PVC deletion cascades to PV + on-disk hostpath, so no separate PV/node step.
 - [status] done — unchanged. The roadmap is now fully closed: P1+P2+P3 shipped via PRs #4133 (merge 8f510f653) and #4134 (merge 608528ac1), and the orphan PVC cleanup is complete. No further work.
+
+## Roadmap closure (2026-08-06)
+The crowdsec-alert-tsdb-sourced roadmap item is CLOSED. The roadmap note (docs/roadmap/crowdsec-alert-tsdb-sourced) was merged into this progress note (Design rationale section above) and deleted — everything now lives under docs/progress per the roadmap -> progress lifecycle. All four acceptance criteria are closed. P1+P2 shipped via PR #4133 (merge 8f510f653), P3 shipped via PR #4134 (merge 608528ac1), and the orphaned PVC cleanup is complete. The Pushgateway is now a stateless Deployment (emptyDir, no PVC); both CrowdSecBlocklistImport* alerts are TSDB-sourced range-vector queries (absent_over_time[26h], max_over_time[50h]) and were inactive post-reconcile; a Pushgateway pod restart no longer false-fires the freshness alert. No further work.
+
+## Relations
+- relates_to [[crowdsec-blocklist-import]]
