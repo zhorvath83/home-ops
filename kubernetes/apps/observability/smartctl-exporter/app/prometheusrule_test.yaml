@@ -307,11 +307,12 @@ tests:
             exp_annotations:
               summary: "ATA drive temperature high on sdd (nas)"
               description: "Drive sdd on nas is at or above 50°C."
-  # SmartctlAtaTempCritical: temperature{current} > 55, for 15m. sdb 38 no fire / sdc 56 fires.
+  # SmartctlAtaTempCritical: temperature{current} > 55, for 15m. sdb 55 no fire / sdc 56 fires
+  # (operator-adjacent boundary pair, matching SmartctlAtaTempHigh's 49/50 pair below a `>= 50`).
   - interval: 1m
     input_series:
       - series: 'smartctl_device_temperature{job="nas-smartctl",instance="nas",device="sdb",temperature_type="current"}'
-        values: '38x21'
+        values: '55x21'
       - series: 'smartctl_device_temperature{job="nas-smartctl",instance="nas",device="sdc",temperature_type="current"}'
         values: '56x21'
     alert_rule_test:

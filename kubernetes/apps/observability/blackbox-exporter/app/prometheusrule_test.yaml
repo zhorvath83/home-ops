@@ -1,14 +1,80 @@
 ---
 # yaml-language-server: $schema=https://json.schemastore.org/prometheus.rules.test.json
-# promtool unit tests for app/prometheusrule.yaml, covering only BlackboxTLSCertExpiringSoon.
-# The rule does day-math — (probe_ssl_earliest_cert_expiry - time()) / 86400 < 1 — with a
-# printf-formatted $value; a sign or divisor slip would make it silently never fire. These
-# tests assert exp_annotations so the template AND the arithmetic are both exercised.
+# promtool unit tests for app/prometheusrule.yaml, covering BlackboxProbeFailed and
+# BlackboxTLSCertExpiringSoon. BlackboxProbeFailed is `probe_success == 0` (for:2m) — a plain
+# threshold with a boundary pair (0 fires / 1 no-fire) and asserted annotations rendering
+# $labels.instance and $labels.job. BlackboxTLSCertExpiringSoon does day-math —
+# (probe_ssl_earliest_cert_expiry - time()) / 86400 < 1 — with a printf-formatted $value; a sign
+# or divisor slip would make it silently never fire. These tests assert exp_annotations so the
+# template AND the arithmetic are both exercised.
 # Run via `just k8s test-prom-rules` (recipe copies this test + .extracted_prometheus_rules.yaml into a temp dir).
 rule_files:
   - ./.extracted_prometheus_rules.yaml
 evaluation_interval: 1m
 tests:
+  # === BlackboxProbeFailed === `probe_success == 0`, for:2m. exp_labels = alertname + severity +
+  # job + instance (the probe_success series labels); exp_annotations render $labels.instance/job.
+  # (1) Boundary FIRE: probe_success == 0 for 2m, eval at 3m (past the for gate). Asserts both
+  # annotation templates and that 0 satisfies `== 0`.
+  - interval: 1m
+    input_series:
+      - series: 'probe_success{job="idm_probe",instance="https://idm.${PUBLIC_DOMAIN}"}'
+        values: '0x4'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: BlackboxProbeFailed
+        exp_alerts:
+          - exp_labels:
+              alertname: BlackboxProbeFailed
+              severity: critical
+              job: idm_probe
+              instance: "https://idm.${PUBLIC_DOMAIN}"
+            exp_annotations:
+              summary: "Blackbox probe failed (https://idm.${PUBLIC_DOMAIN})"
+              description: "Probe for https://idm.${PUBLIC_DOMAIN} (job idm_probe) has been failing for 2m."
+  # (2) Boundary NO-fire: probe_success == 1, `== 0` false → no fire even past for:2m.
+  - interval: 1m
+    input_series:
+      - series: 'probe_success{job="idm_probe",instance="https://idm.${PUBLIC_DOMAIN}"}'
+        values: '1x4'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: BlackboxProbeFailed
+        exp_alerts: []
+  # === BlackboxTLSCertExpiringSoon === `(expiry - time())/86400 < 1`, for:1h. time() at eval 61m
+  # is 3660s. The boundary pair is derived from the strict `< 1` operator: days == 1.0 (no-fire)
+  # vs days < 1 (fire). The expiry INPUT is a unix timestamp, computed as time() + days*86400 —
+  # NOT a bare days value. for:1h means a days value just below 1.0 at eval has NOT yet been < 1
+  # for a full hour (it crossed 1.0 only moments ago) → would not fire; so the fire side uses
+  # 0.9d, which crossed 1.0 before t=0 and has been < 1 across the whole 61m window (for met).
+  # (3) Operator-boundary NO-fire: days == 1.0. expiry 90060 = 3660 + 86400 → (90060-3660)/86400
+  # = 1.0, `< 1` strict false → no fire.
+  - interval: 1m
+    input_series:
+      - series: 'probe_ssl_earliest_cert_expiry{job="idm_probe",instance="https://idm.${PUBLIC_DOMAIN}"}'
+        values: '90060x62'
+    alert_rule_test:
+      - eval_time: 61m
+        alertname: BlackboxTLSCertExpiringSoon
+        exp_alerts: []
+  # (4) Boundary FIRE: days == 0.9. expiry 81420 = 3660 + 0.9*86400 → 0.9d < 1, true for the whole
+  # window → for:1h met → fires. $value=0.9 → printf "%.1f" → "0.9 days".
+  - interval: 1m
+    input_series:
+      - series: 'probe_ssl_earliest_cert_expiry{job="idm_probe",instance="https://idm.${PUBLIC_DOMAIN}"}'
+        values: '81420x62'
+    alert_rule_test:
+      - eval_time: 61m
+        alertname: BlackboxTLSCertExpiringSoon
+        exp_alerts:
+          - exp_labels:
+              alertname: BlackboxTLSCertExpiringSoon
+              severity: warning
+              job: idm_probe
+              instance: "https://idm.${PUBLIC_DOMAIN}"
+            exp_annotations:
+              summary: "Blackbox TLS certificate expiring soon (https://idm.${PUBLIC_DOMAIN})"
+              description: "TLS certificate for https://idm.${PUBLIC_DOMAIN} (job idm_probe) expires in 0.9 days."
   # Fire: cert ~0.5d out (expiry 46860, time()=3660 at 61m -> 0.5d < 1). for:1h holds across the window.
   - interval: 1m
     input_series:
