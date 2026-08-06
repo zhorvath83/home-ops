@@ -1,0 +1,51 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/prometheus.rules.test.json
+# promtool unit tests for app/prometheusrule.yaml, covering PodStuckTerminating. The expr
+# `(time() - kube_pod_deletion_timestamp) > 900` is a threshold on pod-deletion AGE, so the
+# boundary pair tests the `>` strictness at 900s: age 901 fires / age 900 no-fire. To hold a
+# CONSTANT age across the for:15m window (otherwise age grows with time() and the for-window
+# never settles), kube_pod_deletion_timestamp is set to track `time() - age` — i.e. the
+# series values are arithmetic `(-age)+60xN`, rising 60s per 1m step so age stays fixed at
+# every sample. A pod with no deletion timestamp (no series) is the third case. eval at 16m
+# (past the 15m for). exp_annotations asserted so the $labels.pod/$labels.namespace template
+# is exercised.
+# Run via `just k8s test-prom-rules` (recipe copies this test + .extracted_prometheus_rules.yaml into a temp dir).
+rule_files:
+  - ./.extracted_prometheus_rules.yaml
+evaluation_interval: 1m
+tests:
+  # === PodStuckTerminating ===
+  # (a) Fire: deletion age held at 901s (> 900) for the whole 15m for-window. deletion_timestamp
+  # tracks time() - 901, rising 60s/step; at eval 16m (time=960s) timestamp=59, age=901.
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_deletion_timestamp{namespace="backup",pod="app-abc123"}'
+        values: '-901+60x17'
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: PodStuckTerminating
+        exp_alerts:
+          - exp_labels:
+              alertname: PodStuckTerminating
+              severity: warning
+              namespace: backup
+              pod: app-abc123
+            exp_annotations:
+              summary: "Pod app-abc123 stuck Terminating >15m in backup"
+              description: "Pod backup/app-abc123 has been terminating for over 15m — likely blocked by a finalizer the pod-garbage-collector intentionally skips. Investigate VolSync/external-secrets/PVC finalizers."
+  # (b) No-fire boundary: deletion age held at exactly 900s — `> 900` is strict, so 900 does not fire.
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_deletion_timestamp{namespace="backup",pod="app-abc123"}'
+        values: '-900+60x17'
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: PodStuckTerminating
+        exp_alerts: []
+  # (c) No-fire: no deletion timestamp (pod not deleting) — the metric is absent, the expr is empty.
+  - interval: 1m
+    input_series: []
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: PodStuckTerminating
+        exp_alerts: []
