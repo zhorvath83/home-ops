@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=https://json.schemastore.org/prometheus-test
+# yaml-language-server: $schema=https://json.schemastore.org/prometheus.rules.test.json
 # promtool unit tests for app/prometheusrule.yaml. The rule group has been live with 0 eval
 # failures but NO alert ever fired, so the annotation templates were never exercised — these
 # tests assert exp_annotations so a broken {{ $labels.* }} reference fails the suite.

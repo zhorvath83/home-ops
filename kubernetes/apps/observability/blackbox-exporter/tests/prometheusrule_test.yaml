@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=https://json.schemastore.org/prometheus-test
+# yaml-language-server: $schema=https://json.schemastore.org/prometheus.rules.test.json
 # promtool unit tests for app/prometheusrule.yaml, covering only BlackboxTLSCertExpiringSoon.
 # The rule does day-math — (probe_ssl_earliest_cert_expiry - time()) / 86400 < 1 — with a
 # printf-formatted $value; a sign or divisor slip would make it silently never fire. These

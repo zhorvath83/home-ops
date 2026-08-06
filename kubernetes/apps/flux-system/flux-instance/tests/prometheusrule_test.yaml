@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=https://json.schemastore.org/prometheus-test
+# yaml-language-server: $schema=https://json.schemastore.org/prometheus.rules.test.json
 # promtool unit tests for app/prometheusrule.yaml (FluxInstance dead-man alerts).
 # Two Prometheus-evaluated rules that live OUTSIDE the notification-controller ->
 # Alertmanager failure domain: FluxInstanceAbsent (series gone) and
