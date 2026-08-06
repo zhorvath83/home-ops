@@ -75,3 +75,15 @@ Full 6-repo comparison tables are preserved in the original roadmap note.
 - [evidence] talos PRs #4112/#4044/#3979 all show the failure; pure mise-manager tool PRs #4122/#4113/#4109/#4096 do not (skip uniform there). The exact `mise lock` stderr is Mend-hosted-log-only (auth-gated); mise attribution triangulated from the repo's own skip-rule comment + Renovate source + behavior.
 - [open-verification] End-to-end green only observable on the NEXT talos bump or a manual Renovate dry-run — not yet confirmed.
 - [follow-up out-of-scope] `renovate-config-validator` reports 5 pre-existing version-skew errors in `.renovaterc.json5` root (`baseBranchPatterns` + `flux`/`helm-values`/`helmfile`/`kubernetes` `managerFilePatterns`); orthogonal, separate task.
+### Correction (2026-08-06)
+
+The `[follow-up out-of-scope]` bullet above is SUPERSEDED - it framed the 5 `renovate-config-validator` errors as "version-skew ... orthogonal, separate task". Verified verdict: FALSE POSITIVE, not a real config error.
+
+- [cause] The 5 errors (`baseBranchPatterns` + `flux`/`helm-values`/`helmfile`/`kubernetes` `managerFilePatterns`) came from a stale npx-cached validator `renovate@37.440.7`. `managerFilePatterns` is the current name since Renovate v40.2.0 (PR #34615, renamed from `fileMatch`); `baseBranchPatterns` since v41.34.0 (PR #35579, renamed from `baseBranches`). The stale validator predates both renames -> "Invalid configuration option" x5.
+- [confirm] `renovate@44.14.1` validates the same config with 0 errors; Mend hosted Renovate accepts it (Dependency Dashboard #631 active 2026-08-06, no open "Fix Renovate Configuration" issue; PRs generate correctly).
+- [warning] Do NOT revert to the old names `baseBranches`/`fileMatch` - they are the deprecated predecessors; the current names are correct and the hosted Renovate expects them.
+- [durable fix] A pre-commit hook now validates `.renovaterc.json5` + all `.renovate/*.json5` fragments on every change (commit 55bb8fd56). Three findings shaped it:
+  1. The root validator does NOT read local fragments - root-only validation is false security; the hook validates every fragment standalone (proven: a broken fragment passes root validation but fails standalone).
+  2. Validation is offline-capable and deterministic with GITHUB_TOKEN unset (the validator skips `github>` preset resolution without a token - no network dependency, no secret in the repo).
+  3. The hook uses `language: node` (not mise-pinned `npm:renovate`): mise aube npm backend refuses to install renovate on a `@yarnpkg/libzip@3.2.2` provenance downgrade. Bypassing aube (`npm.shell_out=true` or `trust_policy_excludes`) would weaken supply-chain trust repo-wide for a lint hook - rejected. The pre-commit node env installs `renovate@44.14.1` via plain npm, sidestepping both aube and the node-engine constraint.
+- [open] Auto-bump of the pinned `renovate@44.14.1` is deferred: the existing customManagers regex captures the whole `package@version` string as `currentValue` (verified), so a new matchStrings/manager is needed for the `# renovate:` annotation - separate follow-up (no new machinery built without approval).
