@@ -61,7 +61,7 @@ spec:
           ctrld:
             image:
               repository: docker.io/controldns/ctrld
-              tag: 1.5.4@sha256:b3198125154f42baea4c5ee3db76d46c19c57cec88aab934ea50f7661fdc915a
+              tag: 1.5.5@sha256:60df8936d53488400b0b53c50aed39f8db344aa0aa1b6b70e27d2a36caa65129
             args:
               - --listen
               - 0.0.0.0:53
