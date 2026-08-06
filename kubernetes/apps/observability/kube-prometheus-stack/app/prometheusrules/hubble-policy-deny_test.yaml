@@ -1,0 +1,158 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/prometheus.rules.test.json
+# promtool unit tests for prometheusrules/hubble-policy-deny.yaml, covering the recording rule
+# hubble_policy_denied_increase5m and the HubblePolicyDeny alert. The recording rule's
+# `sum without (container, endpoint, instance, job, namespace, node, pod, service)` strips the
+# cilium-agent scrape-target labels (so Pushover's SortedPairs render stays clean) while keeping
+# every flow-relevant label — including `reason`, which is NOT in the without list and therefore
+# survives as reason="POLICY_DENIED" into the alert's labels. Every fire case asserts the POST-strip
+# label set (no scrape labels; reason present), so a regression that re-added a stripped label or
+# dropped reason would fail the suite. increase[5m] over a 1m eval interval: at eval 10m the window
+# [5m,10m] is fully covered by an 11-sample series, so a `0x6 Nx5` step yields exactly increase=N
+# (first=0 at 5m, last=N at 10m, no extrapolation). The alert has NO `for`, so a single eval at 10m
+# is enough. Run via `just k8s test-prom-rules` (recipe copies this test + .extracted_prometheus_rules.yaml into a temp dir).
+rule_files:
+  - ./.extracted_prometheus_rules.yaml
+evaluation_interval: 1m
+tests:
+  # === hubble_policy_denied_increase5m — label-strip + reason survival ===
+  # (1) Direct recording-rule assertion: one POLICY_DENIED drop series carrying the cilium-agent
+  # scrape labels. exp_samples assert the POST-strip label set — source_*/destination_*/traffic_direction/
+  # protocol/reason survive, container/endpoint/instance/job/namespace/node/pod/service are gone.
+  # increase[5m] of `0x6 1x5` at 10m == 1. Pins `sum without (...)` and reason's survival together.
+  - interval: 1m
+    input_series:
+      - series: 'hubble_drop_total{reason="POLICY_DENIED",source_namespace="media",source_pod="emby-abc",source_ip="10.0.0.5",destination_namespace="networking",destination_pod="envoy-x",destination_ip="10.2.0.1",traffic_direction="egress",protocol="TCP",container="hubble",endpoint="hubble-metrics",instance="k8s-cp0:9965",job="hubble",namespace="kube-system",node="k8s-cp0",pod="hubble-abc",service="hubble"}'
+        values: '0x6 1x5'
+    promql_expr_test:
+      - eval_time: 10m
+        expr: hubble_policy_denied_increase5m
+        exp_samples:
+          - labels: 'hubble_policy_denied_increase5m{source_namespace="media",source_pod="emby-abc",source_ip="10.0.0.5",destination_namespace="networking",destination_pod="envoy-x",destination_ip="10.2.0.1",traffic_direction="egress",protocol="TCP",reason="POLICY_DENIED"}'
+            value: 1
+  # === unless exclusion — ICMP ingress to qbittorrent is deliberately silenced ===
+  # The rule's `unless` drops the ICMP world->qbittorrent inbound deny (unsolicited ping noise;
+  # qbittorrent is outbound-only). This exclusion is a deliberate silence that nothing currently
+  # proves. (2) asserts the recording rule itself emits NO sample for that flow (the silence is at
+  # the recording level, not masked by the alert's source_pod matcher or threshold); (3) asserts no
+  # alert fires. A non-plex source with increase=1 would fire at >0 but for the exclusion — so the
+  # only reason (2)/(3) are empty is the `unless`.
+  - interval: 1m
+    input_series:
+      - series: 'hubble_drop_total{reason="POLICY_DENIED",source_namespace="world",source_pod="external-host",source_ip="1.2.3.4",destination_namespace="downloads",destination_pod="qbittorrent-0",destination_ip="10.1.0.2",traffic_direction="ingress",protocol="ICMPv4"}'
+        values: '0x6 1x5'
+    promql_expr_test:
+      - eval_time: 10m
+        expr: hubble_policy_denied_increase5m
+        exp_samples: []
+  - interval: 1m
+    input_series:
+      - series: 'hubble_drop_total{reason="POLICY_DENIED",source_namespace="world",source_pod="external-host",source_ip="1.2.3.4",destination_namespace="downloads",destination_pod="qbittorrent-0",destination_ip="10.1.0.2",traffic_direction="ingress",protocol="ICMPv4"}'
+        values: '0x6 1x5'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: HubblePolicyDeny
+        exp_alerts: []
+  # (4) unless COUNTER-CASE: a TCP (non-ICMP) ingress deny to the same qbittorrent pod MUST still
+  # page — the exclusion is protocol-scoped to ICMPv[46], not a blanket qbittorrent silence. Same
+  # source/destination/direction as (2)/(3), only protocol differs. Fires at >0; asserts the
+  # ingress/--to-pod annotation branch (the conditional template the suite had never rendered).
+  - interval: 1m
+    input_series:
+      - series: 'hubble_drop_total{reason="POLICY_DENIED",source_namespace="world",source_pod="external-host",source_ip="1.2.3.4",destination_namespace="downloads",destination_pod="qbittorrent-0",destination_ip="10.1.0.2",traffic_direction="ingress",protocol="TCP"}'
+        values: '0x6 1x5'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: HubblePolicyDeny
+        exp_alerts:
+          - exp_labels:
+              alertname: HubblePolicyDeny
+              severity: critical
+              source_namespace: world
+              source_pod: external-host
+              source_ip: 1.2.3.4
+              destination_namespace: downloads
+              destination_pod: qbittorrent-0
+              destination_ip: 10.1.0.2
+              traffic_direction: ingress
+              protocol: TCP
+              reason: POLICY_DENIED
+            exp_annotations:
+              summary: Cilium policy denied a packet (Hubble)
+              description: |-
+                Policy-denied drop (ingress) world/external-host [1.2.3.4] -> downloads/qbittorrent-0 [10.1.0.2] (proto: TCP).
+                Investigate: hubble observe --to-pod downloads/qbittorrent-0 --verdict DROPPED --print-policy-names --last 200
+  # === HubblePolicyDeny — general-app tier: hubble_policy_denied_increase5m{source_pod!~"plex-trakt-sync-.*"} > 0 ===
+  # (5) Boundary NO-fire: increase=0, `> 0` strict → 0 > 0 false. egress series.
+  - interval: 1m
+    input_series:
+      - series: 'hubble_drop_total{reason="POLICY_DENIED",source_namespace="media",source_pod="emby-abc",source_ip="10.0.0.5",destination_namespace="networking",destination_pod="envoy-x",destination_ip="10.2.0.1",traffic_direction="egress",protocol="TCP"}'
+        values: '0x11'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: HubblePolicyDeny
+        exp_alerts: []
+  # (6) Boundary FIRE: increase=1, 1 > 0 true. Asserts the egress/--from-pod annotation branch.
+  - interval: 1m
+    input_series:
+      - series: 'hubble_drop_total{reason="POLICY_DENIED",source_namespace="media",source_pod="emby-abc",source_ip="10.0.0.5",destination_namespace="networking",destination_pod="envoy-x",destination_ip="10.2.0.1",traffic_direction="egress",protocol="TCP"}'
+        values: '0x6 1x5'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: HubblePolicyDeny
+        exp_alerts:
+          - exp_labels:
+              alertname: HubblePolicyDeny
+              severity: critical
+              source_namespace: media
+              source_pod: emby-abc
+              source_ip: 10.0.0.5
+              destination_namespace: networking
+              destination_pod: envoy-x
+              destination_ip: 10.2.0.1
+              traffic_direction: egress
+              protocol: TCP
+              reason: POLICY_DENIED
+            exp_annotations:
+              summary: Cilium policy denied a packet (Hubble)
+              description: |-
+                Policy-denied drop (egress) media/emby-abc [10.0.0.5] -> networking/envoy-x [10.2.0.1] (proto: TCP).
+                Investigate: hubble observe --from-pod media/emby-abc --verdict DROPPED --print-policy-names --last 200
+  # === HubblePolicyDeny — plex-trakt-sync tier: hubble_policy_denied_increase5m{source_pod=~"plex-trakt-sync-.*"} > 3 ===
+  # plex-trakt-sync egress races the DNS-proxy cache on freshly-resolved IPs and drops 1-2 SYNs
+  # transiently; the elevated threshold stops that paging while a sustained/repeated deny still does.
+  # (7) Boundary NO-fire: increase=3, `> 3` strict → 3 > 3 false.
+  - interval: 1m
+    input_series:
+      - series: 'hubble_drop_total{reason="POLICY_DENIED",source_namespace="media",source_pod="plex-trakt-sync-xyz",source_ip="10.0.0.9",destination_namespace="external",destination_pod="trakt-tv",destination_ip="3.4.5.6",traffic_direction="egress",protocol="TCP"}'
+        values: '0x6 3x5'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: HubblePolicyDeny
+        exp_alerts: []
+  # (8) Boundary FIRE: increase=4, 4 > 3 true. egress → --from-pod branch.
+  - interval: 1m
+    input_series:
+      - series: 'hubble_drop_total{reason="POLICY_DENIED",source_namespace="media",source_pod="plex-trakt-sync-xyz",source_ip="10.0.0.9",destination_namespace="external",destination_pod="trakt-tv",destination_ip="3.4.5.6",traffic_direction="egress",protocol="TCP"}'
+        values: '0x6 4x5'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: HubblePolicyDeny
+        exp_alerts:
+          - exp_labels:
+              alertname: HubblePolicyDeny
+              severity: critical
+              source_namespace: media
+              source_pod: plex-trakt-sync-xyz
+              source_ip: 10.0.0.9
+              destination_namespace: external
+              destination_pod: trakt-tv
+              destination_ip: 3.4.5.6
+              traffic_direction: egress
+              protocol: TCP
+              reason: POLICY_DENIED
+            exp_annotations:
+              summary: Cilium policy denied a packet (Hubble)
+              description: |-
+                Policy-denied drop (egress) media/plex-trakt-sync-xyz [10.0.0.9] -> external/trakt-tv [3.4.5.6] (proto: TCP).
+                Investigate: hubble observe --from-pod media/plex-trakt-sync-xyz --verdict DROPPED --print-policy-names --last 200
