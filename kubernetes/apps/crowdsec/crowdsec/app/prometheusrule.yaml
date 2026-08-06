@@ -104,15 +104,10 @@ spec:
               or prune a feed before that happens. keep_firing_for: 48h latches the alert: once
               the count drops below the threshold it stays firing for ~48h (≥ the daily 24h-TTL
               sawtooth) before resolving — not minutes — so a peak crossing does not flap.
-        # blocklist-import pushes source_status{source} (1=ok, 0=failed) to the Pushgateway once
-        # per daily run; delete-before-push leaves a single series per source. _run_once exits 0
-        # if ≥1 source succeeds, so a dead feed is invisible to KubeJobFailed — this rule surfaces
-        # it. for:48h ≈ 2 consecutive failed daily runs (the Pushgateway retains the last pushed
-        # value between runs, so a single transient fetch failure does not page); keep_firing_for:
-        # 24h latches across one run boundary so a recovery does not clear the alert before it is seen.
+        # TSDB-sourced: max_over_time[50h]==0 means ~2 daily runs all failed, immune to a
+        # Pushgateway restart. keep_firing_for:24h latches the resolve past one run boundary.
         - alert: CrowdSecBlocklistImportSourceFailing
-          expr: max by (source) (blocklist_import_source_status{job="crowdsec-blocklist-import"}) == 0
-          for: 48h
+          expr: max by (source) (max_over_time(blocklist_import_source_status{job="crowdsec-blocklist-import"}[50h])) == 0
           keep_firing_for: 24h
           labels:
             severity: warning
@@ -120,24 +115,20 @@ spec:
             summary: A blocklist-import feed failed to fetch
             description: |-
               blocklist-import source {{ $labels.source }} reported fetch status 0 (failed) for
-              ~2 consecutive daily runs. The job exits 0 as long as ≥1 source succeeds, so
-              feed-rot is invisible to KubeJobFailed. Check the importer logs and the feed URL;
-              prune or disable the feed if it is dead.
-        # v3.7.1 always pushes source_status (0 or 1) for every iterated source, so a single feed
-        # absent while others report is unreachable — this catches the reachable "signal entirely
-        # dead" case (METRICS_ENABLED off, Pushgateway down/unscraped, or the importer crashed
-        # before its metrics push). for:1h rides out a Pushgateway restart/scrape gap; the
-        # Pushgateway PVC persists metrics across restart so a restart alone does not fire this.
+              every scrape across ~2 consecutive daily runs (max_over_time[50h] == 0). The job
+              exits 0 as long as ≥1 source succeeds, so feed-rot is invisible to KubeJobFailed.
+              Check the importer logs and the feed URL; prune or disable the feed if it is dead.
+        # TSDB-sourced: absent_over_time[26h] fires when no source_status sample has been
+        # scraped for ~1 missed daily run. Reads the TSDB, so a Pushgateway restart cannot fire it.
         - alert: CrowdSecBlocklistImportMetricsAbsent
-          expr: absent(blocklist_import_source_status{job="crowdsec-blocklist-import"})
-          for: 1h
+          expr: absent_over_time(blocklist_import_source_status{job="crowdsec-blocklist-import"}[26h])
           labels:
             severity: warning
           annotations:
             summary: blocklist-import freshness metrics are absent
             description: |-
-              No blocklist_import_source_status series has been scraped for 1h — the per-source
-              freshness signal is dead. Likely causes: METRICS_ENABLED disabled, the Pushgateway
-              unreachable or down, or the importer crashing before its metrics push. The
-              CrowdSecBlocklistImportSourceFailing alert cannot fire while this is absent, so
-              treat as a monitoring outage of the feed-rot detection plane.
+              No blocklist_import_source_status sample has been scraped for ~26h (absent_over_time[26h]),
+              so the per-source freshness signal is dead — a daily run was missed. Likely causes:
+              METRICS_ENABLED disabled, the Pushgateway unreachable, or the importer crashing before
+              its metrics push. The CrowdSecBlocklistImportSourceFailing alert cannot fire while this
+              is absent, so treat as a monitoring outage of the feed-rot detection plane.
