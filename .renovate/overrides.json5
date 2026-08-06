@@ -71,6 +71,11 @@
       skipArtifactsUpdate: true,
     },
     {
+      description: "Skip artifact updates for Talos factory deps (grouped with the mise aqua tool in one branch; without this the branch-level mise skip is non-uniform and mise.lock regen runs)",
+      matchDatasources: ["custom.talos-factory"],
+      skipArtifactsUpdate: true,
+    },
+    {
       description: "Override packageName for kubectl in mise (aqua 3-part path breaks github-tags owner/repo)",
       matchManagers: ["mise"],
       matchDepNames: ["kubectl"],
