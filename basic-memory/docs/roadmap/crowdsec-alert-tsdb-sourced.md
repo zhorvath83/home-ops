@@ -5,7 +5,7 @@ permalink: home-ops/docs/roadmap/crowdsec-alert-tsdb-sourced
 topic: Source the CrowdSec blocklist-import freshness alerts from the Prometheus TSDB
   with range-vector queries so they are immune to Pushgateway relay restarts, then
   revert the Pushgateway to stateless.
-status: in-progress
+status: done
 priority: medium
 area: observability, security
 created: 2026-08-06
@@ -17,7 +17,7 @@ relates_to: '[[crowdsec-blocklist-import]]'
 ## Metadata (observation-form, schema validation)
 
 - [topic] Source the CrowdSec blocklist-import freshness alerts from the Prometheus TSDB with range-vector queries so they are immune to Pushgateway relay restarts; revert the Pushgateway to stateless.
-- [status] in-progress
+- [status] done
 - [priority] medium
 - [area] observability, security
 - [created] 2026-08-06
@@ -118,3 +118,14 @@ The gate question: does anything OTHER than crowdsec-blocklist-import push to th
 - [delivered] GREEN GATE: `just k8s test-prom-rules` → "All promtool rule tests passed" (crowdsec module: "SUCCESS: 8 rules found" / "SUCCESS"); pre-commit on the 2 files (yamlfmt, yamllint, gitleaks, promtool-rule-tests) all Passed, no reformatting.
 - [not-delivered] P3 (stateless Pushgateway) + orphaned PVC cleanup are OUT OF SCOPE for this branch — the user handles the PVC cleanup later. P3 stays tracked here, gated by the verification step above (GATE PASSES).
 - [status] proposed → in-progress. P1+P2 done; P3 pending separate work.
+
+
+## Delivery — P3 (2026-08-06)
+
+- [delivered] P3 landed on branch `refactor/pushgateway-stateless` (off main after #4133 merge commit `8f510f653`). Code commit `33944e7ee` (signed, "Good git" signature) — `♻️ refactor(observability): drop pushgateway StatefulSet+PVC, alerts are TSDB-sourced`, 1 file changed, 7 deletions(-).
+- [delivered] Removed from `kubernetes/apps/observability/prometheus-pushgateway/app/helmrelease.yaml`: `runAsStatefulSet: true`, the whole `persistentVolume` block (enabled/size/storageClass), and the false 2-line comment claiming "StatefulSet + PVC so pushed metrics survive a pod restart". Kept: serviceMonitor (namespace + honorLabels: true), securityContext, containerSecurityContext, resources, podLabels, automountServiceAccountToken, serviceAccount. No `extraArgs` / `--persistence.file` added (the relay-not-store fix is rejected; Prometheus is SSOT).
+- [delivered] PRE-FLIGHT writable-filesystem finding (verified against chart 3.7.0 templates): with `runAsStatefulSet: false` + `persistentVolume.enabled: false` (chart defaults once the overrides are removed), `templates/_helpers.tpl` renders the `storage-volume` as `emptyDir: {}` mounted at `/data` (the `$storageVolumeAsPVCTemplate := and .Values.runAsStatefulSet .Values.persistentVolume.enabled` guard is false, so the `else` branch emits emptyDir). `readOnlyRootFilesystem: true` therefore still has a writable mount — no CrashLoopBackOff. The pushgateway binary with no `--persistence.file` writes nothing at runtime (confirmed in Task 1: /data empty, cmdline `/bin/pushgateway` no args), so the emptyDir is harmless.
+- [delivered] Service name unchanged: `templates/service.yaml` uses `prometheus-pushgateway.fullname` regardless of `runAsStatefulSet`; only the `clusterIP: None` (Headless) line is dropped when `runAsStatefulSet=false`, giving a normal ClusterIP Service. The importer target `prometheus-pushgateway.observability.svc.cluster.local:9091` resolves either way. `templates/statefulset.yaml` is gated on `if .Values.runAsStatefulSet` so it no longer renders; `templates/deployment.yaml` renders instead.
+- [delivered] GREEN GATE: `just k8s test-prom-rules` -> "All promtool rule tests passed" (crowdsec 8 rules SUCCESS — untouched, as expected); pre-commit on the touched file (yamlfmt, yamllint, gitleaks, end-of-file-fixer, etc.) all Passed, no auto-fix.
+- [not-delivered] Orphaned PVC `storage-volume-prometheus-pushgateway-0` (bound, 1Gi, democratic-csi-local-hostpath, Retain policy) is NOT deleted by this change — the StatefulSet removal does not garbage-collect it. It is a separate manual ops step for the Maestro, AFTER the HelmRelease reconciles to the Deployment.
+- [status] in-progress -> done. P1+P2+P3 all shipped; the only remaining item is the one-shot PVC cleanup (Maestro ops step, not a manifest change).
