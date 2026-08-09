@@ -85,7 +85,7 @@ repos:
         language: node
         entry: bash -c 'env -u GITHUB_TOKEN renovate-config-validator .renovaterc.json5 .renovate/*.json5'
         additional_dependencies:
-          - "renovate@44.14.12"
+          - "renovate@44.17.1"
         files: '^(\.renovaterc\.json5|\.renovate/.*\.json5)$'
         pass_filenames: false
         # No token -> validator skips `github>` preset resolution -> deterministic offline validation.
