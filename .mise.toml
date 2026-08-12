@@ -61,4 +61,4 @@ kubectl = "1.36.3"
 # Python tooling (pipx backend)
 "pipx:flux-local" = "8.4.0"
 "pipx:ansible" = "14.2.0"
-"pipx:ansible-core" = "2.21.2"
+"pipx:ansible-core" = "2.21.3"
