@@ -40,9 +40,10 @@ spec:
               APP_URL: "https://idm.${PUBLIC_DOMAIN}"
               PORT: &port 1411
               HOST: 0.0.0.0
-              # pocket-id v2.11 reads TLS_CERT/TLS_KEY as file PATHS, not base64
-              TLS_CERT: /certs/tls.crt
-              TLS_KEY: /certs/tls.key
+              # v2.13.0 split TLS into inline (TLS_CERT/TLS_KEY) vs file-path env
+              # vars (PR #1653); cert/key are mounted as files, so use the _FILE form.
+              TLS_CERT_FILE: /certs/tls.crt
+              TLS_KEY_FILE: /certs/tls.key
               DB_CONNECTION_STRING: "/app/data/pocket-id.db"
               # GeoLite2 mmdb is auto-refreshed on startup + by a cron job; keep it
               # out of the backed-up PVC.
