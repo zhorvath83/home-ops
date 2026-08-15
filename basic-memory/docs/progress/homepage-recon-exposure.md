@@ -74,7 +74,7 @@ tags:
 ## Metadata (observation-form, schema validation)
 
 - [topic] Stop the dashboard from handing out internal topology and a cluster-read SA token to an unauthenticated origin request
-- [status] proposed
+- [status] done — closed 2026-08-15; Phase 3 delivered, remaining phases dropped (see Closure section)
 - [priority] high
 - [area] networking / k8s-workloads / observability
 - [created] 2026-08-14
