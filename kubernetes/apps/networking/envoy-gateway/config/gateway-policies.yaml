@@ -41,6 +41,11 @@ spec:
           limit:
             requests: 3000
             unit: Minute
+        # No clientSelectors: one shared bucket for every request on this gateway, so
+        # IP rotation cannot defeat it and unrouted-404 floods are covered too.
+        - limit:
+            requests: 30000
+            unit: Minute
   # Replace the oauth2 filter's "OAuth flow failed." 401 with a friendly page — kept here, not a separate BTP, because EG allows only one BTP per Gateway.
   # source:Local matches only Envoy-local 401s (OIDC flow failure here; no JWT auth on these gateways).
   # The inline script recovers error_description from the callback URL (EG can't server-side; no CSP on the gateway).

@@ -8,4 +8,5 @@ resources:
   - ./externalsecret.yaml
   - ./helmrelease.yaml
   - ./backendtlspolicy.yaml
+  - ./backendtrafficpolicy.yaml
   - ./httproute.yaml

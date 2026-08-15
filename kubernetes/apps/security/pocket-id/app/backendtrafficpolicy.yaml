@@ -1,0 +1,38 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/gateway.envoyproxy.io/backendtrafficpolicy_v1alpha1.json
+# Route-level rate limit for the public IdP surface. mergeType is mandatory here: without
+# it this policy REPLACES the Gateway-level `envoy` BackendTrafficPolicy for this route and
+# silently drops its circuit breaker, compression, 401 page, retry and timeouts.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: BackendTrafficPolicy
+metadata:
+  name: pocket-id-external
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: pocket-id-external
+  mergeType: StrategicMerge
+  rateLimit:
+    type: Local
+    local:
+      rules:
+        - clientSelectors:
+            - sourceCIDR:
+                value: 0.0.0.0/0
+                type: Distinct
+          limit:
+            requests: 300
+            unit: Minute
+        - clientSelectors:
+            - sourceCIDR:
+                value: ::/0
+                type: Distinct
+          limit:
+            requests: 300
+            unit: Minute
+        # No clientSelectors: one shared bucket for the whole IdP route, so credential
+        # stuffing cannot buy more attempts by rotating source IPs.
+        - limit:
+            requests: 1200
+            unit: Minute
