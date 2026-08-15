@@ -1,13 +1,13 @@
 ---
 title: homepage-recon-exposure
-type: roadmap
-permalink: home-ops/docs/roadmap/homepage-recon-exposure
+type: progress-note
+permalink: home-ops/docs/progress/homepage-recon-exposure
 topic: 'Stop the dashboard (homepage) from handing out the internal
 
   service/host/IP topology and a cluster-read service-account token to an
 
   unauthenticated origin request — a measured exposure, not an inferred one.'
-status: proposed
+status: done
 priority: high
 scope: 'The homepage pod on the envoy-external Gateway. The pod automounts a
 
@@ -220,3 +220,35 @@ Remaining, all deliberate:
 - Phase 1's token cut stays blocked by the `mode: cluster` dependency (see update 2).
 - Phase 2's second half (`mode: cluster` → scoped) untouched; with Phase 3 landed its value is now mostly redundant, since the egress boundary already contains the blast radius.
 - Further RBAC narrowing only by trading features (option B: drop the resources widget to release nodes + metrics.k8s.io).
+
+- [verified] 2026-08-15, human visual confirmation after the Phase 3 deploy: the dashboard was loaded in a browser and **every tile renders correctly**. This closes the one check the in-pod probes could not make. Phase 3 needs no follow-up.
+- [status] partially-delivered — Phase 3 done and verified; Phase 1's token cut blocked by design (`mode: cluster`); Phase 2's second half deliberately left, its value now largely redundant behind the egress boundary.
+
+
+## Closure 2026-08-15 — item closed, remaining phases deliberately dropped
+
+Closed with the human after Phase 3 landed and the dashboard was visually confirmed. Moved from docs/roadmap to docs/progress following the repo's closure precedent ([[crowdsec-blocklist-import]]): the design rationale above is preserved in place rather than summarized away, so the reasoning survives the roadmap entry.
+
+### What the item actually achieved
+
+- The unauthenticated recon surface is closed (native OIDC gate; `/api/services` returns 307 to signin, measured over envoy-internal so it measures the origin, not Cloudflare).
+- Host validation is on (`HOMEPAGE_ALLOWED_HOSTS` pinned), with the probe `Host: localhost:3000` workaround for the upstream middleware ordering trap.
+- The ClusterRole carries only what a configured widget consumes; `get/list` on Ingress is gone along with the duplicated rule.
+- The pod's egress is default-deny except kube-apiserver and the weather API, so the credentialed widget proxy has no in-cluster pivot.
+
+### Why each remaining phase was dropped (not deferred)
+
+- [decision] **Phase 1's token cut — impossible, not postponed.** `automountServiceAccountToken: false` and `mode: cluster` are mutually exclusive; cluster discovery authenticates with that exact token. The only way through is option C (abandon discovery, hand-maintain 26 entries in the 1Password `services.yaml`), rejected as a bad trade: permanent maintenance load for a token that grants read-only recon, on a pod that can no longer reach anything but the API server.
+- [decision] **Phase 2's second half — redundant after Phase 3.** Narrowing `mode: cluster` was a blast-radius measure. The egress CNP now bounds the blast radius more strongly, since it closes the exit path rather than narrowing what discovery enumerates.
+- [decision] **Option B (drop the `resources` widget to release `nodes` + `metrics.k8s.io`) — not worth it.** Those grants are read-only and the exit path is shut; the trade would cost a working tile for no measurable gain.
+
+### Residual risk, accepted knowingly
+
+The pod still mounts a service-account token granting cluster-wide read (namespaces, pods, nodes, httproutes, gateways, node/pod metrics). An attacker who achieves code execution inside the pod can still enumerate cluster topology. What they cannot do: read Secrets (403, verified), reach any other in-cluster service (blocked, verified), or reach the internet beyond `api.openweathermap.org` (blocked, verified). That residue is the accepted price of automatic service discovery.
+
+### Follow-ups owned elsewhere
+
+- The identity gate for this and other routes → [[app-auth-coverage]].
+- CSP / frame-ancestors / Permissions-Policy in front of the dashboard → [[gateway-guardrails-response-headers]].
+- Recon-flood detection (4xx/401/429 spikes) — was edge-detection-observability, lost from BM, still unbuilt. This item's closure does not restore it.
+- [gotcha] Any future per-app egress CNP in this repo must also flip the pod labels (`allow-world` out, `custom-egress` in) or it is decorative — Cilium policy only adds allows.
