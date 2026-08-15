@@ -24,13 +24,14 @@ spec:
         # metrics[].type: External (the zeroscaler component) can resolve it.
         # namespaced: false — the NFS probe is cluster-scoped, not tied to a namespace;
         # HPAs query it with a job=<nfs_probe> labelSelector from any namespace.
-        # max_over_time [1m] smooths a single failed probe so the HPA does not flap.
+        # max_over_time [2m]: probe_success is scraped at 60s, so a 1m window can
+        # hold zero samples (HPA gap); 2m guarantees >=2.
         - seriesQuery: '{__name__="probe_success"}'
           resources:
             namespaced: false
           name:
             as: probe_success
-          metricsQuery: max_over_time(<<.Series>>{<<.LabelMatchers>>}[1m])
+          metricsQuery: max_over_time(<<.Series>>{<<.LabelMatchers>>}[2m])
     resources:
       requests:
         cpu: 10m
