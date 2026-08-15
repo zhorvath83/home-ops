@@ -164,7 +164,7 @@ spec:
           - sourceLabels:
               - __name__
             action: drop
-            regex: "container_(memory_failures|last_seen|memory_kernel|memory_failcnt|blkio_device|start_time|threads|ulimits_soft).*"
+            regex: "container_(memory_failures|last_seen|memory_kernel|memory_failcnt|blkio_device|start_time|threads|ulimits_soft|health_state|processes|sockets).*"
         metricRelabelings:
           # Drop almost all kubelet metrics, only want cpu/memory usage
           - sourceLabels:
@@ -415,7 +415,7 @@ spec:
               action: drop
             - sourceLabels:
                 - __name__
-              regex: "^node_network_(flags|device_id|dormant|iface_link_mode|transmit_queue_length|carrier.*)"
+              regex: "^node_network_(flags|device_id|dormant|iface_link_mode|transmit_queue_length|carrier.*|address_assign_type|name_assign_type|net_dev_group|protocol_type)"
               action: drop
             - sourceLabels:
                 - __name__
