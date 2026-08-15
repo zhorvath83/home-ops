@@ -10,7 +10,7 @@
     'docker:enableMajor',
     ':enablePreCommit',
     'helpers:pinGitHubActionDigestsToSemver',
-    'github>home-operations/renovate-presets//managers/grafanaDashboards.json5#7.0.0',
+    'github>home-operations/renovate-presets//apps/grafanaDashboards.json5#7.0.0',
     'github>zhorvath83/home-ops//.renovate/autoMerge.json5',
     'github>zhorvath83/home-ops//.renovate/changeLogs.json5',
     'github>zhorvath83/home-ops//.renovate/customManagers.json5',
