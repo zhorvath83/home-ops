@@ -104,7 +104,8 @@ spec:
         - "${POD_CIDR}"
   connection:
     bufferLimit: 8Mi
-    maxAcceptPerSocketEvent: 0
+    # EG deliberately defaults this to 1; the explicit 0 (unlimited) had no recorded reason.
+    maxAcceptPerSocketEvent: 1
   headers:
     # Strip client-supplied identity headers before route matching and auth,
     # so only the auth layer can set them (header-injection spoofing guard).
@@ -166,7 +167,8 @@ spec:
       numTrustedHops: 0
   connection:
     bufferLimit: 8Mi
-    maxAcceptPerSocketEvent: 0
+    # EG deliberately defaults this to 1; the explicit 0 (unlimited) had no recorded reason.
+    maxAcceptPerSocketEvent: 1
   headers:
     earlyRequestHeaders:
       remove:
