@@ -151,3 +151,24 @@ The dashboard received a native OIDC gate (Homepage 2.0's built-in auth, Pocket 
 - [open] Phase 2's second half is UNTOUCHED: config/kubernetes.yaml still uses `mode: cluster` service discovery.
 - [open] Phase 1 (automountServiceAccountToken false, ClusterRole narrowing) and Phase 3 (per-app egress CNP) are UNTOUCHED. The item's rationale is unchanged by the gate: the pod still mounts a cluster-read service-account token and still runs a credentialed widget proxy, and a gate bypass or widget misconfiguration still reaches both. Status stays `proposed`.
 - [observation] The decision to keep Cloudflare Access in front (double gate) was taken explicitly, so the item's premise that Cloudflare provides zero protection remains the operating assumption for the remaining phases.
+
+
+## Update 2026-08-15 (2) — Phase 1 RBAC hygiene landed (option A)
+
+Delivered on main via commit f6d648887 (pushed with the user's parallel 355a6af48). Maestro lane: brief + independent verification; the Llama subterminal made the edits and the commit.
+
+- [decision] **Option A chosen over token removal.** `automountServiceAccountToken: false` and `mode: cluster` are MUTUALLY EXCLUSIVE — cluster-mode discovery authenticates with exactly that mounted token. The roadmap's Phase 1 asks for both; they cannot both land while cluster discovery is wanted. Kept the token and the `resources` widget; removed only what grants nothing.
+- [done] **ClusterRole narrowed 7 rules → 4** (kubernetes/apps/selfhosted/homepage/app/helmrelease.yaml). Dropped: the exactly-duplicated `""`/namespaces,pods,nodes rule (two upstream examples had been pasted together), and BOTH `ingresses` rules (`networking.k8s.io` + `extensions`). Kept: core namespaces/pods/nodes, gateway.networking.k8s.io httproutes+gateways, metrics.k8s.io nodes+pods, apiextensions customresourcedefinitions/status.
+- [done] **`config/kubernetes.yaml`: `ingress: true` → `false`** so the discovery code path matches the revoked RBAC.
+- [measured] **Zero Ingress objects in this cluster carry a `gethomepage.dev/*` annotation.** All 26 discovered entries sit on HTTPRoutes (verified by checking the parent key of every annotation block repo-wide). Only 6 annotation keys are in use: enabled, name, group, icon, pod-selector (4 entries), href (1). No `gethomepage.dev/widget.*` API widget exists anywhere in the repo.
+- [observation] **What each grant actually buys** (evidence-backed): httproutes+gateways = all 26 tiles; namespaces = cluster-mode enumeration; pods = the 4 pod-selector status dots + the resources widget; nodes + metrics.k8s.io = ONLY the `resources: backend: kubernetes` CPU/memory tile (widgets.yaml:2-7); customresourcedefinitions/status = CRD-presence probe; ingresses = nothing.
+- [observation] **services.yaml is not in git** — it is a 1Password field mounted as a Secret subPath (comment at helmrelease.yaml:195-196: personal/financial URLs). Its entries could in principle add `namespace:`/`podSelector:` usage that the repo cannot show. Nothing broke, so no such dependency was violated.
+- [verified] Live, read-only: ClusterRole in-cluster shows the 4 rules; HelmRelease `Helm upgrade succeeded … v15`; pod 1/1 Running, 0 restarts; pod log has zero error/forbidden/warning lines; `kubectl auth can-i --as=system:serviceaccount:selfhosted:homepage` → list httproutes **yes**, list ingresses **no**, list nodes **yes**, list secrets **no**.
+- [observation] **This was hygiene, not blast-radius reduction.** The revoked permissions granted nothing in practice, so the token still carries cluster-wide read. The real remediation left is Phase 3 (per-app egress CNP), which is what actually stops a widget/SSRF path from pivoting with the pod's identity.
+
+### Still open after this round
+
+- Phase 1 remainder: the SA token stays mounted (blocked by design on `mode: cluster` — see the decision above). A genuine cut requires giving up cluster discovery and hand-maintaining 26 entries in the 1Password services.yaml (option C, rejected today).
+- Phase 2 second half: `mode: cluster` unchanged.
+- Phase 3: per-app egress CiliumNetworkPolicy — UNTOUCHED, now the highest-value remaining work. Note the allowlist must cover kube-apiserver, DNS, api.openweathermap.org (widgets.yaml), the Unsplash background fetch (settings.yaml:5), the favicon fetch from ${PUBLIC_DOMAIN} (settings.yaml:11), plus whatever siteMonitor/ping targets the 1Password services.yaml holds — that last set is invisible from git and must be derived from the live config or from Hubble flow capture before the CNP is tightened.
+- Further RBAC cuts are possible only by trading features: dropping the `resources` widget would additionally release nodes + all of metrics.k8s.io (option B).
