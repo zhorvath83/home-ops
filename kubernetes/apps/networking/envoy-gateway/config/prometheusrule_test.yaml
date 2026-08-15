@@ -2,7 +2,8 @@
 # yaml-language-server: $schema=https://json.schemastore.org/prometheus.rules.test.json
 # promtool unit tests for config/prometheusrule.yaml, covering EnvoyProxyDown,
 # EnvoyGatewayXDSRejected, EnvoyGatewayPolicyNotAccepted,
-# EnvoyGatewayPolicyStatusMissing and EnvoyInternalConnectionsHigh. The EnvoyProxyDown expr
+# EnvoyGatewayPolicyStatusMissing, EnvoyInternalConnectionsHigh and
+# EnvoyExtAuthzErrors. The EnvoyProxyDown expr
 # `count(up{job="networking/envoy-proxy", namespace="networking"} == 1) < 2` aggregates away
 # all labels, so exp_labels are alertname + severity only — it fires whenever fewer than 2
 # envoy-proxy targets are up: one-down, both-down, and all-vanished (count of an empty vector
@@ -285,3 +286,50 @@ tests:
                 connections — half of the 1024-per-listener connectionLimit. At the cap
                 new connections are rejected, so every LAN app behind this gateway fails;
                 investigate before it engages.
+
+  # === EnvoyExtAuthzErrors ===
+  # Data-plane ext_authz failure counter, both gateways (job=networking/envoy-proxy).
+  # sum by (pod) collapses the per-listener (http-10080/https-10443) series; the metric
+  # has never been non-zero, so any increase > 0 is real. for: 2m, so the fire case evals
+  # past the hold and the boundary no-fire stays short of it.
+  # (r) No-fire: both gateways clean (counter constant at 0).
+  - interval: 1m
+    input_series:
+      - series: 'envoy_http_ext_authz_error{job="networking/envoy-proxy",namespace="networking",pod="envoy-external",envoy_http_conn_manager_prefix="https-10443"}'
+        values: '0x5'
+      - series: 'envoy_http_ext_authz_error{job="networking/envoy-proxy",namespace="networking",pod="envoy-internal",envoy_http_conn_manager_prefix="https-10443"}'
+        values: '0x5'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: EnvoyExtAuthzErrors
+        exp_alerts: []
+  # (s) Boundary no-fire: an error at t=1m, but the 2m `for` hold not yet elapsed at 2m.
+  - interval: 1m
+    input_series:
+      - series: 'envoy_http_ext_authz_error{job="networking/envoy-proxy",namespace="networking",pod="envoy-external",envoy_http_conn_manager_prefix="https-10443"}'
+        values: '0 1x3'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: EnvoyExtAuthzErrors
+        exp_alerts: []
+  # (t) Fire: the error sustained past the 2m hold.
+  - interval: 1m
+    input_series:
+      - series: 'envoy_http_ext_authz_error{job="networking/envoy-proxy",namespace="networking",pod="envoy-external",envoy_http_conn_manager_prefix="https-10443"}'
+        values: '0 1x3'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: EnvoyExtAuthzErrors
+        exp_alerts:
+          - exp_labels:
+              alertname: EnvoyExtAuthzErrors
+              severity: critical
+              pod: envoy-external
+            exp_annotations:
+              summary: Envoy Gateway ext_authz requests are failing
+              description: |-
+                Envoy Gateway envoy-external is failing ext_authz requests.
+                The chain is fail-closed (no failOpen switch), so every ext_authz error is
+                a 503 on the public AND LAN surfaces — exemptIPs cover only 10.0.0.0/8.
+                The cause can be the bouncer (up but erroring) or an AppSec outage
+                underneath it; CrowdSecBouncerDown only catches a dead pod.

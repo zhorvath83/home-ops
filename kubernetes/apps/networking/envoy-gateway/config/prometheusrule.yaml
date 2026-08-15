@@ -35,6 +35,22 @@ spec:
               connections — half of the 1024-per-listener connectionLimit. At the cap
               new connections are rejected, so every LAN app behind this gateway fails;
               investigate before it engages.
+        # CrowdSecBouncerDown only sees the pod; this measures the ext_authz failure
+        # itself — fail-closed, so any error is a 503 on public + LAN surfaces (bouncer
+        # up-but-erroring or AppSec outage alike). Never been non-zero, so any hit is real.
+        - alert: EnvoyExtAuthzErrors
+          expr: sum by (pod) (increase(envoy_http_ext_authz_error{job="networking/envoy-proxy", namespace="networking"}[5m])) > 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: Envoy Gateway ext_authz requests are failing
+            description: |-
+              Envoy Gateway {{ $labels.pod }} is failing ext_authz requests.
+              The chain is fail-closed (no failOpen switch), so every ext_authz error is
+              a 503 on the public AND LAN surfaces — exemptIPs cover only 10.0.0.0/8.
+              The cause can be the bouncer (up but erroring) or an AppSec outage
+              underneath it; CrowdSecBouncerDown only catches a dead pod.
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/monitoring.coreos.com/prometheusrule_v1.json
 apiVersion: monitoring.coreos.com/v1
