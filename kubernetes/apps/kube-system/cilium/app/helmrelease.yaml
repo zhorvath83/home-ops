@@ -58,6 +58,10 @@ spec:
           - httpV2
         serviceMonitor:
           enabled: true
+          # Phase 3 safe subset: hubble 10s -> 60s. cilium-agent/operator intervals
+          # are DEFERRED — their chart dashboards hardcode [1m]/[30s] ranges that
+          # blank at 60s (see docs/roadmap/kube-prometheus-stack-hygiene).
+          interval: 60s
     ipam:
       mode: kubernetes
     ipv4NativeRoutingCIDR: ${POD_CIDR}
