@@ -65,3 +65,18 @@ spec:
               is not Accepted (accepted={{ $labels.accepted }}); it is silently detached and
               its routes lose the Gateway-level CrowdSec / RFC1918 gates. The rejection
               reason is in the envoy-gateway controller log.
+        # Sentinel on the guardrail: envoy_securitypolicy_info vanishing (KSM down, its
+        # securitypolicies RBAC/CRS entry broken, all policies deleted) silently blinds
+        # the NotAccepted alert — the mute failure a missing RBAC rule caused on 2026-08-15.
+        - alert: EnvoyGatewayPolicyStatusMissing
+          expr: absent(envoy_securitypolicy_info)
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: Envoy Gateway SecurityPolicy status metric is missing
+            description: |-
+              envoy_securitypolicy_info produced no samples for 5m — kube-state-metrics
+              is down, its securitypolicies RBAC/CRS entry broke, or every SecurityPolicy
+              was deleted. EnvoyGatewayPolicyNotAccepted is now blind and a silently
+              detached SecurityPolicy will not alert until this recovers.

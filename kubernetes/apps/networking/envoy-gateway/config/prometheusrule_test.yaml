@@ -1,13 +1,17 @@
 ---
 # yaml-language-server: $schema=https://json.schemastore.org/prometheus.rules.test.json
 # promtool unit tests for config/prometheusrule.yaml, covering EnvoyProxyDown,
-# EnvoyGatewayXDSRejected and EnvoyGatewayPolicyNotAccepted. The EnvoyProxyDown expr
+# EnvoyGatewayXDSRejected, EnvoyGatewayPolicyNotAccepted and
+# EnvoyGatewayPolicyStatusMissing. The EnvoyProxyDown expr
 # `count(up{job="networking/envoy-proxy", namespace="networking"} == 1) < 2` aggregates away
 # all labels, so exp_labels are alertname + severity only — it fires whenever fewer than 2
 # envoy-proxy targets are up: one-down, both-down, and all-vanished (count of an empty vector
 # is 0). The 2-up case is the no-fire boundary at count 2 vs 1. for:2m, so every fire case
 # evals past 2m (eval at 3m). exp_annotations asserted so the data-plane/control-plane text
 # is exercised.
+# EnvoyGatewayPolicyStatusMissing (cases l-n) uses absent() — no input series at all
+# yields a 1 with no labels, so the fire case carries only alertname + severity, and the
+# for:5m hold is exercised by the boundary eval at 4m.
 # Run via `just k8s test-prom-rules` (recipe copies this test + .extracted_prometheus_rules.yaml into a temp dir).
 rule_files:
   - ./.extracted_prometheus_rules.yaml
@@ -200,3 +204,40 @@ tests:
                 is not Accepted (accepted=); it is silently detached and
                 its routes lose the Gateway-level CrowdSec / RFC1918 gates. The rejection
                 reason is in the envoy-gateway controller log.
+
+  # === EnvoyGatewayPolicyStatusMissing ===
+  # absent() fires only when the series is entirely gone — no input series at all, so no
+  # labels on the fired alert. for: 5m, so the fire case evals past the hold.
+  # (l) No-fire: the metric exists (KSM up, RBAC fine).
+  - interval: 1m
+    input_series:
+      - series: 'envoy_securitypolicy_info{exported_namespace="networking",name="envoy-internal-rfc1918",accepted="True",reason="Accepted"}'
+        values: '1x8'
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: EnvoyGatewayPolicyStatusMissing
+        exp_alerts: []
+  # (m) Boundary no-fire: absent() yields 1 from t=0, but the 5m `for` hold not yet elapsed.
+  - interval: 1m
+    input_series: []
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: EnvoyGatewayPolicyStatusMissing
+        exp_alerts: []
+  # (n) Fire: the metric path is dead (KSM down / RBAC broken / all policies deleted).
+  - interval: 1m
+    input_series: []
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: EnvoyGatewayPolicyStatusMissing
+        exp_alerts:
+          - exp_labels:
+              alertname: EnvoyGatewayPolicyStatusMissing
+              severity: critical
+            exp_annotations:
+              summary: Envoy Gateway SecurityPolicy status metric is missing
+              description: |-
+                envoy_securitypolicy_info produced no samples for 5m — kube-state-metrics
+                is down, its securitypolicies RBAC/CRS entry broke, or every SecurityPolicy
+                was deleted. EnvoyGatewayPolicyNotAccepted is now blind and a silently
+                detached SecurityPolicy will not alert until this recovers.
