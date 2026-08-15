@@ -71,7 +71,7 @@ tags:
 ## Metadata (observation-form, schema validation)
 
 - [topic] Gateway guardrails (admission, attach, connection, extauth resilience) + response headers (CSP/framing/COOP) on the external surface
-- [status] in-progress — Phase 1 delivered + live-verified (2026-08-15); Phases 2-5 proposed
+- [status] in-progress — Phase 1-2 delivered + live-verified (2026-08-15); Phases 3-5 proposed
 - [priority] medium
 - [area] networking / observability / iam
 - [created] 2026-08-14
@@ -115,10 +115,29 @@ tags:
 - The `httproute-reserved-hostnames` VAP name is now misleading (it covers all route kinds). Rename via delete+create — risk-free.
 - The KSM pod template has no checksum annotation, so a CRS config change is hot-reloaded without a pod restart. This was lucky today, but a future CRS config error would silently stand in the same way.
 
-### Phase 2 — Connection hardening
+### Phase 2 — Connection hardening ✅ (done 2026-08-15)
 
 - Slowloris / connection exhaustion (gateway-policies.yaml timeouts + buffer): add connection.connectionLimit, bound maxAcceptPerSocketEvent, and lower requestReceivedTimeout. Blasts: too-low a timeout breaks large uploads (document ingest, book ingest) — calibrate per-route.
 - https-redirect reflects client Host (gateway-policies.yaml redirect route): the port-80 redirect route has no hostname filter and no requestRedirect.hostname, so Envoy reflects the client Host into the Location header. Pin the hostnames or set requestRedirect.hostname.
+
+**Delivery (2026-08-15) — Phase 2 implemented, deployed, live-verified.** Commits on `main`: `355a6af48` (allow a wildcard hostname on the port-80 listener), `39f2b320c` (stop the https-redirect reflecting a client Host), `92f5740a8` (restore the Envoy Gateway accept default), `fc812ab7d` (bound connections on the LAN-exposed gateway).
+
+1. The https-redirect route no longer reflects a client Host: `hostnames: ["*.${PUBLIC_DOMAIN}"]` scopes the port-80 route to our own subdomains. Live test on the internal VIP: own subdomain → 301 to the correct target (path+query preserved), foreign Host → 404, apex → 404.
+2. The Phase 1 `httproute-reserved-hostnames` VAP had to be widened first — it rejected our own route because it banned wildcard hostnames. Carve-out: a wildcard is allowed when every parentRef points at `sectionName: http` (the port-80 listener is same-namespace and carries no app hostnames). The idm reservation stays enforced on every listener — the idm check moved out of the conditional branch.
+3. `maxAcceptPerSocketEvent: 0 → 1` in both ClientTrafficPolicies. The 0 (unlimited) had no recorded reason (5cf08ffadc, then copied by 27c1c46db8); Envoy Gateway deliberately defaults to 1. EG issue #9652 (a listener-scoped setting silently dropped on a shared address:port) does not affect us — http (10080) and https (10443) are separate ports.
+4. `envoy-internal` CTP: `connection.connectionLimit.value: 1024` (blast-radius bound against a runaway client) + new `EnvoyInternalConnectionsHigh` alert (>512, for:10m, warning) + 3 promtool test cases.
+
+**Deviations from the roadmap text (deliberate, with justification):**
+
+A) The `requestReceivedTimeout` reduction was dropped (human decision). Per the live CRD description it covers the WHOLE request reception (headers + body), so lowering it would break the large-upload routes (paperless/docs, calibre-web-automated/books, pingvin-share-x/share, home-gallery/photos, backrest/backup). The classic slow-header (slowloris) vector is already caught by the set `requestHeadersReceivedTimeout: 10s`. What remains is the slow-body (R-U-Dead-Yet) type, where a timeout is the wrong tool by principle: a slowly sent attacker body and a legitimate large upload are indistinguishable in time. The right tool is connection-count limiting, not time.
+
+B) The roadmap's "calibrate per-route" instruction was scope-wrong: a ClientTrafficPolicy is Gateway-level, not route-level. Per-route calibration belongs in Gateway API `HTTPRoute.spec.rules[].timeouts` (request + backendRequest, Extended support), which the installed EG 1.9.0 supports but the repo does not use anywhere today. If ever needed, that is a separate item, not Phase 2.
+
+C) The external gateway's `connectionLimit` is deliberately absent — the Phase 2 acceptance criterion "connection.connectionLimit is set" is therefore NOT met on the external gateway; recorded as an explicit descope, not missing work. Justification: the envoy-external Service is ClusterIP-only (envoy.yaml:41-42), the CiliumNetworkPolicy admits the cloudflared pod as the single ingress source on 10080/10443 (+ prometheus scrape, kubelet), and cloudflared multiplexes with `http2Origin: true` — hence the measured 7-day peak is 1 connection. There is no path from which connections could be exhausted. The internal gateway's measured 7-day peak is 14; the 1024 limit is a blast-radius bound against a runaway client, not attack mitigation.
+
+**Live verification (2026-08-15):** envoy-internal `connectionLimit=1024`, envoy-external no limit, `maxAccept=1` on both; both CTPs `Accepted=True` (no Conflicted/Overridden); both gateways `Accepted=True`/`Programmed=True`; `EnvoyInternalConnectionsHigh` live in the PrometheusRule; internal-gateway traffic unchanged (http 301, https 307 OIDC gate).
+
+**Process lesson:** the Phase 1 VAP rejected the first change written after it immediately, so the VAP modification and the route modification went into TWO separate commits, VAP first — apply order within a Flux Kustomization is not guaranteed, and the reverse order would have caused a transient admission rejection. During validation an out-of-band `kubectl apply` also happened (server-side dry-run always evaluates against the LIVE policy); Flux drift-correction converged it to the committed state. The correct procedure is the two-step commit ordering.
 
 ### Phase 3 — ext_authz chain: shrink blast radius and outage window (no replicas)
 - The chain is fail-closed (failOpen:false, statusOnError:503, gateway-policies.yaml:324-325 external, :298-299 internal) on a single-replica bouncer (replicaCount:1, crowdsec-bouncer/app/helmrelease.yaml:15), so a restart or OOMKill 503s every public hostname; on this single-node cluster the goal is a smaller outage window without replicas.
@@ -143,7 +162,7 @@ tags:
 
 - The VAP rejects a GRPCRoute with a reserved hostname and a route attaching to the wrong Gateway; the mergeType VAP rejects a SecurityPolicy without StrategicMerge.
 - A SecurityPolicy set to not-Accepted triggers an alert within the scrape interval.
-- connection.connectionLimit is set; requestReceivedTimeout is lowered; a large-upload route still succeeds.
+- connection.connectionLimit is set on the internal gateway (1024, half-cap alert); the external gateway is deliberately uncapped (no exhaustion path: ClusterIP-only + CiliumNetworkPolicy admits only the cloudflared pod, measured 7-day peak 1). requestReceivedTimeout lowering deliberately dropped — it covers the whole request reception (headers+body) and would break the large-upload routes; the slow-header vector is already bound by requestHeadersReceivedTimeout: 10s (Delivery deviation A).
 - The redirect route no longer reflects an arbitrary Host.
 - The bouncer memory limit is raised and a priorityClass is set; a bouncer-unavailability alert fires within the scrape interval. No PDB, no added replicas.
 - A CSP / frame-ancestors header is present on external responses, injected via ClientTrafficPolicy lateResponseHeaders (addIfAbsent).
