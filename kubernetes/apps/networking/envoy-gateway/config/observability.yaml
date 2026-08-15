@@ -13,6 +13,17 @@ spec:
     - port: metrics
       path: /stats/prometheus
       honorLabels: true
+      metricRelabelings:
+        # P1.2/P1.2b: drop unconsumed envoy-proxy histograms (envoy-proxy-global
+        # uses upstream_rq_time + http_downstream_rq_time only).
+        - sourceLabels:
+            - __name__
+          regex: "envoy_cluster_update_duration_bucket|envoy_sds_update_duration_bucket"
+          action: drop
+        - sourceLabels:
+            - __name__
+          regex: "envoy_cluster_upstream_(rq_per_cx|cx_length_ms|cx_connect_ms)_bucket|envoy_listener_(downstream_cx_length_ms|connections_accepted_per_socket_event)_bucket"
+          action: drop
   selector:
     matchLabels:
       app.kubernetes.io/component: proxy
@@ -28,6 +39,13 @@ spec:
     - port: metrics
       path: /metrics
       honorLabels: true
+      metricRelabelings:
+        # P1.6: drop unconsumed rest_client histograms (envoy-gateway-global uses
+        # watchable/status_update/resource_apply; rest_client only feeds flux dashboards).
+        - sourceLabels:
+            - __name__
+          regex: "rest_client_(request_duration_seconds|rate_limiter_duration_seconds|request_size_bytes|response_size_bytes)_(bucket|sum|count)"
+          action: drop
   jobLabel: envoy-gateway
   namespaceSelector:
     matchNames:
