@@ -347,6 +347,8 @@ per file from a clean working tree (`git status` checked before each `git add`).
 - **Diagnosis (the surprise)**: the aggregate head gauge is **churn-dominated over the ~45-min implementation window**, not drop-dominated. Evidence: `created_total=238 727`, `removed_total=161 232` (net = head, so the gauge is not lagging/buggy); current `rate(created[5m])=0.59/s` vs `rate(removed[5m])=0/s` — the head is still slowly growing from churn while `metricRelabelings drop` prevents *creation* (it does not cause *removal*; already-ingested stale series evict only after staleness + head GC). Cluster churn during the window (Flux reconciling 9 SMs + normal activity) added roughly the same ~17k the drops removed, leaving the aggregate net ~flat-to-slightly-up versus the roadmap's 76 965 baseline.
 - **Why the drops are still confirmed real**: the per-target counts dropped as expected (cilium-agent ~2298->1071, envoy-proxy ~11 000->7790, etc.), and every commit's AFTER=0 + KEEP-populated was verified independently. The **per-commit AFTER=0 + KEEP is the Maestro gate and the reliable signal**; the aggregate head over a 45-min active window is too noisy to be the reduction metric.
 - **Recommendation**: re-measure `prometheus_tsdb_head_series` after a stabilization window (no active reconciles, ~15-30 min) — the true net reduction should surface as the dropped stale series evict and churn subsides. Expected steady-state reduction is ~16.9k below the pre-Phase-1 head.
+- **Post-truncation confirmation (2026-08-15, Maestro-verified)**: the head truncation fired later that day — `truncations_total` 6 → 7, `head_min_time` advanced +2 h, and `head_series_removed_total` 161 232 → 178 442 = **+17 210 series garbage-collected**, matching the ~16.9k measured drop-list almost exactly (Phase 1 confirmed at the aggregate level). `head_series` fell 77 901 → 65 187.
+- **Honest headline — do not overstate**: versus the pre-Phase-1 baseline of **72 234** the NET is **−7 047 (−9.8%)**, NOT −16.9k, because ~10k NEW series were created during the same ~2h window (pod restarts, new container IDs). The drops delivered exactly what they promised; ordinary cluster churn rebuilt about half of it in the same window. The durable win is the **daily growth RATE** (fewer series created per day), which is precisely what `PrometheusTSDBGrowthTrend` (added in Phase 2) now watches — not the absolute head count.
 
 ### Implementation decisions worth recording
 
@@ -544,3 +546,47 @@ Each code commit passed the full per-commit gate before the next was started:
 ### Next
 
 Phase 2 is **DONE**. Phases 3–6 (scrape-interval tuning, hardening/UX, conditional kubeApiServer scrape, prompp migration) remain as future roadmap items, each pending its own Maestro ratify. The 3-day predict watch above is the only open follow-up from Phase 2.
+## Phase 3 Handoff Checkpoint (2026-08-15) — survives context clear
+
+**Status**: Phase 2 is **DONE and Maestro-accepted** (independently verified: all 4 rules LOADED, health=ok, state=inactive; zero unhealthy rules cluster-wide; only pre-existing KubeHpaMaxedOut + Watchdog fire). The Maestro cleared the context **proactively before Phase 3/4** because Phase 4 is security-adjacent (P4.1 exposes the Prometheus UI on envoy-internal behind the OIDC gate) and must not run on a context that may auto-compact mid-flight. Context was at ~62%.
+
+### Phase 2 commits (all on `main`, all pushed, tree clean)
+- A `8723eb295` — feat(observability): TSDB growth-trend + spike alerts (P2.1)
+- C `09768366c` — feat(volsync): missed-interval alert (P2.3)
+- B `15a7267b1` — feat(cert-manager): renewal-relative expiry alerts (P2.2)
+- D `b86db18bd` — docs(observability): Phase 2 execution record (this BM note)
+- (An unrelated human renovate commit `bf9555039` — grafanaDashboards preset repoint, Refs #4174 — is interleaved between C and B; it is the human's parallel work, NOT Phase 2. Explicit-pathspec staging kept it out of every Phase 2 commit.)
+
+### Phase 2 alerts (all inactive, Maestro-verified)
+- `PrometheusTSDBGrowthTrend` (warning, for:30m / 1800s): predict_linear(blocks_bytes[3d], 7d) > 0.9*retention_limit. Inactive: predict=2.76 GB < 4.25 GB.
+- `PrometheusTSDBSpike` (warning, for:5m / 300s): delta(blocks_bytes[1h]) > 100 MB. Inactive: 19.5 MB.
+- `VolSyncMissedInterval` (warning, for:15m / 900s): increase(volsync_missed_intervals_total[1h]) > 0. Inactive: 0 for all 39 objects.
+- `CertManagerRenewalLate` (warning, for:2h / 7200s): time() > renewal_timestamp. Inactive: all 3 certs negative.
+- `CertManagerCertificateExpired` (critical, for:5m / 300s): time() > expiration_timestamp. Inactive: all 3 certs negative.
+
+### Carry-forward #1 — Phase 1 head-truncation (the durable headline, do not overstate)
+Phase 1's "noisy head" surprise is **resolved**: the head truncation fired later on 2026-08-15.
+- `truncations_total` 6 → 7; `head_min_time` advanced +2 h.
+- `head_series_removed_total` 161 232 → 178 442 = **+17 210 series garbage-collected** — matches the ~16.9k measured drop-list almost exactly (Phase 1 confirmed at the aggregate level).
+- `head_series` 77 901 → 65 187.
+- **Honest headline**: vs the pre-Phase-1 baseline of 72 234 the NET is **−7 047 (−9.8%)**, NOT −16.9k — ~10k NEW series were created in the same ~2h window (pod restarts, new container IDs). The drops delivered exactly what they promised; churn rebuilt about half. The durable win is the **daily growth RATE** (fewer series/day), watched by `PrometheusTSDBGrowthTrend` — NOT the absolute head count. Recorded in the Phase 1 Execution Record above.
+
+### Carry-forward #2 — dated P2.1 predict watch (Maestro condition, MUST run)
+Measure `predict_linear(prometheus_tsdb_storage_blocks_bytes[3d], 7d)` and the ratio to `0.9 * prometheus_tsdb_retention_limit_bytes` **DAILY** on:
+- **2026-08-16**: _(pending — record value + ratio here)_
+- **2026-08-17**: _(pending)_
+- **2026-08-18**: _(pending)_
+Baseline at deploy (2026-08-15): predict = 2.76 GB (2 757 987 770 B), threshold = 4.25 GB (4 246 732 800 B), ratio = 65.0%, 35% headroom.
+**Interpretation**: expect predict to **DECAY** as the 3d window slides past the Phase-1 metricRelabeling drop (pre-drop high samples age out — decaying high bias, not real shrinkage). An **UPWARD** trend once the window is fully post-drop (~3 days out, from ~2026-08-18) = real cardinality growth, not window pollution → investigate. Record each day in the Phase 2 Completion section's watch table.
+
+### What is NOT done (future roadmap, each pending its own Maestro ratify)
+- Phase 3 — scrape-interval tuning (not started).
+- Phase 4 — hardening/UX, including **P4.1: expose the Prometheus UI on envoy-internal behind the OIDC gate** (security-adjacent — the reason for this proactive clear).
+- Phase 5 (conditional) — kubeApiServer scrape + measured drop-list.
+- Phase 6 — prompp migration (proposed, gated).
+
+### Resume protocol (for a fresh context after /clear)
+1. Read root `CLAUDE.md` → `kubernetes/CLAUDE.md` → subtree guides → this BM note (`docs/roadmap/kube-prometheus-stack-hygiene`) via the basic-memory MCP (NEVER file tools on basic-memory/).
+2. This checkpoint + the Phase 2 Completion section above are the state of record. Phase 2 is DONE; do not re-implement.
+3. Await the Maestro's Phase 3 brief. Do not start Phase 3/4 work without it.
+4. If asked to run the predict watch on a given day, query live Prometheus and record the value + ratio in the Phase 2 Completion watch table.
