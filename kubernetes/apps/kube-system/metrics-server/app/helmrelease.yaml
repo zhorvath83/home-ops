@@ -27,3 +27,10 @@ spec:
       enabled: true
     serviceMonitor:
       enabled: true
+      # P1.9: drop unconsumed metrics-server histograms (flux-k8s-api-performance
+      # keeps apiserver_request_{duration,slo,sli}; these others have no consumer).
+      metricRelabelings:
+        - sourceLabels:
+            - __name__
+          regex: "apiserver_response_sizes_bucket|field_validation_request_duration_seconds_bucket|metrics_server_.*_bucket|authentication_duration_seconds_bucket|authorization_duration_seconds_bucket|rest_client_.*_bucket"
+          action: drop
