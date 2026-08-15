@@ -114,3 +114,10 @@ clients:
     pkce_enabled: false
     groups:
       - infra_admins
+  homepage:
+    friendly_name: Homepage
+    gate: native
+    subdomain: dash
+    callback_path: /api/auth/callback/homepage-oidc
+    groups:
+      - infra_admins

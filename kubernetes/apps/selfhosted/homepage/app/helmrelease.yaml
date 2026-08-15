@@ -36,9 +36,14 @@ spec:
               repository: ghcr.io/gethomepage/homepage
               tag: v2.0.0@sha256:638dacf5c844e908dc06c1fd57a2b5694f8efd91f91f152829ea0c2f547458f2
             env:
-              HOMEPAGE_ALLOWED_HOSTS: "*"
+              HOMEPAGE_ALLOWED_HOSTS: "dash.${PUBLIC_DOMAIN}"
               LOG_TARGETS: stdout
               # LOG_LEVEL: debug
+              HOMEPAGE_AUTH_ENABLED: "true"
+              HOMEPAGE_EXTERNAL_URL: "https://dash.${PUBLIC_DOMAIN}"
+              HOMEPAGE_OIDC_ISSUER: "https://idm.${PUBLIC_DOMAIN}"
+              HOMEPAGE_OIDC_CLIENT_ID: homepage
+              HOMEPAGE_OIDC_NAME: Pocket ID
             envFrom:
               - secretRef:
                   name: "{{ .Release.Name }}-secret"
@@ -50,6 +55,11 @@ spec:
                   httpGet:
                     path: /api/healthcheck
                     port: &port 3000
+                    # Host validation runs before the /api/healthcheck auth exemption;
+                    # kubelet would otherwise send the pod IP and get a 400.
+                    httpHeaders:
+                      - name: Host
+                        value: localhost:3000
                   initialDelaySeconds: 0
                   periodSeconds: 10
                   timeoutSeconds: 1
