@@ -2,7 +2,7 @@
 title: pocket-id-email-sending
 type: progress-note
 permalink: home-ops/docs/progress/pocket-id-email-sending
-status: in-progress
+status: done
 roadmap: '[[pocket-id-email-sending]] (docs/roadmap)'
 priority: medium
 area: iam
@@ -104,3 +104,14 @@ APP_NAME (default "Pocket ID"), SESSION_DURATION (default 60), HOME_PAGE_URL
   via reloader -> Phase 3 delivery test (login-from-new-device notification or admin one-time
   code; DMARC check on .msg; just pocket-id audit; VictoriaLogs SMTP errors), then iam §1 +
   verified_at bump.
+
+
+## Session 1 — push + delivery (2026-08-15)
+
+- Human pushed 574483936 (code) + d638e18c2 (docs) to origin/main; Flux reconciled; pod
+  redeployed with UI_CONFIG_DISABLED=true + the full override set + SMTP_* from ExternalSecret.
+- Delivery test (human-verified, live): transactional mail arrived, DMARC-aligned on .msg;
+  no pod-side SMTP error; UI config did not reset (override vars pinned). just pocket-id audit
+  unchanged.
+- Status: DONE. Phase 3 docs closure = this progress-note update + the iam area-reference
+  Update section (same commit).

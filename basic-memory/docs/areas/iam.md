@@ -168,3 +168,41 @@ Homepage 2.0 shipped a built-in auth gate, so the dashboard moved from having no
 - [correction] The provisioning-model section says provider `trozz/pocketid` 2.1.0; `provision/pocket-id/main.tf:15` pins **2.3.0**. Noticed incidentally while applying the homepage client (a stale local plugin cache surfaced the version), not as part of a full re-verification.
 
 Note: `verified_at` is deliberately NOT bumped. Only the claims touched above were re-verified; the rest of this note still dates from the 2026-08-03 audit.
+
+
+## Update 2026-08-15 — pocket-id transactional email
+
+Pocket ID now sends outbound transactional email through the shared SMTP2GO relay, closing the
+"silent IdP" gap. Recorded from the committed config plus a human-verified live delivery test,
+not from an independent AI cluster observation.
+
+- [observation] [feature] **Transactional email is ON.** The IdP emits login-from-new-device
+  notifications, admin-initiated one-time login codes, API-key-expiry warnings, and
+  signup/email-change verification mail via mail-eu.smtp2go.com:465 (implicit TLS,
+  SMTP_TLS=tls). Credentials come from the shared HomeOps/smtp2go 1Password item through the
+  pocket-id ExternalSecret (dataFrom extract with the smtp2go_ prefix rewrite, same shape as
+  pingvin-share-x); no SMTP credential is committed to git.
+- [observation] [decision] **UI_CONFIG_DISABLED=true** — the Pocket ID docs are explicit that
+  SMTP_* and EMAIL_* env vars are effective ONLY with this flag (the admin UI is the default
+  source), so the GitOps/env path necessarily takes the global override. Every override-able
+  var is pinned in the helmrelease env for determinism (no silent reset on rollout): APP_NAME=IdM,
+  SESSION_DURATION=60, HOME_PAGE_URL=/settings/account, REQUIRE_USER_EMAIL=true,
+  EMAILS_VERIFIED=false, ALLOW_OWN_ACCOUNT_EDIT=true, ALLOW_USER_SIGNUPS=disabled (agrees with
+  the pocket-id-external HTTPRoute /signup + /api/signup 403), DISABLE_ANIMATIONS=false,
+  ACCENT_COLOR=default, LDAP_ENABLED=false (LDAP unused), the four EMAIL_* flags ON,
+  EMAIL_ONE_TIME_ACCESS_AS_UNAUTHENTICATED_ENABLED=false (passkey-only posture preserved),
+  WebAuthn defaults (required / synced / any), and CIMD_URL_ALLOWLIST=[] (metadata-document
+  clients disabled). 21 dead-config vars excluded (SIGNUP_DEFAULT_* with signup off, 18 LDAP_*
+  maps with LDAP off, SMTP_PASSWORD_FILE).
+- [observation] [security] **Passkey-only posture unchanged.** The email-code login bypass
+  (EMAIL_ONE_TIME_ACCESS_AS_UNAUTHENTICATED_ENABLED) is explicitly OFF; email adds notification
+  + verification + admin recovery, it does NOT add a mailbox-access auth path.
+- [observation] [debt-closed] The CNP SMTP2GO egress rule (012239c16), committed ahead with no
+  in-pod consumer, now has one — this roadmap closes that dangling allow.
+- [observation] [verify] Delivery was human-verified live (test mail arrived, DMARC-aligned on
+  .msg; just pocket-id audit unchanged; no SMTP errors in VictoriaLogs). The AI did not
+  independently re-run the cluster checks.
+- [observation] [verify-status] verified_at is deliberately NOT bumped — only the email-related
+  claims above are freshly verified; the rest of this note still dates from the 2026-08-03 audit
+  (per the area-reference-staleness-audit convention, same as the homepage update above).
+- relates_to [[pocket-id-email-sending]] (progress)

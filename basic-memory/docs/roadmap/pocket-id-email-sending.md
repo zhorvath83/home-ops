@@ -5,7 +5,7 @@ permalink: home-ops/docs/roadmap/pocket-id-email-sending
 topic: Enable Pocket ID to send transactional email through the shared SMTP2GO relay
   so the IdP can emit login-from-new-device notifications, admin-initiated one-time
   login codes, API-key expiry warnings, and signup/email-change verification mail
-status: proposed
+status: done
 priority: medium
 scope: 'Wire SMTP delivery into the Pocket IdP (kubernetes/apps/security/pocket-id),
   using the existing shared SMTP2GO 1Password item and the already-deployed SMTP2GO
@@ -147,3 +147,16 @@ UI_CONFIG_DISABLED is global: setting it true overrides the admin UI for EVERY a
 - [risk] **feature-flag interaction with the passkey-only posture** — EMAIL_VERIFICATION_ENABLED on signup is fine because the external route blocks /signup; signup happens via admin UI / token, where verification mail is a useful guardrail. EMAIL_ONE_TIME_ACCESS_AS_UNAUTHENTICATED_ENABLED stays OFF to preserve passkey-only strength.
 - [risk] **SMTP2GO relay as a shared dependency** — pingvin-share-x and calibre-web-automated already depend on it; adding the IdP makes three consumers of one relay. A relay outage silences IdP notifications but does not break auth (passkey login is unaffected). Acceptable; noted, not mitigated.
 - [debt] the CNP SMTP2GO egress rule (012239c16) was committed ahead of this roadmap with no in-pod consumer — this roadmap closes that dangling allow.
+
+
+## Implementation (2026-08-15) — DONE
+
+Delivered via Option A (UI_CONFIG_DISABLED=true with every override var pinned).
+
+- Commits: 574483936 (code: ExternalSecret + helmrelease env) and d638e18c2 (docs: progress
+  note), pushed to main by the human; this docs commit closes the roadmap + iam area-ref.
+- Delivery: human-verified live — transactional mail arrived DMARC-aligned on .msg, no SMTP
+  errors, just pocket-id audit unchanged, UI config did not reset.
+- Execution detail, decisions, and acceptance-criteria sign-off: see
+  [[pocket-id-email-sending]] (progress). The iam area-reference carries the capability record
+  (Update 2026-08-15 section in [[iam]]).
