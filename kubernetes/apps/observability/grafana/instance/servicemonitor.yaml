@@ -11,9 +11,11 @@ spec:
   endpoints:
     - port: grafana
       metricRelabelings:
+        # P1.3: drop all grafana self-observability metrics (no dashboard/rule
+        # consumes grafana_*; we run no Grafana-internal dashboard).
         - sourceLabels:
             - "__name__"
-          regex: "grafana_http_(request_duration|response_size)_seconds_bucket"
+          regex: "grafana_.*"
           action: drop
         - sourceLabels:
             - "__name__"
