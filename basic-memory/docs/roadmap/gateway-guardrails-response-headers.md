@@ -34,7 +34,7 @@ rationale: 'These are gateway-plane guardrails that fail silently today: a route
   a single instance with 30-minute timeouts and no connection limit; the native
   ClientTrafficPolicy lateResponseHeaders
 
-  injects only HSTS/nosniff/Referrer-Policy — no CSP, frame-ancestors, Permissions-Policy,
+  injected only HSTS/nosniff/Referrer-Policy before Phase 4 — no CSP, frame-ancestors, Permissions-Policy,
 
   or COOP/COEP in front of the unauthenticated public apps. None of this is
 
@@ -53,9 +53,7 @@ options:
 - Guard the silent footguns with admission + alerts, not just config — a mergeType
   VAP and a SecurityPolicy-attach-failure alert catch the detach-on-misconfig class
   before it is exploited.
-- Default-strict response headers, per-app exceptions — apply CSP / frame-ancestors
-  / Permissions-Policy / COOP at the gateway, and carve out per-app exceptions only
-  where an app is known to need inline scripts/widgets.
+- Delivered in Phase 4: gateway response headers via native ClientTrafficPolicy lateResponseHeaders — CSP frame-ancestors 'self' (no default-src/script-src, so the gateway 401 page keeps its inline script), Permissions-Policy (WebAuthn at self, sensitive capabilities blocked), COOP same-origin; all addIfAbsent so an app that sets its own header wins.
 tags:
 - roadmap
 - security
@@ -63,7 +61,6 @@ tags:
 - envoy-gateway
 - admission-policy
 - response-headers
-- proposed
 ---
 
 # gateway-guardrails-response-headers — guardrails + response headers on the external gateway
