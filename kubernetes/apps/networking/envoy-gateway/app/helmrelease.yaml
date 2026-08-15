@@ -27,12 +27,15 @@ spec:
         # default (read-only root filesystem, non-root 65532, drop ALL, no privilege
         # escalation, RuntimeDefault seccomp). Restating it here would only invite drift
         # from upstream — audit `helm show values` before adding anything back.
+        #
+        # No strategy override either. Recreate looks right for a single replica on one
+        # node, but switching an existing Deployment to it fails server-side apply: the
+        # API-server-defaulted spec.strategy.rollingUpdate survives the merge and "may
+        # not be specified when strategy type is 'Recreate'". Clearing it needs an
+        # out-of-band patch, which is not worth it for a 5m/192Mi surge replica.
         resources:
           requests:
             cpu: 5m
             memory: 192Mi
           limits:
             memory: 1024Mi
-        # Single-node: a rolling update would need a surge replica to schedule first.
-        strategy:
-          type: Recreate
