@@ -127,9 +127,22 @@ spec:
           value: max-age=63072000; includeSubDomains
         - name: x-content-type-options
           value: nosniff
+      # CSP is frame-ancestors only — no script-src, so the gateway 401 page keeps its
+      # inline script ("no CSP on the gateway" in the BTP explains that script, not a
+      # ban on adding a CSP). self not none: paperless frames its own preview; WebAuthn stays at self.
       addIfAbsent:
         - name: referrer-policy
           value: strict-origin-when-cross-origin
+        - name: content-security-policy
+          value: frame-ancestors 'self'
+        - name: permissions-policy
+          value: >-
+            camera=(), microphone=(), geolocation=(), usb=(), midi=(), payment=(),
+            display-capture=(), serial=(), bluetooth=(),
+            publickey-credentials-get=(self), publickey-credentials-create=(self),
+            fullscreen=(self), autoplay=(self), picture-in-picture=(self)
+        - name: cross-origin-opener-policy
+          value: same-origin
   http2:
     initialStreamWindowSize: 2Mi
     initialConnectionWindowSize: 32Mi
@@ -188,9 +201,22 @@ spec:
           value: max-age=63072000; includeSubDomains
         - name: x-content-type-options
           value: nosniff
+      # CSP is frame-ancestors only — no script-src, so the gateway 401 page keeps its
+      # inline script ("no CSP on the gateway" in the BTP explains that script, not a
+      # ban on adding a CSP). self not none: paperless frames its own preview; WebAuthn stays at self.
       addIfAbsent:
         - name: referrer-policy
           value: strict-origin-when-cross-origin
+        - name: content-security-policy
+          value: frame-ancestors 'self'
+        - name: permissions-policy
+          value: >-
+            camera=(), microphone=(), geolocation=(), usb=(), midi=(), payment=(),
+            display-capture=(), serial=(), bluetooth=(),
+            publickey-credentials-get=(self), publickey-credentials-create=(self),
+            fullscreen=(self), autoplay=(self), picture-in-picture=(self)
+        - name: cross-origin-opener-policy
+          value: same-origin
   http2:
     initialStreamWindowSize: 2Mi
     initialConnectionWindowSize: 32Mi
