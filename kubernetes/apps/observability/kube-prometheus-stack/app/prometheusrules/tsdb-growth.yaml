@@ -1,0 +1,35 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/monitoring.coreos.com/prometheusrule_v1.json
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: tsdb-growth
+spec:
+  groups:
+    - name: tsdb.rules
+      rules:
+        # Trend: predict the TSDB block-store size 7d out from a 3d regression and page when it
+        # is headed for 90% of the retention limit. The Kör 1 retention-miscalc lesson, automated.
+        # max by (job) on both sides scopes away a stale churned-pod-IP series whose predict_linear
+        # returns garbage; the real per-instance job label is the surviving dimension.
+        - alert: PrometheusTSDBGrowthTrend
+          expr: |
+            max by (job) (predict_linear(prometheus_tsdb_storage_blocks_bytes[3d], 7d))
+              > 0.9 * max by (job) (prometheus_tsdb_retention_limit_bytes)
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            description: Prometheus TSDB for job {{ $labels.job }} is predicted to exceed 90% of the retention limit within 7 days.
+        # Spike: a runaway-block persist raises the block-store gauge by >100 MB in 1h. delta, NOT
+        # increase — blocks_bytes is a gauge with legitimate down-steps at compaction merges and
+        # retention evictions; increase/rate apply counter-reset logic and inflate those down-steps
+        # into a false spike. The natural per-2h-block step is ~34 MB, so 100 MB/h is ~3x margin.
+        - alert: PrometheusTSDBSpike
+          expr: |
+            max by (job) (delta(prometheus_tsdb_storage_blocks_bytes[1h])) > 100000000
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            description: Prometheus TSDB for job {{ $labels.job }} gained over 100 MB of blocks in the last hour, possible runaway cardinality.

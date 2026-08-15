@@ -1,0 +1,148 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/prometheus.rules.test.json
+# promtool unit tests for prometheusrules/tsdb-growth.yaml, covering PrometheusTSDBGrowthTrend
+# and PrometheusTSDBSpike.
+#
+# Trend expr: max by (job) (predict_linear(prometheus_tsdb_storage_blocks_bytes[3d], 7d))
+#   > 0.9 * max by (job) (prometheus_tsdb_retention_limit_bytes)
+# Spike expr: max by (job) (delta(prometheus_tsdb_storage_blocks_bytes[1h])) > 100000000
+#
+# Constants: retention_limit_bytes = 4500 MiB = 4 718 592 000 (live-verified). Threshold =
+# 0.9 * 4 718 592 000 = 4 246 732 800. The `max by (job)` on BOTH sides keeps the per-instance job
+# label as the only dimension; the alert inherits {job} + alertname + severity, so exp_labels
+# assert exactly that. Both input series in every trend group carry the same job label so the
+# vector match on job succeeds; a missing retention_limit series would empty the RHS and silence
+# the alert for every case, so it is present in all four trend groups.
+#
+# Trend arithmetic (1m eval): predict_linear(v[3d], 7d) at eval T regresses the samples in the
+# (T-3d, T] window and predicts 7d = 10 080 min ahead. For a perfect ramp v(t)=v0+r*t the OLS slope
+# is exactly r, so predict(T) = v(T) + r*10080. The [3d] range is wider than any test series here,
+# so the window simply holds every available sample — the regression is sound with as few as 2
+# points. For a flat series the slope is exactly 0, so predict = the flat value; that is what makes
+# the boundary cases float-safe (no epsilon from a slope term).
+#
+# (a) Fire: ramp v0=1.0e9, r=400 000/min -> predict(0) = 1.0e9 + 400000*10080 = 5.032e9 > 4.246e9
+#     from the first 2-sample regression, holds (ramp keeps rising), fires after for:30m at 30m,
+#     eval at 60m -> firing.
+# (b) No-fire: flat 1.0e9 -> predict 1.0e9 < 4.246e9 -> no fire.
+# (c) Boundary no-fire (proves `>` strictness): flat EXACTLY at the threshold (4 246 732 800).
+#     predict = 4 246 732 800.0; RHS = 0.9*4 718 592 000 = 4 246 732 800.0001 (0.9 is slightly above
+#     0.9 in double, so the product is fractionally above the integer). predict > RHS is FALSE ->
+#     no fire. An at-threshold value not firing is the `>` (not `>=`) proof.
+# (d) Boundary fire: flat 4 246 732 900 (just +100 above the threshold). predict = 4 246 732 900 >
+#     4 246 732 800.0001 -> fire after for:30m, eval at 60m -> firing. Pairs with (c) to bracket the
+#     threshold.
+#
+# Spike arithmetic (1m eval): delta(v[1h]) at eval T = last value in (T-60, T] minus first value in
+# (T-60, T]. The 2h-block natural persist is ~34 MB, so 100 MB/h is ~3x margin.
+# (e) Fire: flat 2.5e9 for t=0..39 then +150e6 to 2.65e9 for t=40..79. At eval 70m the window
+#     (10,70] spans the step (first=11m @2.5e9, last=70m @2.65e9) -> delta=150e6 > 100e6, true since
+#     t=40, fires after for:5m at 45m, eval 70m -> firing.
+# (f) No-fire: +34e6 step (a single natural block persist) -> delta=34e6 < 100e6 -> no fire.
+# (g) No-fire (compaction down-step): -70e6 step (3 blocks merge to 1). delta is negative -> no fire.
+#     This is the value of `delta` over `increase`: increase applies counter-reset logic to a gauge
+#     and would inflate this legitimate down-step into a false spike; delta is pure net change.
+#
+# Run via `just k8s test-prom-rules` (recipe copies this test + .extracted_prometheus_rules.yaml into a temp dir).
+rule_files:
+  - ./.extracted_prometheus_rules.yaml
+evaluation_interval: 1m
+tests:
+  # === PrometheusTSDBGrowthTrend ===
+  # (a) Fire: ramp headed for >90% of retention in 7d. Job label survives max by (job); description
+  # renders {{ $labels.job }}.
+  - interval: 1m
+    input_series:
+      - series: 'prometheus_tsdb_storage_blocks_bytes{job="kube-prometheus-stack-prometheus"}'
+        values: '1000000000+400000x61'
+      - series: 'prometheus_tsdb_retention_limit_bytes{job="kube-prometheus-stack-prometheus"}'
+        values: '4718592000x61'
+    alert_rule_test:
+      - eval_time: 60m
+        alertname: PrometheusTSDBGrowthTrend
+        exp_alerts:
+          - exp_labels:
+              alertname: PrometheusTSDBGrowthTrend
+              severity: warning
+              job: kube-prometheus-stack-prometheus
+            exp_annotations:
+              description: Prometheus TSDB for job kube-prometheus-stack-prometheus is predicted to exceed 90% of the retention limit within 7 days.
+  # (b) No-fire: flat and low — predict far below threshold.
+  - interval: 1m
+    input_series:
+      - series: 'prometheus_tsdb_storage_blocks_bytes{job="kube-prometheus-stack-prometheus"}'
+        values: '1000000000x61'
+      - series: 'prometheus_tsdb_retention_limit_bytes{job="kube-prometheus-stack-prometheus"}'
+        values: '4718592000x61'
+    alert_rule_test:
+      - eval_time: 60m
+        alertname: PrometheusTSDBGrowthTrend
+        exp_alerts: []
+  # (c) Boundary no-fire: flat EXACTLY at the threshold — `>` is strict, so an at-threshold predict
+  # does NOT fire. Proves the operator is `>`, not `>=`.
+  - interval: 1m
+    input_series:
+      - series: 'prometheus_tsdb_storage_blocks_bytes{job="kube-prometheus-stack-prometheus"}'
+        values: '4246732800x61'
+      - series: 'prometheus_tsdb_retention_limit_bytes{job="kube-prometheus-stack-prometheus"}'
+        values: '4718592000x61'
+    alert_rule_test:
+      - eval_time: 60m
+        alertname: PrometheusTSDBGrowthTrend
+        exp_alerts: []
+  # (d) Boundary fire: flat +100 above the threshold — predict just exceeds 0.9*limit, fires after
+  # for:30m. Pairs with (c) to bracket the threshold.
+  - interval: 1m
+    input_series:
+      - series: 'prometheus_tsdb_storage_blocks_bytes{job="kube-prometheus-stack-prometheus"}'
+        values: '4246732900x61'
+      - series: 'prometheus_tsdb_retention_limit_bytes{job="kube-prometheus-stack-prometheus"}'
+        values: '4718592000x61'
+    alert_rule_test:
+      - eval_time: 60m
+        alertname: PrometheusTSDBGrowthTrend
+        exp_alerts:
+          - exp_labels:
+              alertname: PrometheusTSDBGrowthTrend
+              severity: warning
+              job: kube-prometheus-stack-prometheus
+            exp_annotations:
+              description: Prometheus TSDB for job kube-prometheus-stack-prometheus is predicted to exceed 90% of the retention limit within 7 days.
+  # === PrometheusTSDBSpike ===
+  # (e) Fire: +150 MB step in the last 1h (runaway-block persist). delta[1h]=150e6 > 100e6, true
+  # since t=40, fires after for:5m, eval 70m -> firing.
+  - interval: 1m
+    input_series:
+      - series: 'prometheus_tsdb_storage_blocks_bytes{job="kube-prometheus-stack-prometheus"}'
+        values: '2500000000x40 2650000000x40'
+    alert_rule_test:
+      - eval_time: 70m
+        alertname: PrometheusTSDBSpike
+        exp_alerts:
+          - exp_labels:
+              alertname: PrometheusTSDBSpike
+              severity: warning
+              job: kube-prometheus-stack-prometheus
+            exp_annotations:
+              description: Prometheus TSDB for job kube-prometheus-stack-prometheus gained over 100 MB of blocks in the last hour, possible runaway cardinality.
+  # (f) No-fire: a +34 MB step — the natural single-2h-block persist (~34 MB), ~3x below the 100 MB
+  # threshold.
+  - interval: 1m
+    input_series:
+      - series: 'prometheus_tsdb_storage_blocks_bytes{job="kube-prometheus-stack-prometheus"}'
+        values: '2500000000x40 2534000000x40'
+    alert_rule_test:
+      - eval_time: 70m
+        alertname: PrometheusTSDBSpike
+        exp_alerts: []
+  # (g) No-fire (compaction down-step): a -70 MB step (blocks merged at compaction). delta[1h] is
+  # negative, so `> 100000000` is false. Proves delta does NOT false-fire on the gauge's legitimate
+  # down-steps — the correctness win over `increase`.
+  - interval: 1m
+    input_series:
+      - series: 'prometheus_tsdb_storage_blocks_bytes{job="kube-prometheus-stack-prometheus"}'
+        values: '2500000000x40 2430000000x40'
+    alert_rule_test:
+      - eval_time: 70m
+        alertname: PrometheusTSDBSpike
+        exp_alerts: []
