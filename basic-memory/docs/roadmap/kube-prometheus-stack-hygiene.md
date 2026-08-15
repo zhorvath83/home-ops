@@ -747,3 +747,9 @@ A bare flux reconcile helmrelease <name> reconciles against the last-fetched sou
 ### Next
 
 Phase 4 is DONE. Remaining roadmap items: Phase 5 (conditional kubeApiServer scrape + measured drop-list — NOT recommended now), Phase 6 (prompp migration — GO per human decision; plan pending, separate ratify). The P2.1 3-day predict watch (2026-08-16/17/18 daily readings) remains pending (Maestro condition from Phase 2), separate from Phase 4.
+
+## Phase 4 addendum — helm-render gate miss (process finding, 2026-08-15)
+
+Commit 61f281271 put prometheusConfigReloader.resources under prometheus.prometheusSpec (wrong path, no-op) and needed 7b09a80b6 to correct it to the operator-level prometheusOperator.prometheusConfigReloader path. The wrong path originated in the Phase 4 Handoff Checkpoint itself — the plan carried the error into the commit. The point is not the mistake; it is that the helm-render gate was supposed to catch the wrong path BEFORE the commit and did not. A rendered-output check that does not actually assert the field appears where you expect it is not a gate — it is a formality.
+
+Lesson (carried into Phase 6): for the image/version/securityContext override — exactly the class of change where a value silently landing at the wrong path means the render looks fine and the change does nothing, or worse, the operator accepts a half-applied spec — the Phase 6 plan states, for EACH value set, what will be asserted in the rendered Helm output to prove it landed at the right path. Generalize: a render gate must assert the specific field path + value in the rendered manifest, not just "the render succeeded".
