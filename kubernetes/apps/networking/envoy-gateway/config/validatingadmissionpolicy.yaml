@@ -1,14 +1,14 @@
 ---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/refs/heads/master/v1.36.0/validatingadmissionpolicy-admissionregistration-v1.json
-# Hostname-scoped IdP guard: only the security namespace may claim
-# idm.${PUBLIC_DOMAIN}; non-security namespaces may not claim a wildcard
-# either (a *.${PUBLIC_DOMAIN} claim would cover idm and every other app).
-# A hostnames-less HTTPRoute inherits its parent listener's hostname, so on
-# the `https` listener (hostname *.${PUBLIC_DOMAIN}, allowedRoutes from: All)
-# it would implicitly claim the wildcard — therefore hostnames-less routes
-# are admitted only when every parentRef targets the hostname-less `http`
-# listener (the port-80 redirect). Native kube-apiserver CEL admission — no
-# Kyverno. Closes the wildcard-bypass of a literal-only hostname check.
+# Hostname-scoped IdP guard for every route kind (HTTPRoute/GRPCRoute/TLSRoute/TCPRoute):
+# only the security namespace may claim idm.${PUBLIC_DOMAIN} or a wildcard (a
+# *.${PUBLIC_DOMAIN} claim would cover idm and every other app). Non-security routes may
+# only attach to the known gateways (envoy-external/envoy-internal in networking) — an
+# unexpected parent is rejected at admission, not silently left unprogrammed. A
+# hostnames-less route (or an explicit empty hostnames list) inherits its parent listener's
+# hostname, so on the `https` listener (hostname *.${PUBLIC_DOMAIN}) it would implicitly
+# claim the wildcard — such routes are admitted only when every parentRef targets the
+# hostname-less `http` listener (the port-80 redirect). Native kube-apiserver CEL admission — no Kyverno.
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingAdmissionPolicy
 metadata:
@@ -26,14 +26,23 @@ spec:
           - UPDATE
         resources:
           - httproutes
+          - grpcroutes
+          - tlsroutes
+          - tcproutes
         scope: Namespaced
   validations:
     - expression: >-
         object.metadata.namespace == 'security'
-        || (has(object.spec.hostnames) && object.spec.hostnames.all(h, !(h in ['idm.${PUBLIC_DOMAIN}']) && !h.contains('*')))
-        || (!has(object.spec.hostnames) && has(object.spec.parentRefs) && object.spec.parentRefs.all(p, has(p.sectionName) && p.sectionName == 'http'))
+        || (has(object.spec.parentRefs)
+            && object.spec.parentRefs.all(p,
+              (!has(p.kind) || p.kind == 'Gateway')
+              && (has(p.namespace) ? p.namespace == 'networking' : object.metadata.namespace == 'networking')
+              && p.name in ['envoy-external', 'envoy-internal'])
+            && (has(object.spec.hostnames) && size(object.spec.hostnames) > 0
+                  ? object.spec.hostnames.all(h, !(h in ['idm.${PUBLIC_DOMAIN}']) && !h.contains('*'))
+                  : object.spec.parentRefs.all(p, has(p.sectionName) && p.sectionName == 'http')))
       reason: Forbidden
-      message: "idm.${PUBLIC_DOMAIN} is a reserved IdP hostname and wildcards are restricted; only the security namespace may claim them"
+      message: "idm.${PUBLIC_DOMAIN} is a reserved IdP hostname, wildcard hostnames are restricted, and routes outside the security namespace may only attach to the known gateways (envoy-external/envoy-internal in networking)"
 ---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/refs/heads/master/v1.36.0/validatingadmissionpolicybinding-admissionregistration-v1.json
 apiVersion: admissionregistration.k8s.io/v1
@@ -42,5 +51,46 @@ metadata:
   name: httproute-reserved-hostnames
 spec:
   policyName: httproute-reserved-hostnames
+  validationActions:
+    - Deny
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/refs/heads/master/v1.36.0/validatingadmissionpolicy-admissionregistration-v1.json
+# Route-level SecurityPolicy must opt into StrategicMerge explicitly: without it the
+# most-specific-policy-wins semantics silently detach the Gateway-level CrowdSec/RFC1918
+# gates for that route (mergeType defaults to Merge). Gateway-level policies (kind
+# Gateway) need no mergeType and are unaffected.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: securitypolicy-route-strategic-merge
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups:
+          - gateway.envoyproxy.io
+        apiVersions:
+          - v1alpha1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - securitypolicies
+        scope: Namespaced
+  validations:
+    - expression: >-
+        (!has(object.spec.targetRefs)
+          || object.spec.targetRefs.all(t, !has(t.kind) || t.kind != 'HTTPRoute'))
+        || object.spec.mergeType == 'StrategicMerge'
+      reason: Forbidden
+      message: "route-level SecurityPolicy must set spec.mergeType: StrategicMerge, or its route silently loses the Gateway-level CrowdSec/RFC1918 gates"
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/refs/heads/master/v1.36.0/validatingadmissionpolicybinding-admissionregistration-v1.json
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: securitypolicy-route-strategic-merge
+spec:
+  policyName: securitypolicy-route-strategic-merge
   validationActions:
     - Deny

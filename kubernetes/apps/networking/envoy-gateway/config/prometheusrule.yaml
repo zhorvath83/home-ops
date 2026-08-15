@@ -48,3 +48,20 @@ spec:
               {{ $labels.typeURL }} and keeps serving its last known good config.
               Traffic still flows, but that proxy will fail to start on its next
               restart. The rejection reason is in the envoy-gateway controller log.
+        # SecurityPolicy attachment status comes from kube-state-metrics
+        # custom-resource-state (envoy_securitypolicy_info) — EG itself exposes no
+        # per-policy status metric. Not-Accepted, or no ancestor at all (accepted=""),
+        # means the policy silently detached and its routes lost the Gateway-level
+        # CrowdSec/RFC1918 gates while traffic kept flowing.
+        - alert: EnvoyGatewayPolicyNotAccepted
+          expr: envoy_securitypolicy_info{accepted!="True"}
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: Envoy Gateway SecurityPolicy is not accepted
+            description: |-
+              SecurityPolicy {{ $labels.name }} (namespace {{ $labels.exported_namespace }})
+              is not Accepted (accepted={{ $labels.accepted }}); it is silently detached and
+              its routes lose the Gateway-level CrowdSec / RFC1918 gates. The rejection
+              reason is in the envoy-gateway controller log.

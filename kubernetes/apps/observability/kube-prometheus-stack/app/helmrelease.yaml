@@ -355,6 +355,41 @@ spec:
                       revision:
                         - status
                         - lastAppliedRevision
+              # Envoy Gateway exposes no per-policy status metric; surface the Accepted
+              # condition here (ancestors[0]) so a silently detached SecurityPolicy alerts.
+              - groupVersionKind:
+                  group: gateway.envoyproxy.io
+                  version: v1alpha1
+                  kind: SecurityPolicy
+                metricNamePrefix: envoy
+                metrics:
+                  - name: "securitypolicy_info"
+                    help: "The attachment state of an Envoy Gateway SecurityPolicy (accepted=Accepted condition status)."
+                    each:
+                      type: Info
+                      info:
+                        labelsFromPath:
+                          name:
+                            - metadata
+                            - name
+                    labelsFromPath:
+                      exported_namespace:
+                        - metadata
+                        - namespace
+                      accepted:
+                        - status
+                        - ancestors
+                        - "0"
+                        - conditions
+                        - "[type=Accepted]"
+                        - status
+                      reason:
+                        - status
+                        - ancestors
+                        - "0"
+                        - conditions
+                        - "[type=Accepted]"
+                        - reason
       collectors:
         - cronjobs
         - daemonsets

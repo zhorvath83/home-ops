@@ -1,7 +1,7 @@
 ---
 # yaml-language-server: $schema=https://json.schemastore.org/prometheus.rules.test.json
-# promtool unit tests for config/prometheusrule.yaml, covering EnvoyProxyDown and
-# EnvoyGatewayXDSRejected. The EnvoyProxyDown expr
+# promtool unit tests for config/prometheusrule.yaml, covering EnvoyProxyDown,
+# EnvoyGatewayXDSRejected and EnvoyGatewayPolicyNotAccepted. The EnvoyProxyDown expr
 # `count(up{job="networking/envoy-proxy", namespace="networking"} == 1) < 2` aggregates away
 # all labels, so exp_labels are alertname + severity only — it fires whenever fewer than 2
 # envoy-proxy targets are up: one-down, both-down, and all-vanished (count of an empty vector
@@ -129,3 +129,74 @@ tests:
       - eval_time: 10m
         alertname: EnvoyGatewayXDSRejected
         exp_alerts: []
+
+  # === EnvoyGatewayPolicyNotAccepted ===
+  # Metric from kube-state-metrics custom-resource-state: accepted is the Accepted
+  # condition status of status.ancestors[0] ("" when no ancestor exists — the silent
+  # attach-failure case). expr `accepted!="True"`, for: 5m, so fire cases eval at 7m
+  # (past the hold) and the hold itself is a no-fire at 2m.
+  # (h) No-fire: policy accepted.
+  - interval: 1m
+    input_series:
+      - series: 'envoy_securitypolicy_info{exported_namespace="networking",name="envoy-internal-rfc1918",accepted="True",reason="Accepted"}'
+        values: '1x8'
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: EnvoyGatewayPolicyNotAccepted
+        exp_alerts: []
+  # (i) Boundary no-fire: not-Accepted but only for 2m — the 5m `for` hold not yet elapsed.
+  - interval: 1m
+    input_series:
+      - series: 'envoy_securitypolicy_info{exported_namespace="networking",name="envoy-external-crowdsec",accepted="False",reason="NoMatchingParent"}'
+        values: '1x8'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: EnvoyGatewayPolicyNotAccepted
+        exp_alerts: []
+  # (j) Fire: Accepted condition False.
+  - interval: 1m
+    input_series:
+      - series: 'envoy_securitypolicy_info{exported_namespace="networking",name="envoy-external-crowdsec",accepted="False",reason="NoMatchingParent"}'
+        values: '1x8'
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: EnvoyGatewayPolicyNotAccepted
+        exp_alerts:
+          - exp_labels:
+              alertname: EnvoyGatewayPolicyNotAccepted
+              severity: warning
+              exported_namespace: networking
+              name: envoy-external-crowdsec
+              accepted: "False"
+              reason: NoMatchingParent
+            exp_annotations:
+              summary: Envoy Gateway SecurityPolicy is not accepted
+              description: |-
+                SecurityPolicy envoy-external-crowdsec (namespace networking)
+                is not Accepted (accepted=False); it is silently detached and
+                its routes lose the Gateway-level CrowdSec / RFC1918 gates. The rejection
+                reason is in the envoy-gateway controller log.
+  # (k) Fire: no ancestor at all (accepted="" / reason="") — the missing-ancestorRef case.
+  - interval: 1m
+    input_series:
+      - series: 'envoy_securitypolicy_info{exported_namespace="selfhosted",name="paperless-oidc",accepted="",reason=""}'
+        values: '1x8'
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: EnvoyGatewayPolicyNotAccepted
+        exp_alerts:
+          # Empty accepted/reason are dropped from the alert's label set by Prometheus
+          # (the series still matched: accepted!="True" on accepted=""), so only the
+          # non-empty labels are asserted here.
+          - exp_labels:
+              alertname: EnvoyGatewayPolicyNotAccepted
+              severity: warning
+              exported_namespace: selfhosted
+              name: paperless-oidc
+            exp_annotations:
+              summary: Envoy Gateway SecurityPolicy is not accepted
+              description: |-
+                SecurityPolicy paperless-oidc (namespace selfhosted)
+                is not Accepted (accepted=); it is silently detached and
+                its routes lose the Gateway-level CrowdSec / RFC1918 gates. The rejection
+                reason is in the envoy-gateway controller log.
