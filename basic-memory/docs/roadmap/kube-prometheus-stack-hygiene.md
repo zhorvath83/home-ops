@@ -753,3 +753,79 @@ Phase 4 is DONE. Remaining roadmap items: Phase 5 (conditional kubeApiServer scr
 Commit 61f281271 put prometheusConfigReloader.resources under prometheus.prometheusSpec (wrong path, no-op) and needed 7b09a80b6 to correct it to the operator-level prometheusOperator.prometheusConfigReloader path. The wrong path originated in the Phase 4 Handoff Checkpoint itself — the plan carried the error into the commit. The point is not the mistake; it is that the helm-render gate was supposed to catch the wrong path BEFORE the commit and did not. A rendered-output check that does not actually assert the field appears where you expect it is not a gate — it is a formality.
 
 Lesson (carried into Phase 6): for the image/version/securityContext override — exactly the class of change where a value silently landing at the wrong path means the render looks fine and the change does nothing, or worse, the operator accepts a half-applied spec — the Phase 6 plan states, for EACH value set, what will be asserted in the rendered Helm output to prove it landed at the right path. Generalize: a render gate must assert the specific field path + value in the rendered manifest, not just "the render succeeded".
+
+## Phase 6 Execution Record — prompp migration (2026-08-15)
+
+Executed by the Maestro directly (the worker terminal hit its session limit mid-roadmap).
+
+### Outcome headline
+
+Migration SUCCEEDED with **NO data loss**. The destructive TSDB-discard step was planned, pre-authorised by the human, and then **deliberately NOT executed** — its precondition turned out to be factually false.
+
+### Pre-flight (all three open items closed with evidence)
+
+- [evidence] Image `docker.io/prompp/prompp:0.8.9` exists, multi-arch (linux/amd64 + linux/arm64), verified via the Docker registry v2 API (manifest list + config blob). Docker Hub tag is `0.8.9` with NO `v` prefix; the GitHub release NAME is `v0.8.9`. The roadmap's "v0.8.9" was the release name, wrong for the image tag.
+- [evidence] Image config declares `User: null` — no USER, so the container would run as root by default. An explicit securityContext is therefore REQUIRED, not merely explicit-for-policy. Entrypoint is `/bin/prompp`; the prometheus container carries no `command`, so the operator's generated args run against that entrypoint (this is why the drop-in works).
+- [evidence] `--storage.tsdb.retention.size` IS supported: deckhouse/prompp `cmd/prometheus/main.go:419` (and `retention.time` at :416). retention 7d + retentionSize 4500MB kept unchanged.
+
+### CORRECTION #6 — the `version:` override is REQUIRED, not redundant
+
+The Phase 6 plan asserted that because the chart renders `version: "{{ default .image.tag .version }}"`, setting `image.tag` alone is sufficient and a separate `version:` override is redundant. **That is wrong.** Helm's `default` returns `.image.tag` only when `.version` is empty — so omitting `version` puts the FORK version (`0.8.9`) into `spec.version`. `0.8.9` is valid semver, so the operator would parse it as Prometheus 0.8.9 — far below any supported release — and generate flags accordingly. The bjw-s reference set `version: v2.55.1` for exactly this reason; it was not decoration.
+Render gate proof: with the override, `spec.version` renders as `v2.55.1`, not `0.8.9`.
+
+### prompp 0.8.9 base version — determined, not assumed
+
+`web/ui/package.json` at tag v0.8.9 is version **0.55.1**. In the Prometheus repo that module tracks the Prometheus release line, so prompp 0.8.9 is **Prometheus 2.55-based** — confirming the roadmap and the bjw-s `v2.55.1`. (The `VERSION` file on `main` reads 3.2.1, i.e. a LATER rebase onto Prometheus 3.2.1 that is not in this release. Do not read `main` for a tagged release's base.)
+
+### securityContext — decision revised to 64535 on new evidence
+
+CORRECTION #5 (64535 breaks a PVC owned 1000:2000) stood, and the Maestro initially ruled "keep chart-default 1000/2000, bjw-s using 64535 is not a reason". The upstream prompp README then turned out to **document 64535 for the Prometheus Operator itself** — so 64535 is the project's own tested value, not a bjw-s idiosyncrasy. Adopted on that basis. It worked: `fsGroup: 64535` made the pre-existing 1000:2000 volume writable, so the ownership mismatch never bit.
+
+### Render gate — per-value assertions (the Phase 4 gate-miss lesson applied)
+
+Rendered the chart (helm template, KPS 88.3.0, our values) and asserted each value at its exact path in the Prometheus CR, rather than merely checking the render succeeded:
+- `spec.image` = `docker.io/prompp/prompp:0.8.9`
+- `spec.version` = `v2.55.1`
+- `spec.securityContext` = fsGroup/runAsGroup/runAsUser 64535 + runAsNonRoot + seccompProfile RuntimeDefault
+- `spec.retention` / `spec.retentionSize` unchanged (7d / 4500MB)
+
+### CORRECTION #7 — the blocking risk did NOT materialise; the discard was unnecessary
+
+The roadmap's blocking gate was "3.x -> 2.55 TSDB block read-compat is NEM ELLENŐRIZVE", and the plan resolved it by discarding the PVC. On deploy, prompp started on the EXISTING volume and:
+- found all 5 existing blocks healthy (`repair.go:56 msg="Found healthy block"`, ULIDs 01M00WPGTY.., 01M01WN450.., 01M02ACHTV.., 01M02H8938.., 01M02H8B72..) — blocks written by Prometheus 3.13.2, read by the 2.55-based engine
+- logged `Using pre-PR-377 historical TSDB storage scheme` — it detects vanilla-format data and selects the compatible scheme
+- **replayed the vanilla WAL successfully** (checkpoint loaded, segments 993-997, `WAL replay completed` in 2.34s), despite upstream documenting that prompp's WAL format differs and `prompptool walvanilla` conversion is needed
+- the only errors were benign: `unreadable log file: /prometheus/head.log` and `head.log.compacted` — prompp's own new-format files, absent on first start
+
+**The destructive step was therefore NOT executed.** The human had pre-authorised losing the TSDB, but authorisation is not a reason: destroying ~19h of retained history for zero benefit is not justified once the precondition is false. PVC `prometheus-kube-prometheus-stack-db-prometheus-kube-prometheus-stack-0` is intact and untouched.
+Lesson: a gate whose premise is marked NEM ELLENŐRIZVE should be tested by the cheapest safe observation before a destructive workaround is executed to avoid it. Here the "workaround" was strictly more destructive than the risk it was avoiding, and deploying first cost nothing.
+
+### Measured result
+
+| Metric | Before | After |
+|---|---|---|
+| Prometheus container RSS | 428 Mi | **197 Mi** (-54%) |
+| head series | 74 851 | 74 856 (unchanged) |
+| TSDB blocks bytes | 260 842 368 | 260 842 368 (unchanged) |
+| oldest queryable sample | — | 2026-08-14T19:59:58 (~19h retained) |
+| rules loaded / unhealthy | — | 186 / **0** |
+| active targets / down | — | 54 / 1 (speedtest-exporter, empty lastError, pre-existing slow scrape) |
+
+Historical queries confirm data survived: `count(up)` at 1h ago = 59, at 6h ago = 54.
+Memory limit deliberately NOT changed in this commit (isolate-variables). Right-sizing 2Gi down is a measured follow-up once prompp RSS has settled over a few days.
+
+### Preconditions verified before deploy (kept for the record)
+
+- StatefulSet `prometheus-kube-prometheus-stack` carries volumeClaimTemplate `prometheus-kube-prometheus-stack-db` (5Gi, democratic-csi-local-hostpath) — PVC recreation was guaranteed had the discard run.
+- No VolSync ReplicationSource or ReplicationDestination targets this PVC.
+- PV reclaimPolicy=Delete, hostpath `/var/mnt/local-hostpath/v/pvc-8d54e1b5-5609-4be5-9615-460b26cd8d33`.
+
+### Operational notes
+
+- The `--with-source` finding held again: `flux reconcile ks` applied the new HelmRelease spec but the Prometheus CR still showed the old image; only `flux reconcile hr kube-prometheus-stack --with-source` triggered the Helm upgrade that propagated it.
+- Supply chain, recorded plainly: the prompp image has NO cosign signature, NO SBOM, NO provenance, whereas the replaced `quay.io/prometheus/prometheus` image IS cosign-signed. The migration DROPS that attestation. The human accepted this knowingly. Apache-2.0, maintained by Deckhouse, ~459 stars, active CVE backporting.
+- Rollback: revert the HelmRelease image/version/securityContext. Since prompp read the vanilla blocks in-place and writes its own `head.log` alongside, rollback compatibility in the reverse direction is untested (NEM ELLENŐRIZVE) — a rollback should be treated as potentially requiring a PVC discard, which is now the cheap direction since the data proved expendable to the human.
+
+### Status
+
+Phase 6 COMPLETE. Roadmap phases 1, 2, 3 (safe subset), 4 (P4.1 dropped by human decision), 6 delivered. Phase 5 remains a documented no-go (its gate — enabling the kubeApiServer scrape — is unmet and it is the roadmap's largest growth item).
