@@ -3,7 +3,7 @@ title: paperless-ngx-v3-migration
 type: progress-note
 permalink: home-ops/docs/progress/paperless-ngx-v3-migration
 topic: Execution record for the paperless-ngx 2.20.15 -> 3.0.5 upgrade
-status: in-progress
+status: done
 priority: high
 roadmap: paperless-ngx-v3-migration
 tags:
@@ -76,3 +76,38 @@ tags:
 - implements [[paperless-ngx-v3-migration]] (docs/roadmap)
 - relates_to [[k8s-workloads]]
 - relates_to [[volsync-backup]]
+
+## End-to-end consumption verified (2026-08-15 16:12)
+
+- [verified] A real scan (`Horvath_Zoltan 26.07 hó NAV utalandó 08.12.pdf`) dropped into the NAS inbox was detected by the polling watcher, passed the stability check, and consumed as **document 1853 in 4.07s**. This closes the end-to-end consumption criterion — the polling rename and the ignore-pattern removal both hold against a real file with spaces and accented characters in the name.
+- [verified] The pre-consume script ran live and exited 0, with all stages reached: encryption check ("PDF is not encrypted"), blank detection (page 1 ink=9.88539, kept), attachment scan, lossless optimization. `DOCUMENT_WORKING_PATH` compatibility with v3 is now proven at runtime, not just by source reading.
+- [verified] `PAPERLESS_FILENAME_FORMAT` still applies (`2026/none/2026-08-12_horvath_zoltan-2607-ho-nav-utalando-0812_0001853.pdf`) and `PAPERLESS_DATE_ORDER=YMD` parsed `created` = 2026-08-12 from the filename.
+- [verified] The new document has `archive_filename = None`; the corpus is now 1791 documents with **0 archives**. `ARCHIVE_FILE_GENERATION=never` holds on a freshly consumed document, not just on the pre-existing corpus.
+
+## New finding — the v2 classifier model did not survive the upgrade
+
+- [finding] During the first consumption v3 logged `ClassifierModelCorruptError`: *"Unrecoverable error while loading document classification model, deleting model file"*. The v2-era `/data/local/data/classification_model.pickle` is not readable by v3 and was **deleted**; the file is confirmed gone.
+- [finding] Because `PAPERLESS_TRAIN_TASK_CRON: "disable"` is set for resource reasons, the periodic training task will never regenerate it. The model was a stale v2 artifact that v2 still loaded read-only, so classifier-based auto-matching worked until the upgrade and is now silently off.
+- [finding] Measured blast radius: **3 of 84 correspondents** use `MATCH_AUTO` (Földhivatal, Kiszámoló Egyesület, OVH Hosting Limited Enterprise). **0 of 29 tags** and **0 of 17 document types** use it. Rule-based matching (regex/literal/fuzzy) is unaffected, as is everything paperless-gpt does.
+- [finding] This is NOT in the upstream migration guide — it surfaced only because a real document was consumed after the cutover. Any v3 upgrade carrying an old pickle will hit it.
+- [option] One-off `python3 manage.py document_create_classifier` regenerates a v3-format model and restores auto-matching for those 3 correspondents; it will go stale again since training stays disabled.
+- [option] Switch those 3 correspondents to a rule-based matching algorithm in the UI — removes the dependency on a model that is deliberately never trained.
+- [option] Accept the loss; 3 correspondents is small and rule-based matching still covers the rest.
+
+## Still open
+
+- [open] paperless-gpt **write** path remains untested. Document 1853 carries only the `Inbox` tag; paperless-gpt watches for `AUTO_TAG=AI-processing`, which currently has 0 documents, and no paperless Workflow exists to apply it (the trigger is manual). Tagging 1853 with `AI-processing` would exercise the PATCH path against API v10.
+- [open] Browser login through the public hostname (allauth client-IP / rate-limit change).
+- [open] Settle commit: re-enable the backup CronJob.
+
+## Settled (2026-08-15, with human)
+
+- [decision] Classifier: the human switched the 3 affected correspondents in the UI instead of retraining. Verified: `MATCH_AUTO` is now empty. **Caveat recorded** — all three ended on `matching_algorithm = None` with an empty `match` string, so they are not rule-matched either; they are now assigned manually only. The classifier dependency is gone as intended, but if automatic assignment is still wanted, each needs a regex/literal algorithm **plus** a match pattern.
+- [decision] Startup probe stays at `failureThreshold: 20`. The whole init chain took ~25s so it is never active today, but it is free insurance for the next long migration or index rebuild. Liveness/readiness stay at 5.
+- [verified] Browser check by the human: the UI and login through the public hostname work — the allauth client-IP / login rate-limit concern did not materialise, so no `PAPERLESS_ALLAUTH_TRUSTED_PROXY_COUNT` / `PAPERLESS_ALLAUTH_TRUSTED_CLIENT_IP_HEADER` is needed.
+- [commit] `80ad23765` — export CronJob back to `suspend: false`. From the next 00:30 run the export is written in v3 format and the v2-format export is gone; the VolSync + Kopia restore stays the rollback path.
+
+## Final status
+
+- [status] done — every acceptance criterion in the roadmap item passed.
+- [open] paperless-gpt **write** path (PATCH against API v10) is the one criterion never exercised: it needs a document tagged `AI-processing`, which is a manual trigger in this setup. Not blocking; the read path is verified and a failure would be visible in the paperless-gpt log the first time it processes a document.

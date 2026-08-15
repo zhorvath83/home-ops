@@ -3,7 +3,7 @@ title: paperless-ngx-v3-migration
 type: roadmap
 permalink: home-ops/docs/roadmap/paperless-ngx-v3-migration
 topic: Upgrade paperless-ngx 2.20.15 -> 3.0.5 (Renovate PR 4056), applying every v3 breaking change to the HelmRelease env in ONE atomic commit, because two of them silently break consumption and one silently changes storage behaviour.
-status: proposed
+status: done
 priority: high
 scope: kubernetes/apps/selfhosted/paperless/app/helmrelease.yaml env block + image
   tag; the pre-consume ConfigMap script (verified compatible, no change); the nightly
@@ -42,7 +42,7 @@ tags:
 ## Metadata (observation-form, schema validation)
 
 - [topic] Upgrade paperless-ngx to v3 with every breaking change applied to the HelmRelease env in one atomic commit
-- [status] proposed
+- [status] done — executed 2026-08-15; see [[paperless-ngx-v3-migration]] (docs/progress) for the evidence, the classifier-model fallout, and the settle decisions
 - [priority] high
 - [area] k8s-workloads
 - [created] 2026-08-15
