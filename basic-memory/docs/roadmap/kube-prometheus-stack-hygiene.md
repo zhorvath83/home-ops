@@ -590,3 +590,55 @@ Baseline at deploy (2026-08-15): predict = 2.76 GB (2 757 987 770 B), threshold 
 2. This checkpoint + the Phase 2 Completion section above are the state of record. Phase 2 is DONE; do not re-implement.
 3. Await the Maestro's Phase 3 brief. Do not start Phase 3/4 work without it.
 4. If asked to run the predict watch on a given day, query live Prometheus and record the value + ratio in the Phase 2 Completion watch table.
+## Phase 3 Execution Record (2026-08-15) — safe subset applied, cilium-agent/operator DEFERRED
+
+**Status**: Phase 3 **DONE for the safe subset** (Maestro ratify: option (a) — hubble interval + KPS cAdvisorInterval only; cilium-agent/cilium-operator DEFERRED). Both code commits on `main`, pushed, tree clean, every per-commit gate green, and the change is **live and verified** against the cluster.
+
+### Scope decision (Maestro ratify, 2026-08-15)
+The Phase 3 brief's HARD GATE was a full range-selector audit of every consumer of the four candidate intervals (cilium-agent, cilium-operator, hubble, kubelet cAdvisor) BEFORE any edit. The audit split the four into SAFE vs BREAKS:
+
+| Consumer set | Interval | Range selectors in consumers | Verdict |
+|---|---|---|---|
+| hubble metrics | hubble SM 10s→60s | only 2 PrometheusRules, both `[5m]` (dns-exfil, hubble-policy-deny); NO hubble Grafana dashboard | **SAFE** |
+| kubelet cAdvisor | cAdvisorInterval 10s→60s | k8s-views dashboards use `[$__rate_interval]` (auto-scales to `[2m]` at 60s); flux dashboards use `[5m]`; app dashboards use `[5m]` or gauges | **SAFE** |
+| cilium-agent | cilium SM 10s→60s | cilium-dashboard: ~48 `[1m]` panels + 1 `[30s]`, ZERO `$__rate_interval` | **BREAKS (silent blank)** |
+| cilium-operator | operator SM 10s→60s | cilium-operator-dashboard: ~7 `[1m]` panels | **BREAKS (silent blank)** |
+
+Decision: apply the SAFE subset now; DEFER cilium-agent + cilium-operator (see follow-up below).
+
+### CORRECTION #4 — the "graceful degradation" premise is REFUTED
+The roadmap originally scoped Phase 3 as "future-proofing, NOT urgent" and justified safety by sampling ONE consumer (dns-exfil `rate(...[5m])`, which does work at 60s). That generalization was wrong. The full audit found the cilium chart dashboards hardcode `[1m]`/`[30s]` ranges with ZERO `$__rate_interval` usage. At a 60s scrape interval a `[1m]` lookback window holds only 1 sample; `rate()`/`increase()` require >=4 samples for a reliable result and return EMPTY below that — a **silent blank panel**, not an error. Nothing alerts; the dashboard just stops showing data.
+
+**General lesson (durable)**: an interval change must be gated on a FULL consumer range-selector audit — every Grafana dashboard panel expression AND every PrometheusRule expression that touches the affected metrics — never a sampled one. The failure mode is SILENT (blank panels / empty query results), so a missing consumer is invisible until someone opens the dashboard. This correction supersedes the roadmap's original Phase 3 safety rationale.
+
+### Commit 1 — cilium hubble interval 10s→60s
+- SHA `afd5e5b9f` — `⚡️ perf(cilium): set hubble scrape interval to 60s`
+- Change: `hubble.metrics.serviceMonitor.interval: 60s` (chart default 10s, newly overridden). cilium-agent + cilium-operator intervals untouched.
+- Gate evidence (pre-push): helm-render confirmed ONLY the hubble ServiceMonitor changes 10s→60s (cilium-agent + cilium-operator stay 10s; both metricRelabelings blocks preserved); `just k8s test-prom-rules` green (all promtool tests passed); pre-commit green (yamlfmt/yamllint/gitleaks); explicit-pathspec staging = exactly a 4-insertion diff.
+- Post-deploy proof: `flux reconcile` applied revision 1.20.0; live SMs = `hubble=60s, cilium-agent=10s, cilium-operator=10s`; `/api/v1/targets` shows `hubble-metrics scrapeInterval=1m` health=up lastError=∅ (cilium-agent/operator stay 10s); audited consumers return live data at 60s — `rate(hubble_dns_queries_total[5m])` = 88 series (dns-exfil rule), `increase(hubble_drop_total[5m])` = 10 series (hubble-policy-deny rule).
+
+### Commit 2 — KPS cAdvisorInterval 10s→60s
+- SHA `5be0e4c95` — `⚡️ perf(kube-prometheus-stack): set cAdvisor scrape interval to 60s`
+- Change: `kubelet.serviceMonitor.cAdvisorInterval: 60s` (chart default 10s, newly overridden). Applies ONLY to the `/metrics/cAdvisor` endpoint; the main kubelet `/metrics` endpoint (kubelet_volume_stats_* / PVC usage) has no explicit interval and inherits the Prometheus global scrapeInterval — UNAFFECTED.
+- Gate evidence (pre-push): helm-render confirmed cAdvisor endpoint 10s→60s AND the main kubelet endpoint stays `interval=(none→inherit-global)` (metricRelabelings preserved); `just k8s test-prom-rules` green; pre-commit green; explicit-pathspec staging = exactly a 5-insertion diff.
+- Post-deploy proof: `flux reconcile --with-source` re-fetched the OCI chart and applied revision 88.3.0 (a bare `flux reconcile helmrelease` did NOT pick up the value change — the HR controller reconciled against a stale source artifact; `--with-source` was required to sync the GitRepository + re-fetch the OCI chart); live SM = `cAdvisor=60s, main kubelet=inherit-global`; `/api/v1/targets` shows the cAdvisor endpoint `scrapeInterval=1m` propagated, main kubelet endpoint unchanged.
+- **Extra check (Maestro-mandated, higher-blast-radius commit)**: queried one `$__rate_interval`-based panel expression and one `[5m]` expression against live data, both must return values:
+  - `$__rate_interval` panel (k8s-views-global CPU): `sum by (node) (rate(container_cpu_usage_seconds_total[$__rate_interval]))` — Grafana resolves `$__rate_interval` to `[2m]` at 60s scrape (>=4 samples). Live query returned 1 result (k8s-cp0 -> 0.899). SAFE confirmed empirically.
+  - `[5m]` panel (flux dashboard network): `rate(container_network_receive_bytes_total[5m])` — live query returned 262 series. SAFE confirmed empirically. (Note: an initial `container=~".+"` label filter returned 0 because `container_network_*` metrics carry `container=""` — per-interface root-cgroup metrics; the flux dashboard form uses no `container` filter, which is why it returns data.)
+  - Observation (not a problem for our consumers): a `[1m]` rate query still returned 247 series immediately after the switch — a transition-window artifact (the `[1m]` lookback still held historical 10s-scraped samples). At steady-state 60s a `[1m]` window holds 1 sample and `rate()` returns empty: this is the BREAK class the audit flagged for the DEFERRED cilium dashboards, illustrated on cAdvisor data. Our cAdvisor consumers use `[5m]`/`$__rate_interval`, never `[1m]`.
+
+### Dated follow-up — cilium-agent + cilium-operator interval tuning DEFERRED (survives context clear)
+The cilium-agent and cilium-operator ServiceMonitors remain at 10s. Widening them to 60s is gated on first fixing the chart dashboards that hardcode `[1m]`/`[30s]` ranges (CORRECTION #4). Do not raise these intervals without that fix.
+
+**DEFER trigger (either of)**:
+1. Active-series cardinality approaching the ~2.2x headroom ceiling (the original Phase 3 motivation), OR
+2. Prometheus RSS under sustained memory pressure (observed pressure, not projected).
+
+**Available paths**:
+- **(c) postRenderers-widen**: patch the chart-rendered cilium-dashboard / cilium-operator-dashboard ConfigMaps via the HelmRelease `postRenderers` to widen `[1m]`->`[5m]` and `[30s]`->`[5m]`. Cost: a kustomize-style JSON patch overlay over chart-rendered dashboard JSON — brittle against structural changes in the chart's dashboard JSON on each cilium chart bump (panel reordering / added panels shift the patch targets); must be re-validated per chart upgrade. Does not fork upstream.
+- **(d) `$__rate_interval` fork**: fork the affected cilium dashboard ConfigMaps into the repo as GrafanaDashboard CRDs (`json:` inline or `configMapRef:`) and rewrite the hardcoded ranges to `[$__rate_interval]`. Cost: divergence from upstream — the fork does not track chart dashboard improvements and must be manually rebased per chart upgrade; BUT the dashboards then auto-scale correctly at ANY scrape interval and are robust to future interval changes.
+
+**Recommendation**: (d) is the more durable fix (auto-scaling, robust to interval changes) at the cost of a fork-rebase burden; (c) is lower upfront effort but fragile and tends to silently rot on chart upgrades. Decide at defer-time based on how often the cilium chart dashboard JSON actually changes and whether fork divergence is acceptable. Re-audit consumers (per CORRECTION #4) before either path lands.
+
+### Next
+Phase 3 safe subset is **DONE**. Remaining roadmap items (each pending its own Maestro ratify): Phase 4 (hardening/UX, incl. P4.1 Prometheus UI on envoy-internal behind OIDC — security-adjacent), Phase 5 (conditional kubeApiServer scrape + measured drop-list), Phase 6 (prompp migration, proposed/gated). The P2.1 3-day predict watch (2026-08-16/17/18) is the only other open follow-up — record daily, separate from Phase 3.
