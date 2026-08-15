@@ -10,7 +10,7 @@ Roadmap: [[client-ip-trust-topology]].
 
 ## Metadata (observation-form)
 
-- [status] implemented, pending merge + live verification
+- [status] done — merged in PR #4183 and verified live
 - [area] networking
 - [branch] feat/client-ip-trust-topology-rate-limit
 
