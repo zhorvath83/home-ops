@@ -1,0 +1,59 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/prometheus.rules.test.json
+# promtool unit tests for app/prometheusrule.yaml, covering ExternalSecretNotReady.
+# expr: externalsecret_status_condition{condition="Ready",status="False"} == 1, for:5m. The == 1
+# comparison keeps every input-series label, so exp_labels assert the full live label set (the
+# namespace label is the controller's ns; exported_namespace is the ExternalSecret's real ns).
+# Boundary pair is 1 fire / 0 no-fire / 2 no-fire (proves ==, not >=). for:5m so fire cases eval past
+# 5m (eval at 6m). exp_annotations asserted so the $labels.exported_namespace/name template is
+# exercised.
+# Run via `just k8s test-prom-rules` (recipe copies this test + .extracted_prometheus_rules.yaml into a temp dir).
+rule_files:
+  - ./.extracted_prometheus_rules.yaml
+evaluation_interval: 1m
+tests:
+  # === ExternalSecretNotReady ===
+  # (a) Fire: Ready=False condition is 1 (held past for:5m). exp_labels carry the full input label set.
+  - interval: 1m
+    input_series:
+      - series: 'externalsecret_status_condition{condition="Ready",status="False",exported_namespace="cert-manager",name="cert-manager-issuer",namespace="external-secrets",job="external-secrets-metrics",container="external-secrets",endpoint="metrics",service="external-secrets-metrics",instance="10.244.0.236:8080",pod="external-secrets-94467784f-d47fp"}'
+        values: '1x7'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: ExternalSecretNotReady
+        exp_alerts:
+          - exp_labels:
+              alertname: ExternalSecretNotReady
+              severity: warning
+              condition: Ready
+              status: "False"
+              exported_namespace: cert-manager
+              name: cert-manager-issuer
+              namespace: external-secrets
+              job: external-secrets-metrics
+              container: external-secrets
+              endpoint: metrics
+              service: external-secrets-metrics
+              instance: 10.244.0.236:8080
+              pod: external-secrets-94467784f-d47fp
+            exp_annotations:
+              summary: "ExternalSecret cert-manager/cert-manager-issuer is not Ready"
+              description: "ExternalSecret cert-manager/cert-manager-issuer has been Ready=False for 5m — likely a failed sync (e.g. after a 1Password Connect credential rotation). Discovered only when a dependent app breaks without this alert."
+  # (b) No-fire: Ready=False condition is 0 (healthy — the False condition is not set, value 0).
+  - interval: 1m
+    input_series:
+      - series: 'externalsecret_status_condition{condition="Ready",status="False",exported_namespace="cert-manager",name="cert-manager-issuer",namespace="external-secrets",job="external-secrets-metrics",container="external-secrets",endpoint="metrics",service="external-secrets-metrics",instance="10.244.0.236:8080",pod="external-secrets-94467784f-d47fp"}'
+        values: '0x7'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: ExternalSecretNotReady
+        exp_alerts: []
+  # (c) No-fire boundary: value 2 — proves the alert is == 1, not >= 1.
+  - interval: 1m
+    input_series:
+      - series: 'externalsecret_status_condition{condition="Ready",status="False",exported_namespace="cert-manager",name="cert-manager-issuer",namespace="external-secrets",job="external-secrets-metrics",container="external-secrets",endpoint="metrics",service="external-secrets-metrics",instance="10.244.0.236:8080",pod="external-secrets-94467784f-d47fp"}'
+        values: '2x7'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: ExternalSecretNotReady
+        exp_alerts: []

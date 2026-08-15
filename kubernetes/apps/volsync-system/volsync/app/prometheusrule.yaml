@@ -40,3 +40,16 @@ spec:
           for: 15m
           labels:
             severity: warning
+        # KopiaMaintenance staleness — the sync-plane rules above watch VolSync sync, not the
+        # KopiaMaintenance CR's compaction/GC jobs. max_over_time[2d] holds the last completion
+        # past Job history GC (successfulJobsHistoryLimit=3); the outer max() drops job_name/
+        # namespace labels, so the summary carries no $labels. 43200 = 12h = 2 missed 6-hourly runs.
+        - alert: KopiaMaintenanceStale
+          expr: |
+            time() - max(max_over_time(kube_job_status_completion_time{namespace="volsync-system",job_name=~"kopia-maint-kopia-daily-maintenance-.*"}[2d])) > 43200
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Kopia maintenance kopia-daily-maintenance has not completed in over 12h"
+            description: "No KopiaMaintenance kopia-daily-maintenance Job has completed in volsync-system in the last 12h (2 of its 4 scheduled 6-hourly runs missed). Compaction/GC may have stopped — slow backup-integrity risk. VolSync sync alerts cover sync, not maintenance."

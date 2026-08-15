@@ -125,3 +125,43 @@ tests:
       - eval_time: 20m
         alertname: VolSyncMissedInterval
         exp_alerts: []
+  # === KopiaMaintenanceStale ===
+  # expr: time() - max(max_over_time(kube_job_status_completion_time{ns=volsync-system,
+  # job_name=~"kopia-maint-kopia-daily-maintenance-.*"}[2d])) > 43200, for:30m. A threshold on the
+  # completion AGE, so the "track time() - age" trick (pod-garbage-collector pattern) holds age
+  # constant across the for-window: the series rises 60s/step so max_over_time[2d] = the latest
+  # (rising) value and time() - value = fixed age. The outer max() drops ALL labels, so the alert
+  # carries only alertname + severity (no $labels in the summary — intentional). eval 31m past
+  # the 30m for.
+  # (j) Fire: completion age held at 43201s (> 43200) for the whole 30m for-window.
+  - interval: 1m
+    input_series:
+      - series: 'kube_job_status_completion_time{namespace="volsync-system",job_name="kopia-maint-kopia-daily-maintenance-f1cb754f15a67036-29780310"}'
+        values: '-43201+60x32'
+    alert_rule_test:
+      - eval_time: 31m
+        alertname: KopiaMaintenanceStale
+        exp_alerts:
+          - exp_labels:
+              alertname: KopiaMaintenanceStale
+              severity: warning
+            exp_annotations:
+              summary: "Kopia maintenance kopia-daily-maintenance has not completed in over 12h"
+              description: "No KopiaMaintenance kopia-daily-maintenance Job has completed in volsync-system in the last 12h (2 of its 4 scheduled 6-hourly runs missed). Compaction/GC may have stopped — slow backup-integrity risk. VolSync sync alerts cover sync, not maintenance."
+  # (k) No-fire boundary: completion age held at exactly 43200s — `> 43200` is strict, 43200 does not fire.
+  - interval: 1m
+    input_series:
+      - series: 'kube_job_status_completion_time{namespace="volsync-system",job_name="kopia-maint-kopia-daily-maintenance-f1cb754f15a67036-29780310"}'
+        values: '-43200+60x32'
+    alert_rule_test:
+      - eval_time: 31m
+        alertname: KopiaMaintenanceStale
+        exp_alerts: []
+  # (l) No-fire absent: no completion-time series (maintenance never ran / fresh install) —
+  # max_over_time is empty, the expr is empty, no alert.
+  - interval: 1m
+    input_series: []
+    alert_rule_test:
+      - eval_time: 31m
+        alertname: KopiaMaintenanceStale
+        exp_alerts: []

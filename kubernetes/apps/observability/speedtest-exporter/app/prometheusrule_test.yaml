@@ -1,0 +1,155 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/prometheus.rules.test.json
+# promtool unit tests for app/prometheusrule.yaml, covering the four speedtest alerts. The
+# speedtest_* gauges carry the scrape labels {endpoint, instance="speedtest", job, namespace,
+# service}; pod is dropped by the serviceMonitor metricRelabeling. Threshold alerts are strict
+# (< / >), so each has a fire case + a boundary no-fire case at the exact threshold (proves
+# strictness vs <= / >=) + a sanity no-fire clear of the threshold. for:25m so fire cases eval at
+# 26m (27 samples); SpeedtestExporterAbsent for:15m evals at 16m. exp_annotations asserted so a
+# broken template fails the suite.
+# Run via `just k8s test-prom-rules` (recipe copies this test + .extracted_prometheus_rules.yaml into a temp dir).
+rule_files:
+  - ./.extracted_prometheus_rules.yaml
+evaluation_interval: 1m
+tests:
+  # === SpeedtestExporterAbsent === absent(up{job="speedtest-exporter"}), for:15m.
+  # (a) Fire: no up series — absent() carries the matcher label (job) into the result. eval 16m.
+  - interval: 1m
+    input_series: []
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: SpeedtestExporterAbsent
+        exp_alerts:
+          - exp_labels:
+              alertname: SpeedtestExporterAbsent
+              severity: critical
+              job: speedtest-exporter
+            exp_annotations:
+              summary: "speedtest-exporter has disappeared from Prometheus target discovery"
+              description: "The speedtest-exporter scrape target is absent — internet-link monitoring is blind (no download/upload/ping data flowing)."
+  # (b) No-fire: up == 1 (target present) — absent() is empty because the series exists.
+  - interval: 1m
+    input_series:
+      - series: 'up{job="speedtest-exporter",instance="speedtest"}'
+        values: '1x17'
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: SpeedtestExporterAbsent
+        exp_alerts: []
+  # === SpeedtestSlowInternetDownload === speedtest_download_bits_per_second < 500000000, for:25m.
+  # (c) Fire: 4e8 (< 5e8), held past for:25m. eval 26m.
+  - interval: 1m
+    input_series:
+      - series: 'speedtest_download_bits_per_second{endpoint="http",instance="speedtest",job="speedtest-exporter",namespace="observability",service="speedtest-exporter"}'
+        values: '400000000x27'
+    alert_rule_test:
+      - eval_time: 26m
+        alertname: SpeedtestSlowInternetDownload
+        exp_alerts:
+          - exp_labels:
+              alertname: SpeedtestSlowInternetDownload
+              severity: warning
+              endpoint: http
+              instance: speedtest
+              job: speedtest-exporter
+              namespace: observability
+              service: speedtest-exporter
+            exp_annotations:
+              summary: "Internet download speed below 500 Mbit/s"
+              description: "speedtest-exporter reports download below 500 Mbit/s (5e8 bit/s) for over 25m — internet downlink degradation."
+  # (d) No-fire boundary: exactly 5e8 — strict `<` does not fire at the threshold.
+  - interval: 1m
+    input_series:
+      - series: 'speedtest_download_bits_per_second{endpoint="http",instance="speedtest",job="speedtest-exporter",namespace="observability",service="speedtest-exporter"}'
+        values: '500000000x27'
+    alert_rule_test:
+      - eval_time: 26m
+        alertname: SpeedtestSlowInternetDownload
+        exp_alerts: []
+  # (e) No-fire sanity: 6e8 (well above threshold).
+  - interval: 1m
+    input_series:
+      - series: 'speedtest_download_bits_per_second{endpoint="http",instance="speedtest",job="speedtest-exporter",namespace="observability",service="speedtest-exporter"}'
+        values: '600000000x27'
+    alert_rule_test:
+      - eval_time: 26m
+        alertname: SpeedtestSlowInternetDownload
+        exp_alerts: []
+  # === SpeedtestSlowInternetUpload === speedtest_upload_bits_per_second < 200000000, for:25m.
+  # (f) Fire: 1e8 (< 2e8).
+  - interval: 1m
+    input_series:
+      - series: 'speedtest_upload_bits_per_second{endpoint="http",instance="speedtest",job="speedtest-exporter",namespace="observability",service="speedtest-exporter"}'
+        values: '100000000x27'
+    alert_rule_test:
+      - eval_time: 26m
+        alertname: SpeedtestSlowInternetUpload
+        exp_alerts:
+          - exp_labels:
+              alertname: SpeedtestSlowInternetUpload
+              severity: warning
+              endpoint: http
+              instance: speedtest
+              job: speedtest-exporter
+              namespace: observability
+              service: speedtest-exporter
+            exp_annotations:
+              summary: "Internet upload speed below 200 Mbit/s"
+              description: "speedtest-exporter reports upload below 200 Mbit/s (2e8 bit/s) for over 25m — internet uplink degradation."
+  # (g) No-fire boundary: exactly 2e8 — strict `<` does not fire.
+  - interval: 1m
+    input_series:
+      - series: 'speedtest_upload_bits_per_second{endpoint="http",instance="speedtest",job="speedtest-exporter",namespace="observability",service="speedtest-exporter"}'
+        values: '200000000x27'
+    alert_rule_test:
+      - eval_time: 26m
+        alertname: SpeedtestSlowInternetUpload
+        exp_alerts: []
+  # (h) No-fire sanity: 3e8 (well above threshold).
+  - interval: 1m
+    input_series:
+      - series: 'speedtest_upload_bits_per_second{endpoint="http",instance="speedtest",job="speedtest-exporter",namespace="observability",service="speedtest-exporter"}'
+        values: '300000000x27'
+    alert_rule_test:
+      - eval_time: 26m
+        alertname: SpeedtestSlowInternetUpload
+        exp_alerts: []
+  # === SpeedtestHighPingLatency === speedtest_ping_latency_milliseconds > 20, for:25m.
+  # (i) Fire: 25 (> 20).
+  - interval: 1m
+    input_series:
+      - series: 'speedtest_ping_latency_milliseconds{endpoint="http",instance="speedtest",job="speedtest-exporter",namespace="observability",service="speedtest-exporter"}'
+        values: '25x27'
+    alert_rule_test:
+      - eval_time: 26m
+        alertname: SpeedtestHighPingLatency
+        exp_alerts:
+          - exp_labels:
+              alertname: SpeedtestHighPingLatency
+              severity: warning
+              endpoint: http
+              instance: speedtest
+              job: speedtest-exporter
+              namespace: observability
+              service: speedtest-exporter
+            exp_annotations:
+              summary: "Internet ping latency above 20 ms"
+              description: "speedtest-exporter reports ping above 20 ms for over 25m — internet latency degradation."
+  # (j) No-fire boundary: exactly 20 — strict `>` does not fire.
+  - interval: 1m
+    input_series:
+      - series: 'speedtest_ping_latency_milliseconds{endpoint="http",instance="speedtest",job="speedtest-exporter",namespace="observability",service="speedtest-exporter"}'
+        values: '20x27'
+    alert_rule_test:
+      - eval_time: 26m
+        alertname: SpeedtestHighPingLatency
+        exp_alerts: []
+  # (k) No-fire sanity: 15 (well below threshold).
+  - interval: 1m
+    input_series:
+      - series: 'speedtest_ping_latency_milliseconds{endpoint="http",instance="speedtest",job="speedtest-exporter",namespace="observability",service="speedtest-exporter"}'
+        values: '15x27'
+    alert_rule_test:
+      - eval_time: 26m
+        alertname: SpeedtestHighPingLatency
+        exp_alerts: []

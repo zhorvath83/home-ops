@@ -7,4 +7,5 @@ resources:
   - ./grafanafolder.yaml
   - ./grafanadashboard.yaml
   - ./helmrelease.yaml
+  - ./prometheusrule.yaml
   - ./ciliumnetworkpolicy.yaml

@@ -1,0 +1,48 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/monitoring.coreos.com/prometheusrule_v1.json
+# Picked up by the kube-prometheus-stack Prometheus (ruleSelector match-all).
+# speedtest-exporter scrapes every 20m (a real speedtest per scrape, ~1m), so the for:-windows
+# below use 25m to require a slow value to survive a re-scrape (2 consecutive slow scrapes),
+# not a single transient one. Thresholds are calibrated to the contracted link (500/200 Mbit/s,
+# 20 ms), set below the 24h-observed minimums (~528/305 Mbit/s, ~2.75 ms) so normal operation
+# does not fire.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: speedtest-exporter
+spec:
+  groups:
+    - name: speedtest-exporter.rules
+      rules:
+        - alert: SpeedtestExporterAbsent
+          expr: absent(up{job="speedtest-exporter"})
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: "speedtest-exporter has disappeared from Prometheus target discovery"
+            description: "The speedtest-exporter scrape target is absent — internet-link monitoring is blind (no download/upload/ping data flowing)."
+        - alert: SpeedtestSlowInternetDownload
+          expr: speedtest_download_bits_per_second < 500000000
+          for: 25m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Internet download speed below 500 Mbit/s"
+            description: "speedtest-exporter reports download below 500 Mbit/s (5e8 bit/s) for over 25m — internet downlink degradation."
+        - alert: SpeedtestSlowInternetUpload
+          expr: speedtest_upload_bits_per_second < 200000000
+          for: 25m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Internet upload speed below 200 Mbit/s"
+            description: "speedtest-exporter reports upload below 200 Mbit/s (2e8 bit/s) for over 25m — internet uplink degradation."
+        - alert: SpeedtestHighPingLatency
+          expr: speedtest_ping_latency_milliseconds > 20
+          for: 25m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Internet ping latency above 20 ms"
+            description: "speedtest-exporter reports ping above 20 ms for over 25m — internet latency degradation."

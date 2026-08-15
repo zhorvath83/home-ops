@@ -1,0 +1,21 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/monitoring.coreos.com/prometheusrule_v1.json
+# Picked up by the kube-prometheus-stack Prometheus (ruleSelector match-all). warning -> Pushover.
+# The namespace label is the controller's ns (external-secrets); exported_namespace is the
+# ExternalSecret's real ns — the summary renders exported_namespace/name.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: external-secrets
+spec:
+  groups:
+    - name: external-secrets.rules
+      rules:
+        - alert: ExternalSecretNotReady
+          expr: externalsecret_status_condition{condition="Ready",status="False"} == 1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "ExternalSecret {{ $labels.exported_namespace }}/{{ $labels.name }} is not Ready"
+            description: "ExternalSecret {{ $labels.exported_namespace }}/{{ $labels.name }} has been Ready=False for 5m — likely a failed sync (e.g. after a 1Password Connect credential rotation). Discovered only when a dependent app breaks without this alert."
