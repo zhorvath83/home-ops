@@ -7,7 +7,7 @@ topic: 'Gateway guardrails and response headers — admission guardrails for
   routes/SecurityPolicies, connection hardening, extauth-chain resilience, and
 
   CSP/framing/COOP response headers on the external surface.'
-status: proposed
+status: in-progress
 priority: medium
 scope: 'The Envoy Gateway control surface in front of the external routes: the
 
@@ -71,7 +71,7 @@ tags:
 ## Metadata (observation-form, schema validation)
 
 - [topic] Gateway guardrails (admission, attach, connection, extauth resilience) + response headers (CSP/framing/COOP) on the external surface
-- [status] proposed
+- [status] in-progress — Phase 1 delivered + live-verified (2026-08-15); Phases 2-5 proposed
 - [priority] medium
 - [area] networking / observability / iam
 - [created] 2026-08-14
@@ -95,11 +95,25 @@ tags:
 
 ## What to do (phased; each phase independently shippable)
 
-### Phase 1 — Admission guardrails for routes and SecurityPolicies
+### Phase 1 — Admission guardrails for routes and SecurityPolicies ✅ (done 2026-08-15)
 
 - Widen the reserved-hostname ValidatingAdmissionPolicy (validatingadmissionpolicy.yaml): today it matches HTTPRoutes only, while the public listener accepts other route kinds, and it never constrains which Gateway a route may attach to. Extend it to grpcroutes/tlsroutes/tcproutes and add a parentRef/kind constraint so a route cannot attach to an unexpected Gateway.
 - Add a VAP requiring spec.mergeType == StrategicMerge on any SecurityPolicy targeting an HTTPRoute (a forgotten mergeType silently detaches the Gateway-level CrowdSec gate).
 - Add a PrometheusRule alerting on any SecurityPolicy whose Accepted condition is False or whose ancestorRef is missing (silent attach failure). The alert-wiring coordination target edge-detection-observability is a descoped/lost roadmap item (pending rebuild).
+
+**Delivery (2026-08-15) — Phase 1 implemented, deployed, live-verified.** Commits on `main`: `3f0b1f884` (route + SecurityPolicy admission guardrails), `d2b161f94` (KSM RBAC for SecurityPolicy metrics), `de8ff39e7` (SecurityPolicy-status-vanishing alert).
+
+1. The `httproute-reserved-hostnames` VAP was widened to httproutes/grpcroutes/tlsroutes/tcproutes, plus a parentRef constraint: a non-security route may attach only to the `envoy-external`/`envoy-internal` Gateways (networking namespace, kind Gateway), and an explicit empty `hostnames` list is treated like a missing one (implicit wildcard inheritance on the https listener). The `security` namespace short-circuits and exits before the Gateway constraint applies.
+2. New `securitypolicy-route-strategic-merge` VAP: any SecurityPolicy targeting an HTTPRoute must set `spec.mergeType: StrategicMerge` — the default `Merge` silently detaches the Gateway-level CrowdSec/RFC1918 gate.
+3. `EnvoyGatewayPolicyNotAccepted` alert. **Decision:** Envoy Gateway exports no per-policy status metric, so the metric comes from kube-state-metrics `custom-resource-state` (`envoy_securitypolicy_info`), following the existing Flux `gotk_resource_info` pattern in the repo — the only viable path to the acceptance criterion.
+4. **Blocker found by deploy-check:** the KSM ClusterRole listed only Flux CRDs, not `gateway.envoyproxy.io/securitypolicies` — the metric family registered but produced ZERO samples, so the alert would have stayed silent. Fixed in `d2b161f94` (`rbac.extraRules` list/watch).
+5. The blocker's lesson produced `de8ff39e7`: `EnvoyGatewayPolicyStatusMissing` sentinel, `expr: absent(envoy_securitypolicy_info)`, `for: 5m`, `severity: critical` — it watches the guardrail itself, because a silent metric path looks exactly like calm.
+
+**Live verification (2026-08-15):** 12 `envoy_securitypolicy_info` samples, all `accepted="True" reason="Accepted"`; cross-checked against live `kubectl get securitypolicy -A` status (12 policies). The sentinel is not firing. Both VAPs and both alerts are live; Flux reconcile `Ready=True` on the `de8ff39e7` revision.
+
+**Follow-ups (recorded, not implemented):**
+- The `httproute-reserved-hostnames` VAP name is now misleading (it covers all route kinds). Rename via delete+create — risk-free.
+- The KSM pod template has no checksum annotation, so a CRS config change is hot-reloaded without a pod restart. This was lucky today, but a future CRS config error would silently stand in the same way.
 
 ### Phase 2 — Connection hardening
 
