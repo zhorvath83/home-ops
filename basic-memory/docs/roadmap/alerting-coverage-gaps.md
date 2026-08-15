@@ -6,7 +6,7 @@ topic: Prometheus alerting coverage gaps identified via a comparative audit agai
   billimek/k8s-gitops PrometheusRules — Kopia maintenance staleness, ExternalSecret
   sync failures, speedtest-exporter metrics left unalerted, and Docker Hub pull rate-limit
   risk.
-status: proposed
+status: done
 priority: medium
 scope: 'Four independently shippable PrometheusRule additions, each backed by metrics
   already scraped in the cluster today (no new exporter/component required): the volsync-system
@@ -49,7 +49,7 @@ tags:
 ## Metadata (observation-form, schema validation)
 
 - [topic] Four PrometheusRule gaps (Kopia maintenance staleness, ExternalSecret sync errors, speedtest-exporter, Docker Hub rate-limit risk) found by comparing our alert coverage against billimek/k8s-gitops
-- [status] proposed
+- [status] done
 - [priority] medium
 - [area] volsync-backup / external-secrets / observability
 - [created] 2026-08-15
@@ -118,3 +118,15 @@ tags:
 - relates_to [[volsync-backup]] — Phase 1 extends the existing VolSync alert set with maintenance staleness.
 - relates_to [[external-secrets]] — Phase 2 adds the platform's first PrometheusRule.
 - relates_to [[observability]] — Phases 3 and 4 both live in the observability alerting surface; ties into the kube-prometheus-stack `defaultRules` baseline already documented there.
+
+
+## Closure (2026-08-16)
+
+**Status: done.** Phase 1-3 delivered to `main` in commit `cca897803` (`✨ feat(observability): add Kopia maintenance, ExternalSecret, speedtest alerts`); Phase 4 dropped after live verification.
+
+- **Phase 1 (KopiaMaintenanceStale)** — shipped. Job-name pattern verified live (`kopia-maint-kopia-daily-maintenance-<hash>-<ts>`, single job type — not billimek's quick/full split); 12h staleness window derived from the verified 6h schedule (2 missed runs), not copied. Outer `max()` drops labels → summary carries no `$labels`.
+- **Phase 2 (ExternalSecretNotReady)** — shipped. The platform's first PrometheusRule; `== 1` keeps labels so the summary renders `$labels.exported_namespace/$labels.name`.
+- **Phase 3 (speedtest-exporter)** — shipped, but rebuilt on real metrics: the billimek metric names (`speedtest_download_bandwidth_bytes`, `speedtest_ping_latency_seconds`) do not exist in exporter v3.5.4 — actual names are `speedtest_*_bits_per_second` / `speedtest_ping_latency_milliseconds`. Thresholds (500/200 Mbit/s, 20 ms) human-calibrated below the 24h-observed minimums (~528/305 Mbit/s, ~2.75 ms) so normal operation does not fire; `for:25m` requires 2 consecutive slow scrapes.
+- **Phase 4 (Docker Hub rate-limit)** — **DROPPED.** The metric basis is absent: neither billimek's `container_last_seen` nor the `kube_pod_container_status_waiting_reason` alternative exists in the cluster, and the roadmap's docker.io inventory premise was stale (crowdsec is not on docker.io now; only 3 explicit docker.io images remain, many opaque `sha256:` digests). A real pull-failure alert would require a separate kube-state-metrics metric-allowlist change — out of scope for "add a PrometheusRule with already-flowing metrics". Recorded as an optional follow-up.
+
+Full execution record (verification basis, what was done, test coverage, Next): [[alerting-coverage-gaps]] progress note at `docs/progress/alerting-coverage-gaps`. The roadmap's central premise ("metrics already scraped, no new exporter") was tested per phase against live Prometheus and held for 1-3, failed for 4 — exactly the verification this roadmap demanded before shipping.
