@@ -115,3 +115,23 @@ Dropped before implementation — the metric basis is absent (see verification b
 - After push + Flux reconcile: confirm the three PrometheusRules are loaded (`promtool query instant http://localhost:9090 'ALERTS{alertname=~"KopiaMaintenanceStale|ExternalSecretNotReady|Speedtest.*"}'`) and that none are spuriously firing on normal operation.
 - Optional follow-up (own issue/MR): enable `kube_pod_container_status_waiting_reason` in kube-state-metrics and ship a real `ImagePullBackOff`/pull-failure alert (the Phase 4 replacement) — separate prerequisite change, not part of this roadmap item.
 - Threshold tuning after a few weeks of live data: the speedtest 500/200 Mbit/s and the Kopia 12h windows may want adjusting based on observed variance.
+
+
+## Post-ship verification & fix (2026-08-16) — supersedes the Phase 3 description above
+
+A live cluster verification (the human requested "ellenőrizd" after the push) confirmed all three rules reconciled via Flux and were loaded by Prometheus with the correct alert names, but it **caught a real defect in the speedtest alerts** that the promtool unit tests had NOT caught.
+
+**Finding (live):** `SpeedtestExporterAbsent` sat `pending` constantly. Root cause: the speedtest-exporter ServiceMonitor scrapes every 20m (verified: `count_over_time(up{job="speedtest-exporter"}[1h]) = 3`; scrapeTimeout 5m — a real speedtest per scrape). The `speedtest_*` gauges and `up` are fresh only ~5m after each scrape and stale for the remaining ~15m of the cycle. The instant form shipped in cca897803 was therefore broken:
+- `absent(up{job="speedtest-exporter"})` returned 1 for ~15m of every 20m cycle (the `up` series goes stale between scrapes) → the alert flapped pending permanently.
+- `speedtest_* < threshold for:25m` — the comparison was active only ~5m/cycle (stale the other 15m), so the `for:25m` window could never accumulate → the threshold alerts would NEVER fire.
+
+**Not affected (verified live):** `KopiaMaintenanceStale` keys off `kube_job_status_completion_time` (kube-state-metrics, scraped ~every 30s-1m) and `ExternalSecretNotReady` off `externalsecret_status_condition` (ESO controller metrics, frequent scrape) — both gauges stay fresh, so the instant comparison + `for:` form is correct for them. The defect was localized to the uniquely-slow 20m speedtest scrape.
+
+**Fix (commit b40b33ab0):** rebuilt the four speedtest alerts with range aggregation over windows sized to the 20m cadence, matching the repo's own crowdsec blocklist idiom (`absent_over_time`/`max_over_time` for infrequent metrics):
+- `SpeedtestExporterAbsent`: `absent_over_time(up{job="speedtest-exporter"}[30m])` — 30m > 20m interval + jitter, no `for:` (the window is the gate); fires ~30m after the target truly disappears, one missed scrape cannot fire.
+- `SpeedtestSlowInternetDownload`/`Upload`: `max_over_time(speedtest_*_bits_per_second[40m]) < threshold` — 40m = 2x interval (last 2 scrapes); `max` means both scrapes must be below, so a single transient slow scrape cannot fire. No `for:`.
+- `SpeedtestHighPingLatency`: `min_over_time(speedtest_ping_latency_milliseconds[40m]) > 20` — `min` means both scrapes must be high; a single low-latency scrape keeps it quiet. No `for:`.
+
+**Test rewrite:** the promtool tests were rewritten to the crowdsec dense-sample healthy-prefix-then-degradation idiom (15 cases: absent fire/no-fire/30m-boundary; per threshold alert fire/healthy/transient/boundary). NOTE: promtool does NOT model the 5m Prometheus staleness (samples placed via `values:` are present at their timestamps), so the unit tests validate the range-window LOGIC, not the live staleness-robustness — the staleness-robustness is a property of the range functions reading the TSDB. This is why the original instant-form tests passed green while the alerts were broken live. `just k8s test-prom-rules` green; pre-commit green.
+
+**Lesson:** for any alert on a slow-scrape metric (interval approaching or exceeding the 5m staleness window), instant comparisons + `for:` are broken by design — use range aggregation (`absent_over_time`/`max_over_time`/`min_over_time`) with a window sized to the scrape interval, and verify LIVE, not just with promtool (which does not model staleness).
