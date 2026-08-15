@@ -1,14 +1,18 @@
 ---
 title: gateway-guardrails-response-headers
-type: roadmap
-permalink: home-ops/docs/roadmap/gateway-guardrails-response-headers
+type: progress
+permalink: home-ops/docs/progress/gateway-guardrails-response-headers
 topic: 'Gateway guardrails and response headers — admission guardrails for
 
   routes/SecurityPolicies, connection hardening, extauth-chain resilience, and
 
   CSP/framing/COOP response headers on the external surface.'
-status: in-progress
+status: done
 priority: medium
+area: networking / observability / iam
+created: '2026-08-14'
+completed: '2026-08-15'
+moved_from: docs/roadmap/gateway-guardrails-response-headers
 scope: 'The Envoy Gateway control surface in front of the external routes: the
 
   reserved-hostname ValidatingAdmissionPolicy, route/SecurityPolicy attach semantics
@@ -61,17 +65,22 @@ tags:
 - envoy-gateway
 - admission-policy
 - response-headers
+- completed
 ---
 
-# gateway-guardrails-response-headers — guardrails + response headers on the external gateway
+# Progress — gateway-guardrails-response-headers (guardrails + response headers on the external gateway)
+
+Roadmap item completed 2026-08-15 and moved from `docs/roadmap/gateway-guardrails-response-headers` to `docs/progress/`; phases 1–4 delivered on `main` and verified live. Phase 5 (path normalization, state-url redirect) is carried as an UNCERTAIN follow-up, not part of the done deliverable.
 
 ## Metadata (observation-form, schema validation)
 
 - [topic] Gateway guardrails (admission, attach, connection, extauth resilience) + response headers (CSP/framing/COOP) on the external surface
-- [status] in-progress — Phase 1-4 delivered + live-verified (2026-08-15); Phase 5 proposed
+- [status] done — Phase 1-4 delivered + live-verified (2026-08-15); Phase 5 carried as follow-up (UNCERTAIN, not done)
 - [priority] medium
 - [area] networking / observability / iam
 - [created] 2026-08-14
+- [completed] 2026-08-15
+- [moved_from] docs/roadmap/gateway-guardrails-response-headers
 
 ## Verification basis (how this item was built)
 
@@ -90,7 +99,7 @@ tags:
 - Every app behind both gateways gets CSP (frame-ancestors 'self') / Permissions-Policy / COOP headers, reducing framing/clickjacking blast radius and what a successful XSS can abuse; an app that sets its own header wins (addIfAbsent).
 - Path-deny rules are robust to percent-encoding/doubled-slash bypass attempts once explicit path normalization is enabled and re-tested (Phase 5 — currently UNCERTAIN).
 
-## What to do (phased; each phase independently shippable)
+## Delivery (phased; each phase independently shipped)
 
 ### Phase 1 — Admission guardrails for routes and SecurityPolicies ✅ (done 2026-08-15)
 
@@ -193,7 +202,7 @@ D) Permissions-Policy does NOT block WebAuthn. Pocket ID is passkey-based (no pa
 
 **Live verification (2026-08-15):** all three headers appear on the internal gateway (192.168.1.18, `--resolve`) for recipes/photos/dash/echo and on the external surface through the Cloudflare Tunnel; paperless (docs) keeps its own `referrer-policy: same-origin` and `x-frame-options: SAMEORIGIN` (addIfAbsent app sovereignty proven live) while receiving our CSP + permissions-policy; the 401 override page loads intact with its inline script (callback with `error=access_denied`); both CTPs `Accepted=True` (no Conflicted/Overridden), both gateways `Accepted=True`/`Programmed=True`; the envoy pods took the reload with 0 restarts, no traffic disruption.
 
-### Phase 5 — Path normalization and redirect-target constraints (UNCERTAIN items)
+### Phase 5 — Path normalization and redirect-target constraints (follow-up, UNCERTAIN — carried, not done)
 
 - Path-deny normalization (UNCERTAIN, id 37): enable explicit path normalization (merge slashes, percent-decode) in a ClientTrafficPolicy and re-test the idm deny rules with encoded/doubled-slash variants.
 - state-url redirect not domain constrained (UNCERTAIN, id 74): Envoy's post-login redirect target is not constrained to the gateway's own domains and no knob exists in the installed Envoy Gateway version. Carry as a known upstream limitation with a monitor; do not block on it.
