@@ -5,7 +5,7 @@ permalink: home-ops/docs/roadmap/client-ip-trust-topology
 topic: Add a non-IP rate-limit dimension to the external edge so IP-rotation cannot
   defeat the rate limit, and remediate the filter-order / unrouted-404 gap that the
   IP-keyed bucket does not cover (NOT today-exploitable).
-status: proposed
+status: done
 priority: medium
 scope: The envoy-external local rate limit (3000 req/min per-source-CIDR Distinct
   bucket, gateway-policies.yaml:26-43), keyed on the same detected client IP that
@@ -44,7 +44,7 @@ tags:
 ## Metadata (observation-form, schema validation)
 
 - [topic] Add a non-IP rate-limit dimension so IP-rotation cannot defeat the rate limit, and remediate the filter-order / unrouted-404 gap (NOT today-exploitable)
-- [status] proposed
+- [status] done
 - [priority] medium
 - [area] networking / observability
 - [created] 2026-08-14
@@ -94,3 +94,10 @@ tags:
 - (descoped) edge-detection-observability — owned the bouncer ticker/reactive-window work and the brute-force parser; item lost from BM, pending rebuild.
 - relates_to [[networking]] — envoy-external rate limit, client-IP detection.
 - relates_to [[observability]] — the alert that surfaces a mis-set per-route limit.
+
+## Delivered 2026-08-15 (PR #4183)
+
+- `envoy` BackendTrafficPolicy: aggregate 30000 req/min rule with no clientSelectors — one shared bucket per gateway, immune to IP rotation, and covering unrouted-404 floods independently of the local_ratelimit filter order.
+- `pocket-id-external`: route-level BackendTrafficPolicy (300 req/min per source IP v4+v6, 1200 req/min shared) with `mergeType: StrategicMerge`.
+- Live verification: both policies `Accepted=True`; the parent `envoy` policy reports `Merged=True` (never `Overridden`) on the envoy-external ancestor; envoy proxy pods stable with 0 restarts; the IdP login page still returns 200 through the external edge.
+- Execution detail: [[client-ip-trust-topology]] in docs/progress.
