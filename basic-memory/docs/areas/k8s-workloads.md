@@ -202,3 +202,9 @@ itself, which is the whole point of this note, was wrong.
 - [addition] Four app-shaped subtrees appeared that this note never mentioned: `crowdsec/`,
   `security/pocket-id/`, `system-upgrade/tuppr/`. Each is claimed by another area; recorded here so
   the inventory boundary is explicit rather than an unexplained absence.
+
+## Update 2026-08-15 — homepage is now a native OIDC client
+
+- [observation] [auth] `homepage` (selfhosted) gained a native OIDC gate with Homepage 2.0's built-in auth, restricted to the `infra_admins` Pocket ID group. It is NOT a `gateway-oidc` consumer, so the OIDC-coverage claims above (which enumerate gateway-gated apps) are unaffected — this is the second auth model in this area's inventory alongside the envoy-gated one. Authoritative detail lives in [[iam]].
+- [observation] [auth] Consequence for the exposure model: the dashboard's origin is no longer reachable unauthenticated on EITHER gateway. Previously the envoy-internal LAN path had no identity gate at all, and the envoy-external path relied solely on Cloudflare Access (which is retained as a second layer).
+- [observation] [gotcha] `HOMEPAGE_ALLOWED_HOSTS` moved off `"*"` to the real hostname, which required an explicit `Host: localhost:3000` header on the kubelet probes — upstream runs host validation ahead of the `/api/healthcheck` auth exemption. See [[homepage-recon-exposure]].

@@ -140,3 +140,14 @@ tags:
 - (descoped) edge-detection-observability — owned the external-surface alerts (4xx/401/429 spikes, auth failures) that would flag recon against this route; item lost from BM, pending rebuild.
 - relates_to [[networking]] — envoy-external route, Cilium egress CNP.
 - relates_to [[k8s-workloads]] — SA token automount, ClusterRole scoping, pod egress.
+
+## Update 2026-08-15 — Phase 2 half-landed alongside the auth gate
+
+The dashboard received a native OIDC gate (Homepage 2.0's built-in auth, Pocket ID client `homepage`, group `infra_admins`). That gate is [[app-auth-coverage]]'s scope, not this item's, but two things this item owns moved with it.
+
+- [done] **HOMEPAGE_ALLOWED_HOSTS is pinned** (Phase 2, first half): `"*"` became `dash.${PUBLIC_DOMAIN}` in kubernetes/apps/selfhosted/homepage/app/helmrelease.yaml. Host validation is now on.
+- [observation] [gotcha] **Pinning ALLOWED_HOSTS alone would have CrashLooped the pod.** Upstream `src/middleware.js` runs host validation BEFORE the `/api/healthcheck` auth exemption, and the route matcher does not exclude the healthcheck path, so the kubelet probe (Host = pod IP) receives a 400 and trips `failureThreshold: 3`. The probes now carry an explicit `Host: localhost:3000` header, which the middleware always allows. Any other app that pins ALLOWED_HOSTS must check for the same trap.
+- [measured] **The unauthenticated recon surface is closed.** Measured over envoy-internal, which bypasses Cloudflare Access and therefore measures the ORIGIN: `/api/services` returns 307 to `/auth/signin`; it previously returned the full internal service inventory. `/api/healthcheck` stays 200 as intended.
+- [open] Phase 2's second half is UNTOUCHED: config/kubernetes.yaml still uses `mode: cluster` service discovery.
+- [open] Phase 1 (automountServiceAccountToken false, ClusterRole narrowing) and Phase 3 (per-app egress CNP) are UNTOUCHED. The item's rationale is unchanged by the gate: the pod still mounts a cluster-read service-account token and still runs a credentialed widget proxy, and a gate bypass or widget misconfiguration still reaches both. Status stays `proposed`.
+- [observation] The decision to keep Cloudflare Access in front (double gate) was taken explicitly, so the item's premise that Cloudflare provides zero protection remains the operating assumption for the remaining phases.
