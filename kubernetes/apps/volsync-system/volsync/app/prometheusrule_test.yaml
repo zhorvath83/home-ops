@@ -81,3 +81,47 @@ tests:
       - eval_time: 16m
         alertname: VolSyncVolumeOutOfSync
         exp_alerts: []
+  # === VolSyncMissedInterval ===
+  # expr: increase(volsync_missed_intervals_total[1h]) > 0, for:15m. volsync_missed_intervals_total
+  # is a COUNTER, so increase() is correct (NOT delta — that is the TSDB gauge's rule). The > 0
+  # threshold is robust to increase()'s range-extrapolation: any positive increment fires, and a
+  # flat counter (zero or steady non-zero) extrapolates to 0 and does not. Identity labels are
+  # obj_name/obj_namespace (NOT name — see roadmap correction #2); summary renders them via
+  # $labels. Every fire case evals past for:15m.
+  # (g) Fire: counter increments 0->1 at t=1 (`0x1 1x20`); increase[1h] > 0 from t=1, holds, fires
+  # after for:15m at 16m, eval at 20m -> firing.
+  - interval: 1m
+    input_series:
+      - series: 'volsync_missed_intervals_total{obj_namespace="backup",obj_name="paperless"}'
+        values: '0x1 1x20'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: VolSyncMissedInterval
+        exp_alerts:
+          - exp_labels:
+              alertname: VolSyncMissedInterval
+              severity: warning
+              obj_namespace: backup
+              obj_name: paperless
+            exp_annotations:
+              summary: backup/paperless missed a scheduled sync interval.
+  # (h) No-fire: counter flat at 0 — no increment, increase[1h] == 0.
+  - interval: 1m
+    input_series:
+      - series: 'volsync_missed_intervals_total{obj_namespace="backup",obj_name="paperless"}'
+        values: '0x21'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: VolSyncMissedInterval
+        exp_alerts: []
+  # (i) No-fire: counter flat at a steady 5 (a backlog, but NOT growing) — increase[1h] == 0 even
+  # though the absolute value is non-zero. Proves the alert is increase>0, not a threshold on the
+  # absolute missed-interval count.
+  - interval: 1m
+    input_series:
+      - series: 'volsync_missed_intervals_total{obj_namespace="backup",obj_name="paperless"}'
+        values: '5x21'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: VolSyncMissedInterval
+        exp_alerts: []

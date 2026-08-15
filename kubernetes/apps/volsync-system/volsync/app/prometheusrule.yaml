@@ -26,3 +26,17 @@ spec:
           for: 15m
           labels:
             severity: critical
+        # Missed scheduled sync interval — a DR-plane signal the existing
+        # exporter-down / out-of-sync rules do not cover. volsync_missed_intervals_total is a
+        # COUNTER, so increase() is correct here (unlike the TSDB blocks_bytes gauge, which
+        # uses delta). Identity labels are obj_name/obj_namespace (NOT name).
+        - alert: VolSyncMissedInterval
+          annotations:
+            summary: >-
+              {{ $labels.obj_namespace }}/{{ $labels.obj_name }} missed a
+              scheduled sync interval.
+          expr: |
+            increase(volsync_missed_intervals_total[1h]) > 0
+          for: 15m
+          labels:
+            severity: warning
