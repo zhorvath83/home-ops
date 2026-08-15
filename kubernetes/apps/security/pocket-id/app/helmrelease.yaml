@@ -105,6 +105,13 @@ spec:
             path: /metrics
             interval: 1m
             scrapeTimeout: 10s
+            # V2: drop pocket-id IdP HTTP histograms (no dashboard/rule consumer;
+            # human-approved drop — SSO request-latency/body-size not retained).
+            metricRelabelings:
+              - sourceLabels:
+                  - __name__
+                regex: "http_server_request_body_size_bytes_(bucket|sum|count)|http_server_response_body_size_bytes_(bucket|sum|count)|http_server_request_duration_seconds_(bucket|sum|count)|http_client_request_.*_(bucket|sum|count)"
+                action: drop
     persistence:
       data:
         existingClaim: pocket-id
