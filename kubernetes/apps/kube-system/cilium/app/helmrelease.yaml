@@ -79,6 +79,13 @@ spec:
         enabled: true
         serviceMonitor:
           enabled: true
+          # P1.5: drop unconsumed cilium-operator latency histograms
+          # (operator-dashboard uses process/ipam gauges + ipam_resync_total).
+          metricRelabelings:
+            - sourceLabels:
+                - __name__
+              regex: "cilium_operator_k8s_client_api_latency_time_seconds_bucket|cilium_k8s_workqueue_(work|queue)_duration_seconds_bucket|cilium_operator_(lbipam_event_processing_time|ipam_resync_latency|ipam_resync_duration|ipam_k8s_sync_latency|ipam_k8s_sync_duration|ipam_deficit_resolver_latency|ipam_deficit_resolver_duration|hive_jobs_observer_run_duration)_seconds_bucket"
+              action: drop
       replicas: 1
       rollOutPods: true
     pmtuDiscovery:
@@ -88,6 +95,13 @@ spec:
       serviceMonitor:
         enabled: true
         trustCRDsExist: true
+        # P1.4: drop unconsumed cilium-agent latency histograms (cilium-dashboard
+        # uses endpoint_regeneration/proxy_upstream_reply/policy_implementation_delay only).
+        metricRelabelings:
+          - sourceLabels:
+              - __name__
+            regex: "cilium_(hive_jobs_timer_run_duration|k8s_client_api_latency_time|agent_api_process_time|k8s_workqueue_work_duration|k8s_workqueue_queue_duration|node_health_connectivity_latency|hive_jobs_observer_run_duration|policy_selector_cache_operation_duration|datapath_conntrack_gc_duration)_seconds_bucket"
+            action: drop
     rollOutCiliumPods: true
     routingMode: native
     securityContext:
