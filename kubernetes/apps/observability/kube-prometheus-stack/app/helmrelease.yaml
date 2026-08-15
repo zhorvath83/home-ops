@@ -111,11 +111,11 @@ spec:
       serviceMonitor:
         probes: false
         cAdvisor: true
-        # cAdvisor 10s -> 60s -> 30s: 60s left rate(...[1m]) with 1 sample, FreeLens
-        # graphs went empty; 30s restores 2 samples/1m, keeping half the TSDB savings.
+        # cAdvisor 10s -> 60s -> 30s -> 15s: a 1m rate window needs several samples,
+        # 30s was marginal (sometimes only 1 landed); 15s gives 4 per window, robustly.
         # Applies only to the /metrics/cAdvisor endpoint; the main kubelet
         # /metrics endpoint (kubelet_volume_stats_*) has no interval set.
-        cAdvisorInterval: 30s
+        cAdvisorInterval: 15s
         cAdvisorMetricRelabelings:
           # Re-add chart-default CNI-interface drop our override lost (Helm arrays
           # don't merge); non-host-net pods use eth0, lxc/tunl are Cilium veth dup.
