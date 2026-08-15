@@ -172,3 +172,51 @@ Delivered on main via commit f6d648887 (pushed with the user's parallel 355a6af4
 - Phase 2 second half: `mode: cluster` unchanged.
 - Phase 3: per-app egress CiliumNetworkPolicy — UNTOUCHED, now the highest-value remaining work. Note the allowlist must cover kube-apiserver, DNS, api.openweathermap.org (widgets.yaml), the Unsplash background fetch (settings.yaml:5), the favicon fetch from ${PUBLIC_DOMAIN} (settings.yaml:11), plus whatever siteMonitor/ping targets the 1Password services.yaml holds — that last set is invisible from git and must be derived from the live config or from Hubble flow capture before the CNP is tightened.
 - Further RBAC cuts are possible only by trading features: dropping the `resources` widget would additionally release nodes + all of metrics.k8s.io (option B).
+
+
+## Update 2026-08-15 (3) — Phase 3 delivered: per-app egress CNP live-verified
+
+Delivered on main via commit 5b33ccb21. Maestro lane: live measurement, design, verification; the Llama subterminal made the edits and the commit.
+
+### The measurement that unblocked it
+
+The previous update flagged the 1Password-held `services.yaml` as an unknown that had to be resolved before the allowlist could be trusted. Resolved by reading the live file out of the running pod:
+
+- [measured] **`services.yaml` contains only `href` (36) and `icon` (36) keys — nothing else.** No `ping`, no `siteMonitor`, no `widget.*`, no `namespace`/`podSelector`, no `server`/`container`. Both key types are rendered client-side, so the file contributes **zero server-side egress**. The 36 hrefs are personal/financial destinations and stay out of the repo; nothing about them had to enter the policy.
+- [measured] A 120s cluster-wide Hubble capture while idle showed the homepage pod opening **no outbound connections at all** — all 72 of its flows were replies from source port 3000 to kubelet probes. Homepage reaches the API and the weather service only while serving a request, so flow capture alone can never enumerate its egress; the allowlist had to come from config, with live probing as the check.
+
+### Design — the additive-policy trap
+
+- [gotcha] **A per-app CNP alone would have changed nothing.** Cilium policy is a union of allows, so it can only ADD. The pod sat under `allow-cluster-egress` (selector: `egress.home.arpa/custom-egress` DoesNotExist) and carried `egress.home.arpa/allow-world: "true"` — i.e. all cluster endpoints on all ports, plus 0.0.0.0/0 minus RFC1918. The CNP only bites after the pod labels flip: drop `allow-world`, add `custom-egress`. Any future per-app egress policy in this repo needs the same label swap or it is decorative.
+- [decision] **`egress.home.arpa/allow-gateways: "true"` added** instead of putting the IdP in the CNP. `HOMEPAGE_OIDC_ISSUER` is the public `idm.${PUBLIC_DOMAIN}`, which resolves in-cluster to 10.245.247.245 = the `networking/envoy-internal` Service (443 → targetPort 10443) — verified live. The existing allow-gateways CCNP covers exactly that hairpin, so no hostname or IP had to be written into the repo.
+- [decision] kube-apiserver rule allows **both 6443 and 443**. `KUBERNETES_SERVICE_HOST/PORT` is 10.245.0.1:443 in the pod, while the repo's only prior per-app apiserver rule (silence-operator) uses 6443 post-translation. Allowing both costs nothing and removes the guess.
+
+### What shipped
+
+- New `kubernetes/apps/selfhosted/homepage/app/ciliumnetworkpolicy.yaml`: egress to `toEntities: kube-apiserver` (6443 + 443) and `toFQDNs: api.openweathermap.org` (443). Wired into `kustomization.yaml`.
+- `helmrelease.yaml` label block: `egress.home.arpa/allow-world` removed; `custom-egress` + `allow-gateways` added.
+
+### Live verification (all probes run from inside the pod)
+
+| Path | Result |
+|---|---|
+| `/apis/gateway.networking.k8s.io/v1/httproutes` | OK — discovery for all 26 tiles works |
+| `/apis/metrics.k8s.io/v1beta1/nodes` | OK — the resources widget works |
+| `/api/v1/secrets` | **403 Forbidden** — RBAC holds |
+| `https://idm.${PUBLIC_DOMAIN}/.well-known/openid-configuration` | OK — the OIDC gate still works |
+| `https://api.openweathermap.org/...` | HTTP 401 (auth-less probe) — TCP+TLS established, the FQDN rule works |
+| `https://github.com` | **timed out — blocked** (world egress genuinely revoked) |
+| `http://paperless.selfhosted.svc:8000` | **timed out — blocked** (the in-cluster pivot path is closed) |
+
+Also: CNP `VALID=True`, pod 1/1 Running with the new labels, 0 restarts.
+
+- [gotcha] The homepage image ships **no `curl`** — only busybox `wget` and node. A first probe round using curl reported every destination as failed, which read as a total egress outage; it was a missing binary. Busybox wget also rejects `--ca-certificate`; use `--no-check-certificate --header=` instead. Any future in-pod connectivity check here must start by confirming the client binary exists.
+
+### Roadmap status after this round
+
+Phase 3 is **done and live-verified** — this is the item's actual blast-radius remediation: the credentialed widget proxy can no longer reach any in-cluster endpoint other than the API server, so a widget-config or SSRF path has nowhere to pivot with the pod's identity.
+
+Remaining, all deliberate:
+- Phase 1's token cut stays blocked by the `mode: cluster` dependency (see update 2).
+- Phase 2's second half (`mode: cluster` → scoped) untouched; with Phase 3 landed its value is now mostly redundant, since the egress boundary already contains the blast radius.
+- Further RBAC narrowing only by trading features (option B: drop the resources widget to release nodes + metrics.k8s.io).
