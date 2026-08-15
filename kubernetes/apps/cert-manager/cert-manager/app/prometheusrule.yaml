@@ -1,0 +1,34 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/monitoring.coreos.com/prometheusrule_v1.json
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: cert-manager
+spec:
+  groups:
+    - name: cert-manager.rules
+      rules:
+        # Renewal-relative, not an absolute day threshold. The cluster's certs span two lifetimes
+        # (horvathzoltan-me + pocket-id-tls are 160h short-lived; k8tz-tls is 2160h), so a single
+        # absolute <N d rule either fires forever on the short-lived certs or never warms up on the
+        # long-lived one. renewal_timestamp advances ONLY on a successful renewal, so
+        # time() > renewal_timestamp is true only when cert-manager is overdue regardless of cycle.
+        # for:2h rides out a slow-but-healthy ACME DNS-01 renewal (propagation + one retry, up to ~2h).
+        - alert: CertManagerRenewalLate
+          expr: |
+            time() > certmanager_certificate_renewal_timestamp_seconds
+          for: 2h
+          labels:
+            severity: warning
+          annotations:
+            description: Certificate {{ $labels.name }} in namespace {{ $labels.exported_namespace }} renewal is overdue, cert-manager has not renewed past the scheduled renewal time.
+        # Catastrophic backstop — the cert has actually lapsed. RenewalLate gives ~52h lead on the
+        # 160h cert; this is the last-resort page when renewal failed AND the cert ran out.
+        - alert: CertManagerCertificateExpired
+          expr: |
+            time() > certmanager_certificate_expiration_timestamp_seconds
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            description: Certificate {{ $labels.name }} in namespace {{ $labels.exported_namespace }} has expired.

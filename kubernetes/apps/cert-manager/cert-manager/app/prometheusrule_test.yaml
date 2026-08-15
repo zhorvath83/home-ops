@@ -1,0 +1,97 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/prometheus.rules.test.json
+# promtool unit tests for app/prometheusrule.yaml, covering CertManagerRenewalLate and
+# CertManagerCertificateExpired.
+#
+# Both alerts are renewal/expiration-relative: `time() > <timestamp_metric>`. promtool's time()
+# is the RELATIVE eval clock in seconds from test start (probed: time()=120s at eval 2m), so the
+# input series values are compared against the test's own clock, NOT wall-clock Unix time. That
+# is why a fire case can use renewal_ts=0 (epoch) — time() > 0 is true from t=1m, not because the
+# cert really dates to 1970.
+#
+# The input series carry only name + exported_namespace (the live metric also has container,
+# endpoint, instance, job, namespace, pod, service, issuer_kind, issuer_name — all scrape
+# labels absent from a unit test). The scalar `time() > vector` keeps the vector's labels, so
+# exp_labels assert exactly {alertname, severity, name, exported_namespace}. exp_annotations
+# exercise the $labels.name / $labels.exported_namespace template.
+#
+# RenewalLate expr: time() > certmanager_certificate_renewal_timestamp_seconds, for:2h.
+#   (a) Fire: renewal_ts=0, eval 130m. time()>0 true from t=1m, holds, fires after for:2h at 121m,
+#       eval 130m -> firing.
+#   (b) No-fire: renewal_ts=1e15 (far future), eval 130m. time()<1e15 -> no fire.
+#   (c) No-fire (brief-renewal, proves for:2h gate): renewal_ts=6000, eval 130m. time()>6000 from
+#       t=101m, but the hold is only 29m < for:2h -> pending, not firing. This is the case an
+#       absolute <N d threshold cannot express: the renewal IS overdue, just briefly — the for:
+#       gate rides it out.
+# Expired expr: time() > certmanager_certificate_expiration_timestamp_seconds, for:5m.
+#   (d) Fire: expiration_ts=0, eval 10m. time()>0 from t=1m, fires after for:5m at 6m, eval 10m.
+#   (e) No-fire: expiration_ts=1e15 (far future), eval 10m. time()<1e15 -> no fire.
+#
+# Run via `just k8s test-prom-rules` (recipe copies this test + .extracted_prometheus_rules.yaml into a temp dir).
+rule_files:
+  - ./.extracted_prometheus_rules.yaml
+evaluation_interval: 1m
+tests:
+  # === CertManagerRenewalLate ===
+  # (a) Fire: renewal overdue (renewal_ts=0, time() passed it long ago), held past for:2h.
+  - interval: 1m
+    input_series:
+      - series: 'certmanager_certificate_renewal_timestamp_seconds{name="example-tls",exported_namespace="secure"}'
+        values: '0x131'
+    alert_rule_test:
+      - eval_time: 130m
+        alertname: CertManagerRenewalLate
+        exp_alerts:
+          - exp_labels:
+              alertname: CertManagerRenewalLate
+              severity: warning
+              name: example-tls
+              exported_namespace: secure
+            exp_annotations:
+              description: Certificate example-tls in namespace secure renewal is overdue, cert-manager has not renewed past the scheduled renewal time.
+  # (b) No-fire: renewal far in the future (1e15 s ~= year 33658).
+  - interval: 1m
+    input_series:
+      - series: 'certmanager_certificate_renewal_timestamp_seconds{name="example-tls",exported_namespace="secure"}'
+        values: '1000000000000000x131'
+    alert_rule_test:
+      - eval_time: 130m
+        alertname: CertManagerRenewalLate
+        exp_alerts: []
+  # (c) No-fire (brief-renewal, proves for:2h gate): renewal_ts=6000, so time()>6000 is true from
+  # t=101m (time=6060), but at eval 130m the condition has only held 29m < for:2h -> pending, not
+  # firing. The renewal IS overdue; the for: gate is what keeps it silent.
+  - interval: 1m
+    input_series:
+      - series: 'certmanager_certificate_renewal_timestamp_seconds{name="example-tls",exported_namespace="secure"}'
+        values: '6000x131'
+    alert_rule_test:
+      - eval_time: 130m
+        alertname: CertManagerRenewalLate
+        exp_alerts: []
+  # === CertManagerCertificateExpired ===
+  # (d) Fire: cert expired (expiration_ts=0), held past for:5m.
+  - interval: 1m
+    input_series:
+      - series: 'certmanager_certificate_expiration_timestamp_seconds{name="example-tls",exported_namespace="secure"}'
+        values: '0x11'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: CertManagerCertificateExpired
+        exp_alerts:
+          - exp_labels:
+              alertname: CertManagerCertificateExpired
+              severity: critical
+              name: example-tls
+              exported_namespace: secure
+            exp_annotations:
+              description: Certificate example-tls in namespace secure has expired.
+  # (e) No-fire: expiration far in the future.
+  - interval: 1m
+    input_series:
+      - series: 'certmanager_certificate_expiration_timestamp_seconds{name="example-tls",exported_namespace="secure"}'
+        values: '1000000000000000x11'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: CertManagerCertificateExpired
+        exp_alerts: []
