@@ -71,7 +71,7 @@ tags:
 ## Metadata (observation-form, schema validation)
 
 - [topic] Gateway guardrails (admission, attach, connection, extauth resilience) + response headers (CSP/framing/COOP) on the external surface
-- [status] in-progress — Phase 1-2 delivered + live-verified (2026-08-15); Phases 3-5 proposed
+- [status] in-progress — Phase 1-3 delivered + live-verified (2026-08-15); Phases 4-5 proposed
 - [priority] medium
 - [area] networking / observability / iam
 - [created] 2026-08-14
@@ -89,7 +89,7 @@ tags:
 - A route-level SecurityPolicy that forgets mergeType can no longer silently detach the Gateway-level CrowdSec gate, and a SecurityPolicy that fails to attach raises an alert instead of leaving the route ungated.
 - The reserved-hostname admission policy covers every route kind the public listener accepts and constrains which Gateway a route may attach to.
 - The external proxy resists slowloris / connection exhaustion, and the https-redirect no longer reflects an arbitrary client Host.
-- A bouncer restart still 503s every public hostname, but the window is shorter (memory headroom, priorityClass, fast probes) and no longer silent (an unavailability alert fires).
+- A bouncer restart still 503s every public hostname and the window is no shorter — the headroom, priorityClass and probe levers were all dropped on evidence — but the failure is no longer silent: an impact-level ext_authz alert fires, and it catches an AppSec outage underneath the bouncer too. The AppSec rollout no longer opens a gap of its own.
 - Unauthenticated public apps get CSP / frame-ancestors / Permissions-Policy / COOP headers, reducing XSS/framing/clickjacking blast radius.
 - Path-deny rules are robust to percent-encoding/doubled-slash bypass attempts once explicit path normalization is enabled and re-tested (Phase 5 — currently UNCERTAIN).
 
@@ -139,7 +139,7 @@ C) The external gateway's `connectionLimit` is deliberately absent — the Phase
 
 **Process lesson:** the Phase 1 VAP rejected the first change written after it immediately, so the VAP modification and the route modification went into TWO separate commits, VAP first — apply order within a Flux Kustomization is not guaranteed, and the reverse order would have caused a transient admission rejection. During validation an out-of-band `kubectl apply` also happened (server-side dry-run always evaluates against the LIVE policy); Flux drift-correction converged it to the committed state. The correct procedure is the two-step commit ordering.
 
-### Phase 3 — ext_authz chain: shrink blast radius and outage window (no replicas)
+### Phase 3 — ext_authz chain: shrink blast radius and outage window (no replicas) ✅ (done 2026-08-15)
 - The chain is fail-closed (failOpen:false, statusOnError:503, gateway-policies.yaml:324-325 external, :298-299 internal) on a single-replica bouncer (replicaCount:1, crowdsec-bouncer/app/helmrelease.yaml:15), so a restart or OOMKill 503s every public hostname; on this single-node cluster the goal is a smaller outage window without replicas.
 - Raise the bouncer memory headroom — a 128Mi limit / 64Mi request is tight (crowdsec-bouncer/app/helmrelease.yaml:62-67); an OOMKill is a hard fail-closed outage across every public hostname. Blasts: only node-memory pressure; raise the request first so admission keeps it schedulable.
 - Give the bouncer a priorityClass above the workloads it gates, so it is never preempted or evicted first when the single node is under pressure. Blasts: a class ranked below a gated workload re-orders eviction the wrong way — the bouncer must outrank what it gates.
@@ -147,6 +147,28 @@ C) The external gateway's `connectionLimit` is deliberately absent — the Phase
 - Add a Prometheus alert on bouncer unavailability so the 503 window is visible, not silent. Blasts: only alert noise — calibrate the firing window to ride out a rolling restart.
 - No rollout surge on the bouncer: a surge would transiently run 2 pods on this single node, so it is rejected; the restart window is instead bounded by the memory-headroom, priorityClass, probe, and alert levers above.
 - No PodDisruptionBudget: a PDB is meaningless at 1 replica on 1 node and is deliberately omitted.
+
+**Delivery (2026-08-15) — Phase 3 implemented, deployed, live-verified.** Commits on `main`: `4a848946e` (close the AppSec rollout gap), `4c439c806` (alert on ext_authz failures, not just a dead bouncer).
+
+1. `EnvoyExtAuthzErrors` alert (envoy-proxy group, networking): `sum by (pod) (increase(envoy_http_ext_authz_error{job="networking/envoy-proxy", namespace="networking"}[5m])) > 0`, `for: 2m`, `severity: critical`, 3 promtool test cases. This is the impact-level signal the roadmap asked for: `CrowdSecBouncerDown` sees only the bouncer pod and `CrowdSecAppsecDown` only the appsec pod — this one measures the failure itself and covers both causes (a bouncer that is up but erroring, or an AppSec outage underneath it). It has never been non-zero, so any occurrence is real.
+2. `crowdsec-appsec` Deployment: `Recreate` → `RollingUpdate maxUnavailable:0 / maxSurge:1` via the chart `appsec.strategy` switch, `replicaCount` stays 1. Why: Recreate at 1 replica is a guaranteed outage window on every rollout, and the bouncer WAF branch is hardcoded fail-closed (no failOpen/timeout/skip switch): WAF error → action "error" → gRPC `codes.Unavailable` → `failOpen:false` + `statusOnError:503` → 503 to the client. `exemptIPs` cover only 10.0.0.0/8, so LAN apps are hit too, not just public ones. The Recreate is the chart's inherited blanket default (values.yaml:736-737, present since PR #189 with no recorded reason), contradicted by the chart's own later AppSec HA feature (PR #208); the appsec pod is stateless (no PVC — emptyDir + ConfigMap, no hostPort, per-pod LAPI registration).
+
+**Deviations from the roadmap text (deliberate, with justification):**
+
+A) The memory-headroom lever was dropped: the measured 7-day peak is 46 MiB against the 128 MiB limit (~2.8x headroom), the 64Mi request already sits above the peak, and there were zero OOMKill/restarts in 7 days. The roadmap's "the 128Mi limit is tight" premise was unverified and wrong.
+
+B) The priorityClass lever was dropped (human decision): the repo uses priorityClassName nowhere, only the system-* classes exist, and on a single-node cluster the effect is limited to eviction-order/preemption. It would be a new convention without reference points.
+
+C) The probe-tuning lever was dropped: the chart defaults give ~20s detection (initialDelay 5s, period 5s, failureThreshold 3), but the outage window is dominated by pod restart time, so tightening buys little and adds flapping risk.
+
+D) The roadmap's requested "unavailability alert" already existed: `CrowdSecBouncerDown`, live since 2026-07-27 (cd7ab20c2). What was missing was the impact-level signal — `EnvoyExtAuthzErrors` supplies that.
+
+**Honest limitation:** the "Recreate is a real outage source" conclusion rests on SOURCE-CODE evidence, not live observation. `bouncer_waf_errors_total` has been 0 for 90 days, and neither of the two AppSec pod swaps landed in a measurable-traffic window.
+
+**Side benefit:** `CrowdSecAppsecDown` saw a zero-target window on every rollout under Recreate (false-positive risk); RollingUpdate 0/1 removes that too.
+
+**Live verification (2026-08-15):** live PrometheusRule `envoy-proxy` group carries the 6th rule `EnvoyExtAuthzErrors`; the alert is loaded in Prometheus with health ok, state inactive (metric 0 on all 4 series — 2 gateways × http-10080/https-10443); `bouncer_waf_requests_total` increasing and `bouncer_waf_errors_total` 0; appsec deployment strategy RollingUpdate maxUnavailable=0/maxSurge=1, pod Ready 1/1.
+
 ### Phase 4 — Gateway response headers (native lateResponseHeaders: CSP / framing / COOP)
 - The baseline is already native: ClientTrafficPolicy headers.lateResponseHeaders injects HSTS and nosniff (set) plus Referrer-Policy (addIfAbsent) on both gateways (gateway-policies.yaml:123-131 external, :180-188 internal). Missing: Content-Security-Policy frame-ancestors 'none', Permissions-Policy, COOP/COEP.
 - Add the missing headers to the SAME lateResponseHeaders lists, using addIfAbsent so an app that sets its own header wins. Blasts: a set() would silently override a stricter app value — addIfAbsent keeps app sovereignty.
@@ -164,7 +186,7 @@ C) The external gateway's `connectionLimit` is deliberately absent — the Phase
 - A SecurityPolicy set to not-Accepted triggers an alert within the scrape interval.
 - connection.connectionLimit is set on the internal gateway (1024, half-cap alert); the external gateway is deliberately uncapped (no exhaustion path: ClusterIP-only + CiliumNetworkPolicy admits only the cloudflared pod, measured 7-day peak 1). requestReceivedTimeout lowering deliberately dropped — it covers the whole request reception (headers+body) and would break the large-upload routes; the slow-header vector is already bound by requestHeadersReceivedTimeout: 10s (Delivery deviation A).
 - The redirect route no longer reflects an arbitrary Host.
-- The bouncer memory limit is raised and a priorityClass is set; a bouncer-unavailability alert fires within the scrape interval. No PDB, no added replicas.
+- The bouncer memory-limit raise and priorityClass were deliberately dropped (Delivery deviations A-B: measured 7-day peak 46 MiB vs the 128 MiB limit is ~2.8x headroom with zero OOM in 7 days; no repo priorityClass convention on a single node); the impact-level EnvoyExtAuthzErrors alert covers bouncer and AppSec outages within the scrape interval. No PDB, no added replicas.
 - A CSP / frame-ancestors header is present on external responses, injected via ClientTrafficPolicy lateResponseHeaders (addIfAbsent).
 - Path normalization is on; encoded/doubled-slash deny-rule bypass attempts are blocked.
 
