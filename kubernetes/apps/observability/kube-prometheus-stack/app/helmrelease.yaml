@@ -112,6 +112,13 @@ spec:
         probes: false
         cAdvisor: true
         cAdvisorMetricRelabelings:
+          # Re-add chart-default CNI-interface drop our override lost (Helm arrays
+          # don't merge); non-host-net pods use eth0, lxc/tunl are Cilium veth dup.
+          - sourceLabels:
+              - __name__
+              - interface
+            action: drop
+            regex: "container_network_.*;(cali|cilium|cni|lxc|nodelocaldns|tunl).*"
           # Drop scheduler/apiserver metrics
           - sourceLabels:
               - __name__
