@@ -48,6 +48,11 @@ spec:
               PAPERLESS_PORT: "8000"
               PAPERLESS_ENABLE_COMPRESSION: "false"
               PAPERLESS_TRUSTED_PROXIES: "${POD_CIDR},${LAN_SUBNET}"
+              # ALLAUTH_TRUSTED_PROXY_COUNT is a hop COUNT, not a CIDR list: paperless defaults it
+              # to len(PAPERLESS_TRUSTED_PROXIES)=2, but the LAN path carries 1 XFF entry -> login 500.
+              # count=1 fixes LAN (true client IP); external (2 entries) still logs in — its allauth
+              # rate-limit key collapses to the tunnel peer, acceptable behind Cloudflare Access.
+              PAPERLESS_ALLAUTH_TRUSTED_PROXY_COUNT: "1"
               # Date parsing (Hungarian format: év.hónap.nap)
               PAPERLESS_DATE_ORDER: "YMD"
               # Paths
