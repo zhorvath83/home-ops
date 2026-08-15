@@ -1,8 +1,8 @@
 ---
 # yaml-language-server: $schema=https://json.schemastore.org/prometheus.rules.test.json
 # promtool unit tests for config/prometheusrule.yaml, covering EnvoyProxyDown,
-# EnvoyGatewayXDSRejected, EnvoyGatewayPolicyNotAccepted and
-# EnvoyGatewayPolicyStatusMissing. The EnvoyProxyDown expr
+# EnvoyGatewayXDSRejected, EnvoyGatewayPolicyNotAccepted,
+# EnvoyGatewayPolicyStatusMissing and EnvoyInternalConnectionsHigh. The EnvoyProxyDown expr
 # `count(up{job="networking/envoy-proxy", namespace="networking"} == 1) < 2` aggregates away
 # all labels, so exp_labels are alertname + severity only — it fires whenever fewer than 2
 # envoy-proxy targets are up: one-down, both-down, and all-vanished (count of an empty vector
@@ -241,3 +241,47 @@ tests:
                 is down, its securitypolicies RBAC/CRS entry broke, or every SecurityPolicy
                 was deleted. EnvoyGatewayPolicyNotAccepted is now blind and a silently
                 detached SecurityPolicy will not alert until this recovers.
+
+  # === EnvoyInternalConnectionsHigh ===
+  # Live listener-level gauge for the internal gateway's http/https listeners
+  # (admin/stats/readiness on 19001/19003 excluded via the listener_address regex).
+  # sum by (pod) collapses the per-listener series; > 512 fires, for: 10m, so the
+  # fire case evals past the hold and the boundary no-fire stays short of 10m.
+  # (o) No-fire: normal load (sum well under 512).
+  - interval: 1m
+    input_series:
+      - series: 'envoy_listener_downstream_cx_active{namespace="networking",pod="envoy-internal-7b474ddb45-26t5g",envoy_listener_address="0.0.0.0_10443"}'
+        values: '2x16'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: EnvoyInternalConnectionsHigh
+        exp_alerts: []
+  # (p) Boundary no-fire: above threshold but the 10m `for` hold not yet elapsed.
+  - interval: 1m
+    input_series:
+      - series: 'envoy_listener_downstream_cx_active{namespace="networking",pod="envoy-internal-7b474ddb45-26t5g",envoy_listener_address="0.0.0.0_10443"}'
+        values: '1x4 600x6'
+    alert_rule_test:
+      - eval_time: 9m
+        alertname: EnvoyInternalConnectionsHigh
+        exp_alerts: []
+  # (q) Fire: above threshold sustained past the 10m hold.
+  - interval: 1m
+    input_series:
+      - series: 'envoy_listener_downstream_cx_active{namespace="networking",pod="envoy-internal-7b474ddb45-26t5g",envoy_listener_address="0.0.0.0_10443"}'
+        values: '600x16'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: EnvoyInternalConnectionsHigh
+        exp_alerts:
+          - exp_labels:
+              alertname: EnvoyInternalConnectionsHigh
+              severity: warning
+              pod: envoy-internal-7b474ddb45-26t5g
+            exp_annotations:
+              summary: Envoy internal gateway active connections at half the cap
+              description: |-
+                envoy-internal (envoy-internal-7b474ddb45-26t5g) is at 600 active downstream
+                connections — half of the 1024-per-listener connectionLimit. At the cap
+                new connections are rejected, so every LAN app behind this gateway fails;
+                investigate before it engages.

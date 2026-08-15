@@ -169,6 +169,9 @@ spec:
     bufferLimit: 8Mi
     # EG deliberately defaults this to 1; the explicit 0 (unlimited) had no recorded reason.
     maxAcceptPerSocketEvent: 1
+    # Blast-radius bound for the LAN-exposed gateway (measured 7-day peak: 14), not attack mitigation.
+    connectionLimit:
+      value: 1024
   headers:
     earlyRequestHeaders:
       remove:

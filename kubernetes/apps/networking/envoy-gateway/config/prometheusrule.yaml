@@ -22,6 +22,19 @@ spec:
               (public) or envoy-internal (LAN) is unreachable. The down proxy's traffic
               path is dead. This is the data plane; the envoy-gateway controller (control
               plane) is a separate ServiceMonitor not covered here.
+        # Warn at half the per-listener cap; without an alert the limit would fail silently.
+        - alert: EnvoyInternalConnectionsHigh
+          expr: sum by (pod) (envoy_listener_downstream_cx_active{namespace="networking", pod=~"envoy-internal-.*", envoy_listener_address=~"0.0.0.0_(10080|10443)"}) > 512
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: Envoy internal gateway active connections at half the cap
+            description: |-
+              envoy-internal ({{ $labels.pod }}) is at {{ $value }} active downstream
+              connections — half of the 1024-per-listener connectionLimit. At the cap
+              new connections are rejected, so every LAN app behind this gateway fails;
+              investigate before it engages.
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/monitoring.coreos.com/prometheusrule_v1.json
 apiVersion: monitoring.coreos.com/v1
