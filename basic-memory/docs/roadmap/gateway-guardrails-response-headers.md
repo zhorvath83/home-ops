@@ -215,7 +215,7 @@ D) Permissions-Policy does NOT block WebAuthn. Pocket ID is passkey-based (no pa
 
 - **Per-route timeouts (Phase 2):** too-low a requestReceivedTimeout breaks large uploads (document/book ingest). Mitigation: calibrate per-route, keep a generous timeout on the ingest routes.
 - **extauth restart window (Phase 3):** the chain is fail-closed, so any bouncer restart 503s every public hostname. Mitigation: memory headroom + priorityClass + fast probes + an unavailability alert. Replicas, HA, and a PDB are explicitly out of scope on this single-node cluster.
-- **CSP (Phase 4):** a strict CSP breaks apps with inline scripts/widgets. Mitigation: default-strict, carve per-app exceptions where needed; coordinate the dashboard header with [[homepage-recon-exposure]].
+- **CSP (Phase 4):** a strict CSP — one with default-src or script-src — would break the gateway own 401 responseOverride page, which carries an inline script, along with any app that inlines scripts. That is why the delivered CSP carries frame-ancestors alone. Widening it later is not a config tweak: it needs a per-app audit, starting with that 401 page. frame-ancestors is self rather than none because paperless frames its own document preview and sends SAMEORIGIN itself.
 - **Path normalization (Phase 5):** enabling normalization can change routing for apps that rely on encoded path segments. Mitigation: test the deny rules AND the app routes with encoded variants before applying.
 - **Reserved-hostname VAP widening (Phase 1):** an over-broad parentRef constraint can reject a legitimate cross-Gateway attach. Mitigation: scope the constraint to the external Gateway family.
 
