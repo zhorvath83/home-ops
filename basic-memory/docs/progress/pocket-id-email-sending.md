@@ -3,7 +3,7 @@ title: pocket-id-email-sending
 type: progress-note
 permalink: home-ops/docs/progress/pocket-id-email-sending
 status: done
-roadmap: '[[pocket-id-email-sending]] (docs/roadmap)'
+roadmap: merged from docs/roadmap/pocket-id-email-sending (deleted at completion)
 priority: medium
 area: iam
 created: 2026-08-15
@@ -15,7 +15,62 @@ tags:
 - smtp2go
 ---
 
-# pocket-id-email-sending — execution progress
+# pocket-id-email-sending — transactional email for the IdP
+
+## Meta
+
+- [assessed] 2026-08-05 — repo state verified against pocket-id helmrelease/externalsecret/CNP, Pocket ID v2.13.0-distroless docs (https://pocket-id.org/docs/configuration/environment-variables), and the shared SMTP2GO 1Password item shape (pingvin-share-x externalsecret).
+- [confidence] high on the gap (helmrelease had no SMTP_* env, externalsecret no smtp2go extract); high on the relay path already open (CNP committed in 012239c16); high on UI_CONFIG_DISABLED scope (global override, confirmed against official docs); the recommended-option uncertainty (Phase 0 admin-UI audit) was resolved below by pinning every override var.
+- [depends_on] [[iam]] (Pocket IdP), [[external-secrets]] (onepassword-connect ClusterSecretStore + shared smtp2go item), [[cloudflare]] (SMTP2GO SPF/DKIM/DMARC DNS for .msg — already in place).
+- [convention] One shared SMTP2GO 1Password item HomeOps/smtp2go (fields smtp_hostname/port/from/user/password), extracted via dataFrom with a smtp2go_ prefix rewrite (same shape as pingvin-share-x). Implicit TLS on 465 → SMTP_TLS=tls.
+
+## Current state (2026-08-05, pre-implementation)
+
+| Layer | State | Evidence |
+|---|---|---|
+| CiliumNetworkPolicy egress | DONE — mail-eu.smtp2go.com:465 (implicit TLS), *.smtp2go.com wildcard | ciliumnetworkpolicy.yaml:24-31 (commit 012239c16) |
+| SMTP2GO 1Password item | DONE — shared item HomeOps/smtp2go | consumed by pingvin-share-x externalsecret.yaml:18-29 |
+| SMTP2GO DNS (SPF/DKIM/DMARC) | DONE — .msg subdomain | provision/cloudflare/dns_records.tf:160-192 |
+| HelmRelease SMTP env | MISSING — no SMTP_*, no UI_CONFIG_DISABLED, no EMAIL_* flags | helmrelease.yaml env block |
+| ExternalSecret smtp2go extract | MISSING — template only ENCRYPTION_KEY + MAXMIND_LICENSE_KEY | externalsecret.yaml |
+| Feature flags | MISSING — all EMAIL_*_ENABLED default false | not set anywhere |
+| Delivery verification | MISSING — no test mail | n/a |
+
+Net: the network path and relay credentials already existed (used by two other apps); the IdP was not wired into them. The CNP rule was committed ahead of config — a dangling egress allow with no in-pod consumer, which this item closes.
+
+## Target state
+
+Pocket IdP sends outbound transactional mail via SMTP2GO (mail-eu.smtp2go.com:465, implicit TLS), credentials from the shared HomeOps/smtp2go 1Password item through the existing onepassword-connect ClusterSecretStore, configuration fully in git (env-var override path).
+
+### Email feature flags — selection
+
+| Flag | Target | Rationale |
+|---|---|---|
+| EMAIL_LOGIN_NOTIFICATION_ENABLED | ON | new-device login alert; additive security signal, the main reason for this item |
+| EMAIL_ONE_TIME_ACCESS_AS_ADMIN_ENABLED | ON | admin can email a login code to a locked-out passkey user; recovery without weakening the unauthenticated surface |
+| EMAIL_API_KEY_EXPIRATION_ENABLED | ON | operational awareness for Terraform/admin API key expiry; low risk |
+| EMAIL_VERIFICATION_ENABLED | ON | verify email ownership on signup and email change |
+| EMAIL_ONE_TIME_ACCESS_AS_UNAUTHENTICATED_ENABLED | OFF | docs warn it "reduces the security significantly" — anyone with mailbox access bypasses passkeys. Contradicts the passkey-only policy. Do NOT enable. |
+| REQUIRE_USER_EMAIL | true | default; needed for the above to be meaningful |
+| SMTP_TLS | tls | port 465 = implicit TLS / SMTPS, not STARTTLS |
+| SMTP_SKIP_CERT_VERIFY | false | SMTP2GO presents a valid public cert |
+
+### Configuration surface — analysis
+
+UI_CONFIG_DISABLED is global: true overrides the admin UI for EVERY app setting (APP_NAME, SESSION_DURATION, HOME_PAGE_URL, ALLOW_USER_SIGNUPS, LDAP_*, accent color, …), not only email. Two paths were considered:
+
+- **Option A (chosen, recommended) — env-var override, UI_CONFIG_DISABLED=true**: full GitOps, matches the uniform ExternalSecrets model, no IdP-specific debt. Cost: must mirror every non-default UI value into env or the next rollout silently resets it — resolved by pinning every override var the docs list (see Decision below).
+- **Option B — admin UI only, leave UI_CONFIG_DISABLED unset**: lighter, but the IdP email config lives only in the admin UI / app DB, unreproducible from git, invisible to just pocket-id audit. Same debt as calibre-web-automated's OIDC secret (iam §8). Rejected for the trust root.
+
+## Open questions / risks (resolved at implementation)
+
+- [question, resolved] UI_CONFIG_DISABLED scope acceptance — Option A chosen; every UI config value owned in env. Re-audit on Pocket ID upgrades that add new UI fields.
+- [question, resolved] Phase 0 audit access — eliminated by pinning every override var to documented defaults; the human's commit-time review replaced the DB/admin-UI read.
+- [question, resolved] LDAP in use? — confirmed unused; LDAP_ENABLED=false explicit, attribute maps left to defaults.
+- [risk, mitigated] silent config reset on rollout — mitigated by pinning every override var; human-verified the UI did not reset after the rollout.
+- [risk, accepted] feature-flag interaction with passkey-only posture — EMAIL_VERIFICATION_ENABLED on signup is fine (the external route blocks /signup); one-time-access-as-unauthenticated stays OFF.
+- [risk, accepted] SMTP2GO as a shared dependency — three consumers of one relay (pingvin-share-x, calibre-web-automated, IdP). A relay outage silences IdP notifications but does not break auth (passkey login is unaffected).
+- [debt, closed] the CNP SMTP2GO egress rule (012239c16) was committed ahead of this item with no in-pod consumer — this item closes the dangling allow.
 
 ## Decision (with human, 2026-08-15)
 
