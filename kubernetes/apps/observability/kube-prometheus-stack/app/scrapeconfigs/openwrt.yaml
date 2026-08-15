@@ -16,3 +16,9 @@ spec:
         - __name__
       regex: "^go_.*"
       action: drop
+    # V4: drop node_network interface metadata (no dashboard consumer; the grafana
+    # 18153 OpenWRT dashboard uses traffic families, not metadata).
+    - sourceLabels:
+        - __name__
+      regex: "^node_network_(flags|device_id|dormant|iface_link_mode|transmit_queue_length|carrier.*|address_assign_type|name_assign_type|net_dev_group|protocol_type)"
+      action: drop

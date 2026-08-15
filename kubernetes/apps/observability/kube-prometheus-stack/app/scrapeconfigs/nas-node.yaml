@@ -18,3 +18,15 @@ spec:
         - __name__
       regex: "^go_.*"
       action: drop
+    # V4: drop node_network interface metadata (no dashboard consumer; traffic
+    # families node_network_(receive|transmit)_bytes_total kept).
+    - sourceLabels:
+        - __name__
+      regex: "^node_network_(flags|device_id|dormant|iface_link_mode|transmit_queue_length|carrier.*|address_assign_type|name_assign_type|net_dev_group|protocol_type)"
+      action: drop
+    # V1: nas-node runs real OMV/Debian systemd and exposes node_systemd_unit_state
+    # (no consumer in the cluster).
+    - sourceLabels:
+        - __name__
+      regex: "node_systemd_unit_state"
+      action: drop
