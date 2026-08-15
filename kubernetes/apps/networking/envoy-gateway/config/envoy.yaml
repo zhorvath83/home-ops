@@ -57,6 +57,9 @@ spec:
               response_flags: "%RESPONSE_FLAGS%"
               response_code_details: "%RESPONSE_CODE_DETAILS%"
               downstream_remote_address: "%DOWNSTREAM_REMOTE_ADDRESS%"
+              # Detected client IP vs. actual TCP peer — the pair that shows whether
+              # XFF-based client IP detection resolved or silently fell back.
+              downstream_direct_remote_address: "%DOWNSTREAM_DIRECT_REMOTE_ADDRESS%"
               x-forwarded-for: "%REQ(X-FORWARDED-FOR)%"
               user-agent: "%REQ(USER-AGENT)%"
               request_id: "%REQ(X-REQUEST-ID)%"
@@ -134,6 +137,9 @@ spec:
               response_flags: "%RESPONSE_FLAGS%"
               response_code_details: "%RESPONSE_CODE_DETAILS%"
               downstream_remote_address: "%DOWNSTREAM_REMOTE_ADDRESS%"
+              # Detected client IP vs. actual TCP peer — the pair that shows whether
+              # XFF-based client IP detection resolved or silently fell back.
+              downstream_direct_remote_address: "%DOWNSTREAM_DIRECT_REMOTE_ADDRESS%"
               x-forwarded-for: "%REQ(X-FORWARDED-FOR)%"
               user-agent: "%REQ(USER-AGENT)%"
               request_id: "%REQ(X-REQUEST-ID)%"

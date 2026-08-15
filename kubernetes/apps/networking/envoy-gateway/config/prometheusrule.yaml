@@ -22,3 +22,29 @@ spec:
               (public) or envoy-internal (LAN) is unreachable. The down proxy's traffic
               path is dead. This is the data plane; the envoy-gateway controller (control
               plane) is a separate ServiceMonitor not covered here.
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/monitoring.coreos.com/prometheusrule_v1.json
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: envoy-gateway
+spec:
+  groups:
+    - name: envoy-gateway
+      rules:
+        # xds_nack_total (new in EG v1.9.0) is the only signal for a rejected config push:
+        # the proxy keeps serving its last known good config, so nothing is visible in
+        # traffic until it restarts and fails to load. increase() rather than the raw
+        # counter, so a healed NACK stops alerting instead of latching forever.
+        - alert: EnvoyGatewayXDSRejected
+          expr: increase(xds_nack_total{job="envoy-gateway", namespace="networking"}[15m]) > 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: Envoy rejected an xDS config update
+            description: |-
+              Proxy {{ $labels.nodeID }} rejected a config update for
+              {{ $labels.typeURL }} and keeps serving its last known good config.
+              Traffic still flows, but that proxy will fail to start on its next
+              restart. The rejection reason is in the envoy-gateway controller log.

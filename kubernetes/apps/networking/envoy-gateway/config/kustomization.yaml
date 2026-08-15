@@ -8,7 +8,6 @@ resources:
   - ./gateway-internal.yaml
   - ./gateway-policies.yaml
   - ./validatingadmissionpolicy.yaml
-  - ./security-headers.yaml
   - ./ciliumnetworkpolicy-external.yaml
   - ./ciliumnetworkpolicy-internal.yaml
   - ./observability.yaml
