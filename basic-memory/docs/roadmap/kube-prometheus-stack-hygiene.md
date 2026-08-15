@@ -359,3 +359,188 @@ per file from a clean working tree (`git status` checked before each `git add`).
 ### Next
 
 Phase 2 (untapped-value alert gaps + the factual correction) is **not started**; its brief is pending Maestro verification of this Phase 1 record. The dropped metrics have no dashboard/PrometheusRule consumer (verified per-family against the cluster's Grafana dashboards and PrometheusRules), so no consumer breaks.
+
+
+## Phase 2 In-Progress Checkpoint (2026-08-15)
+
+Context-survival checkpoint (context at 64%; clear+reload expected before Phase 3). Captures ratified decisions + the P2.2 redesign + open follow-ups so a fresh-context session can resume. The authoritative record of completed commits is git; this note is the non-obvious state.
+
+### Ratified + implemented this turn (P2.1 = Commit A, P2.3 = Commit C)
+- **P2.1 (Commit A) — TSDB-growth.** Files: kubernetes/apps/observability/kube-prometheus-stack/app/prometheusrules/tsdb-growth.yaml + tsdb-growth_test.yaml + add ./tsdb-growth.yaml to that dir kustomization.yaml.
+  - Trend expr (warning, for: 30m): `max by (job) (predict_linear(prometheus_tsdb_storage_blocks_bytes[3d], 7d)) > 0.9 * max by (job) (prometheus_tsdb_retention_limit_bytes)`. The max by (job) scopes away a stale churned-pod-IP series producing predict=-1.24e11 garbage. Live baseline at deploy: retention_limit=4 718 592 000 (4.5 GB, matches retentionSize: 4500MB), blocks_bytes=~230 MB, predict=2.77 GB, 0.9*limit=4.04 GB, ratio=68.6% (31% headroom, does NOT fire on deploy).
+  - Spike expr (warning, for: 5m): `increase(prometheus_tsdb_storage_blocks_bytes[1h]) > 100000000`.
+  - Spike step-size CONFIRMED safe (Maestro condition): natural single 2h-block step measured = ~34 MB (increase[2h]=33.7 MB; blocks_bytes 230 MB / blocks_loaded 6 = 38.4 MB/block avg; increase[6h]=85 MB ~ 2.5 blocks). Blocks land every 2h so increase[1h] sees at most one block (~34 MB). 100 MB/h ~ 3x the single-block step; NOT close -> keep 100 MB/h, no widen/raise.
+- **P2.3 (Commit C) — VolSync missed-interval.** APPEND to existing kubernetes/apps/volsync-system/volsync/app/prometheusrule.yaml (volsync.rules group) + extend prometheusrule_test.yaml.
+  - Expr (warning, for: 15m): `increase(volsync_missed_intervals_total[1h]) > 0`.
+  - ROADMAP CORRECTION: the identity label is obj_name/obj_namespace/role, NOT $labels.name as the roadmap assumed. Annotation uses {{ $labels.obj_namespace }}/{{ $labels.obj_name }} (matches the existing volsync rule). Does NOT fire on deploy (all volsync_missed_intervals_total = 0, increase[1h] = 0).
+
+### P2.2 (Commit B) — REDESIGNED, HELD for ratify (NOT implemented)
+- Premise CORRECTION (record like the Phase 1 head-drift / V4 corrections): the roadmap "soonest ~6d" was a MISREAD. horvathzoltan-me + pocket-id-tls are SHORT-LIVED certs (duration 160h ~ 6.67d, renewBefore 1/3 ~ 53h), healthy Ready=True. A 160h cert is NEVER more than 6.67d from expiry, so an absolute <7d rule is true 100% forever — not a canary and not fixable by tightening. k8tz-tls is 2160h (90d), renewBefore 720h (30d). An absolute day threshold cannot span both.
+- Confirmed live metrics: certmanager_certificate_expiration_timestamp_seconds (notAfter), certmanager_certificate_renewal_timestamp_seconds (renewalTime = notAfter - renewBefore; advances ONLY on successful renewal), certmanager_certificate_ready_status{condition=True|False|Unknown} (gauge=1 when current). certmanager_certificate_not_after_seconds ABSENT; no certmanager_certificate_request_* metrics.
+- Proposed redesign (relative to each cert own cycle):
+  - Rule 1 CertManagerRenewalLate (warning, for: 1h): `time() > certmanager_certificate_renewal_timestamp_seconds`. Fires when renewal is >1h past its scheduled time (relative — no absolute day count). Silent through normal renewal (renewal_timestamp advances on success within minutes; for:1h rides it out). Uniform for 160h and 2160h certs. Current state: time() < renewal_timestamp for all 3 (healthy, mid-cycle) -> does NOT fire on deploy.
+  - Rule 2 CertManagerCertificateExpired (critical, for: 5m): `time() > certmanager_certificate_expiration_timestamp_seconds`. Catastrophic backstop (cert actually lapsed). Rule 1 gives ~52h lead for the 160h cert; Rule 2 is the last-resort page.
+  - REJECTED: a ready_status{condition=True} != 1 rule (for:15m) — would false-positive on a slow-but-healthy ACME renewal (>15 min DNS propagation); Rule 1 covers the failure mode more cleanly without that noise.
+  - Location: kubernetes/apps/cert-manager/cert-manager/app/prometheusrule.yaml + prometheusrule_test.yaml + app/kustomization.yaml (colocated, ACCEPTED). Annotation labels name + exported_namespace render (asserted via exp_annotations).
+- AWAITING Maestro ratify of Rule 1+2 (and for:1h vs for:2h tolerance) before implementing Commit B.
+
+### Open follow-ups (survive context clear)
+1. P2.1 3-day predict watch (Maestro condition, cannot live in context): measure `predict_linear(prometheus_tsdb_storage_blocks_bytes[3d], 7d)` and the 0.9*retention_limit ratio DAILY on 2026-08-16, 2026-08-17, 2026-08-18. Expect the predict value to DECREASE as the 3d window slides past the Phase-1 drop (decaying high bias). An UPWARD trend once the window is fully post-drop (~3 days out) = real growth, not window pollution -> investigate cardinality. Baseline at deploy: predict=2.77 GB, threshold=4.04 GB, ratio=68.6%.
+2. P2.1 spike step-size: confirmed ~34 MB/block, 100 MB/h = ~3x margin (safe).
+3. P2.2 ratify pending -> implement Commit B -> FINAL docs commit (append a Phase 2 Completion section to this note + commit all basic-memory/ changes: this checkpoint + the completion).
+
+### Resume state for a fresh-context session
+- If A and C are committed (git log shows the feat commits on main) but P2.2 not done: await/implement Commit B per the ratified expression above (check the Maestro ratify message for the final for: value), then the final docs commit. Working tree may carry an unstaged basic-memory/ change (this checkpoint) — it is intentional, committed only in the final docs commit.
+
+
+## Phase 2 RATIFIED Implementation Plan (2026-08-15) — AUTHORITATIVE
+
+Status (all four decisions ratified by the Maestro on 2026-08-15):
+- P2.1 TSDB-growth trend + spike — RATIFIED.
+- P2.2 cert-manager redesign (renewal-relative) — RATIFIED. SUPERSEDES the "HELD for ratify" language in the Phase 2 In-Progress Checkpoint section above; read this section, not that one, for P2.2.
+- P2.3 VolSync missed-interval — RATIFIED.
+- P2.2 location (cert-manager/app/ colocated) — RATIFIED.
+
+Two judgment calls made with the available evidence (Maestro delegated both; will not overrule):
+1. **Rule 1 `for: 2h` (not 1h).** A 160h cert (renewBefore 53h) gives lead time = 53h - for. for:1h => 52h; for:2h => 51h. The 1h cost is negligible against 51h, and for:2h rides out a slow-but-healthy ACME DNS-01 renewal (DNS propagation + one retry cycle, up to ~2h) without a false page. Normal renewal completes in minutes; for:2h keeps the alert silent through it. Taken the Maestro's suggestion.
+2. **Spike alert uses `delta`, not `increase`.** `prometheus_tsdb_storage_blocks_bytes` is a GAUGE with legitimate DOWN-steps at compaction merges (3 blocks -> 1) and retention evictions. `increase`/`rate` apply counter-reset semantics and inflate on those down-steps, which can false-fire a spike at the next compaction. `delta` (pure net change, no reset handling) catches a genuine runaway-block persist (net up > 100 MB in 1 h) and stays silent on compaction-only movement. The ~34 MB natural per-block step / 3x margin analysis is unchanged (delta[1h] right after a normal persist = ~34 MB, same as the increase measurement, because no down-step was in that window). This is a correctness refinement of the ratified spike alert (same name, same 100 MB threshold, same purpose); document it in the commit body and the docs commit.
+
+### Commit plan (4 commits, all on main, then push)
+
+Each code commit: explicit pathspec staging (`git add <file> ...` per touched file — NEVER `git add -A`/`git add .`), conventional emoji commit. The working tree carries an UNSTAGED `basic-memory/` change (this checkpoint); it is intentionally left unstaged through A/B/C and committed only in the docs commit D.
+
+**Commit A — P2.1 TSDB-growth.** Message: `✨ feat(observability): add TSDB growth-trend and spike alerts`.
+- NEW `kubernetes/apps/observability/kube-prometheus-stack/app/prometheusrules/tsdb-growth.yaml` — PrometheusRule name `tsdb-growth`, group `tsdb.rules`:
+  - Alert `PrometheusTSDBGrowthTrend` (severity: warning, for: 30m):
+    `expr: max by (job) (predict_linear(prometheus_tsdb_storage_blocks_bytes[3d], 7d)) > 0.9 * max by (job) (prometheus_tsdb_retention_limit_bytes)`
+    The `max by (job)` on BOTH sides scopes away a stale churned-pod-IP series whose predict_linear returns a garbage -1.24e11. Annotation names the job via {{ $labels.job }} and states the 90%-of-retention-in-7d condition.
+  - Alert `PrometheusTSDBSpike` (severity: warning, for: 5m):
+    `expr: max by (job) (delta(prometheus_tsdb_storage_blocks_bytes[1h])) > 100000000`
+    (delta, not increase — see judgment call #2.) Annotation names the job and flags possible runaway cardinality.
+- NEW `kubernetes/apps/observability/kube-prometheus-stack/app/prometheusrules/tsdb-growth_test.yaml` (schema json.schemastore.org/prometheus.rules.test.json, `rule_files: [./.extracted_prometheus_rules.yaml]`, `evaluation_interval: 1m`). Run via `just k8s test-prom-rules`.
+  - Trend fire: blocks_bytes on a linear ramp so predict_linear(3d,7d) > 0.9*limit. With retention_limit_bytes constant = 4 718 592 000 (4500 MiB), threshold = 4 246 732 800. Use ramp v0=2.5e9 at rate r=200 000/min (v(t)=2.5e9 + 200000*t). predict at T=3d (window full, 4320 samples) = v(3d) + r*10080 = (2.5e9 + 200000*4320) + 200000*10080 = 2.5e9 + 8.64e8 + 2.016e9 = 5.38e9 > 4.246e9. Holds across the 30m `for` (ramp continues) -> fires at eval 3d+30m = 4350m. exp_labels: alertname + severity=warning + job (the prometheus job label, e.g. "kube-prometheus-stack-prometheus"). exp_annotations asserted (job renders).
+  - Trend no-fire: blocks_bytes flat at 2.5e9 -> predict 2.5e9 < 4.246e9 -> no fire.
+  - Trend boundary pair (proves > strictness, not >=): rate r=120 000/min -> predict = 2.5e9 + 120000*14400 = 4.228e9 (just BELOW 4.246e9) -> NO fire; rate r=122 000/min -> predict = 2.5e9 + 122000*14400 = 4.257e9 (just ABOVE) -> fire. (14400 = 3d+7d in minutes = 4320+10080.) This pair straddles the threshold.
+  - Spike fire: blocks_bytes steps up by 150 000 000 in the last 1h (e.g. flat 2.5e9 for a while, then +150e6) so delta[1h] = 150e6 > 100e6. Holds 5m -> fires at the step + 5m. exp_labels + exp_annotations asserted.
+  - Spike no-fire: a normal ~34 MB block step (delta[1h]=34e6 < 100e6) -> no fire. Use a +34 000 000 step.
+  - Spike no-fire (compaction down-step): blocks_bytes steps DOWN 70e6 (compaction merge) -> delta[1h] negative -> no fire (proves delta does not false-fire on compaction, the increase->delta fix's value).
+  - NOTE: the exact promtool `values` strings (e.g. `2500000000+200000x4350`) are derivable from the rates above; model the ramp with `v0+rate x N` notation and the step with flat-then-jump. The retention_limit_bytes input series is a constant `4718592000x N` (or whatever 4500 MiB resolves to — verify: 4500*1024*1024 = 4 718 592 000). Keep eval times past the `for:` (trend eval at 4350m; spike fire at step+5m).
+
+**Commit B — P2.2 cert-manager.** Message: `✨ feat(cert-manager): add renewal-relative certificate expiry alerts`.
+- NEW `kubernetes/apps/cert-manager/cert-manager/app/prometheusrule.yaml` — PrometheusRule name `cert-manager`, group `cert-manager.rules`:
+  - Alert `CertManagerRenewalLate` (severity: warning, for: 2h):
+    `expr: time() > certmanager_certificate_renewal_timestamp_seconds`
+    Annotation: `Certificate {{ $labels.name }} in namespace {{ $labels.exported_namespace }} renewal is overdue — cert-manager has not renewed past the scheduled renewal time.`
+  - Alert `CertManagerCertificateExpired` (severity: critical, for: 5m):
+    `expr: time() > certmanager_certificate_expiration_timestamp_seconds`
+    Annotation: `Certificate {{ $labels.name }} in namespace {{ $labels.exported_namespace }} has expired.`
+  - Confirmed live metrics (measured this session): both exist. Per-cert label set: name, exported_namespace, issuer_name, issuer_kind. Current healthy state: time() < renewal_timestamp for all 3 certs (horvathzoltan-me renewal=1787109943, pocket-id-tls=1787109889, k8tz-tls=1790452645; now ~1786790430) -> NEITHER alert fires on deploy.
+- NEW `kubernetes/apps/cert-manager/cert-manager/app/prometheusrule_test.yaml`:
+  - RenewalLate fire: set renewal_timestamp in the PAST relative to eval time (e.g. renewal_ts = eval_time - 3h, so time() > renewal_ts holds) for >2h -> fires at eval past 2h. Model: a constant series `certmanager_certificate_renewal_timestamp_seconds{name="...",exported_namespace="..."}` with a fixed unix value; eval_time chosen so time() at eval > ts + 2h. exp_labels: alertname + severity=warning + name + exported_namespace. exp_annotations asserted (name + exported_namespace render).
+  - RenewalLate no-fire: renewal_timestamp in the FUTURE (healthy mid-cycle) -> time() < ts -> no fire.
+  - RenewalLate no-fire (brief normal-renewal window): renewal_ts = eval_time - 30m (renewal in progress, just 30m past) -> time() > ts holds but only 30m < for:2h -> NOT yet firing (proves for:2h rides out a normal renewal). This is the key no-spurious-fire case.
+  - Expired fire: expiration_timestamp in the past (time() > expiration_ts) for >5m -> fires.
+  - Expired no-fire: expiration_timestamp in the future -> no fire.
+  - NOTE: promtool cannot call time() arbitrarily; use fixed eval_time values and set the timestamp series to fixed unix seconds so the comparison is deterministic. e.g. eval_time: 2h0m, series value 3600 (1h after epoch) -> time()=7200 > 3600 by 1h... choose values so the for: boundary is clear. The fresh me picks concrete unix-second values and eval_times that make the > and for: semantics unambiguous (the pattern is: renewal_ts = T - delta, eval at T, fire iff delta > for:).
+- MODIFY `kubernetes/apps/cert-manager/cert-manager/app/kustomization.yaml` — add `- ./prometheusrule.yaml` to resources (currently lists ocirepository, grafanafolder, grafanadashboard, helmrelease).
+
+**Commit C — P2.3 VolSync missed-interval.** Message: `✨ feat(volsync): add missed-interval alert`.
+- MODIFY `kubernetes/apps/volsync-system/volsync/app/prometheusrule.yaml` — APPEND a 3rd rule to the existing `volsync.rules` group (after VolSyncVolumeOutOfSync):
+  - Alert `VolSyncMissedInterval` (severity: warning, for: 15m):
+    `expr: increase(volsync_missed_intervals_total[1h]) > 0`
+    Annotation: `VolSync {{ $labels.obj_namespace }}/{{ $labels.obj_name }} missed a scheduled sync interval.`
+    (volsync_missed_intervals_total is a COUNTER, so increase is correct here — unlike the TSDB gauge. Identity labels are obj_name/obj_namespace/role, NOT name — see correction #2.)
+- MODIFY `kubernetes/apps/volsync-system/volsync/app/prometheusrule_test.yaml` — APPEND test cases following the existing a/b/c pattern:
+  - Fire: missed_intervals_total increments by 1 in the last 1h (e.g. `0x10 1x7` -> increase[1h]=1 > 0 at eval 16m, holds 15m) -> fires. exp_labels: alertname + severity=warning + obj_namespace + obj_name. exp_annotations asserted (obj_namespace/obj_name render).
+  - No-fire: counter flat at 0 (increase[1h]=0) -> no fire.
+  - No-fire: counter flat at a constant 5 (steady, no increase) -> increase[1h]=0 -> no fire (proves it is increase>0, not the absolute value).
+- NO new file, NO kustomization change (prometheusrule.yaml already in the volsync app kustomization).
+
+**Commit D — docs.** Message: `📝 docs(progress): record Phase 2 of kube-prometheus-stack-hygiene`.
+- First APPEND a "Phase 2 Completion" section to THIS BM note (via edit_note append): commits A/B/C shas, per-commit gate results (test-prom-rules green, pre-commit green, LOADED proof, no-fire proof with the live query values), the 3 roadmap corrections (below), and the spike increase->delta fix rationale.
+- Then `git add basic-memory/` (explicit pathspec covering the BM dir) and commit. (This stages BOTH the In-Progress Checkpoint written earlier AND the Phase 2 Completion + this plan — all the unstaged basic-memory changes land together in the docs commit, as intended.)
+
+### Per-commit gates (apply to A, B, C)
+1. promtool unit tests for the rule's test file pass: positive/fire case + negative/no-fire case + boundary pair (threshold strictness: > not >=, == not >=) + asserted exp_annotations (a broken {{ $labels.* }} or $value template MUST fail the suite). The bar is BM ADR docs/decisions/promtool-unit-test-bar and kubernetes/CLAUDE.md "PrometheusRule Unit Tests".
+2. `just k8s test-prom-rules` green (whole suite — the recipe copies tests + .extracted_prometheus_rules.yaml into a mktemp scratch dir; writes nothing under kubernetes/).
+3. pre-commit green on the touched files (`pre-commit run --files <files>` or full run).
+4. explicit pathspec staging (`git add <file> ...` per touched file; NEVER `git add -A` / `git add .` — the working tree carries the intentional unstaged basic-memory/ change).
+5. AFTER commit + push: reconcile the touched Flux Kustomization (`just k8s flux-reconcile` or wait for auto-reconcile) and verify the rule is LOADED + evaluating + NOT firing against live data:
+   - LOADED: `kubectl get --raw '/api/v1/namespaces/observability/services/prometheus-operated:9090/proxy/api/v1/rules'` shows the new rule (filter by rule_name).
+   - No spurious firing: evaluate each expr against real data via the prometheus proxy `/api/v1/query?query=<urlenc>` and confirm the result is empty (no firing):
+     - P2.1 trend: predict=2.77 GB < 4.04 GB (0.9*4.5GB) -> NOT firing. P2.1 spike: delta[1h] ~0 (no block in the last 1h) or ~34 MB (one block) << 100 MB -> NOT firing.
+     - P2.2 RenewalLate: time() < renewal_timestamp for all 3 certs -> NOT firing. Expired: time() < expiration_timestamp for all 3 -> NOT firing.
+     - P2.3 missed: increase(volsync_missed_intervals_total[1h]) = 0 for all volsync objects -> NOT firing.
+   - This "no spurious firing on deploy" check is THE gate that makes a commit fully verified, not half-verified.
+6. The Maestro's stated risk is a commit landing half-verified (auto-compact mid-gate). Do NOT start the next commit until the current one is pushed + reconciled + LOADED + no-fire-verified.
+
+### Three roadmap corrections to record (in the Commit D docs / Phase 2 Completion section)
+1. P2.2 short-lived-cert premise MISREAD: the roadmap's "soonest ~6d to expiry" observation was a healthy short-lived cert (horvathzoltan-me + pocket-id-tls, duration 160h ~ 6.67d, renewBefore 1/3 ~ 53h) at rest mid-cycle, NOT a near-expiry cert. A 160h cert is never more than 6.67d from expiry, so an absolute <7d rule is true forever — not a canary. k8tz-tls is 2160h (90d, renewBefore 720h/30d). Absolute day thresholds cannot span both; the ratified redesign is renewal-relative (time() > renewal_timestamp). This corrects the roadmap's P2.2 premise.
+2. P2.3 identity labels: the roadmap said `$labels.name`; the live volsync metrics use `obj_name` / `obj_namespace` / `role`. The VolSyncMissedInterval annotation uses {{ $labels.obj_namespace }}/{{ $labels.obj_name }} to match the existing volsync rules.
+3. P2.1 spike function: the roadmap said `increase`; corrected to `delta` because prometheus_tsdb_storage_blocks_bytes is a gauge with compaction/retention down-steps that inflate increase's counter-reset logic. (Judgment call #2 above.)
+
+### Open follow-up (dated, survives context)
+- P2.1 3-day predict watch (Maestro condition): measure `predict_linear(prometheus_tsdb_storage_blocks_bytes[3d], 7d)` and the ratio to 0.9*retention_limit DAILY on 2026-08-16, 2026-08-17, 2026-08-18. Expect the predict value to DECREASE as the 3d window slides past the Phase-1 metricRelabeling drop (the pre-drop high samples age out of the window — decaying high bias, not real growth). An UPWARD trend once the window is fully post-drop (~3 days out, from ~2026-08-18) = real cardinality growth, not window pollution -> investigate. Baseline at deploy (2026-08-15): predict=2.77 GB, threshold=4.04 GB, ratio=68.6%, 31% headroom. Record each day's value + ratio in this note.
+
+### Resume / signal protocol
+- After `/clear` + reload from this BM note: signal the Maestro "Phase 2 context reloaded, implementing".
+- Then implement A -> C -> B -> D in order, each with the per-commit gates above (do not start the next until the current is pushed + reconciled + LOADED + no-fire-verified).
+- Single completion signal when A+B+C+docs are done, with the gate evidence (commit shas, test-prom-rules green, LOADED + no-fire live query outputs, the 3 corrections recorded).
+- If any gate fails or a blocker appears, signal the blocker immediately instead of proceeding.
+## Phase 2 Completion (2026-08-15)
+
+**Implementer**: Llama dev subterminal. **Maestro (supervising)**: Claude Code #2.
+**Branch**: `main` (direct-to-main, the established pattern). **Status**: DONE — 3 code commits (A, C, B) pushed + reconciled + LOADED + no-fire-verified; this docs commit (D) closes Phase 2.
+
+### Commit-by-commit table
+
+| # | SHA | Scope | Alert(s) added | File(s) |
+|---|-----|-------|----------------|---------|
+| A | `8723eb295` | observability | PrometheusTSDBGrowthTrend (warning, for:30m), PrometheusTSDBSpike (warning, for:5m) | `kube-prometheus-stack/app/prometheusrules/{tsdb-growth,tsdb-growth_test}.yaml` + kustomization |
+| C | `09768366c` | volsync | VolSyncMissedInterval (warning, for:15m) | `volsync-system/volsync/app/{prometheusrule,prometheusrule_test}.yaml` |
+| B | `15a7267b1` | cert-manager | CertManagerRenewalLate (warning, for:2h), CertManagerCertificateExpired (critical, for:5m) | `cert-manager/cert-manager/app/{prometheusrule,prometheusrule_test}.yaml` + kustomization |
+| D | (this commit) | docs | — | `basic-memory/docs/roadmap/kube-prometheus-stack-hygiene.md` (this checkpoint + completion) |
+
+Implementation order was A → C → B → D (P2.1 and P2.3 were ratified first; P2.2 was redesigned and ratified after). An unrelated renovate commit (`bf9555039`, grafanaDashboards preset repoint) landed between C and B — not part of Phase 2.
+
+### Gate evidence (every code commit)
+
+Each code commit passed the full per-commit gate before the next was started:
+1. `just k8s test-prom-rules` green — every `<basename>_test.yaml` pairs with its `.yaml`, `.spec.groups` extracted via yq, `promtool check rules` + `promtool test rules` pass in a mktemp scratch dir. Bar met: positive + negative + boundary + `exp_annotations` (threshold alerts add a boundary pair; the cert-manager RenewalLate adds a brief-renewal case proving the `for:2h` gate).
+2. pre-commit green on the touched files (yamlfmt/yamllint/gitleaks/promtool-rule-tests).
+3. Explicit-pathspec staging (`git add <file>` per touched file) from a working tree checked with `git status` first — the unstaged BM checkpoint was never staged with A/C/B.
+4. Pushed, then the touched Flux Kustomization reconciled (`flux reconcile kustomization <name> --with-source`), confirmed applied at the exact commit sha.
+5. **LOADED + no-fire on live data** (the gate that makes a commit fully verified): the new rule group appeared in `prometheus_rule_group_rules`, `prometheus_rule_evaluation_failures_total` = 0 for the group, and the alert condition evaluated false on real cluster data (`ALERTS{alertname=...}` empty). Measured at deploy:
+
+**A — TSDB growth (live, 2026-08-15):**
+- Trend: `predict_linear(prometheus_tsdb_storage_blocks_bytes[3d], 7d)` = **2.76 GB** (2 757 987 770 B) < threshold **4.25 GB** (4 246 732 800 B = 0.9 × 4 718 592 000 retention) → NOT firing. Ratio 65.0%, 35% headroom. (Baseline at deploy was 2.77 GB / 68.6%; the predict is decaying as the 3d window slides past the Phase-1 metricRelabeling drop — expected.)
+- Spike: `delta(prometheus_tsdb_storage_blocks_bytes[1h])` = **19.5 MB** (19 451 260 B) << 100 MB threshold → NOT firing (a single natural ~2h-block persist, ~3x below threshold).
+- ALERTS empty; eval failures 0.
+
+**C — VolSync missed-interval (live, 2026-08-15):**
+- `increase(volsync_missed_intervals_total[1h])` = **0** for all 39 VolSync objects (source + destination roles across selfhosted/downloads/media/security) → NOT firing.
+- ALERTS empty; eval failures 0.
+
+**B — cert-manager renewal-relative (live, 2026-08-15):**
+- RenewalLate: `time() - certmanager_certificate_renewal_timestamp_seconds` negative for all 3 certs → `time() < renewal_ts` → NOT firing. horvathzoltan-me = −317 854 s (~88 h to renewal), pocket-id-tls = −317 800 s, k8tz-tls = −3 660 556 s (~42 d).
+- Expired: `time() - certmanager_certificate_expiration_timestamp_seconds` negative for all 3 → NOT expired. horvathzoltan-me = −509 854 s, pocket-id-tls = −509 800 s, k8tz-tls = −6 252 556 s.
+- ALERTS empty; eval failures 0. The 3 live certs are `name=horvathzoltan-me` (exported_namespace=networking, 160 h), `name=pocket-id-tls` (security, 160 h), `name=k8tz-tls` (kube-system, 2160 h) — exactly the two-lifetime span the absolute-threshold premise could not cover.
+
+### Three roadmap corrections (recorded as corrections, like the Phase 1 head-drift + V4 findings)
+
+1. **P2.2 premise — short-lived cert misread.** The roadmap's "soonest ~6 d to expiry" was a *healthy* short-lived cert at rest mid-cycle, not a near-expiry cert. horvathzoltan-me + pocket-id-tls are 160 h-duration certs (renewBefore 1/3 ≈ 53 h), so they are *never* more than ~6.67 d from expiry — an absolute `< 7 d` rule is true forever (a constant canary, not a failure canary). k8tz-tls is 2160 h (90 d, renewBefore 720 h). No single absolute day threshold spans both lifetimes. **Corrected** to renewal-relative (`time() > certmanager_certificate_renewal_timestamp_seconds`): the renewal timestamp advances only on a successful renewal, so the condition is true only when cert-manager is actually overdue, regardless of cycle length. `for: 2h` rides out a slow-but-healthy ACME DNS-01 renewal (propagation + one retry, up to ~2 h).
+
+2. **P2.3 identity labels.** The roadmap said `$labels.name`; the live VolSync metrics use `obj_name` / `obj_namespace` / `role` (VolSync sets the RS name as `obj_name`, not `name`). The VolSyncMissedInterval annotation uses `{{ $labels.obj_namespace }}/{{ $labels.obj_name }}` to match the existing VolSyncComponentAbsent / VolSyncVolumeOutOfSync rules.
+
+3. **P2.1 spike function — increase → delta (with the reasoning, not just the expression).** `prometheus_tsdb_storage_blocks_bytes` is a **gauge, not a counter**. It carries legitimate **down-steps**: block-store bytes *decrease* when (a) compaction merges N head-blocks into 1 persisted block, and (b) retention evicts expired blocks. `increase()` and `rate()` apply **counter-reset detection**: on seeing a decrease, they assume the series wrapped (counter reset to 0 then climbed back) and *add* the pre-reset value to the post-reset value, inflating the apparent delta. On a gauge with compaction down-steps (every ~2 h), this manufactures a **false spike** every compaction cycle — a runaway-cardinality alarm that cries wolf on routine maintenance. `delta()` is pure net change (last − first in the range window) with **no counter-reset logic**, so a compaction down-step correctly reads as a *negative* delta and never satisfies `> 100 MB`. The function follows the metric type, not a blanket choice: the companion `volsync_missed_intervals_total` IS a counter (missed intervals only increment), so `increase()` is correct *there* — the opposite choice for the opposite metric type. This is the spike rule's correctness core; the next person must not "simplify" `delta` back to `increase` to "match" the VolSync rule.
+
+### Open follow-up (dated, survives context)
+
+- **P2.1 3-day predict watch** (Maestro condition): measure `predict_linear(prometheus_tsdb_storage_blocks_bytes[3d], 7d)` and the ratio to `0.9 * prometheus_tsdb_retention_limit_bytes` **daily** on 2026-08-16, 2026-08-17, 2026-08-18. Expect the predict value to **decrease** as the 3 d window slides past the Phase-1 metricRelabeling drop (the pre-drop high samples age out of the window — a decaying high bias, not real growth). An **upward** trend once the window is fully post-drop (~3 days out, from ~2026-08-18) = real cardinality growth, not window pollution → investigate. Baseline at deploy (2026-08-15): predict = 2.76 GB, threshold = 4.25 GB, ratio = 65.0%, 35% headroom. Record each day's value + ratio below:
+  - 2026-08-16: _(pending)_
+  - 2026-08-17: _(pending)_
+  - 2026-08-18: _(pending)_
+
+### Next
+
+Phase 2 is **DONE**. Phases 3–6 (scrape-interval tuning, hardening/UX, conditional kubeApiServer scrape, prompp migration) remain as future roadmap items, each pending its own Maestro ratify. The 3-day predict watch above is the only open follow-up from Phase 2.
