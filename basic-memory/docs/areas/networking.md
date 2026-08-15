@@ -5,24 +5,24 @@ permalink: home-ops/docs/areas/networking
 area: networking
 status: current
 confidence: high
-verified_at: '2026-08-03'
+verified_at: '2026-08-15'
 summary: Gateway API with Envoy Gateway provides cluster ingress, split across two
   shared entrypoints (envoy-external for Cloudflare Tunnel public traffic, envoy-internal
   for LAN traffic on a Cilium L2-announced VIP). Single HTTPS listener per Gateway
   (named `https`), SNI-restricted to `*.${PUBLIC_DOMAIN}` — the apex stays at an
   external provider and never enters the cluster. cloudflared ingress mirrors that
   scope (only the wildcard rule plus a 404 catch-all). ClientTrafficPolicy is
-  per-gateway — external uses CF-Connecting-IP for client IP detection, internal
+  per-gateway — external derives the client IP from XFF trusted to the pod CIDR, internal
   rejects client-supplied XFF (numTrustedHops=0). HTTP/3 enabled internal-only
   (CF Tunnel cannot relay QUIC to origin). Baseline security response headers
-  (HSTS, nosniff, Referrer-Policy) injected via inline Lua. Per-EnvoyProxy access
+  (HSTS, nosniff, Referrer-Policy) set natively via lateResponseHeaders. Per-EnvoyProxy access
   logs to stdout. Split DNS by k8s-gateway (LAN) and ExternalDNS (public).
 verified_against:
 - kubernetes/apps/networking/envoy-gateway/config/gateway-internal.yaml
 - kubernetes/apps/networking/envoy-gateway/config/gateway-external.yaml
 - kubernetes/apps/networking/envoy-gateway/config/gateway-policies.yaml
 - kubernetes/apps/networking/envoy-gateway/config/validatingadmissionpolicy.yaml
-- kubernetes/apps/networking/envoy-gateway/config/security-headers.yaml
+- kubernetes/flux/cluster/ks.yaml
 - kubernetes/apps/networking/envoy-gateway/config/envoy.yaml
 - kubernetes/apps/networking/envoy-gateway/config/ciliumnetworkpolicy-external.yaml
 - kubernetes/apps/networking/envoy-gateway/config/ciliumnetworkpolicy-internal.yaml
@@ -41,7 +41,7 @@ verified_against:
 - kubernetes/apps/networking/envoy-gateway/config/kustomization.yaml
 - kubernetes/apps/networking/envoy-gateway/config/observability.yaml
 - kubernetes/apps/networking/envoy-gateway/config/prometheusrule.yaml
-- kubernetes/apps/networking/envoy-gateway/config/resources/block-user-agents.lua
+- kubernetes/apps/networking/envoy-gateway/config/prometheusrule_test.yaml
 - kubernetes/apps/networking/external-dns/app/helmrelease.yaml
 - kubernetes/apps/kube-system/cilium/config/l2-announcement-policy.yaml
 - kubernetes/apps/kube-system/cilium/netpols/kustomization.yaml
@@ -74,7 +74,7 @@ drift_risk: 'HSTS includeSubDomains with 2-year max-age is a one-way commitment 
 - [area] networking
 - [status] current
 - [confidence] high
-- [verified_at] 2026-08-03
+- [verified_at] 2026-08-15
 
 ## Summary
 
@@ -117,9 +117,9 @@ and injected into every child Kustomization via Flux `postBuild.substituteFrom`.
 - [component] Gateway/envoy-external — HTTP/80 (Same-ns, redirect only) + HTTPS/443 named `https` with hostname filter `*.${PUBLIC_DOMAIN}` (All-ns routes, single-label subdomains only), ExternalDNS target external.${PUBLIC_DOMAIN} (gateway-external.yaml)
 - [component] Gateway/envoy-internal — same listener layout as external, LAN VIP pinned to ${ENVOY_INTERNAL_IP} (gateway-internal.yaml)
 - [component] BackendTrafficPolicy/envoy — shared compression (Zstd/Brotli/Gzip), retry on reset, circuitBreaker (maxConnections/maxPendingRequests/maxParallelRequests=2048, maxParallelRetries=128), tcpKeepalive, PLUS `rateLimit` (Local, 3000/min per client via two Distinct sourceCIDR rules for 0.0.0.0/0 and ::/0), `responseOverride` (Envoy-local 401 -> inline Hungarian access-denied page) and `timeout.http.requestTimeout: 30m` — EG allows only ONE BTP per Gateway, so everything lands here (gateway-policies.yaml:26-78)
-- [component] ClientTrafficPolicy/envoy-external — CF-Connecting-IP client IP detection (failClosed=false), HTTP/2 hardening, TLS 1.3 floor, no HTTP/3 (gateway-policies.yaml)
-- [component] ClientTrafficPolicy/envoy-internal — numTrustedHops=0, HTTP/3 enabled, TLS **1.2** floor (NOT 1.3): the `SecurityPolicy.oidc` token-exchange hairpin lands on this listener and Envoy's upstream TLS client caps at 1.2 because EG sets no `tls_params` on the cluster — the reason is recorded in the manifest comment (gateway-policies.yaml:161-164)
-- [component] EnvoyExtensionPolicy/security-response-headers — TWO lua entries: (1) inline Lua injecting HSTS + nosniff (replace) + Referrer-Policy (add-if-absent) on every response via `envoy_on_response`, (2) a `ValueRef` to the `envoy-external-extensions` ConfigMap running the bot-user-agent block via `envoy_on_request`. Targets both Gateways (security-headers.yaml:31-39)
+- [component] ClientTrafficPolicy/envoy-external — provider-independent client IP detection: `xForwardedFor.trustedCIDRs: [${POD_CIDR}]` (the cloudflared pod is the only path in per CiliumNetworkPolicy/envoy-external, so trust is anchored on network position, not on a vendor header). Plus `lateResponseHeaders` security headers, `stripTrailingHostDot`, HTTP/2 hardening, TLS 1.3 floor, `requestHeadersReceivedTimeout: 10s` + `tlsHandshakeTimeout: 10s`, no HTTP/3 (gateway-policies.yaml)
+- [component] ClientTrafficPolicy/envoy-internal — numTrustedHops=0 (LAN-direct, rejects client-supplied XFF), `lateResponseHeaders` security headers, `stripTrailingHostDot`, HTTP/3 enabled, the same two pre-request timeouts, TLS **1.3** floor since EG v1.9.0 — the 1.2 floor existed only because Envoy's upstream TLS client capped at 1.2, which broke the `SecurityPolicy.oidc` token-exchange hairpin onto this listener; v1.9.0 fixed that cap (gateway-policies.yaml)
+- [component] Security response headers — set natively in BOTH ClientTrafficPolicies via `headers.lateResponseHeaders`: HSTS + `x-content-type-options` through `set` (gateway-authoritative), `referrer-policy` through `addIfAbsent` (an app may supply a stricter value). There is NO EnvoyExtensionPolicy any more — the Lua one was removed at the EG v1.9.0 upgrade, together with the bot-user-agent blocklist (gateway-policies.yaml)
 - [component] EnvoyPatchPolicy/envoy-external — zstd compressor fine-tuning on networking/envoy-external/https (no -quic, HTTP/3 disabled here) (gateway-policies.yaml)
 - [component] EnvoyPatchPolicy/envoy-internal — zstd compressor fine-tuning on networking/envoy-internal/{https,https-quic} (gateway-policies.yaml)
 - [component] SecurityPolicy/envoy-internal-rfc1918 — TWO features: (1) `authorization` with defaultAction Deny and allow 10.0.0.0/8 + 172.16.0.0/12 + 192.168.0.0/16, (2) `extAuth` to the CrowdSec gRPC bouncer with `failOpen: false` and `statusOnError: 503` (gateway-policies.yaml:257-266)
@@ -434,3 +434,19 @@ false**, and the expression has since changed.
   all-vanished cases fail — mutation-verified in both directions.
 
 - relates_to [[prometheusrule-unit-test-coverage]]
+
+## Update — 2026-08-15: EG v1.9.0 — Lua removed, provider-independent client IP
+
+- [observation] **Lua is gone from the gateway path.** EG v1.9.0 disables Lua EnvoyExtensionPolicies by default (`extensionApis.enableLua`, with `disableLua` deprecated). Rather than opting back in, both Lua consumers were retired: the bot user-agent blocklist was dropped outright (self-declared UAs are trivially spoofed; CrowdSec's `http-bad-user-agent` scenario covers the impolite crawlers behaviourally), and the security response headers moved to the native `ClientTrafficPolicy.headers.lateResponseHeaders`. `EnvoyExtensionPolicy/security-response-headers`, the `envoy-external-extensions` ConfigMap, `config/resources/block-user-agents.lua` and the scheduled `update-ai-bots` workflow + script are all removed.
+- [observation] **`lateResponseHeaders` was available since v1.8.3**, not new in v1.9.0 — the inline Lua had simply outlived the workaround it was written as (its own manifest comment said "v1.8.1 has no native gateway-level response-header injection"). `set` for HSTS + nosniff, `addIfAbsent` for Referrer-Policy, which maps 1:1 onto what the Lua did.
+- [observation] **Client IP detection is no longer Cloudflare-specific.** `clientIPDetection.customHeader: CF-Connecting-IP` was replaced by `xForwardedFor.trustedCIDRs: [${POD_CIDR}]`. EG maps this to Envoy's `original_ip_detection.xff` extension with `xff_trusted_cidrs`: the direct peer must be inside a trusted CIDR, then XFF is walked right-to-left and the first untrusted address wins. The trust anchor is now the network position enforced by `CiliumNetworkPolicy/envoy-external` (only the cloudflared pod may reach 10443), so replacing the edge provider is a CIDR change, not a header-name change.
+- [evidence] Envoy does **not** append XFF when an original-IP-detection extension is configured (`internal/xds/translator/listener.go`: `originalIPDetectionExtensions != nil → useRemoteAddress = false`). The single-entry `x-forwarded-for` seen in the envoy-external access log therefore comes from Cloudflare, which is what makes the right-to-left walk resolve to the real client. The `xff` extension does its own append unless `disableXForwardedForAppend` is set — deliberately left unset so backends still receive the client IP.
+- [decision] **`directSourceIP` (new in v1.9.0) is NOT the provider-independent answer** despite how the release notes read. It is consumed only by `internal/xds/translator/geoip.go` and SecurityPolicy `clientIPGeoLocations` — it is not a general client-IP mode, and on envoy-external the TCP peer is the cloudflared pod anyway.
+- [observation] **envoy-internal moved to a TLS 1.3 floor.** v1.9.0 fixed backend/upstream TLS being capped at 1.2 by default, which was the sole reason for the documented 1.2 concession (the OIDC token-exchange hairpin onto this listener).
+- [observation] **Pre-request timeouts bounded**: `timeout.http.requestHeadersReceivedTimeout: 10s` and `timeout.tcp.tlsHandshakeTimeout: 10s` on both gateways. `requestReceivedTimeout: 30m` is the whole-request ceiling and left 30 minutes of slowloris headroom in the header phase. `connectionInspectionTimeout` was left at its 15s default.
+- [observation] **`headers.host.stripTrailingHostDot: true`** on both gateways — a trailing-dot Host would otherwise miss hostname-scoped route matching and the `httproute-reserved-hostnames` admission guard.
+- [observation] **New alert `EnvoyGatewayXDSRejected`** on `xds_nack_total` (new metric in v1.9.0, labels `nodeID` + `typeURL`, un-prefixed like the other EG control-plane metrics). A rejected config push is otherwise invisible: the proxy keeps serving its last known good config and only fails at the next restart. `increase(...[15m]) > 0` with `for: 5m` so a healed NACK stops alerting instead of latching. Lives in a second PrometheusRule document (`envoy-gateway`) beside the data-plane `envoy-proxy` one; the promtool harness merges `.spec.groups` across documents.
+- [correction] **CRDs are NOT applied by hand.** `kubernetes/flux/cluster/ks.yaml` already injects `install.crds: CreateReplace` + `upgrade.crds: CreateReplace` into every HelmRelease, and `helm-controller` is a managedFields owner of `gateways.gateway.networking.k8s.io`. The Gateway API bundle therefore moves v1.5.1 → v1.6.1 with the chart upgrade on its own. `kubernetes/bootstrap/helmfile.d/00-crds.yaml` stays as the bootstrap-ordering path only.
+- [observation] **The gateway-helm `safe-upgrades` ValidatingAdmissionPolicy needs no action**, contrary to how the v1.9.0 breaking-changes note reads. Its chart template carries a `lookup` guard that renders it only when the object is absent or already owned by this Helm release; the cluster object is the bootstrap-era one (v1.5.0-dev, Flux labels, no Helm ownership metadata), so it is skipped — identical guard in 1.8.3 and 1.9.0. Its CEL also admits `v1.6.1`.
+- [gap] **The XFF switch needs a post-merge read-back.** `downstream_direct_remote_address` was added to both access-log formats for exactly this: on envoy-external `downstream_remote_address` must stay a public client IP while the direct address is the cloudflared pod. If the detected address collapses to a `${POD_CIDR}` address, Cloudflare is not forwarding XFF and the change must be reverted — the CrowdSec gate and the per-client rate-limit buckets would otherwise all key on one pod IP.
+- [gap] **Ordering race with a 1h retry.** `stripTrailingHostDot`, `requestHeadersReceivedTimeout` and `tlsHandshakeTimeout` only exist in the v1.9.0 CRDs. `envoy-gateway-config` `dependsOn: envoy-gateway` (HelmRelease health check), so the normal path is safe, but if the config Kustomization wins a race against the HelmRelease upgrade it fails validation and Flux retries at `interval` — 1h here, no `retryInterval` set. `just k8s sync-ks envoy-gateway-config networking` clears it immediately.

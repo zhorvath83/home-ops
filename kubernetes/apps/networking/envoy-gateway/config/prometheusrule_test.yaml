@@ -1,6 +1,7 @@
 ---
 # yaml-language-server: $schema=https://json.schemastore.org/prometheus.rules.test.json
-# promtool unit tests for config/prometheusrule.yaml, covering EnvoyProxyDown. The expr
+# promtool unit tests for config/prometheusrule.yaml, covering EnvoyProxyDown and
+# EnvoyGatewayXDSRejected. The EnvoyProxyDown expr
 # `count(up{job="networking/envoy-proxy", namespace="networking"} == 1) < 2` aggregates away
 # all labels, so exp_labels are alertname + severity only — it fires whenever fewer than 2
 # envoy-proxy targets are up: one-down, both-down, and all-vanished (count of an empty vector
@@ -83,3 +84,48 @@ tests:
                 (public) or envoy-internal (LAN) is unreachable. The down proxy's traffic
                 path is dead. This is the data plane; the envoy-gateway controller (control
                 plane) is a separate ServiceMonitor not covered here.
+
+  # === EnvoyGatewayXDSRejected ===
+  # `increase(...[15m]) > 0`, for: 5m. Fire cases eval at 10m so the 5m hold is exercised.
+  # (e) No-fire: counter present and never incremented.
+  - interval: 1m
+    input_series:
+      - series: 'xds_nack_total{job="envoy-gateway",namespace="networking",nodeID="envoy-external-0",typeURL="type.googleapis.com/envoy.config.listener.v3.Listener"}'
+        values: '0x20'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: EnvoyGatewayXDSRejected
+        exp_alerts: []
+  # (f) Fire: one NACK at t=3m, condition holds past the 5m for.
+  - interval: 1m
+    input_series:
+      - series: 'xds_nack_total{job="envoy-gateway",namespace="networking",nodeID="envoy-external-0",typeURL="type.googleapis.com/envoy.config.listener.v3.Listener"}'
+        values: '0 0 0 1x16'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: EnvoyGatewayXDSRejected
+        exp_alerts:
+          - exp_labels:
+              alertname: EnvoyGatewayXDSRejected
+              severity: critical
+              job: envoy-gateway
+              namespace: networking
+              nodeID: envoy-external-0
+              typeURL: type.googleapis.com/envoy.config.listener.v3.Listener
+            exp_annotations:
+              summary: Envoy rejected an xDS config update
+              description: |-
+                Proxy envoy-external-0 rejected a config update for
+                type.googleapis.com/envoy.config.listener.v3.Listener and keeps serving its last known good config.
+                Traffic still flows, but that proxy will fail to start on its next
+                restart. The rejection reason is in the envoy-gateway controller log.
+  # (g) Boundary no-fire: a non-zero counter that stops incrementing — the healed case
+  # the raw-counter form would latch on forever.
+  - interval: 1m
+    input_series:
+      - series: 'xds_nack_total{job="envoy-gateway",namespace="networking",nodeID="envoy-external-0",typeURL="type.googleapis.com/envoy.config.listener.v3.Listener"}'
+        values: '7x20'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: EnvoyGatewayXDSRejected
+        exp_alerts: []

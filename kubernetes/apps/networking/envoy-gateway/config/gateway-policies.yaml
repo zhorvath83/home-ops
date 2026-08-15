@@ -78,10 +78,12 @@ spec:
       requestTimeout: 30m
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/gateway.envoyproxy.io/clienttrafficpolicy_v1alpha1.json
-# Cloudflare-fronted: trust CF-Connecting-IP (CF overwrites client-supplied
-# values); failClosed: false falls back to TCP source for non-CF callers
-# (cloudflared health probes). HTTP/3 disabled — cloudflared does not relay
-# QUIC to the origin.
+# Provider-independent client IP: trust is anchored on the pod CIDR (the tunnel
+# daemon is the only ingress path per CiliumNetworkPolicy/envoy-external), not on
+# a vendor header — swapping the edge provider only changes the CIDR. Envoy walks
+# XFF right-to-left and takes the first untrusted address, so client-supplied
+# entries left of the edge-appended real IP are ignored.
+# HTTP/3 disabled — cloudflared does not relay QUIC to the origin.
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: ClientTrafficPolicy
 metadata:
@@ -92,15 +94,15 @@ spec:
       kind: Gateway
       name: envoy-external
   clientIPDetection:
-    customHeader:
-      name: CF-Connecting-IP
-      failClosed: false
+    xForwardedFor:
+      trustedCIDRs:
+        - "${POD_CIDR}"
   connection:
     bufferLimit: 8Mi
     maxAcceptPerSocketEvent: 0
-  # Strip client-supplied identity headers before route matching and auth,
-  # so only the auth layer can set them (header-injection spoofing guard).
   headers:
+    # Strip client-supplied identity headers before route matching and auth,
+    # so only the auth layer can set them (header-injection spoofing guard).
     earlyRequestHeaders:
       remove:
         - Remote-User
@@ -108,6 +110,20 @@ spec:
         - Remote-Groups
         - Remote-Name
         - Remote-Sub
+    host:
+      # "example.com." must not evade hostname-scoped route and admission matching.
+      stripTrailingHostDot: true
+    # Gateway-authoritative baseline; Referrer-Policy yields to a stricter app value.
+    # HSTS preload intentionally omitted (one-way browser-registry commitment).
+    lateResponseHeaders:
+      set:
+        - name: strict-transport-security
+          value: max-age=63072000; includeSubDomains
+        - name: x-content-type-options
+          value: nosniff
+      addIfAbsent:
+        - name: referrer-policy
+          value: strict-origin-when-cross-origin
   http2:
     initialStreamWindowSize: 2Mi
     initialConnectionWindowSize: 32Mi
@@ -115,7 +131,12 @@ spec:
   tcpKeepalive: {}
   timeout:
     http:
+      # Bounds the header phase specifically; requestReceivedTimeout is the
+      # whole-request ceiling and would let a slowloris dribble headers for 30m.
+      requestHeadersReceivedTimeout: 10s
       requestReceivedTimeout: 30m
+    tcp:
+      tlsHandshakeTimeout: 10s
   tls:
     # 1.3: only cloudflared (Go TLS, 1.3-capable) reaches this listener — no OIDC
     # hairpin lands here (CoreDNS routes id.* to envoy-internal), so no 1.2 floor.
@@ -149,6 +170,17 @@ spec:
         - Remote-Groups
         - Remote-Name
         - Remote-Sub
+    host:
+      stripTrailingHostDot: true
+    lateResponseHeaders:
+      set:
+        - name: strict-transport-security
+          value: max-age=63072000; includeSubDomains
+        - name: x-content-type-options
+          value: nosniff
+      addIfAbsent:
+        - name: referrer-policy
+          value: strict-origin-when-cross-origin
   http2:
     initialStreamWindowSize: 2Mi
     initialConnectionWindowSize: 32Mi
@@ -157,11 +189,14 @@ spec:
   tcpKeepalive: {}
   timeout:
     http:
+      requestHeadersReceivedTimeout: 10s
       requestReceivedTimeout: 30m
+    tcp:
+      tlsHandshakeTimeout: 10s
   tls:
-    # 1.2 floor: SecurityPolicy.oidc token exchange hairpins to this listener and
-    # Envoy's upstream TLS client caps at 1.2 (EG sets no tls_params on the cluster).
-    minVersion: "1.2"
+    # 1.3 floor: EG v1.9.0 lifted the upstream TLS 1.2 cap, so the OIDC token
+    # exchange hairpinning onto this listener no longer needs a 1.2 fallback.
+    minVersion: "1.3"
     alpnProtocols:
       - h2
       - http/1.1
