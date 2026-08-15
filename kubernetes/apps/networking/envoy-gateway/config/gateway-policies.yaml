@@ -339,6 +339,9 @@ metadata:
   annotations:
     external-dns.alpha.kubernetes.io/controller: none
 spec:
+  # Scope to our own subdomains so the redirect cannot reflect an arbitrary client Host.
+  hostnames:
+    - "*.${PUBLIC_DOMAIN}"
   parentRefs:
     - name: envoy-external
       namespace: networking
