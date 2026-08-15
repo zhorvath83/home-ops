@@ -59,6 +59,32 @@ spec:
               OTEL_METRICS_EXPORTER: "prometheus"
               OTEL_EXPORTER_PROMETHEUS_HOST: "0.0.0.0"
               OTEL_EXPORTER_PROMETHEUS_PORT: "9464"
+              # UI_CONFIG_DISABLED=true makes env override the admin UI for every setting
+              # below; each override var is pinned so the global override is deterministic.
+              UI_CONFIG_DISABLED: "true"
+              APP_NAME: "IdM"
+              SESSION_DURATION: "60"
+              HOME_PAGE_URL: "/settings/account"
+              REQUIRE_USER_EMAIL: "true"
+              EMAILS_VERIFIED: "false"
+              ALLOW_OWN_ACCOUNT_EDIT: "true"
+              ALLOW_USER_SIGNUPS: "disabled"
+              DISABLE_ANIMATIONS: "false"
+              ACCENT_COLOR: "default"
+              # LDAP unused here; gate off (attribute maps left to defaults).
+              LDAP_ENABLED: "false"
+              EMAIL_LOGIN_NOTIFICATION_ENABLED: "true"
+              EMAIL_ONE_TIME_ACCESS_AS_ADMIN_ENABLED: "true"
+              EMAIL_API_KEY_EXPIRATION_ENABLED: "true"
+              EMAIL_VERIFICATION_ENABLED: "true"
+              # Passkey-only posture: do not enable the email-code login bypass.
+              EMAIL_ONE_TIME_ACCESS_AS_UNAUTHENTICATED_ENABLED: "false"
+              # WebAuthn policy is also overridden by UI_CONFIG_DISABLED; pin to defaults.
+              WEBAUTHN_USER_VERIFICATION: "required"
+              WEBAUTHN_ALLOW_SYNCED_PASSKEYS: "true"
+              WEBAUTHN_AUTHENTICATOR_ATTACHMENT: "any"
+              # Keep Client ID Metadata Document clients disabled.
+              CIMD_URL_ALLOWLIST: "[]"
             envFrom:
               - secretRef:
                   name: pocket-id-secret
