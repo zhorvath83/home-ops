@@ -168,6 +168,13 @@ spec:
               - ALL
     appsec:
       enabled: true
+      # Recreate at 1 replica = a guaranteed outage window on every rollout, and the WAF
+      # branch is fail-closed (no failOpen switch): each gap 503s public + LAN surfaces.
+      strategy:
+        type: RollingUpdate
+        rollingUpdate:
+          maxUnavailable: 0
+          maxSurge: 1
       securityContext:
         allowPrivilegeEscalation: false
         privileged: false
