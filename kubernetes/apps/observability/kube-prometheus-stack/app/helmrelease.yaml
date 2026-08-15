@@ -496,6 +496,13 @@ spec:
             memory: 380Mi
           limits:
             memory: 2Gi
+        prometheusConfigReloader:
+          resources:
+            requests:
+              cpu: 5m
+              memory: 32Mi
+            limits:
+              memory: 32Mi
         storageSpec:
           volumeClaimTemplate:
             spec:
