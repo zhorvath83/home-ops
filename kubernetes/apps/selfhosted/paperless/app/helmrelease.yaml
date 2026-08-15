@@ -60,10 +60,11 @@ spec:
               PAPERLESS_LOGROTATE_MAX_BACKUPS: "10"
               PAPERLESS_FILENAME_FORMAT: &filenameFormat "{{ `{{ created_year }}/{{ correspondent | default('uncategorized') | slugify }}/{{ created_year }}-{{ created_month }}-{{ created_day }}_{{ title | slugify }}_{{ doc_pk }}` }}"
               # Configure folder importer
-              PAPERLESS_CONSUMER_IGNORE_PATTERNS: '[".DS_Store", ".DS_STORE", "._*", ".stfolder/*", ".stversions/*", ".localized/*", "desktop.ini", "@eaDir/*", "Thumbs.db"]'
+              # v3 ignore patterns are regex and additive to the built-in defaults, which already
+              # cover every pattern this app used to list; polling is mandatory on the NFS inbox.
               PAPERLESS_CONSUMER_DELETE_DUPLICATES: "true"
               PAPERLESS_CONSUMER_RECURSIVE: "true"
-              PAPERLESS_CONSUMER_POLLING: "60"
+              PAPERLESS_CONSUMER_POLLING_INTERVAL: "60"
               # Print a Patch-Code-T sheet as a separator page between different documents when scanning.
               # https://www.alliancegroup.co.uk/downloads/patch-code-t.pdf
               # PAPERLESS_CONSUMER_ENABLE_BARCODES: "true"
@@ -77,8 +78,10 @@ spec:
               # OCR settings
               # PAPERLESS_OCR_LANGUAGE: "hun"
               # PAPERLESS_OCR_LANGUAGES: "hun"
-              PAPERLESS_OCR_MODE: "skip"
-              PAPERLESS_OCR_SKIP_ARCHIVE_FILE: "always"
+              # v3 split OCR control from archive control; auto + never is the documented
+              # equivalent of the v2 skip + skip_archive_file=always pair this app used.
+              PAPERLESS_OCR_MODE: "auto"
+              PAPERLESS_ARCHIVE_FILE_GENERATION: "never"
               PAPERLESS_OCR_CLEAN: "none"
               PAPERLESS_OCR_DESKEW: "false"
               PAPERLESS_OCR_ROTATE_PAGES: "false"
@@ -111,7 +114,8 @@ spec:
                 spec:
                   periodSeconds: 30
                   timeoutSeconds: 5
-                  failureThreshold: 5
+                  # s6 runs DB migrations and the tantivy index rebuild before the webserver starts
+                  failureThreshold: 20
               liveness:
                 enabled: true
                 spec:
@@ -180,7 +184,9 @@ spec:
         cronjob:
           concurrencyPolicy: Forbid
           schedule: "30 0 * * *"
-          suspend: false
+          # suspended for the v3 cutover: the v3 exporter's --delete would overwrite the
+          # v2-format export that is the secondary rollback path
+          suspend: true
           successfulJobsHistory: 1
           failedJobsHistory: 3
         containers:
