@@ -642,3 +642,108 @@ The cilium-agent and cilium-operator ServiceMonitors remain at 10s. Widening the
 
 ### Next
 Phase 3 safe subset is **DONE**. Remaining roadmap items (each pending its own Maestro ratify): Phase 4 (hardening/UX, incl. P4.1 Prometheus UI on envoy-internal behind OIDC — security-adjacent), Phase 5 (conditional kubeApiServer scrape + measured drop-list), Phase 6 (prompp migration, proposed/gated). The P2.1 3-day predict watch (2026-08-16/17/18) is the only other open follow-up — record daily, separate from Phase 3.
+## Phase 4 Handoff Checkpoint (2026-08-15) — survives /clear
+
+**Status**: Phase 4 ratify received. P4.1 is DROPPED by human decision. Three items remain to implement: P4.4, P4.3, P4.2 (option A), then docs. This checkpoint captures the ratify decisions, CORRECTION #5, the P4.1 DROPPED record + preserved security analysis, and the exact commit plan with file paths so a fresh context can execute WITHOUT re-investigation. All facts below are evidence-backed (live cluster queries + chart render + file reads, 2026-08-15).
+
+### Ratify decisions (Maestro, 2026-08-15)
+1. **P4.1 — DROPPED (human decision, CLOSED not deferred).** The Prometheus UI is not wanted. Do NOT implement the HTTPRoute, do NOT touch ks.yaml, do NOT touch provision/pocket-id/clients.yaml, do NOT run `just pocket-id apply`. Nothing is created in Pocket ID or 1Password. Rationale (record so no future pass reopens it as unfinished): the Prometheus UI would be a NEW network exposure granting full PromQL read over every cluster metric (cluster-admin-equivalent visibility) plus internal topology via `/api/v1/status/config`, in exchange for debug convenience over the existing `kubectl get --raw` path. The human judged the convenience not worth the surface. The security analysis below is preserved because it is real work and stays useful if this is ever revisited — it just does not lead to an implementation.
+2. **P4.2 — option A.** Pin the ACTUAL current values: `securityContext: {runAsUser: 1000, runAsGroup: 2000, fsGroup: 2000, runAsNonRoot: true, seccompProfile: {type: RuntimeDefault}}`. Option C (64535) is REJECTED — a PVC chown migration bought for cosmetic uniformity with another project's convention is a bad trade, and the chart is ALREADY runAsNonRoot with RuntimeDefault, so the security property the roadmap wanted is ALREADY satisfied. The real justification for pinning (record this): if a future chart bump silently changed the default UID/GID, our existing PVC would break exactly the way option C would have. Pinning in git converts a silent future failure into a visible diff. NOT policy cosmetics.
+3. **P4.3 — PROCEED** as planned (5m/32M on prometheusConfigReloader.resources). Behavior change acknowledged (config-reloader is currently UNCONSTRAINED — empty resources — so 5m/32M is a tighten, not pure explicitness), low risk, aligns with the repo resource baseline.
+4. **P4.4 — PROCEED, static verification sufficient.** Do NOT stage a temporary test rule (it would send a real Pushover notification for a level no current rule can reach). BUT the reload check is EXPLICIT and non-optional: after reconcile, confirm Alertmanager actually reloaded the config with NO template-parse error in its logs. A Go template typo is the only real failure mode here.
+5. **flux-reconcile operational fact — home is `docs/areas/flux-gitops`, NOT observability.** It is general Flux mechanics (an HR reconcile works against the last-fetched source artifact; `--with-source` syncs the source first), not an observability fact. Correct home wins over discoverability — one home per fact. Reference it from the Phase 3 record. (The fact, from Phase 3: a bare `flux reconcile helmrelease <kps>` did NOT pick up a values-only change — the HR reconciled against a stale source artifact; `flux reconcile helmrelease <name> --with-source` was required to sync the GitRepository + re-fetch the OCI chart.)
+
+### CORRECTION #5 — a securityContext value copied from another project's convention is a BEHAVIOR change against existing persistent state, never mere explicitness
+The roadmap's P4.2 specified `securityContext: runAsNonRoot, runAsUser 64535, fsGroup 64535`. The chart DEFAULT (LIVE-confirmed on pod `prometheus-kube-prometheus-stack-0`) is `runAsUser: 1000, runAsGroup: 2000, fsGroup: 2000, runAsNonRoot: true, seccompProfile: {type: RuntimeDefault}`. The existing 5Gi TSDB PVC (local-hostpath) is owned on-disk by 1000:2000. Switching to 64535 = permission-denied on the existing TSDB blocks = Prometheus fails to read its own history (data loss / re-scrape). The roadmap carried this data-loss trap unexamined. The "non-root + RuntimeDefault" security property was ALREADY satisfied by the chart default; only the specific UID/GID was a copied convention, and that part is a behavior change against persistent state. **General lesson**: a securityContext value copied from another project's convention is a BEHAVIOR change against existing persistent state (PVC ownership, file modes), never mere explicitness — always verify the on-disk ownership before adopting a UID/GID. This is the 5th roadmap correction (joining #1–#4).
+
+### P4.1 security analysis (PRESERVED — real work, useful if revisited; P4.1 itself is DROPPED)
+- **Gateway = envoy-INTERNAL only, never external.** envoy-internal is LAN-only at the gateway tier: `SecurityPolicy/envoy-internal-rfc1918` (authorization default Deny, allow 10/8 + 172.16/12 + 192.168/16) + the Gateway Service is a Cilium L2-announced LoadBalancer on a LAN VIP. Cloudflare Tunnel forwards ONLY to envoy-external (never envoy-internal). ExternalDNS watches envoy-EXTERNAL routes (public Cloudflare); k8s-gateway watches envoy-INTERNAL routes (LAN DNS). So a prometheus.${PUBLIC_DOMAIN} route would get a LAN DNS record and NO public record -> external dig NXDOMAIN; cloudflared forced -> 404. No outside path.
+- **OIDC gate = components/gateway-oidc.** SecurityPolicy targets the HTTPRoute, OIDC redirect to Pocket ID. Header-stripping spoofing guard (ClientTrafficPolicy strips Remote-User/Email/Groups/Name/Sub) is GATEWAY-LEVEL on envoy-internal, always-on for every route. The route-level OIDC SecurityPolicy sets `mergeType: StrategicMerge` (the component does this) — WITHOUT it the per-route policy overrides the Gateway-level policy and silently drops RFC1918 + CrowdSec from the route (this exact bug excluded every OIDC route from RFC1918 until 2026-07-28). Post-deploy would verify Accepted=True / no Overridden/Conflicted.
+- **Admin API = FALSE and stays false.** LIVE: Prometheus CR spec.enableAdminAPI=false; chart default enableAdminAPI=false (values.yaml line 4308), not overridden. A browsable Prometheus with admin API on means anyone past the gate can delete series — confirmed off.
+- **What the UI exposes**: (a) `/api/v1/status/config` renders 171KB of scrape config. ALL credentials FILE-based (authorization.credentials_file = SA token; tls_config.ca_file/cert_file/key_file = mounted cert files). ZERO inline passwords/bearer tokens/basic_auth. Secret VALUES not exposed; internal topology (job names, scrape intervals, namespaces, file paths, internal hostnames) IS readable. (b) The UI grants full PromQL read over ALL scraped metric data — cluster-admin-equivalent visibility. Both are NEW surfaces (today debug is kubectl get --raw only).
+- **Per-app group ACL = infra_admins** (the existing group for infra admin tools: hubble-ui, echo-server, grafana Admin). Enforced at Pocket ID via allowed_user_groups on the client (the SecurityPolicy carries no authorization block by design).
+- **Route mechanism finding**: every one of the 11 existing gateway-oidc-gated apps uses a STANDALONE HTTPRoute named ${APP}; NO chart-rendered route + gateway-oidc combination exists in the repo. The chart would render the prometheus route named `kube-prometheus-stack-prometheus` (not `prometheus`), needing an HTTPROUTE_NAME override (untested). Recommended approach (had P4.1 proceeded): standalone HTTPRoute named `prometheus` backendRef `kube-prometheus-stack-prometheus:9090`, mirroring the grafana observability-UI pattern. Chart `prometheus.route.main.enabled: false` by default (no conflict).
+
+### Revised commit plan (execute in this order; do not proceed to next until previous verified)
+**Commit 1 — P4.4 alertmanagerconfig message fallback**
+- File: `kubernetes/apps/observability/kube-prometheus-stack/app/alertmanagerconfig.yaml`
+- Change: in the pushover receiver `message:` template (lines 68-84), insert a `message` annotation level between `summary` and the default. New chain: ```{{- if ne .Annotations.description "" }}{{ .Annotations.description }}{{- else if ne .Annotations.summary "" }}{{ .Annotations.summary }}{{- else if ne .Annotations.message "" }}{{ .Annotations.message }}{{- else }}Alert description not available{{- end }}```
+- Behavior: NO change to current alert output (zero rules use message: — 37 description + 35 summary + 0 message across all PrometheusRules). Pure future-capability.
+- Verification: static template parse check; `just k8s test-prom-rules` green; pre-commit green; reconcile; **EXPLICIT reload check**: confirm Alertmanager reloaded the config with NO template-parse error in its logs. Do NOT stage a test rule.
+- Commit: 1 file. Code commit. Subject: `♻️ refactor(observability): add message annotation fallback to pushover template` (or fix/docs — it is a template enhancement; refactor or feat).
+
+**Commit 2 — P4.3 config-reloader resources**
+- File: `kubernetes/apps/observability/kube-prometheus-stack/app/helmrelease.yaml`
+- Change: under `prometheus.prometheusSpec`, add ```prometheusConfigReloader:
+  resources:
+    requests: {cpu: 5m, memory: 32Mi}
+    limits: {memory: 32Mi}```
+- Behavior: tightens config-reloader sidecar from unconstrained (chart default `prometheusConfigReloader.resources: {}`, LIVE empty) to 5m/32M. Low-risk behavior change.
+- Verification: helm render confirms config-reloader container carries the resources; test-prom-rules green; pre-commit green; reconcile; live pod config-reloader container shows requests/limits; config reloads still work (no reload failures in logs).
+- Commit: 1 file. Code commit. Subject: `🔧 build(observability): set explicit config-reloader resources`.
+
+**Commit 3 — P4.2 securityContext (option A)**
+- File: `kubernetes/apps/observability/kube-prometheus-stack/app/helmrelease.yaml`
+- Change: under `prometheus.prometheusSpec`, add ```securityContext:
+  runAsUser: 1000
+  runAsGroup: 2000
+  runAsNonRoot: true
+  fsGroup: 2000
+  seccompProfile:
+    type: RuntimeDefault```
+- Behavior: ZERO — pins the actual current chart-default values explicitly in-git (converts a silent future chart-default UID/GID change into a visible diff). NO 64535, NO PVC migration.
+- Verification: helm render confirms the rendered pod securityContext is UNCHANGED (matches chart default — no diff); test-prom-rules green; pre-commit green; reconcile; live pod securityContext still 1000/2000; Prometheus starts and reads existing TSDB (no permission-denied, no data loss).
+- Commit: 1 file. Code commit. Subject: `🔒 security(observability): pin prometheus pod securityContext`.
+
+**Commit 4 — docs**
+- Append Phase 4 Execution Record to this BM roadmap note: per-item what landed, behavior-vs-explicitness, verification evidence, CORRECTION #5 (the 64535 data-loss trap + general lesson), the P4.1 DROPPED human decision (closed, with the preserved security analysis reference), the flux-reconcile operational fact with its correct home (docs/areas/flux-gitops).
+- ALSO: append the flux-reconcile operational fact to BM `docs/areas/flux-gitops` (its correct home) as an operational observation: "a bare `flux reconcile helmrelease <name>` reconciles against the last-fetched source artifact; for a values-only change (chart version unchanged), use `flux reconcile helmrelease <name> --with-source` to sync the GitRepository + re-fetch the OCI chart first." Reference it from the Phase 3/4 records.
+- `git add basic-memory/` (explicit pathspec) + docs commit. Subject: `📝 docs(observability): record Phase 4 of kube-prometheus-stack-hygiene`.
+
+### Operating frame (unchanged)
+Directly on main. Explicit pathspec, fresh `git status` before every add (human commits in parallel). Per-commit: helm render where relevant, `just k8s test-prom-rules` green, pre-commit green, reconcile + live proof after push, no proceeding until previous verified. Cluster commands (kubectl/flux) run OUTSIDE the sandbox (`dangerouslyDisableSandbox: true`). pre-commit cache-lock write needs sandbox disabled (Phase 3 evidence). KPS reconcile for a values change needs `--with-source`.
+
+### Resume protocol (fresh context after /clear)
+1. Read root `CLAUDE.md` -> `kubernetes/CLAUDE.md` -> subtree guides -> this BM note (`docs/roadmap/kube-prometheus-stack-hygiene`) via the basic-memory MCP (NEVER file tools on basic-memory/).
+2. This checkpoint is the state of record. Execute the 4 commits above in order. P4.1 is DROPPED — do not touch it.
+3. The two target files are already known: `kubernetes/apps/observability/kube-prometheus-stack/app/alertmanagerconfig.yaml` (P4.4) and `kubernetes/apps/observability/kube-prometheus-stack/app/helmrelease.yaml` (P4.3 + P4.2 — two separate commits, same file). Read them fresh before editing.
+4. ONE completion signal to the Maestro ("Claude Code #2" via maestri ask) when all 4 commits are done + verified, or an immediate blocker.
+
+### P2.1 predict watch (still pending, separate from Phase 4)
+2026-08-16/17/18 daily predict_linear readings remain pending (Maestro condition from Phase 2). Record when asked, separate from Phase 4.
+
+## Phase 4 Execution Record (2026-08-15)
+
+**Implementer**: Claude Code (this session). **Branch**: main (direct-to-main, established pattern).
+**Status**: DONE — P4.4 + P4.3 shipped, deployed, live-verified. P4.2 REVOKED (folded into Phase 6). P4.1 DROPPED (closed human decision). Commits: a0e1ed0ae (P4.4), 61f281271 (P4.3 wrong path, no-op), 7b09a80b6 (P4.3 fix-forward) + this docs commit.
+
+### Sequencing decision — P4.2 REVOKED from Phase 4, folded into Phase 6 (human decision, 2026-08-15)
+
+The human decided Phase 6 (prompp migration) goes ahead NOW and explicitly accepted losing the Prometheus TSDB. This changes the P4.2 calculus: CORRECTION #5 stands and was correct — switching to 64535 IS a behavior change that breaks a PVC owned 1000:2000 — but the PVC is now going to be discarded anyway, which is exactly when 64535 becomes safe. Pinning 1000/2000 now only to overwrite it a few commits later (in the Phase 6 prompp change) is churn. So P4.2 is NOT implemented in Phase 4. The full explicit securityContext lands as part of the Phase 6 prompp change, as one coherent commit. CORRECTION #5 is KEPT as written — it is still the finding that made the right sequencing visible. The roadmap Phase 4 P4.2 entry is superseded by this decision.
+
+### P4.1 — DROPPED (human decision, CLOSED, not deferred)
+
+The Prometheus UI is not wanted. No HTTPRoute, no ks.yaml touch, no provision/pocket-id/clients.yaml touch, no 'just pocket-id apply'. Nothing created in Pocket ID or 1Password. Rationale: the Prometheus UI would be a NEW network exposure granting full PromQL read over every cluster metric (cluster-admin-equivalent visibility) plus internal topology via /api/v1/status/config, in exchange for debug convenience over the existing kubectl get --raw path. The human judged the convenience not worth the surface. The security analysis (gateway=envoy-internal-only, OIDC gate, admin API=false, what the UI exposes, per-app group ACL=infra_admins, route mechanism) is PRESERVED in the Phase 4 Handoff Checkpoint section above — real work, useful if revisited, but it does not lead to an implementation.
+
+### P4.4 — alertmanagerconfig message fallback (Commit a0e1ed0ae)
+
+- File: kubernetes/apps/observability/kube-prometheus-stack/app/alertmanagerconfig.yaml
+- Change: inserted a message annotation level between summary and the default in the pushover receiver message: template. New chain: description -> summary -> message -> default.
+- Behavior: ZERO change to current alert output (0 rules use message: — 37 description + 35 summary across all PrometheusRules). Pure future-capability.
+- Verification: static template parse (mirrors existing valid branches); just k8s test-prom-rules green; pre-commit green (yamlfmt/yamllint/gitleaks); committed+pushed; Kustomization reconciled (applied revision a0e1ed0ae); EXPLICIT Alertmanager reload check — alertmanager logged "Loading configuration file" -> "Completed loading of configuration file", config-reloader "Reload triggered", NO template-parse error in alertmanager/config-reloader/operator logs; live CR carries the message branch (2 .Annotations.message refs — the check + the render). The only WARN is the pre-existing intentional Watchdog heartbeat (repeat_interval=1m < group_interval=5m, the dead-man's-switch design), unrelated to this change.
+
+### P4.3 — config-reloader resources 5m/32M (Commit 61f281271 wrong path no-op + 7b09a80b6 fix-forward)
+
+- File: kubernetes/apps/observability/kube-prometheus-stack/app/helmrelease.yaml
+- CORRECTION (to the Handoff Checkpoint's path): the checkpoint specified prometheus.prometheusSpec.prometheusConfigReloader.resources. That is NOT a valid kube-prometheus-stack chart path — prometheus.prometheusSpec has no prometheusConfigReloader field (verified against the chart values, 88.3.0). Commit 61f281271 used that path and rendered to NOTHING (the Prometheus CR spec.prometheusConfigReloader stayed empty; the live pod config-reloader resources stayed empty). The correct path is prometheusOperator.prometheusConfigReloader.resources: the chart wires it (deployment.yaml:101-104) to the operator's --config-reloader-{cpu,memory}-{request,limit} args, which the operator injects as the config-reloader sidecar resources in managed prometheus AND alertmanager pods. Commit 7b09a80b6 (fix-forward) removed the no-op prometheusSpec block and set the operator-level resources to 5m/32M.
+- Blast radius (wider than the checkpoint assumed): operator-level, so the config-reloader sidecar in BOTH the prometheus pod AND the alertmanager pod gets 5m/32M (consistent baseline, not a risk), AND the prometheus-operator deployment restarts to pick up the new args. This is the only available mechanism (no per-pod path exists in the chart).
+- Safety check (before applying): current config-reloader memory usage ~15Mi (prometheus 14.7Mi, alertmanager 15.0Mi); 32Mi limit = ~2x headroom -> no OOM risk. CPU request 5m vs current 0-1m -> ample.
+- Verification: just k8s test-prom-rules green; pre-commit green; Kustomization reconciled (applied 7b09a80b6); HelmRelease reconciled --with-source (applied 88.3.0); operator deployment args render confirmed (--config-reloader-cpu-request=5m, --config-reloader-cpu-limit=0, --config-reloader-memory-request=32Mi, --config-reloader-memory-limit=32Mi); live pods — BOTH prometheus + alertmanager config-reloader containers show requests {cpu: 5m, memory: 32Mi}, limits {memory: 32Mi}; both pods recreated 2/2 Running, 0 restarts; no OOM; prometheus config-reloader had one transient startup-race connection-refused (config-reloader started before prometheus :9090 — recovered within 5s, "Reload triggered", normal race not a regression); Prometheus read existing TSDB (WAL replay, "Server is ready to receive web requests"), NO permission-denied, NO data loss. cpu-limit=0 is correct (no CPU limit, per repo baseline — CPU limits are optional).
+
+### flux-reconcile operational fact — home is docs/areas/flux-gitops (appended there this session)
+
+A bare flux reconcile helmrelease <name> reconciles against the last-fetched source artifact; for a values-only change (chart version unchanged), flux reconcile helmrelease <name> --with-source syncs the GitRepository + re-fetches the OCI chart first. For a standalone resource change (e.g. alertmanagerconfig.yaml), reconcile the owning Kustomization: flux reconcile kustomization <name> --with-source. This fact is general Flux mechanics, not observability-specific — its correct home is docs/areas/flux-gitops (appended there as an operational observation this session), referenced here. (The KPS Kustomization lives in the observability namespace, not the default flux-system — reconcile with --namespace observability.)
+
+### Next
+
+Phase 4 is DONE. Remaining roadmap items: Phase 5 (conditional kubeApiServer scrape + measured drop-list — NOT recommended now), Phase 6 (prompp migration — GO per human decision; plan pending, separate ratify). The P2.1 3-day predict watch (2026-08-16/17/18 daily readings) remains pending (Maestro condition from Phase 2), separate from Phase 4.

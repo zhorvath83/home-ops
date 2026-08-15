@@ -153,3 +153,9 @@ roadmap item. Previous `verified_at` was 2026-07-05. Verdict on arrival: MAJOR-D
   (kube-prometheus-stack/app/helmrelease.yaml:85), the ExternalSecret key names
   PUSHOVER_ALERTMANAGER_TOKEN / PUSHOVER_USER_KEY (externalsecret.yaml:17-18), and the intel chart
   version above. Live cluster state remains unverified by design (repo-only audit).
+
+## Operational observation — values-only vs standalone-resource reconcile (2026-08-15)
+
+- A bare 'flux reconcile helmrelease <name>' reconciles the HelmRelease against the last-fetched source artifact; for a values-only change (chart version unchanged), it may NOT pick up the new values — use 'flux reconcile helmrelease <name> --with-source' to sync the GitRepository + re-fetch the OCI chart first. Observed during kube-prometheus-stack-hygiene Phase 3/4 (a values-only KPS HelmRelease change did not apply without --with-source).
+- For a standalone-resource change (a manifest applied by a Kustomization, not rendered by a HelmRelease — e.g. an AlertmanagerConfig), reconcile the owning Kustomization: 'flux reconcile kustomization <name> --with-source'. The Kustomization applies the new manifest; any dependent HelmRelease then reconciles its CR.
+- Namespace: app Kustomizations may live in their app's namespace (e.g. kube-prometheus-stack in observability), not the default flux-system — pass --namespace <ns> when reconciling.
