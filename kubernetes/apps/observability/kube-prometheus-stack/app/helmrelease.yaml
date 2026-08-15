@@ -516,7 +516,7 @@ spec:
         resources:
           requests:
             cpu: 50m
-            memory: 380Mi
+            memory: 256Mi
           limits:
             memory: 2Gi
         storageSpec:
