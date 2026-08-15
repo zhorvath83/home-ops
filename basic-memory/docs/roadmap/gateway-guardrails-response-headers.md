@@ -19,7 +19,7 @@ scope: 'The Envoy Gateway control surface in front of the external routes: the
   port-80 https-redirect route, the fail-closed ext_authz chain (CrowdSec bouncer
   +
 
-  AppSec, both single-replica), and the response-header Lua filter. Carries the
+  AppSec), and the native ClientTrafficPolicy lateResponseHeaders. Carries the
 
   response-headers-lack-CPS cluster (ids 42, 70).'
 rationale: 'These are gateway-plane guardrails that fail silently today: a route-level
@@ -31,8 +31,8 @@ rationale: 'These are gateway-plane guardrails that fail silently today: a route
   fully ungated; neither is caught by admission, lint, or alert. The external proxy
   is
 
-  single-replica with 30-minute timeouts and no connection limit, and the response
-  Lua
+  a single instance with 30-minute timeouts and no connection limit; the native
+  ClientTrafficPolicy lateResponseHeaders
 
   injects only HSTS/nosniff/Referrer-Policy — no CSP, frame-ancestors, Permissions-Policy,
 
@@ -89,9 +89,9 @@ tags:
 - A route-level SecurityPolicy that forgets mergeType can no longer silently detach the Gateway-level CrowdSec gate, and a SecurityPolicy that fails to attach raises an alert instead of leaving the route ungated.
 - The reserved-hostname admission policy covers every route kind the public listener accepts and constrains which Gateway a route may attach to.
 - The external proxy resists slowloris / connection exhaustion, and the https-redirect no longer reflects an arbitrary client Host.
-- The ext_authz chain is no longer a single restart away from 503ing every public hostname.
+- A bouncer restart still 503s every public hostname, but the window is shorter (memory headroom, priorityClass, fast probes) and no longer silent (an unavailability alert fires).
 - Unauthenticated public apps get CSP / frame-ancestors / Permissions-Policy / COOP headers, reducing XSS/framing/clickjacking blast radius.
-- Path-deny rules are robust to percent-encoding/doubled-slash bypass attempts.
+- Path-deny rules are robust to percent-encoding/doubled-slash bypass attempts once explicit path normalization is enabled and re-tested (Phase 5 — currently UNCERTAIN).
 
 ## What to do (phased; each phase independently shippable)
 
@@ -103,19 +103,23 @@ tags:
 
 ### Phase 2 — Connection hardening
 
-- Slowloris / connection exhaustion (gateway-policies.yaml timeouts + buffer; envoy.yaml replicas): add connection.connectionLimit, bound maxAcceptPerSocketEvent, and lower requestReceivedTimeout. Blasts: too-low a timeout breaks large uploads (document ingest, book ingest) — calibrate per-route.
+- Slowloris / connection exhaustion (gateway-policies.yaml timeouts + buffer): add connection.connectionLimit, bound maxAcceptPerSocketEvent, and lower requestReceivedTimeout. Blasts: too-low a timeout breaks large uploads (document ingest, book ingest) — calibrate per-route.
 - https-redirect reflects client Host (gateway-policies.yaml redirect route): the port-80 redirect route has no hostname filter and no requestRedirect.hostname, so Envoy reflects the client Host into the Location header. Pin the hostnames or set requestRedirect.hostname.
 
-### Phase 3 — ext_authz chain single-point-of-failure
-
-- The chain is fail-closed (failOpen:false, statusOnError:503) plus a single-replica bouncer (128Mi limit) and single-replica AppSec, so one restart 503s every public hostname (gateway-policies.yaml + crowdsec-bouncer/app/helmrelease.yaml replicaCount:1).
-- Add a PodDisruptionBudget, raise the bouncer/AppSec resources, and use a RollingUpdate surge (or 2 replicas). Blasts: a second replica changes the ban-state consistency model — verify the bouncer supports HA before scaling.
-
-### Phase 4 — Gateway response headers (CSP / framing / COOP)
-
-- The response Lua injects only HSTS, nosniff, and Referrer-Policy (security-headers.yaml). Add Content-Security-Policy: frame-ancestors 'none', Permissions-Policy, and COOP/COEP (add-if-absent).
-- Blasts: a strict CSP can break apps that load inline scripts/widgets — apply per-app where the app is known to need inline, default-strict elsewhere. The dashboard's header is coordinated with [[homepage-recon-exposure]].
-
+### Phase 3 — ext_authz chain: shrink blast radius and outage window (no replicas)
+- The chain is fail-closed (failOpen:false, statusOnError:503, gateway-policies.yaml:324-325 external, :298-299 internal) on a single-replica bouncer (replicaCount:1, crowdsec-bouncer/app/helmrelease.yaml:15), so a restart or OOMKill 503s every public hostname; on this single-node cluster the goal is a smaller outage window without replicas.
+- Raise the bouncer memory headroom — a 128Mi limit / 64Mi request is tight (crowdsec-bouncer/app/helmrelease.yaml:62-67); an OOMKill is a hard fail-closed outage across every public hostname. Blasts: only node-memory pressure; raise the request first so admission keeps it schedulable.
+- Give the bouncer a priorityClass above the workloads it gates, so it is never preempted or evicted first when the single node is under pressure. Blasts: a class ranked below a gated workload re-orders eviction the wrong way — the bouncer must outrank what it gates.
+- Tune liveness/readiness so a hung bouncer is detected and restarted fast instead of 503ing through a slow probe window. Blasts: over-aggressive probes restart a healthy bouncer during startup/latency spikes.
+- Add a Prometheus alert on bouncer unavailability so the 503 window is visible, not silent. Blasts: only alert noise — calibrate the firing window to ride out a rolling restart.
+- No rollout surge on the bouncer: a surge would transiently run 2 pods on this single node, so it is rejected; the restart window is instead bounded by the memory-headroom, priorityClass, probe, and alert levers above.
+- No PodDisruptionBudget: a PDB is meaningless at 1 replica on 1 node and is deliberately omitted.
+### Phase 4 — Gateway response headers (native lateResponseHeaders: CSP / framing / COOP)
+- The baseline is already native: ClientTrafficPolicy headers.lateResponseHeaders injects HSTS and nosniff (set) plus Referrer-Policy (addIfAbsent) on both gateways (gateway-policies.yaml:123-131 external, :180-188 internal). Missing: Content-Security-Policy frame-ancestors 'none', Permissions-Policy, COOP/COEP.
+- Add the missing headers to the SAME lateResponseHeaders lists, using addIfAbsent so an app that sets its own header wins. Blasts: a set() would silently override a stricter app value — addIfAbsent keeps app sovereignty.
+- CSP default-strict at the gateway (frame-ancestors 'none'), with per-app carve-outs for apps known to need inline scripts/widgets. Blasts: a strict CSP breaks inline-script/widget apps — carve per-app, never gateway-wide.
+- Coordinate the dashboard header with [[homepage-recon-exposure]] — that item owns the dashboard exposure surface; this one only supplies its frame-ancestors / CSP baseline.
+- Permissions-Policy and COOP/COEP are additive and low-risk, but verify COEP (cross-origin-isolate) against widget-bearing apps first. Blasts: COEP breaks cross-origin embeds — leave it off until the carve-out list is known.
 ### Phase 5 — Path normalization and redirect-target constraints (UNCERTAIN items)
 
 - Path-deny normalization (UNCERTAIN, id 37): enable explicit path normalization (merge slashes, percent-decode) in a ClientTrafficPolicy and re-test the idm deny rules with encoded/doubled-slash variants.
@@ -127,14 +131,14 @@ tags:
 - A SecurityPolicy set to not-Accepted triggers an alert within the scrape interval.
 - connection.connectionLimit is set; requestReceivedTimeout is lowered; a large-upload route still succeeds.
 - The redirect route no longer reflects an arbitrary Host.
-- A bouncer PDB exists; a RollingUpdate surge is configured (or 2 replicas, after HA verification).
-- A CSP / frame-ancestors header is present on external responses.
+- The bouncer memory limit is raised and a priorityClass is set; a bouncer-unavailability alert fires within the scrape interval. No PDB, no added replicas.
+- A CSP / frame-ancestors header is present on external responses, injected via ClientTrafficPolicy lateResponseHeaders (addIfAbsent).
 - Path normalization is on; encoded/doubled-slash deny-rule bypass attempts are blocked.
 
 ## Risks / what could break (blast radius per change)
 
 - **Per-route timeouts (Phase 2):** too-low a requestReceivedTimeout breaks large uploads (document/book ingest). Mitigation: calibrate per-route, keep a generous timeout on the ingest routes.
-- **extauth HA (Phase 3):** a second bouncer replica changes the ban-state consistency model. Mitigation: verify the envoy-proxy-bouncer supports HA before scaling; otherwise use a PDB + RollingUpdate surge on a single replica.
+- **extauth restart window (Phase 3):** the chain is fail-closed, so any bouncer restart 503s every public hostname. Mitigation: memory headroom + priorityClass + fast probes + an unavailability alert. Replicas, HA, and a PDB are explicitly out of scope on this single-node cluster.
 - **CSP (Phase 4):** a strict CSP breaks apps with inline scripts/widgets. Mitigation: default-strict, carve per-app exceptions where needed; coordinate the dashboard header with [[homepage-recon-exposure]].
 - **Path normalization (Phase 5):** enabling normalization can change routing for apps that rely on encoded path segments. Mitigation: test the deny rules AND the app routes with encoded variants before applying.
 - **Reserved-hostname VAP widening (Phase 1):** an over-broad parentRef constraint can reject a legitimate cross-Gateway attach. Mitigation: scope the constraint to the external Gateway family.
