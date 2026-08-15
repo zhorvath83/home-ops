@@ -35,3 +35,30 @@ spec:
         memory: 140Mi
       limits:
         memory: 1024Mi
+  # P1.8: chart ServiceMonitor is hardcoded (no metricRelabelings hook), so patch
+  # via postRenderers. Full endpoint included for CRD list-merge safety — kustomize
+  # merges by port: https, preserving interval/tlsConfig while adding metricRelabelings.
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: ServiceMonitor
+              name: volsync
+            patch: |-
+              apiVersion: monitoring.coreos.com/v1
+              kind: ServiceMonitor
+              metadata:
+                name: volsync
+              spec:
+                endpoints:
+                  - interval: 30s
+                    path: /metrics
+                    port: https
+                    scheme: https
+                    tlsConfig:
+                      insecureSkipVerify: true
+                    metricRelabelings:
+                      - sourceLabels:
+                          - __name__
+                        regex: "controller_runtime_reconcile_time_seconds_bucket|workqueue_(work|queue)_duration_seconds_bucket"
+                        action: drop
