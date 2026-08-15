@@ -1,10 +1,18 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/monitoring.coreos.com/prometheusrule_v1.json
-# Picked up by the kube-prometheus-stack Prometheus (ruleSelector match-all).
-# speedtest-exporter scrapes every 20m (a real speedtest per scrape, ~1m), so the for:-windows
-# below use 25m to require a slow value to survive a re-scrape (2 consecutive slow scrapes),
-# not a single transient one. Thresholds are calibrated to the contracted link (500/200 Mbit/s,
-# 20 ms), set below the 24h-observed minimums (~528/305 Mbit/s, ~2.75 ms) so normal operation
+# Picked up by the kube-prometheus-stack Prometheus (ruleSelector match-all). warning -> Pushover.
+# speedtest-exporter scrapes every 20m (a real speedtest per scrape, up to the 5m scrapeTimeout),
+# so the speedtest_* gauges are only fresh ~5m after each scrape and go stale for the remaining
+# ~15m of the cycle. Instant comparisons (metric < N) are thus active only ~5m/cycle and a `for:`
+# window can never accumulate — threshold alerts would never fire and absent(up{...}) would flap
+# pending constantly (verified live: SpeedtestExporterAbsent sat pending with the instant form).
+# The expressions use range aggregation over windows sized to the 20m cadence, which reads the
+# TSDB and is staleness-robust (same idiom as the crowdsec blocklist absent_over_time/max_over_time
+# rules): absent_over_time[30m] for discovery loss (30m > 20m interval + jitter, one missed scrape
+# cannot fire), and max_over_time/min_over_time[40m] for the thresholds (40m = 2x interval -> the
+# last 2 scrapes, so a single transient slow scrape cannot fire; both must confirm). No `for:` —
+# the window is the gate, matching the crowdsec range-agg alerts. Thresholds (500/200 Mbit/s,
+# 20 ms) are set below the 24h-observed minimums (~528/305 Mbit/s, ~2.75 ms) so normal operation
 # does not fire.
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
@@ -15,34 +23,30 @@ spec:
     - name: speedtest-exporter.rules
       rules:
         - alert: SpeedtestExporterAbsent
-          expr: absent(up{job="speedtest-exporter"})
-          for: 15m
+          expr: absent_over_time(up{job="speedtest-exporter"}[30m])
           labels:
             severity: critical
           annotations:
             summary: "speedtest-exporter has disappeared from Prometheus target discovery"
-            description: "The speedtest-exporter scrape target is absent — internet-link monitoring is blind (no download/upload/ping data flowing)."
+            description: "No up sample for the speedtest-exporter scrape target in the last 30m (absent_over_time[30m]) — internet-link monitoring is blind (no download/upload/ping data flowing). 30m is greater than the 20m scrape interval plus jitter, so a single late scrape does not fire."
         - alert: SpeedtestSlowInternetDownload
-          expr: speedtest_download_bits_per_second < 500000000
-          for: 25m
+          expr: max_over_time(speedtest_download_bits_per_second[40m]) < 500000000
           labels:
             severity: warning
           annotations:
             summary: "Internet download speed below 500 Mbit/s"
-            description: "speedtest-exporter reports download below 500 Mbit/s (5e8 bit/s) for over 25m — internet downlink degradation."
+            description: "speedtest-exporter reports download below 500 Mbit/s (5e8 bit/s) across the last 2 scrapes (max_over_time[40m] < 5e8; 40m = 2x the 20m scrape interval). A single transient slow scrape does not fire — both scrapes in the window must be below."
         - alert: SpeedtestSlowInternetUpload
-          expr: speedtest_upload_bits_per_second < 200000000
-          for: 25m
+          expr: max_over_time(speedtest_upload_bits_per_second[40m]) < 200000000
           labels:
             severity: warning
           annotations:
             summary: "Internet upload speed below 200 Mbit/s"
-            description: "speedtest-exporter reports upload below 200 Mbit/s (2e8 bit/s) for over 25m — internet uplink degradation."
+            description: "speedtest-exporter reports upload below 200 Mbit/s (2e8 bit/s) across the last 2 scrapes (max_over_time[40m] < 2e8; 40m = 2x the 20m scrape interval). A single transient slow scrape does not fire — both scrapes in the window must be below."
         - alert: SpeedtestHighPingLatency
-          expr: speedtest_ping_latency_milliseconds > 20
-          for: 25m
+          expr: min_over_time(speedtest_ping_latency_milliseconds[40m]) > 20
           labels:
             severity: warning
           annotations:
             summary: "Internet ping latency above 20 ms"
-            description: "speedtest-exporter reports ping above 20 ms for over 25m — internet latency degradation."
+            description: "speedtest-exporter reports ping above 20 ms across the last 2 scrapes (min_over_time[40m] > 20; 40m = 2x the 20m scrape interval). min_over_time is used so a single low-latency scrape in the window keeps it quiet — both scrapes must be high to fire."
