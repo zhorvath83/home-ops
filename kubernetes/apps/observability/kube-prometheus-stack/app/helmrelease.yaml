@@ -111,11 +111,11 @@ spec:
       serviceMonitor:
         probes: false
         cAdvisor: true
-        # Phase 3: cAdvisor endpoint 10s -> 60s. k8s-views dashboards use
-        # [$__rate_interval] (auto-scales), flux dashboards use [5m] — both safe.
+        # cAdvisor 10s -> 60s -> 30s: 60s left rate(...[1m]) with 1 sample, FreeLens
+        # graphs went empty; 30s restores 2 samples/1m, keeping half the TSDB savings.
         # Applies only to the /metrics/cAdvisor endpoint; the main kubelet
         # /metrics endpoint (kubelet_volume_stats_*) has no interval set.
-        cAdvisorInterval: 60s
+        cAdvisorInterval: 30s
         cAdvisorMetricRelabelings:
           # Re-add chart-default CNI-interface drop our override lost (Helm arrays
           # don't merge); non-host-net pods use eth0, lxc/tunl are Cilium veth dup.
