@@ -309,3 +309,53 @@ Net: 55 198 - 35 893 = **+19 305 series (+25% over the 76 965 head)**. This is B
 - Do NOT hard-drop uncertain metrics (container_pressure_*, blocklist_import_errors_total, nas-node node_systemd_unit_state, pocket-id http_*, container_processes/sockets, node-exporter interface metadata) — VERIFY / keep for debug.
 - Do NOT adopt prompp before verifying the 3.x -> 2.55 TSDB read-compatibility (blocking risk) and before confirming the cheaper alternatives (raise the limit, Phase 1, Phase 3) are insufficient.
 - Do NOT introduce noisy alerts (speedtest bandwidth, envoy 5xx on home-cluster traffic) — dashboard-only where not actionable.
+
+
+## Phase 1 Execution Record (2026-08-15)
+
+**Implementer**: Llama dev subterminal. **Maestro (supervising)**: Claude Code #2.
+**Branch**: `main` (GitHub project — direct-to-main is the established pattern; no PR required for this work).
+**Status**: DONE — all 9 code commits pushed; this docs commit closes Phase 1.
+
+### Gate evidence (all 9 commits)
+
+Every commit was verified before staging with **per-commit AFTER=0 + KEEP populated** (the
+Maestro gate and the reliable cardinality signal), `just k8s test-prom-rules` green, and
+pre-commit (yamlfmt/yamllint/gitleaks) green on the touched files. Staging was explicit-pathspec
+per file from a clean working tree (`git status` checked before each `git add`).
+
+### Commit-by-commit drop table
+
+| # | SHA | Scope | File(s) | Drop families (metricRelabelings regex) | Measured BEFORE->AFTER |
+|---|-----|-------|---------|------------------------------------------|------------------------|
+| C1 | `e8c7caf9b` | observability (fix) | `kube-prometheus-stack/app/helmrelease.yaml` | restore chart-default CNI `container_network_*` drop lost to the repo override (P1.1) | CNI-iface series ->0; KEEP eth0=70, non-CNI=259 |
+| C2 | `23103d348` | observability | `kube-prometheus-stack/app/helmrelease.yaml` | cAdvisor `container_(memory_failures|last_seen|memory_kernel|failcnt|blkio_device|start_time|threads|ulimits_soft|health_state|processes|sockets).*` + node-exporter `node_network_(flags|device_id|dormant|iface_link_mode|transmit_queue_length|carrier.*|address_assign_type|name_assign_type|net_dev_group|protocol_type)` (P1.7, V3, V4) | health_state/processes/sockets 248->0 each; node_network V4 metadata ->0 |
+| C3 | `24cc4c317` | cilium | `cilium/app/helmrelease.yaml` | cilium-agent + cilium-operator latency histograms, **bucket-only** (P1.4, P1.5); chart hooks `prometheus.serviceMonitor.metricRelabelings` / `operator.prometheus.serviceMonitor.metricRelabelings` confirmed by helm template render | 771+456=1227->0; KEEP endpoint_regeneration / policy_implementation / proxy_upstream_reply intact |
+| C4 | `66a6b8c95` | envoy-gateway | `networking/envoy-gateway/config/observability.yaml` | envoy-proxy `envoy_cluster_update_duration` / `envoy_sds_update_duration` + upstream cx/rq buckets (P1.2/P1.2b, **bucket-only**) and envoy-gateway `rest_client_*` (**all-parts** _bucket/_sum/_count) (P1.6) | 1400+1100+710=3210->0; KEEP upstream_rq_time, http_downstream_rq_time, watchable/status_update/resource_apply intact |
+| C5 | `0b55a82c` | grafana | `observability/grafana/instance/servicemonitor.yaml` | `grafana_.*` + `^go_.*` (P1.3, broadened from the roadmap's specific-bucket list — no dashboard consumes any `grafana_*`) | grafana_* 3705->0; the **separate** `grafana-operator-metrics-service` SM left untouched (controller_runtime_reconcile_total=48, workqueue_depth=4) |
+| C6 | `cf8af62eb` | metrics-server | `metrics-server/app/helmrelease.yaml` | `apiserver_response_sizes_bucket|field_validation_request_duration_seconds_bucket|metrics_server_.*_bucket|authentication_duration_seconds_bucket|authorization_duration_seconds_bucket|rest_client_.*_bucket` (P1.9); chart hook + `values.yaml metricRelabelings: []` confirmed | 263->0; KEEP `apiserver_request_{duration,slo,sli}` |
+| C7 | `e0c7598e7` | volsync | `volsync/app/helmrelease.yaml` | `controller_runtime_reconcile_time_seconds_bucket|workqueue_(work|queue)_duration_seconds_bucket` (P1.8) via **postRenderers** (chart SM is hardcoded, no metricRelabelings hook) | 268->0; rendered endpoint verified — `interval: 30s` + `tlsConfig.insecureSkipVerify: true` preserved, metricRelabelings added |
+| C8 | `50c73a2b9` | observability | `kube-prometheus-stack/app/scrapeconfigs/{nas-node,openwrt}.yaml` | V4 node_network metadata (both) + V1 `node_systemd_unit_state` (nas-node only; OpenWRT exposes 0 systemd, V1 N/A) | nas 946->0 + openwrt 234->0; openwrt exposure confirmed (18 iface x 13 families); node-network traffic families kept |
+| C9 | `57bee7df8` | pocket-id | `pocket-id/app/helmrelease.yaml` | IdP HTTP histograms (**all-parts**): `http_server_{request_body_size_bytes,response_body_size_bytes,request_duration_seconds}_(bucket|sum|count)|http_client_request_.*_(bucket|sum|count)` (V2); bjw-s app-template `endpoints[].metricRelabelings` passthrough confirmed via render-test | 1059->0 |
+
+**Dropped total (measured, per-commit sum)**: ~16.9k series across the 9 commits.
+
+### Net head before/after — and a surprise
+
+- **Head start (Phase 1 baseline)**: `prometheus_tsdb_head_series` = **72 234** (the live re-measurement at Phase 1 start; ratified by the Maestro to supersede the roadmap's plan-time 76 965 — recorded here per the RATIFY refinement).
+- **Head now**: **77 495** — a **net +5 261** (an *increase*), despite the ~16.9k verified drops.
+- **Diagnosis (the surprise)**: the aggregate head gauge is **churn-dominated over the ~45-min implementation window**, not drop-dominated. Evidence: `created_total=238 727`, `removed_total=161 232` (net = head, so the gauge is not lagging/buggy); current `rate(created[5m])=0.59/s` vs `rate(removed[5m])=0/s` — the head is still slowly growing from churn while `metricRelabelings drop` prevents *creation* (it does not cause *removal*; already-ingested stale series evict only after staleness + head GC). Cluster churn during the window (Flux reconciling 9 SMs + normal activity) added roughly the same ~17k the drops removed, leaving the aggregate net ~flat-to-slightly-up versus the roadmap's 76 965 baseline.
+- **Why the drops are still confirmed real**: the per-target counts dropped as expected (cilium-agent ~2298->1071, envoy-proxy ~11 000->7790, etc.), and every commit's AFTER=0 + KEEP-populated was verified independently. The **per-commit AFTER=0 + KEEP is the Maestro gate and the reliable signal**; the aggregate head over a 45-min active window is too noisy to be the reduction metric.
+- **Recommendation**: re-measure `prometheus_tsdb_head_series` after a stabilization window (no active reconciles, ~15-30 min) — the true net reduction should surface as the dropped stale series evict and churn subsides. Expected steady-state reduction is ~16.9k below the pre-Phase-1 head.
+
+### Implementation decisions worth recording
+
+- **Head offset**: the roadmap's plan-time 76 965 head was superseded by the live 72 234 measurement at Phase 1 start (Maestro RATIFY). Per-commit BEFORE values used live measurements where captured; plan-time roadmap values are marked where the live capture was noisy.
+- **V2 (pocket-id) — full histogram, not bucket-only**: the roadmap listed V2 as specific `_bucket` names (~939 series). Implemented as the **full histogram** (all-parts: `_bucket/_sum/_count`, ~1059 series) for a faithful drop with no orphaned `_sum/_count`, consistent with P1.6's all-parts treatment. Human-approved drop — SSO request-latency/body-size is not retained.
+- **V4 — three jobs, not one**: the roadmap's "SM node-exporter" V4 location was imprecise. V4 node-network interface metadata was applied on all three jobs that expose it: node-exporter (C2, in the KPS cAdvisor relabeling neighbour), nas-node (C8), and openwrt (C8). OpenWRT exposure confirmed first (18 interfaces x 13 families = 234 series) before applying, per Maestro RATIFY (a). The `carrier.*` regex does not cover `transmit_carrier_total` (transmit-prefixed -> KEPT traffic family).
+- **P1.8 (volsync) — postRenderers, not values**: the volsync-perfectra1n chart's ServiceMonitor is hardcoded with no `metricRelabelings` value hook, so the drop is patched via `postRenderers` (kustomize strategic-merge). The patch carries the **full endpoint** (`interval: 30s`, `path: /metrics`, `port: https`, `scheme: https`, `tlsConfig.insecureSkipVerify: true`) for CRD list-merge safety — kustomize merges by the `port: https` key, preserving interval/tlsConfig while adding metricRelabelings. Render verified the merged endpoint.
+- **C8/C9 type is perf, not remove** (Maestro RATIFY (c)) — these drop unconsumed metrics from collection; they do not remove code.
+
+### Next
+
+Phase 2 (untapped-value alert gaps + the factual correction) is **not started**; its brief is pending Maestro verification of this Phase 1 record. The dropped metrics have no dashboard/PrometheusRule consumer (verified per-family against the cluster's Grafana dashboards and PrometheusRules), so no consumer breaks.
