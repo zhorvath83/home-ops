@@ -184,9 +184,7 @@ spec:
         cronjob:
           concurrencyPolicy: Forbid
           schedule: "30 0 * * *"
-          # suspended for the v3 cutover: the v3 exporter's --delete would overwrite the
-          # v2-format export that is the secondary rollback path
-          suspend: true
+          suspend: false
           successfulJobsHistory: 1
           failedJobsHistory: 3
         containers:
