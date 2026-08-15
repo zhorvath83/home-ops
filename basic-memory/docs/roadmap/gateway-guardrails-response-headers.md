@@ -71,7 +71,7 @@ tags:
 ## Metadata (observation-form, schema validation)
 
 - [topic] Gateway guardrails (admission, attach, connection, extauth resilience) + response headers (CSP/framing/COOP) on the external surface
-- [status] in-progress — Phase 1-3 delivered + live-verified (2026-08-15); Phases 4-5 proposed
+- [status] in-progress — Phase 1-4 delivered + live-verified (2026-08-15); Phase 5 proposed
 - [priority] medium
 - [area] networking / observability / iam
 - [created] 2026-08-14
@@ -90,7 +90,7 @@ tags:
 - The reserved-hostname admission policy covers every route kind the public listener accepts and constrains which Gateway a route may attach to.
 - The external proxy resists slowloris / connection exhaustion, and the https-redirect no longer reflects an arbitrary client Host.
 - A bouncer restart still 503s every public hostname and the window is no shorter — the headroom, priorityClass and probe levers were all dropped on evidence — but the failure is no longer silent: an impact-level ext_authz alert fires, and it catches an AppSec outage underneath the bouncer too. The AppSec rollout no longer opens a gap of its own.
-- Unauthenticated public apps get CSP / frame-ancestors / Permissions-Policy / COOP headers, reducing XSS/framing/clickjacking blast radius.
+- Every app behind both gateways gets CSP (frame-ancestors 'self') / Permissions-Policy / COOP headers, reducing framing/clickjacking blast radius and what a successful XSS can abuse; an app that sets its own header wins (addIfAbsent).
 - Path-deny rules are robust to percent-encoding/doubled-slash bypass attempts once explicit path normalization is enabled and re-tested (Phase 5 — currently UNCERTAIN).
 
 ## What to do (phased; each phase independently shippable)
@@ -169,12 +169,33 @@ D) The roadmap's requested "unavailability alert" already existed: `CrowdSecBoun
 
 **Live verification (2026-08-15):** live PrometheusRule `envoy-proxy` group carries the 6th rule `EnvoyExtAuthzErrors`; the alert is loaded in Prometheus with health ok, state inactive (metric 0 on all 4 series — 2 gateways × http-10080/https-10443); `bouncer_waf_requests_total` increasing and `bouncer_waf_errors_total` 0; appsec deployment strategy RollingUpdate maxUnavailable=0/maxSurge=1, pod Ready 1/1.
 
-### Phase 4 — Gateway response headers (native lateResponseHeaders: CSP / framing / COOP)
+### Phase 4 — Gateway response headers (native lateResponseHeaders: CSP / framing / COOP) ✅ (done 2026-08-15)
 - The baseline is already native: ClientTrafficPolicy headers.lateResponseHeaders injects HSTS and nosniff (set) plus Referrer-Policy (addIfAbsent) on both gateways (gateway-policies.yaml:123-131 external, :180-188 internal). Missing: Content-Security-Policy frame-ancestors 'none', Permissions-Policy, COOP/COEP.
 - Add the missing headers to the SAME lateResponseHeaders lists, using addIfAbsent so an app that sets its own header wins. Blasts: a set() would silently override a stricter app value — addIfAbsent keeps app sovereignty.
 - CSP default-strict at the gateway (frame-ancestors 'none'), with per-app carve-outs for apps known to need inline scripts/widgets. Blasts: a strict CSP breaks inline-script/widget apps — carve per-app, never gateway-wide.
 - Coordinate the dashboard header with [[homepage-recon-exposure]] — that item owns the dashboard exposure surface; this one only supplies its frame-ancestors / CSP baseline.
 - Permissions-Policy and COOP/COEP are additive and low-risk, but verify COEP (cross-origin-isolate) against widget-bearing apps first. Blasts: COEP breaks cross-origin embeds — leave it off until the carve-out list is known.
+**Delivery (2026-08-15) — Phase 4 implemented, deployed, live-verified.** Commit on `main`: `f3d89a847` (feat(networking): add framing, permissions and COOP response headers).
+
+1. Three response headers were added to BOTH ClientTrafficPolicy `lateResponseHeaders` blocks (gateway-policies.yaml, envoy-external + envoy-internal), each `addIfAbsent` so an app that sets its own header always wins:
+   - `content-security-policy: frame-ancestors 'self'` — this single directive only, no default-src/script-src.
+   - `permissions-policy` — blocked (empty allowlist): camera, microphone, geolocation, usb, midi, payment, display-capture, serial, bluetooth; at `(self)`: publickey-credentials-get, publickey-credentials-create, fullscreen, autoplay, picture-in-picture.
+   - `cross-origin-opener-policy: same-origin`.
+
+**Deviations from the roadmap text (deliberate, with justification):**
+
+A) `frame-ancestors` is `self`, not the roadmap's `none`. Paperless sends its own `x-frame-options: SAMEORIGIN` — it relies on same-origin embedding (its document preview) — and a CSP `frame-ancestors` overrides X-Frame-Options in browsers, so `none` would have broken that preview. `self` blocks the same threat (a foreign page framing our apps) while leaving same-origin embedding intact.
+
+B) The CSP deliberately carries `frame-ancestors` ALONE — no default-src/script-src — so the gateway's own 401 responseOverride page keeps its inline script. The "no CSP on the gateway" comment (gateway-policies.yaml:51) explains that script's existence; it is NOT a ban on adding a CSP. Live-proven: the full OIDC flow ends with the 401 override page served intact, inline script in the body.
+
+C) COEP was left out, deliberately. It breaks cross-origin embeds and adds nothing in this cluster; the roadmap's requested pre-check verdict is: not worth it.
+
+D) Permissions-Policy does NOT block WebAuthn. Pocket ID is passkey-based (no password), so `publickey-credentials-get` and `publickey-credentials-create` stay at `(self)`; empty allowlists there would break every login in the cluster.
+
+**Syntactic lesson (two standards, two syntaxes in one commit):** in CSP the `self` keyword must be QUOTED (`frame-ancestors 'self'`) — unquoted it parses as a host-source named "self" and the protection silently does nothing; in Permissions-Policy the `(self)` allowlist is correct UNQUOTED.
+
+**Live verification (2026-08-15):** all three headers appear on the internal gateway (192.168.1.18, `--resolve`) for recipes/photos/dash/echo and on the external surface through the Cloudflare Tunnel; paperless (docs) keeps its own `referrer-policy: same-origin` and `x-frame-options: SAMEORIGIN` (addIfAbsent app sovereignty proven live) while receiving our CSP + permissions-policy; the 401 override page loads intact with its inline script (callback with `error=access_denied`); both CTPs `Accepted=True` (no Conflicted/Overridden), both gateways `Accepted=True`/`Programmed=True`; the envoy pods took the reload with 0 restarts, no traffic disruption.
+
 ### Phase 5 — Path normalization and redirect-target constraints (UNCERTAIN items)
 
 - Path-deny normalization (UNCERTAIN, id 37): enable explicit path normalization (merge slashes, percent-decode) in a ClientTrafficPolicy and re-test the idm deny rules with encoded/doubled-slash variants.
@@ -187,7 +208,7 @@ D) The roadmap's requested "unavailability alert" already existed: `CrowdSecBoun
 - connection.connectionLimit is set on the internal gateway (1024, half-cap alert); the external gateway is deliberately uncapped (no exhaustion path: ClusterIP-only + CiliumNetworkPolicy admits only the cloudflared pod, measured 7-day peak 1). requestReceivedTimeout lowering deliberately dropped — it covers the whole request reception (headers+body) and would break the large-upload routes; the slow-header vector is already bound by requestHeadersReceivedTimeout: 10s (Delivery deviation A).
 - The redirect route no longer reflects an arbitrary Host.
 - The bouncer memory-limit raise and priorityClass were deliberately dropped (Delivery deviations A-B: measured 7-day peak 46 MiB vs the 128 MiB limit is ~2.8x headroom with zero OOM in 7 days; no repo priorityClass convention on a single node); the impact-level EnvoyExtAuthzErrors alert covers bouncer and AppSec outages within the scrape interval. No PDB, no added replicas.
-- A CSP / frame-ancestors header is present on external responses, injected via ClientTrafficPolicy lateResponseHeaders (addIfAbsent).
+- A CSP / frame-ancestors 'self' header is present on external responses, injected via ClientTrafficPolicy lateResponseHeaders (addIfAbsent).
 - Path normalization is on; encoded/doubled-slash deny-rule bypass attempts are blocked.
 
 ## Risks / what could break (blast radius per change)
