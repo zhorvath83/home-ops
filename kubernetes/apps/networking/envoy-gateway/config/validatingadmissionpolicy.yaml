@@ -8,7 +8,9 @@
 # hostnames-less route (or an explicit empty hostnames list) inherits its parent listener's
 # hostname, so on the `https` listener (hostname *.${PUBLIC_DOMAIN}) it would implicitly
 # claim the wildcard — such routes are admitted only when every parentRef targets the
-# hostname-less `http` listener (the port-80 redirect). Native kube-apiserver CEL admission — no Kyverno.
+# hostname-less `http` listener (the port-80 redirect). Same for an explicit wildcard: a
+# route whose every parentRef is `sectionName: http` may claim `*.${PUBLIC_DOMAIN}`, since
+# that Same-namespace listener carries no app hostnames and idm stays reserved. Native kube-apiserver CEL admission — no Kyverno.
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingAdmissionPolicy
 metadata:
@@ -39,7 +41,9 @@ spec:
               && (has(p.namespace) ? p.namespace == 'networking' : object.metadata.namespace == 'networking')
               && p.name in ['envoy-external', 'envoy-internal'])
             && (has(object.spec.hostnames) && size(object.spec.hostnames) > 0
-                  ? object.spec.hostnames.all(h, !(h in ['idm.${PUBLIC_DOMAIN}']) && !h.contains('*'))
+                  ? object.spec.hostnames.all(h, !(h in ['idm.${PUBLIC_DOMAIN}']))
+                    && (object.spec.parentRefs.all(p, has(p.sectionName) && p.sectionName == 'http')
+                        || object.spec.hostnames.all(h, !h.contains('*')))
                   : object.spec.parentRefs.all(p, has(p.sectionName) && p.sectionName == 'http')))
       reason: Forbidden
       message: "idm.${PUBLIC_DOMAIN} is a reserved IdP hostname, wildcard hostnames are restricted, and routes outside the security namespace may only attach to the known gateways (envoy-external/envoy-internal in networking)"
