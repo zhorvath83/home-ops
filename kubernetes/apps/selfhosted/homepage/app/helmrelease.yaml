@@ -44,7 +44,7 @@ spec:
               HOMEPAGE_EXTERNAL_URL: "https://dash.${PUBLIC_DOMAIN}"
               HOMEPAGE_OIDC_ISSUER: "https://idm.${PUBLIC_DOMAIN}"
               HOMEPAGE_OIDC_CLIENT_ID: homepage
-              HOMEPAGE_OIDC_NAME: Pocket ID
+              HOMEPAGE_OIDC_NAME: SSO
             envFrom:
               - secretRef:
                   name: "{{ .Release.Name }}-secret"
