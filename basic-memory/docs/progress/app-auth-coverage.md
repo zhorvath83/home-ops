@@ -1,0 +1,73 @@
+---
+title: app-auth-coverage
+type: progress-note
+permalink: home-ops/docs/progress/app-auth-coverage
+status: in-progress
+priority: high
+area: iam
+created: 2026-08-16
+roadmap: docs/roadmap/app-auth-coverage
+tags:
+- progress
+- iam
+- oidc
+- envoy-oidc
+- pocket-id
+- security
+- app-auth-coverage
+---
+
+# app-auth-coverage — unified identity layer for every exposed app (implementation)
+
+relates_to [[app-auth-coverage]] (roadmap), [[iam]], [[networking]], [[external-secrets]], [[k8s-workloads]]
+
+## Session 2026-08-16 — Phase 1 repo edits (direct-to-main)
+
+Goal: bring the 8 remaining exposed apps under the Pocket ID identity layer (envoy-oidc gate OR native OIDC) so none relies on app-local login. homepage was done 2026-08-15. home-gallery is an out-of-scope documented exception (Google OAuth later).
+
+### What landed (repo, uncommitted)
+
+**Pocket ID registry** (`provision/pocket-id/clients.yaml`): +4 groups, +8 clients.
+- Groups: `paperless_admins`, `paperless_users`, `mealie_admins`, `mealie_users`.
+- envoy clients (4): `backrest` (backup), `paperless-gpt` (paperless-gpt), `kopia` (pvbackup), `victoria-logs` (logs) — `gate: envoy`, `groups: [infra_admins]`.
+- native clients (4): `mealie` (recipes, cb `/login`, `[mealie_admins, mealie_users]`), `paperless` (docs, cb `/accounts/oidc/pocket-id/login/callback/`, `[paperless_admins, paperless_users]`), `actual` (pfm, cb `/openid/callback`, `[infra_admins]`), `wallos` (subscriptions, cb `""`, `pkce_enabled: false`, `[infra_admins]`).
+
+**envoy-oidc consumers** (4 ks.yaml): added `components/gateway-oidc` + `APP`/`APP_SUBDOMAIN` substitute + `dependsOn: pocket-id (security)` — backrest, paperless-gpt, kopia (created components+postBuild), victoria-logs (created components+dependsOn+postBuild).
+
+**alertmanager** (`kube-prometheus-stack/app/helmrelease.yaml`): deleted the inline `alertmanager.route.main` HTTPRoute (never used). Alertmanager stays in-cluster-only (Service :9093). This removes alertmanager from auth-coverage scope (no exposed route remains) instead of gating it.
+
+**pocket-id** (`security/pocket-id/app/helmrelease.yaml`): `EMAILS_VERIFIED: "false" → "true"` (mealie v3.21.0+ requires a verified-email claim; passkey is the real auth).
+
+**native OIDC app wiring**:
+- mealie: env (OIDC_AUTH_ENABLED, OIDC_CONFIGURATION_URL, OIDC_CLIENT_ID, OIDC_GROUPS_CLAIM, OIDC_USER_GROUP, OIDC_ADMIN_GROUP, OIDC_AUTO_REDIRECT, ALLOW_PASSWORD_LOGIN=false) + BASE_URL fixed `mealie.* → recipes.*`; ES extended with `OIDC_CLIENT_SECRET` + `data:` from `mealie_client_secret`. Callback `/login` (verified against mealie oidc-v2 docs).
+- paperless: env (PAPERLESS_APPS=openid_connect, PAPERLESS_DISABLE_REGULAR_LOGIN, PAPERLESS_REDIRECT_LOGIN_TO_SSO, flipped SOCIALACCOUNT_ALLOW_SIGNUPS/SOCIAL_AUTO_SIGNUP true, SOCIAL_ACCOUNT_SYNC_GROUPS + claim=groups) + pod label `allow-gateways`; ES extended with `PAPERLESS_SOCIALACCOUNT_PROVIDERS` JSON blob (provider_id=pocket-id, client_id=paperless, secret interpolated, server_url=issuer, SCOPE includes groups, OAUTH_PKCE_ENABLED) + `data:` from `paperless_client_secret`. Callback `/accounts/oidc/pocket-id/login/callback/` (verified against django-allauth docs).
+- actual: env (ACTUAL_OPENID_DISCOVERY_URL, CLIENT_ID, SERVER_HOSTNAME=https://pfm.*, AUTH_METHOD=openid, ENFORCE=true, USER_CREATION_MODE=login) + envFrom new `actual-secret` + pod label `allow-gateways`; NEW ExternalSecret (`actual_client_secret` → `ACTUAL_OPENID_CLIENT_SECRET`); kustomization updated; per-app CNP comment updated. Callback `/openid/callback` (verified against actualbudget.org docs).
+- wallos: NO repo OIDC config — wallos OIDC is admin-UI-only (env-var OIDC is an unimplemented feature request, ellite/Wallos#1026). The `clients.yaml` registration stands; wiring is a Phase 3 manual admin-UI step. Callback bare-hostname `https://subscriptions.horvathzoltan.me` (callback_path "").
+
+### Discoveries / corrections (vs roadmap)
+- **wallos admin-UI-only** — deviation from the plan's "env + new ES" approach; env-var OIDC doesn't exist. Recorded; wallos remains `gate: native`, delivered via admin UI (like calibre-web-automated).
+- **kopia** — roadmap said "HTTP Basic Auth"; reality `--without-password` + KOPIA_PASSWORD (no UI auth). envoy-oidc is clean (no double-gate).
+- **victoria-logs vmauth-OIDC** — not a UI identity layer (JWT Bearer validation only); envoy-oidc gate chosen.
+- **mealie** — roadmap caveat "keeps password login until redesign" is stale (v3.22.0 supports ALLOW_PASSWORD_LOGIN=false → disabled now). BASE_URL was wrong (`mealie.*` vs route `recipes.*`) — fixed.
+- **EMAILS_VERIFIED** — global IdP flip (cleaner than per-app disabling) makes mealie's/wallos' verified-email checks pass.
+
+### Validation
+- `just pocket-id lint` — passes (clients.yaml ↔ ks.yaml agree; group refs exist; non-empty groups; wallos empty callback_path tolerated).
+- `pre-commit run` on all 15 touched files — passes (yamlfmt/yamllint/gitleaks/secret checks).
+
+### Next (Phase 2-4, user — needs op session + LAN)
+1. `just pocket-id apply` (creates 8 clients + 8 `<app>_client_secret` 1Password fields; NEVER piped stdin — sync-secrets `op item edit` dies on non-TTY).
+2. `just pocket-id audit` (zero unrestricted clients).
+3. Commit-doc-commit + push (apply-before-push ordering so ExternalSecrets/SecurityPolicies don't go Pending/Invalid transiently; Flux deploys on push to main).
+4. Pocket ID admin UI: assign user to `infra_admins` + the 4 new groups (paperless_admins/users, mealie_admins/users). Without this, group-restricted clients deny everyone.
+5. backrest: set `{"auth":{"disabled":true}}` in `/data/config.json` (PVC, one-time, volsync-backed-up).
+6. wallos: configure OIDC in Admin UI (issuer, client_id=wallos, client_secret from 1Password `wallos_client_secret`, redirect `https://subscriptions.horvathzoltan.me`, scopes `openid email profile`, disable password login).
+7. victoria-logs: verify the chart-generated HTTPRoute is named `victoria-logs` in-cluster so the SecurityPolicy targetRef binds; if renamed, set `HTTPROUTE_NAME` in the ks.yaml substitute.
+8. EMAILS_VERIFIED: confirm the existing user's `email_verified` claim is true (mealie login test); if Pocket ID only marks NEW users verified, a one-time admin-UI email-verify flip may be needed.
+9. Per-app login tests: unauthenticated → 302 to idm.*; authenticated-as-allowed-group → admitted; authenticated-as-non-allowed-group → denied at the IdP. Confirm no app-local login is the primary gate.
+
+### Risks open
+- wallos bare-hostname callback (`callback_path: ""`): confirm Pocket ID accepts the no-path redirect URI and wallos completes the `?code=` on the base URL.
+- paperless allauth JSON blob with embedded secret: validate the JSON renders and the secret interpolates on first reconcile.
+- mealie logout redirect (`/login?direct=1` vs hardcoded bare logout_url in locals.tf): login works; logout may land on `/`. Minor.
+- actual readiness probe (`httpGet path: /`) with `ACTUAL_OPENID_ENFORCE=true`: `/` likely 302s to OIDC (k8s counts 302 as success); verify the pod stays Ready.

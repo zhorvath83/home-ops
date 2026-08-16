@@ -4,7 +4,7 @@ type: roadmap
 permalink: home-ops/docs/roadmap/app-auth-coverage
 topic: Bring every exposed application under one identity layer (envoy-oidc gate OR
   native Pocket ID OIDC) so no application relies on its own local login
-status: proposed
+status: in-progress
 priority: high
 scope: 'Audit all 26 HTTPRoute-exposed applications in the cluster and drive the 11
   currently-unprotected ones into one of the two accepted auth categories used everywhere
@@ -53,7 +53,7 @@ tags:
 - envoy-oidc
 - pocket-id
 - security
-- proposed
+- in-progress
 decisions:
 - Method policy — native OIDC if the app supports it (strict); envoy-oidc gate only
   where the app has no native OIDC. PKCE absence on a native client is NOT a blocker
@@ -209,3 +209,21 @@ The first app of the Phase 2 native-OIDC sweep landed. Inventory shifts: **Table
 - [decision] Cloudflare Access is **retained** in front of `dash` (double gate on the external path) by explicit human decision. This is not the §risk about double-gating an envoy-oidc app with native OIDC — that prohibition still stands unchanged.
 - [gotcha] Relevant to the remaining batched applies (§decision "apply per phase, not 11 separate applies"): **never run `just pocket-id apply` with piped stdin.** The `sync-secrets` step's `op item edit` reads a non-TTY stdin as a JSON template and dies with `invalid JSON provided` — Terraform succeeds, the 1Password sync does not, and every consuming ExternalSecret is left stale. Recovery: `just pocket-id sync-secrets` without a pipe. See [[iam]].
 - [open] Phase 2 remainder: paperless, mealie, actual, wallos. Phase 1 (6 envoy-oidc apps) untouched. Status stays `proposed`.
+
+## Update 2026-08-16 — app-auth-coverage sweep (Phase 1 + Phase 2 remainder, repo edits)
+
+The remaining sweep landed as repo edits (direct-to-main, uncommitted at this writing). Status flips `proposed → in-progress`: all 8 remaining apps have their Pocket ID client registered and their cluster-side wiring written; apply/deploy + manual cluster steps are the pending Phase 2-4 work. Net after this batch: **14 envoy-gated + 9 native** (16 prior + 8 new); Table D drops to **1 documented exception (home-gallery)**. (alertmanager leaves the scope entirely — its unused exposed route was deleted, not gated.)
+
+- [done] **8 apps remediated in the repo** — `provision/pocket-id/clients.yaml` gained 4 groups (`paperless_admins`/`users`, `mealie_admins`/`users`) and 8 clients:
+  - envoy (4): `backrest` (backup), `paperless-gpt` (paperless-gpt), `kopia` (pvbackup), `victoria-logs` (logs) — each `gate: envoy`, `groups: [infra_admins]`. Their `ks.yaml` got the `gateway-oidc` component + `APP`/`APP_SUBDOMAIN` substitute + `dependsOn: pocket-id (security)`.
+  - native (4): `mealie` (recipes, callback `/login`, `[mealie_admins, mealie_users]`), `paperless` (docs, callback `/accounts/oidc/pocket-id/login/callback/`, `[paperless_admins, paperless_users]`), `actual` (pfm, callback `/openid/callback`, `[infra_admins]`), `wallos` (subscriptions, callback `""` bare-hostname, `pkce_enabled: false`, `[infra_admins]`).
+- [done] **alertmanager** — its inline `alertmanager.route.main` HTTPRoute was DELETED from the kube-prometheus-stack HelmRelease (never used; the `gethomepage.dev/*` annotations go with it). Alertmanager stays reachable in-cluster only (Service :9093 for grafana/silence-operator/flux). This REMOVES alertmanager from auth-coverage scope (no exposed route left) instead of gating it.
+- [done] **EMAILS_VERIFIED flip** — `kubernetes/apps/security/pocket-id/app/helmrelease.yaml` `EMAILS_VERIFIED: "false" → "true"`. Mealie v3.21.0+ defaults `OIDC_REQUIRES_EMAIL_VERIFICATION=true`; the IdP-wide flip makes the existing user's `email_verified` claim true so mealie/wallos admit. Passkey remains the real auth.
+- [correction] **kopia** — inventory said "HTTP Basic Auth"; reality is `--without-password` server flag + `KOPIA_PASSWORD` (the UI has no own auth). envoy-oidc in front is clean (no double-gate).
+- [correction] **victoria-logs** — "vmauth-OIDC" is NOT a UI identity layer (validates JWT Bearer headers only; no browser auth-code/cookie/redirect). envoy-oidc gate is the correct choice.
+- [correction] **mealie** — the inventory caveat ("keeps password login until OIDC redesign") is STALE: deployed v3.22.0 supports `ALLOW_PASSWORD_LOGIN=false`, so it is disabled now. Also `BASE_URL` was `mealie.*` (wrong — the route is `recipes.*`); fixed to `https://recipes.${PUBLIC_DOMAIN}` so the OIDC callback `https://recipes.horvathzoltan.me/login` matches the registered redirect URI.
+- [deviation] **wallos is admin-UI-only, NOT env** — the planned env-var OIDC config (`OIDC_ENABLED` etc.) does NOT exist in Wallos; it is an open feature request (ellite/Wallos#1026). Wallos' native OIDC is configured entirely in the Admin UI (SQLite `oauth_settings` table), like calibre-web-automated. Consequence: NO helmrelease env / NO ExternalSecret for wallos OIDC — the `clients.yaml` registration stands, and the OIDC wiring (issuer, client_id, client_secret from the 1Password `wallos_client_secret` field, redirect URL `https://subscriptions.horvathzoltan.me`, scopes, disable-password-login) is a Phase 3 MANUAL admin-UI step. Wallos keeps `allow-world` egress (sufficient for the public-issuer hairpin).
+- [exception] **home-gallery** — out of scope this sweep; will get Google OAuth later (separate effort). Documented interim exception, not remediated.
+- [done] **native CNP posture** — paperless and actual carry `egress.home.arpa/custom-egress` (opted out of baseline allow-world), so both got `egress.home.arpa/allow-gateways: "true"` added for the token-exchange hairpin (the `allow-gateways-egress` CCNP). mealie/wallos keep `allow-world` (sufficient). Actual's per-app CNP comment updated to record the OIDC hairpin.
+- [done] **Validation** — `just pocket-id lint` passes (clients.yaml ↔ ks.yaml agree; group refs exist; non-empty groups; wallos' empty `callback_path` tolerated). `pre-commit run` on all touched files passes (yamlfmt/yamllint/gitleaks/secret checks green).
+- [open] **Phase 2-4 pending (user, needs op session + LAN)**: (1) `just pocket-id apply` (creates 8 clients + 8 `<app>_client_secret` 1Password fields — never piped stdin); (2) `just pocket-id audit` (zero unrestricted); (3) commit-doc-commit + push (apply-before-push ordering so ExternalSecrets/SecurityPolicies don't go Pending/Invalid transiently); (4) Pocket ID admin UI — assign user to `infra_admins` + the 4 new groups; (5) backrest — set `{"auth":{"disabled":true}}` in `/data/config.json` on the PVC; (6) wallos — configure OIDC in the Admin UI + disable password login; (7) victoria-logs — verify the chart-generated HTTPRoute is named `victoria-logs` so the SecurityPolicy targetRef binds; (8) EMAILS_VERIFIED — confirm the existing user's `email_verified` claim is true (mealie login test); (9) per-app login tests (authed admitted, non-allowed-group denied at IdP).
