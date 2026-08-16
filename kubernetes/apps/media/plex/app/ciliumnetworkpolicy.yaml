@@ -22,9 +22,6 @@ spec:
         - matchLabels:
             k8s:io.kubernetes.pod.namespace: media
             app.kubernetes.io/name: plex-trakt-sync
-        - matchLabels:
-            k8s:io.kubernetes.pod.namespace: media
-            app.kubernetes.io/name: suggestarr
       toPorts:
         - ports:
             - port: "32400"

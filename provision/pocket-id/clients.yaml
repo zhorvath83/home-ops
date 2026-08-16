@@ -72,12 +72,6 @@ clients:
     subdomain: reqs
     groups:
       - media_users
-  suggestarr:
-    friendly_name: SuggestArr
-    gate: envoy
-    subdomain: suggestarr
-    groups:
-      - media_users
   hubble-ui:
     friendly_name: Hubble UI
     gate: envoy
