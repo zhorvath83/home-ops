@@ -2,34 +2,21 @@
 title: alerting-coverage-gaps
 type: progress
 permalink: home-ops/docs/progress/alerting-coverage-gaps
-topic: Execution of the alerting-coverage-gaps roadmap — three PrometheusRule coverage
-  gaps (Kopia maintenance staleness, ExternalSecret sync-error, speedtest-exporter)
-  shipped with promtool unit tests; Phase 4 (Docker Hub rate-limit) dropped after
-  live verification found its metric basis absent from the cluster.
+topic: Consolidated alerting-coverage-gaps roadmap+progress — three PrometheusRule
+  coverage gaps shipped (Kopia maintenance staleness, ExternalSecret sync-error, speedtest-exporter)
+  with promtool unit tests; Phase 4 (Docker Hub rate-limit) dropped after live verification
+  found its metric basis absent. Roadmap note merged into this progress note 2026-08-16.
 status: done
 priority: medium
 area: volsync-backup / external-secrets / observability
-created: '2026-08-16'
+created: '2026-08-15'
 completed: '2026-08-16'
-implements: '[[alerting-coverage-gaps]] roadmap (Phase 1-3 delivered, Phase 4 dropped
-  — metric basis absent)'
-scope: 'Three PrometheusRule additions, each built on metrics verified live in Prometheus
-  before any expression was written (no guessing, per the roadmap premise): KopiaMaintenanceStale
-  in the existing volsync.rules group, ExternalSecretNotReady as the external-secrets
-  platform first PrometheusRule, and a four-alert speedtest-exporter set. Phase 4
-  (Docker Hub rate-limit) was dropped: neither billimek container_last_seen nor the
-  kube_pod_container_status_waiting_reason alternative exists in the cluster, and
-  the roadmap docker.io inventory premise was stale (crowdsec is not on docker.io
-  now).'
-rationale: 'The roadmap central premise (metrics already scraped, no new exporter)
-  was tested per phase against live Prometheus, not assumed: it held for Phases 1-3
-  and failed for Phase 4. Every metric name, label set, and threshold was derived
-  from live observation — the speedtest-exporter v3.5.4 metric names (speedtest_download_bits_per_second
-  etc.) are entirely different from the roadmap/billimek-assumed names, the Kopia
-  Job-name pattern is a single job type (not billimek quick/full split), and the 12h
-  staleness window was derived from the verified 6h schedule (2 missed runs), not
-  copied. Thresholds (500/200 Mbit/s, 20 ms) were human-calibrated below the 24h-observed
-  minimums so normal operation does not fire.'
+scope: Three PrometheusRule additions shipped (Kopia maintenance staleness, ExternalSecret
+  sync-error, speedtest-exporter); Phase 4 (Docker Hub rate-limit) dropped — metric
+  basis absent.
+rationale: Built on metrics verified live in Prometheus per phase before any expression
+  was written; the roadmap premise (metrics already scraped, no new exporter) held
+  for Phases 1-3 and failed for Phase 4.
 related_areas:
 - volsync-backup
 - external-secrets
@@ -41,6 +28,9 @@ tags:
 - volsync-backup
 - external-secrets
 - prometheus
+- roadmap
+origin: roadmap note docs/roadmap/alerting-coverage-gaps merged into this progress
+  note 2026-08-16 (spec + execution consolidated; roadmap note deleted)
 ---
 
 # alerting-coverage-gaps — execution progress
@@ -51,7 +41,7 @@ tags:
 - [status] DONE — implemented, promtool-verified, committed to main
 - [area] volsync-backup / external-secrets / observability
 - [created] 2026-08-16
-- [implements] [[alerting-coverage-gaps]] roadmap (Phase 1-3 delivered, Phase 4 dropped)
+- [implements] roadmap merged into this note 2026-08-16 (Phase 1-3 delivered, Phase 4 dropped)
 
 ## Live verification basis (built with no guessing)
 
@@ -135,3 +125,48 @@ A live cluster verification (the human requested "ellenőrizd" after the push) c
 **Test rewrite:** the promtool tests were rewritten to the crowdsec dense-sample healthy-prefix-then-degradation idiom (15 cases: absent fire/no-fire/30m-boundary; per threshold alert fire/healthy/transient/boundary). NOTE: promtool does NOT model the 5m Prometheus staleness (samples placed via `values:` are present at their timestamps), so the unit tests validate the range-window LOGIC, not the live staleness-robustness — the staleness-robustness is a property of the range functions reading the TSDB. This is why the original instant-form tests passed green while the alerts were broken live. `just k8s test-prom-rules` green; pre-commit green.
 
 **Lesson:** for any alert on a slow-scrape metric (interval approaching or exceeding the 5m staleness window), instant comparisons + `for:` are broken by design — use range aggregation (`absent_over_time`/`max_over_time`/`min_over_time`) with a window sized to the scrape interval, and verify LIVE, not just with promtool (which does not model staleness).
+
+
+---
+
+## Roadmap (merged 2026-08-16 from docs/roadmap/alerting-coverage-gaps)
+
+The roadmap note that specified this work was merged into this progress note and deleted; this section preserves its spec-side content. The execution detail above remains the source of truth for what shipped.
+
+### Origin
+
+A GitHub code search over billimek/k8s-gitops (21 PrometheusRule manifests) was cross-checked against our 13 existing PrometheusRules. Four gaps were found where we run the component and scrape its metrics but carry no alert. Items where the component/metric does not exist in this stack (Ceph, OPNsense/Unbound, NFS+KEDA, CloudNativePG, Gatus, UPS/NUT) and items already covered by the kube-prometheus-stack defaultRules (node-exporter host alerts) were discarded as not-applicable or redundant.
+
+### Scope (premise: metrics already scraped, no new exporter)
+
+Four independently-shippable PrometheusRule additions: KopiaMaintenance staleness (volsync-system), ExternalSecret sync-error (external-secrets), speedtest-exporter (observability), and Docker Hub rate-limit risk (observability). The central premise was tested per phase against live Prometheus before any expression was written — it held for Phases 1-3 and failed for Phase 4.
+
+### What we gain
+
+- A silent Kopia maintenance failure (compaction/GC never running) surfaces before it becomes a slow-motion backup-integrity problem; the existing VolSync sync alerts watch sync, not maintenance.
+- An ExternalSecret stuck Ready=False (e.g. after a 1Password Connect credential rotation) alerts instead of being discovered only when a dependent app breaks.
+- Internet-link degradation (slow speedtest, high ping, exporter gone dark) becomes visible instead of living only in an unwatched Grafana dashboard.
+- Phase 4 (Docker Hub rate-limit) was dropped — see execution.
+
+### Acceptance criteria and outcomes
+
+- Kopia staleness alert fires on a deliberately stale fixture and not on a normal run — MET (Phase 1 shipped; promtool fire/no-fire/absent cases green; live 2026-08-16: most recent completion 5.6h ago, alert inactive).
+- ExternalSecret Ready=False fires within 5m; healthy does not — MET (Phase 2 shipped; fire(1)/no-fire(0)/boundary(2) green).
+- speedtest set has a passing promtool suite with recalibrated thresholds plus positive/negative/boundary per alert — MET (Phase 3 shipped, then rebuilt for the 20m staleness trap; 15-case suite green; thresholds 500/200 Mbit/s and 20 ms set below 24h-observed minimums).
+- Docker Hub alert rebuilt (not copied) against our actual container count/pull cadence with a documented threshold — NOT MET / DROPPED (Phase 4: metric basis absent — neither container_last_seen nor kube_pod_container_status_waiting_reason exists; recorded as an optional follow-up requiring a kube-state-metrics allowlist change).
+- All shipped rules carry sibling _test.yaml fixtures and pass just k8s test-prom-rules — MET (suite green, re-verified 2026-08-16).
+
+### Out of scope (do not reopen here)
+
+- Node-exporter host-level alerts — already covered by kube-prometheus-stack defaultRules (node/nodeExporterAlerting/nodeExporterRecording enabled).
+- Ceph, OPNsense/Unbound, NFS+KEDA, CloudNativePG, Gatus, UPS/NUT alerts — components do not exist in this stack.
+- Alertmanager meta-alerting (MassiveAlertStorm etc.) — low priority at current alert volume.
+- Envoy Gateway alert expansion beyond the existing EnvoyProxyDown — tracked separately in [[gateway-guardrails-response-headers]].
+- A real Docker Hub pull-failure alert — separate issue/MR; needs kube_pod_container_status_waiting_reason enabled in kube-state-metrics first (a KPS HelmRelease allowlist change), not a metrics-already-flowing PrometheusRule.
+
+### Risks: roadmap vs. realized
+
+- Phase 1 Job-name regex guessing -> mitigated: verified live (single job type, not billimek quick/full split).
+- Phase 2 ESO metric rename -> mitigated: externalsecret_status_condition confirmed (134 series) before writing the expr.
+- Phase 3 uncalibrated thresholds -> mitigated: set from 24h-observed minimums, not billimek link. A non-roadmap risk — the 20m scrape staleness breaking instant comparisons — was caught only by live verification, not promtool (see the post-ship fix above).
+- Phase 4 threshold meaningless at single-node scale -> moot: the metric basis was absent, so the alert was dropped, not shipped inert.
