@@ -41,7 +41,7 @@ spec:
               # OIDC via Pocket ID (passkey-only). Secret via envFrom wallos-secret.
               # OIDC_ISSUER triggers .well-known discovery; group enforcement at the IdP (infra_admins).
               OIDC_ENABLED: "true"
-              OIDC_PROVIDER_NAME: "IdM"
+              OIDC_PROVIDER_NAME: "SSO"
               OIDC_CLIENT_ID: "wallos"
               OIDC_ISSUER: "https://idm.${PUBLIC_DOMAIN}"
               OIDC_REDIRECT_URL: "https://subscriptions.${PUBLIC_DOMAIN}"

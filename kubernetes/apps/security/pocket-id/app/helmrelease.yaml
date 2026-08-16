@@ -62,7 +62,7 @@ spec:
               # UI_CONFIG_DISABLED=true makes env override the admin UI for every setting
               # below; each override var is pinned so the global override is deterministic.
               UI_CONFIG_DISABLED: "true"
-              APP_NAME: "IdM"
+              APP_NAME: "IdP"
               SESSION_DURATION: "60"
               HOME_PAGE_URL: "/settings/account"
               REQUIRE_USER_EMAIL: "true"
