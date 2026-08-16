@@ -118,3 +118,9 @@ Gotchas (deployed-source verified):
 Deferred: OIDC_DISABLE_PASSWORD_LOGIN not set yet (lockout safety). Add in a follow-up after OIDC login is verified AND the user is in the infra_admins group.
 
 Manual follow-ups (user): add self to infra_admins in Pocket ID admin UI (allowed_user_groups denies without membership); first OIDC login creates a new wallos user (sub-identified) — verify subscription association.
+
+## Wallos — password login disabled (2026-08-16, follow-up)
+
+OIDC login verified end-to-end by the user (passkey -> idm -> wallos callback, infra_admins membership confirmed, new user created). Deferred OIDC_DISABLE_PASSWORD_LOGIN now applied: set to "true" in the wallos helmrelease env (commit 472e9ee70). This removes the local password fallback — Pocket ID (infra_admins) is the only login path. End-state of the roadmap item for wallos reached.
+
+Recovery note (if OIDC ever breaks access): git revert 472e9ee70 + push, Flux redeploys with the password fallback re-enabled (~1-2 min).
