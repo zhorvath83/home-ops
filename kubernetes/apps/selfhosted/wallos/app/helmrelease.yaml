@@ -50,6 +50,8 @@ spec:
               OIDC_USER_IDENTIFIER: "sub"
               OIDC_SCOPES: "openid email profile"
               OIDC_AUTO_CREATE_USER: "true"
+              # Password login disabled — OIDC (Pocket ID) is the only login path; removes the local fallback.
+              OIDC_DISABLE_PASSWORD_LOGIN: "true"
               # Bypass wallos' SSRF guard for the in-cluster IdP: idm.* resolves (k8s-gateway
               # split DNS) to an RFC1918 IP that FILTER_FLAG_NO_PRIV_RANGE blocks.
               SSRF_ALLOWLIST: "idm.${PUBLIC_DOMAIN}"
