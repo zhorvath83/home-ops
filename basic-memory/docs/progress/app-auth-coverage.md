@@ -100,3 +100,21 @@ Still open (Phase 3/4): Pocket ID admin-UI group membership for the user (infra_
 paperless_*/mealie_*); backrest auth.disabled in PVC config.json; wallos admin-UI OIDC;
 per-app login smoke (302 to idm, allowed-group admitted, non-allowed denied at IdP);
 EMAILS_VERIFIED effect on the existing user.
+## Wallos — OIDC via env (2026-08-16, continuation)
+
+Switched wallos from the abandoned admin-UI path to env-based OIDC config (deployed 5.4.2 supports it: includes/oidc_settings.php -> wallos_get_effective_oidc_configuration overrides the admin-UI DB at runtime).
+
+Files: app/externalsecret.yaml (NEW — wallos-secret from 1Password pocket-id-clients wallos_client_secret), app/kustomization.yaml (registered ES), app/helmrelease.yaml (OIDC env + envFrom). Commit 4ec102f07.
+
+Env: OIDC_ENABLED, OIDC_PROVIDER_NAME=IdM, OIDC_CLIENT_ID=wallos, OIDC_ISSUER=https://idm.* (triggers .well-known discovery — auth/token/userinfo auto-populated by discoveryMap), OIDC_REDIRECT_URL=bare https://subscriptions.* (matches Pocket ID callback_path empty), OIDC_USER_IDENTIFIER=sub, OIDC_SCOPES="openid email profile", OIDC_AUTO_CREATE_USER=true, SSRF_ALLOWLIST=idm.*. Secret via envFrom.
+
+Gotchas (deployed-source verified):
+- SSRF guard: idm.* resolves in-cluster (k8s-gateway split DNS) to 10.245.247.245 (RFC1918); ssrf_helper.php FILTER_FLAG_NO_PRIV_RANGE blocks it. The admin-UI save error ("link-local or loopback") is misleading — all RFC1918 is blocked. SSRF_ALLOWLIST env (overrides the empty DB allowlist) is the bypass; covers OIDC endpoint URLs. Exact-host match, no wildcard.
+- Discovery map (oidc_settings.php:204-207) auto-fills ONLY authorization_url/token_url/user_info_url. logout_url is NOT discovered (default empty) -> OIDC_LOGOUT_URL must be set explicitly (https://idm.*/api/oidc/end-session, from end_session_endpoint).
+- require_email_verified defaults to 1 (required); global EMAILS_VERIFIED=true makes the claim always true -> no OIDC_REQUIRE_EMAIL_VERIFIED env needed.
+- Bare-URL callback works: checksession.php:15 detects code+state on every page load (via index.php->header.php). So OIDC_REDIRECT_URL=bare hostname matches Pocket ID callback_path empty — no client change needed.
+- Egress: live curl from the wallos pod reached idm at 10.245.247.245 (404 on GET /api/oidc/token) -> allow-world posture already reaches the in-cluster IdP; no allow-gateways label / CNP needed.
+
+Deferred: OIDC_DISABLE_PASSWORD_LOGIN not set yet (lockout safety). Add in a follow-up after OIDC login is verified AND the user is in the infra_admins group.
+
+Manual follow-ups (user): add self to infra_admins in Pocket ID admin UI (allowed_user_groups denies without membership); first OIDC login creates a new wallos user (sub-identified) — verify subscription association.
