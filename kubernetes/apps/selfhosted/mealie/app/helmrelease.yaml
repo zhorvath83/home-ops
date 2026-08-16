@@ -43,7 +43,6 @@ spec:
               ALLOW_SIGNUP: "false"
               BASE_URL: "https://recipes.${PUBLIC_DOMAIN}"
               # OIDC via Pocket ID (passkey-only). Callback /login; secret via envFrom.
-              # email_verified must be true (IdP EMAILS_VERIFIED=true) — mealie enforces it.
               OIDC_AUTH_ENABLED: "true"
               OIDC_CONFIGURATION_URL: "https://idm.${PUBLIC_DOMAIN}/.well-known/openid-configuration"
               OIDC_CLIENT_ID: "mealie"
