@@ -53,25 +53,12 @@ spec:
         prometheusOperator: true
         windows: false
     # ============================================================================
-    # Alertmanager - enabled (internal-gateway UI + Pushover via AlertmanagerConfig)
+    # Alertmanager - enabled (in-cluster only + Pushover via AlertmanagerConfig).
+    # The envoy-internal UI HTTPRoute was removed (unused); reachable in-cluster
+    # via Service :9093 (grafana, silence-operator, flux notification-controller).
     # ============================================================================
     alertmanager:
       enabled: true
-      route:
-        main:
-          enabled: true
-          annotations:
-            gethomepage.dev/enabled: "true"
-            gethomepage.dev/name: Alertmanager
-            gethomepage.dev/group: Observability
-            gethomepage.dev/icon: alertmanager.svg
-            gethomepage.dev/pod-selector: app.kubernetes.io/name=alertmanager
-          hostnames:
-            - "alertmanager.${PUBLIC_DOMAIN}"
-          parentRefs:
-            - name: envoy-internal
-              namespace: networking
-              sectionName: https
       alertmanagerSpec:
         alertmanagerConfiguration:
           name: alertmanager

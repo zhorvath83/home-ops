@@ -10,17 +10,21 @@ spec:
       app.kubernetes.io/name: paperless-gpt
   components:
     - ../../../../components/volsync
+    - ../../../../components/gateway-oidc
   dependsOn:
     - name: onepassword-connect
       namespace: external-secrets
     - name: democratic-csi
       namespace: kube-system
     - name: paperless
+    - name: pocket-id
+      namespace: security
   interval: 1h
   path: ./kubernetes/apps/selfhosted/paperless-gpt/app
   postBuild:
     substitute:
       APP: paperless-gpt
+      APP_SUBDOMAIN: paperless-gpt
   prune: true
   sourceRef:
     kind: GitRepository

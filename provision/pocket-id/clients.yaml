@@ -14,6 +14,14 @@ groups:
     friendly_name: Calibre admins
   pingvin-share-x_admins:
     friendly_name: Pingvin Share admins
+  paperless_admins:
+    friendly_name: Paperless admins
+  paperless_users:
+    friendly_name: Paperless users
+  mealie_admins:
+    friendly_name: Mealie admins
+  mealie_users:
+    friendly_name: Mealie users
 
 clients:
   bazarr:
@@ -119,5 +127,60 @@ clients:
     gate: native
     subdomain: dash
     callback_path: /api/auth/callback/homepage-oidc
+    groups:
+      - infra_admins
+  backrest:
+    friendly_name: Backrest
+    gate: envoy
+    subdomain: backup
+    groups:
+      - infra_admins
+  paperless-gpt:
+    friendly_name: Paperless GPT
+    gate: envoy
+    subdomain: paperless-gpt
+    groups:
+      - infra_admins
+  kopia:
+    friendly_name: Kopia
+    gate: envoy
+    subdomain: pvbackup
+    groups:
+      - infra_admins
+  victoria-logs:
+    friendly_name: Victoria Logs
+    gate: envoy
+    subdomain: logs
+    groups:
+      - infra_admins
+  mealie:
+    friendly_name: Mealie
+    gate: native
+    subdomain: recipes
+    callback_path: /login
+    groups:
+      - mealie_admins
+      - mealie_users
+  paperless:
+    friendly_name: Paperless
+    gate: native
+    subdomain: docs
+    callback_path: /accounts/oidc/pocket-id/login/callback/
+    groups:
+      - paperless_admins
+      - paperless_users
+  actual:
+    friendly_name: Actual Budget
+    gate: native
+    subdomain: pfm
+    callback_path: /openid/callback
+    groups:
+      - infra_admins
+  wallos:
+    friendly_name: Wallos
+    gate: native
+    subdomain: subscriptions
+    callback_path: ""
+    pkce_enabled: false
     groups:
       - infra_admins

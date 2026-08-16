@@ -1,7 +1,8 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
 # actual (AD-023): file-based budget DB; envoy ingress via the ingress-from-gateway-external + -internal CCNPs.
-# Egress: only the enablebanking.com open-banking API for bank transaction fetch (DNS via the cluster-wide allow-dns-egress CCNP).
+# Egress: enablebanking.com open-banking API (here); DNS via the cluster-wide allow-dns-egress CCNP;
+# the Pocket ID OIDC hairpin rides the allow-gateways-egress CCNP (pod label egress.home.arpa/allow-gateways).
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:

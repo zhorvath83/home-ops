@@ -29,6 +29,7 @@ spec:
         pod:
           labels:
             egress.home.arpa/custom-egress: "true"
+            egress.home.arpa/allow-gateways: "true"
             ingress.home.arpa/allow-gateway-external: "true"
             ingress.home.arpa/allow-gateway-internal: "true"
         containers:
@@ -101,10 +102,18 @@ spec:
               PAPERLESS_TRAIN_TASK_CRON: "disable"
               PAPERLESS_EMAIL_TASK_CRON: "disable"
               PAPERLESS_WORKFLOW_SCHEDULED_TASK_CRON: "disable"
-              # Configure Remote User auth
+              # OIDC via Pocket ID (passkey-only). Regular login disabled, auto-redirect to SSO.
+              # PAPERLESS_SOCIALACCOUNT_PROVIDERS (with the client secret) is built in the ES.
+              # Callback /accounts/oidc/pocket-id/login/callback/ (provider_id=pocket-id).
+              PAPERLESS_APPS: "allauth.socialaccount.providers.openid_connect"
+              PAPERLESS_DISABLE_REGULAR_LOGIN: "true"
+              PAPERLESS_REDIRECT_LOGIN_TO_SSO: "true"
+              PAPERLESS_SOCIALACCOUNT_ALLOW_SIGNUPS: "true"
+              PAPERLESS_SOCIAL_AUTO_SIGNUP: "true"
+              PAPERLESS_SOCIAL_ACCOUNT_SYNC_GROUPS: "true"
+              PAPERLESS_SOCIAL_ACCOUNT_SYNC_GROUPS_CLAIM: "groups"
+              # Regular (non-social) account signups stay closed.
               PAPERLESS_ACCOUNT_ALLOW_SIGNUPS: "false"
-              PAPERLESS_SOCIALACCOUNT_ALLOW_SIGNUPS: "false"
-              PAPERLESS_SOCIAL_AUTO_SIGNUP: "false"
               # Security
               USERMAP_UID: &uid "1000"
               USERMAP_GID: &gid "1000"

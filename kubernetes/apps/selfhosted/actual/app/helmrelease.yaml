@@ -16,6 +16,7 @@ spec:
       # AD-023 vocabulary: custom-egress (per-app CNP) + envoy-routed ingress (ingress-from-gateway-external + -internal CCNPs)
       labels:
         egress.home.arpa/custom-egress: "true"
+        egress.home.arpa/allow-gateways: "true"
         ingress.home.arpa/allow-gateway-external: "true"
         ingress.home.arpa/allow-gateway-internal: "true"
       securityContext:
@@ -39,6 +40,17 @@ spec:
               ACTUAL_PORT: &port 5006
               # Bank-sync diagnostics: surfaces enablebanking API error_type/message in logs
               DEBUG: "actual:enable-banking:*"
+              # OIDC via Pocket ID (passkey-only). Secret via envFrom actual-secret.
+              # Callback /openid/callback; group enforcement is at the IdP (infra_admins).
+              ACTUAL_OPENID_DISCOVERY_URL: "https://idm.${PUBLIC_DOMAIN}/.well-known/openid-configuration"
+              ACTUAL_OPENID_CLIENT_ID: "actual"
+              ACTUAL_OPENID_SERVER_HOSTNAME: "https://pfm.${PUBLIC_DOMAIN}"
+              ACTUAL_OPENID_AUTH_METHOD: "openid"
+              ACTUAL_OPENID_ENFORCE: "true"
+              ACTUAL_USER_CREATION_MODE: "login"
+            envFrom:
+              - secretRef:
+                  name: actual-secret
             probes:
               liveness:
                 enabled: true

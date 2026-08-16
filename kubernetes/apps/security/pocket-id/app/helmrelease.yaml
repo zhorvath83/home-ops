@@ -66,7 +66,9 @@ spec:
               SESSION_DURATION: "60"
               HOME_PAGE_URL: "/settings/account"
               REQUIRE_USER_EMAIL: "true"
-              EMAILS_VERIFIED: "false"
+              # true: OIDC clients (mealie, wallos) require a verified-email claim;
+              # passkey is the actual auth, so this is safe.
+              EMAILS_VERIFIED: "true"
               ALLOW_OWN_ACCOUNT_EDIT: "true"
               ALLOW_USER_SIGNUPS: "disabled"
               DISABLE_ANIMATIONS: "false"
