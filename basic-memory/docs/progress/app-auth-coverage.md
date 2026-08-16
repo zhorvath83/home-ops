@@ -71,3 +71,32 @@ Goal: bring the 8 remaining exposed apps under the Pocket ID identity layer (env
 - paperless allauth JSON blob with embedded secret: validate the JSON renders and the secret interpolates on first reconcile.
 - mealie logout redirect (`/login?direct=1` vs hardcoded bare logout_url in locals.tf): login works; logout may land on `/`. Minor.
 - actual readiness probe (`httpGet path: /`) with `ACTUAL_OPENID_ENFORCE=true`: `/` likely 302s to OIDC (k8s counts 302 as success); verify the pod stays Ready.
+
+
+## Deploy & verify (2026-08-16, continuation)
+
+Phase 2 ran after the first push. Flux reconciled all 9 affected app Kustomizations
+to the new revision; native OIDC ExternalSecrets (mealie, paperless, actual,
+paperless-gpt-oidc) all reached SecretSynced=True.
+
+Envoy-oidc SecurityPolicies: the envoy-gateway controller went Invalid across ALL 16
+OIDC policies (existing + new) — its discovery fetch
+(https://idm.*/.well-known/openid-configuration) timed out inside pocket-id's own Helm
+rollout window (the EMAILS_VERIFIED flip restarted pocket-id). This is the documented
+iam discovery-fetch fragility; remediated with
+`kubectl rollout restart deployment/envoy-gateway -n networking` (user-approved).
+After restart, 13/14 OIDC SecurityPolicies reached Accepted=True
+(`status.ancestors[].conditions`, "Policy has been accepted.").
+
+victoria-logs-oidc stayed unattached (empty status, no ancestor): the gateway-oidc
+component defaults `targetRefs[].name` to `${APP}`=victoria-logs, but the chart
+generates its HTTPRoute named `victoria-logs-server`. Fixed by overriding
+`HTTPROUTE_NAME: victoria-logs-server` in
+`kubernetes/apps/observability/victoria-logs/ks.yaml` (commit 62d9bc957); re-attaches
+on the next Flux reconcile after push. Closes the Phase 3 "verify chart-generated
+HTTPRoute name" item.
+
+Still open (Phase 3/4): Pocket ID admin-UI group membership for the user (infra_admins +
+paperless_*/mealie_*); backrest auth.disabled in PVC config.json; wallos admin-UI OIDC;
+per-app login smoke (302 to idm, allowed-group admitted, non-allowed denied at IdP);
+EMAILS_VERIFIED effect on the existing user.
