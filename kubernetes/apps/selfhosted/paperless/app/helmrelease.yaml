@@ -106,10 +106,10 @@ spec:
               # PAPERLESS_SOCIALACCOUNT_PROVIDERS (with the client secret) is built in the ES.
               # Callback /accounts/oidc/pocket-id/login/callback/ (provider_id=pocket-id).
               PAPERLESS_APPS: "allauth.socialaccount.providers.openid_connect"
-              PAPERLESS_DISABLE_REGULAR_LOGIN: "true"
-              PAPERLESS_REDIRECT_LOGIN_TO_SSO: "true"
-              PAPERLESS_SOCIALACCOUNT_ALLOW_SIGNUPS: "true"
-              PAPERLESS_SOCIAL_AUTO_SIGNUP: "true"
+              PAPERLESS_DISABLE_REGULAR_LOGIN: "false"
+              PAPERLESS_REDIRECT_LOGIN_TO_SSO: "false"
+              PAPERLESS_SOCIALACCOUNT_ALLOW_SIGNUPS: "false"
+              PAPERLESS_SOCIAL_AUTO_SIGNUP: "false"
               PAPERLESS_SOCIAL_ACCOUNT_SYNC_GROUPS: "true"
               PAPERLESS_SOCIAL_ACCOUNT_SYNC_GROUPS_CLAIM: "groups"
               # Regular (non-social) account signups stay closed.
