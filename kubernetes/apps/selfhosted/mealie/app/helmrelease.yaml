@@ -51,7 +51,7 @@ spec:
               OIDC_USER_GROUP: "mealie_users"
               OIDC_ADMIN_GROUP: "mealie_admins"
               OIDC_AUTO_REDIRECT: "true"
-              ALLOW_PASSWORD_LOGIN: "true"
+              ALLOW_PASSWORD_LOGIN: "false"
               # SMTP Configuration
               SMTP_AUTH_STRATEGY: "NONE"
             envFrom:
