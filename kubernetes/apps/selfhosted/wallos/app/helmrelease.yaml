@@ -38,6 +38,24 @@ spec:
             env:
               PUID: 1000
               PGID: 1000
+              # OIDC via Pocket ID (passkey-only). Secret via envFrom wallos-secret.
+              # OIDC_ISSUER triggers .well-known discovery; group enforcement at the IdP (infra_admins).
+              OIDC_ENABLED: "true"
+              OIDC_PROVIDER_NAME: "IdM"
+              OIDC_CLIENT_ID: "wallos"
+              OIDC_ISSUER: "https://idm.${PUBLIC_DOMAIN}"
+              OIDC_REDIRECT_URL: "https://subscriptions.${PUBLIC_DOMAIN}"
+              # end_session_endpoint is not in wallos' discovery map, so set it explicitly.
+              OIDC_LOGOUT_URL: "https://idm.${PUBLIC_DOMAIN}/api/oidc/end-session"
+              OIDC_USER_IDENTIFIER: "sub"
+              OIDC_SCOPES: "openid email profile"
+              OIDC_AUTO_CREATE_USER: "true"
+              # Bypass wallos' SSRF guard for the in-cluster IdP: idm.* resolves (k8s-gateway
+              # split DNS) to an RFC1918 IP that FILTER_FLAG_NO_PRIV_RANGE blocks.
+              SSRF_ALLOWLIST: "idm.${PUBLIC_DOMAIN}"
+            envFrom:
+              - secretRef:
+                  name: wallos-secret
             probes:
               liveness: &probes
                 enabled: true
