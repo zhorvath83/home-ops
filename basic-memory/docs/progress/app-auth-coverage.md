@@ -2,11 +2,11 @@
 title: app-auth-coverage
 type: progress-note
 permalink: home-ops/docs/progress/app-auth-coverage
-status: in-progress
+status: done
 priority: high
 area: iam
 created: 2026-08-16
-roadmap: docs/roadmap/app-auth-coverage
+roadmap: closed (merged into this note 2026-08-16)
 tags:
 - progress
 - iam
@@ -124,3 +124,53 @@ Manual follow-ups (user): add self to infra_admins in Pocket ID admin UI (allowe
 OIDC login verified end-to-end by the user (passkey -> idm -> wallos callback, infra_admins membership confirmed, new user created). Deferred OIDC_DISABLE_PASSWORD_LOGIN now applied: set to "true" in the wallos helmrelease env (commit 472e9ee70). This removes the local password fallback — Pocket ID (infra_admins) is the only login path. End-state of the roadmap item for wallos reached.
 
 Recovery note (if OIDC ever breaks access): git revert 472e9ee70 + push, Flux redeploys with the password fallback re-enabled (~1-2 min).
+
+## Closure — 2026-08-16 (roadmap merged, item done)
+
+All Pocket ID admin-UI group memberships assigned and every per-app login smoke test passed (authed-as-allowed-group admitted, non-allowed denied at the IdP, no app-local login reachable as the primary gate). The roadmap note `docs/roadmap/app-auth-coverage` was merged here and deleted; this progress note is now the single home for the item.
+
+### Final coverage state
+
+Every exposed application terminates identity at Pocket ID — envoy-oidc SecurityPolicy gate OR the app's own native OIDC client. 9 apps remediated across this roadmap (homepage 2026-08-15; mealie, paperless, actual, wallos, backrest, paperless-gpt, victoria-logs, kopia 2026-08-16). Repo/GitOps wiring shipped and live; `just pocket-id audit` = 24/24 clients group-restricted; `just pocket-id lint` = registry/cluster agree.
+
+Remediated this roadmap (method -> IdP group):
+
+| App | FQDN | Method | Group |
+|---|---|---|---|
+| homepage | dash | native (NextAuth, PKCE on) | infra_admins |
+| mealie | recipes | native (ALLOW_PASSWORD_LOGIN=false) | mealie_admins, mealie_users |
+| paperless | docs | native (DISABLE_REGULAR_LOGIN, REDIRECT_LOGIN_TO_SSO) | paperless_admins, paperless_users |
+| actual | pfm | native (OPENID_ENFORCE) | infra_admins |
+| wallos | subscriptions | native (env-based, OIDC_DISABLE_PASSWORD_LOGIN) | infra_admins |
+| backrest | backup | envoy-oidc | infra_admins |
+| paperless-gpt | paperless-gpt | envoy-oidc | infra_admins |
+| victoria-logs | logs | envoy-oidc (HTTPROUTE_NAME=victoria-logs-server) | infra_admins |
+| kopia | pvbackup | envoy-oidc | infra_admins |
+
+Unauthenticated probe confirms the gates live: the 4 envoy-gated apps 302 to idm.horvathzoltan.me/authorize with PKCE (code_challenge_method=S256); the native apps present their OIDC login (homepage -> /auth/signin Pocket button, wallos -> /login.php IdM button; full login flow tested end-to-end).
+
+### Documented exceptions (NOT a hidden category)
+
+- pocket-id (idm.*) — the IdP / trust root; hardened with the pocket-id-deny-403 HTTPRouteFilter.
+- flux github-webhook — HMAC-token auth, not a human login surface.
+- https-redirect — RequestRedirect 301 http->https, no backend.
+- home-gallery (photos. / fenykepek.) — interim exception; browser Basic Auth only, Google OAuth planned separately.
+- alertmanager — its unused exposed HTTPRoute was deleted; stays in-cluster-only (Service :9093). Removed from auth-coverage scope entirely (not gated).
+
+### Durable decisions
+
+- Method policy — native OIDC if the app supports it (strict); envoy-oidc gate only where the app has no native OIDC. PKCE-off acceptable for non-public / confidential clients (Pocket ID only verifies a challenge for clients that require it).
+- IdP group policy — every remediated app gets a Pocket ID group on its client (allowed_user_groups, default infra_admins), enforced AT the IdP (IsUserGroupAllowedToAuthorize). Gates authorization for native clients too, dissolving the "native app has no RBAC" concern.
+- calibre-web-automated — OIDC config lives in the app database permanently (no ENV-based config in the chart); accepted as-is, not a debt.
+- wallos — env-based OIDC (deployed 5.4.2: oidc_settings.php overrides the admin-UI DB at runtime), NOT admin-UI-only as an earlier deviation guessed. SSRF_ALLOWLIST=idm.* bypasses the FILTER_FLAG_NO_PRIV_RANGE block on the in-cluster RFC1918 IdP; OIDC_LOGOUT_URL set explicitly (discovery map does not cover end_session).
+- EMAILS_VERIFIED flipped true cluster-wide — mealie v3.21+ and wallos require a verified-email claim; passkey is the real auth.
+
+### Acceptance criteria — all met
+
+1. [done] The 9 remediated apps terminate identity at Pocket ID (envoy-oidc OR native), confirmed by per-app login test.
+2. [done] No remediated app uses an app-local username/password as the primary gate — wallos/mealie/paperless/actual password login disabled; homepage has no password; envoy-gated apps sit behind the gate.
+3. [done] clients.yaml lists every remediated client with correct gate/allowed_user_groups/callback; just pocket-id lint passes; just pocket-id audit = zero unrestricted (24/24).
+4. [done] The documented exceptions remain the only exceptions; no hidden category.
+5. [done] calibre-web-automated protection verified by login test (Phase 0 closed).
+
+Status: done.
