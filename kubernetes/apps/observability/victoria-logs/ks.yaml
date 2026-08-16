@@ -21,6 +21,8 @@ spec:
     substitute:
       APP: victoria-logs
       APP_SUBDOMAIN: logs
+      # chart-generated HTTPRoute is named victoria-logs-server, not ${APP}
+      HTTPROUTE_NAME: victoria-logs-server
   prune: true
   sourceRef:
     kind: GitRepository
