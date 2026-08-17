@@ -1,0 +1,16 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ./externalsecret.yaml
+  - ./helmrelease.yaml
+generatorOptions:
+  disableNameSuffixHash: true
+configMapGenerator:
+  - name: recyclarr-config
+    files:
+      - recyclarr.yml=config/recyclarr.yml
+      - settings.yml=config/settings.yml
+      - sonarr-hungarian.json=config/custom-formats/sonarr/hungarian.json
+      - radarr-hungarian.json=config/custom-formats/radarr/hungarian.json
