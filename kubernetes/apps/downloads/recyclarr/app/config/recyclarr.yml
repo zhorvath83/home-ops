@@ -21,19 +21,27 @@ sonarr:
       series: plex-imdb
     quality_definition:
       type: series
+      # preferred = balanced ~60% of max (<= max): satisfies recyclarr validation (preferred must
+      # not exceed max) and nudges toward balanced-size releases within the bloat cap; tunable.
       qualities:
         - name: WEBDL-2160p
           max: 200
+          preferred: 120
         - name: WEBRip-2160p
           max: 200
+          preferred: 120
         - name: WEBDL-1080p
           max: 100
+          preferred: 60
         - name: WEBRip-1080p
           max: 100
+          preferred: 60
         - name: WEBDL-720p
           max: 50
+          preferred: 30
         - name: WEBRip-720p
           max: 50
+          preferred: 30
     quality_profiles:
       - trash_id: c4cadd6b35b95f62c3d47a408e53e2f7 # WEB-2160p (Combined)
         reset_unmatched_scores:
@@ -86,17 +94,24 @@ radarr:
       # sqp-uhd (not sqp-streaming): no 720p entry keeps 720p uncapped as the fallback
       # (sqp-streaming would cap 720p at 85.7 MB/min, rejecting large HUN 720p vs HUN > size).
       # Cap allowed 2160p/1080p WEB+Bluray qualities to reject gigantic encodes.
+      # preferred = balanced ~60% of max (<= max): satisfies recyclarr validation and favors
+      # balanced size within the bloat cap; tunable. No min floors (Upscaled CF covers fakes).
       qualities:
         - name: WEBDL-2160p
           max: 300
+          preferred: 180
         - name: WEBRip-2160p
           max: 300
+          preferred: 180
         - name: Bluray-2160p
           max: 300
+          preferred: 180
         - name: WEBDL-1080p
           max: 150
+          preferred: 90
         - name: WEBRip-1080p
           max: 150
+          preferred: 90
     quality_profiles:
       - trash_id: 5128baeb2b081b72126bc8482b2a86a0 # [SQP] SQP-1 (2160p)
         reset_unmatched_scores:
@@ -113,6 +128,8 @@ radarr:
     custom_format_groups:
       add:
         - trash_id: ff204bbcecdd487d1cefcefdbf0c278d # [Optional] Golden Rule UHD
+          assign_scores_to:
+            - trash_id: 5128baeb2b081b72126bc8482b2a86a0
         - trash_id: 15b1cf0b6f1a1493856a4355907affee # [Unwanted] Unwanted Formats SQP
     custom_formats:
       - trash_ids:
