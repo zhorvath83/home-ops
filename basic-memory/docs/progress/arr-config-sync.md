@@ -244,3 +244,37 @@ Commit `b6a36eff0` on branch `fix/recyclarr-egress`: `🐛 fix(recyclarr): add a
 - Post-merge: recyclarr CronJob re-deploys with the label; re-trigger first sync manually.
 - Post-sync verify: TRaSH-Guides repo clones; quality profiles/CFs/quality-defs written to the live *arr; read back HUN +9900 / cutoff WEB 2160p / unwanted -10000.
 - Rollback path unchanged: pre-merge VolSync snapshots (radarr `cfad81…`, sonarr `9c4a4f…`) from the prior session.
+
+
+## Session 2026-08-17 — FIX-2: quality preferred + Golden Rule UHD targeting
+
+After the egress fix (#4195 merged) the Maestro triggered the first live recyclarr sync. It reached github.com (egress OK) but the job FAILED (exit non-zero) on **three config defects**. Live radarr/sonarr pods stayed healthy; apply state was partial/unknown. A corrected re-sync is idempotent and converges, so the fix is config-then-re-sync (no rollback needed).
+
+### Defect 1 — Radarr quality_definition validation error
+`ERR 'Quality WEBDL-1080p: preferred (1999) cannot be greater than max (150)'`. The `type: sqp-uhd` size-set carries default `preferred` values; our override set only `max`, leaving the size-set preferred (1999) which exceeds our max (150). recyclarr validates `preferred <= max`.
+
+### Defect 2 — Sonarr quality_definition validation error
+`ERR 'Quality WEBRip-720p: preferred (995) cannot be greater than max (50)'` — same root cause on the `type: series` size-set.
+
+### Defect 3 — Radarr Golden Rule UHD CF group skipped (WRN)
+`[Optional] Golden Rule UHD (ff204b…) was skipped because none of your quality profiles are in its compatibility list.` SQP-1 is NOT in Golden Rule UHD's compat list, so the group's default score-set (x265-no-HDR/DV -10000) was never applied to SQP-1. (Sonarr Golden Rule UHD did NOT skip — it applied via compat with WEB-2160p Combined; Sonarr left unchanged.)
+
+### Fixes (one file: recyclarr.yml)
+1. **preferred on every capped quality** (~60% of max, rounded, <= max): Radarr 2160p/Bluray-2160p=180, 1080p=90; Sonarr 2160p=120, 1080p=60, 720p=30. Future-proofs against size-set default drift and satisfies recyclarr validation. No `min` floors added (human decision: rely on the Upscaled CF for fake/upscaled 4K).
+2. **Golden Rule UHD forced onto SQP-1**: changed the Radarr `custom_format_groups.add` Golden Rule UHD entry from a bare `trash_id` to include `assign_scores_to` targeting SQP-1 (`5128baeb…`). The group's default score-set now applies x265(no HDR/DV) -10000 to SQP-1. The Unwanted SQP entry is left as a bare `trash_id`.
+
+### Indent correction (flagged vs. brief)
+The brief stated `assign_scores_to` at 8-space / child `trash_id` at 10-space — that is the `custom_formats` indent, but `custom_format_groups.add` nests one level deeper (the extra `add:` key), so the syntactically-correct indent is 10-space for `assign_scores_to` (sibling of the group item's `trash_id`) and 12-space for the child `- trash_id:`. Used 10/12; yamllint clean confirms valid YAML.
+
+### Validation
+- read-back: all preferred values present and <= max; assign_scores_to block targets SQP-1 ✓
+- `yamlfmt --dry --conf .yamlfmt.yaml` → 'No files will be changed' (exit 0) ✓
+- `yamllint -c .yamllint.yaml` → clean (exit 0) ✓
+
+Commit `935a73cc9` on branch `fix/recyclarr-quality-def-cf`: `🐛 fix(recyclarr): set quality preferred <= max and target SQP-1 for Golden Rule UHD`. PR opened against `main`. Re-sync pending — **Maestro merges the fix then re-triggers the sync** (worker does not merge, does not trigger sync).
+
+### Next
+- Wait for Maestro merge (after green CI).
+- Post-merge: recyclarr re-sync should pass validation (preferred <= max) and apply Golden Rule UHD to SQP-1.
+- Post-sync verify: live *arr quality_definition preferred values match; SQP-1 carries x265(no HDR/DV) -10000; HUN +9900 / cutoff WEB 2160p / unwanted -10000 intact.
+- Rollback path unchanged: pre-merge VolSync snapshots (radarr `cfad81…`, sonarr `9c4a4f…`) from PR #4193's prep.
