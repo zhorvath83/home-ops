@@ -223,3 +223,24 @@ PR opened against `main` (transition plan + review verdict in PR body). First ma
 - Post-merge: verify recyclarr CronJob live + ExternalSecret synced, then trigger first sync manually.
 - Post-sync verify: read back live *arr profiles (HUN +9900, cutoff WEB 2160p, unwanted -10000); remap library naming + delete old sub-optimal profiles in UI.
 - Rollback path: `just volsync restore …` from the pre-merge snapshots above if the first sync goes wrong.
+
+
+## Session 2026-08-17 — post-merge hotfix: recyclarr world-egress label
+
+PR #4193 merged (squash `f99517fd3`) and recyclarr deployed + ExternalSecret synced (arr API auth OK). The **first manual recyclarr sync FAILED at git-provider init** — the pod could not reach `github.com:443` to clone the TRaSH-Guides provider repo.
+
+### Root cause (Maestro-verified)
+The cluster egress model gates internet egress behind a **pod label**, not a per-app CNP: the `allow-world-egress` Cilium Clusterwide NetworkPolicy (CCNP) admits egress to the internet only for pods carrying `egress.home.arpa/allow-world: "true"`. radarr and sonarr carry this label (helmrelease defaultPodOptions); **recyclarr did not**. The `allow-cluster-egress` CCNP (for the in-cluster *arr service FQDNs) is NOT label-gated, so the *arr API path already worked — only world/internet egress was missing.
+
+The best-practice review's verdict "no recyclarr egress CNP needed (default-allow)" was **incomplete**: it correctly noted no per-app egress CNP exists, but missed that internet egress is label-gated cluster-wide via the AD-023 `egress.home.arpa/*` vocabulary. The review gap: egress was assessed as "default-allow" when in fact world-egress is default-DENY with a label opt-in.
+
+### Fix (one file, one block)
+`kubernetes/apps/downloads/recyclarr/app/helmrelease.yaml` `defaultPodOptions` — added a `labels` block with `egress.home.arpa/allow-world: "true"` (6-space indent, matching `enableServiceLinks`/`securityContext` siblings). No `ingress.home.arpa/allow-gateway-internal` label — recyclarr is a CronJob with no gateway/UI route. yamlfmt --dry: no changes; yamllint: clean.
+
+Commit `b6a36eff0` on branch `fix/recyclarr-egress`: `🐛 fix(recyclarr): add allow-world-egress pod label for github reachability`. PR opened against `main`. Re-sync pending — **Maestro merges the fix then re-triggers the first sync** (worker does not merge, does not trigger sync).
+
+### Next
+- Wait for Maestro merge of the egress-fix PR (after green CI).
+- Post-merge: recyclarr CronJob re-deploys with the label; re-trigger first sync manually.
+- Post-sync verify: TRaSH-Guides repo clones; quality profiles/CFs/quality-defs written to the live *arr; read back HUN +9900 / cutoff WEB 2160p / unwanted -10000.
+- Rollback path unchanged: pre-merge VolSync snapshots (radarr `cfad81…`, sonarr `9c4a4f…`) from the prior session.
