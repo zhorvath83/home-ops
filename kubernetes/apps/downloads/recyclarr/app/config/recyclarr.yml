@@ -1,0 +1,138 @@
+---
+# yaml-language-server: $schema=https://schemas.recyclarr.dev/v8/config-schema.json
+# recyclarr sync for Sonarr + Radarr — priority order HUN dub > quality > size
+# (see BM docs/progress/arr-config-sync for the full planning framework). Local Hungarian CF
+# is scored +9900 so a HUN 720p/1080p beats any non-HUN release; LQ/BR-DISK -10000; explicit
+# quality_definition max caps reject gigantic 4K/1080p encodes while 720p/1080p stay as fallback.
+sonarr:
+  series:
+    base_url: http://sonarr.downloads.svc.cluster.local:8989
+    api_key: !env_var SONARR_API_KEY
+    delete_old_custom_formats: true
+    media_management:
+      propers_and_repacks: do_not_prefer
+    media_naming:
+      episodes:
+        anime: default
+        daily: default
+        rename: true
+        standard: default
+      season: default
+      series: plex-imdb
+    quality_definition:
+      type: series
+      qualities:
+        - name: WEBDL-2160p
+          max: 200
+        - name: WEBRip-2160p
+          max: 200
+        - name: WEBDL-1080p
+          max: 100
+        - name: WEBRip-1080p
+          max: 100
+        - name: WEBDL-720p
+          max: 50
+        - name: WEBRip-720p
+          max: 50
+    quality_profiles:
+      - trash_id: c4cadd6b35b95f62c3d47a408e53e2f7 # WEB-2160p (Combined)
+        reset_unmatched_scores:
+          enabled: true
+        upgrade:
+          allowed: true
+          until_quality: WEB 2160p
+          until_score: 20000
+        # Combined profile disables WEB 720p; re-enable it so content only available in 720p
+        # is still grabbed (HUN > quality > size — fallback must be preserved).
+        qualities:
+          - name: WEB 2160p
+            qualities:
+              - WEBRip-2160p
+              - WEBDL-2160p
+          - name: WEB 1080p
+            qualities:
+              - WEBRip-1080p
+              - WEBDL-1080p
+          - name: WEB 720p
+            qualities:
+              - WEBRip-720p
+              - WEBDL-720p
+    custom_format_groups:
+      add:
+        - trash_id: e3f37512790f00d0e89e54fe5e790d1c # [Optional] Golden Rule UHD
+        - trash_id: 74aff4168620ed49dcc67e92b2c2a5b4 # [Optional] Language Profiles
+        - trash_id: 85fae4a2294965b75710ef2989c850eb # [Streaming Services] HD/UHD boost
+        - trash_id: 59c3af66780d08332fdc64e68297098f # [Unwanted] Unwanted Formats (LQ/BR-DISK incl.)
+    custom_formats:
+      - trash_ids:
+          - home-ops-hungarian-language
+        assign_scores_to:
+          - trash_id: c4cadd6b35b95f62c3d47a408e53e2f7
+            score: 9900
+radarr:
+  movies:
+    base_url: http://radarr.downloads.svc.cluster.local:7878
+    api_key: !env_var RADARR_API_KEY
+    delete_old_custom_formats: true
+    media_management:
+      propers_and_repacks: do_not_prefer
+    media_naming:
+      folder: plex-imdb
+      movie:
+        rename: true
+        standard: plex-imdb
+    quality_definition:
+      type: sqp-uhd
+      # sqp-uhd (not sqp-streaming): no 720p entry keeps 720p uncapped as the fallback
+      # (sqp-streaming would cap 720p at 85.7 MB/min, rejecting large HUN 720p vs HUN > size).
+      # Cap allowed 2160p/1080p WEB+Bluray qualities to reject gigantic encodes.
+      qualities:
+        - name: WEBDL-2160p
+          max: 300
+        - name: WEBRip-2160p
+          max: 300
+        - name: Bluray-2160p
+          max: 300
+        - name: WEBDL-1080p
+          max: 150
+        - name: WEBRip-1080p
+          max: 150
+    quality_profiles:
+      - trash_id: 5128baeb2b081b72126bc8482b2a86a0 # [SQP] SQP-1 (2160p)
+        reset_unmatched_scores:
+          enabled: true
+        # Profile default minFormatScore=1000 would reject every non-HUN release (no tier CF
+        # groups are added); lower to 0 so 720p/1080p fallback works. LQ/BR-DISK (-10000) still
+        # reject junk; a HUN+LQ release (9900 + (-10000) = -100 < 0) is rejected, restoring the
+        # LQ-rejection invariant at no cost to fallback or HUN dominance.
+        min_format_score: 0
+        upgrade:
+          allowed: true
+          until_quality: WEB 2160p
+          until_score: 20000
+    custom_format_groups:
+      add:
+        - trash_id: ff204bbcecdd487d1cefcefdbf0c278d # [Optional] Golden Rule UHD
+        - trash_id: 15b1cf0b6f1a1493856a4355907affee # [Unwanted] Unwanted Formats SQP
+    custom_formats:
+      - trash_ids:
+          - home-ops-hungarian-language
+        assign_scores_to:
+          - trash_id: 5128baeb2b081b72126bc8482b2a86a0
+            score: 9900
+      # SQP Unwanted group lacks LQ/BR-DISK; add them explicitly to preserve junk rejection.
+      - trash_ids:
+          - 90a6f9a284dff5103f6346090e6280c8 # LQ
+          - e204b80c87be9497a8a6eaff48f72905 # LQ (Release Title)
+          - ed38b889b31be83fda192888e2286d83 # BR-DISK
+        assign_scores_to:
+          - trash_id: 5128baeb2b081b72126bc8482b2a86a0
+            score: -10000
+      # AV1 + 3D are trash-guide required-unwanted but not members of the SQP Unwanted group;
+      # add explicitly to complete the 'exclude BAD quality' coverage on SQP-1.
+      - trash_ids:
+          - cae4ca30163749b891686f95532519bd # AV1
+          - b8cd450cbfa689c0259a01d9e29ba3d6 # 3D
+        assign_scores_to:
+          - trash_id: 5128baeb2b081b72126bc8482b2a86a0
+            score: -10000

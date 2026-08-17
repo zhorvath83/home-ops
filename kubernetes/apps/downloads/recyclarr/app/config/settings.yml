@@ -1,0 +1,12 @@
+---
+# Local custom-format resource providers (recyclarr v8): loads the Hungarian
+# language CF from the per-service folders below so it can be scored in recyclarr.yml.
+resource_providers:
+  - name: hungarian-cfs-sonarr
+    type: custom-formats
+    path: /config/custom-formats/sonarr
+    service: sonarr
+  - name: hungarian-cfs-radarr
+    type: custom-formats
+    path: /config/custom-formats/radarr
+    service: radarr

@@ -1,0 +1,82 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: recyclarr
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  values:
+    defaultPodOptions:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+    controllers:
+      recyclarr:
+        type: cronjob
+        cronjob:
+          schedule: "@daily"
+          backoffLimit: 0
+          concurrencyPolicy: Forbid
+          failedJobsHistory: 1
+          successfulJobsHistory: 0
+        containers:
+          app:
+            image:
+              repository: ghcr.io/recyclarr/recyclarr
+              tag: 8.7.1@sha256:73303ba5ee647b6492fee917d3a781c6e59b6cab08f9dfce9482a950846f564f
+            args:
+              - sync
+            env:
+              RECYCLARR_DATA_DIR: /tmp
+              SONARR_API_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: recyclarr-secret
+                    key: SONARR_API_KEY
+              RADARR_API_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: recyclarr-secret
+                    key: RADARR_API_KEY
+            resources:
+              requests:
+                cpu: 5m
+                memory: 36Mi
+              limits:
+                memory: 128Mi
+            securityContext:
+              privileged: false
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: {drop: ["ALL"]}
+    persistence:
+      config:
+        type: persistentVolumeClaim
+        existingClaim: recyclarr
+        globalMounts:
+          - path: /config
+      tmp:
+        type: emptyDir
+      config-files:
+        type: configMap
+        name: recyclarr-config
+        globalMounts:
+          - path: /config/recyclarr.yml
+            subPath: recyclarr.yml
+          - path: /config/settings.yml
+            subPath: settings.yml
+          - path: /config/custom-formats/sonarr/hungarian.json
+            subPath: sonarr-hungarian.json
+          - path: /config/custom-formats/radarr/hungarian.json
+            subPath: radarr-hungarian.json

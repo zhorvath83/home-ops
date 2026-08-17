@@ -1,6 +1,6 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
-# sonarr (AD-023): envoy-internal ingress via the ingress-from-gateway-internal CCNP; this CNP admits the *arr named consumers (bazarr, prowlarr, seerr) on the API port.
+# sonarr (AD-023): envoy-internal ingress via the ingress-from-gateway-internal CCNP; this CNP admits the *arr named consumers (bazarr, prowlarr, seerr, recyclarr) on the API port.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -22,6 +22,9 @@ spec:
         - matchLabels:
             k8s:io.kubernetes.pod.namespace: downloads
             app.kubernetes.io/name: seerr
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: downloads
+            app.kubernetes.io/name: recyclarr
       toPorts:
         - ports:
             - port: "8989"

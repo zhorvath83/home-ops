@@ -1,0 +1,15 @@
+{
+  "trash_id": "home-ops-hungarian-language",
+  "name": "Hungarian Language",
+  "specifications": [
+    {
+      "name": "Hungarian",
+      "implementation": "LanguageSpecification",
+      "negate": false,
+      "required": true,
+      "fields": {
+        "value": 22
+      }
+    }
+  ]
+}
