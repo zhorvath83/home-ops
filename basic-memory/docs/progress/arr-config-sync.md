@@ -184,3 +184,36 @@ Files (branch `feat/arr-config-sync`):
 ### Debt
 
 - `fix-radarr-language.sh` carries a `debt:` marker: recyclarr v8 has no `quality_profile.language` YAML override; guide-backed SQP-1 gets `language=Original` (TRaSH guide) and Radarr's own default is `Original` (`QualityProfileService.cs:263`), so there is no declarative path to `language=Any`. Remove the script + helmrelease command wrapper when recyclarr ships a language YAML override (upstream feature request warranted).
+
+
+## Follow-up — configMapGenerator envsubst build-fix (2026-08-18)
+
+The reconciler script added to the `recyclarr-config` configMapGenerator broke the Flux Kustomization build on first deploy (main `3ef09eafd`): `FluxKustomizationBuildFailed` — `envsubst error: variable not set (strict mode): "RADARR_HOST"`. The build never applied, so the new CM (script + 4th CF) was stuck and `lastApplied` stayed at the pre-reconciler revision (`9bbd02d1e`).
+
+### Root cause
+
+- Flux runs its OWN envsubst (`fluxcd/pkg/envsubst/template.go`), strict by default: a bare `${VAR}` not in the substitute map errors; only default-providing operators (`${VAR:-default}` and `:- :+ := :? - + = ?`) are exempt.
+- The script uses bare shell `${VAR}` (`${RADARR_HOST}`, `${RADARR_PORT}`, `${profile_id}`, `${tmp}`, …) — runtime shell vars, not Flux substitution vars — so every one is a strict-mode landmine; the first (`${RADARR_HOST}`) failed the build.
+- The qbittorrent `qbittorrent-scripts` ConfigMap carries the same shell `${VAR}` pattern and builds fine because its `generatorOptions` sets `annotations: kustomize.toolkit.fluxcd.io/substitute: disabled`, which tells Flux envsubst to skip that ConfigMap. The recyclarr configMapGenerator was missing this annotation — the precedent was not followed.
+
+### Fix
+
+`kubernetes/apps/downloads/recyclarr/app/kustomization.yaml` `generatorOptions` gained:
+
+```yaml
+  annotations:
+    kustomize.toolkit.fluxcd.io/substitute: disabled  # scripts carry shell ${VAR}; skip Flux envsubst
+```
+
+Commit `62672814e` on `main` (per user instruction, committed directly to main + pushed). Pre-commit hooks green (yamlfmt aligned the comment). No other change needed — no non-script file in `recyclarr-config` uses Flux `${VAR}` substitution (the `!env_var` tags are recyclarr-native).
+
+### Verification (live, read-only kubectl)
+
+- `recyclarr` Kustomization `Ready=True`, `lastApplied=refs/heads/main@sha1:62672814e`.
+- Applied `recyclarr-config` CM now has all 6 keys incl. `fix-radarr-language.sh` + `radarr-not-hungarian-or-original.json`, carries the `substitute: disabled` annotation, and the script's `${RADARR_HOST}` is literal (4 occurrences) — envsubst skipped it.
+- `onepassword-connect` dependency `Ready=True`; the transient "dependency not ready" was a mid-reconcile state.
+- `FluxKustomizationBuildFailed` alert clears (Ready False → True).
+
+### Lesson (durable)
+
+Script (shell `${VAR}`) embedded in a Flux-substituted configMapGenerator → always annotate the ConfigMap with `kustomize.toolkit.fluxcd.io/substitute: disabled` (qbittorrent precedent). Flux envsubst is strict on bare `${VAR}`; `${VAR:-default}` is exempt. This fix is orthogonal to the existing `debt:` marker in `fix-radarr-language.sh` (which tracks the recyclarr language-YAML-override gap, still open).
