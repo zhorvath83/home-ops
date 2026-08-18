@@ -77,6 +77,13 @@ sonarr:
         assign_scores_to:
           - trash_id: c4cadd6b35b95f62c3d47a408e53e2f7
             score: 9900
+      # Block third-language dubs: only HUN or Original wanted. Sonarr has no profile language
+      # gate, so this CF is the sole mechanism that rejects non-HUN/non-Original dubs.
+      - trash_ids:
+          - home-ops-not-hungarian-or-original
+        assign_scores_to:
+          - trash_id: c4cadd6b35b95f62c3d47a408e53e2f7
+            score: -35000
 radarr:
   movies:
     base_url: http://radarr.downloads.svc.cluster.local:7878

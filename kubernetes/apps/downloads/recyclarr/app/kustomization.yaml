@@ -15,6 +15,7 @@ configMapGenerator:
       - recyclarr.yml=config/recyclarr.yml
       - settings.yml=config/settings.yml
       - sonarr-hungarian.json=config/custom-formats/sonarr/hungarian.json
+      - sonarr-not-hungarian-or-original.json=config/custom-formats/sonarr/not-hungarian-or-original.json
       - radarr-hungarian.json=config/custom-formats/radarr/hungarian.json
       - radarr-not-hungarian-or-original.json=config/custom-formats/radarr/not-hungarian-or-original.json
       - fix-radarr-language.sh=config/scripts/fix-radarr-language.sh

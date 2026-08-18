@@ -86,6 +86,8 @@ spec:
             subPath: settings.yml
           - path: /config/custom-formats/sonarr/hungarian.json
             subPath: sonarr-hungarian.json
+          - path: /config/custom-formats/sonarr/not-hungarian-or-original.json
+            subPath: sonarr-not-hungarian-or-original.json
           - path: /config/custom-formats/radarr/hungarian.json
             subPath: radarr-hungarian.json
           - path: /config/custom-formats/radarr/not-hungarian-or-original.json
