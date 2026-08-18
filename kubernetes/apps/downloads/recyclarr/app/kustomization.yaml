@@ -7,6 +7,8 @@ resources:
   - ./helmrelease.yaml
 generatorOptions:
   disableNameSuffixHash: true
+  annotations:
+    kustomize.toolkit.fluxcd.io/substitute: disabled # scripts carry shell ${VAR}; skip Flux envsubst
 configMapGenerator:
   - name: recyclarr-config
     files:
