@@ -541,7 +541,7 @@ spec:
         scrapeInterval: 60s
         evaluationInterval: 60s
         retention: 7d
-        retentionSize: 9GB
+        retentionSize: 18GB
         replicas: 1
         resources:
           requests:
@@ -557,7 +557,7 @@ spec:
                 - "ReadWriteOnce"
               resources:
                 requests:
-                  storage: 10Gi
+                  storage: 20Gi
         # Discover all ServiceMonitors, PodMonitors, Probes, and ScrapeConfigs
         serviceMonitorSelectorNilUsesHelmValues: false
         podMonitorSelectorNilUsesHelmValues: false
