@@ -62,6 +62,12 @@ spec:
           # are DEFERRED — their chart dashboards hardcode [1m]/[30s] ranges that
           # blank at 60s (see docs/roadmap/kube-prometheus-stack-hygiene).
           interval: 60s
+          # drop unconsumed hubble_port_distribution_total (orphan series; alert uses hubble_drop_total)
+          metricRelabelings:
+            - sourceLabels:
+                - __name__
+              regex: "hubble_port_distribution_total"
+              action: drop
     ipam:
       mode: kubernetes
     ipv4NativeRoutingCIDR: ${POD_CIDR}
