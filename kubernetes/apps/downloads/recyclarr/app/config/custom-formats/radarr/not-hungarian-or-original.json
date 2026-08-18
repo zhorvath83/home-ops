@@ -1,0 +1,33 @@
+{
+  "trash_id": "home-ops-not-hungarian-or-original",
+  "name": "Not Hungarian or Original",
+  "specifications": [
+    {
+      "name": "Not Hungarian Language",
+      "implementation": "LanguageSpecification",
+      "negate": true,
+      "required": true,
+      "fields": {
+        "value": 22
+      }
+    },
+    {
+      "name": "Not Original Language",
+      "implementation": "LanguageSpecification",
+      "negate": true,
+      "required": true,
+      "fields": {
+        "value": -2
+      }
+    },
+    {
+      "name": "Not Hungarian in Title",
+      "implementation": "ReleaseTitleSpecification",
+      "negate": true,
+      "required": true,
+      "fields": {
+        "value": "(?i)\\b(hungarian|hun|magyar)\\b"
+      }
+    }
+  ]
+}

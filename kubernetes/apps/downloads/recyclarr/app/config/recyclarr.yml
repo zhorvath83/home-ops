@@ -137,6 +137,13 @@ radarr:
         assign_scores_to:
           - trash_id: 5128baeb2b081b72126bc8482b2a86a0
             score: 9900
+      # Block third-language dubs: only HUN or Original wanted. Replaces the hard "Original"
+      # language gate (reconciled to "Any" by fix-radarr-language.sh) so non-HUN dubs score -35000.
+      - trash_ids:
+          - home-ops-not-hungarian-or-original
+        assign_scores_to:
+          - trash_id: 5128baeb2b081b72126bc8482b2a86a0
+            score: -35000
       # SQP Unwanted group lacks LQ/BR-DISK; add them explicitly to preserve junk rejection.
       - trash_ids:
           - 90a6f9a284dff5103f6346090e6280c8 # LQ

@@ -123,3 +123,64 @@ Restore via `just volsync restore …` if a sync ever damages live state.
 - relates_to [[home-ops/docs/areas/k8s-workloads]] — app shape, canonical patterns, downloads/media split
 - relates_to [[home-ops/docs/areas/external-secrets]] — 1Password properties for the Arr API keys
 - relates_to [[home-ops/docs/areas/networking]] — callee-side CiliumNetworkPolicy edits
+
+
+## Follow-up — SQP-1 `language=Any` reconciler (2026-08-18)
+
+### Problem (post-deploy regression on foreign-origin films)
+
+After the 2026-08-17 deploy, manual interactive search in Radarr rejected every Hungarian release for the French film "Zodi and Téhu: Princes of the Desert" (2023) with:
+
+> Release Rejected — Original Language (French) is wanted, but found Hungarian
+
+This violated the HUN > quality > size goal directly: the foreign-origin films whose HUN dubs we want were hard-gated at the language layer before the HUN CF (+9900) could score them.
+
+### Root cause (source-verified — three independent layers all default to Original)
+
+The SQP-1 profile's `Preferred Language` was `Original` — a hard gate that runs BEFORE custom-format scoring. Three sources independently force `Original`:
+
+1. **TRaSH guide** — `docs/json/radarr/quality-profiles/sqp-1-2160p.json` hardcodes `"language": "Original"` on the SQP-1 preset.
+2. **recyclarr** — `src/Recyclarr.Cli/Pipelines/QualityProfile/UpdatedQualityProfile.cs:114-123`: language is only ever passed through from the guide resource (`ProfileConfig.GuideResource?.Language`). The v8 quality-profiles schema has no `language` property (`additionalProperties: false`), so it cannot be overridden in YAML; name-backed profiles skip the language write entirely (preserving whatever Radarr already has).
+3. **Radarr** — `src/NzbDrone.Core/Profiles/Qualities/QualityProfileService.cs:263`: `GetDefaultProfile` sets `Language = Language.Original`, so any freshly-created profile (new cluster, profile recreation) also defaults to `Original`.
+
+TRaSH's own German guide documents this exact failure: *"We choose `Any` for the language profile, as otherwise, English movies identified with German audio and vice-versa will not be grabbed."* and the Language-CF doc: *"Using language Custom Formats is not compatible with setting a preferred language in a quality profile in Radarr. You must use one or the other."* Our config violated that mutual-exclusivity rule (HUN CF + profile language=Original).
+
+Scope: only Radarr SQP-1 (all films map to it). Sonarr is unaffected (its quality profiles have no language field).
+
+### Decision — idempotent post-sync reconciler (not a one-shot, not a UI step)
+
+Ruled out:
+- **One-shot `kubectl`/UI flip to `Any`**: not GitOps-durable — Radarr's default is `Original`, so every fresh deploy / profile recreation silently reverts to the broken state; a one-off non-declarative step is not reproducible from git. Rejected.
+- **name-backed profile + `score_set`**: schema-valid (`score_set` is independent of `trash_id`) and avoids the language write, but sacrifices guide-backed profile management (quality list, cutoff, rename tracking) AND still cannot SET `language=Any` declaratively — name-backed only preserves the existing (already-`Original`) value.
+
+Chosen: **keep `trash_id: 5128baeb…` (full guide auto-sync) + an idempotent post-sync reconciler script that sets SQP-1 `language=Any` after every `recyclarr sync`**. This is the GitOps reconciler for the one field with no declarative path — same role Flux plays for cluster state: in-git, idempotent, converges the current profile AND every future fresh deploy. A `debt:` marker records the recyclarr upstream gap (no `language` YAML property); remove when recyclarr ships a language override (upstream feature request warranted).
+
+### Implementation — all four TRaSH guide tenets now in effect
+
+The guide's recipe for our case (German-DEFAULT mode: prefer dubbed + original fallback) is `profile language=Any` + dubbed CF (high positive) + `min_format_score=0` + "Not X or Original" CF (−35000). All four now in effect:
+
+| Tenet | Guide recipe | Our config |
+|---|---|---|
+| 1. profile `language=Any` | mandatory (guide rule) | reconciler sets `Any` after every sync |
+| 2. "Hungarian" CF, high positive | German +10000 | HUN CF +9900 (`home-ops-hungarian-language`, LanguageSpecification value 22) |
+| 3. `min_format_score=0` | original accepted as fallback | `min_format_score: 0` (720p/1080p fallback preserved) |
+| 4. "Not Hungarian or Original" CF −35000 | "Not German or English" −35000 | new local CF `home-ops-not-hungarian-or-original` (3-spec negate, mirrors TRaSH "Not German or English") — blocks 3rd-language dubs, only HUN + Original accepted |
+
+Files (branch `feat/arr-config-sync`):
+- `kubernetes/apps/downloads/recyclarr/app/config/recyclarr.yml` — added the 4th CF (`assign_scores_to` SQP-1, score −35000); `trash_id` for SQP-1 kept.
+- `kubernetes/apps/downloads/recyclarr/app/config/custom-formats/radarr/not-hungarian-or-original.json` — new local CF (LanguageSpecification negate value 22 + value −2; ReleaseTitleSpecification regex \`(?i)\\b(hungarian|hun|magyar)\\b\`).
+- `kubernetes/apps/downloads/recyclarr/app/config/scripts/fix-radarr-language.sh` — the reconciler. Idempotent: GET `/api/v3/qualityProfile`, find SQP-1 by name, PUT `language={id:-1,name:Any}` via bash `/dev/tcp` (no curl/jq in the Alpine image), read-back verify. Runs after every `recyclarr sync`.
+- `kubernetes/apps/downloads/recyclarr/app/helmrelease.yaml` — container `command: [/sbin/tini, --, /bin/sh, -c]` + `args: [recyclarr sync && bash /config/fix-radarr-language.sh]` (tini is the image's own ENTRYPOINT init, Dockerfile-verified); new CF + script added to the `config-files` ConfigMap projection.
+- `kubernetes/apps/downloads/recyclarr/app/kustomization.yaml` — added the new CF + script to `configMapGenerator`.
+
+### Verification (live, end-to-end against the real Radarr API)
+
+- Radarr 6.4.1.10545; SQP-1 = profile id 7; `language=Any` = language id **−1** (verified live via `GET /api/v3/language`, not assumed).
+- Image `ghcr.io/recyclarr/recyclarr:8.7.1` has no `curl`/`jq`/`python3`; the script uses BusyBox `wget` (GET) + bash `/dev/tcp` (PUT) — the only reliable PUT path in that image.
+- Live test: `PUT /api/v3/qualityProfile/7` → 202; read-back → `language=Any`. Full reconciler logic proven against the real API in a debug pod (temporarily labelled `app.kubernetes.io/name=recyclarr` to satisfy the Cilium CNP, then cleaned up).
+- Local validation: `shellcheck -x` clean; `yamllint` exit 0 on the 3 touched YAMLs; `yamlfmt --dry` no changes; `jq` valid on both CF JSONs.
+- Transient: the live SQP-1 is currently `Any` (from the test); without deploying the new config the next `@daily` recyclarr sync would revert it to `Original` within 24h. Deploying the new config makes the reconciler self-heal `Any` on every sync.
+
+### Debt
+
+- `fix-radarr-language.sh` carries a `debt:` marker: recyclarr v8 has no `quality_profile.language` YAML override; guide-backed SQP-1 gets `language=Original` (TRaSH guide) and Radarr's own default is `Original` (`QualityProfileService.cs:263`), so there is no declarative path to `language=Any`. Remove the script + helmrelease command wrapper when recyclarr ships a language YAML override (upstream feature request warranted).

@@ -14,3 +14,5 @@ configMapGenerator:
       - settings.yml=config/settings.yml
       - sonarr-hungarian.json=config/custom-formats/sonarr/hungarian.json
       - radarr-hungarian.json=config/custom-formats/radarr/hungarian.json
+      - radarr-not-hungarian-or-original.json=config/custom-formats/radarr/not-hungarian-or-original.json
+      - fix-radarr-language.sh=config/scripts/fix-radarr-language.sh

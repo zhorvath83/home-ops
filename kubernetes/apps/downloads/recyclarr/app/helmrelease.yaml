@@ -38,8 +38,13 @@ spec:
             image:
               repository: ghcr.io/recyclarr/recyclarr
               tag: 8.7.1@sha256:73303ba5ee647b6492fee917d3a781c6e59b6cab08f9dfce9482a950846f564f
+            command:
+              - /sbin/tini
+              - --
+              - /bin/sh
+              - -c
             args:
-              - sync
+              - recyclarr sync && bash /config/fix-radarr-language.sh
             env:
               RECYCLARR_DATA_DIR: /tmp
               SONARR_API_KEY:
@@ -83,3 +88,7 @@ spec:
             subPath: sonarr-hungarian.json
           - path: /config/custom-formats/radarr/hungarian.json
             subPath: radarr-hungarian.json
+          - path: /config/custom-formats/radarr/not-hungarian-or-original.json
+            subPath: radarr-not-hungarian-or-original.json
+          - path: /config/fix-radarr-language.sh
+            subPath: fix-radarr-language.sh
