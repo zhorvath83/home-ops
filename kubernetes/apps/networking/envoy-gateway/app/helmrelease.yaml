@@ -16,6 +16,9 @@ spec:
       envoyGateway:
         extensionApis:
           enableEnvoyPatchPolicy: true
+          # Re-enabled for the bot user-agent block (EnvoyExtensionPolicy/block-user-agents).
+          # Partially reverses the v1.9.0 Lua-free decision for this feature only.
+          enableLua: true
         provider:
           type: Kubernetes
           kubernetes:

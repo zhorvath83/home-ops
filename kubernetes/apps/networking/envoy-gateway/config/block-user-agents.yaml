@@ -1,0 +1,23 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/gateway.envoyproxy.io/envoyextensionpolicy_v1alpha1.json
+# Bot user-agent block (envoy_on_request) loaded from the envoy-external-extensions
+# ConfigMap. Split from the old security-response-headers EEP — response headers now
+# live in ClientTrafficPolicy.headers.lateResponseHeaders. No-op on envoy-internal.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyExtensionPolicy
+metadata:
+  name: block-user-agents
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: envoy-external
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: envoy-internal
+  lua:
+    - type: ValueRef
+      valueRef:
+        name: envoy-external-extensions
+        kind: ConfigMap
+        group: v1
