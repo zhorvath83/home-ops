@@ -1,0 +1,72 @@
+---
+name: "Update AI Bot List"
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * *"
+env:
+  BOT_LIST_FILE: kubernetes/apps/networking/envoy-gateway/config/resources/block-user-agents.lua
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-ai-bots:
+    name: Update AI Bot List
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.x'
+
+      - name: Update AI Bots
+        id: update
+        run: |
+          OUTPUT=$(python .github/scripts/update-ai-bots.py)
+          {
+            echo "changes<<EOF"
+            echo "${OUTPUT}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          sign-commits: true
+          branch: github-action/update-ai-bots
+          delete-branch: true
+          title: "chore(github-action): update AI bot list"
+          signoff: true
+          commit-message: "chore(github-action): update AI bot list"
+          body: |
+            Update the AI bot blocklist in Envoy Gateway based on the latest data from ai-robots-txt.
+
+            **Updated files:**
+            - `${{ env.BOT_LIST_FILE }}`
+
+            **Changes:**
+            ```
+            ${{ steps.update.outputs.changes }}
+            ```
+
+            Source: https://github.com/ai-robots-txt/ai.robots.txt
+          labels: |
+            automated
+
+      - name: Debug Git Diff
+        if: failure()
+        run: |-
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git diff --name-status || true
+          git status || true
