@@ -29,7 +29,8 @@ spec:
     controllers:
       pocket-id:
         annotations:
-          reloader.stakater.com/auto: "true"
+          # TLS secret hot-reloaded by pocket-id; Reloader only on app-secret.
+          reloader.stakater.com/secret: "pocket-id-secret"
         containers:
           app:
             image:
@@ -40,8 +41,6 @@ spec:
               APP_URL: "https://idm.${PUBLIC_DOMAIN}"
               PORT: &port 1411
               HOST: 0.0.0.0
-              # v2.13.0 split TLS into inline (TLS_CERT/TLS_KEY) vs file-path env
-              # vars (PR #1653); cert/key are mounted as files, so use the _FILE form.
               TLS_CERT_FILE: /certs/tls.crt
               TLS_KEY_FILE: /certs/tls.key
               DB_CONNECTION_STRING: "/app/data/pocket-id.db"
@@ -133,8 +132,6 @@ spec:
             path: /metrics
             interval: 1m
             scrapeTimeout: 10s
-            # V2: drop pocket-id IdP HTTP histograms (no dashboard/rule consumer;
-            # human-approved drop — SSO request-latency/body-size not retained).
             metricRelabelings:
               - sourceLabels:
                   - __name__

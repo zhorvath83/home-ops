@@ -7,7 +7,7 @@
     {
       description: "Auto-merge trusted container updates (digest, minor, patch)",
       matchDatasources: ["docker"],
-      automerge: true,
+      automerge: false,
       matchUpdateTypes: ["digest", "minor", "patch"],
       matchPackagePrefixes: [
         "ghcr.io/home-operations",
@@ -18,20 +18,20 @@
     {
       description: "Auto-merge kube-prometheus-stack minor and patch updates",
       matchDatasources: ["docker", "helm"],
-      automerge: true,
+      automerge: false,
       matchUpdateTypes: ["minor", "patch"],
       matchPackageNames: ["/kube-prometheus-stack/", "/grafana/"],
     },
     {
       description: "Auto-merge pre-commit hook updates",
       matchManagers: ["pre-commit"],
-      automerge: true,
+      automerge: false,
       matchUpdateTypes: ["minor", "patch", "digest"],
     },
     {
       description: "Auto-merge GitHub Actions minor/patch updates (3-day cooldown)",
       matchManagers: ["github-actions"],
-      automerge: true,
+      automerge: false,
       matchUpdateTypes: ["minor", "patch"],
       excludePackagePrefixes: ["actions/"],
       minimumReleaseAge: "3 days",
@@ -42,7 +42,7 @@
       description: "Auto-merge trusted GitHub Actions fast-track",
       matchManagers: ["github-actions"],
       matchPackagePrefixes: ["actions/"],
-      automerge: true,
+      automerge: false,
       matchUpdateTypes: ["minor", "patch", "digest"],
       minimumReleaseAge: "1 minute",
       ignoreTests: true,
