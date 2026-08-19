@@ -14,7 +14,8 @@ spec:
     fullnameOverride: crowdsec-bouncer
     replicaCount: 1
     image:
-      tag: v0.6.3@sha256:85c9f802eca3ad32aa4a8cb5b63e5c5a5642b07cff623beca0bab634c2128020
+      repository: ghcr.io/kdwils/envoy-proxy-bouncer
+      tag: v0.8.0@sha256:faf15d1a09cd64fa568f420b9ee150e539ec8116ad54b838461a34458840a626
     podSecurityContext:
       seccompProfile:
         type: RuntimeDefault
@@ -47,6 +48,7 @@ spec:
         apiKeySecretRef:
           name: crowdsec-bouncer-secret
           key: BOUNCER_API_KEY
+        failOpen: false
       prometheus:
         enabled: true
         serviceMonitor:
