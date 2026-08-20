@@ -43,7 +43,8 @@
       "/media/downloads/watchdir/misc": "/media/downloads/complete/misc",
       "/media/downloads/watchdir/movies": "/media/downloads/complete/movies",
       "/media/downloads/watchdir/shows": "/media/downloads/complete/shows",
-      "/media/downloads/watchdir/documentaries": "/media/downloads/complete/documentaries",
+      "/media/downloads/watchdir/docuseries": "/media/downloads/complete/docuseries",
+      "/media/downloads/watchdir/docufilms": "/media/downloads/complete/docufilms",
       "/media/downloads/watchdir/ebooks": "/media/downloads/complete/ebooks"
     },
     "auto_delete_mode": 1,
@@ -75,5 +76,5 @@
     "file_log_max_size": 10240,
     "locale": "en"
   },
-  "categories": ["movies", "shows", "documentaries", "ebooks", "misc"]
+  "categories": ["movies", "shows", "docuseries", "docufilms", "ebooks", "misc"]
 }
