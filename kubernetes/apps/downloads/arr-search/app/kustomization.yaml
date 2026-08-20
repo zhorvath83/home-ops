@@ -1,0 +1,15 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ./externalsecret.yaml
+  - ./helmrelease.yaml
+generatorOptions:
+  disableNameSuffixHash: true
+  annotations:
+    kustomize.toolkit.fluxcd.io/substitute: disabled # scripts carry shell ${VAR}; skip Flux envsubst
+configMapGenerator:
+  - name: arr-search-config
+    files:
+      - arr-search.sh=config/scripts/arr-search.sh
