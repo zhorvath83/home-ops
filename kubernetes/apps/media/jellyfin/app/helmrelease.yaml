@@ -1,0 +1,121 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: jellyfin
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  values:
+    defaultPodOptions:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      # AD-023 vocabulary: envoy-internal only (ingress-from-gateway-internal CCNP) + internet egress via the allow-world-egress CCNP,
+      # needed for metadata providers and the plugin catalog / Introskipper downloads (same class as plex and the *arr apps).
+      labels:
+        ingress.home.arpa/allow-gateway-internal: "true"
+        egress.home.arpa/allow-world: "true"
+      resourceClaims:
+        - name: gpu
+          resourceClaimTemplateName: "${APP}-gpu"
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+    controllers:
+      jellyfin:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/jellyfin/jellyfin
+              tag: 12.0-rc5@sha256:669d234c776a37b331d875f58246434f80dbbbb619fa7edef55ce26d187baa2c
+            env:
+              JELLYFIN_PublishedServerUrl: "https://jellyfin.${PUBLIC_DOMAIN}"
+            securityContext:
+              privileged: false
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: {drop: ["ALL"]}
+            probes:
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: &port 8096
+                  initialDelaySeconds: 30
+                  periodSeconds: 30
+                  timeoutSeconds: 5
+                  failureThreshold: 5
+              readiness: *probes
+              startup:
+                enabled: false
+            resources:
+              claims:
+                - name: gpu
+              requests:
+                cpu: 25m
+                memory: 512Mi
+              limits:
+                memory: 4Gi
+    service:
+      app:
+        controller: jellyfin
+        ports:
+          http:
+            port: *port
+    route:
+      app:
+        annotations:
+          gethomepage.dev/enabled: "true"
+          gethomepage.dev/name: Jellyfin
+          gethomepage.dev/group: Media
+          gethomepage.dev/icon: jellyfin.svg
+        hostnames:
+          - "jellyfin.${PUBLIC_DOMAIN}"
+        parentRefs:
+          - name: envoy-internal
+            namespace: networking
+            sectionName: https
+        rules:
+          - backendRefs:
+              - identifier: app
+                port: *port
+    persistence:
+      config:
+        type: persistentVolumeClaim
+        existingClaim: jellyfin
+        globalMounts:
+          - path: /config
+      # Rebuildable, deliberately NOT backed up: library artwork/metadata (point the
+      # Jellyfin metadata path at /metadata in the UI) and the Introskipper fingerprint DB.
+      metadata:
+        existingClaim: jellyfin-metadata
+        advancedMounts:
+          jellyfin:
+            app:
+              - path: /metadata
+                subPath: metadata
+              - path: /config/data/introskipper
+                subPath: introskipper
+      nfs-nas-media:
+        type: nfs
+        server: ${NAS_IP}
+        path: /media
+        globalMounts:
+          - path: /media
+      # JELLYFIN_CACHE_DIR=/cache also holds the transcode working directory.
+      cache:
+        type: emptyDir
+      tmp:
+        type: emptyDir

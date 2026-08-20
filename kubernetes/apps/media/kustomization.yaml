@@ -10,5 +10,6 @@ resources:
   # Flux-Kustomizations
   - ./plex/ks.yaml
   - ./plex-trakt-sync/ks.yaml
+  - ./jellyfin/ks.yaml
   - ./calibre-web-automated/ks.yaml
   - ./isponsorblocktv/ks.yaml
