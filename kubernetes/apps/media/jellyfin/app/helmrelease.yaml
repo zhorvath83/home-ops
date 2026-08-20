@@ -39,6 +39,8 @@ spec:
               repository: ghcr.io/jellyfin/jellyfin
               tag: 12.0-rc5@sha256:669d234c776a37b331d875f58246434f80dbbbb619fa7edef55ce26d187baa2c
             env:
+              # .NET enforces FileShare with flock(), which is unreliable on the NFS media mount.
+              DOTNET_SYSTEM_IO_DISABLEFILELOCKING: "true"
               JELLYFIN_PublishedServerUrl: "https://jellyfin.${PUBLIC_DOMAIN}"
             securityContext:
               privileged: false
