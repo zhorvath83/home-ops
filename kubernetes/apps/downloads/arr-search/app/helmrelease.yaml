@@ -1,0 +1,75 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: arr-search
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  values:
+    defaultPodOptions:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+    controllers:
+      arr-search:
+        type: cronjob
+        cronjob:
+          schedule: "3 1 * * 6"
+          backoffLimit: 0
+          concurrencyPolicy: Forbid
+          failedJobsHistory: 1
+          successfulJobsHistory: 1
+        containers:
+          app:
+            image:
+              # renovate: datasource=docker depName=alpine/k8s
+              repository: alpine/k8s
+              tag: 1.36.2@sha256:1af42341bac2392c9af30f79019aa94dd9d3be018c970383debfb3d6f76acf87
+            command:
+              - /bin/bash
+            args:
+              - /script/arr-search.sh
+            env:
+              SONARR_API_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: arr-search-secret
+                    key: SONARR_API_KEY
+              RADARR_API_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: arr-search-secret
+                    key: RADARR_API_KEY
+            resources:
+              requests:
+                cpu: 5m
+                memory: 16Mi
+              limits:
+                memory: 64Mi
+            securityContext:
+              privileged: false
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: {drop: ["ALL"]}
+    persistence:
+      tmp:
+        type: emptyDir
+        globalMounts:
+          - path: /tmp
+      config-files:
+        type: configMap
+        name: arr-search-config
+        globalMounts:
+          - path: /script/arr-search.sh
+            subPath: arr-search.sh
