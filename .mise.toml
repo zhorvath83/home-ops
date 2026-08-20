@@ -36,7 +36,7 @@ kubectl = "1.36.3"
 "aqua:mitsuhiko/minijinja" = "2.24.0"
 
 # YAML/JSON tooling
-"aqua:mikefarah/yq" = "4.53.4"
+"aqua:mikefarah/yq" = "4.53.6"
 "aqua:jqlang/jq" = "1.8.1"
 
 # UX
