@@ -33,7 +33,7 @@ permalink: home-ops/docs/progress/jellyfin
 New app `kubernetes/apps/media/jellyfin/`:
 
 - `ks.yaml` — components `gpu` + `volsync` + `zeroscaler`; dependsOn `onepassword-connect`, `democratic-csi`, `intel-gpu-resource-driver`; `postBuild.substitute`: `APP: jellyfin`, `VOLSYNC_CAPACITY: "5Gi"`; `targetNamespace: media`
-- `app/helmrelease.yaml` — app-template 5.1.0 via the shared OCIRepository, `defaultPodOptions` style (NOT the reference's app-template v4 `controllers.x.pod` syntax); UID/GID/fsGroup 10001 (repo default, matches the VolSync mover); `readOnlyRootFilesystem: true`, drop ALL caps, seccomp RuntimeDefault; `/health` probes on 8096 with `startup: disabled` (sonarr pattern); `JELLYFIN_PublishedServerUrl` = the internal route URL; resources 25m CPU / 512Mi request, 4Gi memory limit
+- `app/helmrelease.yaml` — app-template 5.1.0 via the shared OCIRepository, `defaultPodOptions` style (the reference pins the SAME chart version 5.1.0 but sets pod options per-controller via `controllers.jellyfin.pod`; this repo's house style is the global `defaultPodOptions`); UID/GID/fsGroup 10001 (repo default, matches the VolSync mover); `readOnlyRootFilesystem: true`, drop ALL caps, seccomp RuntimeDefault; `/health` probes on 8096 with `startup: disabled` (sonarr pattern); `JELLYFIN_PublishedServerUrl` = the internal route URL; resources 25m CPU / 512Mi request, 4Gi memory limit
 - `app/pvc-metadata.yaml` — `jellyfin-metadata`, 10Gi, `democratic-csi-local-hostpath`
 - `app/kustomization.yaml` — pvc-metadata + helmrelease (no ExternalSecret: jellyfin needs no bootstrap secret; the VolSync ES comes from the component)
 - `kubernetes/apps/media/kustomization.yaml` — jellyfin ks.yaml registered
@@ -46,7 +46,7 @@ Plex change (separate commit `8fbb42332`):
 Mounts that differ from the reference by intent:
 
 - `/cache` emptyDir instead of a separate `/transcode` volume — `JELLYFIN_CACHE_DIR=/cache` (from the image config) already holds the transcode working directory, so a second volume plus a UI path change would be redundant
-- `DOTNET_SYSTEM_IO_DISABLEFILELOCKING` omitted — the reference needs it for config on network storage; ours is a local-hostpath PVC
+- ~~`DOTNET_SYSTEM_IO_DISABLEFILELOCKING` omitted~~ — **CORRECTED 2026-08-21, now set to `"true"`.** The original rationale ("the reference needs it for config on network storage") was wrong: the reference's config PVC uses `storageClassName: ${KOPIUR_STORAGECLASS:=miroir-local}` (components/kopiur/backup/pvc.yaml), a local class just like ours. The flag's real target is the **NFS media mount**, which we have identically: .NET 6+ enforces `FileShare` with `flock()`, which is unreliable over NFS and surfaces as intermittent "file in use" IOExceptions during scan/playback. A `gh api search/code` over the reference repo returns exactly ONE hit for the variable (jellyfin only, not their .NET *arr apps), confirming it is a deliberate jellyfin-specific setting rather than a house-wide default.
 
 ## Verification (local, pre-deploy)
 
@@ -71,7 +71,30 @@ Mounts that differ from the reference by intent:
 ## Follow-ups
 
 - [task] Plex now transcodes in software. Decide whether plex stays at all, or whether the shared-`ResourceClaim` route is worth revisiting so both servers can use the iGPU.
-- [task] If `seerr` should drive jellyfin (it currently targets plex), jellyfin will need a per-app CNP admitting `downloads/seerr` on 8096 — jellyfin has no CNP today.
+- [task] Any in-cluster consumer of jellyfin needs a per-app CNP admitting it on 8096, because the baseline is ingress default-deny and jellyfin has no CNP today. Two concrete cases: (a) `seerr` if it should drive jellyfin instead of plex; (b) `sonarr`/`radarr`/`bazarr` library-refresh notifications (Connect → Emby/Jellyfin) — the reference's own CNP admits exactly `bazarr`, `sonarr`, `radarr`, `maintainerr` plus two apps we do not run (`mumc`, `jellyplex-watched`).
 - [task] Update BM `docs/areas/k8s-workloads` after deployment: media namespace grows to 5 apps, and the "Plex GPU wiring" component claim becomes a jellyfin claim.
 - [task] Sizing is estimated from plex, not measured — revisit `requests.memory: 512Mi` / `limits.memory: 4Gi` and the 10Gi metadata PVC once the library is scanned.
 - [task] 12.0-rc5 is a pre-release. Watch for plugin ABI churn on rc bumps; Renovate PRs are review-gated, not auto-merged.
+
+## Reference diff — full field-by-field audit (2026-08-21)
+
+Triggered by the human asking whether any other reference setting we skipped is actually needed.
+Reference: `bjw-s-labs/home-ops` @ main, `kubernetes/apps/media/jellyfin/` (helmrelease.yaml, ks.yaml,
+ciliumnetworkpolicy.yaml, ocirepository.yaml).
+
+**Adopted after the audit:**
+
+- [decision] `DOTNET_SYSTEM_IO_DISABLEFILELOCKING: "true"` — ADDED. See the corrected rationale above (NFS media mount, not config storage).
+
+**Reviewed and deliberately NOT adopted, with evidence:**
+
+- [decision] `service.app.ports.http.appProtocol: kubernetes.io/ws` — **verified no-op for us.** Envoy Gateway's `kubernetes.io/ws` / `kubernetes.io/wss` handling does NOT enable websocket support (Envoy upgrades websockets on HTTP routes regardless); per the EG v1.8.1 release note it "force[s] HTTP/1.1 upstream connections instead of negotiating HTTP/2, avoiding compatibility issues with WebSocket backends that do not support RFC 8441 extended CONNECT", implemented in `internal/gatewayapi/route.go` (`shouldForceHTTP1Upstream`). Our EG is 1.9.0 and we set no `kubernetes.io/h2c`, BackendTrafficPolicy, or BackendTLSPolicy that would push the upstream to HTTP/2, so the upstream is already HTTP/1.1. Zero `appProtocol` occurrences exist anywhere in this repo. Becomes relevant only if HTTP/2-to-backend is ever enabled.
+- [decision] Per-app `ciliumnetworkpolicy.yaml` — not needed for the envoy-internal ingress, which the `ingress-from-gateway-internal` CCNP already grants (the reference has no such CCNP layer, so they must spell the gateway out in the app CNP). Their CNP additionally admits `bazarr`, `sonarr`, `radarr`, `maintainerr`, `mumc`, `jellyplex-watched` — see the consumer follow-up above; none of those integrations are wired here yet.
+- [decision] Probes — reference: `initialDelaySeconds: 0`, `periodSeconds: 10`, `timeoutSeconds: 1`, `failureThreshold: 3`. Ours: 30/30/5/5 (sonarr house pattern). Ours is deliberately more forgiving, which matters for a 12.0-rc first boot that may run DB migrations. Kept.
+- [decision] Resources — reference: `requests.cpu: 100m`, NO memory request, `limits.memory: 8Gi`. Ours: 25m + 512Mi request, 4Gi limit. A memory request is mandatory per the repo resource baseline; 8Gi is not defensible on a single node that also runs plex. Kept, revisit after measurement.
+- [decision] Metadata PVC — reference declares it chart-managed (`persistence.metadata.size/accessMode/storageClass/suffix`). Ours is an explicit `pvc-metadata.yaml` matching `plex-rebuildable`. Same resulting name (`jellyfin-metadata`); ours survives a HelmRelease deletion, which is the safer lifecycle.
+- [decision] NFS mount shape — reference mounts a `Library` subPath at `/data/nas-media/Library`. We mount `${NAS_IP}:/media` wholesale at `/media`, matching plex/sonarr/radarr so library paths line up with the *arr import paths. Kept.
+- [decision] `tmpfs` single emptyDir with cache/tmp/transcode subPaths — split into `cache` + `tmp` emptyDirs here; the transcode dir lives under `JELLYFIN_CACHE_DIR=/cache` anyway.
+- [decision] Per-app `ocirepository.yaml` — the reference pins app-template 5.1.0 per app; this repo consumes the shared `components/common/repos/app-template` OCIRepository at the same 5.1.0. No per-app file needed.
+- [decision] Pod `securityContext` — reference runs UID/GID 2000 with no `runAsNonRoot` and no `seccompProfile`. Ours is strictly harder (10001 + `runAsNonRoot: true` + RuntimeDefault + drop ALL + `readOnlyRootFilesystem`). Kept.
+- [decision] `service.type: LoadBalancer` + `externalTrafficPolicy: Local` — dropped per the exposure decision (envoy-internal only).
