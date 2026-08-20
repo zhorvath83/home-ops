@@ -17,9 +17,6 @@ spec:
       labels:
         ingress.home.arpa/none: "true"
         egress.home.arpa/allow-world: "true"
-      resourceClaims:
-        - name: gpu
-          resourceClaimTemplateName: "${APP}-gpu"
       securityContext:
         runAsNonRoot: true
         runAsUser: 10001
@@ -72,8 +69,6 @@ spec:
                   tcpSocket:
                     port: *port
             resources:
-              claims:
-                - name: gpu
               requests:
                 cpu: 25m
                 memory: 160Mi
