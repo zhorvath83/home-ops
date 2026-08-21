@@ -26,7 +26,11 @@ spec:
         runAsUser: 10001
         runAsGroup: 10001
         fsGroup: 10001
-        fsGroupChangePolicy: OnRootMismatch
+        # The introskipper subPath mount under /config/data makes kubelet create that parent
+        # root-owned; OnRootMismatch skips it (volume root gid already matches fsGroup) and
+        # Jellyfin's /config/data/.jellyfin-data sanity marker fails. Always chmods it writable.
+        # debt: recursive chown per restart; move to a dedicated data PVC if startup slows
+        fsGroupChangePolicy: Always
         seccompProfile:
           type: RuntimeDefault
     controllers:
