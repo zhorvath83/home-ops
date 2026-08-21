@@ -10,7 +10,7 @@ permalink: home-ops/docs/progress/jellyfin
 
 - [type] progress-note
 - [topic] Jellyfin 10.11.11 media server alongside plex in the media namespace, with Introskipper support
-- [status] IN PROGRESS — manifests written, rendered and linted locally; NOT yet deployed (PR open, awaiting merge + Flux reconcile)
+- [status] DEPLOYED - CrashLoopBackOff fixed via fsGroupChangePolicy=Always; pod 1/1 Running 0 restart, HR Ready=True; commit 88cfbb544 on main (2026-08-21)
 - [branch] feat/jellyfin
 - [area] k8s-workloads, networking, volsync-backup
 - [created] 2026-08-20
@@ -98,3 +98,50 @@ ciliumnetworkpolicy.yaml, ocirepository.yaml).
 - [decision] Per-app `ocirepository.yaml` — the reference pins app-template 5.1.0 per app; this repo consumes the shared `components/common/repos/app-template` OCIRepository at the same 5.1.0. No per-app file needed.
 - [decision] Pod `securityContext` — reference runs UID/GID 2000 with no `runAsNonRoot` and no `seccompProfile`. Ours is strictly harder (10001 + `runAsNonRoot: true` + RuntimeDefault + drop ALL + `readOnlyRootFilesystem`). Kept.
 - [decision] `service.type: LoadBalancer` + `externalTrafficPolicy: Local` — dropped per the exposure decision (envoy-internal only).
+
+## Session 2026-08-21 - CrashLoopBackOff fix (fsGroupChangePolicy Always)
+
+### Root cause (live-proven)
+The introskipper subPath mount at /config/data/introskipper (metadata PVC, nested under
+the config PVC's /config/data) makes kubelet create /config/data as root-owned
+(uid 0:10001, mode 0755) on the config PVC. fsGroupChangePolicy=OnRootMismatch skips the
+recursive chown because the config volume root gid already matches fsGroup (10001), so
+Jellyfin (uid 10001) gets only group r-x on /config/data and cannot write its
+/config/data/.jellyfin-data sanity marker, raising UnauthorizedAccessException and
+CrashLoopBackOff (27 restarts). Evidence: debug pod (uid 10001, no fsGroup) showed
+/config/data owner=0:10001 mode=2755, and touch /config/data/.jellyfin-data was denied.
+
+Why plex (same nested-subPath pattern) is unaffected: plex only writes INSIDE its
+subPaths (Cache/Metadata/Scanners), never into the root-owned parent; Jellyfin writes the
+sanity marker INTO the parent (/config/data) that the nested mount stole.
+
+### Why the cleaner paths do not apply
+Intro Skipper hardcodes its storage to {JellyfinDataPath}/introskipper/ (introskipper.db
+plus chromaprints/); not configurable. So the nested mount is REQUIRED to keep the
+fingerprint DB on the rebuildable jellyfin-metadata PVC. A non-nested /introskipper mount
+would be ignored by the plugin (it writes to /config/data/introskipper on the config PVC
+instead). JELLYFIN_DATA_DIR alone does not help (the nested mount re-creates the new data
+dir as root) unless paired with a dedicated data PVC - a bigger diff than warranted.
+
+### Fix
+kubernetes/apps/media/jellyfin/app/helmrelease.yaml: fsGroupChangePolicy OnRootMismatch to
+Always (1 file, +5/-1). kubelet now chmods g+rwX over the config volume tree on every
+mount, making /config/data group-writable so the sanity marker writes.
+debt: recursive chown per restart; move to a dedicated data PVC if startup slows.
+
+### Live verification (post-push, commit 88cfbb544)
+- Flux: git source flux-system fetched 88cfbb5444; cluster-apps applied it; HR jellyfin was
+  initially Stalled (rollback-remediation "missing target release for rollback" from the
+  prior crashloop), cleared via flux reconcile helmrelease jellyfin -n media --force, then
+  Ready=True, Released=True, "Helm upgrade succeeded ... jellyfin.v4", history deployed(5.1.0).
+- Pod: jellyfin-698d8586-r7g79 1/1 Running, 0 restart, Ready.
+- Filesystem (live pod): /config/data now owner=0:10001 mode=2775 (group-writable);
+  .jellyfin-data marker plus jellyfin.db (-wal/-shm) created as uid 10001:10001.
+- Introskipper: plugin not yet installed; the /config/data/introskipper mount already points
+  at the metadata PVC, so installing the plugin writes its hardcoded path to the rebuildable
+  PVC automatically - no plugin reconfiguration needed.
+
+### Maestro verification (independent)
+Verified from the control lane, not from the worker self-report: pod 1/1 Running 0 restart,
+HR Ready=True, diff is 1 file / 5 lines, origin/main = 88cfbb544, unrelated in-progress
+working-tree files untouched.
