@@ -13,15 +13,18 @@ spec:
     defaultPodOptions:
       automountServiceAccountToken: false
       enableServiceLinks: false
-      # AD-023: ingress admitted by the ingress-from-gateway-internal CCNP via this label
+      # AD-023: gateway ingress via the CCNP label; allow-world egress because Jellyfin
+      # matching needs TMDb metadata. Narrow to custom-egress once the destinations settle.
       labels:
         ingress.home.arpa/allow-gateway-internal: "true"
         egress.home.arpa/allow-world: "true"
       securityContext:
+        # 1000 matches the image's baked-in appuser (APP_UID default); at 10001 the
+        # entrypoint's id lookup fails and logs "cannot find name for user ID".
         runAsNonRoot: true
-        runAsUser: 10001
-        runAsGroup: 10001
-        fsGroup: 10001
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
@@ -41,14 +44,15 @@ spec:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
               capabilities: {drop: ["ALL"]}
-            # Probes match the upstream Dockerfile HEALTHCHECK (TCP 127.0.0.1:8787) — no
-            # HTTP path guessed; switch to httpGet once a clean health endpoint is confirmed.
+            # /healthz is the documented health endpoint and stays unauthenticated
+            # while / redirects to the login page.
             probes:
               liveness: &probes
                 enabled: true
                 custom: true
                 spec:
-                  tcpSocket:
+                  httpGet:
+                    path: /healthz
                     port: *port
                   periodSeconds: 30
                   timeoutSeconds: 5
@@ -58,7 +62,8 @@ spec:
                 enabled: true
                 custom: true
                 spec:
-                  tcpSocket:
+                  httpGet:
+                    path: /healthz
                     port: *port
                   periodSeconds: 30
                   timeoutSeconds: 5
