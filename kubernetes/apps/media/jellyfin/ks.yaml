@@ -3,12 +3,13 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: plex
+  name: jellyfin
 spec:
   commonMetadata:
     labels:
-      app.kubernetes.io/name: plex
+      app.kubernetes.io/name: jellyfin
   components:
+    - ../../../../components/gpu
     - ../../../../components/volsync
     - ../../../../components/zeroscaler
   dependsOn:
@@ -16,11 +17,13 @@ spec:
       namespace: external-secrets
     - name: democratic-csi
       namespace: kube-system
+    - name: intel-gpu-resource-driver
+      namespace: kube-system
   interval: 1h
-  path: ./kubernetes/apps/media/plex/app
+  path: ./kubernetes/apps/media/jellyfin/app
   postBuild:
     substitute:
-      APP: plex
+      APP: jellyfin
       VOLSYNC_CAPACITY: "5Gi"
   prune: true
   sourceRef:
