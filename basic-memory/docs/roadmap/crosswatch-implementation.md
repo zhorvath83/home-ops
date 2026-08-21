@@ -93,28 +93,35 @@ Four legs, in dependency order:
 ## Phases
 
 ### P0 — Trakt rescue (manual, human-only, BLOCKING)
+**DONE 2026-08-21.** The Trakt account was the only copy of the history we did not control. Rescue complete; the measurement baseline is captured.
 
-Nothing else may start before this is done. The Trakt account is the only copy of the history that
-we do not control.
+- [done] Trakt web UI export → `~/Downloads/trakt-json-export-zhorvath83.zip` (715542 bytes, SHA-256 `825b560fb53ad0e651169f0f2859c6f21da7ceec4f5625c04259000944ba425f`). `unzip -t` clean, 82 files.
+- [done] Second copy in the file-level backup plane: `/Volumes/backups/trakt/trakt-json-export-zhorvath83.zip` (NAS 192.168.1.10:/backups, picked up by resticprofile at 01:00 → OVH Object Storage offsite). Subdir named after the SOURCE (trakt), not the consumer (crosswatch), because the archive outlives CrossWatch (P6 keeps it permanently). Both copies byte-identical (same SHA-256, 715542 bytes).
+- [pending, human-only] Check whether the Trakt API application still exists in the account. Do not delete it — a new one cannot be created (VIP-only since 2026-07-30). NOT answered in P0; remains open. This is the only open item blocking the "live Trakt sync possible?" decision.
 
-- Trakt web UI, Settings then Data, "Export now". Download the ZIP.
-- Store it outside the cluster AND drop a copy into the file-level backup plane
-  (/backups tree, picked up by resticprofile into OVH Object Storage).
-- Check in the Trakt account whether the API application still exists. Do not delete it — a new one
-  cannot be created. Record the answer here.
+Ground-truth baseline measured from the `watched-history-*.json` event log (what CrossWatch imports), cross-checked against Trakt's own `user-stats.json` — all matched exactly, so the export lost no events:
 
-### P1 — Proof of concept, outside the cluster (GATE)
+- Total watch-events: 5639 (movie 310 / episode 5329)
+- Unique movies: 174, unique episodes: 4688, unique shows: 249
+- watched_at coverage: 5639/5639 = 100%; range 2010-12-04 .. 2026-07-29
+- ratings / watchlist / lists / comments: all 0 (those Trakt features were unused — empty datasets, nothing to migrate). The migration is watch-history ONLY.
+- 46 ZIP files are not ingested by the trakt importer; none are watch-history data loss (per-title summaries are duplicates of the event log; `collection-*` is ownership data out of P0 scope, preserved in the ZIP archive).
 
-No manifests are written before this phase is green.
+Full detail in [[crosswatch-implementation]] progress note.
 
-- Run ghcr.io/cenodude/crosswatch v0.11.2 locally with a throwaway /config volume.
-- Import the real Trakt export ZIP.
-- Measure and record: movie count, episode count, how many carry the original watched_at date,
-  ratings count, watchlist count, and what failed to match.
-- Exercise the export path (services/export.py, the backups API) and confirm a round trip:
-  export, wipe, re-import, same counts.
+### P1 — Proof of concept (MERGED INTO P2, human-approved 2026-08-21)
+**MERGED INTO P2 (human-approved 2026-08-21).** The original plan — run CrossWatch locally out-of-cluster with "No manifests are written before this phase is green" — is superseded:
+
+- No container runtime on the Mac (only an engine-less docker CLI in /usr/local/bin; no Docker Desktop / OrbStack / Podman / Colima). Nothing is installed on the Mac.
+- An out-of-band `kubectl run` throwaway pod was rejected: the repo non-negotiable forbids manual kubectl changes outside documented bootstrap/recovery/Just flows.
+
+P1 therefore runs ON the live in-cluster instance (see P2), treated as a PoC. The P1 measurements are performed there:
+
+- Import the real Trakt export ZIP; record movie count, episode count, how many carry the original watched_at date, ratings count, watchlist count, and what failed to match — compared against the P0 ground-truth baseline (5639 events: 310 movie / 5329 episode; 174 / 4688 / 249 unique; 100% watched_at). Imported episode count must be within a stated tolerance of 4688.
+- Exercise the export path (services/export.py, the backups API) and confirm a round trip: export, wipe, re-import, same counts.
 - Inspect the UI and record whether it is a browsable library or primarily a sync dashboard.
 
+On failure: git revert + Flux prune rolls everything back. ISOLATION CONDITION (non-optional, first round): ONLY CrossWatch itself deploys — NO SIMKL, Plex, or Jellyfin provider. Nothing that can write into the real libraries is wired until the import and round-trip are green. P3/P4/P5 remain separate later steps.
 ### P2 — Deploy to the cluster
 
 - Namespace media, alongside jellyfin and plex.
