@@ -1,0 +1,33 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: crosswatch
+spec:
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: crosswatch
+  components:
+    # No zeroscaler round-1: keep the pod warm during the import + measure PoC;
+    # add it back for sibling consistency once the import + round-trip is green.
+    - ../../../../components/volsync
+  dependsOn:
+    - name: onepassword-connect
+      namespace: external-secrets
+    - name: democratic-csi
+      namespace: kube-system
+  interval: 1h
+  path: ./kubernetes/apps/media/crosswatch/app
+  postBuild:
+    substitute:
+      APP: crosswatch
+      VOLSYNC_CAPACITY: "5Gi"
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  targetNamespace: media
+  timeout: 5m
+  wait: false
