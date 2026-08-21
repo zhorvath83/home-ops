@@ -526,7 +526,7 @@ spec:
           registry: docker.io
           repository: prompp/prompp
           # renovate: datasource=docker depName=docker.io/prompp/prompp
-          tag: "0.8.9"
+          tag: "3.8.14"
         # Fork version is not a Prometheus version; operator needs the real base for flag generation
         version: v2.55.1
         # Image declares no USER; 64535 is the upstream-documented operator context
