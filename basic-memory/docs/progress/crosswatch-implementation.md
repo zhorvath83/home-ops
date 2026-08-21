@@ -107,6 +107,35 @@ Next: push + reconcile when the human greenlights; then run the import + measure
 - [P3 redefined] P3 is a BULK BACKFILL, not a sync test: mark ~174 movies + 4688 episodes watched in an EMPTY Jellyfin. Less risky (no before-state to lose; rollback = delete what we wrote). Jellyfin is a pure consumer, zero own knowledge.
 - [phase order] a) Trakt ZIP import -> 5639 events, only through 2026-07-29. b) Plex -> CrossWatch -> one-way read, fill the 23-day gap. c) VERIFICATION: does CrossWatch own the full truth? d) CrossWatch -> Jellyfin -> one-way upload into the empty Jellyfin. e) only after (c)+(d) verify, any two-way sync.
 - [P6] plex-trakt-sync is a PROVEN DEAD workload (no API app, no scrobble since 07-29); the withdrawal gate lost its meaning. Note only — do not act this round.
+
+## Session 2026-08-21 — upstream contract + round-1 live verification
+
+### Round-1 deploy verified live (read-only)
+Pod 1/1 Running, 0 restart, IP 10.244.0.62. PVC crosswatch Bound, 5Gi, democratic-csi-local-hostpath. HTTPRoute Accepted=True ResolvedRefs=True. LAN DNS resolves crosswatch.${PUBLIC_DOMAIN} to the envoy-internal VIP (192.168.1.18). HTTPS GET / -> 200, TLS verify OK. The P2 deploy is live and healthy.
+
+### Commits already on main (this session, verified)
+- 1b512d0a0 feat(crosswatch): add Homepage dashboard annotations. Fulfills the media/CLAUDE.md guardrail "dashboard apps carry Homepage annotations" (enabled/name/group/icon per the jellyfin pattern). Icon crosswatch.svg verified to exist in the selfhst/icons set (HTTP 200, real 940-byte SVG, gradient id crosswatch_svg__a) — not a torn tile.
+- 82af0f411 pod label `egress.home.arpa/allow-world: "true"`. WIDER than the roadmap P2 expectation ("custom-egress to the SIMKL and TMDB APIs"). Acceptable for the PoC; must narrow to a custom-egress CNP before the app holds Plex/Jellyfin/SIMKL credentials (see Follow-up).
+- 8829522c1 / PR #4227 (merged a65cbbaaf) fix(crosswatch): probe /healthz + align UID with the image.
+  - Probe: tcpSocket -> httpGet /healthz. Verified live: GET /healthz returns 200 {"ok":true,"status":"ok"} and is NOT auth-gated, while GET / 302s to /login. The httpGet probe proves the app SERVES, not just that the port is open.
+  - runAsUser/runAsGroup/fsGroup 10001 -> 1000. The image builds appuser at APP_UID=1000. Verified result: the "id: cannot find name for user ID 10001" entrypoint warning is GONE; the entrypoint now logs "as appuser:appuser (1000:1000)". Pod 1/1 Ready, no probe error. The UID-1000 verify-at-PoC item is resolved (the symptom was present and non-fatal; now removed).
+  - TZ is intentionally NOT in the manifest: the k8tz webhook injects it (verified TZ=Europe/Budapest on the live pod), even though the upstream wiki lists TZ as "required".
+
+### Auth model (operational)
+CrossWatch requires login (the /login page: username/password/totp/remember; title "Sign in | CrossWatch"; links to wiki.crosswatch.app). A first-run open window existed for the first few minutes after boot (during which GET / -> 200 and the trakt preview API answered 200), then shut; after that GET / 302s to /login and all /api/* return 401 except /healthz. The first-run setup was completed by the human (a local admin was created). The import credential is the human's; not pursued this round.
+
+### Deployment contract (wiki: installation/docker-setup) — env list
+CONFIG_BASE=/config, WEB_HOST=0.0.0.0, WEB_PORT=8787, RUNTIME_DIR=/config, APP_UID=1000, APP_GID=1000, APP_USER=appuser, APP_GROUP=appuser, APP_DIR=/app, TZ (required), RELOAD=no, CW_RESET_AUTH_ONCE=1 (auth/session wipe on restart). Health endpoint: GET /healthz -> {"ok":true,"status":"ok"}. "Always persist /config" — state lives in config.json, state.json, statistics.json. WARNING: do NOT set the container `user` property together with the APP_* vars.
+
+### CW_RESET_AUTH_ONCE — documented auth-recovery path
+CW_RESET_AUTH_ONCE=1 is the documented way to wipe auth/session on restart. We did NOT set it: it would also wipe the admin the human just created. Recorded here as the known recovery path for a future lockout, not used now.
+
+### Follow-up
+- Revert/add `components/zeroscaler` to ks.yaml for sibling consistency once the import is green (carried from the prior round-1 note).
+- Narrow the allow-world pod label to a custom-egress CNP (SIMKL + TMDB, plus in-cluster to jellyfin/plex) before the app holds provider credentials.
+- Measure the export round-trip (roadmap acceptance criteria) — NOT done yet; the P1 import measurement is still auth-blocked pending the credential decision.
+- CrossWatch admin credential long term: an ExternalSecret backed by onepassword-connect is the repo standard; currently ad-hoc (human-created local admin). Decide and wire before steady state.
+
 ## Open — human-only
 
 - [resolved 2026-08-21, human-verified] Does the Trakt API application still exist in the account? ANSWER: no — the app is disabled (proven). The ZIP is the only route; a live Trakt sync is not possible. Recorded for traceability. Do not delete the app entry — a new one cannot be created (VIP-only since 2026-07-30).

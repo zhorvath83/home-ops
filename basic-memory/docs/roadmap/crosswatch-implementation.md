@@ -211,6 +211,48 @@ On failure: git revert + Flux prune rolls everything back. ISOLATION CONDITION (
 - VolSync produces a restorable snapshot of the /config PVC.
 - plex-trakt-sync is fully removed and nothing else references it.
 
+## Upstream guidance (wiki.crosswatch.app, verified 2026-08-21)
+
+Manufacturer best-practices and the provider/sync model read from the official wiki. These confirm or rewrite decisions in this roadmap — the manufacturer's word, not our preference. Operational details (deployment env, /healthz, CW_RESET_AUTH_ONCE) live in the progress note.
+
+### Direction and removal — confirms decision C
+- Default direction is "Media server -> tracker (one-way)" — exactly our (C) decision (Plex -> CrossWatch one-way). Manufacturer recommendation, not our preference.
+- "Do not switch to tracker -> media server unless you have a clear reason."
+- Removal modes: `source_deletes` is the DEFAULT and the safe mode; `mirror` removes from the Destination everything absent in the Source — dangerous.
+- "Two-way sync and mirror removals can spread bad matches and unwanted deletes."
+
+### Steady-state architecture — REWRITES the roadmap resting state
+- "History: perform a one-way seed once. Then disable History and use scrobbling."
+- The roadmap spoke throughout of continuous two-way history-sync. The manufacturer specifies a DIFFERENT steady state: history-sync is a ONE-TIME seed; History is then DISABLED on the pair, and scrobbling carries new events from there. Two-way history-sync is a migration tool, not the resting mode. Affects P3 and phase e.
+- Verify the local-tracker scrobble-sink question (see Open questions) before building on this architecture.
+
+### Dry run is a mandatory first step at P3
+- "Use Dry run before enabling writes." The safest config is "one-way, one feature, dry run on", media server source + tracker destination.
+- For the Jellyfin bulk backfill (P3), Dry run is NOT optional — it is the required first step: it validates the match plan before any write into the empty library.
+- "Only sync data into a media server when the item already exists in that library" — the manufacturer's own caveat, which confirms (does not retire) the open question of whether the Jellyfin library holds the same content as Plex.
+
+### Pair model — architectural backing for "tracker owns the truth"
+- The CrossWatch local tracker is SOURCE and DESTINATION for all four features, fully two-way. The "tracker owns the truth" decision is therefore ARCHITECTURALLY supported, not merely intent.
+- Per-pair controls: sync direction, per-feature enablement (Watchlist/Ratings/History/Progress), Dry run, source vs mirror delete mode, and separate write-gates for additions and removals.
+
+### Recovery tools (exist; lower the risk of P3/P4 writes)
+- "Rebuild sync state" and "Retry provider items" are the documented recovery tools.
+- Reset triggers include an "unexpected large remove plan" — a guardrail against a runaway delete.
+
+### Provider matrix — our data shape avoids the limits
+- JELLYFIN: History OK (movies, episodes); Ratings DISABLED; "No native watchlist; Playlist is episode-only." Credential: server connection + access token. We need only History, and our ratings and watchlist are both zero, so our data exactly avoids every Jellyfin limitation.
+- PLEX: History OK, Ratings OK, Watchlist OK, Progress OK. Credential: device PIN. "Uses Plex Discover. Progress removal can be limited."
+- SIMKL: History OK; Ratings title-level only ("No season or episode ratings"); Progress only via Progress Manager. Credential per wiki: OAuth client id + secret + access token. This CONTRADICTS the code-read in "Verified provider auth models" (built-in DEFAULT_PIN_CLIENT_ID device-code, overridable via CROSSWATCH_SIMKL_CLIENT_ID) — see Open questions. Not resolved this round.
+- TRAKT: "History writes can also add to Trakt Collections." Moot for us — the Trakt road is shut.
+- Experimental providers: Floppy, Nuvio, Kodi, Stremio, PunchPlay, Scrob.
+- Jellyfin/Emby metadata is TMDb, so Jellyfin matching NEEDS TMDB — the allow-world egress label is justified for the matching path (narrow it to custom-egress later; see Follow-up in the progress note).
+
+### Scrobbling — and an open question
+- Watcher (polling) sources: Emby, Jellyfin, Plex, Kodi, Scrob. Polling is OUTGOING, so no inbound connection to CrossWatch is needed — better for our network posture.
+- Webhook sources: Emby, Jellyfin, Plex — BUT the Plex webhook needs Plex Pass and the Emby webhook needs Emby Premiere. Watcher does NOT need Plex Pass.
+- Progress reporting (Watcher only): 25% steps.
+- The wiki scrobbling "tracker targets" list (MDBList, PunchPlay, Scrob, SIMKL, Trakt) does NOT include the CrossWatch local tracker — see Open questions.
+
 ## Open questions
 
 - [resolved 2026-08-21, human-verified] Does the Trakt API application still exist in the account? ANSWER: no — the app is disabled (proven). The ZIP is the only route; a live Trakt sync is not possible.
@@ -219,6 +261,8 @@ On failure: git revert + Flux prune rolls everything back. ISOLATION CONDITION (
 - Is the CrossWatch local tracker a browsable library in the UI, or primarily a sync dashboard?
   Answer in P1. The user asked for a tracker surface, not only a store.
 - Does the CrossWatch Jellyfin write-back preserve original watch dates? Answer in P3.
+- [open, upstream-contradiction, P5] SIMKL credential model: the wiki says SIMKL needs an OAuth client id + secret + access token, contradicting the code-read in "Verified provider auth models" (built-in DEFAULT_PIN_CLIENT_ID device-code, overridable via CROSSWATCH_SIMKL_CLIENT_ID). Resolve before P5. Not resolved this round.
+- [open, must-verify-before-building] Can the CrossWatch LOCAL tracker be a scrobble sink? The wiki scrobbling tracker-targets list (MDBList, PunchPlay, Scrob, SIMKL, Trakt) omits the CrossWatch local tracker. If it cannot be a scrobble sink, then "seed once, then use scrobbling" means scrobbling INTO AN EXTERNAL tracker, which contradicts the local tracker owning the truth. The pair-model makes the local tracker a two-way sync endpoint, but scrobble-sink capability is a separate question. VERIFY before building on the seed-then-scrobble architecture; do NOT decide either way yet.
 
 ## Relations
 
