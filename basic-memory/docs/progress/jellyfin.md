@@ -210,3 +210,61 @@ The config lives on the PVC, so it must be fixed there:
 - [observation] Residue after the refresh is ONLY the 7 `Studio` landscape logos (`/config/metadata/Studio` absent, 7 DB rows still name them). A full `Replace all metadata` refresh ALREADY ran without restoring them, so they do NOT self-heal — Jellyfin does not re-fetch studio images during a library refresh. Cosmetic (studio logos missing on item detail pages). Counter-note: the `backdrop1.jpg`/`backdrop2.jpg` strings in the DB are freed-page remnants of earlier refresh generations — the live files are 21 `backdrop.jpg` and nothing references a missing backdrop.
 - [observation] `SaveSubtitlesWithMedia: true` on the "Docu films" library writes downloaded subtitles
   onto the NFS media share (`/media` is mounted read-write). Deliberate, but worth knowing.
+
+## GPU / hardware transcode — measured capability matrix (2026-08-21)
+
+Probed live inside the running pod (`vainfo` + real `ffmpeg` encode tests), so a future session does
+not have to re-derive any of this. Post-deploy step 3 is still OPEN at the time of writing:
+`<HardwareAccelerationType>none</HardwareAccelerationType>` in `/config/config/encoding.xml` — the iGPU
+was taken from plex and given to jellyfin, `/dev/dri/renderD128` is CDI-injected (`crw-rw-rw-`), but
+Jellyfin is not using it. **Right now neither media server has hardware transcode.**
+
+### The hardware
+- [verified] `/sys/class/drm/renderD128/device/device` = `0x9bc5`, vendor `0x8086`, driver `i915` →
+  Intel **UHD Graphics 630 (Comet Lake-S GT2), Gen9.5**. iHD driver 25.4.6, VA-API 1.23 (libva 2.23.0).
+
+### Decision: QSV, not VAAPI
+- [decision] Use **Intel QuickSync (QSV)**. Both paths were live-tested and BOTH work
+  (`h264_qsv` and `h264_vaapi`, 50 frames each, exit 0) — so this is not a functionality gate, it is
+  which path Jellyfin drives better on Intel. QSV is Jellyfin's recommended Intel path.
+- [verified] **The Gen12-only oneVPL concern does not bite.** `libmfx-gen` (the VPL GPU runtime) is
+  Gen12+, but the ffmpeg debug log shows the dispatcher falling back to the bundled legacy Media SDK:
+  `Use Intel(R) oneVPL to create MFX session, API version is 2.16` →
+  `Initialize MFX session: implementation version is 1.35` (`libmfxhw64.so.1.35`), which is the
+  Gen8–Gen11 path. QSV therefore initialises correctly on Gen9.5.
+
+### What the GPU actually exposes (vainfo)
+| Codec | Decode | Encode |
+|---|---|---|
+| H.264 (Baseline/Main/High) | yes | yes (+ `EncSliceLP` low-power) |
+| HEVC Main | yes | yes |
+| HEVC Main10 (10-bit) | yes | yes |
+| VP9 Profile0 / Profile2 (8/10-bit) | yes | no |
+| VP8 | yes | yes |
+| MPEG-2, VC-1, JPEG | yes | MPEG-2 + JPEG only |
+| **AV1** | **NONE** | **NONE** |
+
+### Settings that follow from the matrix
+- [decision] Enable decode for H.264, HEVC, HEVC 10-bit, VP9 (both profiles), VP8, MPEG-2, VC-1.
+- [decision] **Do NOT enable AV1 decode.** Gen9.5 has zero AV1 profiles; ticking it makes Jellyfin
+  believe the path is hardware and silently fall back to CPU. Material for this library — AV1 content
+  will always transcode in software.
+- [decision] **Leave the low-power (LP) encoder OFF.** `VAEntrypointEncSliceLP` exists for H.264, but on
+  Gen9.5 the LP path costs noticeable quality; LP is worth enabling from Gen11+.
+- [decision] Keep the default **H.264 encode** (HEVC Main/Main10 encode is available if ever needed).
+- [verified] **OpenCL tone mapping is usable**: `/etc/OpenCL/vendors/` has `intel.icd` +
+  `intel_legacy1.icd`, `ffmpeg -init_hw_device opencl` exits 0, and the `tonemap_opencl` filter is
+  present. Use the OpenCL "Enable tone mapping" toggle — **not** the VPP variant, which is Intel's
+  Gen12+ route.
+- [observation] Only the render node is needed. Both encode tests passed using `/dev/dri/renderD128`
+  alone, so `card0` being mode `crw-------` (0600) is not a problem.
+
+### Reproducing the probe
+```sh
+P=$(kubectl -n media get pods -l app.kubernetes.io/name=jellyfin -o jsonpath='{.items[0].metadata.name}')
+kubectl -n media exec $P -c app -- sh -c 'export LIBVA_DRIVERS_PATH=/usr/lib/jellyfin-ffmpeg/lib/dri LIBVA_DRIVER_NAME=iHD
+/usr/lib/jellyfin-ffmpeg/vainfo --display drm --device /dev/dri/renderD128
+/usr/lib/jellyfin-ffmpeg/ffmpeg -init_hw_device qsv=hw -f lavfi -i testsrc=size=640x480:rate=25 \
+  -frames:v 50 -c:v h264_qsv -f null -'
+```
+Needs `dangerouslyDisableSandbox: true` like every other cluster command here.
