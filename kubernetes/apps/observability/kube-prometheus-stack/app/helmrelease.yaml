@@ -523,10 +523,10 @@ spec:
       prometheusSpec:
         # Prom++: Prometheus 2.55-based C++ fork, ~10x lower memory
         image:
-          registry: docker.io
-          repository: prompp/prompp
-          # renovate: datasource=docker depName=docker.io/prompp/prompp
-          tag: "0.8.9"
+          registry: ghcr.io
+          repository: deckhouse/prompp
+          # renovate: datasource=docker depName=ghcr.io/deckhouse/prompp
+          tag: "0.8.10"
         # Fork version is not a Prometheus version; operator needs the real base for flag generation
         version: v2.55.1
         # Image declares no USER; 64535 is the upstream-documented operator context
