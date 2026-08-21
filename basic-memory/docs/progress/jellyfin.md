@@ -206,7 +206,7 @@ The config lives on the PVC, so it must be fixed there:
   plugins 16K, root 8K) — the VolSync/Kopia backup no longer carries rebuildable artwork.
 
 ### Still open
-- [task] One `Replace all metadata` refresh to rewrite the DB rows still pointing at `/metadata/…`.
-- [task] The 12 dangling images (5 posters + 7 studio logos) need a per-item refresh.
+- [verified] The `Replace all metadata` refresh ran 2026-08-21 ~12:44 and closed the path migration: **24/24 library items have a poster** (23 poster.jpg + 1 poster.png), plus 21 backdrop2.jpg, 17 landscape.jpg, 16 logo.png — 137 image files, all under `/config/metadata` on the rebuildable claim. No metadata leaked back onto the config PVC (`ls /config` shows only config/data/log/plugins/root plus the two nested PVC mounts).
+- [task] Residue after the refresh, both cosmetic: the 7 `Studio` logos were NOT re-fetched (`/config/metadata/Studio` is absent), and ~8 stale `backdrop1.jpg` strings remain in the DB while the refresh wrote backdrops as `backdrop2.jpg`. Raw grep over `jellyfin.db`/`-wal` cannot tell a live row from a freed SQLite page, so the exact live count is unknowable that way — judge by the UI. Both self-heal on the next refresh of the affected entities.
 - [observation] `SaveSubtitlesWithMedia: true` on the "Docu films" library writes downloaded subtitles
   onto the NFS media share (`/media` is mounted read-write). Deliberate, but worth knowing.
