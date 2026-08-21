@@ -14,10 +14,9 @@ spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
       # AD-023: ingress admitted by the ingress-from-gateway-internal CCNP via this label
-      # (port-agnostic); baseline allow-cluster-egress gives in-cluster egress only, so the
-      # pod is internet-isolated until a per-app CNP is added for a proven egress need.
       labels:
         ingress.home.arpa/allow-gateway-internal: "true"
+        egress.home.arpa/allow-world: "true"
       securityContext:
         runAsNonRoot: true
         runAsUser: 10001
