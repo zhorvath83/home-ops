@@ -103,14 +103,14 @@ spec:
         existingClaim: jellyfin
         globalMounts:
           - path: /config
-      # Rebuildable, deliberately NOT backed up: library artwork/metadata (point the
-      # Jellyfin metadata path at /metadata in the UI) and the Introskipper fingerprint DB.
+      # Rebuildable, deliberately NOT backed up: library artwork/metadata and the Introskipper
+      # fingerprint DB. Both mount where Jellyfin already looks, so no UI path setting is needed.
       metadata:
         existingClaim: jellyfin-metadata
         advancedMounts:
           jellyfin:
             app:
-              - path: /metadata
+              - path: /config/metadata
                 subPath: metadata
               - path: /config/data/introskipper
                 subPath: introskipper
