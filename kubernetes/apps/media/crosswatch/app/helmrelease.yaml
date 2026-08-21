@@ -80,6 +80,11 @@ spec:
       app:
         # LAN-only: envoy-internal, never envoy-external. The Trakt ZIP upload + P1 measurement
         # come from the LAN; the app stays off the public internet while the import is unverified.
+        annotations:
+          gethomepage.dev/enabled: "true"
+          gethomepage.dev/name: CrossWatch
+          gethomepage.dev/group: Media
+          gethomepage.dev/icon: crosswatch.svg
         hostnames:
           - "crosswatch.${PUBLIC_DOMAIN}"
         parentRefs:
