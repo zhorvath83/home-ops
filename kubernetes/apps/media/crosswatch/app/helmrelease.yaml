@@ -76,6 +76,20 @@ spec:
         ports:
           http:
             port: *port
+    route:
+      app:
+        # LAN-only: envoy-internal, never envoy-external. The Trakt ZIP upload + P1 measurement
+        # come from the LAN; the app stays off the public internet while the import is unverified.
+        hostnames:
+          - "crosswatch.${PUBLIC_DOMAIN}"
+        parentRefs:
+          - name: envoy-internal
+            namespace: networking
+            sectionName: https
+        rules:
+          - backendRefs:
+              - identifier: app
+                port: *port
     persistence:
       config:
         type: persistentVolumeClaim
