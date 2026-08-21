@@ -10,7 +10,7 @@ permalink: home-ops/docs/progress/media-library-integrity-audit
 
 - [type] progress-note
 - [topic] Repeatable cross-check methodology for Sonarr/Radarr DB vs. disk vs. Plex: stale DB rows, untracked files on disk, and on-disk duplicates
-- [status] runbook — Phase 0-6 defined; a full pass has NOT been run end-to-end yet. The baseline numbers below were measured 2026-08-21.
+- [status] runbook — Phase 0-6 defined; first full end-to-end pass run 2026-08-21 (read-only, see "Pass 1" below). Baseline numbers in the table further down are the 2026-08-21 pre-pass figures and are already superseded in part.
 - [area] k8s-workloads
 - [created] 2026-08-21
 - [relates_to] [[k8s-workloads]]
@@ -343,3 +343,25 @@ target directories" and "expected 47 files", aborting on any mismatch.
 
 - part_of [[k8s-workloads]]
 - relates_to [[jellyfin]]
+
+## Pass 1 — full end-to-end run, 2026-08-21 09:2x (read-only)
+
+First complete Phase 0-6 pass. Nothing was mutated: no deletes, no rescans, no API writes.
+Method exactly as specified above (all disk checks in-pod over NFS, keys derived in-pod, per-file
+`stat`, `comm` diffs, summing in local python). Jellyfin is **not deployed yet** on this cluster, so
+the Jellyfin third-source cross-check (open finding 7) could not run.
+
+
+### Two methodology corrections for the next pass
+
+1. **Detect a missing series folder from a directory listing, not from the file manifest.** Deriving
+   presence from file paths silently reports every file-less tombstone as "folder missing" (81
+   instead of 2 here). Take `find <roots> -type d` and test the record's `path` against that set.
+2. **busybox `find` in the Sonarr pod has no `-newermt`** (in addition to the documented missing
+   `-printf`). Use `-mmin -N`, or read directory mtimes with `stat -c %y`. `find ... -exec stat -c
+   '%s|%n' {} +` is the fast way to build the manifest and it works.
+
+
+A jq note for the next pass: `.id + " " + .status` on a Sonarr `/command` response throws
+(`number and string cannot be added`) because `.id` is numeric — the POST still succeeded and the
+command ran. Use string interpolation instead of `+`.
