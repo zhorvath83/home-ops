@@ -10,7 +10,7 @@ permalink: home-ops/docs/progress/jellyfin
 
 - [type] progress-note
 - [topic] Jellyfin 10.11.11 media server alongside plex in the media namespace, with Introskipper support
-- [status] DEPLOYED - CrashLoopBackOff fixed via fsGroupChangePolicy=Always; pod 1/1 Running 0 restart, HR Ready=True; commit 88cfbb544 on main (2026-08-21)
+- [status] DEPLOYED - metadata PVC now mounts at the app-default /config/metadata (commit 49c412119); pod 1/1 Running 0 restart, HR Ready=True. Earlier CrashLoopBackOff fixed via fsGroupChangePolicy=Always (commit 88cfbb544). One metadata refresh still owed - see Session 2026-08-21 (2). (2026-08-21)
 - [branch] feat/jellyfin
 - [area] k8s-workloads, networking, volsync-backup
 - [created] 2026-08-20
@@ -145,3 +145,68 @@ debt: recursive chown per restart; move to a dedicated data PVC if startup slows
 Verified from the control lane, not from the worker self-report: pod 1/1 Running 0 restart,
 HR Ready=True, diff is 1 file / 5 lines, origin/main = 88cfbb544, unrelated in-progress
 working-tree files untouched.
+
+## Session 2026-08-21 (2) — metadata path moved to the app default (commit 49c412119)
+
+### What was wrong
+Post-deploy step 2 (`Set the metadata path to /metadata`) was never done, so `system.xml` had an
+empty `<MetadataPath />` and Jellyfin used its default `{JELLYFIN_DATA_DIR}/metadata` =
+`/config/metadata` — i.e. **62 MB of rebuildable artwork on the 5 Gi VolSync-backed config PVC**,
+while the dedicated 10 Gi `jellyfin-metadata` PVC at `/metadata` was empty (0 B). Cache was
+correct all along: `/cache` emptyDir, `CachePath=/cache`, transcodes underneath it.
+
+### Key discovery — image paths in jellyfin.db are ABSOLUTE
+- [observation] `jellyfin.db` stores image paths as absolute strings (`/config/metadata/library/<hash>/poster.jpg`).
+  Changing the metadata path **neither moves files nor rewrites the DB**. Moving the files by hand would
+  therefore strand every poster. The operation that rewrites both disk and DB is a library
+  **Refresh metadata → Replace all metadata/images**; it also deletes the old files itself
+  (`ProviderManager: Deleting previous image …`).
+- [observation] Grepping the raw `.db`/`-wal` for path counts is NOT a reliable liveness measure —
+  freed SQLite pages still hold strings from earlier eras. Use it to prove a path *exists*, never to
+  count live rows.
+- [observation] A library-wide `Replace all` refresh moved 24 items but **skipped 5 `.png` posters and
+  7 `Studio` logos** (their DB rows kept the pre-change timestamp). Their names are not recoverable from
+  the DB blob and `sqlite3` is absent from the image. On the human's explicit instruction the whole old
+  `/config/metadata` was deleted, so those **12 images are dangling until the affected items get an
+  individual refresh**.
+
+### The design change
+`kubernetes/apps/media/jellyfin/app/helmrelease.yaml`: the metadata PVC mount moved
+`/metadata` → `/config/metadata` (`subPath: metadata` unchanged; introskipper mount and
+securityContext untouched). Jellyfin's metadata path is **not settable via env var**, so mounting the
+claim where the empty-default already points is what makes the setting declarative: a fresh or restored
+config PVC needs no UI step. **Post-deploy manual step 2 above is now obsolete.**
+
+### HARD ORDERING CONSTRAINT — learned by breaking it
+- [observation] `system.xml` `MetadataPath` MUST be cleared **before** the mount moves. With
+  `readOnlyRootFilesystem: true`, a stale `MetadataPath=/metadata` makes
+  `ServerConfigurationManager.UpdateMetadataPath()` call `Directory.CreateDirectory("/metadata")` on the
+  read-only root → `Unhandled exception. System.IO.IOException: Read-only file system : '/metadata'`,
+  **exit 139, CrashLoopBackOff before any HTTP listener starts**. This fired live: the manifest was
+  pushed before the UI change landed.
+- The safe sequence is: clear the path in the UI (leave the field EMPTY = default), do **not** restart,
+  then push — the Flux-triggered restart is the first one, and it gets both halves consistently.
+
+### Recovery procedure (works when Jellyfin crashloops and the UI is unreachable)
+The config lives on the PVC, so it must be fixed there:
+1. Short-lived pod in `media`: the jellyfin image itself (already on the node, no pull), mounting ONLY
+   the `jellyfin` config PVC, `nodeName: k8s-cp0`. RWO co-mount on the same node works even while the
+   crashlooping pod holds the claim; the `media` namespace has no PSA enforcement label.
+2. `sed -i "s|<MetadataPath>/metadata</MetadataPath>|<MetadataPath />|" /config/config/system.xml`
+   (the empty-element form is exactly what Jellyfin writes for "default"). The crashing pod dies before
+   config write-back, so there is no write conflict.
+3. Delete the pod, `kubectl -n media rollout restart deploy/jellyfin` to drop the backoff.
+
+### Live verification (post-recovery)
+- Pod `jellyfin-7bd9495b4c-2rbxt` 1/1 Running, **0 restart**, `/health` → `Healthy`;
+  HR `Ready=True`, "Helm upgrade succeeded … jellyfin.v5".
+- Mounts: `/cache`, `/config`, `/config/metadata`, `/config/data/introskipper` — **no `/metadata`**.
+- `/config/metadata` = 60 MB (library 49M, People 12M) on the rebuildable claim.
+- Config PVC's own content down from ~71 MB to **5.3 MB** (jellyfin.db 1.3M, log 128K, config 32K,
+  plugins 16K, root 8K) — the VolSync/Kopia backup no longer carries rebuildable artwork.
+
+### Still open
+- [task] One `Replace all metadata` refresh to rewrite the DB rows still pointing at `/metadata/…`.
+- [task] The 12 dangling images (5 posters + 7 studio logos) need a per-item refresh.
+- [observation] `SaveSubtitlesWithMedia: true` on the "Docu films" library writes downloaded subtitles
+  onto the NFS media share (`/media` is mounted read-write). Deliberate, but worth knowing.
