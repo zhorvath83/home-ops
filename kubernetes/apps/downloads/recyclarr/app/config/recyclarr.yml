@@ -1,7 +1,12 @@
 ---
 # yaml-language-server: $schema=https://schemas.recyclarr.dev/v8/config-schema.json
 # recyclarr sync for Sonarr + Radarr — priority order HUN dub > quality > size.
-# (see BM docs/progress/arr-config-sync for the full planning framework)
+#
+# THIS FILE is authoritative for what runs: every score, cap and quality below is applied verbatim
+# to the live profiles by the @daily sync. BM `docs/progress/arr-config-sync` is authoritative for
+# WHY — the engine behaviour these numbers are derived from, the library measurements they were
+# calibrated on, and the decisions that were considered and rejected. Change a number here and the
+# note goes stale; change the note and nothing happens. Keep both moving together.
 #
 # ---- SHARED SCORING MODEL — read this before touching any score in this file ----
 #
@@ -69,6 +74,20 @@
 # Known gap: there is no rung below 720p, so a 480p release scores the same as a 720p one. Harmless
 # while SD sits outside both profiles (it is rejected at the quality gate regardless), but admitting
 # SD requires a negative 480p rung first, or SD would tie with 720p and never upgrade.
+#
+# ---- WHY THE SIZE CAPS DIFFER BETWEEN THE TWO APPS ----
+#
+# The scoring ladder above is identical on both apps, deliberately: same rungs, same numbers, same
+# cutoff. The size caps are NOT, and that part is intentional too.
+#
+# MB/min normalises away duration, and the measured bitrates really are alike — WEBDL-1080p runs a
+# 56 MB/min median on Sonarr against 51 on Radarr, WEBDL-2160p 116 against 121. So the caps do not
+# differ because the content differs. They differ because the STORAGE COST PER TITLE does: a
+# ten-episode season at 220 MB/min is ~97 GB, a two-hour film at 300 MB/min is ~35 GB. A series is
+# worth roughly 10-20 films of disk, so Sonarr carries the tighter ceiling on purpose.
+#
+# Keep that asymmetry when tuning: raise a Radarr cap on its own evidence, and hold the Sonarr one
+# lower unless the per-season total is what you actually want to grow.
 #
 # Recyclarr note: the flat custom_formats entries below deliberately override the guide/CF-group
 # scores — recyclarr resolves a conflict with "first value wins" and processes custom_formats
