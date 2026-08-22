@@ -14,7 +14,7 @@ tags:
 # arr-config-sync — Recyclarr-owned *arr quality config
 
 - [type] progress-note
-- [status] LIVE, with one change in review on branch `fix/sonarr-hungarian-dub-scoring` (pushed, no PR, not merged, not deployed)
+- [status] LIVE — the HUN-first scoring model is merged and reconciled; it takes effect on the next @daily recyclarr sync
 - [area] k8s-workloads, external-secrets, networking
 - [scope] kubernetes/apps/downloads/recyclarr/
 
