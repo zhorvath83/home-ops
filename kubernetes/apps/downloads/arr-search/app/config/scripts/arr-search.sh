@@ -52,8 +52,8 @@ post_command() {
 }
 
 post_command "${SONARR_BASE}" "${SONARR_API_KEY}" "MissingEpisodeSearch"      "sonarr missing"
-# post_command "${SONARR_BASE}" "${SONARR_API_KEY}" "CutoffUnmetEpisodeSearch"   "sonarr cutoff-unmet"
+post_command "${SONARR_BASE}" "${SONARR_API_KEY}" "CutoffUnmetEpisodeSearch"   "sonarr cutoff-unmet"
 post_command "${RADARR_BASE}" "${RADARR_API_KEY}" "MissingMoviesSearch"        "radarr missing"
-# post_command "${RADARR_BASE}" "${RADARR_API_KEY}" "CutoffUnmetMoviesSearch"     "radarr cutoff-unmet"
+post_command "${RADARR_BASE}" "${RADARR_API_KEY}" "CutoffUnmetMoviesSearch"     "radarr cutoff-unmet"
 
 echo "OK: arr-search complete (4 commands queued)"
