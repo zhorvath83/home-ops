@@ -61,8 +61,11 @@ sonarr:
       series: plex-imdb
     quality_definition:
       type: series
-      # preferred = balanced ~60% of max (<= max): satisfies recyclarr validation (preferred must
-      # not exceed max) and nudges toward balanced-size releases within the bloat cap; tunable.
+      # Size is the LOWEST priority lever, so it is enforced as a cap per quality, never by
+      # excluding a source. Every quality the profile allows gets an explicit max, because the
+      # `series` defaults leave Bluray/HDTV/Remux at max=unlimited. preferred = ~60% of max
+      # (recyclarr requires preferred <= max, and every max here clears the guide's min).
+      # MB/min; for a 45-minute episode multiply by 45 to get MB.
       qualities:
         - name: WEBDL-2160p
           max: 200
@@ -82,24 +85,63 @@ sonarr:
         - name: WEBRip-720p
           max: 50
           preferred: 30
+        # Bluray runs at a higher bitrate than WEB by design, so it gets more headroom than the
+        # WEB rung at the same resolution — but a hard ceiling all the same.
+        - name: Bluray-2160p
+          max: 300
+          preferred: 180
+        - name: Bluray-1080p
+          max: 150
+          preferred: 90
+        - name: Bluray-720p
+          max: 80
+          preferred: 48
+        # Remux caps are the point of allowing Remux at all: admit a normal one, reject the
+        # bloated tail. Calibrated on the library: existing 4K remuxes run 411 MB/min median,
+        # 499 max, so 400 would have rejected 16 of 25. 550 is ~25 GB for a 45-minute episode.
+        - name: Bluray-2160p Remux
+          max: 550
+          preferred: 330
+        - name: Bluray-1080p Remux
+          max: 250
+          preferred: 150
+        # Broadcast captures carry Hungarian dubs; cap them at the WEB rung of the same resolution.
+        - name: HDTV-1080p
+          max: 100
+          preferred: 60
+        - name: HDTV-720p
+          max: 50
+          preferred: 30
     quality_profiles:
       - trash_id: c4cadd6b35b95f62c3d47a408e53e2f7 # WEB-2160p (Combined)
         reset_unmatched_scores:
           enabled: true
         upgrade:
           allowed: true
-          until_quality: WEB
+          until_quality: HD-UHD
           until_score: 26000 # bare HUN 2160p (16000 + 10000) — where the CF cutoff latches
-        # One WEB group instead of the guide's three tiers — see the shared scoring model header.
+        # One group instead of the guide's tiers — see the shared scoring model header. The guide
+        # profile is WEB-only ("covers: WEBDL 1080p, 2160p"), which silently gated out Bluray,
+        # HDTV and Remux — and those are exactly where the Hungarian dubs live: 93% of the files
+        # at an excluded quality were Hungarian, against 64% inside. A quality left out of the
+        # profile also indexes as 0, so it is permanently cutoff-unmet and any allowed release
+        # outranks it on quality before scoring runs. Size is handled by the caps above instead.
         qualities:
-          - name: WEB
+          - name: HD-UHD
             qualities:
+              - Bluray-2160p Remux
+              - Bluray-2160p
               - WEBRip-2160p
               - WEBDL-2160p
+              - Bluray-1080p Remux
+              - Bluray-1080p
               - WEBRip-1080p
               - WEBDL-1080p
+              - HDTV-1080p
+              - Bluray-720p
               - WEBRip-720p
               - WEBDL-720p
+              - HDTV-720p
     custom_format_groups:
       # [Optional] Language Profiles is auto-synced for this profile; its only default member
       # (Language: Not Original, -10000) cancels the HUN boost to -100 and rejects every
@@ -161,11 +203,13 @@ radarr:
         standard: plex-imdb
     quality_definition:
       type: sqp-uhd
-      # sqp-uhd (not sqp-streaming): no 720p entry keeps 720p uncapped as the fallback
-      # (sqp-streaming would cap 720p at 85.7 MB/min, rejecting large HUN 720p vs HUN > size).
-      # Cap allowed 2160p/1080p WEB+Bluray qualities to reject gigantic encodes.
-      # preferred = balanced ~60% of max (<= max): satisfies recyclarr validation and favors
-      # balanced size within the bloat cap; tunable. No min floors (Upscaled CF covers fakes).
+      # sqp-uhd (not sqp-streaming): sqp-streaming would cap 720p at 85.7 MB/min and reject large
+      # HUN 720p releases, against HUN > size. Size is the lowest priority lever, so it is enforced
+      # as a cap per quality, never by excluding a source; sqp-uhd leaves Remux and HDTV-2160p at
+      # max=unlimited, so every allowed quality gets an explicit one. preferred = ~60% of max
+      # (recyclarr requires preferred <= max, and every max here clears the guide's min).
+      # MB/min; for a 120-minute film multiply by 120 to get MB. No min floors (Upscaled CF
+      # covers fakes).
       qualities:
         - name: WEBDL-2160p
           max: 300
@@ -182,6 +226,28 @@ radarr:
         - name: WEBRip-1080p
           max: 150
           preferred: 90
+        - name: Bluray-1080p
+          max: 200
+          preferred: 120
+        - name: Bluray-720p
+          max: 100
+          preferred: 60
+        # Remux caps are the point of allowing Remux at all: admit a normal one, reject the
+        # bloated tail. Calibrated on the same 4K remux population as Sonarr (411 median,
+        # 499 max MB/min). 550 is ~66 GB for a 2-hour film, 300 is ~36 GB.
+        - name: Remux-2160p
+          max: 550
+          preferred: 330
+        - name: Remux-1080p
+          max: 300
+          preferred: 180
+        # Broadcast captures carry Hungarian dubs; cap them at the WEB rung of the same resolution.
+        - name: HDTV-1080p
+          max: 150
+          preferred: 90
+        - name: HDTV-720p
+          max: 100
+          preferred: 60
     quality_profiles:
       - trash_id: 5128baeb2b081b72126bc8482b2a86a0 # [SQP] SQP-1 (2160p)
         reset_unmatched_scores:
@@ -192,22 +258,29 @@ radarr:
         min_format_score: 0
         upgrade:
           allowed: true
-          until_quality: SQP
+          until_quality: HD-UHD
           until_score: 26000 # bare HUN 2160p (16000 + 10000) — where the CF cutoff latches
-        # One SQP group instead of the guide's four tiers — see the shared scoring model header.
-        # Same member set the guide profile already allowed; Remux stays out, as SQP intends.
+        # One group instead of the guide's four tiers — see the shared scoring model header.
+        # Mirrors the Sonarr member set: SQP-1 already allowed WEB and Bluray, and HDTV + Remux
+        # are added for the same reason as on Sonarr — every Radarr file at an excluded quality
+        # is Hungarian, and an excluded quality indexes as 0, so it is permanently cutoff-unmet
+        # and any allowed release outranks it on quality before scoring runs.
         qualities:
-          - name: SQP
+          - name: HD-UHD
             qualities:
+              - Remux-2160p
               - Bluray-2160p
               - WEBDL-2160p
               - WEBRip-2160p
+              - Remux-1080p
               - Bluray-1080p
               - WEBDL-1080p
               - WEBRip-1080p
+              - HDTV-1080p
               - Bluray-720p
               - WEBDL-720p
               - WEBRip-720p
+              - HDTV-720p
     custom_format_groups:
       add:
         - trash_id: ff204bbcecdd487d1cefcefdbf0c278d # [Optional] Golden Rule UHD
