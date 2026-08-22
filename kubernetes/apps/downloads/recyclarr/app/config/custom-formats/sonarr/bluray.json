@@ -1,0 +1,15 @@
+{
+  "trash_id": "home-ops-bluray",
+  "name": "Bluray",
+  "specifications": [
+    {
+      "name": "Bluray",
+      "implementation": "SourceSpecification",
+      "negate": false,
+      "required": true,
+      "fields": {
+        "value": 6
+      }
+    }
+  ]
+}
