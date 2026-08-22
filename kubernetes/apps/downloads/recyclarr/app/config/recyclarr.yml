@@ -89,36 +89,9 @@
 # Keep that asymmetry when tuning: raise a Radarr cap on its own evidence, and hold the Sonarr one
 # lower unless the per-season total is what you actually want to grow.
 #
-# ---- THE HUN-ONLY PROFILE VARIANT ----
-#
-# Each app carries a second profile, `HUN-only`, declared as a variant of the same guide profile
-# (same trash_id, explicit name) and sharing the quality group, size caps and CF ladder through
-# YAML anchors. The two profiles differ in exactly one field: min_format_score.
-#
-# The gate value falls out of the ladder above. The best a non-HUN release can score is 23982
-# (2160p + M); the worst a HUN release can score is 25000 (30000 minus the remux penalty, the
-# largest single penalty one release can take — the bluray CF does not stack with it on either
-# app). 24000 sits in that window, so the profile grabs every HUN release and rejects every
-# non-HUN one, while junk vetoes at -60000 still fail the gate.
-#
-# The window is 1018 wide and both edges move with the ladder — re-derive it whenever a score
-# changes. Radarr gets a second, score-independent gate on top: the profile's own language field,
-# set to Hungarian by fix-radarr-language.sh (recyclarr cannot write it). Sonarr's quality profile
-# has no language field, so there the score gate stands alone.
-#
-# Assignment stays manual by design: nothing in either app binds a root folder to a profile, so
-# titles under docuseries/docufilms/kids_movies/kids_shows pick this profile at request time
-# (Seerr advanced options) or through a Mass Editor pass.
-#
-# Recyclarr notes:
-#  - The flat custom_formats entries below deliberately override the guide/CF-group scores —
-#    recyclarr resolves a conflict with "first value wins" and processes custom_formats before CF
-#    groups. Each override shows up in the sync log as an INFO "conflicting scores" line.
-#  - Profiles are referenced by `name`, never by trash_id: with two variants sharing one trash_id
-#    recyclarr cannot tell them apart and rejects a trash_id reference outright.
-#  - Those names must match the live profiles exactly. RECYCLARR_DATA_DIR is an emptyDir, so the
-#    sync state is gone on every run and recyclarr re-adopts each profile by name; a typo creates
-#    a new profile and orphans the old one instead of renaming it.
+# Recyclarr note: the flat custom_formats entries below deliberately override the guide/CF-group
+# scores — recyclarr resolves a conflict with "first value wins" and processes custom_formats
+# before CF groups. Each override shows up in the sync log as an INFO "conflicting scores" line.
 sonarr:
   series:
     base_url: http://sonarr.downloads.svc.cluster.local:8989
@@ -190,11 +163,10 @@ sonarr:
           max: 50
           preferred: 30
     quality_profiles:
-      - trash_id: c4cadd6b35b95f62c3d47a408e53e2f7
-        name: WEB-2160p (Combined)
+      - trash_id: c4cadd6b35b95f62c3d47a408e53e2f7 # WEB-2160p (Combined)
         reset_unmatched_scores:
           enabled: true
-        upgrade: &sonarrUpgrade
+        upgrade:
           allowed: true
           until_quality: HD-UHD
           until_score: 50000 # bare HUN 2160p, plain WEB (30000 + 20000) — the CF cutoff
@@ -204,7 +176,7 @@ sonarr:
         # at an excluded quality were Hungarian, against 64% inside. A quality left out of the
         # profile also indexes as 0, so it is permanently cutoff-unmet and any allowed release
         # outranks it on quality before scoring runs. Size is handled by the caps above instead.
-        qualities: &sonarrQualities
+        qualities:
           - name: HD-UHD
             qualities:
               - Bluray-2160p Remux
@@ -220,22 +192,12 @@ sonarr:
               - WEBRip-720p
               - WEBDL-720p
               - HDTV-720p
-      # Same profile, same ladder, plus the 24000 gate — see the HUN-only section in the header.
-      - trash_id: c4cadd6b35b95f62c3d47a408e53e2f7
-        name: HUN-only
-        min_format_score: 24000
-        reset_unmatched_scores:
-          enabled: true
-        upgrade: *sonarrUpgrade
-        qualities: *sonarrQualities
     custom_format_groups:
       # [Optional] Language Profiles is auto-synced for this profile; its only default member
       # (Language: Not Original, -10000) cancels the HUN boost to -100 and rejects every
       # Hungarian dub. home-ops-not-hungarian-or-original already covers third-language dubs.
       skip:
         - 74aff4168620ed49dcc67e92b2c2a5b4 # [Optional] Language Profiles
-      # No assign_scores_to: a default group applies to every variant sharing the trash_id, so
-      # both profiles get the same group members.
       add:
         - trash_id: e3f37512790f00d0e89e54fe5e790d1c # [Optional] Golden Rule UHD
         - trash_id: 85fae4a2294965b75710ef2989c850eb # [Streaming Services] HD/UHD boost
@@ -244,39 +206,34 @@ sonarr:
     custom_formats:
       - trash_ids:
           - home-ops-hungarian-language
-        score: 30000
         assign_scores_to:
-          - name: WEB-2160p (Combined)
-          - name: HUN-only
+          - trash_id: c4cadd6b35b95f62c3d47a408e53e2f7
+            score: 30000
       - trash_ids:
           - 290078c8b266272a5cc8e251b5e2eb0b # 1080p
-        score: 10000
         assign_scores_to:
-          - name: WEB-2160p (Combined)
-          - name: HUN-only
+          - trash_id: c4cadd6b35b95f62c3d47a408e53e2f7
+            score: 10000
       - trash_ids:
           - 1bef6c151fa35093015b0bfef18279e5 # 2160p
-        score: 20000
         assign_scores_to:
-          - name: WEB-2160p (Combined)
-          - name: HUN-only
+          - trash_id: c4cadd6b35b95f62c3d47a408e53e2f7
+            score: 20000
       # Demote Bluray below a plain WEB release of the same resolution. SourceSpecification
       # value 6 (Bluray) does not match BlurayRaw, so a remux keeps only its own penalty below.
       - trash_ids:
           - home-ops-bluray
-        score: -4000
         assign_scores_to:
-          - name: WEB-2160p (Combined)
-          - name: HUN-only
+          - trash_id: c4cadd6b35b95f62c3d47a408e53e2f7
+            score: -4000
       # Demote remux below a plain release of the same resolution. Local CF, since the guide has
       # no "is this a remux" format: Sonarr's SourceSpecification value 7 (BlurayRaw) matches
       # Bluray-1080p Remux and Bluray-2160p Remux and nothing else.
       - trash_ids:
           - home-ops-remux
-        score: -5000
         assign_scores_to:
-          - name: WEB-2160p (Combined)
-          - name: HUN-only
+          - trash_id: c4cadd6b35b95f62c3d47a408e53e2f7
+            score: -5000
       # Junk vetoes, overridden from the guide's -10000 to clear the 49982 max positive total.
       - trash_ids:
           - 9c11cd3f07101cdba90a2d81cf0e56b4 # LQ
@@ -287,18 +244,16 @@ sonarr:
           - fbcb31d8dabd2a319072b84fc0b7249c # Extras
           - 23297a736ca77c0fc8e70f8edd7ee56c # Upscaled
           - 9b64dff695c2115facf1b6ea59c9bd07 # x265 (no HDR/DV)
-        score: -60000
         assign_scores_to:
-          - name: WEB-2160p (Combined)
-          - name: HUN-only
+          - trash_id: c4cadd6b35b95f62c3d47a408e53e2f7
+            score: -60000
       # Block third-language dubs: only HUN or Original wanted. Sonarr has no profile language
       # gate, so this CF is the sole mechanism that rejects non-HUN/non-Original dubs.
       - trash_ids:
           - home-ops-not-hungarian-or-original
-        score: -60000
         assign_scores_to:
-          - name: WEB-2160p (Combined)
-          - name: HUN-only
+          - trash_id: c4cadd6b35b95f62c3d47a408e53e2f7
+            score: -60000
 radarr:
   movies:
     base_url: http://radarr.downloads.svc.cluster.local:7878
@@ -368,15 +323,14 @@ radarr:
           max: 100
           preferred: 60
     quality_profiles:
-      - trash_id: 5128baeb2b081b72126bc8482b2a86a0
-        name: "[SQP] SQP-1 (2160p)"
+      - trash_id: 5128baeb2b081b72126bc8482b2a86a0 # [SQP] SQP-1 (2160p)
+        reset_unmatched_scores:
+          enabled: true
         # Profile default minFormatScore=1000 would reject every non-HUN release (no tier CF
         # groups are added); lower to 0 so an untagged non-HUN release stays available as
         # fallback. Junk is rejected by the -35000 vetoes below, not by this floor.
         min_format_score: 0
-        reset_unmatched_scores:
-          enabled: true
-        upgrade: &radarrUpgrade
+        upgrade:
           allowed: true
           until_quality: HD-UHD
           until_score: 50000 # bare HUN 2160p, plain WEB (30000 + 20000) — the CF cutoff
@@ -385,7 +339,7 @@ radarr:
         # are added for the same reason as on Sonarr — every Radarr file at an excluded quality
         # is Hungarian, and an excluded quality indexes as 0, so it is permanently cutoff-unmet
         # and any allowed release outranks it on quality before scoring runs.
-        qualities: &radarrQualities
+        qualities:
           - name: HD-UHD
             qualities:
               - Remux-2160p
@@ -401,76 +355,58 @@ radarr:
               - WEBDL-720p
               - WEBRip-720p
               - HDTV-720p
-      # Same profile, same ladder, plus the 24000 gate and the Hungarian language gate that
-      # fix-radarr-language.sh sets — see the HUN-only section in the header.
-      - trash_id: 5128baeb2b081b72126bc8482b2a86a0
-        name: HUN-only
-        min_format_score: 24000
-        reset_unmatched_scores:
-          enabled: true
-        upgrade: *radarrUpgrade
-        qualities: *radarrQualities
     custom_format_groups:
       add:
         - trash_id: ff204bbcecdd487d1cefcefdbf0c278d # [Optional] Golden Rule UHD
           assign_scores_to:
-            - name: "[SQP] SQP-1 (2160p)"
-            - name: HUN-only
-        # No assign_scores_to: a default group applies to every variant sharing the trash_id.
+            - trash_id: 5128baeb2b081b72126bc8482b2a86a0
         - trash_id: 15b1cf0b6f1a1493856a4355907affee # [Unwanted] Unwanted Formats SQP
     # Scores follow the shared ladder in the file header — do not change one in isolation.
     custom_formats:
       - trash_ids:
           - home-ops-hungarian-language
-        score: 30000
         assign_scores_to:
-          - name: "[SQP] SQP-1 (2160p)"
-          - name: HUN-only
+          - trash_id: 5128baeb2b081b72126bc8482b2a86a0
+            score: 30000
       - trash_ids:
           - 820b09bb9acbfde9c35c71e0e565dad8 # 1080p
-        score: 10000
         assign_scores_to:
-          - name: "[SQP] SQP-1 (2160p)"
-          - name: HUN-only
+          - trash_id: 5128baeb2b081b72126bc8482b2a86a0
+            score: 10000
       - trash_ids:
           - fb392fb0d61a010ae38e49ceaa24a1ef # 2160p
-        score: 20000
         assign_scores_to:
-          - name: "[SQP] SQP-1 (2160p)"
-          - name: HUN-only
+          - trash_id: 5128baeb2b081b72126bc8482b2a86a0
+            score: 20000
       # The guide's own 720p CF scores 5, which would make the 720p rung differ between the two
       # apps for no reason. Pin it to the shared 0 baseline.
       - trash_ids:
           - b2be17d608fc88818940cd1833b0b24c # 720p
-        score: 0
         assign_scores_to:
-          - name: "[SQP] SQP-1 (2160p)"
-          - name: HUN-only
+          - trash_id: 5128baeb2b081b72126bc8482b2a86a0
+            score: 0
       # Demote Bluray below a plain WEB release of the same resolution. Radarr's Bluray source
       # covers remux too, so the CF also negates the REMUX modifier — otherwise a remux would
       # take both penalties here and on Sonarr only one, and the two apps would drift apart.
       - trash_ids:
           - home-ops-bluray
-        score: -4000
         assign_scores_to:
-          - name: "[SQP] SQP-1 (2160p)"
-          - name: HUN-only
+          - trash_id: 5128baeb2b081b72126bc8482b2a86a0
+            score: -4000
       # Demote remux below a plain release of the same resolution. Local CF, since the guide has
       # no "is this a remux" format: Radarr's QualityModifierSpecification value 5 (REMUX).
       - trash_ids:
           - home-ops-remux
-        score: -5000
         assign_scores_to:
-          - name: "[SQP] SQP-1 (2160p)"
-          - name: HUN-only
+          - trash_id: 5128baeb2b081b72126bc8482b2a86a0
+            score: -5000
       # Block third-language dubs: only HUN or Original wanted. Replaces the hard "Original"
       # language gate (reconciled to "Any" by fix-radarr-language.sh) so non-HUN dubs are vetoed.
       - trash_ids:
           - home-ops-not-hungarian-or-original
-        score: -60000
         assign_scores_to:
-          - name: "[SQP] SQP-1 (2160p)"
-          - name: HUN-only
+          - trash_id: 5128baeb2b081b72126bc8482b2a86a0
+            score: -60000
       # Every junk veto SQP-1 carries, at one magnitude that clears the 49982 max positive total.
       # LQ/BR-DISK/AV1/3D are not members of the SQP Unwanted group and were already listed here;
       # the rest come from that group at the guide's -10000 and are overridden to match.
@@ -495,7 +431,6 @@ radarr:
           - 496f355514737f7d83bf7aa4d24f8169 # TrueHD ATMOS
           - bfd8eb01832d646a0a89c4deb46f8564 # Upscaled
           - 839bea857ed2c0a8e084f3cbdbd65ecb # x265 (no HDR/DV)
-        score: -60000
         assign_scores_to:
-          - name: "[SQP] SQP-1 (2160p)"
-          - name: HUN-only
+          - trash_id: 5128baeb2b081b72126bc8482b2a86a0
+            score: -60000
