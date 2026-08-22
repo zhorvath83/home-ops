@@ -215,6 +215,17 @@ A `recyclarr sync` rewrites live *arr state (profiles, CFs, scores) and is not r
 
 ## Open
 
+- [fact] Cutoff-unmet is purely quality-based and the custom format score plays no part.
+  `EpisodeCutoffService` builds the list from `profile.Items.Take(cutoffIndex.Index)`, so with every
+  allowed quality collapsed into one group AT the cutoff, nothing sits below it — Sonarr reports 3
+  episodes, Radarr 0. `until_score`/`cutoffFormatScore` is consulted only by
+  `UpgradableSpecification` when weighing a specific candidate against an existing file. Enabling
+  the commented-out `CutoffUnmetEpisodeSearch` in `arr-search` would therefore search 3 episodes.
+- [followup] Consequence: nothing bulk-hunts Hungarian versions for the 772 non-Hungarian episode
+  files (Radarr: 10 of 215). RSS upgrades them as new Hungarian releases are posted — same quality
+  group, so the CF score decides and HUN wins — but converting the existing library needs
+  per-series automatic searches. There is no command for "search everything below the format cutoff".
+
 - [followup] Library churn is now live on both apps: a HUN 720p outranks a non-HUN 2160p, so
   existing non-HUN files get replaced once a Hungarian release appears. Intended.
 - [followup] 10 existing files carry a -35000 veto CF (9 of them Hungarian) — 3 Radarr Remux-1080p
@@ -228,8 +239,11 @@ A `recyclarr sync` rewrites live *arr state (profiles, CFs, scores) and is not r
 - [followup] SD (WEBRip-480p 89 + DVD 3, all Hungarian) is still outside both profiles, and 480p
   still scores the same as 720p because there is no rung below 720p. Admitting SD needs that
   negative 480p rung first, or SD would tie with 720p and never upgrade.
-- [followup] Four inert leftover user CFs at score 0 (Radarr "HUN lang"; Sonarr "HUN 1080p",
-  "HUN 2160p", "HUN 720p"). No trash_id, so recyclarr will not delete them. Optional UI cleanup.
+- [fact] Cleanup done 2026-08-22: the four leftover user HUN CFs this note used to list no longer
+  exist, and 11 stale Radarr CFs from an older TRaSH generation (DV HDR10, DV, DV HLG, DV SDR,
+  HDR10, HDR10+, HDR (undefined), PQ, EVO (no WEBDL), Multi, DV (WEBDL)) were deleted via the API.
+  recyclarr cannot match a CF whose trash_id left the guide, so `delete_old_custom_formats` never
+  reaches them — periodic manual pruning is the only route. Radarr 91 -> 80 CFs.
 - [followup] *arr API keys live in 1Password, copied from each app's `/config/config.xml`. Re-sync
   if a key is regenerated in the UI.
 
