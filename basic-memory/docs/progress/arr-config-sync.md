@@ -69,27 +69,47 @@ and resolution is expressed as a custom format score. Without this, a non-HUN 21
 
 | rung | score |
 |---|---|
-| HUN dub | 16000 |
-| 2160p / 1080p | 10000 / 5000 (720p is the baseline: no CF on Sonarr, the guide's 5 on Radarr) |
+| HUN dub | 26000 |
+| 2160p / 1080p | 20000 / 10000 (720p is the 0 baseline on both apps) |
+| remux | -5000 |
 | release-group tier | ≤ 3300 |
 | HDR | 500 |
 | audio (DD+ ATMOS, Radarr only) | 135 |
 | streaming service | ≤ 1575 (Sonarr: 19 CFs × 75 + 150 boosts; Radarr: MA+CRiT 40) |
 | Repack/Proper | 7 |
-| junk veto (all of them, both apps) | -35000 |
-| `until_score` (= `cutoffFormatScore`) | 26000 |
+| junk veto (all of them, both apps) | -60000 |
+| `until_score` (= `cutoffFormatScore`) | 46000 |
 
-Worst-case non-resolution stack — max within each mutually exclusive family (tier, audio, repack),
-sum where CFs stack (service, encode group): **Sonarr 3782, Radarr 3982**.
+Worst-case non-resolution stack (M) — max within each mutually exclusive family (tier, audio,
+repack), sum where CFs stack (service, encode group): **Sonarr 3782, Radarr 3982**. Take M = 3982.
 
-- [invariant] resolution step 5000 (4995 on Radarr) > 3982 → resolution outranks tier/HDR/audio/service within HUN
-- [invariant] max non-HUN = 10000 + 3982 = 13982 < 16000 → HUN wins at every resolution
-- [invariant] max total = 16000 + 10000 + 3982 = 29982 < 35000 → every junk veto stays a real veto
-- [invariant] until_score 26000 = 16000 + 10000 (bare HUN 2160p) → the CF cutoff latches
+- [invariant] resolution step 10000 > M → resolution outranks tier/HDR/audio/service
+- [invariant] remux penalty 5000 > M → a plain release always beats a remux of the same
+  resolution, loaded or not
+- [invariant] 2160p remux 15000 > 1080p + M = 13982 → a 4K remux still beats any 1080p
+- [invariant] 1080p remux 5000 > 720p + M = 3982 → a 1080p remux still beats any 720p
+- [invariant] max non-HUN = 20000 + M = 23982 < 26000 → HUN wins at every resolution
+- [invariant] max total = 26000 + 20000 + M = 49982 < 60000 → every junk veto stays a real veto
+- [invariant] until_score 46000 = 26000 + 20000 (bare HUN 2160p, non-remux) → the CF cutoff latches
 
-Re-derive all four before changing any positive score. The binding constraint on a veto is
+Re-derive all of them before changing any score. The binding constraint on a veto is
 **|veto| > max achievable positive total** — not a ceiling on the HUN score. A veto left at the
 guide's -10000 silently stops being a veto once the positive rungs grow past it.
+
+- [decision] The remux penalty is what forced the 10000 resolution step. It has to exceed M to be
+  a guarantee rather than a hope — a remux carrying a Bluray tier CF would otherwise outscore a
+  plain release — and once the penalty is 5000, the step has to exceed penalty + M or a 4K remux
+  would fall below a 1080p WEB.
+- [fact] Neither guide has an "is this a remux" custom format, so it is local: Sonarr has no
+  quality-modifier spec and matches `SourceSpecification` value 7 (BlurayRaw), which covers
+  Bluray-1080p Remux and Bluray-2160p Remux and nothing else; Radarr uses
+  `QualityModifierSpecification` value 5 (REMUX).
+- [fact] There is no rung below 720p, so a 480p release scores the same as a 720p one. Inert while
+  SD sits outside both profiles — a 480p release is rejected at the quality gate regardless.
+
+Live scores after the change (Sonarr `/api/v3/parse`, English-original series): HUN 2160p WEB
+46000 > HUN 2160p remux 41000 > HUN 1080p WEB 36000 > HUN 1080p remux 31000 > HUN 720p 26000 >
+non-HUN 2160p HDR Tier-01 22200.
 
 ### Language gating
 
@@ -195,8 +215,9 @@ A `recyclarr sync` rewrites live *arr state (profiles, CFs, scores) and is not r
 - [followup] Sonarr caps WEBRip-2160p at 200 MB/min, but 16 of the 20 existing WEBRip-2160p files
   exceed it (median 244, max 300). Pre-existing cap, untouched — but Sonarr will not grab more of
   the kind of 4K WEBRip already in the library.
-- [followup] SD (WEBRip-480p 89 + DVD 3, all Hungarian) is still outside both profiles. Needs a
-  negative 480p resolution rung before it can be admitted safely.
+- [followup] SD (WEBRip-480p 89 + DVD 3, all Hungarian) is still outside both profiles, and 480p
+  still scores the same as 720p because there is no rung below 720p. Admitting SD needs that
+  negative 480p rung first, or SD would tie with 720p and never upgrade.
 - [followup] Four inert leftover user CFs at score 0 (Radarr "HUN lang"; Sonarr "HUN 1080p",
   "HUN 2160p", "HUN 720p"). No trash_id, so recyclarr will not delete them. Optional UI cleanup.
 - [followup] *arr API keys live in 1Password, copied from each app's `/config/config.xml`. Re-sync
