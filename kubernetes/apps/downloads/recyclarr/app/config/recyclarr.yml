@@ -95,6 +95,8 @@ sonarr:
       # `series` defaults leave Bluray/HDTV/Remux at max=unlimited. preferred = ~60% of max
       # (recyclarr requires preferred <= max, and every max here clears the guide's min).
       # MB/min; for a 45-minute episode multiply by 45 to get MB.
+      # recyclarr REJECTS preferred < the guide's min and aborts that app's entire sync, so the
+      # remux rungs sit just above their min rather than at the usual ~60% of max.
       qualities:
         - name: WEBDL-2160p
           max: 220
@@ -114,8 +116,8 @@ sonarr:
         - name: WEBRip-720p
           max: 60
           preferred: 30
-        # Bluray runs at a higher bitrate than WEB by design, so it gets more headroom than the
-        # WEB rung at the same resolution — but a hard ceiling all the same.
+        # Bluray gets the same ceiling as WEB at the same resolution, deliberately: it runs at a
+        # higher bitrate by nature, so an equal cap is what keeps its storage cost in line.
         - name: Bluray-2160p
           max: 220
           preferred: 120
@@ -125,15 +127,15 @@ sonarr:
         - name: Bluray-720p
           max: 80
           preferred: 48
-        # Remux caps are the point of allowing Remux at all: admit a normal one, reject the
-        # bloated tail. Calibrated on the library: existing 4K remuxes run 411 MB/min median,
-        # 499 max, so 400 would have rejected 16 of 25. 550 is ~25 GB for a 45-minute episode.
+        # Remux is in the profile so an existing Hungarian remux cannot be outranked by a WEB
+        # release, but capped at the WEB ceiling so no new one gets downloaded: the library's own
+        # remuxes all sit above these caps (4K 305-499, 1080p 109-222 MB/min). Keep, do not grab.
         - name: Bluray-2160p Remux
           max: 220
-          preferred: 120
+          preferred: 190
         - name: Bluray-1080p Remux
           max: 130
-          preferred: 60
+          preferred: 70
         # Broadcast captures carry Hungarian dubs; cap them at the WEB rung of the same resolution.
         - name: HDTV-1080p
           max: 100
@@ -285,15 +287,15 @@ radarr:
         - name: WEBRip-720p
           max: 100
           preferred: 60
-        # Remux caps are the point of allowing Remux at all: admit a normal one, reject the
-        # bloated tail. Calibrated on the same 4K remux population as Sonarr (411 median,
-        # 499 max MB/min). 550 is ~66 GB for a 2-hour film, 300 is ~36 GB.
+        # Remux is in the profile so an existing Hungarian remux cannot be outranked by a WEB
+        # release, but capped at the WEB ceiling so no new one gets downloaded: the library's own
+        # remuxes sit above these caps (the single 4K at 493, 1080p 137-253 MB/min). Keep, do not grab.
         - name: Remux-2160p
           max: 300
-          preferred: 180
+          preferred: 190
         - name: Remux-1080p
           max: 150
-          preferred: 90
+          preferred: 105
         # Broadcast captures carry Hungarian dubs; cap them at the WEB rung of the same resolution.
         - name: HDTV-1080p
           max: 150
