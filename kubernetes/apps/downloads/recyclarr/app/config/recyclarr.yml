@@ -202,14 +202,17 @@ radarr:
         rename: true
         standard: plex-imdb
     quality_definition:
-      type: sqp-uhd
-      # sqp-uhd (not sqp-streaming): sqp-streaming would cap 720p at 85.7 MB/min and reject large
-      # HUN 720p releases, against HUN > size. Size is the lowest priority lever, so it is enforced
-      # as a cap per quality, never by excluding a source; sqp-uhd leaves Remux and HDTV-2160p at
-      # max=unlimited, so every allowed quality gets an explicit one. preferred = ~60% of max
-      # (recyclarr requires preferred <= max, and every max here clears the guide's min).
-      # MB/min; for a 120-minute film multiply by 120 to get MB. No min floors (Upscaled CF
-      # covers fakes).
+      type: movie
+      # `movie`, not sqp-uhd: sqp-uhd only defines 8 qualities and recyclarr hard-errors on a
+      # cap for any quality outside its guide type ("does not exist in the guide for type"),
+      # which rules out capping Bluray-1080p/720p and HDTV-1080p/720p. `movie` covers all 14.
+      # Not sqp-streaming either: its 85.7 MB/min 720p cap would reject large HUN 720p releases,
+      # against HUN > size. Size is the lowest priority lever, so it is enforced as a cap per
+      # quality, never by excluding a source — and `movie` defaults every max to 2000, so EVERY
+      # quality the profile allows must be listed here or it is effectively uncapped.
+      # preferred = ~60% of max (recyclarr requires preferred <= max, and every max here clears
+      # the guide's min). MB/min; for a 120-minute film multiply by 120 to get MB. No min floors
+      # (Upscaled CF covers fakes).
       qualities:
         - name: WEBDL-2160p
           max: 300
@@ -230,6 +233,12 @@ radarr:
           max: 200
           preferred: 120
         - name: Bluray-720p
+          max: 100
+          preferred: 60
+        - name: WEBDL-720p
+          max: 100
+          preferred: 60
+        - name: WEBRip-720p
           max: 100
           preferred: 60
         # Remux caps are the point of allowing Remux at all: admit a normal one, reject the
