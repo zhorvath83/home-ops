@@ -1,9 +1,10 @@
 ---
 # yaml-language-server: $schema=https://schemas.recyclarr.dev/v8/config-schema.json
 # recyclarr sync for Sonarr + Radarr — priority order HUN dub > quality > size
-# (see BM docs/progress/arr-config-sync for the full planning framework). Local Hungarian CF
-# is scored +9900 so a HUN 720p/1080p beats any non-HUN release; LQ/BR-DISK -10000; explicit
-# quality_definition max caps reject gigantic 4K/1080p encodes while 720p/1080p stay as fallback.
+# (see BM docs/progress/arr-config-sync for the full planning framework). On Sonarr that order is
+# enforced entirely by custom format score (one WEB quality group, resolution scored as a CF),
+# because Sonarr ranks quality tier above CF score. LQ/BR-DISK -10000; explicit quality_definition
+# max caps reject gigantic 4K/1080p encodes while 720p/1080p stay as fallback.
 sonarr:
   series:
     base_url: http://sonarr.downloads.svc.cluster.local:8989
@@ -48,35 +49,94 @@ sonarr:
           enabled: true
         upgrade:
           allowed: true
-          until_quality: WEB 2160p
-          until_score: 20000
-        # Combined profile disables WEB 720p; re-enable it so content only available in 720p
-        # is still grabbed (HUN > quality > size — fallback must be preserved).
+          until_quality: WEB
+          until_score: 15900 # bare HUN 2160p — the intended "good enough, stop searching" point
+        # One WEB group, not three tiers: Sonarr compares quality index BEFORE custom format
+        # score and short-circuits, so separate tiers let a non-HUN 2160p outrank a HUN 1080p at
+        # any score. Grouped qualities share one index, handing the decision to the CF score;
+        # resolution is re-expressed as a CF score below.
         qualities:
-          - name: WEB 2160p
+          - name: WEB
             qualities:
               - WEBRip-2160p
               - WEBDL-2160p
-          - name: WEB 1080p
-            qualities:
               - WEBRip-1080p
               - WEBDL-1080p
-          - name: WEB 720p
-            qualities:
               - WEBRip-720p
               - WEBDL-720p
     custom_format_groups:
+      # [Optional] Language Profiles is auto-synced for this profile; its only default member
+      # (Language: Not Original, -10000) cancels the HUN boost to -100 and rejects every
+      # Hungarian dub. home-ops-not-hungarian-or-original already covers third-language dubs.
+      skip:
+        - 74aff4168620ed49dcc67e92b2c2a5b4 # [Optional] Language Profiles
       add:
         - trash_id: e3f37512790f00d0e89e54fe5e790d1c # [Optional] Golden Rule UHD
-        - trash_id: 74aff4168620ed49dcc67e92b2c2a5b4 # [Optional] Language Profiles
         - trash_id: 85fae4a2294965b75710ef2989c850eb # [Streaming Services] HD/UHD boost
         - trash_id: 59c3af66780d08332fdc64e68297098f # [Unwanted] Unwanted Formats (LQ/BR-DISK incl.)
+    # SONARR SCORING MODEL — read this before touching any score below.
+    #
+    # Sonarr does NOT rank releases by a weighted total. DownloadDecisionComparer runs
+    # CompareQuality -> CompareCustomFormatScore -> ... and short-circuits on the first non-zero
+    # result, and UpgradableSpecification returns "upgrade allowed" on a better quality tier
+    # before it even computes a CF score. So with separate quality tiers a non-HUN 2160p always
+    # beats a HUN 1080p, at ANY Hungarian score. Raising 9900 higher changes nothing.
+    #
+    # The fix is the single WEB quality group above: QualityProfile.GetIndex() defaults to
+    # respectGroupOrder=false, so every member of one group yields the same index, CompareQuality
+    # returns 0, and the entire decision falls through to the CF score. Resolution is then
+    # re-expressed as a CF score here, which makes the score a real weight.
+    #
+    # The ladder (each rung must outrank the sum of everything below it):
+    #   HUN dub          9900   the whole point — must beat any non-HUN release
+    #   2160p / 1080p    6000 / 3000   720p is the implicit 0 baseline
+    #   WEB Tier 01-03   1700 / 1650 / 1600   from the guide, release-group quality
+    #   HDR                500
+    #   streaming svc       75  (+75 HD boost, +75 UHD boost)
+    #   Repack/Proper      5-7
+    #
+    # Why the numbers work:
+    #   max non-resolution positives = 1700 + 500 + 75 + 75 + 75 + 7 = 2432
+    #   resolution step 3000 > 2432       -> resolution outranks tier/HDR/service within HUN
+    #   max non-HUN total = 6000 + 2432 = 8432 < 9900   -> HUN wins at every resolution
+    #   max total = 9900 + 6000 + 2432 = 18332          -> see the veto score below
+    #
+    # Changing any positive score means re-deriving the two inequalities above — and until_score,
+    # which is pinned to the bare-HUN-2160p rung (9900 + 6000) so the CF cutoff actually latches
+    # instead of sitting above the 18332 ceiling and hunting upgrades forever.
     custom_formats:
       - trash_ids:
           - home-ops-hungarian-language
         assign_scores_to:
           - trash_id: c4cadd6b35b95f62c3d47a408e53e2f7
             score: 9900
+      - trash_ids:
+          - 290078c8b266272a5cc8e251b5e2eb0b # 1080p
+        assign_scores_to:
+          - trash_id: c4cadd6b35b95f62c3d47a408e53e2f7
+            score: 3000
+      - trash_ids:
+          - 1bef6c151fa35093015b0bfef18279e5 # 2160p
+        assign_scores_to:
+          - trash_id: c4cadd6b35b95f62c3d47a408e53e2f7
+            score: 6000
+      # Junk vetoes, overridden from the guide's -10000. A veto only works while its magnitude
+      # exceeds the 18332 max positive total, otherwise a HUN 2160p LQ release nets +8332 and gets
+      # grabbed. -35000 matches the third-language-dub veto below. Recyclarr resolves a conflicting
+      # score with "first value wins" and flat custom_formats are processed before CF groups, so
+      # these entries override the group-assigned guide scores; the sync logs the conflict as INFO.
+      - trash_ids:
+          - 9c11cd3f07101cdba90a2d81cf0e56b4 # LQ
+          - e2315f990da2e2cbfc9fa5b7a6fcfe48 # LQ (Release Title)
+          - 85c61753df5da1fb2aab6f2a47426b09 # BR-DISK
+          - 15a05bc7c1a36e2b57fd628f8977e2fc # AV1
+          - 32b367365729d530ca1c124a0b180c64 # Bad Dual Groups
+          - fbcb31d8dabd2a319072b84fc0b7249c # Extras
+          - 23297a736ca77c0fc8e70f8edd7ee56c # Upscaled
+          - 9b64dff695c2115facf1b6ea59c9bd07 # x265 (no HDR/DV)
+        assign_scores_to:
+          - trash_id: c4cadd6b35b95f62c3d47a408e53e2f7
+            score: -35000
       # Block third-language dubs: only HUN or Original wanted. Sonarr has no profile language
       # gate, so this CF is the sole mechanism that rejects non-HUN/non-Original dubs.
       - trash_ids:
