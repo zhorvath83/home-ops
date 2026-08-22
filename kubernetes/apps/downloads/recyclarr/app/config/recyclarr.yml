@@ -20,7 +20,8 @@
 #
 # The shared ladder (each rung must outrank the sum of everything below it):
 #   HUN dub               16000
-#   2160p / 1080p         10000 / 5000   720p is the implicit 0 baseline
+#   2160p / 1080p         10000 / 5000   720p is the baseline: no CF on Sonarr, and on Radarr the
+#                                        guide's own 5, left as-is since the step still clears 3982
 #   release-group tier    <= 3300   Sonarr: WEB Tier 01 1700; Radarr: + BHDStudio 1000, hallowed 600
 #   HDR                     500
 #   audio (DD+ ATMOS)       135    Radarr only
@@ -31,7 +32,7 @@
 # Worst-case sum of every rung below resolution, taking the max within each mutually exclusive
 # family (tier, audio, repack) and the sum where CFs can stack (service, encode group):
 # Sonarr 3782, Radarr 3982. Take the larger. The four invariants:
-#   resolution step 5000 > 3982                        -> resolution outranks tier/HDR/audio/svc
+#   resolution step 5000, 4995 on Radarr, > 3982       -> resolution outranks tier/HDR/audio/svc
 #   max non-HUN = 10000 + 3982 = 13982 < 16000         -> HUN wins at every resolution
 #   max total   = 16000 + 10000 + 3982 = 29982 < 35000 -> every junk veto stays a real veto
 #   until_score = 26000 = bare HUN 2160p               -> the CF cutoff actually latches

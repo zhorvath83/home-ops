@@ -14,7 +14,7 @@ tags:
 # arr-config-sync — Recyclarr-owned *arr quality config
 
 - [type] progress-note
-- [status] LIVE — the HUN-first scoring model is merged and reconciled; it takes effect on the next @daily recyclarr sync
+- [status] LIVE — the HUN-first scoring model is merged, reconciled and applied by a recyclarr sync; verified against both live profiles
 - [area] k8s-workloads, external-secrets, networking
 - [scope] kubernetes/apps/downloads/recyclarr/
 
@@ -70,7 +70,7 @@ and resolution is expressed as a custom format score. Without this, a non-HUN 21
 | rung | score |
 |---|---|
 | HUN dub | 16000 |
-| 2160p / 1080p | 10000 / 5000 (720p = implicit 0 baseline) |
+| 2160p / 1080p | 10000 / 5000 (720p is the baseline: no CF on Sonarr, the guide's 5 on Radarr) |
 | release-group tier | ≤ 3300 |
 | HDR | 500 |
 | audio (DD+ ATMOS, Radarr only) | 135 |
@@ -82,7 +82,7 @@ and resolution is expressed as a custom format score. Without this, a non-HUN 21
 Worst-case non-resolution stack — max within each mutually exclusive family (tier, audio, repack),
 sum where CFs stack (service, encode group): **Sonarr 3782, Radarr 3982**.
 
-- [invariant] resolution step 5000 > 3982 → resolution outranks tier/HDR/audio/service within HUN
+- [invariant] resolution step 5000 (4995 on Radarr) > 3982 → resolution outranks tier/HDR/audio/service within HUN
 - [invariant] max non-HUN = 10000 + 3982 = 13982 < 16000 → HUN wins at every resolution
 - [invariant] max total = 16000 + 10000 + 3982 = 29982 < 35000 → every junk veto stays a real veto
 - [invariant] until_score 26000 = 16000 + 10000 (bare HUN 2160p) → the CF cutoff latches
