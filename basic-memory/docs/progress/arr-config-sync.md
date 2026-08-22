@@ -69,8 +69,9 @@ and resolution is expressed as a custom format score. Without this, a non-HUN 21
 
 | rung | score |
 |---|---|
-| HUN dub | 26000 |
+| HUN dub | 30000 |
 | 2160p / 1080p | 20000 / 10000 (720p is the 0 baseline on both apps) |
+| bluray | -4000 |
 | remux | -5000 |
 | release-group tier | ≤ 3300 |
 | HDR | 500 |
@@ -78,7 +79,7 @@ and resolution is expressed as a custom format score. Without this, a non-HUN 21
 | streaming service | ≤ 1575 (Sonarr: 19 CFs × 75 + 150 boosts; Radarr: MA+CRiT 40) |
 | Repack/Proper | 7 |
 | junk veto (all of them, both apps) | -60000 |
-| `until_score` (= `cutoffFormatScore`) | 46000 |
+| `until_score` (= `cutoffFormatScore`) | 50000 |
 
 Worst-case non-resolution stack (M) — max within each mutually exclusive family (tier, audio,
 repack), sum where CFs stack (service, encode group): **Sonarr 3782, Radarr 3982**. Take M = 3982.
@@ -88,9 +89,13 @@ repack), sum where CFs stack (service, encode group): **Sonarr 3782, Radarr 3982
   resolution, loaded or not
 - [invariant] 2160p remux 15000 > 1080p + M = 13982 → a 4K remux still beats any 1080p
 - [invariant] 1080p remux 5000 > 720p + M = 3982 → a 1080p remux still beats any 720p
-- [invariant] max non-HUN = 20000 + M = 23982 < 26000 → HUN wins at every resolution
-- [invariant] max total = 26000 + 20000 + M = 49982 < 60000 → every junk veto stays a real veto
-- [invariant] until_score 46000 = 26000 + 20000 (bare HUN 2160p, non-remux) → the CF cutoff latches
+- [invariant] bluray penalty 4000 > 3342 (what a BLURAY-source release can actually stack) →
+  a plain WEB release always beats Bluray of the same resolution
+- [invariant] 2160p bluray 16000 > 1080p + M = 13982 → a 4K Bluray still beats any 1080p
+- [invariant] max non-HUN = 20000 + M = 23982 < 30000 - 4000 = 26000 → even a HUN Bluray-720p
+  beats every non-HUN release
+- [invariant] max total = 30000 + 20000 + M = 53982 < 60000 → every junk veto stays a real veto
+- [invariant] until_score 50000 = 30000 + 20000 (bare HUN 2160p, plain WEB) → the CF cutoff latches
 
 Re-derive all of them before changing any score. The binding constraint on a veto is
 **|veto| > max achievable positive total** — not a ceiling on the HUN score. A veto left at the
@@ -107,9 +112,14 @@ guide's -10000 silently stops being a veto once the positive rungs grow past it.
 - [fact] There is no rung below 720p, so a 480p release scores the same as a 720p one. Inert while
   SD sits outside both profiles — a 480p release is rejected at the quality gate regardless.
 
-Live scores after the change (Sonarr `/api/v3/parse`, English-original series): HUN 2160p WEB
-46000 > HUN 2160p remux 41000 > HUN 1080p WEB 36000 > HUN 1080p remux 31000 > HUN 720p 26000 >
-non-HUN 2160p HDR Tier-01 22200.
+Live and identical on both apps at 1080p: HUN WEB 40000 > HUN Bluray 36000 > HUN remux 35000;
+HUN Bluray-720p 26000 still clears the best non-HUN release.
+
+- [fact] recyclarr **rejects** `preferred` below the guide's `min` and aborts that app's entire
+  sync ("min (102) cannot be greater than preferred (90)"), reporting only the first offender per
+  app. Tightening a `max` below the usual 60%-of-max preferred silently sets up this trap.
+- [fact] Sonarr's quality-definition API caps `max` at 1000, Radarr's at 2000; recyclarr clamps
+  silently rather than warning, so an over-large cap looks applied but is not.
 
 ### Language gating
 
