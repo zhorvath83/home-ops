@@ -122,6 +122,7 @@ HUN Bluray-720p 26000 still clears the best non-HUN release.
   silently rather than warning, so an over-large cap looks applied but is not.
 
 ### Language gating
+
 - [decision] Sonarr **skips** the auto-synced TRaSH group `[Optional] Language Profiles`
   (`74aff4168620ed49dcc67e92b2c2a5b4`). Its only default member, `Language: Not Original` (-10000),
   penalises every non-original track including Hungarian dubs.
@@ -133,60 +134,12 @@ HUN Bluray-720p 26000 still clears the best non-HUN release.
   reconciler that sets it back to `Any` and read-back verifies, using bash `/dev/tcp` (no curl/jq
   in the image). Carries a `debt:` marker — remove when recyclarr ships a language override.
 - [decision] Third-language dubs are blocked by the local CF `home-ops-not-hungarian-or-original`
-  at -60000 (mirrors TRaSH's "Not German or English"): negate-Hungarian + negate-Original +
+  at -35000 (mirrors TRaSH's "Not German or English"): negate-Hungarian + negate-Original +
   negate-title-regex, so only Hungarian and the original language pass. This is what makes the
   Sonarr group skip safe — it covers the same ground without punishing Hungarian.
-- [decision] `min_format_score: 0` on the two main profiles, so an untagged non-HUN release stays
-  available as fallback. Junk is rejected by the -60000 vetoes, not by this floor.
+- [decision] `min_format_score: 0` on both profiles, so an untagged non-HUN release stays available
+  as fallback. Junk is rejected by the -35000 vetoes, not by this floor.
 
-#### The HUN-only profile variant (2026-08-22)
-
-- [decision] Each app carries a **second** profile named `HUN-only`, declared as a *variant* of the
-  same guide profile — same `trash_id`, explicit `name` — with the quality group and upgrade block
-  shared through YAML anchors. The two profiles differ in exactly one field: `min_format_score`.
-  Profile variants need recyclarr >= 8.3.0 (default CF groups apply to every variant since 8.3.2).
-- [decision] The gate is `min_format_score: 24000`, derived from the shared ladder: the best a
-  non-HUN release can score is 23982 (2160p + M), the worst a HUN release can score is 25000
-  (30000 minus the remux penalty — the largest single penalty one release can take, since the
-  bluray CF does not stack with remux on either app). 24000 sits in that 1018-wide window, so the
-  profile grabs every HUN release and rejects every non-HUN one; junk at -60000 still fails it.
-  Both edges move with the ladder — re-derive on any score change.
-- [decision] Radarr's HUN-only gets a second, score-independent gate: profile `language = Hungarian`
-  (`LanguageSpecification` rejects any release whose parsed languages lack Hungarian, id 22 — the
-  same id the Hungarian CF matches). `fix-radarr-language.sh` was refactored into a
-  `setProfileLanguage <name> <id> <label>` function called twice (SQP-1 -> Any, HUN-only ->
-  Hungarian). Sonarr's `QualityProfileResource` has **no** language field, so there the score gate
-  stands alone.
-- [fact] Profiles are now referenced by `name` in every `assign_scores_to`, not by `trash_id`:
-  recyclarr rejects a trash_id reference once two profiles share that id ("Only works when exactly
-  one profile in the configuration has this trash_id"). Per-profile scores collapsed into the
-  entry-level `score` key (recyclarr >= 8.6.0).
-- [fact] The names must match the live profiles **exactly**. `RECYCLARR_DATA_DIR` is an emptyDir, so
-  sync state is gone on every run and recyclarr re-adopts each profile by name; a typo creates a
-  new profile and orphans the old one instead of renaming it.
-- [fact] Nothing binds a root folder to a quality profile in either app. `RootFolderResource` is
-  path/accessible/freeSpace/unmappedFolders only; the pairing exists solely on the item
-  (`MovieResource`/`SeriesResource` carry `rootFolderPath` and `qualityProfileId` side by side with
-  no constraint between them). So the profile is chosen per title: in Seerr's request Advanced
-  options (the Quality Profile dropdown renders only when `serverData.profiles.length > 1`, which
-  is why it was invisible until this second profile existed), or via a Mass Editor pass for the
-  existing library. Seerr's genre/keyword **override rules** were considered and dropped: they only
-  run for users *without* `MANAGE_REQUESTS` (`MediaRequest.ts`), i.e. never for the single admin
-  who uses this instance.
-- [followup] Intended targets are the `docuseries`, `docufilms`, `kids_movies` and `kids_shows`
-  root folders. The existing titles there have **not** been switched yet — that is a manual Mass
-  Editor pass in each app.
-- [followup] The gate's failure mode is **starvation, not downgrade**: HUN detection rests on the
-  parsed release language, so a Hungarian-dubbed release that is not tagged as such is rejected and
-  nothing is grabbed in its place. Acceptable for kids content; expect real gaps on docuseries and
-  docufilms. If it bites, the first lever is adding the title regex (already in
-  `home-ops-not-hungarian-or-original`) to the Hungarian CF so title-tagged releases score too.
-- [fact] Verified live 2026-08-22 by two manual CronJob runs. Run 1: `Created 1 Profiles:
-  ["HUN-only"]` on both apps, then `PUT /qualityProfile/8 -> 202 (language set to Hungarian)` with
-  read-back `OK: 'HUN-only' language=Hungarian` (SQP-1 = id 7, still `Any`). Run 2: `All quality
-  profiles are up to date!` on both apps — the live profiles match the config exactly, so the sync
-  is idempotent. Pre-commit (yamlfmt/yamllint/shellcheck/gitleaks) and JSON-schema validation
-  against `schemas.recyclarr.dev/v8` both green.
 ### Allowed qualities and size caps
 
 Both profiles allow the same 13 qualities in one group named `HD-UHD`: WEB (WEBDL + WEBRip),
