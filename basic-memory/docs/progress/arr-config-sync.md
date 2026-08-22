@@ -110,12 +110,48 @@ guide's -10000 silently stops being a veto once the positive rungs grow past it.
 - [decision] `min_format_score: 0` on both profiles, so an untagged non-HUN release stays available
   as fallback. Junk is rejected by the -35000 vetoes, not by this floor.
 
-### Size caps (MB/min, preferred ≈ 60% of max)
+### Allowed qualities and size caps
 
-- Sonarr (`quality_definition: series`): 2160p 200/120, 1080p 100/60, 720p 50/30.
-- Radarr (`quality_definition: sqp-uhd`): 2160p + Bluray-2160p 300/180, 1080p 150/90. sqp-uhd has
-  no 720p entry, so 720p keeps Radarr's built-in 208.8 MB/min — deliberately not `sqp-streaming`,
-  whose 85.7 MB/min cap would reject large Hungarian 720p releases.
+Both profiles allow the same 13 qualities in one group named `HD-UHD`: WEB (WEBDL + WEBRip),
+Bluray, HDTV and Remux at 720p / 1080p / 2160p. The guide profiles gate far more narrowly —
+Sonarr's WEB-2160p (Combined) is WEB-only ("covers: WEBDL 1080p, 2160p") and Radarr's SQP-1 leaves
+HDTV and Remux out — and that is wrong here, because the excluded categories are where the
+Hungarian dubs live: 93% of the Sonarr files at an excluded quality were Hungarian against 64%
+inside, and 100% on Radarr. A quality absent from a profile also indexes as 0, so those files are
+permanently cutoff-unmet and any allowed release outranks them on quality tier before scoring runs.
+
+- [decision] Size is the lowest-priority lever, so it is enforced as a **cap per quality**, never
+  by excluding a source category. Every allowed quality carries an explicit `max` because both
+  guide definitions leave Bluray / HDTV / Remux effectively uncapped.
+- [decision] SD stays out (WEBRip-480p, DVD — 92 Sonarr files, all Hungarian). There is no 480p
+  resolution rung, so SD would tie with 720p at the 0 baseline and freeze: `newFormatScore <=
+  currentFormatScore` would block the upgrade to 720p forever. Admitting SD needs a negative 480p
+  rung first.
+- [decision] Remux is admitted on both apps to protect the 69 Hungarian Remux files from being
+  outranked by any WEB release, capped rather than excluded.
+
+Caps in MB/min (preferred ≈ 60% of max). Multiply by ~45 for a Sonarr episode, ~120 for a film:
+
+| quality | Sonarr | Radarr |
+|---|---|---|
+| Remux 2160p | 550 | 550 |
+| Bluray-2160p | 300 | 300 |
+| WEBDL/WEBRip-2160p | 200 | 300 |
+| Remux 1080p | 250 | 300 |
+| Bluray-1080p | 150 | 200 |
+| WEBDL/WEBRip-1080p, HDTV-1080p | 100 | 150 |
+| Bluray-720p | 80 | 100 |
+| WEBDL/WEBRip-720p, HDTV-720p | 50 | 100 |
+
+- [fact] The 4K remux cap is calibrated on the library, not guessed: existing 4K remuxes run
+  411 MB/min median and 499 max, so an initial 400 would have rejected 16 of 25. 550 admits them
+  and still rejects the bloated tail (~25 GB per episode, ~66 GB per film).
+- [fact] Radarr uses `quality_definition: movie`, not `sqp-uhd`. sqp-uhd defines only 8 qualities
+  and recyclarr **hard-errors** on a cap for any quality outside its guide type
+  ("Quality 'X' does not exist in the guide for type 'sqp-uhd'"), aborting the whole Radarr run
+  before it writes anything. `movie` covers all 14 — but defaults every max to 2000, so every
+  allowed quality must be listed or it is effectively uncapped. Not `sqp-streaming` either: its
+  85.7 MB/min 720p cap would reject large Hungarian 720p releases, against HUN > size.
 
 ## Recyclarr semantics worth knowing (v8.7.1, read from source)
 
@@ -149,17 +185,18 @@ A `recyclarr sync` rewrites live *arr state (profiles, CFs, scores) and is not r
 
 ## Open
 
-- [followup] The scoring-model change is on `fix/sonarr-hungarian-dub-scoring`; no PR. Flux watches
-  `main`, so the branch is inert until merged.
-- [followup] On merge, expect library churn: a HUN 720p outranks a non-HUN 2160p, so existing
-  non-HUN 4K files get replaced once a Hungarian release appears. Accepted.
-- [followup] 17 Radarr files sit at a quality SQP-1 does not allow (16× Remux-1080p, 1× Remux-2160p).
-  `GetIndex` returns index 0 for them, so any allowed release counts as an upgrade. Remux is
-  deliberately out of the group.
-- [followup] `Flow (2024)`: Latvian original with an English audio file on disk, which
-  `home-ops-not-hungarian-or-original` should veto. Likely a pre-CF download.
-- [followup] `arr-search` has `CutoffUnmetEpisodeSearch` commented out; worth reconsidering now
-  that `until_score` latches.
+- [followup] Library churn is now live on both apps: a HUN 720p outranks a non-HUN 2160p, so
+  existing non-HUN files get replaced once a Hungarian release appears. Intended.
+- [followup] 10 existing files carry a -35000 veto CF (9 of them Hungarian) — 3 Radarr Remux-1080p
+  with DTS-HD MA, plus scattered TrueHD ATMOS / DV-without-HDR / x265-no-HDR / 3D. Their own score
+  is deeply negative, which makes them the most replaceable files in the library despite being
+  high-quality Hungarian. The lossless-audio vetoes come from SQP and are what keep bloated remuxes
+  out, so they were deliberately left alone; revisit if those files start disappearing.
+- [followup] Sonarr caps WEBRip-2160p at 200 MB/min, but 16 of the 20 existing WEBRip-2160p files
+  exceed it (median 244, max 300). Pre-existing cap, untouched — but Sonarr will not grab more of
+  the kind of 4K WEBRip already in the library.
+- [followup] SD (WEBRip-480p 89 + DVD 3, all Hungarian) is still outside both profiles. Needs a
+  negative 480p resolution rung before it can be admitted safely.
 - [followup] Four inert leftover user CFs at score 0 (Radarr "HUN lang"; Sonarr "HUN 1080p",
   "HUN 2160p", "HUN 720p"). No trash_id, so recyclarr will not delete them. Optional UI cleanup.
 - [followup] *arr API keys live in 1Password, copied from each app's `/config/config.xml`. Re-sync
