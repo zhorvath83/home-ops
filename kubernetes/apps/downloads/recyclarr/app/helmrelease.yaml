@@ -88,9 +88,13 @@ spec:
             subPath: sonarr-hungarian.json
           - path: /config/custom-formats/sonarr/not-hungarian-or-original.json
             subPath: sonarr-not-hungarian-or-original.json
+          - path: /config/custom-formats/sonarr/remux.json
+            subPath: sonarr-remux.json
           - path: /config/custom-formats/radarr/hungarian.json
             subPath: radarr-hungarian.json
           - path: /config/custom-formats/radarr/not-hungarian-or-original.json
             subPath: radarr-not-hungarian-or-original.json
+          - path: /config/custom-formats/radarr/remux.json
+            subPath: radarr-remux.json
           - path: /config/fix-radarr-language.sh
             subPath: fix-radarr-language.sh

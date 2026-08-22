@@ -1,0 +1,15 @@
+{
+  "trash_id": "home-ops-remux",
+  "name": "Remux",
+  "specifications": [
+    {
+      "name": "Bluray Remux",
+      "implementation": "SourceSpecification",
+      "negate": false,
+      "required": true,
+      "fields": {
+        "value": 7
+      }
+    }
+  ]
+}

@@ -19,27 +19,39 @@
 # the score into a real weight and makes "HUN > quality > size" actually hold.
 #
 # The shared ladder (each rung must outrank the sum of everything below it):
-#   HUN dub               16000
-#   2160p / 1080p         10000 / 5000   720p is the baseline: no CF on Sonarr, and on Radarr the
-#                                        guide's own 5, left as-is since the step still clears 3982
+#   HUN dub               26000
+#   2160p / 1080p         20000 / 10000  720p is the 0 baseline on both apps
+#   remux                 -5000  demotes a remux below a plain release of the same resolution
 #   release-group tier    <= 3300   Sonarr: WEB Tier 01 1700; Radarr: + BHDStudio 1000, hallowed 600
 #   HDR                     500
 #   audio (DD+ ATMOS)       135    Radarr only
 #   streaming service     <= 1575  Sonarr: 19 service CFs at 75 + HD/UHD boost 150; Radarr: MA+CRiT 40
 #   Repack/Proper             7
-#   junk veto            -35000
+#   junk veto            -60000
 #
 # Worst-case sum of every rung below resolution, taking the max within each mutually exclusive
 # family (tier, audio, repack) and the sum where CFs can stack (service, encode group):
-# Sonarr 3782, Radarr 3982. Take the larger. The four invariants:
-#   resolution step 5000, 4995 on Radarr, > 3982       -> resolution outranks tier/HDR/audio/svc
-#   max non-HUN = 10000 + 3982 = 13982 < 16000         -> HUN wins at every resolution
-#   max total   = 16000 + 10000 + 3982 = 29982 < 35000 -> every junk veto stays a real veto
-#   until_score = 26000 = bare HUN 2160p               -> the CF cutoff actually latches
+# Sonarr 3782, Radarr 3982. Take the larger, M = 3982. The invariants:
+#   resolution step 10000 > M                          -> resolution outranks tier/HDR/audio/svc
+#   remux penalty 5000 > M                             -> a plain release always beats a remux
+#                                                         of the same resolution, loaded or not
+#   2160p remux 20000-5000 = 15000 > 10000 + M = 13982 -> a 4K remux still beats any 1080p
+#   1080p remux 10000-5000 =  5000 >     0 + M =  3982 -> a 1080p remux still beats any 720p
+#   max non-HUN = 20000 + M = 23982 < 26000            -> HUN wins at every resolution
+#   max total   = 26000 + 20000 + M = 49982 < 60000    -> every junk veto stays a real veto
+#   until_score = 46000 = bare HUN 2160p, non-remux    -> the CF cutoff actually latches
 #
-# Touching any positive score means re-deriving all four. A veto that is not more negative than
+# The remux penalty is what forced the 10000 step. It has to exceed M to be a guarantee rather
+# than a hope (a remux carrying a Bluray tier CF would otherwise outscore a plain release), and
+# once it does, the step has to exceed penalty + M or a 4K remux would fall below a 1080p WEB.
+#
+# Touching any score means re-deriving all of the above. A veto that is not more negative than
 # the max total silently stops being one: at the guide's -10000 a HUN 2160p LQ release would net
 # a positive score and get grabbed.
+#
+# Known gap: there is no rung below 720p, so a 480p release scores the same as a 720p one. Harmless
+# while SD sits outside both profiles (it is rejected at the quality gate regardless), but admitting
+# SD requires a negative 480p rung first, or SD would tie with 720p and never upgrade.
 #
 # Recyclarr note: the flat custom_formats entries below deliberately override the guide/CF-group
 # scores — recyclarr resolves a conflict with "first value wins" and processes custom_formats
@@ -119,7 +131,7 @@ sonarr:
         upgrade:
           allowed: true
           until_quality: HD-UHD
-          until_score: 26000 # bare HUN 2160p (16000 + 10000) — where the CF cutoff latches
+          until_score: 46000 # bare HUN 2160p, non-remux (26000 + 20000) — the CF cutoff
         # One group instead of the guide's tiers — see the shared scoring model header. The guide
         # profile is WEB-only ("covers: WEBDL 1080p, 2160p"), which silently gated out Bluray,
         # HDTV and Remux — and those are exactly where the Hungarian dubs live: 93% of the files
@@ -158,18 +170,26 @@ sonarr:
           - home-ops-hungarian-language
         assign_scores_to:
           - trash_id: c4cadd6b35b95f62c3d47a408e53e2f7
-            score: 16000
+            score: 26000
       - trash_ids:
           - 290078c8b266272a5cc8e251b5e2eb0b # 1080p
         assign_scores_to:
           - trash_id: c4cadd6b35b95f62c3d47a408e53e2f7
-            score: 5000
+            score: 10000
       - trash_ids:
           - 1bef6c151fa35093015b0bfef18279e5 # 2160p
         assign_scores_to:
           - trash_id: c4cadd6b35b95f62c3d47a408e53e2f7
-            score: 10000
-      # Junk vetoes, overridden from the guide's -10000 to clear the 29982 max positive total.
+            score: 20000
+      # Demote remux below a plain release of the same resolution. Local CF, since the guide has
+      # no "is this a remux" format: Sonarr's SourceSpecification value 7 (BlurayRaw) matches
+      # Bluray-1080p Remux and Bluray-2160p Remux and nothing else.
+      - trash_ids:
+          - home-ops-remux
+        assign_scores_to:
+          - trash_id: c4cadd6b35b95f62c3d47a408e53e2f7
+            score: -5000
+      # Junk vetoes, overridden from the guide's -10000 to clear the 49982 max positive total.
       - trash_ids:
           - 9c11cd3f07101cdba90a2d81cf0e56b4 # LQ
           - e2315f990da2e2cbfc9fa5b7a6fcfe48 # LQ (Release Title)
@@ -181,14 +201,14 @@ sonarr:
           - 9b64dff695c2115facf1b6ea59c9bd07 # x265 (no HDR/DV)
         assign_scores_to:
           - trash_id: c4cadd6b35b95f62c3d47a408e53e2f7
-            score: -35000
+            score: -60000
       # Block third-language dubs: only HUN or Original wanted. Sonarr has no profile language
       # gate, so this CF is the sole mechanism that rejects non-HUN/non-Original dubs.
       - trash_ids:
           - home-ops-not-hungarian-or-original
         assign_scores_to:
           - trash_id: c4cadd6b35b95f62c3d47a408e53e2f7
-            score: -35000
+            score: -60000
 radarr:
   movies:
     base_url: http://radarr.downloads.svc.cluster.local:7878
@@ -268,7 +288,7 @@ radarr:
         upgrade:
           allowed: true
           until_quality: HD-UHD
-          until_score: 26000 # bare HUN 2160p (16000 + 10000) — where the CF cutoff latches
+          until_score: 46000 # bare HUN 2160p, non-remux (26000 + 20000) — the CF cutoff
         # One group instead of the guide's four tiers — see the shared scoring model header.
         # Mirrors the Sonarr member set: SQP-1 already allowed WEB and Bluray, and HDTV + Remux
         # are added for the same reason as on Sonarr — every Radarr file at an excluded quality
@@ -302,25 +322,39 @@ radarr:
           - home-ops-hungarian-language
         assign_scores_to:
           - trash_id: 5128baeb2b081b72126bc8482b2a86a0
-            score: 16000
+            score: 26000
       - trash_ids:
           - 820b09bb9acbfde9c35c71e0e565dad8 # 1080p
         assign_scores_to:
           - trash_id: 5128baeb2b081b72126bc8482b2a86a0
-            score: 5000
+            score: 10000
       - trash_ids:
           - fb392fb0d61a010ae38e49ceaa24a1ef # 2160p
         assign_scores_to:
           - trash_id: 5128baeb2b081b72126bc8482b2a86a0
-            score: 10000
+            score: 20000
+      # The guide's own 720p CF scores 5, which would make the 720p rung differ between the two
+      # apps for no reason. Pin it to the shared 0 baseline.
+      - trash_ids:
+          - b2be17d608fc88818940cd1833b0b24c # 720p
+        assign_scores_to:
+          - trash_id: 5128baeb2b081b72126bc8482b2a86a0
+            score: 0
+      # Demote remux below a plain release of the same resolution. Local CF, since the guide has
+      # no "is this a remux" format: Radarr's QualityModifierSpecification value 5 (REMUX).
+      - trash_ids:
+          - home-ops-remux
+        assign_scores_to:
+          - trash_id: 5128baeb2b081b72126bc8482b2a86a0
+            score: -5000
       # Block third-language dubs: only HUN or Original wanted. Replaces the hard "Original"
-      # language gate (reconciled to "Any" by fix-radarr-language.sh) so non-HUN dubs score -35000.
+      # language gate (reconciled to "Any" by fix-radarr-language.sh) so non-HUN dubs are vetoed.
       - trash_ids:
           - home-ops-not-hungarian-or-original
         assign_scores_to:
           - trash_id: 5128baeb2b081b72126bc8482b2a86a0
-            score: -35000
-      # Every junk veto SQP-1 carries, at one magnitude that clears the 29982 max positive total.
+            score: -60000
+      # Every junk veto SQP-1 carries, at one magnitude that clears the 49982 max positive total.
       # LQ/BR-DISK/AV1/3D are not members of the SQP Unwanted group and were already listed here;
       # the rest come from that group at the guide's -10000 and are overridden to match.
       - trash_ids:
@@ -346,4 +380,4 @@ radarr:
           - 839bea857ed2c0a8e084f3cbdbd65ecb # x265 (no HDR/DV)
         assign_scores_to:
           - trash_id: 5128baeb2b081b72126bc8482b2a86a0
-            score: -35000
+            score: -60000
