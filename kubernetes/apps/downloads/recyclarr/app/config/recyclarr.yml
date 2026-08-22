@@ -1,10 +1,48 @@
 ---
 # yaml-language-server: $schema=https://schemas.recyclarr.dev/v8/config-schema.json
-# recyclarr sync for Sonarr + Radarr — priority order HUN dub > quality > size
-# (see BM docs/progress/arr-config-sync for the full planning framework). On Sonarr that order is
-# enforced entirely by custom format score (one WEB quality group, resolution scored as a CF),
-# because Sonarr ranks quality tier above CF score. LQ/BR-DISK -10000; explicit quality_definition
-# max caps reject gigantic 4K/1080p encodes while 720p/1080p stay as fallback.
+# recyclarr sync for Sonarr + Radarr — priority order HUN dub > quality > size.
+# (see BM docs/progress/arr-config-sync for the full planning framework)
+#
+# ---- SHARED SCORING MODEL — read this before touching any score in this file ----
+#
+# Neither Sonarr nor Radarr ranks releases by a weighted total. Both run their
+# DownloadDecisionComparer as CompareQuality -> CompareCustomFormatScore -> ... and short-circuit
+# on the first non-zero result, and both UpgradableSpecifications return "upgrade allowed" on a
+# better quality tier before they compute any CF score. So with separate quality tiers a non-HUN
+# 2160p always beats a HUN 1080p, at ANY Hungarian score. Raising the Hungarian score alone
+# changes nothing — the score is a tiebreaker within a tier, not a weight across tiers.
+#
+# The lever is quality grouping: QualityProfile.GetIndex() defaults to respectGroupOrder=false,
+# so every member of ONE quality group yields the same index, CompareQuality returns 0, and the
+# whole decision falls through to the CF score. Both profiles therefore collapse every allowed
+# quality into a single group, and resolution is re-expressed as a CF score. That is what turns
+# the score into a real weight and makes "HUN > quality > size" actually hold.
+#
+# The shared ladder (each rung must outrank the sum of everything below it):
+#   HUN dub               16000
+#   2160p / 1080p         10000 / 5000   720p is the implicit 0 baseline
+#   release-group tier    <= 3300   Sonarr: WEB Tier 01 1700; Radarr: + BHDStudio 1000, hallowed 600
+#   HDR                     500
+#   audio (DD+ ATMOS)       135    Radarr only
+#   streaming service     <= 1575  Sonarr: 19 service CFs at 75 + HD/UHD boost 150; Radarr: MA+CRiT 40
+#   Repack/Proper             7
+#   junk veto            -35000
+#
+# Worst-case sum of every rung below resolution, taking the max within each mutually exclusive
+# family (tier, audio, repack) and the sum where CFs can stack (service, encode group):
+# Sonarr 3782, Radarr 3982. Take the larger. The four invariants:
+#   resolution step 5000 > 3982                        -> resolution outranks tier/HDR/audio/svc
+#   max non-HUN = 10000 + 3982 = 13982 < 16000         -> HUN wins at every resolution
+#   max total   = 16000 + 10000 + 3982 = 29982 < 35000 -> every junk veto stays a real veto
+#   until_score = 26000 = bare HUN 2160p               -> the CF cutoff actually latches
+#
+# Touching any positive score means re-deriving all four. A veto that is not more negative than
+# the max total silently stops being one: at the guide's -10000 a HUN 2160p LQ release would net
+# a positive score and get grabbed.
+#
+# Recyclarr note: the flat custom_formats entries below deliberately override the guide/CF-group
+# scores — recyclarr resolves a conflict with "first value wins" and processes custom_formats
+# before CF groups. Each override shows up in the sync log as an INFO "conflicting scores" line.
 sonarr:
   series:
     base_url: http://sonarr.downloads.svc.cluster.local:8989
@@ -50,11 +88,8 @@ sonarr:
         upgrade:
           allowed: true
           until_quality: WEB
-          until_score: 15900 # bare HUN 2160p — the intended "good enough, stop searching" point
-        # One WEB group, not three tiers: Sonarr compares quality index BEFORE custom format
-        # score and short-circuits, so separate tiers let a non-HUN 2160p outrank a HUN 1080p at
-        # any score. Grouped qualities share one index, handing the decision to the CF score;
-        # resolution is re-expressed as a CF score below.
+          until_score: 26000 # bare HUN 2160p (16000 + 10000) — where the CF cutoff latches
+        # One WEB group instead of the guide's three tiers — see the shared scoring model header.
         qualities:
           - name: WEB
             qualities:
@@ -74,57 +109,24 @@ sonarr:
         - trash_id: e3f37512790f00d0e89e54fe5e790d1c # [Optional] Golden Rule UHD
         - trash_id: 85fae4a2294965b75710ef2989c850eb # [Streaming Services] HD/UHD boost
         - trash_id: 59c3af66780d08332fdc64e68297098f # [Unwanted] Unwanted Formats (LQ/BR-DISK incl.)
-    # SONARR SCORING MODEL — read this before touching any score below.
-    #
-    # Sonarr does NOT rank releases by a weighted total. DownloadDecisionComparer runs
-    # CompareQuality -> CompareCustomFormatScore -> ... and short-circuits on the first non-zero
-    # result, and UpgradableSpecification returns "upgrade allowed" on a better quality tier
-    # before it even computes a CF score. So with separate quality tiers a non-HUN 2160p always
-    # beats a HUN 1080p, at ANY Hungarian score. Raising 9900 higher changes nothing.
-    #
-    # The fix is the single WEB quality group above: QualityProfile.GetIndex() defaults to
-    # respectGroupOrder=false, so every member of one group yields the same index, CompareQuality
-    # returns 0, and the entire decision falls through to the CF score. Resolution is then
-    # re-expressed as a CF score here, which makes the score a real weight.
-    #
-    # The ladder (each rung must outrank the sum of everything below it):
-    #   HUN dub          9900   the whole point — must beat any non-HUN release
-    #   2160p / 1080p    6000 / 3000   720p is the implicit 0 baseline
-    #   WEB Tier 01-03   1700 / 1650 / 1600   from the guide, release-group quality
-    #   HDR                500
-    #   streaming svc       75  (+75 HD boost, +75 UHD boost)
-    #   Repack/Proper      5-7
-    #
-    # Why the numbers work:
-    #   max non-resolution positives = 1700 + 500 + 75 + 75 + 75 + 7 = 2432
-    #   resolution step 3000 > 2432       -> resolution outranks tier/HDR/service within HUN
-    #   max non-HUN total = 6000 + 2432 = 8432 < 9900   -> HUN wins at every resolution
-    #   max total = 9900 + 6000 + 2432 = 18332          -> see the veto score below
-    #
-    # Changing any positive score means re-deriving the two inequalities above — and until_score,
-    # which is pinned to the bare-HUN-2160p rung (9900 + 6000) so the CF cutoff actually latches
-    # instead of sitting above the 18332 ceiling and hunting upgrades forever.
+    # Scores follow the shared ladder in the file header — do not change one in isolation.
     custom_formats:
       - trash_ids:
           - home-ops-hungarian-language
         assign_scores_to:
           - trash_id: c4cadd6b35b95f62c3d47a408e53e2f7
-            score: 9900
+            score: 16000
       - trash_ids:
           - 290078c8b266272a5cc8e251b5e2eb0b # 1080p
         assign_scores_to:
           - trash_id: c4cadd6b35b95f62c3d47a408e53e2f7
-            score: 3000
+            score: 5000
       - trash_ids:
           - 1bef6c151fa35093015b0bfef18279e5 # 2160p
         assign_scores_to:
           - trash_id: c4cadd6b35b95f62c3d47a408e53e2f7
-            score: 6000
-      # Junk vetoes, overridden from the guide's -10000. A veto only works while its magnitude
-      # exceeds the 18332 max positive total, otherwise a HUN 2160p LQ release nets +8332 and gets
-      # grabbed. -35000 matches the third-language-dub veto below. Recyclarr resolves a conflicting
-      # score with "first value wins" and flat custom_formats are processed before CF groups, so
-      # these entries override the group-assigned guide scores; the sync logs the conflict as INFO.
+            score: 10000
+      # Junk vetoes, overridden from the guide's -10000 to clear the 29982 max positive total.
       - trash_ids:
           - 9c11cd3f07101cdba90a2d81cf0e56b4 # LQ
           - e2315f990da2e2cbfc9fa5b7a6fcfe48 # LQ (Release Title)
@@ -184,26 +186,50 @@ radarr:
         reset_unmatched_scores:
           enabled: true
         # Profile default minFormatScore=1000 would reject every non-HUN release (no tier CF
-        # groups are added); lower to 0 so 720p/1080p fallback works. LQ/BR-DISK (-10000) still
-        # reject junk; a HUN+LQ release (9900 + (-10000) = -100 < 0) is rejected, restoring the
-        # LQ-rejection invariant at no cost to fallback or HUN dominance.
+        # groups are added); lower to 0 so an untagged non-HUN release stays available as
+        # fallback. Junk is rejected by the -35000 vetoes below, not by this floor.
         min_format_score: 0
         upgrade:
           allowed: true
-          until_quality: WEB 2160p
-          until_score: 20000
+          until_quality: SQP
+          until_score: 26000 # bare HUN 2160p (16000 + 10000) — where the CF cutoff latches
+        # One SQP group instead of the guide's four tiers — see the shared scoring model header.
+        # Same member set the guide profile already allowed; Remux stays out, as SQP intends.
+        qualities:
+          - name: SQP
+            qualities:
+              - Bluray-2160p
+              - WEBDL-2160p
+              - WEBRip-2160p
+              - Bluray-1080p
+              - WEBDL-1080p
+              - WEBRip-1080p
+              - Bluray-720p
+              - WEBDL-720p
+              - WEBRip-720p
     custom_format_groups:
       add:
         - trash_id: ff204bbcecdd487d1cefcefdbf0c278d # [Optional] Golden Rule UHD
           assign_scores_to:
             - trash_id: 5128baeb2b081b72126bc8482b2a86a0
         - trash_id: 15b1cf0b6f1a1493856a4355907affee # [Unwanted] Unwanted Formats SQP
+    # Scores follow the shared ladder in the file header — do not change one in isolation.
     custom_formats:
       - trash_ids:
           - home-ops-hungarian-language
         assign_scores_to:
           - trash_id: 5128baeb2b081b72126bc8482b2a86a0
-            score: 9900
+            score: 16000
+      - trash_ids:
+          - 820b09bb9acbfde9c35c71e0e565dad8 # 1080p
+        assign_scores_to:
+          - trash_id: 5128baeb2b081b72126bc8482b2a86a0
+            score: 5000
+      - trash_ids:
+          - fb392fb0d61a010ae38e49ceaa24a1ef # 2160p
+        assign_scores_to:
+          - trash_id: 5128baeb2b081b72126bc8482b2a86a0
+            score: 10000
       # Block third-language dubs: only HUN or Original wanted. Replaces the hard "Original"
       # language gate (reconciled to "Any" by fix-radarr-language.sh) so non-HUN dubs score -35000.
       - trash_ids:
@@ -211,19 +237,30 @@ radarr:
         assign_scores_to:
           - trash_id: 5128baeb2b081b72126bc8482b2a86a0
             score: -35000
-      # SQP Unwanted group lacks LQ/BR-DISK; add them explicitly to preserve junk rejection.
+      # Every junk veto SQP-1 carries, at one magnitude that clears the 29982 max positive total.
+      # LQ/BR-DISK/AV1/3D are not members of the SQP Unwanted group and were already listed here;
+      # the rest come from that group at the guide's -10000 and are overridden to match.
       - trash_ids:
           - 90a6f9a284dff5103f6346090e6280c8 # LQ
           - e204b80c87be9497a8a6eaff48f72905 # LQ (Release Title)
           - ed38b889b31be83fda192888e2286d83 # BR-DISK
-        assign_scores_to:
-          - trash_id: 5128baeb2b081b72126bc8482b2a86a0
-            score: -10000
-      # AV1 + 3D are trash-guide required-unwanted but not members of the SQP Unwanted group;
-      # add explicitly to complete the 'exclude BAD quality' coverage on SQP-1.
-      - trash_ids:
           - cae4ca30163749b891686f95532519bd # AV1
           - b8cd450cbfa689c0259a01d9e29ba3d6 # 3D
+          - b6832f586342ef70d9c128d40c07b872 # Bad Dual Groups
+          - cc5e51a9e85a6296ceefe097a77f12f4 # BCORE
+          - cc444569854e9de0b084ab2b8b1532b2 # Black and White Editions
+          - 2f22d89048b01681dde8afe203bf2e95 # DTS X
+          - 8e109e50e0a0b83a5098b056e13bf6db # DTS-HD HRA
+          - dcf3ec6938fa32445f590a4da84256cd # DTS-HD MA
+          - 923b6abef9b17f937fab56cfcf89e1f1 # DV (w/o HDR fallback)
+          - 0a3f082873eb454bde444150b70253cc # Extras
+          - e6886871085226c3da1830830146846c # Generated Dynamic HDR
+          - c465ccc73923871b3eb1802042331306 # Line/Mic Dubbed
+          - 712d74cd88bceb883ee32f773656b1f5 # Sing-Along Versions
+          - 3cafb66171b47f226146a0770576870f # TrueHD
+          - 496f355514737f7d83bf7aa4d24f8169 # TrueHD ATMOS
+          - bfd8eb01832d646a0a89c4deb46f8564 # Upscaled
+          - 839bea857ed2c0a8e084f3cbdbd65ecb # x265 (no HDR/DV)
         assign_scores_to:
           - trash_id: 5128baeb2b081b72126bc8482b2a86a0
-            score: -10000
+            score: -35000
