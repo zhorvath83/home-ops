@@ -1,0 +1,22 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
+# jellyfin (AD-023): envoy-internal ingress via the ingress-from-gateway-internal CCNP; this CNP admits the seerr consumer (downloads) on the API port so Seerr can drive Jellyfin instead of Plex.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: jellyfin
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: jellyfin
+      app.kubernetes.io/instance: jellyfin
+      app.kubernetes.io/controller: jellyfin
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: downloads
+            app.kubernetes.io/name: seerr
+      toPorts:
+        - ports:
+            - port: "8096"
+              protocol: TCP
