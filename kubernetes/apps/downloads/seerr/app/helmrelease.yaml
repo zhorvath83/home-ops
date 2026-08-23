@@ -29,10 +29,9 @@ spec:
       seerr:
         containers:
           app:
-            # Temporary: preview-media-server-migration image for the in-app Plex→Jellyfin switch (seerr-team PR #2539). Revert to the stable tag after the migration completes.
             image:
               repository: ghcr.io/seerr-team/seerr
-              tag: preview-media-server-migration@sha256:059446f2bf7061533300b6054381da12c46f690573fdfaa4370bb14da5b8cb24
+              tag: v3.4.1@sha256:f4768de5f616248d723e05891f3345a1402123775d03bf0890dbfedc0831bda1
             env:
               PORT: &port 5055
             probes:
