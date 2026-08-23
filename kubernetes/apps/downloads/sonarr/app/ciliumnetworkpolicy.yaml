@@ -28,6 +28,9 @@ spec:
         - matchLabels:
             k8s:io.kubernetes.pod.namespace: downloads
             app.kubernetes.io/name: recyclarr
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: downloads
+            app.kubernetes.io/name: maintainerr
       toPorts:
         - ports:
             - port: "8989"
