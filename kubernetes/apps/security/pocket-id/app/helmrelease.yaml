@@ -29,8 +29,31 @@ spec:
     controllers:
       pocket-id:
         annotations:
-          # TLS secret hot-reloaded by pocket-id; Reloader only on app-secret.
+          # cert-sync sidecar re-syncs pocket-id-tls into /certs hourly (atomic mv);
+          # pocket-id fsnotify reloads — no pod restart on cert rotation.
           reloader.stakater.com/secret: "pocket-id-secret"
+        initContainers:
+          cert-seed:
+            image:
+              repository: public.ecr.aws/docker/library/busybox
+              tag: 1.38.0
+            securityContext:
+              privileged: false
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: {drop: ["ALL"]}
+            resources:
+              limits:
+                memory: 32Mi
+            command:
+              - "/bin/sh"
+              - "-c"
+            args:
+              - |
+                [ -f /certs-src/tls.crt ] && [ -f /certs-src/tls.key ] || { echo "cert source missing"; exit 1; }
+                cp /certs-src/tls.crt /certs/tls.crt
+                cp /certs-src/tls.key /certs/tls.key
+                echo "cert seeded"
         containers:
           app:
             image:
@@ -114,6 +137,40 @@ spec:
                 memory: 96Mi
               limits:
                 memory: 512Mi
+          cert-sync:
+            image:
+              repository: public.ecr.aws/docker/library/busybox
+              tag: 1.38.0
+            securityContext:
+              privileged: false
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: {drop: ["ALL"]}
+            resources:
+              requests:
+                cpu: 5m
+                memory: 8Mi
+              limits:
+                memory: 32Mi
+            command:
+              - "/bin/sh"
+              - "-c"
+            args:
+              - |
+                sync_cert() {
+                  [ -f /certs-src/tls.crt ] && [ -f /certs-src/tls.key ] || { echo "cert source missing"; return 1; }
+                  if ! cmp -s /certs-src/tls.crt /certs/tls.crt; then
+                    cp /certs-src/tls.crt /certs/.tls.crt.tmp && mv -f /certs/.tls.crt.tmp /certs/tls.crt
+                    echo "tls.crt updated"
+                  fi
+                  if ! cmp -s /certs-src/tls.key /certs/tls.key; then
+                    cp /certs-src/tls.key /certs/.tls.key.tmp && mv -f /certs/.tls.key.tmp /certs/tls.key
+                    echo "tls.key updated"
+                  fi
+                  return 0
+                }
+                sync_cert
+                while true; do sleep 3600; sync_cert; done
     service:
       app:
         controller: pocket-id
@@ -152,11 +209,19 @@ spec:
               - path: /app/geolite
       tmp:
         type: emptyDir
-      certs:
+      certs-runtime:
+        type: emptyDir
+        globalMounts:
+          - path: /certs
+      certs-src:
         type: secret
         name: pocket-id-tls
         defaultMode: 0400
         advancedMounts:
           pocket-id:
-            app:
-              - path: /certs
+            cert-seed:
+              - path: /certs-src
+                readOnly: true
+            cert-sync:
+              - path: /certs-src
+                readOnly: true
