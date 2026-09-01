@@ -89,8 +89,9 @@ spec:
               requests:
                 cpu: 10m
                 memory: 64Mi
+              # 8.2 leak: RSS grows ~380Mi/day, ~24h to the old 384Mi limit.
               limits:
-                memory: 384Mi
+                memory: 768Mi
     service:
       app:
         controller: crowdsec-web-ui
