@@ -58,7 +58,7 @@ spec:
             image:
               # renovate: datasource=docker depName=alpine/k8s
               repository: alpine/k8s
-              tag: 1.36.2@sha256:1af42341bac2392c9af30f79019aa94dd9d3be018c970383debfb3d6f76acf87
+              tag: 1.37.0@sha256:32c5765a0d1772b8620e96796bd171b925c0ddb0acbbf9a11dcdc81083e8d025
             env:
               # kubectl writes its HTTP cache under HOME; point it at the writable emptyDir.
               - name: HOME
