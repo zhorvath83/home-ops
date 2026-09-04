@@ -11,5 +11,5 @@ spec:
     operation: copy
   ref:
     # renovate: registryUrl=https://ghcr.io/crowdsecurity/helm-charts chart=crowdsec
-    tag: 0.24.0
+    tag: 0.24.2
   url: oci://ghcr.io/crowdsecurity/helm-charts/crowdsec
