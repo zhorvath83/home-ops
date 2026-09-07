@@ -41,7 +41,7 @@ spec:
               - valkey
             image: &image
               repository: ghcr.io/paperless-ngx/paperless-ngx
-              tag: 3.1.2@sha256:141dc5d5f15124355523722dc87e141552badd86dccf952d242e63b813906cb6
+              tag: 3.1.3@sha256:ad7059ba2e2bd1cdfd66509651ee6127862a80acf0a8a4462709ad5427f181c4
             env:
               # Application settings
               PAPERLESS_TIME_ZONE: "Europe/Budapest"
