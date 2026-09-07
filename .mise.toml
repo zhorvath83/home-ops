@@ -46,7 +46,7 @@ kubectl = "1.37.0"
 "aqua:pre-commit/pre-commit" = "4.6.2"
 
 # Terraform
-"aqua:hashicorp/terraform" = "1.16.0"
+"aqua:hashicorp/terraform" = "1.16.1"
 
 # Linters / formatters / auditors
 "aqua:google/yamlfmt" = "0.21.0"
