@@ -34,7 +34,7 @@ spec:
           app:
             image:
               repository: ghcr.io/ellite/wallos
-              tag: 5.7.0@sha256:1af8424363f2200a3d84235d6732285a2116d0f0afccef948c3b8354035fd9c8
+              tag: 5.7.1@sha256:8defb438c52f5c1b2555f86d4abae6a428ff4968f0959ee82b4fa387844ee273
             env:
               PUID: 1000
               PGID: 1000
