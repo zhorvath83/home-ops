@@ -54,7 +54,7 @@ spec:
           app:
             image:
               repository: ghcr.io/smp46/pingvin-share-x
-              tag: v1.22.1@sha256:38480232d3ec26858e0313e09584b662fde356a32aaf83f6270f26c5414065ec
+              tag: v1.22.2@sha256:8cc803b68c0e31a61f8d77c4a8ba36378ba39c40ec6ad19551c9c86e82528ed4
             env:
               CADDY_DISABLED: "true"
               TRUST_PROXY: "true"
