@@ -217,7 +217,7 @@ url = "https://github.com/google/yamlfmt/releases/download/v0.21.0/yamlfmt_0.21.
 url_api = "https://api.github.com/repos/google/yamlfmt/releases/assets/336650206"
 
 [[tools."aqua:hashicorp/terraform"]]
-version = "1.15.9"
+version = "1.16.2"
 backend = "aqua:hashicorp/terraform"
 
 [tools."aqua:hashicorp/terraform"."platforms.linux-arm64"]
