@@ -118,7 +118,7 @@ url = "https://github.com/cilium/hubble/releases/download/v1.19.4/hubble-windows
 url_api = "https://api.github.com/repos/cilium/hubble/releases/assets/439544308"
 
 [[tools."aqua:fluxcd/flux2"]]
-version = "2.9.4"
+version = "2.9.5"
 backend = "aqua:fluxcd/flux2"
 
 [tools."aqua:fluxcd/flux2"."platforms.linux-arm64"]
