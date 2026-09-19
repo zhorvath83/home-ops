@@ -24,11 +24,11 @@
 # the degraded value for >=41m; the alert first fires at t=80m (40m after degradation starts,
 # when the last healthy sample ages out of the window) -> eval at 81m. exp_annotations asserted
 # so a broken template fails the suite. The speedtest_* gauges carry {endpoint,
-# instance="speedtest", job, namespace, service} (pod/ip/isp dropped by the serviceMonitor
-# metricRelabeling, and the exporter's own instance label dropped too — colliding with the
-# target instance it would become an exported_instance shadow label; the target relabeling
-# supplies instance="speedtest"); max/min_over_time keep these labels. speedtest_up carries
-# the same target labels (the exporter
+# instance="speedtest", job, namespace, service} (the serviceMonitor metricRelabelings drop
+# ip/isp/pod, plus exported_instance — the exporter's own instance label collides with the
+# target instance and is renamed at ingest BEFORE metric relabeling, so the shadow label is
+# dropped there and the target instance survives); max/min_over_time keep these labels.
+# speedtest_up carries the same target labels (the exporter
 # emits it label-free). absent_over_time carries only the selector label (job).
 # Run via `just k8s test-prom-rules` (recipe copies this test + .extracted_prometheus_rules.yaml into a temp dir).
 rule_files:

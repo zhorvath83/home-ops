@@ -112,6 +112,7 @@ spec:
                 replacement: speedtest
             metricRelabelings:
               - action: labeldrop
-                # ip/isp change with the WAN IP; a series instance colliding with the
-                # target instance would become an exported_instance shadow label
-                regex: (instance|ip|isp|pod)
+                # ip/isp change with the WAN IP; the exporter's instance label is renamed
+                # exported_instance at ingest (collision with the target instance) and
+                # must be dropped there — metric relabeling runs AFTER the rename
+                regex: (exported_instance|ip|isp|pod)
