@@ -64,8 +64,16 @@ spec:
                   timeoutSeconds: 5
                   failureThreshold: 5
               readiness: *probes
+              # 12.x first-boot DB migrations delay /health by minutes; liveness stays suspended until startup succeeds.
               startup:
-                enabled: false
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: *port
+                  periodSeconds: 30
+                  failureThreshold: 60
             resources:
               claims:
                 - name: gpu
