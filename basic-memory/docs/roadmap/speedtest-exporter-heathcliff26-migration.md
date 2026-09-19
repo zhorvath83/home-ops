@@ -85,10 +85,12 @@ App: kubernetes/apps/observability/speedtest-exporter (bjw-s app-template, ks.ya
   servers (Ookla CLI, 2026-09-19) found only 1697 healthy on every axis (582/319 Mbps, 5.8 ms): the others measure download 355-494 Mbps
   (below the 500 Mbit/s alert threshold) or are broken (ATW 7842 connection refused). The pin carries the known ceiling: if Yettel retires or
   degrades, tests fail visibly (speedtest_up=0 -> MeasurementFailed) - re-survey and re-pin then.
-- D6 instance label -> set instance: "speedtest" in config.yaml so the exporter's own metric label matches the target relabeling replacement (avoids an exported_instance shadow label). AND extend the ServiceMonitor metricRelabelings labeldrop from (pod) to (ip|isp|pod): the exporter's ip/isp labels would create a new series on every WAN IP change and leak into the unit-test exp_labels; the dashboard uses neither. exp_labels in the test suite stay as today (endpoint, instance, job, namespace, service). REVISED 2026-09-19: instance was ADDED to the
-  labeldrop regex (instance|ip|isp|pod) - matching the exporter instance label to the target relabeling did NOT avoid the collision: at ingest
-  Prometheus renamed the series instance to an exported_instance shadow label on every gauge (observed live). Dropping the series-side
-  instance lets the target relabeling supply instance="speedtest"; live series then match exp_labels exactly.
+- D6 instance label -> set instance: "speedtest" in config.yaml so the exporter's own metric label matches the target relabeling replacement (avoids an exported_instance shadow label). AND extend the ServiceMonitor metricRelabelings labeldrop from (pod) to (ip|isp|pod): the exporter's ip/isp labels would create a new series on every WAN IP change and leak into the unit-test exp_labels; the dashboard uses neither. exp_labels in the test suite stay as today (endpoint, instance, job, namespace, service). REVISED twice 2026-09-19 (live-observed mechanics): the collision rename runs BEFORE metric relabeling and metric relabeling operates on
+  the MERGED label set (target labels included). Dropping `instance` (commit 155fa9252) therefore removed the TARGET label and left the
+  exported_instance shadow in place - observed live as series carrying [endpoint, exported_instance, job, namespace, service] with no
+  instance, and the 20115 dashboard panels (instance-filtered) rendered empty for the affected samples. FINAL FORM (commit fb5cb10c4):
+  labeldrop regex (exported_instance|ip|isp|pod) - the shadow label is dropped, the target instance="speedtest" survives. Post-fix scrape
+  22:47 verified: gauges carry exactly [endpoint, instance, job, namespace, service], no shadow label.
 - D7 NEW ALERT -> RECOMMEND adding SpeedtestMeasurementFailed: max_over_time(speedtest_up[40m]) == 0 (same 2-sample window gate as the threshold alerts). Reason: on the new exporter measurement failure no longer produces low gauge values - the gauges go absent and the threshold alerts stay silent, so the failure signal the old flapping accidentally provided must become an explicit alert. max (not min) picks the BEST sample in the window, so a single failed test with a healthy one in-window does NOT fire - both must fail. speedtest_up is always emitted on a working scrape, so scrape loss remains the Absent alert's domain, not this one's.
 
 ## Execution plan
@@ -204,8 +206,21 @@ Live verification (acceptance criteria 1-3, 5 partial, 7-8 done):
 
 Still pending before close-out:
 
-- Post-labeldrop-fix scrape cycle observation (>=2 cycles / 40m no-alert window from ~14:39).
-- Grafana dashboard 20115 rendering check (criterion 6).
-- 24h threshold recalibration follow-up: observe Yettel-measured minimums, re-check distance
-  to 500/200/20; ALSO re-check the pinned server's health (pin ceiling, see revised D5).
-- Close-out: move this note to docs/progress/ + status done.
+- Post-fix observation: SATISFIED - the session went idle ~15:15-22:20, and the 22:20 range queries
+  showed up{job="speedtest-exporter"}==1 on EVERY 20m scrape 19:27-22:07 (no gap, no restarts),
+  gauges healthy throughout (download 883-927, upload 300-308, ping 5-6 ms, all serverID=1697),
+  and zero Speedtest alerts - criterion 5 met over a >7h window, far beyond the 40m requirement.
+  Note the 40m alert monitor (b48wk4x4d) ended clean at ~15:17, and the earlier watchers missed
+  the post-fix scrapes NOT because of a fault but because instant queries go stale between the
+  20m scrapes (the 5m staleness window the alert design already models - watchers must range-query).
+- Grafana dashboard 20115: CR applied successfully (contentUrl 20115 rev 4, contentTimestamp
+  2026-09-19, DashboardSynchronized=True). User reported panels empty over the last 6h - root
+  cause was the 155fa9252 instance-labeldrop regression (gauge series lost instance, instance-
+  filtered panels matched nothing), NOT the dashboard; fixed by fb5cb10c4, verified by the
+  22:47 post-fix scrape carrying instance="speedtest". Permanent cosmetic gaps: pre-14:19 (metric
+  rename series break, accepted) and 14:49-22:47 (samples exist only as exported_instance).
+- Post-fix verification 22:47: gauges [endpoint, instance, job, namespace, service] exactly as
+  exp_labels; upload 308.88; ALERTS empty.
+- REMAINING follow-up (24h, next session): threshold recalibration against Yettel-measured
+  minimums (distance to 500/200/20) + pinned-server health re-check (pin ceiling, revised D5).
+- Close-out: move this note to docs/progress/ + status done (after the 24h follow-up).
