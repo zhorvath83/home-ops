@@ -268,3 +268,23 @@ kubectl -n media exec $P -c app -- sh -c 'export LIBVA_DRIVERS_PATH=/usr/lib/jel
   -frames:v 50 -c:v h264_qsv -f null -'
 ```
 Needs `dangerouslyDisableSandbox: true` like every other cluster command here.
+
+## Session 2026-09-19 — 12.1 major migration (roadmap jellyfin-12-migration executed)
+
+- [decision] Image bumped 10.11.11 -> 12.1@sha256:c0166b09f7068e7738d006d86a71ad58b981e4ecf1bf0a24fbba2498ecfe8715
+  (amd64 manifest digest), commit be3c07022 direct on main. Startup probe landed first via PR #4390
+  (httpGet /health:8096, period 30s, failureThreshold 60 = ~30 min slow-start budget); the actual
+  migration finished in ~19s ("Startup complete 0:00:18.8"), pod 1/1, 0 restarts, /health 200.
+  Full record: [[jellyfin-12-migration]].
+- [observation] The 10.11 encoding.xml was rejected by 12.1 (empty EncoderPreset value) and hw accel
+  fell back to 'none'; config rebuilt by the human in the UI instead of recovering the old one:
+  QSV, /dev/dri/renderD128, hw encoding on. The 2026-08-21 capability matrix still applies (AV1 decode
+  stays off, LP encoder off, VPP tone mapping not for Gen9.5).
+- [decision] HEVC hardware encoding ALLOWED (2026-09-19) — a deliberate change from the 2026-08-21
+  "keep H.264" decision; hevc_qsv encode verified live (h264_qsv decode -> vpp_qsv scale -> hevc_qsv
+  encode, ffmpeg exit 0) on a forced 2 Mbps transcode.
+- [observation] Plugins: Introskipper 1.10.11.24 failed ABI load (auto-disabled); server auto-installed
+  12.0-track 12.0.4.0 which also stays dark on 12.1 (targetAbi 12.0.0.0). Fingerprint DB intact on the
+  jellyfin-metadata PVC. File Transformation vanished from /config/plugins during migration -> dropped.
+- [observation] Full library scan (required post-12) ran from the UI, completed in 28s; web UI +
+  multi-version movie + series spot-checks OK after hard-refresh.

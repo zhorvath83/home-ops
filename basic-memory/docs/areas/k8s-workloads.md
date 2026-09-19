@@ -208,3 +208,12 @@ itself, which is the whole point of this note, was wrong.
 - [observation] [auth] `homepage` (selfhosted) gained a native OIDC gate with Homepage 2.0's built-in auth, restricted to the `infra_admins` Pocket ID group. It is NOT a `gateway-oidc` consumer, so the OIDC-coverage claims above (which enumerate gateway-gated apps) are unaffected — this is the second auth model in this area's inventory alongside the envoy-gated one. Authoritative detail lives in [[iam]].
 - [observation] [auth] Consequence for the exposure model: the dashboard's origin is no longer reachable unauthenticated on EITHER gateway. Previously the envoy-internal LAN path had no identity gate at all, and the envoy-external path relied solely on Cloudflare Access (which is retained as a second layer).
 - [observation] [gotcha] `HOMEPAGE_ALLOWED_HOSTS` moved off `"*"` to the real hostname, which required an explicit `Host: localhost:3000` header on the kubelet probes — upstream runs host validation ahead of the `/api/healthcheck` auth exemption. See [[homepage-recon-exposure]].
+
+## Update 2026-09-19 — jellyfin 12.1; media inventory predates two apps
+
+- [observation] The App inventory above (verified 2026-08-03) does not list jellyfin or crosswatch
+  (both deployed in the media namespace after that verification). Full inventory refresh is owed.
+- [observation] jellyfin (kubernetes/apps/media/jellyfin) is digest-pinned and was migrated
+  10.11.11 -> 12.1 on 2026-09-19 (commit be3c07022) with a startup probe guarding first-boot DB
+  migrations (PR #4390). QSV hardware transcode re-verified on 12.1 + FFmpeg 8.1.2. Execution record:
+  [[jellyfin-12-migration]].

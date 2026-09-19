@@ -6,7 +6,7 @@ topic: Jellyfin 10.11.11 to 12.x major migration - one-way database schema migra
   that runs for minutes before the web server binds, under a Kubernetes liveness probe
   that kills the pod after ~180s; plus an Introskipper plugin ABI-track constraint
   that decides the target minor version
-status: planned
+status: done
 priority: medium
 scope: Single-app major upgrade of the jellyfin HelmRelease in the media namespace
   (image digest bump 10.11.11 to 12.x) with probe rework BEFORE the bump, a fresh
@@ -43,7 +43,7 @@ related_areas:
 
 - [type] roadmap
 - [topic] Jellyfin 10.11.11 -> 12.x major migration in the media namespace
-- [status] planned - researched 2026-09-18 against the 12.0/12.1 release notes, the jellyfin.org announcement, the XDA breakage summary, and the live intro-skipper manifest/issues. D1 RESOLVED 2026-09-18: target 12.1. D2 (probe strategy) has a recommendation executable early as prep on 10.11.11. Plan re-reviewed objectively 2026-09-18: 4 corrections folded in (GitOps-safe emergency stop, Jellyfin's own pre-migration DB backup as first-line recovery, /health-during-migration assumption flagged, transcode verification added). Timing RESOLVED 2026-09-18 (human): migrate NOW, plugin-free - Introskipper stays dark until its 12.1 track ships (monthly follow-up check of releases/manifest). Phase 0 prep (D2 startup probe) executing the same day.
+- [status] done - executed 2026-09-19 (research 2026-09-18) against the 12.0/12.1 release notes, the jellyfin.org announcement, the XDA breakage summary, and the live intro-skipper manifest/issues. D1 RESOLVED 2026-09-18: target 12.1. D2 (probe strategy) has a recommendation executable early as prep on 10.11.11. Plan re-reviewed objectively 2026-09-18: 4 corrections folded in (GitOps-safe emergency stop, Jellyfin's own pre-migration DB backup as first-line recovery, /health-during-migration assumption flagged, transcode verification added). Timing RESOLVED 2026-09-18 (human): migrate NOW, plugin-free - Introskipper stays dark until its 12.1 track ships (monthly follow-up check of releases/manifest). Phase 0 prep (D2 startup probe) executing the same day.
 - [priority] medium
 - [created] 2026-09-18
 - [relates_to] [[home-ops/docs/progress/jellyfin]]
@@ -286,3 +286,18 @@ the risk is only that a plugin track mismatch makes them unreadable, not lost).
 - Introskipper dashboard-restart issue: https://github.com/intro-skipper/intro-skipper/issues/1001
 - Introskipper manifest repo (tracks): https://github.com/intro-skipper/manifest
 - Current deployment: [[home-ops/docs/progress/jellyfin]]
+
+## Execution outcome (2026-09-19)
+
+Executed in a single attended maintenance window, end to end.
+
+- [observation] Phase 0 prep: startup probe landed via PR #4390 (squash e109bddc2) - httpGet /health:8096, periodSeconds 30, failureThreshold 60 (~30 min slow-start budget). CI green (flux-local test+diff, gitleaks); forced reconcile; reloader restart verified 1/1 Running 0 restarts.
+- [observation] Username case-conflict gate: jellyfin.db Users table holds a single user (zhorvath83) - conflict impossible.
+- [observation] Rollback point: manual VolSync snapshot 6b663a849493f3e793a567698b2168e4 @ 2026-09-19 04:16:19Z (79.3 MiB), verified in the Kopia list. Unused; kept.
+- [observation] The migration itself: image bumped to 12.1@sha256:c0166b09f7068e7738d006d86a71ad58b981e4ecf1bf0a24fbba2498ecfe8715 (amd64 manifest digest, resolved via docker manifest inspect), commit be3c07022 direct on main. Server completed startup in ~19s ("Startup complete 0:00:18.8") - migrations (RepairAlternateVersionLinks, MigrateRatingLevels, StripEmbeddedLinkedChildren over 3014 items, db optimize) ran far under the 30 min budget. Pod 1/1 Running, 0 restarts through the whole window; /health 200 via readiness probe.
+- [observation] DEVIATION (human decision 2026-09-19): third-party plugins were NOT removed pre-migration. Old Introskipper 1.10.11.24 failed ABI load and was auto-disabled; the server auto-updated it to 12.0-track 12.0.4.0, which also stays dark on 12.1 (targetAbi 12.0.0.0, issue #999). File Transformation vanished from /config/plugins during the migration -> dropped per roadmap step 11.
+- [observation] Post-migration repair: the 10.11 encoding.xml failed to load on 12.1 (empty EncoderPreset value rejected) and hardware acceleration fell back to 'none'. Human rebuilt the config in the UI (old config discarded by decision): QSV, device /dev/dri/renderD128, hw decoding H264/HEVC/MPEG2/VC1/VP8/VP9 + 10bit variants (no AV1, no RExt 12bit - UHD 630 Gen9.5 limits), hw encoding on, HEVC encode allowed, AV1 encode off, low-power VDENC off (HuC firmware unverified on Talos).
+- [observation] Verification: full library scan triggered from UI, completed 28s (07:29:59Z). Web UI + multi-version movie + series spot-check OK (human, hard-refresh). QSV transcode verified live on "The Way (2010)" forced to 2 Mbps: h264_qsv decode -> vpp_qsv scale -> hevc_qsv encode via vaapi child device (iHD), ffmpeg exit 0.
+- [follow-up] Monthly check of intro-skipper releases/manifest for a 12.1-track build; fingerprint DB intact on jellyfin-metadata PVC.
+- [follow-up] File Transformation re-add decision (12.x compat unverified).
+- [follow-up] Kopia maintenance: "too many index blobs (3407)" warning during list-snapshots - run just volsync kopia-maintenance and check the KopiaMaintenance schedule.
