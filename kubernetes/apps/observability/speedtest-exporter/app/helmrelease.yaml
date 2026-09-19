@@ -112,5 +112,6 @@ spec:
                 replacement: speedtest
             metricRelabelings:
               - action: labeldrop
-                # ip/isp change with the WAN IP — dropping avoids a new series per IP change
-                regex: (ip|isp|pod)
+                # ip/isp change with the WAN IP; a series instance colliding with the
+                # target instance would become an exported_instance shadow label
+                regex: (instance|ip|isp|pod)
