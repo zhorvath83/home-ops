@@ -79,8 +79,16 @@ App: kubernetes/apps/observability/speedtest-exporter (bjw-s app-template, ks.ya
 - D2 Test cadence -> RECOMMEND cache: 20m via config.yaml, with the CONSTRAINT cache <= scrape interval (a failed result is cached for the full TTL; cache > interval would blind the window). Behavior stays test-per-scrape, same as today.
 - D3 Port -> RECOMMEND keep 9798 via config.yaml port (Service/ServiceMonitor naming unchanged; the SPEEDTEST_PORT env goes away). scrapeTimeout stays 5m (no churn; the server-side 60s WriteTimeout is the real bound).
 - D4 Dashboard -> VERIFIED, no fallback needed: dashboard 20115 rev 4 uses a datasource template variable that defaults to the Grafana default datasource - our Prometheus (grafanadatasource.yaml isDefault: true) - and an instance variable querying label_values({job="speedtest-exporter"},instance) which resolves to "speedtest" under our target relabeling. REMOVE the CR's datasources block: 20115 has no grafana.com inputs, that block is 13665's input model.
-- D5 Server pin -> auto-select (serverID 0; the author explicitly discourages pinning - pinned servers can retire or degrade).
-- D6 instance label -> set instance: "speedtest" in config.yaml so the exporter's own metric label matches the target relabeling replacement (avoids an exported_instance shadow label). AND extend the ServiceMonitor metricRelabelings labeldrop from (pod) to (ip|isp|pod): the exporter's ip/isp labels would create a new series on every WAN IP change and leak into the unit-test exp_labels; the dashboard uses neither. exp_labels in the test suite stay as today (endpoint, instance, job, namespace, service).
+- D5 Server pin -> REVISED 2026-09-19 after live verification: PIN Yettel serverID 1697 (config.yaml serverID: 1697). The original auto-select
+  recommendation was falsified by evidence: auto-select picked broken server 41195 (bpspeedtest.giganet.hu) - its upload data plane returns
+  ~0 Mbit/s (speedtest-go) while speedtest_up=1, and Ookla CLI cannot even connect (socket refused). A full survey of all ten Budapest
+  servers (Ookla CLI, 2026-09-19) found only 1697 healthy on every axis (582/319 Mbps, 5.8 ms): the others measure download 355-494 Mbps
+  (below the 500 Mbit/s alert threshold) or are broken (ATW 7842 connection refused). The pin carries the known ceiling: if Yettel retires or
+  degrades, tests fail visibly (speedtest_up=0 -> MeasurementFailed) - re-survey and re-pin then.
+- D6 instance label -> set instance: "speedtest" in config.yaml so the exporter's own metric label matches the target relabeling replacement (avoids an exported_instance shadow label). AND extend the ServiceMonitor metricRelabelings labeldrop from (pod) to (ip|isp|pod): the exporter's ip/isp labels would create a new series on every WAN IP change and leak into the unit-test exp_labels; the dashboard uses neither. exp_labels in the test suite stay as today (endpoint, instance, job, namespace, service). REVISED 2026-09-19: instance was ADDED to the
+  labeldrop regex (instance|ip|isp|pod) - matching the exporter instance label to the target relabeling did NOT avoid the collision: at ingest
+  Prometheus renamed the series instance to an exported_instance shadow label on every gauge (observed live). Dropping the series-side
+  instance lets the target relabeling supply instance="speedtest"; live series then match exp_labels exactly.
 - D7 NEW ALERT -> RECOMMEND adding SpeedtestMeasurementFailed: max_over_time(speedtest_up[40m]) == 0 (same 2-sample window gate as the threshold alerts). Reason: on the new exporter measurement failure no longer produces low gauge values - the gauges go absent and the threshold alerts stay silent, so the failure signal the old flapping accidentally provided must become an explicit alert. max (not min) picks the BEST sample in the window, so a single failed test with a healthy one in-window does NOT fire - both must fail. speedtest_up is always emitted on a working scrape, so scrape loss remains the Absent alert's domain, not this one's.
 
 ## Execution plan
@@ -165,7 +173,39 @@ Validation (Phase 1 gate):
 - diff review: 4 files, 168 insertions / 74 deletions, every hunk traces to a plan step;
   nothing outside the migration; AD-023 labels untouched; no PVC, no secret, no .renovate change.
 
-Pending (Phase 2, after push + flux reconcile): live verification per the acceptance criteria -
-pod image v1.8.0, new metric names with speedtest_up 1, no ip/isp labels, Prometheus target up,
-dashboard 20115 rendering, >=40m no-alert observation, measured minimums for the 24h threshold
-recalibration follow-up. Close-out: move this note to docs/progress/ + status done.
+### Phase 2 - rollout + live verification 2026-09-19
+
+Deployed direct to main (jellyfin-migration pattern, user-approved; no PR): migration commit
+e1f6a9c7d, server pin fix 2c572f3fe, instance labeldrop fix 155fa9252 - each pushed and
+reconciled via just k8s flux-reconcile.
+
+Live verification (acceptance criteria 1-3, 5 partial, 7-8 done):
+
+1. Pod image ghcr.io/heathcliff26/speedtest-exporter:v1.8.0 Running, ready, 0 restarts.
+2. Config load PROVEN by logs: server binds :9798 (not the 8080 default), cache file at
+   /cache/speedtest-result.json (emptyDir, fsGroup-writable), test runs inside the scrape
+   (duration 23.1s, author-matched).
+3. INCIDENT during verification (root-caused, fixed same day): auto-select picked broken
+   server 41195 (bpspeedtest.giganet.hu) - upload measured -8e-06 Mbit/s (i.e. ~0) on every
+   test while speedtest_up=1, download 926 fine. Two independent tests reproduced the exact
+   same value. Ookla CLI cannot even connect to that server. speedtest-go issue #262 is the
+   same pattern (server-specific impossible upload results). Fix: serverID pin (see revised
+   D5). Post-pin measurement via the exporter itself: serverHost speedtest.yettel.hu,
+   download 921.96 / upload 307.16 / ping 5 ms, speedtest_up=1.
+4. Prometheus: up{job="speedtest-exporter"}==1; gauge series carry exactly
+   {endpoint, instance, job, namespace, service} after the instance labeldrop fix; no
+   Speedtest alert firing or pending.
+5. Server survey evidence (Ookla CLI, from the Mac, 2026-09-19): giganet 41195 broken upload
+   (and Ookla socket fail), Yettel 1697 the only all-axes-healthy server (582/319/5.8),
+   Telekom 2073 355/314, Fiberwave 71879 370/313, ZNET 28951 373/319, HostingBazis 26895
+   377/312, SWEET TV 71778 412/309, Microsystem 36406 494/289, OPC 22794 367/301, ATW 7842
+   connection refused. Everything except Yettel measures download below the 500 alert
+   threshold.
+
+Still pending before close-out:
+
+- Post-labeldrop-fix scrape cycle observation (>=2 cycles / 40m no-alert window from ~14:39).
+- Grafana dashboard 20115 rendering check (criterion 6).
+- 24h threshold recalibration follow-up: observe Yettel-measured minimums, re-check distance
+  to 500/200/20; ALSO re-check the pinned server's health (pin ceiling, see revised D5).
+- Close-out: move this note to docs/progress/ + status done.
