@@ -1,19 +1,26 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/monitoring.coreos.com/prometheusrule_v1.json
 # Picked up by the kube-prometheus-stack Prometheus (ruleSelector match-all). warning -> Pushover.
-# speedtest-exporter scrapes every 20m (a real speedtest per scrape, up to the 5m scrapeTimeout),
-# so the speedtest_* gauges are only fresh ~5m after each scrape and go stale for the remaining
-# ~15m of the cycle. Instant comparisons (metric < N) are thus active only ~5m/cycle and a `for:`
-# window can never accumulate — threshold alerts would never fire and absent(up{...}) would flap
-# pending constantly (verified live: SpeedtestExporterAbsent sat pending with the instant form).
-# The expressions use range aggregation over windows sized to the 20m cadence, which reads the
-# TSDB and is staleness-robust (same idiom as the crowdsec blocklist absent_over_time/max_over_time
-# rules): absent_over_time[30m] for discovery loss (30m > 20m interval + jitter, one missed scrape
-# cannot fire), and max_over_time/min_over_time[40m] for the thresholds (40m = 2x interval -> the
-# last 2 scrapes, so a single transient slow scrape cannot fire; both must confirm). No `for:` —
-# the window is the gate, matching the crowdsec range-agg alerts. Thresholds (500/200 Mbit/s,
-# 20 ms) are set below the 24h-observed minimums (~528/305 Mbit/s, ~2.75 ms) so normal operation
-# does not fire.
+# heathcliff26/speedtest-exporter runs a real speedtest INSIDE the scrape whenever its 20m cache
+# has expired (cache == scrape interval -> test-per-scrape, bounded by the exporter's 60s server
+# WriteTimeout, well under the 5m scrapeTimeout), so the speedtest_* gauges are only fresh ~5m
+# after each scrape and go stale for the remaining ~15m of the cycle. Instant comparisons
+# (metric < N) are thus active only ~5m/cycle and a `for:` window can never accumulate —
+# threshold alerts would never fire and absent(up{...}) would flap pending constantly (verified
+# live: SpeedtestExporterAbsent sat pending with the instant form). The expressions use range
+# aggregation over windows sized to the 20m cadence, which reads the TSDB and is
+# staleness-robust (same idiom as the crowdsec blocklist absent_over_time/max_over_time rules):
+# absent_over_time[30m] for discovery loss (30m > 20m interval + jitter, one missed scrape
+# cannot fire), and max_over_time/min_over_time[40m] for the thresholds (40m = 2x interval ->
+# the last 2 scrapes, so a single transient slow scrape cannot fire; both must confirm). No
+# `for:` — the window is the gate. On a FAILED test the exporter emits ONLY speedtest_up=0 —
+# the throughput/ping gauges are absent that scrape, so the threshold alerts stay silent on
+# sustained failures; that failure signal is carried by SpeedtestMeasurementFailed, which uses
+# max_over_time (max, not min: the BEST sample in the window decides, so a single failed test
+# beside a healthy one does not fire — both must fail). speedtest_up is always emitted on a
+# working scrape, so scrape/target loss remains the Absent alert's domain, not that one's.
+# Thresholds (500/200 Mbit/s, 20 ms) are set below the 24h-observed minimums (~528/305 Mbit/s,
+# ~2.75 ms) so normal operation does not fire.
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
@@ -29,20 +36,27 @@ spec:
           annotations:
             summary: "speedtest-exporter has disappeared from Prometheus target discovery"
             description: "No up sample for the speedtest-exporter scrape target in the last 30m (absent_over_time[30m]) — internet-link monitoring is blind (no download/upload/ping data flowing). 30m is greater than the 20m scrape interval plus jitter, so a single late scrape does not fire."
+        - alert: SpeedtestMeasurementFailed
+          expr: max_over_time(speedtest_up[40m]) == 0
+          labels:
+            severity: warning
+          annotations:
+            summary: "speedtest-exporter measurement failed"
+            description: "speedtest_up is 0 across the last 2 scrapes (max_over_time[40m] == 0; 40m = 2x the 20m scrape interval) — the speedtest itself is failing (on a failed test only speedtest_up=0 is emitted, the throughput/ping gauges are absent). max_over_time picks the best sample in the window, so a single failed test beside a healthy one does not fire — both must fail. Scrape/target loss is the SpeedtestExporterAbsent alert's domain."
         - alert: SpeedtestSlowInternetDownload
-          expr: max_over_time(speedtest_download_bits_per_second[40m]) < 500000000
+          expr: max_over_time(speedtest_download_megabits_per_second[40m]) < 500
           labels:
             severity: warning
           annotations:
             summary: "Internet download speed below 500 Mbit/s"
-            description: "speedtest-exporter reports download below 500 Mbit/s (5e8 bit/s) across the last 2 scrapes (max_over_time[40m] < 5e8; 40m = 2x the 20m scrape interval). A single transient slow scrape does not fire — both scrapes in the window must be below."
+            description: "speedtest-exporter reports download below 500 Mbit/s across the last 2 scrapes (max_over_time[40m] < 500 Mbit/s; 40m = 2x the 20m scrape interval). A single transient slow scrape does not fire — both scrapes in the window must be below."
         - alert: SpeedtestSlowInternetUpload
-          expr: max_over_time(speedtest_upload_bits_per_second[40m]) < 200000000
+          expr: max_over_time(speedtest_upload_megabits_per_second[40m]) < 200
           labels:
             severity: warning
           annotations:
             summary: "Internet upload speed below 200 Mbit/s"
-            description: "speedtest-exporter reports upload below 200 Mbit/s (2e8 bit/s) across the last 2 scrapes (max_over_time[40m] < 2e8; 40m = 2x the 20m scrape interval). A single transient slow scrape does not fire — both scrapes in the window must be below."
+            description: "speedtest-exporter reports upload below 200 Mbit/s across the last 2 scrapes (max_over_time[40m] < 200 Mbit/s; 40m = 2x the 20m scrape interval). A single transient slow scrape does not fire — both scrapes in the window must be below."
         - alert: SpeedtestHighPingLatency
           expr: min_over_time(speedtest_ping_latency_milliseconds[40m]) > 20
           labels:

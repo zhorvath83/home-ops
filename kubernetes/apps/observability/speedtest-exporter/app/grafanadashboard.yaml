@@ -9,7 +9,6 @@ spec:
     matchLabels:
       dashboards: grafana
   folderRef: observability
-  url: https://grafana.com/api/dashboards/13665/revisions/4/download
-  datasources:
-    - inputName: DS_PROMETHEUS
-      datasourceName: Prometheus
+  # heathcliff26 dashboard: no grafana.com inputs — datasource/instance variables resolve via
+  # the Grafana default datasource (our Prometheus) and the speedtest-exporter job label.
+  url: https://grafana.com/api/dashboards/20115/revisions/4/download

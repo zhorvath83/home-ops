@@ -1,23 +1,33 @@
 ---
 # yaml-language-server: $schema=https://json.schemastore.org/prometheus.rules.test.json
-# promtool unit tests for app/prometheusrule.yaml, covering the four speedtest alerts.
+# promtool unit tests for app/prometheusrule.yaml, covering the five speedtest alerts.
 #
-# speedtest-exporter scrapes every 20m, so the speedtest_* gauges are stale ~15m of each cycle and
-# the alerts use range aggregation (absent_over_time / max_over_time / min_over_time) sized to that
-# cadence. promtool does NOT model the 5m Prometheus staleness (samples placed via values: are
-# "present" at their timestamps), so these tests validate the WINDOW LOGIC of the range functions
-# with dense 1m samples and healthy-prefix-then-degradation transitions (same idiom as the crowdsec
-# blocklist max_over_time[50h] / absent_over_time[26h] tests). The live staleness-robustness is a
+# heathcliff26/speedtest-exporter runs a real speedtest inside the scrape when its 20m cache
+# has expired (cache == scrape interval -> test-per-scrape), so the speedtest_* gauges are
+# stale ~15m of each cycle and the alerts use range aggregation (absent_over_time /
+# max_over_time / min_over_time) sized to that cadence. promtool does NOT model the 5m
+# Prometheus staleness (samples placed via values: are "present" at their timestamps), so these
+# tests validate the WINDOW LOGIC of the range functions with dense 1m samples and
+# healthy-prefix-then-degradation transitions (same idiom as the crowdsec blocklist
+# max_over_time[50h] / absent_over_time[26h] tests). The live staleness-robustness is a
 # property of the range functions reading the TSDB, not something the unit test exercises.
 #
+# On a failed test the exporter emits ONLY speedtest_up=0 (the throughput/ping gauges are
+# absent), so sustained failures stay invisible to the threshold alerts — the failure signal
+# is carried by SpeedtestMeasurementFailed: max (not min) keeps the BEST sample in the window,
+# so a single 0 beside a 1 does not fire; the fire case uses exactly the threshold value 0
+# (== boundary — any nonzero sample in the window keeps max > 0, covered by the transient case).
+#
 # Windows: absent_over_time[30m] (30m > 20m interval + jitter); max/min_over_time[40m] (40m = 2x
-# interval -> last 2 scrapes). The threshold alerts have NO `for:` — the 40m window is the gate, so
-# a fire case models a healthy prefix (above-threshold, or low-latency for ping) for 40m then the
-# degraded value for >=41m; the alert first fires at t=80m (40m after degradation starts, when the
-# last healthy sample ages out of the window) -> eval at 81m. exp_annotations asserted so a broken
-# template fails the suite. The speedtest_* gauges carry {endpoint, instance="speedtest", job,
-# namespace, service} (pod dropped by the serviceMonitor metricRelabeling); max/min_over_time keep
-# these labels. absent_over_time carries only the selector label (job).
+# interval -> last 2 scrapes). The threshold alerts have NO `for:` — the 40m window is the gate,
+# so a fire case models a healthy prefix (above-threshold, or low-latency for ping) for 40m then
+# the degraded value for >=41m; the alert first fires at t=80m (40m after degradation starts,
+# when the last healthy sample ages out of the window) -> eval at 81m. exp_annotations asserted
+# so a broken template fails the suite. The speedtest_* gauges carry {endpoint,
+# instance="speedtest", job, namespace, service} (pod/ip/isp dropped by the serviceMonitor
+# metricRelabeling; the exporter's own instance label matches the target relabeling);
+# max/min_over_time keep these labels. speedtest_up carries the same target labels (the exporter
+# emits it label-free). absent_over_time carries only the selector label (job).
 # Run via `just k8s test-prom-rules` (recipe copies this test + .extracted_prometheus_rules.yaml into a temp dir).
 rule_files:
   - ./.extracted_prometheus_rules.yaml
@@ -71,15 +81,62 @@ tests:
             exp_annotations:
               summary: "speedtest-exporter has disappeared from Prometheus target discovery"
               description: "No up sample for the speedtest-exporter scrape target in the last 30m (absent_over_time[30m]) — internet-link monitoring is blind (no download/upload/ping data flowing). 30m is greater than the 20m scrape interval plus jitter, so a single late scrape does not fire."
-  # === SpeedtestSlowInternetDownload === max_over_time(speedtest_download_bits_per_second[40m]) < 500000000, no for:.
-  # 40m = 2x the 20m interval -> last 2 scrapes. max_over_time < threshold means BOTH scrapes in the
-  # window are below (the higher one is still below). exp_labels carry the gauge labels + alertname/severity.
-  # (d) Fire: healthy 6e8 for 40m, then 4e8 (<5e8) for 42m. max_over_time[40m]==4e8 first holds at t=80m
-  # (40m after degradation starts, last healthy 6e8 ages out); eval at 81m -> firing.
+  # === SpeedtestMeasurementFailed === max_over_time(speedtest_up[40m]) == 0, no for:.
+  # On a failed test the exporter emits only speedtest_up=0 — this is the failure signal the
+  # threshold alerts cannot carry (absent gauges -> empty range -> silent). max (not min) keeps
+  # the BEST sample, so a single failed test beside a healthy one does not fire. The fire case
+  # uses exactly the threshold value 0 (== boundary); any nonzero sample in the window keeps
+  # max_over_time > 0 (transient case r).
+  # (p) Fire: healthy 1 for 40m, then 0 for 42m. max_over_time[40m]==0 first holds at t=80m
+  # (last healthy 1 ages out); eval at 81m -> firing.
   - interval: 1m
     input_series:
-      - series: 'speedtest_download_bits_per_second{endpoint="http",instance="speedtest",job="speedtest-exporter",namespace="observability",service="speedtest-exporter"}'
-        values: '600000000x40 400000000x42'
+      - series: 'speedtest_up{endpoint="http",instance="speedtest",job="speedtest-exporter",namespace="observability",service="speedtest-exporter"}'
+        values: '1x40 0x42'
+    alert_rule_test:
+      - eval_time: 81m
+        alertname: SpeedtestMeasurementFailed
+        exp_alerts:
+          - exp_labels:
+              alertname: SpeedtestMeasurementFailed
+              severity: warning
+              endpoint: http
+              instance: speedtest
+              job: speedtest-exporter
+              namespace: observability
+              service: speedtest-exporter
+            exp_annotations:
+              summary: "speedtest-exporter measurement failed"
+              description: "speedtest_up is 0 across the last 2 scrapes (max_over_time[40m] == 0; 40m = 2x the 20m scrape interval) — the speedtest itself is failing (on a failed test only speedtest_up=0 is emitted, the throughput/ping gauges are absent). max_over_time picks the best sample in the window, so a single failed test beside a healthy one does not fire — both must fail. Scrape/target loss is the SpeedtestExporterAbsent alert's domain."
+  # (q) No-fire healthy: 1 throughout — max_over_time[40m]=1, condition false, quiet at 81m.
+  - interval: 1m
+    input_series:
+      - series: 'speedtest_up{endpoint="http",instance="speedtest",job="speedtest-exporter",namespace="observability",service="speedtest-exporter"}'
+        values: '1x82'
+    alert_rule_test:
+      - eval_time: 81m
+        alertname: SpeedtestMeasurementFailed
+        exp_alerts: []
+  # (r) No-fire transient: 1 for 40m, 0 for 20m (one failed test), 1 for 22m (recovered). The 20m
+  # of 0 can never fill a 40m all-zero window while prior/after 1 samples are still in it, so
+  # max_over_time[40m] stays 1 and the alert never fires — a single failed test does not page.
+  - interval: 1m
+    input_series:
+      - series: 'speedtest_up{endpoint="http",instance="speedtest",job="speedtest-exporter",namespace="observability",service="speedtest-exporter"}'
+        values: '1x40 0x20 1x22'
+    alert_rule_test:
+      - eval_time: 81m
+        alertname: SpeedtestMeasurementFailed
+        exp_alerts: []
+  # === SpeedtestSlowInternetDownload === max_over_time(speedtest_download_megabits_per_second[40m]) < 500, no for:.
+  # 40m = 2x the 20m interval -> last 2 scrapes. max_over_time < threshold means BOTH scrapes in the
+  # window are below (the higher one is still below). exp_labels carry the gauge labels + alertname/severity.
+  # (d) Fire: healthy 600 for 40m, then 400 (<500) for 42m. max_over_time[40m]==400 first holds at
+  # t=80m (40m after degradation starts, last healthy 600 ages out); eval at 81m -> firing.
+  - interval: 1m
+    input_series:
+      - series: 'speedtest_download_megabits_per_second{endpoint="http",instance="speedtest",job="speedtest-exporter",namespace="observability",service="speedtest-exporter"}'
+        values: '600x40 400x42'
     alert_rule_test:
       - eval_time: 81m
         alertname: SpeedtestSlowInternetDownload
@@ -94,43 +151,44 @@ tests:
               service: speedtest-exporter
             exp_annotations:
               summary: "Internet download speed below 500 Mbit/s"
-              description: "speedtest-exporter reports download below 500 Mbit/s (5e8 bit/s) across the last 2 scrapes (max_over_time[40m] < 5e8; 40m = 2x the 20m scrape interval). A single transient slow scrape does not fire — both scrapes in the window must be below."
-  # (e) No-fire healthy: 6e8 throughout — max_over_time[40m]=6e8, condition false, quiet at 81m.
+              description: "speedtest-exporter reports download below 500 Mbit/s across the last 2 scrapes (max_over_time[40m] < 500 Mbit/s; 40m = 2x the 20m scrape interval). A single transient slow scrape does not fire — both scrapes in the window must be below."
+  # (e) No-fire healthy: 600 throughout — max_over_time[40m]=600, condition false, quiet at 81m.
   - interval: 1m
     input_series:
-      - series: 'speedtest_download_bits_per_second{endpoint="http",instance="speedtest",job="speedtest-exporter",namespace="observability",service="speedtest-exporter"}'
-        values: '600000000x82'
+      - series: 'speedtest_download_megabits_per_second{endpoint="http",instance="speedtest",job="speedtest-exporter",namespace="observability",service="speedtest-exporter"}'
+        values: '600x82'
     alert_rule_test:
       - eval_time: 81m
         alertname: SpeedtestSlowInternetDownload
         exp_alerts: []
-  # (f) No-fire transient: 6e8 for 40m, then 4e8 for 20m (one slow scrape period), then 6e8 (recovered).
-  # The 20m of 4e8 can never fill a 40m all-low window while prior/after 6e8 samples are still in it,
-  # so max_over_time[40m] stays 6e8 and the alert never fires — a single transient slow scrape does not page.
+  # (f) No-fire transient: 600 for 40m, then 400 for 20m (one slow scrape period), then 600
+  # (recovered). The 20m of 400 can never fill a 40m all-low window while prior/after 600 samples
+  # are still in it, so max_over_time[40m] stays 600 and the alert never fires — a single
+  # transient slow scrape does not page.
   - interval: 1m
     input_series:
-      - series: 'speedtest_download_bits_per_second{endpoint="http",instance="speedtest",job="speedtest-exporter",namespace="observability",service="speedtest-exporter"}'
-        values: '600000000x40 400000000x20 600000000x22'
+      - series: 'speedtest_download_megabits_per_second{endpoint="http",instance="speedtest",job="speedtest-exporter",namespace="observability",service="speedtest-exporter"}'
+        values: '600x40 400x20 600x22'
     alert_rule_test:
       - eval_time: 81m
         alertname: SpeedtestSlowInternetDownload
         exp_alerts: []
-  # (g) No-fire boundary: 6e8 for 40m, then exactly 5e8 (the threshold) for 42m. max_over_time[40m]=5e8,
-  # strict `<` does not fire at the threshold.
+  # (g) No-fire boundary: 600 for 40m, then exactly 500 (the threshold) for 42m.
+  # max_over_time[40m]=500, strict `<` does not fire at the threshold.
   - interval: 1m
     input_series:
-      - series: 'speedtest_download_bits_per_second{endpoint="http",instance="speedtest",job="speedtest-exporter",namespace="observability",service="speedtest-exporter"}'
-        values: '600000000x40 500000000x42'
+      - series: 'speedtest_download_megabits_per_second{endpoint="http",instance="speedtest",job="speedtest-exporter",namespace="observability",service="speedtest-exporter"}'
+        values: '600x40 500x42'
     alert_rule_test:
       - eval_time: 81m
         alertname: SpeedtestSlowInternetDownload
         exp_alerts: []
-  # === SpeedtestSlowInternetUpload === max_over_time(speedtest_upload_bits_per_second[40m]) < 200000000, no for:.
-  # (h) Fire: healthy 3e8 for 40m, then 1e8 (<2e8) for 42m. Fires at 81m.
+  # === SpeedtestSlowInternetUpload === max_over_time(speedtest_upload_megabits_per_second[40m]) < 200, no for:.
+  # (h) Fire: healthy 300 for 40m, then 100 (<200) for 42m. Fires at 81m.
   - interval: 1m
     input_series:
-      - series: 'speedtest_upload_bits_per_second{endpoint="http",instance="speedtest",job="speedtest-exporter",namespace="observability",service="speedtest-exporter"}'
-        values: '300000000x40 100000000x42'
+      - series: 'speedtest_upload_megabits_per_second{endpoint="http",instance="speedtest",job="speedtest-exporter",namespace="observability",service="speedtest-exporter"}'
+        values: '300x40 100x42'
     alert_rule_test:
       - eval_time: 81m
         alertname: SpeedtestSlowInternetUpload
@@ -145,30 +203,31 @@ tests:
               service: speedtest-exporter
             exp_annotations:
               summary: "Internet upload speed below 200 Mbit/s"
-              description: "speedtest-exporter reports upload below 200 Mbit/s (2e8 bit/s) across the last 2 scrapes (max_over_time[40m] < 2e8; 40m = 2x the 20m scrape interval). A single transient slow scrape does not fire — both scrapes in the window must be below."
-  # (i) No-fire healthy: 3e8 throughout, quiet at 81m.
+              description: "speedtest-exporter reports upload below 200 Mbit/s across the last 2 scrapes (max_over_time[40m] < 200 Mbit/s; 40m = 2x the 20m scrape interval). A single transient slow scrape does not fire — both scrapes in the window must be below."
+  # (i) No-fire healthy: 300 throughout, quiet at 81m.
   - interval: 1m
     input_series:
-      - series: 'speedtest_upload_bits_per_second{endpoint="http",instance="speedtest",job="speedtest-exporter",namespace="observability",service="speedtest-exporter"}'
-        values: '300000000x82'
+      - series: 'speedtest_upload_megabits_per_second{endpoint="http",instance="speedtest",job="speedtest-exporter",namespace="observability",service="speedtest-exporter"}'
+        values: '300x82'
     alert_rule_test:
       - eval_time: 81m
         alertname: SpeedtestSlowInternetUpload
         exp_alerts: []
-  # (j) No-fire transient: 3e8 for 40m, 1e8 for 20m, 3e8 for 22m — single slow period, never fires at 81m.
+  # (j) No-fire transient: 300 for 40m, 100 for 20m, 300 for 22m — single slow period, never fires at 81m.
   - interval: 1m
     input_series:
-      - series: 'speedtest_upload_bits_per_second{endpoint="http",instance="speedtest",job="speedtest-exporter",namespace="observability",service="speedtest-exporter"}'
-        values: '300000000x40 100000000x20 300000000x22'
+      - series: 'speedtest_upload_megabits_per_second{endpoint="http",instance="speedtest",job="speedtest-exporter",namespace="observability",service="speedtest-exporter"}'
+        values: '300x40 100x20 300x22'
     alert_rule_test:
       - eval_time: 81m
         alertname: SpeedtestSlowInternetUpload
         exp_alerts: []
-  # (k) No-fire boundary: 3e8 for 40m, then exactly 2e8 for 42m. max_over_time[40m]=2e8, strict `<` does not fire.
+  # (k) No-fire boundary: 300 for 40m, then exactly 200 (the threshold) for 42m.
+  # max_over_time[40m]=200, strict `<` does not fire.
   - interval: 1m
     input_series:
-      - series: 'speedtest_upload_bits_per_second{endpoint="http",instance="speedtest",job="speedtest-exporter",namespace="observability",service="speedtest-exporter"}'
-        values: '300000000x40 200000000x42'
+      - series: 'speedtest_upload_megabits_per_second{endpoint="http",instance="speedtest",job="speedtest-exporter",namespace="observability",service="speedtest-exporter"}'
+        values: '300x40 200x42'
     alert_rule_test:
       - eval_time: 81m
         alertname: SpeedtestSlowInternetUpload

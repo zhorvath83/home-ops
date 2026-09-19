@@ -10,6 +10,20 @@ spec:
     kind: OCIRepository
     name: app-template
   values:
+    # heathcliff26/speedtest-exporter: config file is optional — without the -config arg
+    # below it silently runs all-defaults (port 8080, cache 5m).
+    configMaps:
+      config:
+        enabled: true
+        includeInChecksum: true
+        data:
+          config.yaml: |-
+            logLevel: info
+            port: 9798
+            instance: speedtest
+            # cache <= scrape interval: a failed result is cached for the full TTL
+            cache: 20m
+            persistCache: true
     defaultPodOptions:
       automountServiceAccountToken: false
       enableServiceLinks: false
@@ -34,10 +48,11 @@ spec:
         containers:
           app:
             image:
-              repository: ghcr.io/miguelndecarvalho/speedtest-exporter
-              tag: v3.5.4
-            env:
-              SPEEDTEST_PORT: &port 9798
+              repository: ghcr.io/heathcliff26/speedtest-exporter
+              tag: v1.8.0
+            args:
+              - -config
+              - /config/config.yaml
             probes:
               liveness:
                 enabled: true
@@ -64,15 +79,21 @@ spec:
                 memory: 128Mi
     persistence:
       config:
+        type: configMap
+        identifier: config
+        globalMounts:
+          - path: /config
+      # exporter cache file path is hardcoded to /cache/speedtest-result.json
+      cache:
         type: emptyDir
         globalMounts:
-          - path: /.config
+          - path: /cache
     service:
       app:
         controller: speedtest-exporter
         ports:
           http:
-            port: *port
+            port: 9798
     serviceMonitor:
       app:
         serviceName: speedtest-exporter
@@ -88,4 +109,5 @@ spec:
                 replacement: speedtest
             metricRelabelings:
               - action: labeldrop
-                regex: (pod)
+                # ip/isp change with the WAN IP — dropping avoids a new series per IP change
+                regex: (ip|isp|pod)
