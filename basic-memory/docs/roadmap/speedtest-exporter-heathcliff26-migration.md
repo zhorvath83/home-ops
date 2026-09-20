@@ -221,6 +221,20 @@ Still pending before close-out:
   rename series break, accepted) and 14:49-22:47 (samples exist only as exported_instance).
 - Post-fix verification 22:47: gauges [endpoint, instance, job, namespace, service] exactly as
   exp_labels; upload 308.88; ALERTS empty.
-- REMAINING follow-up (24h, next session): threshold recalibration against Yettel-measured
-  minimums (distance to 500/200/20) + pinned-server health re-check (pin ceiling, revised D5).
+2026-09-20 - Telekom switch + 22h Yettel verdict:
+
+- 22h Yettel window (66 scrapes, all up=1, zero alerts): download 514-929, upload 293-311,
+  ping 5-7 ms. Threshold verdict: 500/200/20 hold on Yettel data, but the worst download
+  scrape (514) had only ~3% headroom over the 500 alert threshold.
+- User decision: switch to Telekom 2073. Note the own-ISP motivation did not hold - the
+  exporter's isp label shows the actual ISP is Digi TV - so the choice is empirical. The
+  Mac/WiFi survey values (Telekom 355/314) proved WiFi-distorted: the exporter's own
+  first Telekom test on the wired node measured 802.
+- Switch deployed: commit 924043c7e (serverID 2073 + comment), pushed (rebased over a
+  Renovate batch), reconciled 2026-09-20 21:40; pod restarted with empty cache, first
+  Telekom test 21:54.
+- First 3 Telekom measurements (21:54/22:14/22:34): 802.8/295.2/6, 897.7/306.7/6,
+  917.6/307.2/5 - trending up, min 802 vs Yettel's 66-sample min 514, zero Speedtest alerts.
+- REMAINING follow-up: 24h observation now runs on Telekom - recalibrate thresholds against
+  Telekom minimums + pinned-server health re-check (pin ceiling, revised D5, now for 2073).
 - Close-out: move this note to docs/progress/ + status done (after the 24h follow-up).
