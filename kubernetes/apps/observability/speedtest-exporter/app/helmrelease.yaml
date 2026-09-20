@@ -21,9 +21,9 @@ spec:
             logLevel: info
             port: 9798
             instance: speedtest
-            # auto-select picked broken server 41195 (giganet, upload always ~0);
-            # Yettel 1697 is the only surveyed Budapest server healthy on all axes
-            serverID: 1697
+            # Telekom 2073: own-ISP server measures truest line capacity; Yettel 1697
+            # dipped to 514 min download (500 alert threshold) in the 22h window
+            serverID: 2073
             # cache <= scrape interval: a failed result is cached for the full TTL
             cache: 20m
             persistCache: true
