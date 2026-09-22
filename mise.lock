@@ -1039,7 +1039,7 @@ checksum = "sha256:4721b614a67bb4932a0369e61f4a323d8c6ca00943d3a2ff14837c124da06
 url = "https://dl.k8s.io/v1.37.0/bin/windows/amd64/kubectl.exe"
 
 [[tools."npm:markdownlint-cli2"]]
-version = "0.23.2"
+version = "0.23.3"
 backend = "npm:markdownlint-cli2"
 
 [[tools."pipx:ansible"]]
