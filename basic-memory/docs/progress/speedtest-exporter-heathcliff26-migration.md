@@ -5,7 +5,7 @@ permalink: home-ops/docs/roadmap/speedtest-exporter-heathcliff26-migration
 topic: Replace the frozen miguelndecarvalho speedtest-exporter (v3.5.4, 2023) with
   heathcliff26/speedtest-exporter - root-cause fix for recurring measurement errors
   and alert flapping
-status: in-progress
+status: done
 priority: medium
 scope: 'Single-workload swap in kubernetes/apps/observability/speedtest-exporter:
   image + config plumbing (ConfigMap + explicit -config arg, cache 20m test-inside-scrape),
@@ -39,7 +39,7 @@ related_areas:
 
 - [type] roadmap
 - [topic] Replace the frozen 2023 speedtest-exporter image (root cause of recurring measurement errors and alert flapping) with the actively maintained Go exporter
-- [status] in-progress - Phase 0 (manifest changes) and Phase 1 (validation gate) executed 2026-09-19; researched 2026-09-19 against the live manifests, the heathcliff26/speedtest-exporter v1.8.0 README + example config, grafana.com dashboard 20115 rev 4, and a 27-repo community survey. Re-reviewed objectively the same day against the upstream SOURCE (cmd/main.go, pkg/collector, pkg/cache, pkg/config, Dockerfile), the pinned app-template 5.1.0 chart tarball, and the live deployment: 6 corrections folded in (scrape model is synchronous test-inside-scrape, NOT background; failure emits speedtest_up=0 with gauges absent -> new MeasurementFailed alert; config file needs an explicit -config arg; ConfigMap+mount mechanics verified against the chart; ip/isp metric labels labeldropped; dashboard datasource resolution verified, no fallback needed). D1-D7 all carry a recommendation, none blocking.
+- [status] done - migration executed and live-verified 2026-09-19 (Phase 2 record below), server re-pinned to Telekom 2073 on 2026-09-20 (Yettel min-download dip), closed 2026-09-22 over a 43h clean Telekom window (129/129 scrapes up, zero alerts, thresholds hold with 71%/40%/65% headroom on download/upload/ping). Research + same-day source re-review: see the Context, Target and Decisions sections below.
 - [priority] medium
 - [created] 2026-09-19
 - [relates_to] [[home-ops/docs/areas/observability]]
@@ -204,7 +204,7 @@ Live verification (acceptance criteria 1-3, 5 partial, 7-8 done):
    connection refused. Everything except Yettel measures download below the 500 alert
    threshold.
 
-Still pending before close-out:
+Close-out checklist (all satisfied 2026-09-22):
 
 - Post-fix observation: SATISFIED - the session went idle ~15:15-22:20, and the 22:20 range queries
   showed up{job="speedtest-exporter"}==1 on EVERY 20m scrape 19:27-22:07 (no gap, no restarts),
@@ -235,6 +235,14 @@ Still pending before close-out:
   Telekom test 21:54.
 - First 3 Telekom measurements (21:54/22:14/22:34): 802.8/295.2/6, 897.7/306.7/6,
   917.6/307.2/5 - trending up, min 802 vs Yettel's 66-sample min 514, zero Speedtest alerts.
-- REMAINING follow-up: 24h observation now runs on Telekom - recalibrate thresholds against
-  Telekom minimums + pinned-server health re-check (pin ceiling, revised D5, now for 2073).
-- Close-out: move this note to docs/progress/ + status done (after the 24h follow-up).
+2026-09-22 - close-out (this note moves to docs/progress/, status done):
+
+- Final observation window: 43h pure-Telekom, 2026-09-20 22:37 -> 2026-09-22 17:37 local:
+  129/129 scrapes with speedtest_up=1 (zero failed tests), zero Speedtest alerts.
+  Download 854-926 Mbit/s (71% headroom over the 500 threshold), upload 280-311 (40% over
+  200), ping 5-7 ms (65% under 20).
+- Threshold recalibration verdict: 500/200/20 KEEP - the Telekom-measured minimums give real
+  margin on every axis (vs Yettel's worst-case download headroom of ~3%).
+- Pin ceiling stands (revised D5, now server 2073): if Telekom retires or degrades, tests fail
+  visibly (speedtest_up=0 -> SpeedtestMeasurementFailed) - re-survey and re-pin then.
+- Acceptance criteria 1-8: ALL MET (criterion 6 dashboard rendering user-confirmed 2026-09-20).
