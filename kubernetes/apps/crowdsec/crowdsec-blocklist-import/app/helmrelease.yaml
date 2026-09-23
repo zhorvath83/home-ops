@@ -43,7 +43,7 @@ spec:
             image:
               # renovate: datasource=docker depName=ghcr.io/wolffcatskyy/crowdsec-blocklist-import
               repository: ghcr.io/wolffcatskyy/crowdsec-blocklist-import
-              tag: 3.7.1@sha256:78ec83464827a129128e2e1cba0bc23562988bec177745334a9f2896c817860c
+              tag: 3.8.0@sha256:eb141a69b023ddca4b05de3e9900d92132dafbf56e85d4881ea132d416b9192e
             env:
               CROWDSEC_LAPI_URL: http://crowdsec-service.crowdsec.svc.cluster.local:8080
               CROWDSEC_MACHINE_ID: blocklist-import
