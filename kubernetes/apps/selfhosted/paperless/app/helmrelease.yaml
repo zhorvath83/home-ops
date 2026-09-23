@@ -156,7 +156,7 @@ spec:
           valkey:
             image:
               repository: ghcr.io/valkey-io/valkey
-              tag: 9.1.2@sha256:67878c70fc179bb928b1a9b510860aff1c475ff245e91d98d4b2133326bf8e3e
+              tag: 9.1.2@sha256:ac9c858b86dc81f3482d53a9d854547379a5f41e012500f839ab257c399063e0
             args:
               - --port
               - "6379"
