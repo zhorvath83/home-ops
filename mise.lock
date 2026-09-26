@@ -531,7 +531,7 @@ url = "https://github.com/pre-commit/pre-commit/releases/download/v4.6.2/pre-com
 url_api = "https://api.github.com/repos/pre-commit/pre-commit/releases/assets/509317714"
 
 [[tools."aqua:prometheus/prometheus"]]
-version = "3.14.0"
+version = "3.15.0"
 backend = "aqua:prometheus/prometheus"
 
 [tools."aqua:prometheus/prometheus"."platforms.linux-arm64"]
