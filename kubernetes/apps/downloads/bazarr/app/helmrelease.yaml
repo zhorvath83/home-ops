@@ -53,7 +53,7 @@ spec:
           app:
             image:
               repository: ghcr.io/home-operations/bazarr
-              tag: 1.6.1@sha256:c0aeafe9141de3d3f5c0ed9648d2686213943896a8c879a19c4fc4e31a05f94a
+              tag: 1.6.2@sha256:5ed5fc54eee7157ce8a5e3a03c8ef41092a0111b11eab702e4fbdd700d71457b
             probes:
               liveness:
                 enabled: true
