@@ -288,7 +288,7 @@ checksum = "sha256:551b0065fdfae8ba74ddac3a213e46e0144188cacf997ae1002f508af1697
 url = "https://get.helm.sh/helm-v4.3.0-windows-amd64.tar.gz"
 
 [[tools."aqua:helmfile/helmfile"]]
-version = "1.8.0"
+version = "1.8.1"
 backend = "aqua:helmfile/helmfile"
 
 [tools."aqua:helmfile/helmfile"."platforms.linux-arm64"]
