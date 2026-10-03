@@ -1,0 +1,25 @@
+---
+apiVersion: dragonfly.k8s.io/v1alpha1
+kind: Dragonfly
+metadata:
+  name: dragonfly
+spec:
+  # Cache-only by decision: no snapshot/tiering PVC, a restart drops in-flight
+  # sidekiq/cache state. Add spec.snapshot.persistentVolumeClaimSpec if job loss
+  # ever becomes a problem.
+  replicas: 1
+  image: ghcr.io/dragonflydb/dragonfly:v2.0.0
+  args:
+    - --maxmemory
+    - 384mb
+    # never set --dbnum: the default 16 keeps SELECT 1 (paperless) and 2 (sure) valid
+  authentication:
+    passwordFromSecret:
+      name: dragonfly-secret
+      key: password
+  resources:
+    requests:
+      cpu: 5m
+      memory: 64Mi
+    limits:
+      memory: 512Mi
