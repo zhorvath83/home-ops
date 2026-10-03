@@ -18,6 +18,8 @@ groups:
     friendly_name: Paperless admins
   paperless_users:
     friendly_name: Paperless users
+  sure_admins:
+    friendly_name: Sure admins
   mealie_admins:
     friendly_name: Mealie admins
   mealie_users:
@@ -178,3 +180,12 @@ clients:
     pkce_enabled: false
     groups:
       - infra_admins
+  # Callback path is provisional: the sure admin UI (/admin/sso_providers) dictates the
+  # exact redirect URI; fix here + re-apply if it differs.
+  sure:
+    friendly_name: Sure
+    gate: native
+    subdomain: fin
+    callback_path: /auth/pocket-id/callback
+    groups:
+      - sure_admins
