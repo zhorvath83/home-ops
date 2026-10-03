@@ -1,0 +1,24 @@
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: postgres
+spec:
+  # Shared Postgres for apps needing a real SQL server (currently sure only).
+  # pg_dumpall for backups authenticates via the operator-managed postgres-superuser secret.
+  # renovate: datasource=docker depName=ghcr.io/cloudnative-pg/postgresql
+  imageName: ghcr.io/cloudnative-pg/postgresql:18-standard-trixie
+  instances: 1
+  enableSuperuserAccess: true
+  inheritedMetadata:
+    labels:
+      ingress.home.arpa/allow-prometheus: "true"
+  storage:
+    size: 10Gi
+    storageClass: democratic-csi-local-hostpath
+  resources:
+    requests:
+      cpu: 25m
+      memory: 256Mi
+    limits:
+      memory: 1Gi

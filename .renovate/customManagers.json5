@@ -53,6 +53,18 @@
     },
     {
       customType: "regex",
+      description: "Process CNPG Cluster imageName and Dragonfly CR image fields (plain manifests, tag-only like the tuppr precedent)",
+      managerFilePatterns: [
+        "/^kubernetes/.+\\.yaml(?:\\.j2)?$/",
+      ],
+      matchStrings: [
+        "imageName:\\s*[\"']?(?<depName>[^\"'\\s]+):(?<currentValue>[^\"'\\s]+)",
+        "kind:\\s*Dragonfly\\b[\\s\\S]*?\\n\\s*image:\\s*[\"']?(?<depName>[^\"'\\s]+):(?<currentValue>[^\"'\\s]+)",
+      ],
+      datasourceTemplate: "docker",
+    },
+    {
+      customType: "regex",
       description: "Process busybox image refs across bjw-s (repository/tag), democratic-csi (registry/tag), and CEL inline (image: \"path:tag\") shapes",
       managerFilePatterns: [
         "/^kubernetes/.+\\.yaml(?:\\.j2)?$/",
