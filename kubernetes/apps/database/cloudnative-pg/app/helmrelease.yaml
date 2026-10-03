@@ -1,0 +1,22 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: cloudnative-pg
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: cloudnative-pg
+  values:
+    # Chart defaults are hardened (non-root, seccomp, dropped caps, read-only rootfs).
+    # No CNP: the operator only talks to the API server and its webhook (baseline in-cluster egress).
+    crds:
+      create: true
+    resources:
+      requests:
+        cpu: 5m
+        memory: 100Mi
+      limits:
+        memory: 512Mi
