@@ -17,4 +17,5 @@ resources:
   - ./paperless-gpt/ks.yaml
   - ./pingvin-share-x/ks.yaml
   - ./resticprofile/ks.yaml
+  - ./sure/ks.yaml
   - ./wallos/ks.yaml
