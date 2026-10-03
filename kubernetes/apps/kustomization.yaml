@@ -13,6 +13,7 @@ resources:
   - ./crowdsec
   - ./system-upgrade
   - ./volsync-system
+  - ./database
   - ./media
   - ./downloads
   - ./selfhosted
