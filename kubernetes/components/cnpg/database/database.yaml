@@ -1,0 +1,17 @@
+---
+# Explicit namespace: Database/DatabaseRole must sit next to the postgres Cluster,
+# which lives in database regardless of the consuming app's targetNamespace.
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: "${APP}"
+  namespace: database
+spec:
+  name: "${APP}"
+  cluster:
+    name: postgres
+  owner: "${APP}"
+  extensions:
+    # pgvector for sure's AI categorization; harmless for plain consumers
+    - name: vector
+      ensure: present

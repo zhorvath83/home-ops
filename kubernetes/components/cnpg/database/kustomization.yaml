@@ -1,0 +1,10 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/component.json
+# Contract: the consumer app's 1Password item must contain a postgres_password field;
+# its ks.yaml substitutes APP and dependsOn postgres (database namespace).
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+resources:
+  - ./database.yaml
+  - ./databaserole.yaml
+  - ./externalsecret.yaml
