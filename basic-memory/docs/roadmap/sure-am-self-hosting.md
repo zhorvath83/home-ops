@@ -4,12 +4,12 @@ type: roadmap
 permalink: home-ops/docs/roadmap/sure-am-self-hosting
 topic: Sure.am self-hosting — shared CNPG Postgres plane + Dragonfly Redis plane +
   app-template app
-status: planned
+status: in_progress
 priority: medium
 scope: New database platform (CNPG operator + shared postgres cluster + Dragonfly
   operator + shared instance in a database namespace), a reusable per-app Database/DatabaseRole
-  component, OVH S3 Postgres backups, paperless valkey decommission, and the sure
-  app itself via app-template with internal-only exposure and Pocket ID OIDC.
+  component, NAS pg_dump Postgres backups, paperless valkey decommission, and the
+  sure app itself via app-template with internal-only exposure and Pocket ID OIDC.
 rationale: Sure is the first app in this cluster that needs a real SQL server and
   a non-localhost Redis; bringing the two missing platform planes once (shared CNPG
   cluster, shared Dragonfly) makes every current and future database-needing app a
@@ -27,8 +27,9 @@ options:
 - Dragonfly operator + shared instance (chosen) vs plain shared Valkey deployment
   vs per-app Redis
 - Internal-only exposure (chosen) vs also external via Cloudflare
-- CNPG built-in barmanObjectStore to OVH S3 (chosen) vs barman-cloud plugin deployment
-  vs volume snapshots (local only)
+- NAS-only pg_dump to the /backups plane, resticprofile offsite (chosen 2026-10-03,
+  supersedes barmanObjectStore→OVH) vs CNPG built-in barmanObjectStore to OVH S3 vs
+  barman-cloud plugin deployment
 - No pgbouncer initially (chosen, revisit on growth) vs Pooler from day one
 tags:
 - sure
@@ -50,8 +51,7 @@ also brings the two missing platform planes: a shared CloudNativePG Postgres clu
 sidecar onto the shared plane.
 
 Ratified design decisions (owner, 2026-10-01): shared CNPG cluster + per-app Database/DatabaseRole
-component; Dragonfly operator for the Redis plane; internal-only exposure; CNPG built-in barmanObjectStore
-backup to OVH S3.
+component; Dragonfly operator for the Redis plane; internal-only exposure; backup superseded 2026-10-03 by NAS-only daily pg_dumpall (resticprofile carries it offsite; no PITR - worst case 1 day loss, owner-accepted).
 
 References studied:
 - sure.am docs — https://docs.sure.am/self-hosting and /self-hosting-helm (official chart exists but the
@@ -64,7 +64,7 @@ References studied:
 ## Metadata (observation-form)
 
 - [topic] Sure.am self-hosting — shared CNPG Postgres plane + Dragonfly Redis plane + app-template app
-- [status] planned - auth and onboarding mechanics corrected against docs.sure.am, 2026-10-02
+- [status] in_progress — implemented on feat/sure-self-hosting, corrections recorded in [[home-ops/docs/progress/sure-am-self-hosting]] (2026-10-03)
 - [priority] medium
 - [effort] L — two new platform planes + a new app + one app migration
 - [progress] Tracking + session summaries will live in a docs/progress sibling once work starts; this note is the plan.
@@ -84,27 +84,23 @@ References studied:
 
 ## What to do
 
-1. Provision prerequisites: OVH S3 bucket + object-store user for Postgres backups (Terraform,
-   `provision/ovh` pattern) and 1Password items (`cnpg-backup` S3 creds; `sure` app secrets).
+1. Provision prerequisites: 1Password items - `sure` (SECRET_KEY_BASE, three AR-encryption keys, postgres_password) and `dragonfly` (requirepass); the NAS-only backup decision (2026-10-03) removed the OVH S3 bucket, object-store user and `cnpg-backup` item.
 2. Create the `database` namespace group under `kubernetes/apps/` and deploy the CloudNativePG operator
    (chart `cloudnative-pg` 1.30.x).
 3. Deploy the shared `postgres` Cluster: 1 instance (single node — AD-011 logic), PG 18 standard image
-   pinned by digest, 10Gi democratic-csi-local-hostpath, barmanObjectStore backup to OVH S3 with WAL
-   archiving, daily ScheduledBackup, PodMonitor into kube-prometheus-stack, CNP ingress allow-list.
-4. Deploy the Dragonfly operator and a shared `dragonfly` instance in `database` (1 replica, small PVC,
-   requirepass, ingress CNP allow-list from consuming apps).
+   pinned by digest, 10Gi democratic-csi-local-hostpath, NAS-only nightly pg_dumpall CronJob (dump to the shared /backups plane, resticprofile carries it offsite; no PITR by decision), manual PodMonitor (the chart's monitoring.enablePodMonitor is deprecated; pod labels go on inheritedMetadata), CNP ingress allow-list.
+4. Deploy the Dragonfly operator (OCI chart oci://ghcr.io/dragonflydb/dragonfly-operator/helm, v1.7.0 - the earlier "no published chart" finding was wrong) and a shared `dragonfly` instance in `database` (1 replica, cache-only - no snapshot PVC, owner decision 2026-10-03; dbnum stays default 16 so SELECT 1/2 work; passwordFromSecret), ingress CNP allow-list from consuming apps.
 5. Migrate paperless off its localhost Valkey sidecar to the shared instance (own DB index), remove the
    sidecar and its emptyDir, update paperless's CNP.
 6. Author the reusable `kubernetes/components/cnpg/database` component: per-app `Database` +
    `DatabaseRole` with a passwordSecret (basic-auth Secret created by External Secrets from 1Password).
 7. Create the Pocket ID OIDC client for sure (Terraform, `provision/pocket-id`) and the 1Password
    `sure` item: SECRET_KEY_BASE, the three Active Record encryption keys, Postgres + Dragonfly passwords.
-8. Deploy sure with app-template in `selfhosted`: web + worker controllers, db:prepare initContainer,
+8. Deploy sure with app-template in `selfhosted`: web + worker controllers (db:prepare runs on web boot - no initContainer),
    `sure` PVC on /rails/storage (volsync-backed), internal-only route on envoy-internal, native OIDC
    (db-backed SSO provider configured in the admin UI — Phase 6), passkey config, onboarding opened
    for the first registration then closed in the admin UI (Settings → Self-Hosting → Onboarding).
-9. Verify: cluster ready, first backup object in OVH bucket, OIDC + passkey login, paperless healthy
-   post-migration; run a restore drill into a scratch cluster.
+9. Verify: cluster ready, first dump in the NAS /backups/postgres tree (and the next resticprofile run carrying it offsite), OIDC + passkey login, paperless healthy post-migration; run a restore drill of the latest dump into a scratch DB.
 
 ## Options
 
@@ -117,7 +113,7 @@ References studied:
    checks; paperless's sidecar model is decommissioned either way.
 3. Exposure — internal-only (chosen): `fin.${PUBLIC_DOMAIN}` on envoy-internal + k8s-gateway; no public
    surface for financial data.
-4. Postgres backup — CNPG built-in barmanObjectStore to OVH S3 (chosen: offsite, no extra moving parts)
+4. Postgres backup — SUPERSEDED (owner, 2026-10-03): NAS-only daily pg_dumpall into the shared /backups plane with resticprofile as the offsite leg (no PITR - worst case 1 day loss, owner-accepted); the original barmanObjectStore-to-OVH option remains as history
    vs the separate barman-cloud plugin deployment (eleboucher; extra deployment, same destination) vs
    volume snapshots only (snapshot-controller exists, but snapshots stay on the same disk — no offsite,
    AD-011 makes that weak). Volume snapshots can be added later as a fast local layer.
@@ -159,25 +155,22 @@ References studied:
 ### Target state
 
 ```
-database ns:  cnpg operator ── Cluster postgres (1x PG18, 10Gi) ── barman → OVH S3 (home-ops-postgres)
-              dragonfly operator ── Dragonfly dragonfly (1x, ~2Gi, requirepass)
-selfhosted ns:  sure (app-template: web + worker + db:prepare initContainer, PVC /rails/storage)
-                └─ DATABASE_URL → postgres-rw.database.svc:5432/sure  (Database sure + DatabaseRole sure)
-                └─ REDIS_URL → redis://:<pass>@dragonfly.database.svc:6379/0
+database ns:  cnpg operator ── Cluster postgres (1x PG18, 10Gi) ── nightly pg_dumpall → NAS /backups
+              dragonfly operator ── Dragonfly dragonfly (1x, cache-only, passwordFromSecret)
+selfhosted ns:  sure (app-template: web + worker, db:prepare on web boot, PVC /rails/storage)
+                └─ postgres-rw.database.svc:5432/sure  (Database sure + DatabaseRole sure)
+                └─ REDIS_URL → redis://:<pass>@dragonfly.database.svc:6379/2
 selfhosted ns:  paperless └─ PAPERLESS_REDIS → redis://:<pass>@dragonfly.database.svc:6379/1 (sidecar gone)
 Route:         fin.${PUBLIC_DOMAIN} → envoy-internal (k8s-gateway LAN DNS), native OIDC via Pocket ID
 ```
 
 ### Implementation steps (PR-sized phases)
 
-**Phase 0 — prerequisites (Terraform + 1Password)**
-1. `provision/ovh`: add an S3 bucket (e.g. `home-ops-postgres`) plus object-store user and policy,
-   mirroring the existing OVH module used by volsync.
-2. 1Password: item `cnpg-backup` (S3 access key, secret key, endpoint, plus a random AES-256
-   backup-encryption key for barman data+WAL encryption) for barman; item `sure` with
+**Phase 0 — prerequisites (1Password only — NAS-only backup removed the OVH/Terraform part)**
+1. 1Password: item `sure` with
    SECRET_KEY_BASE (`openssl rand -hex 64`), ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY / _DETERMINISTIC_KEY /
    _KEY_DERIVATION_SALT (`openssl rand -hex 32` each — set once, never regenerated casually: rotation
-   needs the `security:backfill_encryption` rake task), Postgres password, Dragonfly password.
+   needs the `security:backfill_encryption` rake task), postgres_password; item `dragonfly` with requirepass (`openssl rand -hex 24`).
 
 **Phase 1 — database namespace + CNPG operator**
 1. New `kubernetes/apps/database/` group (kustomization + ks.yaml per app, like the other namespaces);
@@ -237,16 +230,13 @@ Route:         fin.${PUBLIC_DOMAIN} → envoy-internal (k8s-gateway LAN DNS), na
    + app/{helmrelease,externalsecret,ciliumnetworkpolicy}.yaml.
 3. HelmRelease (app-template): two controllers — `server` (web, port 3000, /up liveness+readiness+startup
    probes) and `worker` (sidekiq), shared env anchor: RAILS_ENV=production, SELF_HOSTED=true,
-   RAILS_ASSUME_SSL=true (TLS terminates at Envoy), APP_DOMAIN=fin.${PUBLIC_DOMAIN} (not documented in
-   the official docs — verify against chart values at implementation), DATABASE_URL + REDIS_URL via
-   secretKeyRef, WEBAUTHN_RP_ID=fin.${PUBLIC_DOMAIN},
+   RAILS_ASSUME_SSL=true (TLS terminates at Envoy), no APP_DOMAIN env (it does not exist in sure); DB_HOST/DB_PORT/POSTGRES_USER/POSTGRES_DB plain env, POSTGRES_PASSWORD + REDIS_URL in the ES template (dragonfly SELECT 2 - paperless takes 1), WEBAUTHN_RP_ID=fin.${PUBLIC_DOMAIN},
    WEBAUTHN_ALLOWED_ORIGINS=https://fin.${PUBLIC_DOMAIN}, SECRET_KEY_BASE + AR-encryption keys envFrom
    sure-secret. SSO is NOT env-configured: sure uses db-backed SSO providers (AUTH_PROVIDERS_SOURCE=db)
    created in the admin UI (/admin/sso_providers) with the Pocket ID issuer, client id/secret and the
    redirect URI from step 1; harden with AUTH_LOCAL_LOGIN_ENABLED=false (SSO-only, removes the local
    password-reset path) and pick AUTH_JIT_MODE deliberately (create_and_link vs link_only, given the
-   Pocket ID group ACL). initContainer `migrate` running
-   `DISABLE_DATABASE_ENVIRONMENT_CHECK=1 bundle exec rake db:prepare` with the same env;
+   Pocket ID group ACL). db:prepare runs on web boot (no initContainer - the image entrypoint runs it);
    persistence `sure` existingClaim mounted at /rails/storage by both controllers; resources web
    100m/384Mi→1Gi, worker 50m/256Mi→768Mi (reference-measured).
 4. Route: envoy-internal only, hostname `fin.${PUBLIC_DOMAIN}` (k8s-gateway serves it on LAN);
@@ -263,10 +253,8 @@ See Verification below.
 
 ### Verification
 
-- `kubectl -n database get cluster postgres` → 1 ready instance; `kubectl -n database get backup` → first
-  ScheduledBackup completed; object visible in the OVH bucket (`just ovh` recipes / mc), WAL archive present.
-- Restore drill: bootstrap a scratch Cluster with `bootstrap.recovery` from the last backup, verify it
-  reaches ready and the sure DB exists (this also exercises the barman encryption key), then delete it.
+- `kubectl -n database get cluster postgres` → 1 ready instance; nightly dump present in the NAS /backups/postgres tree and the next resticprofile run carries it offsite (there is no Backup CR - barman is gone).
+- Restore drill: load the latest dump into a scratch DB (`sure_restore_test`), verify tables, then drop it.
 - sure: /up probes pass through a full reconcile; db:prepare completed; first user registered and
   promoted to super_admin; onboarding shows Closed in the admin UI (DB setting, not an env);
   Pocket ID login works; passkey registration works; local login form absent
