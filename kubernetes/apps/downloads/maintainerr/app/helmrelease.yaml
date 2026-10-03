@@ -31,7 +31,7 @@ spec:
           app:
             image:
               repository: ghcr.io/maintainerr/maintainerr
-              tag: 3.30.0@sha256:8b899de4c4b8e318f8ddcfd40aea988aa2013d43446389aeed6ee8bacb23b7ce
+              tag: 3.30.1@sha256:186ff0aaa5b531f51cf82fa817d7b1d75dbcd71d7be6b013d4bd0f097ae9c570
             env:
               UI_PORT: &port 6246
             probes:
