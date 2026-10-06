@@ -68,12 +68,13 @@ reusable components/cnpg/database, sure app with native Pocket ID OIDC, verifica
 - Validation green: just pocket-id lint OK; pre-commit hooks OK (mise-lock fails on pre-existing
   tool-version drift in the working tree — owner's in-progress work; mise.lock reverted, not
   committed); flux-local test 145/145 passed after fixing sure readiness probe httpGet port.
-- BLOCKER: git commit signing via op-ssh-sign fails ("1Password: failed to fill whole buffer") —
-  the 1Password desktop app is not running/unlocked. Commits 4-10, Phase 0 (op item create sure +
-  dragonfly) and just pocket-id apply are all blocked on it.
+- BLOCKER resolved 2026-10-06: 1Password desktop app unlocked — commits 4-10 + docs landed and
+  pushed; PR #4489 open, CI green (7/7 checks). Commit-signing works, but the op CLI still needs the
+  desktop "Connect with 1Password CLI" integration enabled — Phase 0 (op item create sure + dragonfly)
+  and just pocket-id apply remain gated on that.
 - Follow-ups recorded: Healthchecks.io ping for the dump job (dropped for now), CNPG Grafana
   dashboard (dropped — chart ships a plain ConfigMap, the repo uses the GrafanaDashboard CRD),
   NFS /backups/postgres mkdir + permissions on the OMV side, resticprofile /backups coverage
   check at verification, restore drill to a scratch DB.
 
-### Next: unblock 1Password (owner) -> commits 4-10 as pathspec-isolated atomic commits -> Phase 0 (op item create sure + dragonfly) -> just pocket-id apply (approval) -> push + PR (approval).
+### Next: owner enables the 1Password CLI desktop integration -> Phase 0 (op item create sure + dragonfly) -> just pocket-id apply -> merge PR #4489 (approval) -> Flux reconcile + live verification (onboarding runbook in the PR description) -> local-login flip commit after SSO is proven.
