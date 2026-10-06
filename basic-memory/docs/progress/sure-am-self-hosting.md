@@ -68,10 +68,18 @@ reusable components/cnpg/database, sure app with native Pocket ID OIDC, verifica
 - Validation green: just pocket-id lint OK; pre-commit hooks OK (mise-lock fails on pre-existing
   tool-version drift in the working tree — owner's in-progress work; mise.lock reverted, not
   committed); flux-local test 145/145 passed after fixing sure readiness probe httpGet port.
-- BLOCKER resolved 2026-10-06: 1Password desktop app unlocked — commits 4-10 + docs landed and
-  pushed; PR #4489 open, CI green (7/7 checks). Commit-signing works, but the op CLI still needs the
-  desktop "Connect with 1Password CLI" integration enabled — Phase 0 (op item create sure + dragonfly)
-  and just pocket-id apply remain gated on that.
+- Commit-signing resolved 2026-10-06 (app unlocked): commits 4-10 + docs landed and pushed; PR #4489
+  open (https://github.com/zhorvath83/home-ops/pull/4489), CI green (7/7 checks: Flux Local Diff/Test,
+  Gitleaks, Labeler). Latest commit on branch: a3e2548e0.
+- OPEN (owner action): op CLI 2.39.0 still reports "No accounts configured" — app running (PID seen),
+  daemon socket live (~/.config/op/op-daemon.sock), ~/.config/op/config has accounts: null. The desktop
+  "Connect with 1Password CLI" global toggle was switched on but no account is integrated. `op signin
+  -t` does not exist in 2.39 (-t unknown flag); plain `op signin` was NOT run yet (user interrupted it —
+  it may need interactive approval). Next attempt: owner runs `! op signin` interactively or checks
+  Settings -> Developer for a per-account integration toggle. Phase 0 (op item create sure +
+  dragonfly) and just pocket-id apply (uses op run + op item edit) remain gated on this.
+- Working tree note: mise.lock drift (config has newer tool versions, e.g. hubble 1.20.2 vs lock 1.19.4)
+  is the owner's in-progress work, deliberately left uncommitted; `mise lock` closes it.
 - Follow-ups recorded: Healthchecks.io ping for the dump job (dropped for now), CNPG Grafana
   dashboard (dropped — chart ships a plain ConfigMap, the repo uses the GrafanaDashboard CRD),
   NFS /backups/postgres mkdir + permissions on the OMV side, resticprofile /backups coverage
