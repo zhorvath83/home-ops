@@ -53,13 +53,15 @@ spec:
       namespace: external-secrets
     - name: postgres
       namespace: database
+  healthCheckExprs:
+    - apiVersion: postgresql.cnpg.io/v1
+      kind: Database
+      current: status.applied == true
   healthChecks:
     - apiVersion: postgresql.cnpg.io/v1
       kind: Database
       name: sure
       namespace: database
-      healthCheckExprs:
-        - current: status.applied == true
   interval: 1h
   path: ./kubernetes/apps/selfhosted/sure/database
   postBuild:

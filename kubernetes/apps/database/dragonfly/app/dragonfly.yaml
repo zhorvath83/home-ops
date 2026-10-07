@@ -1,5 +1,5 @@
 ---
-apiVersion: dragonfly.k8s.io/v1alpha1
+apiVersion: dragonflydb.io/v1alpha1
 kind: Dragonfly
 metadata:
   name: dragonfly

@@ -13,13 +13,15 @@ spec:
       namespace: database
     - name: democratic-csi
       namespace: kube-system
+  healthCheckExprs:
+    - apiVersion: postgresql.cnpg.io/v1
+      kind: Cluster
+      current: status.readyInstances >= 1
   healthChecks:
     - apiVersion: postgresql.cnpg.io/v1
       kind: Cluster
       name: postgres
       namespace: database
-      healthCheckExprs:
-        - current: status.readyInstances >= 1
   interval: 1h
   path: ./kubernetes/apps/database/postgres/app
   prune: true
