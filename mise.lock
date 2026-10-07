@@ -1047,7 +1047,7 @@ version = "14.4.0"
 backend = "pipx:ansible"
 
 [[tools."pipx:ansible-core"]]
-version = "2.21.4"
+version = "2.21.5"
 backend = "pipx:ansible-core"
 
 [[tools."pipx:flux-local"]]
