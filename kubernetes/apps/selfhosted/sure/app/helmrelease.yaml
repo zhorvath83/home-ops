@@ -45,7 +45,9 @@ spec:
               # local login stays enabled until SSO is proven, then flipped off in a follow-up commit.
               AUTH_PROVIDERS_SOURCE: db
               AUTH_LOCAL_LOGIN_ENABLED: "true"
-              AUTH_JIT_MODE: create_and_link
+              # SSO creates accounts only from a pending invitation (joins the inviting family);
+              # create_and_link would give each new SSO user a separate family.
+              AUTH_JIT_MODE: link_only
               # Database (Database/DatabaseRole provisioned by the cnpg component)
               POSTGRES_USER: sure
               POSTGRES_DB: sure

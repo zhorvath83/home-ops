@@ -44,6 +44,11 @@ reusable components/cnpg/database, sure app with native Pocket ID OIDC, verifica
 - [correction] dragonfly-operator IS published as an OCI chart:
   oci://ghcr.io/dragonflydb/dragonfly-operator/helm/dragonfly-operator (v1.7.0) — the earlier
   "no published chart" finding was wrong (registry path probe stopped one segment short).
+- [decision] Sure SSO JIT = link_only (owner, 2026-10-07): SSO accounts are created only from a pending
+  Sure invitation (joins the inviting family); create_and_link would give every new SSO user a separate
+  family (oidc_accounts_controller.rb#create_user, v0.7.5). Role mapping is set in the admin UI (db-sourced
+  provider): super_admin: [sure_admins], member: [sure_users] — never map sure_admins to admin, the mapping
+  re-applies on every login and would demote the owner (oidc_identity.rb#apply_role_mapping!).
 - [decision] Dragonfly persistence = cache-only, no snapshot/tiering PVC (owner, 2026-10-03):
   a restart drops in-flight sidekiq/cache state; add spec.snapshot.persistentVolumeClaimSpec
   later if job loss becomes a problem.
@@ -65,11 +70,11 @@ Ratified plan (owner, 2026-10-03) — 9 phases (roadmap Phases 0-7 + local-login
 ## Checkpoint
 - **Phase**: 8/9 — merge + live verification — awaiting push + CI + merge approval
 - **State**: Phase 0 + pocket-id apply done. Final full review (2026-10-07) found 4 critical + 3 high defects, all fixed in one commit: K1 cnpg component landed in selfhosted (Flux targetNamespace overrides explicit namespace) -> separate sure-database ks targeting database; K2 dragonfly CNP blocked operator admin port 9999 (master promotion -> role=master Service selector) -> allowed; K3 dragonfly exits when maxmemory < 256MB x threads (16 CPUs) -> --proactor_threads=1; K4 postgres CNP blocked CNPG operator 8000/5432 -> allowed; M1 sure server lacked allow-gateways (Pocket ID hairpin) -> added; M2 rails server mkdir_p tmp/sockets on RO rootfs -> emptyDir /rails/tmp; M3 pg_dumpall pipe without pipefail -> bash pipefail + .partial rename. Also: dragonfly ks healthCheck (phase Ready), postgres image digest-pinned in Cluster + backup (same index digest), renovate regex digest-aware, Renovate pin allowedVersions <19 for ghcr.io/cloudnative-pg/postgresql (major = planned CNPG offline pg_upgrade), roadmap barman text marked superseded. Enable Banking (api.enablebanking.com) is covered by allow-world; credentials live in the sure DB (AR-encrypted), callback is a browser redirect.
-- **Commits**: b25b3290a + the review-fix commit — local until owner approves push
+- **Commits**: b25b3290a, f40c020de (review fixes) + the JIT link_only commit — local until owner approves push; PR #4489 runbook updated (role mapping + invitation flow)
 - **Tests**: flux-local test 146/146 (2026-10-07, after fixes); just pocket-id lint OK
 - **Next-Claude**: push (approval) -> wait for PR #4489 CI green -> ask merge approval -> just k8s flux-reconcile + live verification per the onboarding runbook (postgres Cluster ready, Database sure applied, dragonfly phase Ready + paperless redis OK, sure /up, first user -> super_admin -> onboarding Closed, SSO provider at /admin/sso_providers, OIDC + passkey test, Enable Banking connect, NAS dump present, restore drill to sure_restore_test) -> local-login flip commit after SSO proven.
 - **Next-Human**: approve push + merge; add yourself to sure_admins (family to sure_users) in Pocket ID; create /backups/postgres on the NAS writable by uid 1000 if mkdir fails.
-- **Open questions**: callback_path /auth/pocket-id/callback provisional; WEBAUTHN_RP_ID subdomain may need the bare public domain; AUTH_JIT_MODE create_and_link — whether sure_users JIT accounts join the owner's family or get their own (verify live).
+- **Open questions**: callback_path /auth/pocket-id/callback provisional; WEBAUTHN_RP_ID subdomain may need the bare public domain; JIT question resolved 2026-10-07 (link_only, see Decisions).
 - **Maestro**: n/a — human-attended Maestri-canvas session, no delegation
 ## Session 1 — 2026-10-03
 - Plan mode: full repo + BM area research (3 explorers), Plan-agent design pass, owner decisions
