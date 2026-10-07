@@ -38,7 +38,14 @@ spec:
             image: &image
               repository: ghcr.io/we-promise/sure
               tag: 0.7.5-hotfix.1@sha256:3692b3bcf0eae2c7f3154348c6131060bda8127038fc78b0543f15b5166e6074
+            # Ruby's Dir.tmpdir rejects the world-writable, non-sticky emptyDir; give it an
+            # owner-only dir, then hand off to the image entrypoint (db:prepare + server).
+            command:
+              - /bin/bash
+              - -c
+              - mkdir -p -m 700 /tmp/app && exec /rails/bin/docker-entrypoint ./bin/rails server
             env:
+              TMPDIR: /tmp/app
               SELF_HOSTED: "true"
               RAILS_ASSUME_SSL: "true"
               # OIDC providers live in the DB, registered in the admin UI (/admin/sso_providers);
@@ -104,10 +111,11 @@ spec:
           app:
             image: *image
             command:
-              - bundle
-              - exec
-              - sidekiq
+              - /bin/bash
+              - -c
+              - mkdir -p -m 700 /tmp/app && exec /rails/bin/docker-entrypoint bundle exec sidekiq
             env:
+              TMPDIR: /tmp/app
               SELF_HOSTED: "true"
               RAILS_ASSUME_SSL: "true"
               POSTGRES_USER: sure
