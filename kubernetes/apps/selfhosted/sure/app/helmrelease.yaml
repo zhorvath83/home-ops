@@ -37,7 +37,7 @@ spec:
           app:
             image: &image
               repository: ghcr.io/we-promise/sure
-              tag: 0.7.5-hotfix.1@sha256:3692b3bcf0eae2c7f3154348c6131060bda8127038fc78b0543f15b5166e6074
+              tag: 0.7.5-hotfix.2@sha256:aa46be2d8e3f8b2182261dc05933a64b4a12543dd5f44ad12f08868caac1f997
             # Ruby's Dir.tmpdir rejects the world-writable, non-sticky emptyDir; give it an
             # owner-only dir, then hand off to the image entrypoint (db:prepare + server).
             command:
@@ -49,7 +49,7 @@ spec:
               # bundler wants a writable HOME on the read-only rootfs
               HOME: /tmp/app
               SELF_HOSTED: "true"
-              # self-hosted production defaults to a browser-side PostHog feedback survey
+              # defaults on: browser feedback survey + daily usage event with client IP (hotfix.2)
               POSTHOG_FEEDBACK_ENABLED: "false"
               RAILS_ASSUME_SSL: "true"
               # Pure SSO-only: Pocket ID (DB provider "pocketid", /admin/sso_providers) is the only
@@ -124,6 +124,7 @@ spec:
               TMPDIR: /tmp/app
               HOME: /tmp/app
               SELF_HOSTED: "true"
+              POSTHOG_FEEDBACK_ENABLED: "false"
               RAILS_ASSUME_SSL: "true"
               POSTGRES_USER: sure
               POSTGRES_DB: sure
