@@ -49,8 +49,8 @@ spec:
                 mkdir -p /backups/postgres
                 # write to .partial first so a failed dump never counts toward the 14 kept files
                 out="/backups/postgres/postgres-$(date +%F).sql.gz"
-                pg_dumpall -h postgres-rw -U postgres | gzip > "${out}.partial"
-                mv "${out}.partial" "${out}"
+                pg_dumpall -h postgres-rw -U postgres | gzip > "$${out}.partial"
+                mv "$${out}.partial" "$${out}"
                 # keep the newest 14 dumps locally; older ones stay in the resticprofile history
                 ls -1t /backups/postgres/postgres-*.sql.gz | tail -n +15 | xargs -r rm -f
             securityContext:
