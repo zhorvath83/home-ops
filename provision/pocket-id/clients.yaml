@@ -182,13 +182,12 @@ clients:
     pkce_enabled: false
     groups:
       - infra_admins
-  # Callback path is provisional: the sure admin UI (/admin/sso_providers) dictates the
-  # exact redirect URI; fix here + re-apply if it differs.
+  # Path segment = the sure SSO provider name, which only allows [a-z0-9_].
   sure:
     friendly_name: Sure
     gate: native
     subdomain: fin
-    callback_path: /auth/pocket-id/callback
+    callback_path: /auth/pocketid/callback
     groups:
       - sure_admins
       - sure_users
