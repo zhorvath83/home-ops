@@ -18,12 +18,12 @@ kind: Gateway
 metadata:
   name: envoy-external
   annotations:
-    external-dns.alpha.kubernetes.io/target: &hostname "external.${PUBLIC_DOMAIN}"
+    external-dns.kubernetes.io/target: &hostname "external.${PUBLIC_DOMAIN}"
 spec:
   gatewayClassName: envoy-external
   infrastructure:
     annotations:
-      external-dns.alpha.kubernetes.io/hostname: *hostname
+      external-dns.kubernetes.io/hostname: *hostname
   listeners:
     - name: http
       protocol: HTTP
