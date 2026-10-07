@@ -20,6 +20,8 @@ groups:
     friendly_name: Paperless users
   sure_admins:
     friendly_name: Sure admins
+  sure_users:
+    friendly_name: Sure users
   mealie_admins:
     friendly_name: Mealie admins
   mealie_users:
@@ -189,3 +191,4 @@ clients:
     callback_path: /auth/pocket-id/callback
     groups:
       - sure_admins
+      - sure_users
