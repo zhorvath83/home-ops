@@ -5,14 +5,21 @@ general:
   appName: File share
   #On which URL Pingvin Share is available
   appUrl: "https://share.${PUBLIC_DOMAIN}"
-  #Whether to set the secure flag on cookies. If enabled, the site will not function when accessed over HTTP.
-  secureCookies: "true"
   #Whether to show the home page
   showHomePage: "false"
-  #Time after which a user must log in again (default: 3 months).
-  sessionDuration: 7 days
   #Default language
   defaultLanguage: "hu-HU"
+security:
+  #Time after which a user must log in again (default: 3 months).
+  sessionDuration: 7 days
+  #Whether to set the secure flag on cookies. If enabled, the site will not function when accessed over HTTP.
+  secureCookies: "true"
+  #Whether registration is allowed
+  allowRegistration: "false"
+  #Whether unauthenticated users can create shares
+  allowUnauthenticatedShares: "false"
+  #Whether admins can access all shares without tokens/passwords
+  allowAdminAccessAllShares: "true"
 appearance:
   #Mantine primary color used across the UI.
   #Use one of the named colors: dark, gray, red, pink, grape, violet, indigo, blue, cyan, teal, green, lime, yellow, orange, victoria, custom
@@ -27,10 +34,10 @@ appearance:
   customCss: ""
 
 share:
-  #Whether registration is allowed
-  allowRegistration: "false"
-  #Whether unauthenticated users can create shares
-  allowUnauthenticatedShares: "false"
+  #Whether to allow email sharing with recipients. Only enable this if SMTP is activated.
+  enableShareEmailRecipients: "true"
+  #Whether to send an email to the share creator when an email recipient downloads a file. This requires SMTP and email recipient sharing.
+  enableShareDownloadNotifications: "true"
   #Maximum share expiration. Set to 0 to allow unlimited expiration.
   maxExpiration: 90 days
   #Default length for the generated ID of a share. This value is also used to generate links for reverse shares. A value below 8 is not considered secure.
@@ -43,8 +50,6 @@ share:
   chunkSize: "10000000"
   #The share creation modal automatically appears when a user selects files, eliminating the need to manually click the button.
   autoOpenShareModal: "true"
-  #Whether admins can access all shares without tokens/passwords
-  allowAdminAccessAllShares: "true"
   #How long files are kept after shares expire or are deleted by the uploader.
   fileRetentionPeriod: 7 days
   #Whether reverse shares are restricted to simple mode (no description, expiration, password, etc.).
@@ -55,8 +60,6 @@ cache:
   redis-enabled: "false"
 
 email:
-  #Whether to allow email sharing with recipients. Only enable this if SMTP is activated.
-  enableShareEmailRecipients: "true"
   #Subject of the email which gets sent to the share recipients.
   shareRecipientsSubject: Files shared with you
   #Message which gets sent to the share recipients. Available variables:
@@ -110,8 +113,6 @@ email:
     You can use the email "{email}" and the password "{password}" to sign in.
 
     Pingvin Share 🐧
-  #Whether to send an email to the share creator when an email recipient downloads a file. This requires SMTP and email recipient sharing.
-  enableShareDownloadNotifications: "true"
   #Subject of the email which gets sent to the share creator when a recipient downloads a file.
   shareDownloadNotificationSubject: Your file was downloaded
   #Message which gets sent to the share creator when a recipient downloads a file. Available variables:
