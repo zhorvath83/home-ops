@@ -52,10 +52,12 @@ spec:
               # self-hosted production defaults to a browser-side PostHog feedback survey
               POSTHOG_FEEDBACK_ENABLED: "false"
               RAILS_ASSUME_SSL: "true"
-              # OIDC providers live in the DB, registered in the admin UI (/admin/sso_providers);
-              # local login stays enabled until SSO is proven, then flipped off in a follow-up commit.
+              # Pure SSO-only: Pocket ID (DB provider "pocketid", /admin/sso_providers) is the only
+              # way in; no local password, no super-admin override, no standalone Sure passkey.
               AUTH_PROVIDERS_SOURCE: db
-              AUTH_LOCAL_LOGIN_ENABLED: "true"
+              AUTH_LOCAL_LOGIN_ENABLED: "false"
+              AUTH_LOCAL_ADMIN_OVERRIDE_ENABLED: "false"
+              AUTH_PASSKEY_LOGIN_ENABLED: "false"
               # SSO creates accounts only from a pending invitation (joins the inviting family);
               # create_and_link would give each new SSO user a separate family.
               AUTH_JIT_MODE: link_only
