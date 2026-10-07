@@ -1,8 +1,7 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
 # sure (AD-023): egress-only delta — postgres + shared dragonfly in database; world egress
-# (bank sync providers, open FQDN list) via the allow-world pod label + CCNP. Ingress comes
-# from envoy-internal via the ingress-from-gateway-internal CCNP; no east-west consumers yet.
+# (Enable Banking api.enablebanking.com) and the envoy hairpin come from pod-label CCNPs.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:

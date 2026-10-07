@@ -75,8 +75,8 @@ References studied:
   `fin.${PUBLIC_DOMAIN}` (cluster-settings templated hostname, never a hardcoded domain), authenticated
   via Pocket ID OIDC + passkeys.
 - The cluster's first shared SQL plane: CNPG operator + one shared `postgres` cluster in `database`,
-  with daily barman backups to OVH S3 (offsite, consistent with the volsync plane) — reusable by any
-  future app that needs Postgres instead of embedded SQLite.
+  with a daily pg_dumpall to the NAS /backups plane (resticprofile carries it offsite; no PITR) — reusable
+  by any future app that needs Postgres instead of embedded SQLite.
 - A shared Dragonfly instance replacing paperless's pod-local Valkey sidecar; sure's Sidekiq queues get
   persistence and both apps share one Redis plane with per-app DB indexes.
 - A reusable per-app database component (`Database` + `DatabaseRole` + password secret wiring), so
@@ -184,7 +184,7 @@ Route:         fin.${PUBLIC_DOMAIN} → envoy-internal (k8s-gateway LAN DNS), na
    `ghcr.io/cloudnative-pg/postgresql:18.x-standard-trixie` pinned by digest; storage 10Gi
    `democratic-csi-local-hostpath`; minimal initdb bootstrap (no default app db needed — per-app
    `Database` CRs own that).
-2. `spec.backup.barmanObjectStore`: destinationPath `s3://home-ops-postgres/postgres`, OVH endpoint,
+2. SUPERSEDED 2026-10-03 (NAS-only pg_dumpall CronJob, see Decisions in the progress note) — original text kept as history: `spec.backup.barmanObjectStore`: destinationPath `s3://home-ops-postgres/postgres`, OVH endpoint,
    credentials from ExternalSecret `cnpg-backup` (ClusterSecretStore `onepassword-connect`),
    AES-256 encryption on both data and WAL, key from the same ExternalSecret — backups hold financial
    data and (per Phase 6) an OIDC client secret, and the volsync plane's offsite backups are

@@ -52,27 +52,25 @@ reusable components/cnpg/database, sure app with native Pocket ID OIDC, verifica
 
 Ratified plan (owner, 2026-10-03) — 9 phases (roadmap Phases 0-7 + local-login flip). The active phase is marked `← current`.
 
-1. [ ] **Phase 0 — 1Password items** — `op item create` vault HomeOps: `sure` (secret_key_base hex64, 3x AR-encryption keys hex32, postgres_password hex24) + `dragonfly` (requirepass hex24) `← current` — BLOCKED on op CLI integration (owner action)
+1. [x] **Phase 0 — 1Password items** — `sure` + `dragonfly` created 2026-10-07 as API Credential items in HomeOps (field names/lengths read back)
 2. [x] **Phase 1 — database ns group + CNPG operator** — f3b091c3d, ee953928f
 3. [x] **Phase 2 — postgres cluster + NAS dump cronjob** — b967c6022, 004684032
 4. [x] **Phase 3 — dragonfly operator + shared instance (cache-only)** — 501053151, 19759aa9f
 5. [x] **Phase 4 — paperless valkey decommission** — fcd6263fa
 6. [x] **Phase 5 — components/cnpg/database** — 188952040
-7. [x] **Phase 6 — sure app + Pocket ID client manifests** — 838ccccee, 29eb72766; `just pocket-id apply` still pending, gated on Phase 0
-8. [ ] **Phase 7 — merge + Flux reconcile + live verification + restore drill** — PR #4489 open, CI 7/7 green; onboarding runbook in the PR description
+7. [x] **Phase 6 — sure app + Pocket ID client manifests** — 838ccccee, 29eb72766, b25b3290a (sure_users group); `just pocket-id apply` done 2026-10-07 (3 added: sure client, sure_admins, sure_users; secrets synced; audit 24/24 group-restricted)
+8. [ ] **Phase 7 — merge + Flux reconcile + live verification + restore drill** — PR #4489 open; final review fixes committed 2026-10-07 `← current`
 9. [ ] **Local-login flip** — security commit `AUTH_LOCAL_LOGIN_ENABLED=false` after SSO is proven
 
 ## Checkpoint
-
-- **Phase**: 0/9 — 1Password items — blocked on owner action (op CLI account integration)
-- **State**: all repo-side work finished and pushed — Phases 1-6 committed (14 branch commits, remote in sync, PR #4489 open, CI 7/7 green). Phase 0 blocked: op CLI 2.39.0 reports "No accounts configured" (~/.config/op/config has accounts: null; desktop global CLI toggle on but no account integrated; plain `op signin` NOT run — owner interrupted it, may need interactive approval). `just pocket-id apply` gated on the same (uses op run + op item edit). Working tree: only mise.lock drift — owner's in-progress tool versions, deliberately uncommitted (`mise lock` closes it).
-- **Commits**: aa14a5fbe (last pushed) — all 14 branch commits on the remote; the docs commit carrying this checkpoint is LOCAL by owner decision (2026-10-06) — push before handover to another machine
-- **Tests**: green — flux-local test (all-namespaces, enable-helm, path kubernetes/flux/cluster) 145/145 passed in this session (2026-10-06), no source change since (only BM docs commits); just pocket-id lint OK; PR #4489 CI 7/7 green
-- **Next-Claude**: after the op CLI is unblocked, run Phase 0 (approval gate): op item create --category=password --vault HomeOps --title sure with fields secret_key_base[password] (openssl rand -hex 64), active_record_encryption_primary_key[password] / _deterministic_key[password] / _key_derivation_salt[password] (openssl rand -hex 32 each), postgres_password[password] (openssl rand -hex 24); same for --title dragonfly with requirepass[password] (openssl rand -hex 24). AR-encryption keys generated once, NEVER casually rotated. Then: just pocket-id apply (approval gate) -> ask approval to merge PR #4489 -> just k8s flux-reconcile + live verification per the onboarding runbook in the PR description (postgres Cluster/Database/DatabaseRole ready; paperless without sidecar; sure /up green; first user -> super_admin -> onboarding Closed; SSO provider at /admin/sso_providers, issuer https://idm.${PUBLIC_DOMAIN}, secret from 1P pocket-id-clients/sure_client_secret; OIDC + passkey test; NAS dump; restore drill to sure_restore_test) -> local-login flip commit after SSO is proven.
-- **Next-Human**: enable per-account 1Password CLI integration (1Password Settings -> Developer) or run `! op signin` interactively; then approve the gated steps (Phase 0 item creates, just pocket-id apply, PR #4489 merge). Separately: `mise lock` for own tool-version drift.
-- **Open questions**: callback_path /auth/pocket-id/callback is provisional — admin UI dictates the exact URI (clients.yaml fix + re-apply if it differs); WEBAUTHN_RP_ID as subdomain fin.${PUBLIC_DOMAIN} may need drop to ${PUBLIC_DOMAIN} if passkey registration fails.
+- **Phase**: 8/9 — merge + live verification — awaiting push + CI + merge approval
+- **State**: Phase 0 + pocket-id apply done. Final full review (2026-10-07) found 4 critical + 3 high defects, all fixed in one commit: K1 cnpg component landed in selfhosted (Flux targetNamespace overrides explicit namespace) -> separate sure-database ks targeting database; K2 dragonfly CNP blocked operator admin port 9999 (master promotion -> role=master Service selector) -> allowed; K3 dragonfly exits when maxmemory < 256MB x threads (16 CPUs) -> --proactor_threads=1; K4 postgres CNP blocked CNPG operator 8000/5432 -> allowed; M1 sure server lacked allow-gateways (Pocket ID hairpin) -> added; M2 rails server mkdir_p tmp/sockets on RO rootfs -> emptyDir /rails/tmp; M3 pg_dumpall pipe without pipefail -> bash pipefail + .partial rename. Also: dragonfly ks healthCheck (phase Ready), postgres image digest-pinned in Cluster + backup (same index digest), renovate regex digest-aware, Renovate pin allowedVersions <19 for ghcr.io/cloudnative-pg/postgresql (major = planned CNPG offline pg_upgrade), roadmap barman text marked superseded. Enable Banking (api.enablebanking.com) is covered by allow-world; credentials live in the sure DB (AR-encrypted), callback is a browser redirect.
+- **Commits**: b25b3290a + the review-fix commit — local until owner approves push
+- **Tests**: flux-local test 146/146 (2026-10-07, after fixes); just pocket-id lint OK
+- **Next-Claude**: push (approval) -> wait for PR #4489 CI green -> ask merge approval -> just k8s flux-reconcile + live verification per the onboarding runbook (postgres Cluster ready, Database sure applied, dragonfly phase Ready + paperless redis OK, sure /up, first user -> super_admin -> onboarding Closed, SSO provider at /admin/sso_providers, OIDC + passkey test, Enable Banking connect, NAS dump present, restore drill to sure_restore_test) -> local-login flip commit after SSO proven.
+- **Next-Human**: approve push + merge; add yourself to sure_admins (family to sure_users) in Pocket ID; create /backups/postgres on the NAS writable by uid 1000 if mkdir fails.
+- **Open questions**: callback_path /auth/pocket-id/callback provisional; WEBAUTHN_RP_ID subdomain may need the bare public domain; AUTH_JIT_MODE create_and_link — whether sure_users JIT accounts join the owner's family or get their own (verify live).
 - **Maestro**: n/a — human-attended Maestri-canvas session, no delegation
-
 ## Session 1 — 2026-10-03
 - Plan mode: full repo + BM area research (3 explorers), Plan-agent design pass, owner decisions
   on branch scope (full item), 1P ownership (AI via op CLI), apply/deploy depth (AI with approval

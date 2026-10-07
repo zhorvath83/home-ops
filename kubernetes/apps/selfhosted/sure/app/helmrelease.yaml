@@ -25,12 +25,13 @@ spec:
       server:
         annotations:
           reloader.stakater.com/auto: "true"
-        # AD-023 vocabulary: custom-egress + allow-world (bank sync providers, open FQDN
-        # list for now); internal-only ingress via the allow-gateway-internal CCNP.
+        # AD-023: allow-world for bank sync (api.enablebanking.com), allow-gateways for the
+        # Pocket ID token exchange hairpinning through envoy; internal-only ingress.
         pod:
           labels:
             egress.home.arpa/custom-egress: "true"
             egress.home.arpa/allow-world: "true"
+            egress.home.arpa/allow-gateways: "true"
             ingress.home.arpa/allow-gateway-internal: "true"
         containers:
           app:
@@ -153,6 +154,10 @@ spec:
       tmpfs:
         globalMounts:
           - path: /tmp
+            subPath: tmp
+          # rails server mkdir_p's tmp/{cache,pids,sockets} on boot; the image ships no tmp/sockets
+          - path: /rails/tmp
+            subPath: rails-tmp
         type: emptyDir
       storage:
         existingClaim: sure

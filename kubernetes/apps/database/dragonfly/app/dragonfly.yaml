@@ -10,6 +10,8 @@ spec:
   replicas: 1
   image: ghcr.io/dragonflydb/dragonfly:v2.0.0
   args:
+    # dragonfly exits unless maxmemory >= 256MB per thread; threads default to all 16 node CPUs
+    - --proactor_threads=1
     - --maxmemory
     - 384mb
     # never set --dbnum: the default 16 keeps SELECT 1 (paperless) and 2 (sure) valid
