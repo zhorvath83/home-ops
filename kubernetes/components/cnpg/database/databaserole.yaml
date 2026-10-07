@@ -8,6 +8,6 @@ spec:
     name: postgres
   name: "${APP}"
   login: true
-  databaseRoleReclaimPolicy: Delete
+  databaseRoleReclaimPolicy: delete
   passwordSecret:
     name: "${APP}-db"
