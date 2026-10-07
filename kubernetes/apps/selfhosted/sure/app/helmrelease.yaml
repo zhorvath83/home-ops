@@ -46,7 +46,11 @@ spec:
               - mkdir -p -m 700 /tmp/app && exec /rails/bin/docker-entrypoint ./bin/rails server
             env:
               TMPDIR: /tmp/app
+              # bundler wants a writable HOME on the read-only rootfs
+              HOME: /tmp/app
               SELF_HOSTED: "true"
+              # self-hosted production defaults to a browser-side PostHog feedback survey
+              POSTHOG_FEEDBACK_ENABLED: "false"
               RAILS_ASSUME_SSL: "true"
               # OIDC providers live in the DB, registered in the admin UI (/admin/sso_providers);
               # local login stays enabled until SSO is proven, then flipped off in a follow-up commit.
@@ -116,6 +120,7 @@ spec:
               - mkdir -p -m 700 /tmp/app && exec /rails/bin/docker-entrypoint bundle exec sidekiq
             env:
               TMPDIR: /tmp/app
+              HOME: /tmp/app
               SELF_HOSTED: "true"
               RAILS_ASSUME_SSL: "true"
               POSTGRES_USER: sure
