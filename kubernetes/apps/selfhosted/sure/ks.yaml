@@ -1,0 +1,74 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: sure
+spec:
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: sure
+  components:
+    - ../../../../components/volsync
+  dependsOn:
+    - name: onepassword-connect
+      namespace: external-secrets
+    - name: democratic-csi
+      namespace: kube-system
+    - name: sure-database
+    - name: dragonfly
+      namespace: database
+  interval: 1h
+  path: ./kubernetes/apps/selfhosted/sure/app
+  postBuild:
+    substitute:
+      APP: sure
+      APP_UID: "1000"
+      APP_GID: "1000"
+      VOLSYNC_CAPACITY: "2Gi"
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  targetNamespace: selfhosted
+  timeout: 5m
+  wait: false
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+# Separate ks because targetNamespace overrides every namespace: the Database/DatabaseRole
+# must land in database next to the postgres Cluster, not in selfhosted.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: sure-database
+spec:
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: sure
+  components:
+    - ../../../../components/cnpg/database
+  dependsOn:
+    - name: onepassword-connect
+      namespace: external-secrets
+    - name: postgres
+      namespace: database
+  healthChecks:
+    - apiVersion: postgresql.cnpg.io/v1
+      kind: Database
+      name: sure
+      namespace: database
+      healthCheckExprs:
+        - current: status.applied == true
+  interval: 1h
+  path: ./kubernetes/apps/selfhosted/sure/database
+  postBuild:
+    substitute:
+      APP: sure
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  targetNamespace: database
+  timeout: 5m

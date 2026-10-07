@@ -16,6 +16,8 @@ spec:
       namespace: external-secrets
     - name: democratic-csi
       namespace: kube-system
+    - name: dragonfly
+      namespace: database
   interval: 1h
   path: ./kubernetes/apps/selfhosted/paperless/app
   postBuild:

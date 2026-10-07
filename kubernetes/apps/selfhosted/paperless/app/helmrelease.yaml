@@ -37,8 +37,6 @@ spec:
           # because the s6-overlay init system requires privileges to fix /run permissions.
           # Adding allowPrivilegeEscalation: false and dropping ALL capabilities breaks startup.
           app:
-            dependsOn:
-              - valkey
             image: &image
               repository: ghcr.io/paperless-ngx/paperless-ngx
               tag: 3.2.1@sha256:2459d860e4e936c26c34a3ff58ede53487a9116202db78a1262c44f68f746196
@@ -79,8 +77,8 @@ spec:
               PAPERLESS_PRE_CONSUME_SCRIPT: "/usr/src/paperless/scripts/pre-consume.sh"
               # Database (SQLite)
               PAPERLESS_DBENGINE: &dbEngine "sqlite"
-              # Redis/Valkey connection (sidecar)
-              PAPERLESS_REDIS: "redis://localhost:6379"
+              # Redis connection (shared dragonfly) comes from the ExternalSecret template
+              # so the auth password never lands in this manifest.
               # OCR settings
               # PAPERLESS_OCR_LANGUAGE: "hun"
               # PAPERLESS_OCR_LANGUAGES: "hun"
@@ -153,46 +151,6 @@ spec:
                 cpu: 10m
               limits:
                 memory: 5Gi
-          valkey:
-            image:
-              repository: ghcr.io/valkey-io/valkey
-              tag: 9.1.2@sha256:ac9c858b86dc81f3482d53a9d854547379a5f41e012500f839ab257c399063e0
-            args:
-              - --port
-              - "6379"
-              - --maxmemory
-              - "96mb"
-              - --maxmemory-policy
-              - allkeys-lru
-              - --save
-              - ""
-              - --appendonly
-              - "no"
-            securityContext:
-              runAsNonRoot: true
-              runAsUser: 1000
-              runAsGroup: 1000
-              privileged: false
-              allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: true
-              capabilities: {drop: ["ALL"]}
-            probes:
-              liveness:
-                enabled: true
-              readiness:
-                enabled: true
-              startup:
-                enabled: true
-                spec:
-                  periodSeconds: 30
-                  timeoutSeconds: 5
-                  failureThreshold: 5
-            resources:
-              requests:
-                cpu: 5m
-                memory: 12Mi
-              limits:
-                memory: 128Mi
       backup:
         type: cronjob
         cronjob:
@@ -262,12 +220,6 @@ spec:
             subPath: tmp
           - path: /run
         type: emptyDir
-      valkey-data:
-        type: emptyDir
-        advancedMounts:
-          paperless:
-            valkey:
-              - path: /data
       data:
         existingClaim: paperless
         advancedMounts:

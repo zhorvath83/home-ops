@@ -14,6 +14,12 @@
       versioning: "regex:^[Vv](?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)$",
     },
     {
+      description: "Postgres major upgrades are a planned CNPG pg_upgrade (downtime + fresh dump), not a Renovate bump",
+      matchDatasources: ["docker"],
+      matchPackageNames: ["ghcr.io/cloudnative-pg/postgresql"],
+      allowedVersions: "<19",
+    },
+    {
       description: "Override helmfile dependency name so charts surface as their packageName",
       matchDatasources: ["docker"],
       matchManagers: ["helmfile"],

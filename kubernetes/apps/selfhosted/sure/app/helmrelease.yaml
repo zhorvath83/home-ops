@@ -1,0 +1,172 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: sure
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  values:
+    defaultPodOptions:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+    controllers:
+      server:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        # AD-023: allow-world for bank sync (api.enablebanking.com), allow-gateways for the
+        # Pocket ID token exchange hairpinning through envoy; internal-only ingress.
+        pod:
+          labels:
+            egress.home.arpa/custom-egress: "true"
+            egress.home.arpa/allow-world: "true"
+            egress.home.arpa/allow-gateways: "true"
+            ingress.home.arpa/allow-gateway-internal: "true"
+        containers:
+          app:
+            image: &image
+              repository: ghcr.io/we-promise/sure
+              tag: 0.7.5-hotfix.1@sha256:3692b3bcf0eae2c7f3154348c6131060bda8127038fc78b0543f15b5166e6074
+            env:
+              SELF_HOSTED: "true"
+              RAILS_ASSUME_SSL: "true"
+              # OIDC providers live in the DB, registered in the admin UI (/admin/sso_providers);
+              # local login stays enabled until SSO is proven, then flipped off in a follow-up commit.
+              AUTH_PROVIDERS_SOURCE: db
+              AUTH_LOCAL_LOGIN_ENABLED: "true"
+              # SSO creates accounts only from a pending invitation (joins the inviting family);
+              # create_and_link would give each new SSO user a separate family.
+              AUTH_JIT_MODE: link_only
+              # Database (Database/DatabaseRole provisioned by the cnpg component)
+              POSTGRES_USER: sure
+              POSTGRES_DB: sure
+              DB_HOST: postgres-rw.database.svc
+              DB_PORT: "5432"
+              # Passkeys are scoped to the app subdomain; drop to ${PUBLIC_DOMAIN} if
+              # registration fails (risk tracked in the roadmap note).
+              WEBAUTHN_RP_ID: "fin.${PUBLIC_DOMAIN}"
+              WEBAUTHN_ALLOWED_ORIGINS: "https://fin.${PUBLIC_DOMAIN}"
+            envFrom:
+              - secretRef:
+                  name: "{{ .Release.Name }}-secret"
+            probes:
+              startup:
+                enabled: true
+                spec:
+                  periodSeconds: 30
+                  timeoutSeconds: 5
+                  # db:prepare runs on boot before /up answers
+                  failureThreshold: 20
+              liveness:
+                enabled: true
+                spec:
+                  periodSeconds: 30
+                  timeoutSeconds: 5
+                  failureThreshold: 5
+              readiness:
+                enabled: true
+                spec:
+                  httpGet:
+                    path: /up
+                    port: 3000
+                  periodSeconds: 30
+                  timeoutSeconds: 5
+                  failureThreshold: 5
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: {drop: ["ALL"]}
+            resources: &resources
+              requests:
+                memory: 256Mi
+                cpu: 10m
+              limits:
+                memory: 1Gi
+      worker:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        pod:
+          labels:
+            egress.home.arpa/custom-egress: "true"
+            egress.home.arpa/allow-world: "true"
+        containers:
+          app:
+            image: *image
+            command:
+              - bundle
+              - exec
+              - sidekiq
+            env:
+              SELF_HOSTED: "true"
+              RAILS_ASSUME_SSL: "true"
+              POSTGRES_USER: sure
+              POSTGRES_DB: sure
+              DB_HOST: postgres-rw.database.svc
+              DB_PORT: "5432"
+            envFrom:
+              - secretRef:
+                  name: "{{ .Release.Name }}-secret"
+            probes:
+              startup:
+                enabled: false
+              liveness:
+                enabled: false
+              readiness:
+                enabled: false
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: {drop: ["ALL"]}
+            resources: *resources
+    service:
+      app:
+        controller: server
+        ports:
+          http:
+            port: &port 3000
+    route:
+      app:
+        annotations:
+          gethomepage.dev/enabled: "true"
+          gethomepage.dev/name: Sure
+          gethomepage.dev/group: PFM
+          gethomepage.dev/icon: sure.svg
+        hostnames:
+          - "fin.${PUBLIC_DOMAIN}"
+        parentRefs:
+          - name: envoy-internal
+            namespace: networking
+            sectionName: https
+        rules:
+          - backendRefs:
+              - identifier: app
+                port: *port
+    persistence:
+      tmpfs:
+        globalMounts:
+          - path: /tmp
+            subPath: tmp
+          # rails server mkdir_p's tmp/{cache,pids,sockets} on boot; the image ships no tmp/sockets
+          - path: /rails/tmp
+            subPath: rails-tmp
+        type: emptyDir
+      storage:
+        existingClaim: sure
+        advancedMounts:
+          server:
+            app:
+              - path: /rails/storage
+          worker:
+            app:
+              - path: /rails/storage

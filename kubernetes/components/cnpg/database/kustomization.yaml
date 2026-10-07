@@ -1,0 +1,10 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/component.json
+# Contract: wire it from a dedicated <app>-database ks with targetNamespace database (next
+# to the postgres Cluster), substitute APP; the app's 1P item holds postgres_password.
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+resources:
+  - ./database.yaml
+  - ./databaserole.yaml
+  - ./externalsecret.yaml
