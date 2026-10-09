@@ -53,9 +53,8 @@ spec:
               # defaults on: browser feedback survey + daily usage event with client IP (hotfix.2)
               POSTHOG_FEEDBACK_ENABLED: "false"
               RAILS_ASSUME_SSL: "true"
-              # Pure SSO-only: Pocket ID (DB provider "pocketid", /admin/sso_providers) is the only
-              # way in; no local password, no super-admin override, no standalone Sure passkey.
-              AUTH_PROVIDERS_SOURCE: db
+              # Pure SSO-only: Pocket ID (OIDC_* in sure-secret) is the only way in; no local
+              # password, no super-admin override, no standalone Sure passkey.
               AUTH_LOCAL_LOGIN_ENABLED: "false"
               AUTH_LOCAL_ADMIN_OVERRIDE_ENABLED: "false"
               AUTH_PASSKEY_LOGIN_ENABLED: "false"

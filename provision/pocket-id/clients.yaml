@@ -182,12 +182,12 @@ clients:
     pkce_enabled: false
     groups:
       - infra_admins
-  # Path segment = the sure SSO provider name, which only allows [a-z0-9_].
+  # Path segment = sure's built-in env-driven OIDC provider name, fixed to openid_connect upstream.
   sure:
     friendly_name: Sure
     gate: native
     subdomain: fin
-    callback_path: /auth/pocketid/callback
+    callback_path: /auth/openid_connect/callback
     groups:
       - sure_admins
       - sure_users
