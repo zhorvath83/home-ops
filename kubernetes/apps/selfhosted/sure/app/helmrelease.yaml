@@ -26,12 +26,13 @@ spec:
         annotations:
           reloader.stakater.com/auto: "true"
         # AD-023: allow-world for bank sync (api.enablebanking.com), allow-gateways for the
-        # Pocket ID token exchange hairpinning through envoy; internal-only ingress.
+        # Pocket ID token exchange hairpinning through envoy.
         pod:
           labels:
             egress.home.arpa/custom-egress: "true"
             egress.home.arpa/allow-world: "true"
             egress.home.arpa/allow-gateways: "true"
+            ingress.home.arpa/allow-gateway-external: "true"
             ingress.home.arpa/allow-gateway-internal: "true"
         containers:
           app:

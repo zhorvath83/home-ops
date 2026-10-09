@@ -1,0 +1,77 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/gateway.envoyproxy.io/httproutefilter_v1alpha1.json
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: HTTPRouteFilter
+metadata:
+  name: sure-deny-403
+spec:
+  directResponse:
+    contentType: text/plain
+    statusCode: 403
+    body:
+      type: Inline
+      inline: "Forbidden\n"
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/gateway.networking.k8s.io/httproute_v1.json
+# Public route; machine and admin surfaces stay LAN-only via the app-template internal route.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: sure-external
+spec:
+  hostnames:
+    - "fin.${PUBLIC_DOMAIN}"
+  parentRefs:
+    - name: envoy-external
+      namespace: networking
+      sectionName: https
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: sure
+          port: 3000
+    # Gateway API ranks by prefix length, so these win over the catch-all above.
+    - matches:
+        # MCP server and the OAuth surface behind it (/register is unauthenticated client registration)
+        - path:
+            type: PathPrefix
+            value: /mcp
+        - path:
+            type: PathPrefix
+            value: /oauth
+        - path:
+            type: PathPrefix
+            value: /.well-known/oauth-authorization-server
+        - path:
+            type: PathPrefix
+            value: /.well-known/oauth-protected-resource
+        - path:
+            type: PathPrefix
+            value: /register
+        # REST API (mobile app, API keys) — no external client
+        - path:
+            type: PathPrefix
+            value: /api
+        - path:
+            type: PathPrefix
+            value: /admin
+        - path:
+            type: PathPrefix
+            value: /sidekiq
+        # Unused Plaid/Stripe receivers
+        - path:
+            type: PathPrefix
+            value: /webhooks
+        # kubelet probes hit the Service, not the gateway
+        - path:
+            type: PathPrefix
+            value: /up
+      filters:
+        - type: ExtensionRef
+          extensionRef:
+            group: gateway.envoyproxy.io
+            kind: HTTPRouteFilter
+            name: sure-deny-403

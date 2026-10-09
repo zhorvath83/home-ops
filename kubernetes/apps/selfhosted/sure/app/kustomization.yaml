@@ -5,3 +5,4 @@ resources:
   - ./ciliumnetworkpolicy.yaml
   - ./externalsecret.yaml
   - ./helmrelease.yaml
+  - ./httproute.yaml
