@@ -177,6 +177,17 @@ spec:
           - path: /rails/tmp
             subPath: rails-tmp
         type: emptyDir
+      # Rails loads it with the image's own initializers; see the file for why it exists
+      logtail-header-filters:
+        type: configMap
+        name: sure-configmap
+        defaultMode: 0444
+        advancedMounts:
+          server:
+            app:
+              - path: /rails/config/initializers/logtail_header_filters.rb
+                subPath: logtail_header_filters.rb
+                readOnly: true
       storage:
         existingClaim: sure
         advancedMounts:

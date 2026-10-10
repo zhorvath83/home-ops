@@ -6,3 +6,11 @@ resources:
   - ./externalsecret.yaml
   - ./helmrelease.yaml
   - ./httproute.yaml
+configMapGenerator:
+  - name: sure-configmap
+    files:
+      - ./config/logtail_header_filters.rb
+generatorOptions:
+  disableNameSuffixHash: true
+  annotations:
+    kustomize.toolkit.fluxcd.io/substitute: disabled
