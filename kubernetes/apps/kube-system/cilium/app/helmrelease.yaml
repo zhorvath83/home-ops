@@ -34,6 +34,9 @@ spec:
       enabled: true
     envoy:
       enabled: false
+    extraConfig:
+      # Also kill TCP (not just UDP) sockets to deleted backends, so pooled clients reconnect
+      lb-sock-terminate-all-protos: "true"
     hubble:
       enabled: true
       relay:
