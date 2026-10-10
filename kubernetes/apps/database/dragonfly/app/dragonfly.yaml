@@ -8,7 +8,7 @@ spec:
   # sidekiq/cache state. Add spec.snapshot.persistentVolumeClaimSpec if job loss
   # ever becomes a problem.
   replicas: 1
-  image: ghcr.io/dragonflydb/dragonfly:v2.0.0
+  image: ghcr.io/dragonflydb/dragonfly:v2.0.2
   args:
     # dragonfly exits unless maxmemory >= 256MB per thread; threads default to all 16 node CPUs
     - --proactor_threads=1
