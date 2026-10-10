@@ -458,7 +458,7 @@ url_api = "https://api.github.com/repos/mikefarah/yq/releases/assets/522027974"
 provenance = "cosign"
 
 [[tools."aqua:mitsuhiko/minijinja"]]
-version = "2.24.0"
+version = "3.0.0"
 backend = "aqua:mitsuhiko/minijinja"
 
 [tools."aqua:mitsuhiko/minijinja"."platforms.linux-arm64"]
