@@ -33,7 +33,7 @@ kubectl = "1.37.1"
 "aqua:prometheus/prometheus" = "3.15.0"
 
 # Templating + secrets
-"aqua:mitsuhiko/minijinja" = "2.24.0"
+"aqua:mitsuhiko/minijinja" = "3.0.0"
 
 # YAML/JSON tooling
 "aqua:mikefarah/yq" = "4.54.1"
