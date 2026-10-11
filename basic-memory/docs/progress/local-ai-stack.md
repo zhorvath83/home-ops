@@ -49,6 +49,14 @@ permalink: home-ops/docs/progress/local-ai-stack
 - [fixed] CORS_ALLOW_ORIGIN restricted to the chat origin (startup warned on '*')
 - [gotcha] First rollout outlives the injected 10m HelmRelease timeout and the Deployment's 600s progressDeadline -> HR InstallFailed, then Deployment stuck Progressing=False (kstatus Failed, rollback impossible). Recovery: kubectl rollout restart deploy/llama-cpp + flux reconcile hr --force. One-off per fresh PVC; recurs only if a new model is added to models.conf
 
+## Open WebUI prompt bloat (2026-10-11)
+
+- [measured] 8 threads (1dca74fe5): decode 7.4 tok/s (6 threads: 6.3-6.6), prompt processing ~26-33 tok/s; still below the 10 tok/s gate
+- [problem] Open WebUI v0.12 native function calling attaches builtin tool schemas to every chat: ~7.2-7.7k prompt tokens => ~4 min to first token on cold cache (worse with 2 concurrent slots)
+- [gotcha] Open WebUI snapshots ALL config keys (368 rows, table config) into webui.db on first boot; afterwards the DB row wins over env, so later env changes are silently ignored. Fix 4dbb3ed06: ENABLE_PERSISTENT_CONFIG=false — env/git is authoritative on every start; admin UI changes do not survive a restart
+- [fixed] 1e907687d (ENABLE_MEMORIES/NOTES/CODE_INTERPRETER/CODE_EXECUTION=false) + 0d30d3a0c (DEFAULT_MODEL_METADATA capabilities.builtin_tools=false; ef27774c2 knowledge-only variant superseded). Measured after: new chat prompt 19-38 tokens, first token ~1-2 s, decode 5.9-7.3 tok/s
+- [observation] Intermediate step with only memories/notes/code off: prompt ~4.0k tokens (time, ask_user, chats tools + their instructions remained)
+
 ## Next
 - [next] Throughput below gate: try LLAMA_ARG_THREADS 8 (all physical cores) and measure decode + node health; then Gemma 4 26B-A4B under the same flags (switch --model/--alias)
 - [next] Bake-off gate (roadmap Plan step 4): Hungarian prompt set, paperless set, sure tool-calling round, TTFT on an 8k prompt
