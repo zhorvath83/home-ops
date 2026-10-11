@@ -69,8 +69,8 @@ spec:
               LLAMA_ARG_CTX_SIZE: "32768"
               # Two slots so a batch consumer does not block interactive chat.
               LLAMA_ARG_N_PARALLEL: "2"
-              # 8 physical cores; the control plane shares this node.
-              LLAMA_ARG_THREADS: "6"
+              # All 8 physical cores; decode is memory-bound, SMT siblings add nothing.
+              LLAMA_ARG_THREADS: "8"
               LLAMA_ARG_FLASH_ATTN: "on"
               # Thinking costs minutes per answer on CPU.
               LLAMA_ARG_REASONING: "off"
