@@ -173,10 +173,15 @@ spec:
               PAPERLESS_DBENGINE: *dbEngine
               USERMAP_UID: *uid
               USERMAP_GID: *gid
+            envFrom:
+              # v3 settings loader enforces PAPERLESS_SECRET_KEY; exporter needs the same app secret as the web pod
+              - secretRef:
+                  name: "{{ .Release.Name }}-secret"
             command:
               - "/bin/sh"
               - "-c"
               - |
+                set -e
                 echo "Starting paperless-ngx document export..."
                 python3 /usr/src/paperless/src/manage.py document_exporter /data/nas/export --compare-checksums --delete --use-filename-format --use-folder-prefix
                 echo "Export completed successfully."
