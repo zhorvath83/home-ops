@@ -35,8 +35,7 @@ permalink: home-ops/docs/progress/local-ai-stack
 - [done] Validation: kustomize build (3 trees), helm template of both charts, pre-commit, just pocket-id lint — all green
 
 ## Blocked
-
-- [blocker] just pocket-id apply fails: Pocket ID returns HTTP 401 for the provisioning API key (TF_VAR_POCKETID_API_TOKEN from HomeOps/pocket-id) — key most likely expired. Owner must mint a new API key in the Pocket ID admin UI (LAN) and update the 1Password field; then apply creates the open-webui client and syncs open-webui_client_secret. Until then the open-webui ExternalSecret cannot resolve.
+- [resolved] 2026-10-11: the Pocket ID provisioning API key had expired (HTTP 401); owner rotated it in HomeOps/pocket-id. terraform plan showed exactly 1 add (pocketid_client open-webui), applied; sync-secrets wrote open-webui_client_secret (run through `script -q /dev/null` so op gets a pty — avoids the piped-stdin gotcha); `just pocket-id audit` reports all 25 clients group-restricted.
 
 ## Next
 
