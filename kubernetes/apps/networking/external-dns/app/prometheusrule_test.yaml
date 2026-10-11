@@ -1,0 +1,85 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/prometheus.rules.test.json
+# promtool unit tests for app/prometheusrule.yaml, covering ExternalDNSAbsent and
+# ExternalDNSSoftErrors. ExternalDNSAbsent is bare `absent(up{job="external-dns"})` — no
+# `up == 0` branch, so it fires only when the series vanishes from discovery (an up==0 scrape
+# failure is a present series and must NOT fire — that case belongs to TargetDown). absent()
+# carries the equality matcher label (job) into the result vector, so the fire case asserts it.
+# SoftErrors is `gauge > 0` with reset-to-0-on-first-success semantics — the boundary pairs are
+# sustained>0 fire / flat-0 no-fire / reset-within-the-for-window no-fire. Fire cases eval past
+# their for windows.
+# Run via `just k8s test-prom-rules` (recipe copies this test + .extracted_prometheus_rules.yaml into a temp dir).
+rule_files:
+  - ./.extracted_prometheus_rules.yaml
+evaluation_interval: 1m
+tests:
+  # === ExternalDNSAbsent ===
+  # (a) Fire: series absent (external-dns gone from discovery). absent() carries the matcher
+  # label (job) into the result vector; fires after the 15m for.
+  - interval: 1m
+    input_series: []
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: ExternalDNSAbsent
+        exp_alerts:
+          - exp_labels:
+              alertname: ExternalDNSAbsent
+              severity: critical
+              job: external-dns
+            exp_annotations:
+              summary: ExternalDNS has disappeared from Prometheus target discovery.
+              description: No external-dns up series has been scraped for 15m — the pod is gone from discovery or the scrape config drifted. Scrape failures on a live target are covered by TargetDown, hard pod failures by KubePodCrashLooping.
+  # (b) No-fire: up == 1 — the series is present so absent() is empty.
+  - interval: 1m
+    input_series:
+      - series: 'up{job="external-dns"}'
+        values: '1x17'
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: ExternalDNSAbsent
+        exp_alerts: []
+  # (c) No-fire: up == 0 (scrape failed but present) — absent() is empty because the series
+  # exists; TargetDown owns this case, this alert must not double-fire on it.
+  - interval: 1m
+    input_series:
+      - series: 'up{job="external-dns"}'
+        values: '0x17'
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: ExternalDNSAbsent
+        exp_alerts: []
+  # === ExternalDNSSoftErrors ===
+  # (d) Fire: gauge sustained at 3 — > 0 holds through the 5m for window.
+  - interval: 1m
+    input_series:
+      - series: 'external_dns_controller_consecutive_soft_errors'
+        values: '3x7'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: ExternalDNSSoftErrors
+        exp_alerts:
+          - exp_labels:
+              alertname: ExternalDNSSoftErrors
+              severity: warning
+            exp_annotations:
+              summary: ExternalDNS reconcile loop is failing softly on every run.
+              description: external_dns_controller_consecutive_soft_errors > 0 for 5m — every DNS reconcile run is failing and retrying (e.g. Cloudflare apply errors). This exact loop ran silent for 3 days in the 2026-10 incident. Check external-dns logs for the per-run failure reason.
+  # (e) No-fire boundary: gauge flat at 0 — healthy loop, > 0 never true.
+  - interval: 1m
+    input_series:
+      - series: 'external_dns_controller_consecutive_soft_errors'
+        values: '0x7'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: ExternalDNSSoftErrors
+        exp_alerts: []
+  # (f) No-fire: gauge at 2 for one scrape then reset to 0 (first success) — a transient blip
+  # never satisfies the 5m for window.
+  - interval: 1m
+    input_series:
+      - series: 'external_dns_controller_consecutive_soft_errors'
+        values: '2 0x6'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: ExternalDNSSoftErrors
+        exp_alerts: []

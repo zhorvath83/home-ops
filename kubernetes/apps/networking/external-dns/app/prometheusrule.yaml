@@ -1,0 +1,34 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/monitoring.coreos.com/prometheusrule_v1.json
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: external-dns
+spec:
+  groups:
+    - name: external-dns.rules
+      rules:
+        # Bare absent() by repo idiom (VolSyncComponentAbsent) — fires only when the target
+        # vanishes from discovery. A present-but-failing scrape (up==0) is TargetDown's plane.
+        - alert: ExternalDNSAbsent
+          annotations:
+            summary: ExternalDNS has disappeared from Prometheus target discovery.
+            description: No external-dns up series has been scraped for 15m — the pod is gone from discovery or the scrape config drifted. Scrape failures on a live target are covered by TargetDown, hard pod failures by KubePodCrashLooping.
+          expr: |
+            absent(up{job="external-dns"})
+          for: 15m
+          labels:
+            severity: critical
+        # Gauge +1 per failed reconcile, reset to 0 on first success — for 5m is ~5 consecutive
+        # failed loops at the ~1m reconcile interval. This is the silent-soft-error-loop class
+        # of the 2026-10 incident; the registry/source error counters see the same failure, so
+        # they stay investigation signals, not alerts.
+        - alert: ExternalDNSSoftErrors
+          annotations:
+            summary: ExternalDNS reconcile loop is failing softly on every run.
+            description: external_dns_controller_consecutive_soft_errors > 0 for 5m — every DNS reconcile run is failing and retrying (e.g. Cloudflare apply errors). This exact loop ran silent for 3 days in the 2026-10 incident. Check external-dns logs for the per-run failure reason.
+          expr: |
+            external_dns_controller_consecutive_soft_errors > 0
+          for: 5m
+          labels:
+            severity: warning
