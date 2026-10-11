@@ -151,9 +151,9 @@ spec:
         value: "false"
       - name: ENABLE_CODE_EXECUTION
         value: "false"
-      # No knowledge bases exist; their 7 tool schemas are dead weight in every prompt.
+      # No builtin tool schemas at all: even the remaining few cost ~4k prompt tokens on CPU prefill.
       - name: DEFAULT_MODEL_METADATA
-        value: '{"builtinTools":{"knowledge":false}}'
+        value: '{"capabilities":{"builtin_tools":false}}'
       # Static assets are copied at startup; keep them off the read-only root filesystem.
       - name: STATIC_DIR
         value: /app/static
