@@ -288,3 +288,37 @@ Needs `dangerouslyDisableSandbox: true` like every other cluster command here.
   jellyfin-metadata PVC. File Transformation vanished from /config/plugins during migration -> dropped.
 - [observation] Full library scan (required post-12) ran from the UI, completed in 28s; web UI +
   multi-version movie + series spot-checks OK after hard-refresh.
+
+## Session 2026-10-11 — SkipMe.db plugin installed (roadmap jellyfin-skipme-db-plugin executed)
+
+- [decision] SkipMe.db **0.2.5.0** installed 2026-10-11 via manual DLL copy into
+  `/config/plugins/SkipMe.db/` (kubectl cp into the running pod, uid 10001) — the only documented
+  path: the plugin publishes no catalog manifest, so the Jellyfin UI cannot install or update it.
+  sha256 of the DLL: d988b90f1900eb263fc4de06981b44536079cad122157104df533ee9b2eba72e.
+  Leftover `Intro Skipper_12.0.4.0` directory removed in the same step.
+- [verified] Load on 12.2 clean: startup log "Loaded plugin: SkipMe.db 0.2.5.0" from
+  /config/plugins/SkipMe.db/SkipMe.Db.Plugin.dll; scheduled task registered ("Daily trigger for
+  Sync SkipMe.db Segment Database ... 01:00:00"). No plugin errors in the log (the
+  DropDisabledItemSeasonId migration warning is 12.2 server behavior, unrelated).
+- [verified] First manual sync (run from UI by the human): "Starting SkipMe.db sync for 217
+  movie(s) and 2621 episode(s)" -> "SkipMe.db sync complete. Stored segments for 1008 of 2838
+  item(s)" in 6s. SQLite cache at /config/data/introskipper/skipme-segments.db (+wal/shm).
+- [decision] **D3 provider order — flipped same day to SkipMe.db FIRST (human, 2026-10-11)**.
+  Initially set local-first on the frame-exactness argument (local fingerprint analysis exact
+  for our cuts, crowd timestamps version-approximate, priority only deciding overlap); the
+  human's measured experience is missing segments on locally analyzed content, so crowd
+  timestamps now win on overlap (917 covered episodes). Intro Skipper stays second and is the
+  sole provider on the ~64% crowd-uncovered items; its tuning (Regenerate All + re-analysis)
+  is a follow-up.
+- [decision] **D2 sharing OFF** (human, 2026-10-11) — local Intro Skipper timestamps are not
+  uploaded; the Share tab is left untouched.
+- [observation] Gap coverage proven immediately: the Media Segment Scan attached SkipMe.db
+  segments to shows/docuseries episodes (The Wire, Dark Matter 2024, Tell Me Lies...) that the
+  local analysis had not covered — the known Intro Skipper re-enqueue churn area.
+- [verified] Coexistence server-side: Intro Skipper 12.0.5.0 loads, introskipper-v2.db actively
+  written post-restart; both plugins registered as Media segment providers.
+- [pending-human] Playback-level spot-check: skip button on an Intro-Skipper-analyzed episode
+  during the next watch (the only checklist item not machine-verifiable).
+- [observation] No manifest change; plugin + SQLite cache live on the /config PVC (VolSync-covered),
+  so future snapshots capture them. Upgrade = re-download release zip + re-copy DLL; watch the repo
+  for a future catalog manifest that would supersede the manual path.
