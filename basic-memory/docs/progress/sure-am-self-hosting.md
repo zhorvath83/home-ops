@@ -98,9 +98,66 @@ Ratified plan (owner, 2026-10-03) — 9 phases (roadmap Phases 0-7 + local-login
 - Enable Banking connect in Sure (application id + certificate in the UI) — owner action, in-app.
 - Invite family members (link_only JIT) and add them to Pocket ID sure_users.
 - Verify the first nightly pg_dumpall lands in NAS /backups/postgres (00:17) and the next resticprofile run carries it offsite; check /backups/postgres permissions (uid 1000) if the dump fails.
-- Restore drill of the latest dump into a scratch DB (`sure_restore_test`) if still wanted.
+- Restore drill of the latest dump — detailed procedure in `## Restore drill — detailed procedure` below (not yet run at closure).
 - stash@{0} review decision (mixed pre-hotfix state from a parallel branch switch, incl. mise.lock).
 - Dropped earlier: Healthchecks.io ping for the dump job; CNPG Grafana dashboard (chart ships a plain ConfigMap, the repo uses the GrafanaDashboard CRD).
+
+## Restore drill — detailed procedure
+
+Goal: prove the NAS pg_dumpall plane is actually restorable — an untested backup is an unverified backup. The drill never touches the live `postgres` cluster: it restores the latest dump into a throwaway, pod-local scratch instance and compares it against live.
+
+Backup facts (from `kubernetes/apps/database/postgres/app/backup/helmrelease.yaml`):
+
+- Nightly pg_dumpall (`17 0 * * *`) → NFS `${NAS_IP}:/backups` mounted at `/backups`, file `/backups/postgres/postgres-YYYY-MM-DD.sql.gz` (written as `.partial` first), newest 14 kept locally; resticprofile's 01:00 run carries it offsite.
+- Dump auth: Secret `postgres-superuser` (operator-managed, `enableSuperuserAccess: true`).
+- The dump is a **full-instance dump** (roles + all databases, with `\connect` transitions), not a single-DB dump.
+
+### Recommended shape — ephemeral scratch instance
+
+One-shot Job in `database`: pod-local postgres on a unix socket, emptyDir PGDATA, NFS mounted read-only. No live-cluster objects, secrets or CNP changes involved — every connection is loopback-only and no DNS is needed, so no network-policy exception is expected; the NFS mount rides the node mounter exactly like the live backup job's. Running the Job is a cluster-mutating action → explicit approval per invocation, per the Cluster Access Policy.
+
+1. Stage the Job manifest in `$TMPDIR` (single-call staging; deliberately outside GitOps, `ttlSecondsAfterFinished` cleans it up). Same PG 18 image digest as the live instance, uid 1000, volumes: emptyDir at `/pgdata` + `/tmp`, NFS `${NAS_IP}:/backups` at `/backups` with `readOnly: true`.
+2. Drill script (single bash container):
+
+```
+dump=$(ls -1t /backups/postgres/postgres-*.sql.gz | head -1)
+gzip -t "$dump"                        # catches a truncated/partial copy
+zcat "$dump" | tail -c 200             # must end with the dump-complete comment, not mid-statement
+initdb -D /pgdata -A trust -U postgres
+pg_ctl -D /pgdata -l /tmp/pg.log start -o "-c listen_addresses= -c unix_socket_directories=/tmp"
+gunzip -c "$dump" | psql -h /tmp -U postgres -d postgres -v ON_ERROR_STOP=0 -f -
+```
+
+One error is expected and tolerated: `CREATE ROLE postgres` collides with the bootstrap superuser of the fresh instance — psql continues; everything after must be error-free.
+
+3. Verification against the scratch instance:
+
+```
+psql -h /tmp -U postgres -tAc "SELECT datname FROM pg_database WHERE NOT datistemplate ORDER BY 1"   # sure present
+psql -h /tmp -U postgres -d sure -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema NOT IN ('pg_catalog','information_schema')"
+psql -h /tmp -U postgres -d sure -tAc "SELECT count(*) FROM families"                               # > 0, matches live
+psql -h /tmp -U postgres -d sure -tAc "SELECT extname FROM pg_extension"                            # vector present
+```
+
+Compare with live: `kubectl -n database exec postgres-1 -- psql -U postgres -d sure -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema NOT IN ('pg_catalog','information_schema')"` (152 tables at go-live; equality expected, a day of new writes is the acceptable delta).
+
+4. Cleanup: `pg_ctl -D /pgdata stop`, exit 0, the Job completes and the emptyDir vanishes with the pod; the NFS export was read-only for the drill.
+
+PASS criteria: (1) latest dump passes `gzip -t` and ends cleanly; (2) restore completes with no unexpected errors; (3) `sure` exists in the scratch instance with a table count matching live; (4) `families` rows > 0 and match live; (5) pgvector present in the restored `sure`; (6) cleanup leaves nothing behind.
+
+### Rejected alternative
+
+The original sketch — extract only the `sure` section of the dumpall and load it into a scratch DB `sure_restore_test` on the live instance — touches the live cluster, validates only the `sure` section (not roles), and the `\connect`-based slice extraction is fragile. The ephemeral-instance shape costs nothing extra on this cluster and validates the whole dump.
+
+### What the drill proves about disaster recovery
+
+- Full-loss recovery runbook: bring the platform back (CNPG operator + cluster), then restore the whole dump into the **fresh** instance **before** the per-app Database CRs re-create their databases — the dump's `CREATE DATABASE sure` / `CREATE ROLE sure` statements collide with what `components/cnpg/database` already recreated. Practical sequence: operator + cluster up → restore dump → let Flux continue with app Kustomizations.
+- The dump contains role password hashes (pg_dumpall includes encrypted passwords) — the NAS export is LAN-internal and the resticprofile offsite repo is client-side-encrypted; both must stay that way.
+- RPO: no PITR (owner decision 2026-10-03) — a restore lands on the last nightly dump; everything written since 00:17 is lost. Known and accepted.
+
+### Recording
+
+When run, record the outcome + date here and close the follow-up. A failed drill is a finding against the backup plane — fix before trusting the dumps, not a note-only matter.
 
 ## Plan as ratified (historical reference, 2026-10-03)
 
