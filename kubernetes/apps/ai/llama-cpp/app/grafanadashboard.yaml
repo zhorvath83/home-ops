@@ -1,0 +1,15 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/grafana.integreatly.org/grafanadashboard_v1beta1.json
+# Upstream: eleboucher/homelab (Apache-2.0), pinned to a commit. The JSON picks its own
+# Prometheus datasource through a template variable — no datasources mapping needed.
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: llama-server
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
+  allowCrossNamespaceImport: true
+  folderRef: ai
+  url: https://raw.githubusercontent.com/eleboucher/homelab/e3af890b846e9b307f2d90441c17d9bc99620d4b/kubernetes/apps/ai/litellm/app/dashboard/llama-server.json

@@ -191,3 +191,10 @@ clients:
     groups:
       - sure_admins
       - sure_users
+  open-webui:
+    friendly_name: Open WebUI
+    gate: native
+    subdomain: chat
+    callback_path: /oauth/oidc/callback
+    groups:
+      - infra_admins

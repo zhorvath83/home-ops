@@ -1,0 +1,35 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
+# llama-cpp (AD-023): envoy-internal + Prometheus ingress via the CCNPs, plus open-webui below; custom-egress opt-out,
+# so this CNP is the sole egress source. Cilium identity is per pod, so the server container inherits the HF egress.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: llama-cpp
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: llama-cpp
+      app.kubernetes.io/instance: llama-cpp
+      app.kubernetes.io/controller: llama-cpp
+  ingress:
+    # Open WebUI, the in-namespace chat frontend.
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: ai
+            app.kubernetes.io/instance: open-webui
+            app.kubernetes.io/component: open-webui
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+  egress:
+    # HuggingFace: resolve URLs redirect to the xet/LFS CDNs, which serve the actual bytes.
+    - toFQDNs:
+        - matchName: "huggingface.co"
+        - matchPattern: "*.huggingface.co"
+        - matchPattern: "*.hf.co"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP

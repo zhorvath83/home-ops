@@ -1,0 +1,172 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: llama-cpp
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  values:
+    defaultPodOptions:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      # AD-023 vocabulary: envoy-internal + Prometheus ingress, open-webui via the app CNP; custom-egress (HuggingFace only)
+      labels:
+        ingress.home.arpa/allow-gateway-internal: "true"
+        ingress.home.arpa/allow-prometheus: "true"
+        egress.home.arpa/custom-egress: "true"
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+    controllers:
+      llama-cpp:
+        # Always resident by owner decision: never attach components/zeroscaler here.
+        strategy: Recreate
+        annotations:
+          reloader.stakater.com/auto: "true"
+        initContainers:
+          download:
+            image:
+              repository: docker.io/curlimages/curl
+              tag: 8.22.0@sha256:58adaa4e8dca9c988bae2aba4ab3434a0bb2da16bbe3f92dec39ec7785166777
+            command:
+              - /bin/sh
+              - /config/download-models.sh
+            securityContext: &securityContext
+              privileged: false
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                  - ALL
+            resources:
+              requests:
+                cpu: 50m
+                memory: 64Mi
+              limits:
+                memory: 1Gi
+        containers:
+          app:
+            image:
+              repository: ghcr.io/ggml-org/llama.cpp
+              tag: server-b11552@sha256:fc9b506e89c1a1cfdd7bc056480f54dc657c1c04d76839a08642dc280b8ed2f6
+            args:
+              - --model
+              - /models/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf
+              - --alias
+              - qwen3.6-35b-a3b
+            env:
+              LLAMA_ARG_HOST: 0.0.0.0
+              LLAMA_ARG_PORT: "8080"
+              LLAMA_ARG_CTX_SIZE: "32768"
+              # Two slots so a batch consumer does not block interactive chat.
+              LLAMA_ARG_N_PARALLEL: "2"
+              # 8 physical cores; the control plane shares this node.
+              LLAMA_ARG_THREADS: "6"
+              LLAMA_ARG_FLASH_ATTN: "on"
+              # Thinking costs minutes per answer on CPU.
+              LLAMA_ARG_REASONING: "off"
+              LLAMA_ARG_ENDPOINT_METRICS: "1"
+              LLAMA_ARG_UI: "0"
+              LLAMA_API_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: llama-cpp-secret
+                    key: LLAMA_API_KEY
+            probes:
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: &port 8080
+                  periodSeconds: 30
+                  timeoutSeconds: 5
+                  failureThreshold: 3
+              readiness: *probes
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: *port
+                  periodSeconds: 10
+                  timeoutSeconds: 5
+                  failureThreshold: 60
+            securityContext: *securityContext
+            resources:
+              requests:
+                cpu: "6"
+                # mmap-resident weights (~22.4 GB) + KV cache + runtime overhead
+                memory: 26Gi
+              limits:
+                memory: 32Gi
+    service:
+      app:
+        controller: llama-cpp
+        ports:
+          http:
+            port: *port
+    serviceMonitor:
+      app:
+        endpoints:
+          - port: http
+            path: /metrics
+            interval: 1m
+            scrapeTimeout: 30s
+            # /metrics sits behind --api-key; Prometheus uses its own key.
+            authorization:
+              type: Bearer
+              credentials:
+                name: llama-cpp-secret
+                key: METRICS_API_KEY
+    route:
+      app:
+        hostnames:
+          - "llm.${PUBLIC_DOMAIN}"
+        parentRefs:
+          - name: envoy-internal
+            namespace: networking
+            sectionName: https
+        rules:
+          - backendRefs:
+              - identifier: app
+                port: *port
+    persistence:
+      models:
+        existingClaim: llama-cpp-models
+        advancedMounts:
+          llama-cpp:
+            download:
+              - path: /models
+            app:
+              - path: /models
+                readOnly: true
+      download:
+        type: configMap
+        name: llama-cpp-download
+        advancedMounts:
+          llama-cpp:
+            download:
+              - path: /config
+                readOnly: true
+      tmpfs:
+        type: emptyDir
+        advancedMounts:
+          llama-cpp:
+            download:
+              - path: /tmp
+                subPath: download-tmp
+            app:
+              - path: /tmp
+                subPath: app-tmp
