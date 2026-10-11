@@ -24,11 +24,11 @@ spec:
             - port: "8080"
               protocol: TCP
   egress:
-    # HuggingFace: resolve URLs redirect to the xet/LFS CDNs, which serve the actual bytes.
+    # HuggingFace: resolve URLs redirect to multi-level CDN hosts (us.aws.cdn.hf.co), hence "**.".
     - toFQDNs:
         - matchName: "huggingface.co"
-        - matchPattern: "*.huggingface.co"
-        - matchPattern: "*.hf.co"
+        - matchPattern: "**.huggingface.co"
+        - matchPattern: "**.hf.co"
       toPorts:
         - ports:
             - port: "443"
