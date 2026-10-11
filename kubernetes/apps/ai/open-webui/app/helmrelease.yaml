@@ -117,6 +117,8 @@ spec:
         value: https://chat.${PUBLIC_DOMAIN}/oauth/oidc/callback
       - name: OAUTH_CODE_CHALLENGE_METHOD
         value: S256
+      - name: CORS_ALLOW_ORIGIN
+        value: https://chat.${PUBLIC_DOMAIN}
       # OAuth settings come from env on every start, never from the admin UI database.
       - name: ENABLE_OAUTH_PERSISTENT_CONFIG
         value: "false"
