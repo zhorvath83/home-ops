@@ -140,6 +140,15 @@ spec:
         value: "false"
       - name: ENABLE_FOLLOW_UP_GENERATION
         value: "false"
+      # Each enabled feature adds builtin tool schemas to every prompt; CPU prefill makes that minutes.
+      - name: ENABLE_MEMORIES
+        value: "false"
+      - name: ENABLE_NOTES
+        value: "false"
+      - name: ENABLE_CODE_INTERPRETER
+        value: "false"
+      - name: ENABLE_CODE_EXECUTION
+        value: "false"
       # Static assets are copied at startup; keep them off the read-only root filesystem.
       - name: STATIC_DIR
         value: /app/static
