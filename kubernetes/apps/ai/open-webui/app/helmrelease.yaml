@@ -1,0 +1,172 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: open-webui
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: open-webui
+  values:
+    ollama:
+      enabled: false
+    pipelines:
+      enabled: false
+    tika:
+      enabled: false
+    # Single replica: the in-process websocket manager suffices, no bundled redis.
+    websocket:
+      enabled: true
+      manager: ""
+      redis:
+        enabled: false
+    workload:
+      kind: Deployment
+    strategy:
+      type: Recreate
+    annotations:
+      reloader.stakater.com/auto: "true"
+    image:
+      repository: ghcr.io/open-webui/open-webui
+      tag: v0.12.0@sha256:1565038903151ced924b5a3226f73f40f16963df4b910441f6391f10144afdaa
+    serviceAccount:
+      enable: false
+      automountServiceAccountToken: false
+    # AD-023 vocabulary: envoy-internal ingress; baseline cluster egress only (llama-cpp + the Pocket ID hairpin), no world
+    podLabels:
+      ingress.home.arpa/allow-gateway-internal: "true"
+    podSecurityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+      fsGroupChangePolicy: OnRootMismatch
+      seccompProfile:
+        type: RuntimeDefault
+    containerSecurityContext:
+      privileged: false
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities:
+        drop:
+          - ALL
+    copyAppData:
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          memory: 256Mi
+    resources:
+      requests:
+        cpu: 100m
+        memory: 1Gi
+      limits:
+        memory: 2Gi
+    startupProbe:
+      httpGet:
+        path: /health
+        port: http
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 30
+    livenessProbe:
+      httpGet:
+        path: /health
+        port: http
+      periodSeconds: 30
+      timeoutSeconds: 5
+      failureThreshold: 3
+    readinessProbe:
+      httpGet:
+        path: /health
+        port: http
+      periodSeconds: 30
+      timeoutSeconds: 5
+      failureThreshold: 3
+    persistence:
+      enabled: true
+      existingClaim: open-webui
+    enableOpenaiApi: true
+    openaiBaseApiUrl: http://llama-cpp.ai.svc.cluster.local:8080/v1
+    openaiApiKeyExistingSecret: open-webui-secret
+    openaiApiKeyExistingSecretKey: OPENAI_API_KEY
+    sso:
+      enabled: true
+      enableSignup: true
+      enableRoleManagement: true
+      oidc:
+        enabled: true
+        clientId: open-webui
+        clientExistingSecret: open-webui-secret
+        clientExistingSecretKey: OAUTH_CLIENT_SECRET
+        providerUrl: https://idm.${PUBLIC_DOMAIN}/.well-known/openid-configuration
+        providerName: Pocket ID
+        scopes: openid email profile groups
+      # Pocket ID's client group restriction is the gate; the same group maps to the admin role.
+      roleManagement:
+        rolesClaim: groups
+        allowedRoles: infra_admins
+        adminRoles: infra_admins
+    extraEnvVars:
+      - name: WEBUI_URL
+        value: https://chat.${PUBLIC_DOMAIN}
+      - name: OPENID_REDIRECT_URI
+        value: https://chat.${PUBLIC_DOMAIN}/oauth/oidc/callback
+      - name: OAUTH_CODE_CHALLENGE_METHOD
+        value: S256
+      # OAuth settings come from env on every start, never from the admin UI database.
+      - name: ENABLE_OAUTH_PERSISTENT_CONFIG
+        value: "false"
+      - name: ENABLE_LOGIN_FORM
+        value: "false"
+      - name: ENABLE_PASSWORD_AUTH
+        value: "false"
+      - name: ENABLE_SIGNUP
+        value: "false"
+      # Purely local: no HuggingFace downloads, no update check (the image bundles its embedding model).
+      - name: OFFLINE_MODE
+        value: "true"
+      - name: ENABLE_COMMUNITY_SHARING
+        value: "false"
+      # Background tasks would queue behind chat on the CPU-bound backend.
+      - name: ENABLE_TITLE_GENERATION
+        value: "false"
+      - name: ENABLE_TAGS_GENERATION
+        value: "false"
+      - name: ENABLE_FOLLOW_UP_GENERATION
+        value: "false"
+      # Static assets are copied at startup; keep them off the read-only root filesystem.
+      - name: STATIC_DIR
+        value: /app/static
+      - name: HOME
+        value: /tmp
+    extraEnvFrom:
+      - secretRef:
+          name: open-webui-secret
+    volumes:
+      - name: tmpfs
+        emptyDir: {}
+    volumeMounts:
+      container:
+        - name: tmpfs
+          mountPath: /tmp
+          subPath: tmp
+        - name: tmpfs
+          mountPath: /app/static
+          subPath: static
+    route:
+      enabled: true
+      annotations:
+        gethomepage.dev/enabled: "true"
+        gethomepage.dev/name: Open WebUI
+        gethomepage.dev/group: Selfhosted
+        gethomepage.dev/icon: open-webui.svg
+      hostnames:
+        - "chat.${PUBLIC_DOMAIN}"
+      parentRefs:
+        - name: envoy-internal
+          namespace: networking
+          sectionName: https
