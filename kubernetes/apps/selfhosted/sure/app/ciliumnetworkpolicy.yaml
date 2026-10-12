@@ -1,6 +1,6 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
-# sure (AD-023): egress-only delta — postgres + shared dragonfly in database; world egress
+# sure (AD-023): egress-only delta — postgres + shared dragonfly in database, ai/llama-cpp; world egress
 # (Enable Banking api.enablebanking.com) and the envoy hairpin come from pod-label CCNPs.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
@@ -26,4 +26,13 @@ spec:
       toPorts:
         - ports:
             - port: "6379"
+              protocol: TCP
+    # Local LLM (ai/llama-cpp) for the chat assistant and AI rules.
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: ai
+            app.kubernetes.io/name: llama-cpp
+      toPorts:
+        - ports:
+            - port: "8080"
               protocol: TCP

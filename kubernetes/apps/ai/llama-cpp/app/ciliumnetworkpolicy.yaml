@@ -1,6 +1,6 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
-# llama-cpp (AD-023): envoy-internal + Prometheus ingress via the CCNPs, plus open-webui below; custom-egress opt-out,
+# llama-cpp (AD-023): envoy-internal + Prometheus ingress via the CCNPs, plus the consumers below; custom-egress opt-out,
 # so this CNP is the sole egress source. Cilium identity is per pod, so the server container inherits the HF egress.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
@@ -19,6 +19,18 @@ spec:
             k8s:io.kubernetes.pod.namespace: ai
             app.kubernetes.io/instance: open-webui
             app.kubernetes.io/component: open-webui
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+    # Consumers in selfhosted: paperless-gpt (document metadata) and sure (chat + AI rules).
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: selfhosted
+            app.kubernetes.io/name: paperless-gpt
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: selfhosted
+            app.kubernetes.io/name: sure
       toPorts:
         - ports:
             - port: "8080"

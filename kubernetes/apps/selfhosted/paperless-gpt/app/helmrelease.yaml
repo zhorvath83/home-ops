@@ -63,10 +63,11 @@ spec:
               OCR_PROCESS_MODE: "whole_pdf" # "whole_pdf" or "image" or "pdf"
               PDF_SKIP_EXISTING_OCR: "false"
               OCR_LIMIT_PAGES: "0"
-              # LLM Provider (for title/tag/correspondent generation)
+              # LLM Provider (for title/tag/correspondent generation): local ai/llama-cpp
               LLM_LANGUAGE: "Hungarian"
-              LLM_PROVIDER: "mistral"
-              LLM_MODEL: "mistral-large-latest"
+              LLM_PROVIDER: "openai"
+              LLM_MODEL: "qwen3.6-35b-a3b"
+              OPENAI_BASE_URL: "http://llama-cpp.ai.svc.cluster.local:8080/v1"
               TOKEN_LIMIT: "5000"
             envFrom:
               - secretRef:
