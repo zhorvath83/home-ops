@@ -106,7 +106,9 @@ Qwen3.6 (no MTP, 2 slots), temperature 0.1. Read-only exports: tools/llm-bakeoff
 
 - [fixed] 7a06ad612 OPENAI_REQUEST_TIMEOUT=600: first chat died with Net::ReadTimeout at the 60 s default (Provider::Openai::DEFAULT_REQUEST_TIMEOUT); the client-wide option also covers categorisation and merchant detection
 - [fixed] 5b18da83b AI_RESPONSE_TIMEOUT=600: the browser watchdog (Chat::DEFAULT_RESPONSE_TIMEOUT 90 s) POSTed report_timeout and marked the reply dead while the worker finished it at 194 s
-- [fixed] 6845099fa LLM_CONTEXT_WINDOW=16384: sure sized AI batches against a 2048-token default (Assistant::TokenBudget::DEFAULT_CONTEXT_WINDOW); now matches the llama-cpp per-slot context; max 25 items per call
+- [fixed] 6845099fa LLM_CONTEXT_WINDOW=16384: sure sized AI batches against a 2048-token default (Assistant::TokenBudget::DEFAULT_CONTEXT_WINDOW); max 25 items per call
+- [fixed] 66b29dcd6 LLM_CONTEXT_WINDOW=10240 (superseding 16384): sure estimates tokens as chars/4 x safety factor, which undercounts Hungarian text and JSON tool results; at 16384 a two-turn chat with transaction tool results reached the 16384-token slot (reply truncated, then HTTP 400 "request (16399 tokens) exceeds the available context size"). 10240 leaves ~35% headroom for estimator error and the reply
+- [measured] sure chat turns with tool results took 270-350 s each (prefill 7.9-8k uncached tokens at 27-30 tok/s); this is the realistic pace for sure chat on this node
 - [measured] sure chat prompt = 8372 tokens (system prompt + function tool schemas); cold prefill ~176 s at ~36 tok/s; completion ~6 tok/s. Prefix cache helps follow-ups only while the slot keeps it
 - [note] All four live in sure-secret (shared by server and worker), verified in the worker: ctx=16384 items=25 http=600s watchdog=600s
 
