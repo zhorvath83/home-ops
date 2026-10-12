@@ -91,11 +91,23 @@ Qwen3.6 (no MTP, 2 slots), temperature 0.1. Read-only exports: tools/llm-bakeoff
 - [conclusion] sure chat assistant (tool calling, read-only answers) is viable; sure AI auto-categorisation is NOT recommended at 54% — it writes categories onto transactions
 - [caveat] Small samples; sure sample covers only 4 categories; the paperless baseline is not a pure Mistral output
 
+## Consumers wired (2026-10-12, Plan step 5, owner decision "wire everywhere, then see")
+
+- [done] e71166b70: per-consumer keys paperless_gpt_api_key + sure_api_key added to 1Password HomeOps/llama-cpp; LLAMA_API_KEY now lists open-webui, metrics, paperless-gpt, sure; llama-cpp CNP ingress from selfhosted paperless-gpt and sure
+- [done] paperless-gpt: LLM_PROVIDER openai + LLM_MODEL qwen3.6-35b-a3b + OPENAI_BASE_URL http://llama-cpp.ai.svc.cluster.local:8080/v1 (honoured for non-Azure openai, paperless-gpt main.go:1224); OPENAI_API_KEY via its ExternalSecret; OCR stays mistral_ocr; CNP egress to ai/llama-cpp:8080 added (Mistral egress kept for OCR)
+- [done] sure: OPENAI_ACCESS_TOKEN / OPENAI_URI_BASE (with /v1, per sure docs) / OPENAI_MODEL in sure-secret so server and worker share the provider; CNP egress to ai/llama-cpp:8080. Custom provider uses Chat Completions (no Responses endpoint)
+- [verified] sure-server: Provider::Registry.preferred_llm_provider = Custom OpenAI-compatible (llama-cpp); GET /v1/models with sure's key -> 200 qwen3.6-35b-a3b. No live sure chat was triggered (it would write LLM usage rows)
+- [verified] paperless-gpt restarted cleanly (OCR mistral_ocr valid, workers up); end-to-end needs one document tagged AI-processing (owner action — it writes metadata)
+- [observation] sure AI categorisation / merchant detection only run through user-created Rules (Rule::ActionExecutor::AutoCategorize / AutoDetectMerchants are the only callers) and only touch enrichable (unlocked) categories — wiring alone writes nothing
+- [observation] Backups before wiring: paperless + paperless-gpt VolSync 2026-10-12 ~05:02 UTC successful; sure DB covered by the database/postgres-backup CronJob (daily 00:17)
+- [risk] Real-data validation predicted paperless over-tagging (precision 0.56) and weak sure categorisation (22/41); the paperless-gpt tag prompt lives in its PVC (/app/prompts, editable in its UI), not in git
+
 ## Next
-- [next] Roadmap: revise the 10 tok/s gate to the measured ~7-8 tok/s ceiling (owner decision) and record the pick
-- [next] Optional real-data validation before wiring consumers: ~20 real paperless OCR texts vs current mistral-large output, 50-100 real sure transactions, a multi-step tool-calling scenario (needs owner consent for real data)
-- [next] Plan step 5: paperless-gpt and sure as consumers (own API keys via ExternalSecret, CNP egress to ai/llama-cpp)
-- [next] Consider progressDeadlineSeconds / download Job split if model switches remain frequent (see gotcha)
+- [next] Owner: tag one paperless document AI-processing and review the result; watch paperless-gpt logs for LLM errors/timeouts (~50 s per document expected)
+- [next] If over-tagging shows up: tighten the paperless-gpt tag prompt (UI / PVC prompts), then consider moving prompts into git
+- [next] sure: try the chat assistant; create an AI auto-categorise rule only if the quality is acceptable (22/41 on real data)
+- [next] Consider progressDeadlineSeconds / download Job split if model switches remain frequent
+- [next] Roadmap closure once consumers are judged: merge roadmap into this note per repo convention
 
 ## Relations
 
