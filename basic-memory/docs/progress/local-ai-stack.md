@@ -9,7 +9,7 @@ permalink: home-ops/docs/progress/local-ai-stack
 ## Metadata (observation-form)
 
 - [topic] MVP wave of the local-ai-stack roadmap: ai namespace, llama-cpp + open-webui
-- [status] LIVE — PR #4510 squash-merged to main (25478acee) + follow-ups 1fb0b3981, ecb3eca4b; MVP wave deployed and verified 2026-10-11; bake-off gate (Plan step 4) still open
+- [status] LIVE — MVP wave deployed 2026-10-11 (PR #4510); bake-off decided 2026-10-12: Qwen3.6 35B-A3B, no MTP, 2 slots (f2d7dd443). Open: 10 tok/s gate revision in the roadmap, real-data paperless/sure validation, Plan step 5 consumers
 - [branch] feat/local-ai-stack
 - [implements] [[local-ai-stack]] roadmap, Plan steps 1-3 (step 4 bake-off runs after merge)
 - [created] 2026-10-11
@@ -57,10 +57,34 @@ permalink: home-ops/docs/progress/local-ai-stack
 - [fixed] 1e907687d (ENABLE_MEMORIES/NOTES/CODE_INTERPRETER/CODE_EXECUTION=false) + 0d30d3a0c (DEFAULT_MODEL_METADATA capabilities.builtin_tools=false; ef27774c2 knowledge-only variant superseded). Measured after: new chat prompt 19-38 tokens, first token ~1-2 s, decode 5.9-7.3 tok/s
 - [observation] Intermediate step with only memories/notes/code off: prompt ~4.0k tokens (time, ask_user, chats tools + their instructions remained)
 
+## Bake-off (2026-10-12)
+
+Suite: tools/llm-bakeoff/bakeoff.py (runs in the open-webui pod with its own key; synthetic data only): 3x decode on a short prompt (cache_prompt=false), one ~9k-token prompt, 10 Hungarian prompts, 3 paperless-style extractions (JSON + correspondent + date), 12 sure-style categorisations, one tool-calling round. Same flags for all: 8 threads, ctx 32768, temperature 0.2, reasoning off.
+
+| Variant | Decode short | Decode HU avg | ~9k prompt | Paperless / Sure / Tool |
+|---|---|---|---|---|
+| Qwen3.6 35B-A3B UD-Q4_K_XL (PTQ) | 7.2-7.8 tok/s | 8.1 | 251 s (36 tok/s) | 3/3 · 11/12 · ok |
+| Qwen3.6 MTP GGUF + draft-mtp (n_max 2, 1 slot) | 6.8-7.2 | 7.7 | 263 s | 3/3 · 11/12 · ok |
+| Gemma 4 26B-A4B UD-Q4_K_M (PTQ) | 7.2-7.3 | 7.4 | 322 s (28 tok/s) | 3/3 · 11/12 · ok |
+| Gemma 4 26B-A4B QAT UD-Q4_K_XL + MTP drafter (n_max 4, 1 slot) | 3.7-4.2 | 7.4 | 296 s | 3/3 · 11/12 · ok |
+
+- [decision] Owner decision 2026-10-12: Qwen3.6 35B-A3B without MTP, 2 slots. Rationale: fastest decode and prefill (prefill ~28% ahead of Gemma, which matters for paperless documents), equal accuracy on the consumer-shaped tasks, single-answer instruction following suits structured output
+- [decision] The served file is the Qwen3.6 MTP GGUF (unsloth/Qwen3.6-35B-A3B-MTP-GGUF @5bc3e238) used WITHOUT speculative decoding — avoids a re-download; re-check after the switch: 2 slots load, decode 7.6-7.8 tok/s
+- [measured] MTP speculative decoding is a net loss on this CPU: Qwen draft acceptance ~0.9-1.0 (mean len ~3) yet decode got slower; Gemma QAT drafter acceptance only 0.39 and decode halved. MTP also limits the server to one slot (-np > 1 unsupported per the Unsloth card). Hypothesis, unverified: MoE verification reads different experts per drafted token, so memory bandwidth is not saved
+- [measured] The 10 tok/s gate is not reachable with this model class on an i7-10700T (DDR4 dual channel): every variant decodes at ~7-8 tok/s. The gate needs revising in the roadmap (owner decision pending)
+- [observation] Accuracy on consumer-shaped tasks was identical across all four variants: paperless 3/3 valid JSON with correct correspondent and date; sure 11/12 (all missed DM drogerie -> Egyeb instead of Egeszseg, arguably acceptable); tool call with correct name and arguments
+- [observation] Hungarian free-text quality is noisy on a 10-prompt sample: the same Qwen weights named Jokai as the author of Toldi in one run and Arany in the next. Stable patterns across runs: Gemma corrects spelling flawlessly (Qwen failed the same item twice: "elkezdt"/"elkezdet"); Qwen answers with one result, Gemma tends to list several variants on rewrite/translate prompts; Gemma QAT produced odd words ("tuzetni", "megsemmisul") and denied Toldi exists
+- [observation] Hungarian lexical/world knowledge matters for free chat in Open WebUI, much less for paperless (answer is in the document) and sure (classification from a given list; chat answers come from tool results)
+- [observation] Newer models checked 2026-10-12: Qwen3.8 family exists (Flash-Next 125B/6B active: GGUF >= 78 GB, does not fit; 27B dense: too slow on CPU); no Gemma 5; Gemma 4 QAT + MTP drafter evaluated above
+- [observation] Memory: Qwen3.6 pod ~20 GiB working set; node apiserver p99 stayed 4-14 ms during the runs (same as idle)
+- [gotcha] Model switches that download multi-GB files outlive the HelmRelease 10m timeout -> upgrade fails -> Flux remediation rolls back to the previous release; if the downloader already pruned that release's GGUF, the rolled-back pod crashloops. Recovery: flux reconcile hr llama-cpp -n ai --force once the files are on the PVC (no download on the retry, upgrade succeeds)
+- [done] Downloader (download-models.sh): prunes GGUFs no longer listed in models.conf; if a file name is re-pinned to a different sha256, the old file is discarded instead of resumed
+
 ## Next
-- [next] Throughput below gate: try LLAMA_ARG_THREADS 8 (all physical cores) and measure decode + node health; then Gemma 4 26B-A4B under the same flags (switch --model/--alias)
-- [next] Bake-off gate (roadmap Plan step 4): Hungarian prompt set, paperless set, sure tool-calling round, TTFT on an 8k prompt
-- [next] Consider progressDeadlineSeconds on the llama-cpp controller if new models are added later
+- [next] Roadmap: revise the 10 tok/s gate to the measured ~7-8 tok/s ceiling (owner decision) and record the pick
+- [next] Optional real-data validation before wiring consumers: ~20 real paperless OCR texts vs current mistral-large output, 50-100 real sure transactions, a multi-step tool-calling scenario (needs owner consent for real data)
+- [next] Plan step 5: paperless-gpt and sure as consumers (own API keys via ExternalSecret, CNP egress to ai/llama-cpp)
+- [next] Consider progressDeadlineSeconds / download Job split if model switches remain frequent (see gotcha)
 
 ## Relations
 
