@@ -102,6 +102,14 @@ Qwen3.6 (no MTP, 2 slots), temperature 0.1. Read-only exports: tools/llm-bakeoff
 - [observation] Backups before wiring: paperless + paperless-gpt VolSync 2026-10-12 ~05:02 UTC successful; sure DB covered by the database/postgres-backup CronJob (daily 00:17)
 - [risk] Real-data validation predicted paperless over-tagging (precision 0.56) and weak sure categorisation (22/41); the paperless-gpt tag prompt lives in its PVC (/app/prompts, editable in its UI), not in git
 
+## Sure tuning for the local model (2026-10-12)
+
+- [fixed] 7a06ad612 OPENAI_REQUEST_TIMEOUT=600: first chat died with Net::ReadTimeout at the 60 s default (Provider::Openai::DEFAULT_REQUEST_TIMEOUT); the client-wide option also covers categorisation and merchant detection
+- [fixed] 5b18da83b AI_RESPONSE_TIMEOUT=600: the browser watchdog (Chat::DEFAULT_RESPONSE_TIMEOUT 90 s) POSTed report_timeout and marked the reply dead while the worker finished it at 194 s
+- [fixed] 6845099fa LLM_CONTEXT_WINDOW=16384: sure sized AI batches against a 2048-token default (Assistant::TokenBudget::DEFAULT_CONTEXT_WINDOW); now matches the llama-cpp per-slot context; max 25 items per call
+- [measured] sure chat prompt = 8372 tokens (system prompt + function tool schemas); cold prefill ~176 s at ~36 tok/s; completion ~6 tok/s. Prefix cache helps follow-ups only while the slot keeps it
+- [note] All four live in sure-secret (shared by server and worker), verified in the worker: ctx=16384 items=25 http=600s watchdog=600s
+
 ## Next
 - [next] Owner: tag one paperless document AI-processing and review the result; watch paperless-gpt logs for LLM errors/timeouts (~50 s per document expected)
 - [next] If over-tagging shows up: tighten the paperless-gpt tag prompt (UI / PVC prompts), then consider moving prompts into git
