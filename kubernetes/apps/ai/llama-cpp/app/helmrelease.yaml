@@ -60,19 +60,16 @@ spec:
               tag: server-b11552@sha256:fc9b506e89c1a1cfdd7bc056480f54dc657c1c04d76839a08642dc280b8ed2f6
             args:
               - --model
-              - /models/gemma-4-26B-A4B-it-qat-UD-Q4_K_XL.gguf
-              - --model-draft
-              - /models/mtp-gemma-4-26B-A4B-it.gguf
+              - /models/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf
               - --alias
-              - gemma-4-26b-a4b-qat
+              - qwen3.6-35b-a3b
             env:
               LLAMA_ARG_HOST: 0.0.0.0
               LLAMA_ARG_PORT: "8080"
               LLAMA_ARG_CTX_SIZE: "32768"
-              # MTP speculative decoding does not support more than one slot yet.
-              LLAMA_ARG_N_PARALLEL: "1"
-              LLAMA_ARG_SPEC_TYPE: draft-mtp
-              LLAMA_ARG_SPEC_DRAFT_N_MAX: "4"
+              # Two slots so a batch consumer does not block interactive chat.
+              # No MTP: measured slower on this CPU, and it caps slots at one.
+              LLAMA_ARG_N_PARALLEL: "2"
               # All 8 physical cores; decode is memory-bound, SMT siblings add nothing.
               LLAMA_ARG_THREADS: "8"
               LLAMA_ARG_FLASH_ATTN: "on"
