@@ -112,6 +112,14 @@ Qwen3.6 (no MTP, 2 slots), temperature 0.1. Read-only exports: tools/llm-bakeoff
 - [measured] sure chat prompt = 8372 tokens (system prompt + function tool schemas); cold prefill ~176 s at ~36 tok/s; completion ~6 tok/s. Prefix cache helps follow-ups only while the slot keeps it
 - [note] All four live in sure-secret (shared by server and worker), verified in the worker: ctx=16384 items=25 http=600s watchdog=600s
 
+## Sure chat assessment + categorisation trial (2026-10-12)
+
+- [measured] After the timeout/context fixes the sure chat no longer fails, but turns take 150-350 s and quality is uneven: of 4 replies, one started in English, two stopped after ~7 tokens ("## ..." heading only), one was a correct Hungarian summary. Cause of the short replies not investigated (candidates: sure's max_tokens under the reduced budget, or a malformed tool call)
+- [decision] Owner: try AI categorisation on uncategorised transactions instead of pursuing the chat
+- [done] Trial on 25 of 88 uncategorised standard transactions (most recent by entry date), run synchronously via Family#auto_categorize_transactions in sure-server: 136 s; 19 categorised (Bayes 13, local LLM 6), 6 withheld as low-confidence (left blank, unlocked); only the 6 AI decisions are locked. Pre-run snapshot (ids, category_id, locked_attributes) kept on the owner's laptop for a revert
+- [observation] Sure's BayesCategorizer runs before the LLM and learns from the family's existing categorised transactions; it handled half of the trial with no LLM call
+- [next] Owner reviews the 19 in sure; then either run the remaining ~63 or revert the trial (set category_id nil + unlock for the snapshot ids)
+
 ## Next
 - [next] Owner: tag one paperless document AI-processing and review the result; watch paperless-gpt logs for LLM errors/timeouts (~50 s per document expected)
 - [next] If over-tagging shows up: tighten the paperless-gpt tag prompt (UI / PVC prompts), then consider moving prompts into git
