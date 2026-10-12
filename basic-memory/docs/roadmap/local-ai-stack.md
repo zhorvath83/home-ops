@@ -5,7 +5,7 @@ permalink: home-ops/docs/roadmap/local-ai-stack
 topic: Self-hosted LLM inference stack in a new ai namespace - llama.cpp server (Qwen3.6-35B-A3B
   UD-Q4_K_XL provisional, Gemma 4 26B-A4B challenger in a bake-off, CPU-only), and Open WebUI talking directly to its OpenAI-compatible API
   behind Pocket ID OIDC - no cloud fallback, model always resident
-status: planned
+status: in-progress
 priority: medium
 scope: One new app group kubernetes/apps/ai/ with namespace ai and two apps in one
   MVP wave - llama-cpp (bjw-s app-template HelmRelease, HF download init container,
@@ -96,7 +96,7 @@ llmkube-for-embeddings), adapted to this repo's canonical app shape (their local
 ## Metadata (observation-form)
 
 - [topic] Local AI inference stack — llama.cpp (Qwen3.6-35B-A3B provisional, Gemma 4 26B-A4B bake-off challenger) + Open WebUI, new ai namespace, no cloud fallback
-- [status] planned
+- [status] in-progress — MVP wave live (2026-10-11), bake-off decided (2026-10-12); real-data validation and Plan step 5 open
 - [priority] medium
 - [area] k8s-workloads / networking / iam / external-secrets / observability
 - [created] 2026-10-11
@@ -138,6 +138,7 @@ llmkube-for-embeddings), adapted to this repo's canonical app shape (their local
 - [decision] llama.cpp server Deployment chosen over LLMKube operator for the chat model (single model = no operator machinery; LLMKube revisit trigger — multi-model orchestration, multi-runtime, or inference-metric HPA).
 - [decision] Model PVC excluded from VolSync (regenerable); open-webui chat-history PVC included.
 - [decision] Chat model (owner decision 2026-10-11, supersedes Qwen3-30B-A3B-Instruct-2507): Qwen3.6-35B-A3B UD-Q4_K_XL provisional, confirmed or replaced by Gemma 4 26B-A4B through the bake-off gate (Plan step 4). Qwen3-30B-A3B-2507 is fallback only.
+- [decision] Bake-off pick (owner decision 2026-10-12): Qwen3.6-35B-A3B UD-Q4_K_XL, served without MTP, 2 slots. Both candidates cleared tool calling and scored equal on the paperless/sure-shaped synthetic sets; Qwen won decode (7.2-8.1 vs 7.1-7.5 tok/s) and prefill (251 s vs 322 s on a ~9k prompt); Hungarian free-text quality was too noisy on a 10-prompt sample to separate them (Gemma steadier at spelling, Qwen at single-answer instruction following). Real-data validation of the paperless/sure sets follows before Plan step 5. Full numbers: docs/progress/local-ai-stack.
 - [decision] Target consumers (owner direction 2026-10-11): Open WebUI first; paperless-gpt and sure are wired to the llama-cpp endpoint in follow-up PRs once the bake-off gate passes.
 - [decision] LiteLLM dropped from the MVP (owner decision 2026-10-11) — one local backend, no cloud fallback, no API cost to track and a single consumer make the gateway (and the Postgres it needs for virtual keys / spend logs) speculative; llama.cpp server already provides the OpenAI-compatible API, API-key auth and --metrics. Revisit trigger — a second backend, a cloud fallback route, or per-consumer quotas/usage accounting; per-consumer keys alone do not trigger it (llama-server accepts multiple API keys — verify on the pinned version). Consumers then repoint to the LiteLLM URL.
 
@@ -191,13 +192,14 @@ llmkube-for-embeddings), adapted to this repo's canonical app shape (their local
      compared against the current mistral-large output.
    - sure set: categorize ~20 real transactions + one tool-calling round (chat assistant
      contract).
-   - Throughput: decode >= 10 tok/s sustained (realistic expectation 8-15 tok/s — ~40 GB/s
-     DDR4 at ~2 GB active weights per token; the earlier 15-25 tok/s estimate was optimistic)
+   - Throughput: decode >= 7 tok/s sustained (revised 2026-10-12 by owner decision from >= 10:
+     every candidate measured 7-8 tok/s on the i7-10700T — the ceiling of this model class on
+     DDR4 dual channel; MTP speculative decoding measured slower, see docs/progress/local-ai-stack)
      AND time-to-first-token measured on an 8k-token prompt (CPU prefill is the real
      bottleneck for paperless documents).
    - Node health under load: apiserver/etcd latency stays normal while the model generates.
    - Decision rule: tool-calling failure disqualifies (sure chat); otherwise Hungarian
-     quality wins over speed if both clear 10 tok/s. Record results + the pick in this note.
+     quality wins over speed if both clear 7 tok/s. Record results + the pick in this note.
    - llama-cpp answers /v1/models and a completion with the API key; llama.cpp
      --metrics visible in Grafana.
    - Open WebUI login via Pocket ID works; a chat round-trip completes.
