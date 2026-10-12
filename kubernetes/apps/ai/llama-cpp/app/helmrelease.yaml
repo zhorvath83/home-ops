@@ -60,9 +60,9 @@ spec:
               tag: server-b11552@sha256:fc9b506e89c1a1cfdd7bc056480f54dc657c1c04d76839a08642dc280b8ed2f6
             args:
               - --model
-              - /models/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf
+              - /models/gemma-4-26B-A4B-it-UD-Q4_K_M.gguf
               - --alias
-              - qwen3.6-35b-a3b
+              - gemma-4-26b-a4b
             env:
               LLAMA_ARG_HOST: 0.0.0.0
               LLAMA_ARG_PORT: "8080"
