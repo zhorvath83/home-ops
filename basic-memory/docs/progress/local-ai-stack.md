@@ -80,6 +80,17 @@ Suite: tools/llm-bakeoff/bakeoff.py (runs in the open-webui pod with its own key
 - [gotcha] Model switches that download multi-GB files outlive the HelmRelease 10m timeout -> upgrade fails -> Flux remediation rolls back to the previous release; if the downloader already pruned that release's GGUF, the rolled-back pod crashloops. Recovery: flux reconcile hr llama-cpp -n ai --force once the files are on the PVC (no download on the retry, upgrade succeeds)
 - [done] Downloader (download-models.sh): prunes GGUFs no longer listed in models.conf; if a file name is re-pinned to a different sha256, the old file is discarded instead of resumed
 
+## Real-data validation (2026-10-12, owner-approved, read-only)
+
+Qwen3.6 (no MTP, 2 slots), temperature 0.1. Read-only exports: tools/llm-bakeoff/paperless_export.py (Django shell ORM reads) and sure_export.rb (rails runner reads); evaluation tools/llm-bakeoff/realdata.py in the open-webui pod. Nothing was written back to paperless or sure; data moved paperless/sure pod -> kubectl on the owner's laptop (memory only, plus a local result file for owner review) -> open-webui pod -> local llama-cpp. Only aggregates recorded here.
+
+- [measured] paperless, 15 most recent documents vs their current metadata (mostly set by paperless-gpt + Mistral, possibly hand-corrected): valid JSON 15/15, correspondent 12/15 (picked from 81), document type 14/15 (from 17), created date 11/15, tags recall 0.97 / precision 0.56 (over-tags: ~3 per doc vs 1.7 current), ~50 s per document (max 91 s) with the choice lists cached as system prompt
+- [measured] sure, all 41 categorised transactions (only 4 distinct categories; model saw name, merchant, amount and the flat 70-category list): 22/41 correct. Error pattern: takeaway food split across other categories, parking -> sibling car/other categories, groceries -> other costs
+- [measured] multi-step tool calling (synthetic, 2 tools): list_accounts -> get_transactions(acc-1, 2026-10) -> correct sum
+- [conclusion] paperless-gpt LLM part is viable on the local model; its tag prompt needs to restrain over-tagging; created-date mismatches need owner review (issue vs performance date ambiguity)
+- [conclusion] sure chat assistant (tool calling, read-only answers) is viable; sure AI auto-categorisation is NOT recommended at 54% — it writes categories onto transactions
+- [caveat] Small samples; sure sample covers only 4 categories; the paperless baseline is not a pure Mistral output
+
 ## Next
 - [next] Roadmap: revise the 10 tok/s gate to the measured ~7-8 tok/s ceiling (owner decision) and record the pick
 - [next] Optional real-data validation before wiring consumers: ~20 real paperless OCR texts vs current mistral-large output, 50-100 real sure transactions, a multi-step tool-calling scenario (needs owner consent for real data)
