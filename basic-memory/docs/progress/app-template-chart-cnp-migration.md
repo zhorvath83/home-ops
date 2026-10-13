@@ -72,3 +72,28 @@ per AD-025.
   recursion, machine-level brew python 3.15 issue) but runs clean inside the git commit hook;
   commit signing needs the 1Password agent socket (sandbox off); `diff <(...)` process
   substitution is blocked in the Bash sandbox — use temp files.
+
+## Batch 2 result (2026-10-13, done)
+
+- [observation] Ratified by the human via the Maestro ("mehet a 2. batch") plus direct
+  confirmation in the worker terminal (the permission gate required the ratification in the
+  worker transcript).
+- [observation] RETIRE commit a5f55930b pushed 22:21, all 8 CNPs pruned on first check
+  (~2 min after reconcile — the batch-1 prune lag did not recur). One HubblePolicyDeny alert
+  class expected during the window (paperless -> dragonfly, sure -> postgres/dragonfly/llama-cpp
+  fail closed); the Maestro independently verified only paperless-gpt -> paperless fired in
+  batch 1's window and it self-resolves (increase[5m] expression).
+- [observation] ADD commit fa0b52a57 pushed 22:23. Render gate: 7 apps byte-identical
+  (paperless with controller: paperless renders exactly the hand-written selector); sure
+  differs only by the ratified selector shape (instance label + controller In [server, worker]
+  matchExpression). Live verify: 8/8 HRs Ready on app-template@5.3.0, 8/8 CNPs Valid + Helm-owned
+  (CNPs appeared ~1 min after the HR upgrade — re-check after a wait, not immediately);
+  show-cnp-matrix per-controller rows confirm paperless/backup stays CNP-less (baseline egress,
+  name "-") and both sure controllers are covered by the single "sure" CNP.
+- [observation] Hubble 120s post-capture: zero DROPPED egress AND ingress flows for all 8 apps
+  (baseline identical); positive traffic present for all (98-471 flow-lines; sure-worker ->
+  postgres:5432 FORWARDED under the new CNP). Captures preserved as baseline-hubble-batch2 /
+  post-batch2.
+- [observation] Values shape for app-template 5.3.0 (from batch 1): rule arrays directly under
+  networkpolicies.main (no rules: key); batch-2 blocks authored in this shape from the start —
+  first-try schema green on all 8.
