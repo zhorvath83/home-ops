@@ -49,6 +49,8 @@ spec:
               CROWDSEC_MACHINE_ID: blocklist-import
               # Flipped to false after the Phase 2 dry-run was reviewed live (PR #4114 merged).
               DRY_RUN: "false"
+              # Feeds added upstream later default OFF (no PRESET); v4.0 flips the no-config fallback.
+              BLOCKLISTS_OPT_IN: "true"
               # Tier A only — confirmed-malicious infrastructure. Tier B/C stay disabled
               # and out of this change (roadmap Phase 5, evidence-gated).
               ENABLE_SPAMHAUS: "true"
@@ -58,8 +60,6 @@ spec:
               ENABLE_DSHIELD: "true"
               ENABLE_BRUTEFORCE_BLOCKER: "true"
               ENABLE_CYBERCRIME_TRACKER: "true"
-              # Upstream removed data/all.txt (404); keep raw.githubusercontent.com for Cybercrime + VXVault.
-              ENABLE_MONTY_SECURITY_C2: "false"
               ENABLE_VXVAULT: "true"
               ENABLE_BOTVRIJ: "true"
               # v3.7.1 exposes a single ENABLE_FIREHOL master, not per-level keys.

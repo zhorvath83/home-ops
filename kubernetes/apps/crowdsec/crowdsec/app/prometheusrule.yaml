@@ -117,7 +117,8 @@ spec:
               blocklist-import source {{ $labels.source }} reported fetch status 0 (failed) for
               every scrape across ~2 consecutive daily runs (max_over_time[50h] == 0). The job
               exits 0 as long as ≥1 source succeeds, so feed-rot is invisible to KubeJobFailed.
-              Check the importer logs and the feed URL; prune or disable the feed if it is dead.
+              blocklist_import_source_http_status gives the cause: 404/410 dead feed, 5xx provider
+              outage, 0 connection failure (DNS/CNP/TLS). Prune or disable the feed if it is dead.
         # TSDB-sourced: absent_over_time[26h] fires when no source_status sample has been
         # scraped for ~1 missed daily run. Reads the TSDB, so a Pushgateway restart cannot fire it.
         - alert: CrowdSecBlocklistImportMetricsAbsent
@@ -132,3 +133,38 @@ spec:
               METRICS_ENABLED disabled, the Pushgateway unreachable, or the importer crashing before
               its metrics push. The CrowdSecBlocklistImportSourceFailing alert cannot fire while this
               is absent, so treat as a monitoring outage of the feed-rot detection plane.
+        # A 200 with an empty/garbage body is reported as success with 0 raw entries, so
+        # SourceFailing never sees it. A failed fetch also sets entries=0, hence the status gate.
+        - alert: CrowdSecBlocklistImportFeedEmpty
+          expr: |
+            max by (source) (blocklist_import_source_entries{job="crowdsec-blocklist-import"}) == 0
+              and on (source)
+            max by (source) (blocklist_import_source_status{job="crowdsec-blocklist-import"}) == 1
+          labels:
+            severity: warning
+          annotations:
+            summary: A blocklist-import feed returned no entries
+            description: |-
+              blocklist-import source {{ $labels.source }} was fetched successfully but contained 0
+              raw entries, so it contributes nothing while looking healthy. Likely the feed URL now
+              serves an empty or non-list body. Check the feed URL and the importer logs.
+        # 6d, not longer: Prometheus retention is 7d. The offset presence gate needs >=5d of history,
+        # so a new feed (or the first runs after an upgrade) cannot fire on a short constant window.
+        # A failed run sets entries=0, which the `min > 0` gate excludes (SourceFailing owns that).
+        - alert: CrowdSecBlocklistImportFeedFrozen
+          expr: |
+            min by (source) (min_over_time(blocklist_import_source_entries{job="crowdsec-blocklist-import"}[6d])) > 0
+              and on (source)
+            max by (source) (max_over_time(blocklist_import_source_entries{job="crowdsec-blocklist-import"}[6d]))
+              == min by (source) (min_over_time(blocklist_import_source_entries{job="crowdsec-blocklist-import"}[6d]))
+              and on (source)
+            max by (source) (present_over_time(blocklist_import_source_entries{job="crowdsec-blocklist-import"}[1d] offset 5d))
+          labels:
+            severity: warning
+          annotations:
+            summary: A blocklist-import feed looks frozen
+            description: |-
+              blocklist-import source {{ $labels.source }} returned exactly {{ $value }} raw entries on
+              every daily run for 6 days. A live threat feed changes size daily, so the upstream mirror
+              is probably stale (HTTP 200, old content). Investigate first: check the feed's
+              Last-Modified and publish cadence, then prune or disable it if it is abandoned.

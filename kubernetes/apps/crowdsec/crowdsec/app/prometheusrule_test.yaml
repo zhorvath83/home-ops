@@ -2,8 +2,9 @@
 # yaml-language-server: $schema=https://json.schemastore.org/prometheus.rules.test.json
 # promtool unit tests for app/prometheusrule.yaml, covering CrowdSecLAPIDown,
 # CrowdSecAgentDown, CrowdSecAppsecDown, CrowdSecBanActive, CrowdSecAcquisitionStalled,
-# CrowdSecDecisionBudgetNearCap, CrowdSecBlocklistImportSourceFailing, and
-# CrowdSecBlocklistImportMetricsAbsent. The three `*Down` alerts share the shape
+# CrowdSecDecisionBudgetNearCap, CrowdSecBlocklistImportSourceFailing,
+# CrowdSecBlocklistImportMetricsAbsent, CrowdSecBlocklistImportFeedEmpty, and
+# CrowdSecBlocklistImportFeedFrozen. The three `*Down` alerts share the shape
 # `up == 0 or absent(up{...})`, so the `absent()` branch covers scale-to-0 / crashloop /
 # evicted where the `up` series vanishes — that is the branch the tests exercise most,
 # since `up == 0` alone would never fire for those outage shapes. for:5m, so every fire
@@ -261,7 +262,8 @@ tests:
                 blocklist-import source Cybercrime Tracker reported fetch status 0 (failed) for
                 every scrape across ~2 consecutive daily runs (max_over_time[50h] == 0). The job
                 exits 0 as long as ≥1 source succeeds, so feed-rot is invisible to KubeJobFailed.
-                Check the importer logs and the feed URL; prune or disable the feed if it is dead.
+                blocklist_import_source_http_status gives the cause: 404/410 dead feed, 5xx provider
+                outage, 0 connection failure (DNS/CNP/TLS). Prune or disable the feed if it is dead.
   # (9) NO-FIRE: healthy (1) for 100h1m — max_over_time[50h]=1, condition false, stays quiet.
   - interval: 1m
     input_series:
@@ -304,7 +306,8 @@ tests:
                 blocklist-import source Cybercrime Tracker reported fetch status 0 (failed) for
                 every scrape across ~2 consecutive daily runs (max_over_time[50h] == 0). The job
                 exits 0 as long as ≥1 source succeeds, so feed-rot is invisible to KubeJobFailed.
-                Check the importer logs and the feed URL; prune or disable the feed if it is dead.
+                blocklist_import_source_http_status gives the cause: 404/410 dead feed, 5xx provider
+                outage, 0 connection failure (DNS/CNP/TLS). Prune or disable the feed if it is dead.
   # === CrowdSecBlocklistImportMetricsAbsent ===
   # expr: absent_over_time(blocklist_import_source_status{...}[26h]) — TSDB-sourced, no `for:`.
   # absent_over_time carries the selector's job label -> exp_labels carry alertname + severity + job.
@@ -577,3 +580,104 @@ tests:
                 /var/log/containers/envoy-* glob matches nothing (envoy pods recreated with
                 new names mid-window), or the parser chain cri-logs -> envoy-logs broke.
                 Remediation: check the agent DaemonSet and its acquisition, then restart it.
+  # === CrowdSecBlocklistImportFeedEmpty ===
+  # expr: max by(source)(source_entries) == 0 and on(source) max by(source)(source_status) == 1,
+  # no `for:`. by(source) drops job/instance -> exp_labels = alertname + severity + source.
+  # (27) FIRE: fetch succeeded (status 1) but 0 raw entries — empty-200 body.
+  - interval: 1m
+    input_series:
+      - series: 'blocklist_import_source_entries{job="crowdsec-blocklist-import",source="Botvrij"}'
+        values: '0x10'
+      - series: 'blocklist_import_source_status{job="crowdsec-blocklist-import",source="Botvrij"}'
+        values: '1x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: CrowdSecBlocklistImportFeedEmpty
+        exp_alerts:
+          - exp_labels:
+              alertname: CrowdSecBlocklistImportFeedEmpty
+              severity: warning
+              source: Botvrij
+            exp_annotations:
+              summary: A blocklist-import feed returned no entries
+              description: |-
+                blocklist-import source Botvrij was fetched successfully but contained 0
+                raw entries, so it contributes nothing while looking healthy. Likely the feed URL now
+                serves an empty or non-list body. Check the feed URL and the importer logs.
+  # (28) NO-FIRE, status gate load-bearing: a failed fetch also sets entries=0 (status 0) — that is
+  # SourceFailing's case, so FeedEmpty must stay quiet.
+  - interval: 1m
+    input_series:
+      - series: 'blocklist_import_source_entries{job="crowdsec-blocklist-import",source="Botvrij"}'
+        values: '0x10'
+      - series: 'blocklist_import_source_status{job="crowdsec-blocklist-import",source="Botvrij"}'
+        values: '0x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: CrowdSecBlocklistImportFeedEmpty
+        exp_alerts: []
+  # (29) NO-FIRE boundary: a single raw entry (1, the smallest value != 0) with status 1.
+  - interval: 1m
+    input_series:
+      - series: 'blocklist_import_source_entries{job="crowdsec-blocklist-import",source="Botvrij"}'
+        values: '1x10'
+      - series: 'blocklist_import_source_status{job="crowdsec-blocklist-import",source="Botvrij"}'
+        values: '1x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: CrowdSecBlocklistImportFeedEmpty
+        exp_alerts: []
+  # === CrowdSecBlocklistImportFeedFrozen ===
+  # expr: min_over_time[6d] > 0 and max_over_time[6d] == min_over_time[6d] and present_over_time[1d]
+  # offset 5d, all by(source), no `for:`. 6d = 8640m; the offset gate needs a sample in
+  # (t-6d, t-5d]. $value = the frozen entry count (first operand).
+  # (30) FIRE: entries constant 1000 for 6d+ — eval at 8641m, present at t-6d..t-5d.
+  - interval: 1m
+    input_series:
+      - series: 'blocklist_import_source_entries{job="crowdsec-blocklist-import",source="Botvrij"}'
+        values: '1000x8700'
+    alert_rule_test:
+      - eval_time: 8641m
+        alertname: CrowdSecBlocklistImportFeedFrozen
+        exp_alerts:
+          - exp_labels:
+              alertname: CrowdSecBlocklistImportFeedFrozen
+              severity: warning
+              source: Botvrij
+            exp_annotations:
+              summary: A blocklist-import feed looks frozen
+              description: |-
+                blocklist-import source Botvrij returned exactly 1000 raw entries on
+                every daily run for 6 days. A live threat feed changes size daily, so the upstream mirror
+                is probably stale (HTTP 200, old content). Investigate first: check the feed's
+                Last-Modified and publish cadence, then prune or disable it if it is abandoned.
+  # (31) NO-FIRE: the size changed inside the 6d window (1000 -> 1001) — max != min, a live feed.
+  - interval: 1m
+    input_series:
+      - series: 'blocklist_import_source_entries{job="crowdsec-blocklist-import",source="Botvrij"}'
+        values: '1000x4000 1001x4700'
+    alert_rule_test:
+      - eval_time: 8641m
+        alertname: CrowdSecBlocklistImportFeedFrozen
+        exp_alerts: []
+  # (32) NO-FIRE, `min > 0` gate: one failed run (entries 0) inside the window — constant-elsewhere
+  # but min is 0, so it is SourceFailing's territory, not a frozen mirror.
+  - interval: 1m
+    input_series:
+      - series: 'blocklist_import_source_entries{job="crowdsec-blocklist-import",source="Botvrij"}'
+        values: '1000x4000 0x1440 1000x3260'
+    alert_rule_test:
+      - eval_time: 8641m
+        alertname: CrowdSecBlocklistImportFeedFrozen
+        exp_alerts: []
+  # (33) Age-gate pin: the series only starts at t=2d (new feed / first runs after an upgrade), so
+  # it is constant for the ~4d it exists but absent from (t-6d, t-5d]. Removing the offset gate
+  # makes this fire.
+  - interval: 1m
+    input_series:
+      - series: 'blocklist_import_source_entries{job="crowdsec-blocklist-import",source="Botvrij"}'
+        values: '_x2880 1000x5820'
+    alert_rule_test:
+      - eval_time: 8641m
+        alertname: CrowdSecBlocklistImportFeedFrozen
+        exp_alerts: []
