@@ -132,3 +132,24 @@ spec:
         path: /backups
         globalMounts:
           - path: /backups
+    # backrest (AD-023): OVH S3 repo reads/restores + hc-ping healthchecks; NFS /backups is node-level, not pod egress.
+    networkpolicies:
+      main:
+        type: cilium
+        egress:
+          # OVH Object Storage S3 endpoint — restic repository reads/restores.
+          - toFQDNs:
+              - matchName: "s3.de.io.cloud.ovh.net"
+              - matchPattern: "*.s3.de.io.cloud.ovh.net"
+            toPorts:
+              - ports:
+                  - port: "443"
+                    protocol: TCP
+          # Healthchecks ping endpoint.
+          - toFQDNs:
+              - matchName: "hc-ping.com"
+              - matchPattern: "*.hc-ping.com"
+            toPorts:
+              - ports:
+                  - port: "443"
+                    protocol: TCP

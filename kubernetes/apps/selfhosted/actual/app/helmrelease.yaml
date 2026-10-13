@@ -112,3 +112,16 @@ spec:
               - path: /data
       tmp:
         type: emptyDir
+    # actual (AD-023): narrow-world egress — enablebanking.com only; DNS via the allow-dns-egress CCNP.
+    networkpolicies:
+      main:
+        type: cilium
+        egress:
+          # enablebanking.com open-banking API for bank transaction fetch.
+          - toFQDNs:
+              - matchName: "enablebanking.com"
+              - matchPattern: "*.enablebanking.com"
+            toPorts:
+              - ports:
+                  - port: "443"
+                    protocol: TCP

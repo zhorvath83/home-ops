@@ -225,3 +225,25 @@ spec:
             cert-sync:
               - path: /certs-src
                 readOnly: true
+    # pocket-id (AD-023): MaxMind GeoLite2 download + SMTP2GO; OIDC arrives through the envoy ingress CCNPs.
+    networkpolicies:
+      main:
+        type: cilium
+        egress:
+          # MaxMind GeoLite2 download; download.maxmind.com 302-redirects to its R2 bucket for the tarball.
+          - toFQDNs:
+              - matchName: "download.maxmind.com"
+              - matchPattern: "*.maxmind.com"
+              - matchName: "mm-prod-geoip-databases.a2649acb697e2c09b632799562c076f2.r2.cloudflarestorage.com"
+            toPorts:
+              - ports:
+                  - port: "443"
+                    protocol: TCP
+          # SMTP2GO mail submission (implicit TLS).
+          - toFQDNs:
+              - matchName: "mail-eu.smtp2go.com"
+              - matchPattern: "*.smtp2go.com"
+            toPorts:
+              - ports:
+                  - port: "465"
+                    protocol: TCP

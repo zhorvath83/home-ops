@@ -154,3 +154,36 @@ spec:
                 subPath: config
               - path: /tmp
                 subPath: tmp
+    # paperless-gpt (AD-023): Mistral OCR + in-cluster paperless API + llama-cpp; DNS via allow-dns-egress CCNP.
+    networkpolicies:
+      main:
+        type: cilium
+        egress:
+          # Mistral AI — OCR (mistral-ocr-latest) API.
+          - toFQDNs:
+              - matchName: "mistral.ai"
+              - matchPattern: "*.mistral.ai"
+            toPorts:
+              - ports:
+                  - port: "443"
+                    protocol: TCP
+          # Paperless-ngx API (in-cluster; PAPERLESS_BASE_URL).
+          - toEndpoints:
+              - matchLabels:
+                  k8s:io.kubernetes.pod.namespace: selfhosted
+                  app.kubernetes.io/name: paperless
+                  app.kubernetes.io/instance: paperless
+                  app.kubernetes.io/controller: paperless
+            toPorts:
+              - ports:
+                  - port: "8000"
+                    protocol: TCP
+          # Local LLM (ai/llama-cpp) for title/tag/correspondent generation.
+          - toEndpoints:
+              - matchLabels:
+                  k8s:io.kubernetes.pod.namespace: ai
+                  app.kubernetes.io/name: llama-cpp
+            toPorts:
+              - ports:
+                  - port: "8080"
+                    protocol: TCP

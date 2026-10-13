@@ -177,3 +177,24 @@ spec:
         globalMounts:
           - path: /app/config/services.yaml
             subPath: services.yaml
+    # homepage (AD-023): kube-apiserver discovery/status widgets + OpenWeatherMap; DNS via allow-dns-egress CCNP.
+    networkpolicies:
+      main:
+        type: cilium
+        egress:
+          # Kubernetes API: mode-cluster HTTPRoute discovery, pod-selector status dots, and the resources widget via metrics.k8s.io.
+          - toEntities:
+              - kube-apiserver
+            toPorts:
+              - ports:
+                  - port: "6443"
+                    protocol: TCP
+                  - port: "443"
+                    protocol: TCP
+          # OpenWeatherMap: the weather widget is server-side, it holds the API token.
+          - toFQDNs:
+              - matchName: "api.openweathermap.org"
+            toPorts:
+              - ports:
+                  - port: "443"
+                    protocol: TCP

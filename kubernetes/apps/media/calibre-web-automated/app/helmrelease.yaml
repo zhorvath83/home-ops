@@ -184,3 +184,16 @@ spec:
         path: /backups/documents/personal/ebooks
         globalMounts:
           - path: /calibre-library
+    # calibre-web-automated (AD-023): sole egress source (custom-egress opt-out) — SMTP2GO only; DNS via allow-dns-egress CCNP.
+    networkpolicies:
+      main:
+        type: cilium
+        egress:
+          # SMTP2GO mail submission (implicit TLS).
+          - toFQDNs:
+              - matchName: "mail-eu.smtp2go.com"
+              - matchPattern: "*.smtp2go.com"
+            toPorts:
+              - ports:
+                  - port: "465"
+                    protocol: TCP
