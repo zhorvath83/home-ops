@@ -83,3 +83,10 @@ tags:
 - relates_to [[app-template-common-5-3-0-migration]]
 - relates_to [[k8s-workloads]]
 - relates_to [[networking]]
+
+## Update 2026-10-13 — execution findings
+
+- [observation] Executed for all 17 apps on 2026-10-13 in 3 batches (progress: [[docs/progress/app-template-chart-cnp-migration]]); no hand-written CNP remains under an app-template app.
+- [observation] Values shape: the rule arrays sit directly under `networkpolicies.main` (`ingress:` / `egress:`); a `rules:` key is rejected by the 5.3.0 schema (`unevaluatedProperties: false`) with the opaque `'oneOf' failed` error. `policyTypes` belongs to the native type only.
+- [correction] The CNP-less window was fail-CLOSED on ingress too, not fail-open: the gateway vocabulary CCNPs already select the ingress-bearing pods for ingress, so peers listed only in the retired CNP were dropped (measured batch 2: radarr/sonarr->qbittorrent, bazarr/seerr->radarr/sonarr, paperless-gpt->paperless, until the chart CNPs appeared). The fail-OPEN wording in the Migration constraint above is superseded by this.
+- [observation] Windows measured: batch 1 ~8 min, batch 2 ~3 min, batch 3 ~30 s (Flux prune -> Helm create); every HubblePolicyDeny drop stopped once the chart-rendered CNP existed.

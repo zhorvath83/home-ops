@@ -4,7 +4,7 @@ type: roadmap
 permalink: home-ops/docs/roadmap/app-template-chart-cnp-migration
 topic: Migrate the 19 app-template per-app CNPs from hand-written manifests to chart-generated
   networkpolicies values (AD-025), additive->retire per batch
-status: accepted
+status: done
 priority: medium
 scope: 19 app-template apps in 3 batches; plex and plex-trakt-sync deferred until
   their HelmReleases are resumed; non-app-template CNPs out of scope.
@@ -29,7 +29,7 @@ policy gap, in batches of additive → retire commits.
 ## Metadata (observation-form)
 
 - [topic] Migrate 19 app-template per-app CNPs to chart-generated networkpolicies (AD-025)
-- [status] accepted
+- [status] done — executed 2026-10-13 in 3 batches, see [[docs/progress/app-template-chart-cnp-migration]]
 - [priority] medium
 - [area] k8s-workloads / networking
 - [created] 2026-10-13
@@ -38,7 +38,7 @@ policy gap, in batches of additive → retire commits.
 ## Inventory (verified against the repo 2026-10-13)
 
 - [observation] Egress-only CNPs (no ingress rules — a gap would be fail-closed): actual, backrest, calibre-web-automated, crowdsec-blocklist-import, homepage, paperless-gpt, pocket-id, resticprofile, sure (plus plex-trakt-sync — out of scope, see below).
-- [observation] CNPs with ingress rules (a gap would be fail-OPEN): cloudflare-tunnel, jellyfin, llama-cpp, paperless, prowlarr, qbittorrent, radarr, sonarr (plus plex — out of scope, see below).
+- [observation] CNPs with ingress rules (a gap was expected to be fail-open; measured fail-CLOSED, see AD-025 update 2026-10-13): cloudflare-tunnel, jellyfin, llama-cpp, paperless, prowlarr, qbittorrent, radarr, sonarr (plus plex — out of scope, see below).
 - [observation] Multi-controller releases: paperless (controllers paperless, backup — the CNP selects only paperless → `controller: paperless`); sure (server, worker — the CNP selects both via name only → `controllers: [server, worker]`).
 - [observation] Name-only selectors today: cloudflare-tunnel, crowdsec-blocklist-import, sure — the chart renders name+instance+controller (equivalent for the pods selected today).
 - [decision] plex and plex-trakt-sync are OUT of scope: both apps were removed entirely on 2026-10-13 (commit 573c7eeb5; orphaned Helm releases uninstalled, PVCs pruned). Scope is therefore 17 apps.
