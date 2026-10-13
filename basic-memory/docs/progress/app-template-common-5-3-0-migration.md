@@ -1,12 +1,12 @@
 ---
 title: app-template-common-5-3-0-migration
-type: roadmap
-permalink: home-ops/docs/roadmap/app-template-common-5-3-0-migration
+type: progress
+permalink: home-ops/docs/progress/app-template-common-5-3-0-migration
 topic: Upgrade the shared bjw-s app-template chart pin from 5.2.1 to 5.3.0 (which
   bundles common library v5.3.0), gated by a rendered-output diff of pod labels/selectors,
   and decide the follow-on questions the release raises (chart-generated CNP adoption,
   Renovate coverage of the chart pin)
-status: proposed
+status: done
 priority: low
 scope: 'One-line pin bump in kubernetes/components/common/repos/app-template/ocirepository.yaml
   affecting all 37 app-template HelmReleases, gated by a helm-render before/after
@@ -40,24 +40,26 @@ tags:
 - renovate
 ---
 
-# app-template 5.2.1 → 5.3.0 (common 5.3.0) migration
+# Progress — app-template 5.2.1 → 5.3.0 (common 5.3.0) migration
 
-Migrate the shared bjw-s `app-template` chart pin from 5.2.1 to 5.3.0. app-template 5.3.0
-(released 2026-10-10) is a pure library bump — its sole changelog entry is "Upgraded the common
-library to v5.3.0" — so everything below is a common-5.3.0 change. The migration itself is a
-one-line pin bump, but common 5.3.0 changes label/selector rendering semantics that the repo`s
-36 hand-written CiliumNetworkPolicy endpointSelectors depend on, so the bump is gated by a
-rendered-output diff. Two follow-on design questions (CNP adoption, Renovate coverage) are
-recorded here as open, not decided.
+Roadmap item completed 2026-10-13 and moved from `docs/roadmap/app-template-common-5-3-0-migration`.
+The pin bump itself was delivered by Renovate PR #4507 (merged 2026-10-10, commit c4519273e) before
+this item was executed; this session verified the live result and closed the follow-on questions.
 
 ## Metadata (observation-form)
 
-- [topic] app-template 5.2.1 → 5.3.0 pin bump, render-diff gated; CNP adoption + Renovate coverage as open follow-on decisions
-- [status] proposed
+- [status] done — 5.3.0 live on all reconciling app-template releases, no regression found
 - [priority] low
 - [area] k8s-workloads / networking / versions-renovate
 - [created] 2026-10-12
-- [effort] S — one-line bump + render-diff verification on representative apps; grows only if the CNP adoption follow-on is pulled into this item
+- [completed] 2026-10-13
+- [branch] main
+- [moved_from] docs/roadmap/app-template-common-5-3-0-migration
+
+## Correction to the roadmap note
+
+- [observation] The roadmap note claimed the chart pin is invisible to Renovate. Wrong: Renovate's built-in `flux` manager (enabled for `kubernetes/**.yaml` in `.renovaterc.json5`) extracts OCIRepository `spec.url` + `ref.tag`. Every app-template bump arrived as a Renovate PR: #4188 (5.0.1→5.1.0), #4376 (5.1.0→5.2.1), #4507 (5.2.1→5.3.0). No `# renovate:` annotation is needed; the Renovate-coverage question is closed with no change.
+- [observation] app-template is not automerged (`.renovate/autoMerge.json5`: every rule `automerge: false`); #4507 was merged by hand.
 
 ## The release — verified facts (research 2026-10-12)
 
@@ -72,25 +74,25 @@ recorded here as open, not decided.
 - [observation] Templateable keys: annotation and label keys support Helm templating (`schemas/definitions.json`).
 - [observation] Resource label/annotation merge-order fixes: controller-level and network-policy-level metadata now use `mergeOverwrite` so per-object labels take precedence over chart-level labels (`classes/_deployment.tpl`, `classes/_ciliumNetworkPolicy.tpl`).
 
-## Repo state — verified facts (2026-10-12)
+## Live verification (2026-10-13)
 
-- [observation] The pin is a single tag: `kubernetes/components/common/repos/app-template/ocirepository.yaml:13` — `tag: 5.2.1`. 37 HelmReleases reference app-template through this shared OCIRepository.
-- [observation] The pin is NOT covered by Renovate: the OCI customManager regex (`.renovate/customManagers.json5:11`) matches only `oci://...:<value>` URL shapes; the OCIRepository URL is tagless (the version lives in `ref.tag`) and the file carries no `# renovate:` annotation. The 5.3.0 bump must therefore be made manually — no Renovate PR will arrive for it.
-- [observation] 36 standalone CiliumNetworkPolicy manifest files exist; endpointSelector label usage: `app.kubernetes.io/name` (36), `app.kubernetes.io/instance` (21), `app.kubernetes.io/controller` (16). No HelmRelease uses chart-level `networkpolicies`/`ciliumNetworkPolicies` values today — all per-app CNPs are hand-written manifests.
-- [observation] Pod-level labels set in HelmRelease values use only custom keys (`ingress.home.arpa/*`, `egress.home.arpa/*` — e.g. homepage, actual); no HR overrides an `app.kubernetes.io/*` label. The selector-label precedence change therefore has no known collision in current values — but this is value analysis, not a rendered diff; the render-diff gate stays.
-- [observation] No app uses `globalLabels` anywhere.
-- [observation] LoadBalancer services under app-template apps: plex and k8s-gateway; neither sets the `clusterIP` option, so the clusterIP rendering fix has no visible effect on current values.
-- [observation] No COMMAND probe consumer today: qbittorrent (the app whose probe config was inspected) uses tcpSocket probes; the `exec:` occurrences found in app-template apps are lifecycle hooks, not probes.
-- [observation] Every app-template HelmRelease carries a yaml-language-server schema comment pointing at the main-branch app-template schema, which already tracks 5.3.0 shapes.
+- [observation] All 15 namespaced `app-template` OCIRepositories store `5.3.0@sha256:0e13b145…`.
+- [observation] 35 of 37 app-template HelmReleases report chart 5.3.0; `flux get hr -A --status-selector ready=false` is empty. The 2 others are plex and plex-trakt-sync — suspended, still at chart 5.1.0; both are no longer needed and are to be removed entirely (user decision 2026-10-13, tracked in [[app-template-chart-cnp-migration]]).
+- [observation] Render-diff gate, run for the two releases that have not upgraded yet: `helm template` with live HR values, 5.1.0 vs 5.3.0 — the only differences are the `helm.sh/chart` label and the key order inside `spec.selector.matchLabels`. Resuming them is safe with respect to the chart bump (no immutable-selector change).
+- [observation] For the upgraded releases the gate is implicit: an upgrade that changed a Deployment `spec.selector` would have failed on the immutable field, and none failed.
+- [observation] CNP selector check: every one of the 42 live CNPs' endpointSelectors evaluated against running pods. The 4 without a running match are explained: plex + plex-trakt-sync scaled to 0 (suspended), crowdsec-blocklist-import is a CronJob (its Completed job pod carries all three app.kubernetes.io labels), llama-cpp was mid-rollout (new pod labels match).
+- [observation] Hubble policy-denied drops over the 3 days are not attributable to the bump: downloads destination drops started 2026-10-10 19h UTC, before the merge; the ai burst is 2026-10-11 14h (local-ai-stack rollout); selfhosted drops are sporadic. Firing `KubeHpaMaxedOut` alerts date from 2026-10-07.
 
-## Open design questions (to elaborate before moving to accepted)
+## Follow-on questions — resolved
 
-- [question] Render-diff scope: which apps get a helm-template before/after comparison (candidates by shape: homepage — extra custom pod labels; plex — LoadBalancer service; a CronJob-based app such as crowdsec-blocklist-import; one plain Deployment). Unverified until run: whether any rendered pod labels/selectors actually change for repo values.
-- [question] CNP model: keep the standalone per-app CNP manifest pattern, or migrate some/all apps to chart-generated `ciliumNetworkPolicies` values using the new `controllers` option? Whichever wins, the AD-023 label vocabulary (`ingress.home.arpa/*`, `egress.home.arpa/*`) and the custom-egress opt-out model must be preserved — this is a design decision, potentially its own ADR.
-- [question] Renovate coverage: add a `# renovate:` annotation (docker datasource, depName `ghcr.io/bjw-s-labs/helm/app-template`) to the OCIRepository `ref.tag` so future chart bumps arrive as PRs instead of manual pin edits?
-- [question] Any consumer for the other 5.3.0 features (`extraSelectorLabels`, COMMAND probes, `templateEvaluation` passes, templateable label keys)? None found in the repo today.
+- [decision] Render-diff scope: done as above (live-value analysis + plex render-diff); no rendered pod label/selector change for repo values.
+- [decision] CNP model: chart-generated per-app CNPs for app-template apps — decided as [[AD-025-app-template-chart-generated-cnps]], executed by [[app-template-chart-cnp-migration]] (docs/roadmap).
+- [decision] Renovate coverage: already covered by the flux manager; no change.
+- [observation] Other 5.3.0 features (`extraSelectorLabels`, COMMAND probes, `templateEvaluation`, templateable label keys): no consumer in the repo; nothing to do.
 
 ## Relations
 
 - relates_to [[k8s-workloads]]
 - relates_to [[networking]]
+- relates_to [[AD-025-app-template-chart-generated-cnps]]
+- relates_to [[app-template-chart-cnp-migration]]
