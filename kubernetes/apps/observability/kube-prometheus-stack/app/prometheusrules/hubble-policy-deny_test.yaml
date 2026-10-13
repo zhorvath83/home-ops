@@ -35,7 +35,7 @@ tests:
   # qbittorrent is outbound-only). This exclusion is a deliberate silence that nothing currently
   # proves. (2) asserts the recording rule itself emits NO sample for that flow (the silence is at
   # the recording level, not masked by the alert's source_pod matcher or threshold); (3) asserts no
-  # alert fires. A non-plex source with increase=1 would fire at >0 but for the exclusion — so the
+  # alert fires. A source with increase=1 would fire at >0 but for the exclusion — so the
   # only reason (2)/(3) are empty is the `unless`.
   - interval: 1m
     input_series:
@@ -82,7 +82,7 @@ tests:
               description: |-
                 Policy-denied drop (ingress) world/external-host [1.2.3.4] -> downloads/qbittorrent-0 [10.1.0.2] (proto: TCP).
                 Investigate: hubble observe --to-pod downloads/qbittorrent-0 --verdict DROPPED --print-policy-names --last 200
-  # === HubblePolicyDeny — general-app tier: hubble_policy_denied_increase5m{source_pod!~"plex-trakt-sync-.*"} > 0 ===
+  # === HubblePolicyDeny: hubble_policy_denied_increase5m > 0 ===
   # (5) Boundary NO-fire: increase=0, `> 0` strict → 0 > 0 false. egress series.
   - interval: 1m
     input_series:
@@ -118,41 +118,3 @@ tests:
               description: |-
                 Policy-denied drop (egress) media/emby-abc [10.0.0.5] -> networking/envoy-x [10.2.0.1] (proto: TCP).
                 Investigate: hubble observe --from-pod media/emby-abc --verdict DROPPED --print-policy-names --last 200
-  # === HubblePolicyDeny — plex-trakt-sync tier: hubble_policy_denied_increase5m{source_pod=~"plex-trakt-sync-.*"} > 3 ===
-  # plex-trakt-sync egress races the DNS-proxy cache on freshly-resolved IPs and drops 1-2 SYNs
-  # transiently; the elevated threshold stops that paging while a sustained/repeated deny still does.
-  # (7) Boundary NO-fire: increase=3, `> 3` strict → 3 > 3 false.
-  - interval: 1m
-    input_series:
-      - series: 'hubble_drop_total{reason="POLICY_DENIED",source_namespace="media",source_pod="plex-trakt-sync-xyz",source_ip="10.0.0.9",destination_namespace="external",destination_pod="trakt-tv",destination_ip="3.4.5.6",traffic_direction="egress",protocol="TCP"}'
-        values: '0x6 3x5'
-    alert_rule_test:
-      - eval_time: 10m
-        alertname: HubblePolicyDeny
-        exp_alerts: []
-  # (8) Boundary FIRE: increase=4, 4 > 3 true. egress → --from-pod branch.
-  - interval: 1m
-    input_series:
-      - series: 'hubble_drop_total{reason="POLICY_DENIED",source_namespace="media",source_pod="plex-trakt-sync-xyz",source_ip="10.0.0.9",destination_namespace="external",destination_pod="trakt-tv",destination_ip="3.4.5.6",traffic_direction="egress",protocol="TCP"}'
-        values: '0x6 4x5'
-    alert_rule_test:
-      - eval_time: 10m
-        alertname: HubblePolicyDeny
-        exp_alerts:
-          - exp_labels:
-              alertname: HubblePolicyDeny
-              severity: critical
-              source_namespace: media
-              source_pod: plex-trakt-sync-xyz
-              source_ip: 10.0.0.9
-              destination_namespace: external
-              destination_pod: trakt-tv
-              destination_ip: 3.4.5.6
-              traffic_direction: egress
-              protocol: TCP
-              reason: POLICY_DENIED
-            exp_annotations:
-              summary: Cilium policy denied a packet (Hubble)
-              description: |-
-                Policy-denied drop (egress) media/plex-trakt-sync-xyz [10.0.0.9] -> external/trakt-tv [3.4.5.6] (proto: TCP).
-                Investigate: hubble observe --from-pod media/plex-trakt-sync-xyz --verdict DROPPED --print-policy-names --last 200

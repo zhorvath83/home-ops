@@ -9,14 +9,6 @@
       ],
     },
     {
-      description: "Changelog link for Plex",
-      matchDatasources: ["docker"],
-      matchPackageNames: ["ghcr.io/home-operations/plex"],
-      prBodyNotes: [
-        "[Plex Media Server release notes](https://forums.plex.tv/t/plex-media-server/30447)",
-      ],
-    },
-    {
       description: "Changelog link for Sonarr",
       matchDatasources: ["docker"],
       matchPackageNames: ["ghcr.io/home-operations/sonarr"],
