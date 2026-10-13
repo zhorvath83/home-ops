@@ -497,7 +497,7 @@ url = "https://github.com/mitsuhiko/minijinja/releases/download/3.0.0/minijinja-
 url_api = "https://api.github.com/repos/mitsuhiko/minijinja/releases/assets/624062597"
 
 [[tools."aqua:pre-commit/pre-commit"]]
-version = "4.6.2"
+version = "4.7.0"
 backend = "aqua:pre-commit/pre-commit"
 
 [tools."aqua:pre-commit/pre-commit"."platforms.linux-arm64"]
