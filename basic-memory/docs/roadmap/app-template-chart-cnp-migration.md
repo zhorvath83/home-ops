@@ -41,7 +41,7 @@ policy gap, in batches of additive → retire commits.
 - [observation] CNPs with ingress rules (a gap would be fail-OPEN): cloudflare-tunnel, jellyfin, llama-cpp, paperless, prowlarr, qbittorrent, radarr, sonarr (plus plex — out of scope, see below).
 - [observation] Multi-controller releases: paperless (controllers paperless, backup — the CNP selects only paperless → `controller: paperless`); sure (server, worker — the CNP selects both via name only → `controllers: [server, worker]`).
 - [observation] Name-only selectors today: cloudflare-tunnel, crowdsec-blocklist-import, sure — the chart renders name+instance+controller (equivalent for the pods selected today).
-- [decision] plex and plex-trakt-sync are OUT of scope: both HelmReleases (suspended, chart 5.1.0) are no longer needed and are to be removed entirely — HR, ks.yaml, CNP, ExternalSecret, PVC/VolSync wiring and namespace registration (user decision 2026-10-13). The removal is a separate task; their CNP files go with the apps, not through this migration. Scope is therefore 17 apps.
+- [decision] plex and plex-trakt-sync are OUT of scope: both apps were removed entirely on 2026-10-13 (commit 573c7eeb5; orphaned Helm releases uninstalled, PVCs pruned). Scope is therefore 17 apps.
 
 ## Batches
 
@@ -49,13 +49,14 @@ policy gap, in batches of additive → retire commits.
 - [decision] Batch 2 — ingress-bearing + multi-controller: jellyfin, llama-cpp, prowlarr, qbittorrent, radarr, sonarr, paperless, sure.
 - [decision] Batch 3 — cloudflare-tunnel alone (edge path; CIDR + endpoint rules).
 
-## Procedure per batch (3 commits, each pushed and reconciled before the next)
+## Procedure per batch (2 commits, retire → add, each pushed and reconciled before the next)
 
-1. **Rename** — in every batch CNP file set `metadata.name: <app>-legacy`. Kustomize applies the new object before pruning the old one, so the union is continuous. Check: `kubectl get cnp -A | grep legacy` lists the batch, the old names are gone.
-2. **Add** — add `networkpolicies.main` (`type: cilium`, rules copied 1:1, split any rule that mixes peer kinds) to each HelmRelease; keep the AD-023 intent comment on the block. Local gates: `helm template` of each release with the 5.3.0 chart, a diff of the rendered CNP spec against the legacy file (only the selector shape may differ), pre-commit. Check after reconcile: each HR Ready, `kubectl get cnp -n <ns> <app>` exists and is Valid, legacy still present.
-3. **Retire** — delete the `ciliumnetworkpolicy.yaml` files and their `app/kustomization.yaml` entries. Check: legacy objects pruned.
+A short CNP-less window between the two commits is accepted (user decision 2026-10-13, AD-025).
 
-After steps 2 and 3: `just k8s show-cnp-matrix` (each batch app shows its APP-CNP under the release name) + `just k8s hubble-live-capture 120` and `just k8s hubble-analyze <app label> DROPPED egress|ingress` for the batch pods; a startup-time app-log check for the narrow-world apps. Rollback at any step = a single revert.
+1. **Retire** — delete every batch `ciliumnetworkpolicy.yaml` and its `app/kustomization.yaml` entry. Flux prunes the CNPs; until step 2 the pods run on the baseline + vocabulary CCNPs only (narrow-world egress fails closed, ingress-bearing pods fall back to their ingress vocabulary labels). Check: `kubectl get cnp -n <ns> <app>` → NotFound for the batch.
+2. **Add** — add `networkpolicies.main` (`type: cilium`, rules copied 1:1, split any rule that mixes peer kinds; `controller`/`controllers` for paperless and sure) to each HelmRelease; keep the AD-023 intent comment on the block. Local gates before commit: `helm template` of each release with the 5.3.0 chart and a diff of the rendered CNP spec against the deleted file (only the selector shape may differ), pre-commit. Push step 2 right after step 1 reconciles, to keep the window short. Check after reconcile: each HR Ready, `kubectl get cnp -n <ns> <app>` exists, Valid, labelled `app.kubernetes.io/managed-by: Helm`.
+
+After step 2: `just k8s show-cnp-matrix` (each batch app shows its APP-CNP under the release name) + `just k8s hubble-live-capture 120` and `just k8s hubble-analyze <app label> DROPPED egress|ingress` for the batch pods; a startup-time app-log check for the narrow-world apps. Rollback = revert.
 
 ## Acceptance criteria
 

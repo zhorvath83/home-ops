@@ -191,3 +191,5 @@ and the note was never re-read against it. Almost every wrong claim follows from
   (Talos and Kubernetes), not one as the note claimed.
 - [observation] All six `verified_against` paths still existed; six load-bearing paths were added
   (.mise.toml, the two Renovate fragments, the tuppr ks + both upgrade CRs).
+
+- [drift] 2026-10-13 — plex and plex-trakt-sync were removed from the cluster (commit 573c7eeb5: app trees, ks entries, PLEX_IP var, Plex Renovate rules, the plex-trakt-sync HubblePolicyDeny tier; PVCs pruned, orphaned Helm releases uninstalled). Plex is no longer an iGPU consumer; jellyfin is.

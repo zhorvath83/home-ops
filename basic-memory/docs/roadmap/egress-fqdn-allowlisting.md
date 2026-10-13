@@ -380,3 +380,5 @@ the Pushover token.
 
 ### Effort
 M (~0.5 day per batch of apps; spread it out, low urgency).
+
+- [drift] 2026-10-13 — plex and plex-trakt-sync were removed from the cluster (commit 573c7eeb5: app trees, ks entries, PLEX_IP var, Plex Renovate rules, the plex-trakt-sync HubblePolicyDeny tier; PVCs pruned, orphaned Helm releases uninstalled). Drop plex and plex-trakt-sync from every wave/table here; seerr and maintainerr no longer need in-cluster plex :32400.

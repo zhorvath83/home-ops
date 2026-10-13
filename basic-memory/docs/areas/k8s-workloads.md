@@ -217,3 +217,5 @@ itself, which is the whole point of this note, was wrong.
   10.11.11 -> 12.1 on 2026-09-19 (commit be3c07022) with a startup probe guarding first-boot DB
   migrations (PR #4390). QSV hardware transcode re-verified on 12.1 + FFmpeg 8.1.2. Execution record:
   [[jellyfin-12-migration]].
+
+- [drift] 2026-10-13 — plex and plex-trakt-sync were removed from the cluster (commit 573c7eeb5: app trees, ks entries, PLEX_IP var, Plex Renovate rules, the plex-trakt-sync HubblePolicyDeny tier; PVCs pruned, orphaned Helm releases uninstalled). Every plex / plex-trakt-sync mention above is stale; this note predates crosswatch and jellyfin and needs a full re-verification.

@@ -1096,3 +1096,5 @@ rejected on this cluster's specifics (adopted-repository starting point, four di
 the NAS's existing role as the other plane's source) and what Option C would look like if the
 durability requirement ever changes. It is documentation of a closed decision, not a pending
 follow-up.
+
+- [drift] 2026-10-13 — plex and plex-trakt-sync were removed from the cluster (commit 573c7eeb5: app trees, ks entries, PLEX_IP var, Plex Renovate rules, the plex-trakt-sync HubblePolicyDeny tier; PVCs pruned, orphaned Helm releases uninstalled). Drop plex and plex-trakt-sync from the inventory and from Waves A/B.
