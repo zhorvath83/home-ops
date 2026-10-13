@@ -34,7 +34,7 @@ There is no shared auth platform declared under `kubernetes/apps/`.
 
 ## Media App Questions
 
-For media-oriented apps, inspect `plex`, `calibre-web-automated`, `maintainerr`, and `home-gallery` before designing the workload.
+For media-oriented apps, inspect `jellyfin`, `calibre-web-automated`, `maintainerr`, and `home-gallery` before designing the workload.
 
 Answer these questions explicitly:
 
