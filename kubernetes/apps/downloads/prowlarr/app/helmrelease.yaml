@@ -89,3 +89,19 @@ spec:
           - path: /config
       tmp:
         type: emptyDir
+    # prowlarr (AD-023): radarr/sonarr pull indexer details from the API port; envoy ingress via the gateway CCNPs.
+    networkpolicies:
+      main:
+        type: cilium
+        ingress:
+          - fromEndpoints:
+              - matchLabels:
+                  k8s:io.kubernetes.pod.namespace: downloads
+                  app.kubernetes.io/name: radarr
+              - matchLabels:
+                  k8s:io.kubernetes.pod.namespace: downloads
+                  app.kubernetes.io/name: sonarr
+            toPorts:
+              - ports:
+                  - port: "9696"
+                    protocol: TCP

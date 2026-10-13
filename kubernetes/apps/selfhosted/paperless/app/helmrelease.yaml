@@ -261,3 +261,26 @@ spec:
               - path: /usr/src/paperless/scripts/pre-consume.sh
                 subPath: pre-consume.sh
                 readOnly: true
+    # paperless (AD-023): dragonfly-only egress + paperless-gpt east-west ingress; backup CronJob stays on baseline.
+    networkpolicies:
+      main:
+        type: cilium
+        controller: paperless
+        egress:
+          - toEndpoints:
+              - matchLabels:
+                  k8s:io.kubernetes.pod.namespace: database
+                  app.kubernetes.io/name: dragonfly
+            toPorts:
+              - ports:
+                  - port: "6379"
+                    protocol: TCP
+        ingress:
+          - fromEndpoints:
+              - matchLabels:
+                  k8s:io.kubernetes.pod.namespace: selfhosted
+                  app.kubernetes.io/name: paperless-gpt
+            toPorts:
+              - ports:
+                  - port: "8000"
+                    protocol: TCP

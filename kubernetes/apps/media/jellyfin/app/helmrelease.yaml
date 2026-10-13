@@ -133,3 +133,22 @@ spec:
         type: emptyDir
       tmp:
         type: emptyDir
+    # jellyfin (AD-023): named east-west consumers on the API port; envoy ingress via the gateway CCNPs.
+    networkpolicies:
+      main:
+        type: cilium
+        ingress:
+          - fromEndpoints:
+              - matchLabels:
+                  k8s:io.kubernetes.pod.namespace: downloads
+                  app.kubernetes.io/name: maintainerr
+              - matchLabels:
+                  k8s:io.kubernetes.pod.namespace: downloads
+                  app.kubernetes.io/name: seerr
+              - matchLabels:
+                  k8s:io.kubernetes.pod.namespace: media
+                  app.kubernetes.io/name: crosswatch
+            toPorts:
+              - ports:
+                  - port: "8096"
+                    protocol: TCP

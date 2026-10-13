@@ -197,3 +197,36 @@ spec:
           worker:
             app:
               - path: /rails/storage
+    # sure (AD-023): egress-only delta — postgres, dragonfly, llama-cpp; world + envoy hairpin come from pod-label CCNPs.
+    networkpolicies:
+      main:
+        type: cilium
+        controllers:
+          - server
+          - worker
+        egress:
+          - toEndpoints:
+              - matchLabels:
+                  k8s:io.kubernetes.pod.namespace: database
+                  cnpg.io/cluster: postgres
+            toPorts:
+              - ports:
+                  - port: "5432"
+                    protocol: TCP
+          - toEndpoints:
+              - matchLabels:
+                  k8s:io.kubernetes.pod.namespace: database
+                  app.kubernetes.io/name: dragonfly
+            toPorts:
+              - ports:
+                  - port: "6379"
+                    protocol: TCP
+          # Local LLM (ai/llama-cpp) for the chat assistant and AI rules.
+          - toEndpoints:
+              - matchLabels:
+                  k8s:io.kubernetes.pod.namespace: ai
+                  app.kubernetes.io/name: llama-cpp
+            toPorts:
+              - ports:
+                  - port: "8080"
+                    protocol: TCP

@@ -171,3 +171,40 @@ spec:
             app:
               - path: /tmp
                 subPath: app-tmp
+    # llama-cpp (AD-023): in-cluster consumers on :8080; HuggingFace model egress — custom-egress opt-out, sole egress source.
+    networkpolicies:
+      main:
+        type: cilium
+        ingress:
+          # Open WebUI, the in-namespace chat frontend.
+          - fromEndpoints:
+              - matchLabels:
+                  k8s:io.kubernetes.pod.namespace: ai
+                  app.kubernetes.io/instance: open-webui
+                  app.kubernetes.io/component: open-webui
+            toPorts:
+              - ports:
+                  - port: "8080"
+                    protocol: TCP
+          # Consumers in selfhosted: paperless-gpt (document metadata) and sure (chat + AI rules).
+          - fromEndpoints:
+              - matchLabels:
+                  k8s:io.kubernetes.pod.namespace: selfhosted
+                  app.kubernetes.io/name: paperless-gpt
+              - matchLabels:
+                  k8s:io.kubernetes.pod.namespace: selfhosted
+                  app.kubernetes.io/name: sure
+            toPorts:
+              - ports:
+                  - port: "8080"
+                    protocol: TCP
+        egress:
+          # HuggingFace: resolve URLs redirect to multi-level CDN hosts (us.aws.cdn.hf.co), hence "**.".
+          - toFQDNs:
+              - matchName: "huggingface.co"
+              - matchPattern: "**.huggingface.co"
+              - matchPattern: "**.hf.co"
+            toPorts:
+              - ports:
+                  - port: "443"
+                    protocol: TCP

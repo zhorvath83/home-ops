@@ -153,3 +153,19 @@ spec:
         type: emptyDir
         globalMounts:
           - path: /ipfilter
+    # qbittorrent (AD-023): the *arr named consumers on the WebUI API port; envoy ingress via the gateway CCNPs.
+    networkpolicies:
+      main:
+        type: cilium
+        ingress:
+          - fromEndpoints:
+              - matchLabels:
+                  k8s:io.kubernetes.pod.namespace: downloads
+                  app.kubernetes.io/name: sonarr
+              - matchLabels:
+                  k8s:io.kubernetes.pod.namespace: downloads
+                  app.kubernetes.io/name: radarr
+            toPorts:
+              - ports:
+                  - port: "8080"
+                    protocol: TCP
