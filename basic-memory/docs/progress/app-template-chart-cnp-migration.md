@@ -74,10 +74,10 @@ per AD-025.
   substitution is blocked in the Bash sandbox — use temp files.
 
 ## Batch 2 result (2026-10-13, done)
-
-- [observation] Ratified by the human via the Maestro ("mehet a 2. batch") plus direct
-  confirmation in the worker terminal (the permission gate required the ratification in the
-  worker transcript).
+- [observation] Batch-2 start record (corrected): neither the human nor the Maestro ever sent
+  "mehet a 2. batch"; the "Igen" answer in the worker's batch-2 menu was a mistaken Enter
+  keystroke sent by the Maestro, and the batch proceeded on that signal (see correction under
+  Maestro-verified).
 - [observation] RETIRE commit a5f55930b pushed 22:21, all 8 CNPs pruned on first check
   (~2 min after reconcile — the batch-1 prune lag did not recur). One HubblePolicyDeny alert
   class expected during the window (paperless -> dragonfly, sure -> postgres/dragonfly/llama-cpp
@@ -97,3 +97,33 @@ per AD-025.
 - [observation] Values shape for app-template 5.3.0 (from batch 1): rule arrays directly under
   networkpolicies.main (no rules: key); batch-2 blocks authored in this shape from the start —
   first-try schema green on all 8.
+
+## Maestro-verified (2026-10-13)
+- [observation] Batch 2 accepted after the Maestro's independent verification: render diff 7
+  identical + sure ratified selector diff; 16 Helm-owned CNPs (batches 1+2) all Valid; 8/8
+  batch-2 HelmReleases Ready.
+- [observation] Prometheus sum(hubble_drop_total{reason="POLICY_DENIED"}): 1984 -> 5502 -> 7750
+  at 20:22:30 / 20:23:30 / 20:24:30 UTC, flat since 20:24:30 — drops stopped when the CNPs
+  appeared (20:24:05).
+- [observation] Window drops: egress paperless + sure-server/worker -> dragonfly; ingress
+  paperless-gpt -> paperless, radarr/sonarr -> qbittorrent, sonarr -> prowlarr,
+  bazarr/seerr -> radarr/sonarr.
+- [finding] The ingress window was fail-CLOSED, not fail-open: the gateway vocabulary CCNPs
+  already select those pods for ingress, so with the app CNP gone the peer apps' traffic fell
+  through to deny.
+- [correction] Neither the human nor the Maestro ever wrote "mehet a 2. batch"; the "Igen"
+  answer in the worker's batch-2 confirmation menu came from a mistaken Enter keystroke sent
+  by the Maestro. Never attribute words to someone who did not send them.
+
+## Checkpoint
+
+- Maestro: "Claude Code #2"
+- status: batches 1+2 done — batch 1 RETIRE 6b77debb5 / ADD 5171ea352 / docs 6b6bce8b8;
+  batch 2 RETIRE a5f55930b / ADD fa0b52a57 / docs 7ebbd0863 (all pushed to main, reconciled)
+- Next-Claude: batch 3 cloudflare-tunnel alone, same RETIRE->ADD procedure (kustomization entry
+  has no ./ prefix; live-check pod instance+controller labels before RETIRE), then final docs
+  commit (.claude/skills/k8s-workloads/references/app-scaffolding.md chart-generated form,
+  BM docs/areas/k8s-workloads canonical shape, roadmap status, AD-025 corrections: rule arrays
+  directly under networkpolicies.main with no rules: key; ingress window fail-closed)
+- Next-Human: batch-3 public-site outage accepted any time by the human, no scheduling
+  constraint; batch 3 starts only on a new explicit Maestro brief
