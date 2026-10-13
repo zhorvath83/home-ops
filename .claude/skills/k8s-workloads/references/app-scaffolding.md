@@ -59,7 +59,7 @@ Typical resource order:
 1. `ocirepository.yaml`
 2. `externalsecret.yaml` if present
 3. `helmrelease.yaml`
-4. extra resources after that (`ciliumnetworkpolicy.yaml`, `pvc.yaml`, custom config, etc.)
+4. extra resources after that (`pvc.yaml`, custom config, etc.; `ciliumnetworkpolicy.yaml` only for non-app-template workloads)
 
 ## Common Manifest Rules (all kinds under `app/`)
 
@@ -80,6 +80,31 @@ HelmRelease `spec` is intentionally minimal — see `kubernetes/CLAUDE.md` "Helm
 - The cluster-root `Kustomization` (`kubernetes/flux/cluster/ks.yaml`) injects `install`, `rollback`, `timeout`, `upgrade` defaults into every HelmRelease through a kustomize patch. **Never repeat or override those fields per-app.** Adding `install.createNamespace`, `install.remediation.retries`, `upgrade.remediation.{strategy,retries}`, or `uninstall.keepHistory` to a HelmRelease is no-op drift at best and a maintenance trap at worst — it was historical noise from the K3s era and has been dropped repo-wide.
 - If a future app genuinely needs a different remediation profile, change the root patch in `kubernetes/flux/cluster/ks.yaml` instead of re-introducing per-HR drift.
 - YAML anchors in HelmRelease values are allowed for **scalar values reused multiple times** (`&port`, `&httpPort`, `&host`, `&tz`, `&exportDir`, `&resources`, `&probes`, `&image`). Anchors on `metadata.name` or as map keys for `controllers`/`persistence`/`serviceAccount`/`bindings` are forbidden — see `kubernetes/CLAUDE.md` "YAML anchor policy" for examples and rationale.
+
+## Per-app CiliumNetworkPolicy (AD-025)
+
+- **app-template apps**: the per-app CNP is chart-generated from HelmRelease `values.networkpolicies.main` with `type: cilium`; there is no `app/ciliumnetworkpolicy.yaml`. The rendered CNP is named after the release and its `endpointSelector` is derived from the controller, so a rename cannot desync policy and pods.
+- Rule arrays sit directly under `networkpolicies.main` (`ingress:` / `egress:`), never under a `rules:` key — the chart schema rejects it with an opaque `'oneOf' failed` error.
+- Selector: omit `controller` for single-controller releases; set `controller: <key>` or `controllers: [...]` when the release has several (paperless, sure). No raw `endpointSelector`, no `forceRename`.
+- One peer kind per rule (`toEndpoints` and `toFQDNs` in one rule are rejected — split them), and `icmps` cannot share a rule with `toPorts`.
+- Same-release peers use `fromControllers` / `toControllers`; cross-release peers stay raw `matchLabels` with `k8s:io.kubernetes.pod.namespace`.
+- Only app-unique rules go here (AD-023); vocabulary labels stay in `defaultPodOptions.labels` and the generic grants in the clusterwide CCNPs. The one-line AD-023 intent comment sits on the `networkpolicies:` block.
+- Validate with `helm template` against the pinned chart; `flux-local test` runs the same render in CI.
+- Non-app-template workloads (upstream charts, operators) keep a hand-written `app/ciliumnetworkpolicy.yaml`.
+
+```yaml
+    # <app> (AD-023): <one-line intent>.
+    networkpolicies:
+      main:
+        type: cilium
+        egress:
+          - toFQDNs:
+              - matchName: "api.example.com"
+            toPorts:
+              - ports:
+                  - port: "443"
+                    protocol: TCP
+```
 
 ## `externalsecret.yaml`
 
