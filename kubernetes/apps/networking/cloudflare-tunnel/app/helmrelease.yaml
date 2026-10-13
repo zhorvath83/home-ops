@@ -113,3 +113,65 @@ spec:
         globalMounts:
           - path: /etc/cloudflared/config.yaml
             subPath: config.yaml
+    # cloudflare-tunnel (AD-023): edge path — Cloudflare edge + envoy-external egress, Prometheus scrape ingress.
+    networkpolicies:
+      main:
+        type: cilium
+        ingress:
+          # Prometheus metrics scrape on the cloudflared metrics port.
+          - fromEndpoints:
+              - matchLabels:
+                  io.kubernetes.pod.namespace: observability
+                  app.kubernetes.io/name: prometheus
+        egress:
+          # CoreDNS for in-cluster service discovery.
+          - toEndpoints:
+              - matchLabels:
+                  io.kubernetes.pod.namespace: kube-system
+                  k8s-app: kube-dns
+            toPorts:
+              - ports:
+                  - port: "53"
+                    protocol: UDP
+          # envoy-external for HTTPRoute traffic forwarding (Cloudflare tunnel ingress target).
+          - toEndpoints:
+              - matchLabels:
+                  io.kubernetes.pod.namespace: networking
+                  app.kubernetes.io/name: envoy
+                  gateway.envoyproxy.io/owning-gateway-name: envoy-external
+            toPorts:
+              - ports:
+                  - port: "10080"
+                    protocol: TCP
+                  - port: "10443"
+                    protocol: TCP
+          # Cloudflare edge for tunnel control plane and registration.
+          - toCIDRSet:
+              - cidrGroupRef: cloudflare
+            toPorts:
+              - ports:
+                  - port: "443"
+                    protocol: TCP
+                  - port: "80"
+                    protocol: TCP
+                  - port: "7844"
+                    protocol: TCP
+                  - port: "7844"
+                    protocol: UDP
+          # ICMP to the Cloudflare edge (cloudflared ICMP proxy + QUIC-path unreachables); silences HubblePolicyDeny drops.
+          - toCIDRSet:
+              - cidrGroupRef: cloudflare
+            icmps:
+              - fields:
+                  - family: IPv4
+                    type: 8
+                  - family: IPv4
+                    type: 3
+                  - family: IPv6
+                    type: 128
+                  - family: IPv6
+                    type: 1
+          # Cloudflare public resolvers: remote connectivity diagnostic, ports unpredictable.
+          - toCIDRSet:
+              - cidr: 1.1.1.1/32
+              - cidr: 1.0.0.1/32
