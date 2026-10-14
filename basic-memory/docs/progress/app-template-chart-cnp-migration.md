@@ -143,3 +143,9 @@ per AD-025.
   heading line, not after the section body (observed by the worker 2026-10-13).
 - [follow-up] Roadmap note can be merged into this progress note per the project convention for
   fully implemented roadmap items.
+
+## Post-migration observation — batch 2 CNP-less window (2026-10-14)
+
+- [observation] hubble_drop_total{reason="POLICY_DENIED"} egress to database/dragonfly-0 grew in ONE burst on 2026-10-13 ~22:22:30-22:24:30 CEST: sure-worker 3220, sure-server 2196, paperless 472 (5888 total). Flat since (increase[1h]=0 on 2026-10-14 morning); no other source workload in the 7d retention.
+- [evidence] Window = RETIRE commit a5f55930b (22:21:26) -> Flux prune -> ADD commit fa0b52a57 (22:22:34) -> Helm-created CNPs paperless 20:23:56Z / sure 20:24:05Z (creationTimestamp, managed-by Helm). The custom-egress pods were selected only by the pod-label CCNPs in between, so dragonfly:6379 was denied — the AD-025 accepted fail-closed window, measured at ~2.5 min.
+- [observation] Impact: paperless celery hit a redis TimeoutError, in-flight tasks were cancelled and redelivered (late-ack), reconnected 22:23:58. sure showed no redis/dragonfly errors. No restarts; nothing to fix. Lesson for a future migration of this kind: land RETIRE + ADD in a single push so one reconcile replaces the CNP.
