@@ -62,8 +62,10 @@ spec:
               ENABLE_CYBERCRIME_TRACKER: "true"
               ENABLE_VXVAULT: "true"
               ENABLE_BOTVRIJ: "true"
-              # v3.7.1 exposes a single ENABLE_FIREHOL master, not per-level keys.
-              ENABLE_FIREHOL: "false"
+              # Per-level keys: the ENABLE_FIREHOL master still works but v3.9.0 logs it as unknown.
+              ENABLE_FIREHOL_LEVEL1: "false"
+              ENABLE_FIREHOL_LEVEL2: "false"
+              ENABLE_FIREHOL_LEVEL3: "false"
               ENABLE_IPSUM: "false"
               ENABLE_BLOCKLIST_DE: "false"
               ENABLE_CI_ARMY: "false"
