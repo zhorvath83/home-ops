@@ -1,10 +1,10 @@
 ---
 title: crowdsec-blocklist-import-v39-alignment
-type: roadmap
-permalink: home-ops/docs/roadmap/crowdsec-blocklist-import-v39-alignment
+type: progress-note
+permalink: home-ops/docs/progress/crowdsec-blocklist-import-v39-alignment
 topic: crowdsec-blocklist-import v3.9.0 alignment — config posture + new-gauge degradation
   alerting
-status: in-progress
+status: done
 priority: medium
 scope: Align the blocklist-import env with the upstream v3.9.0 config surface (remove
   the dead Monty switch, BLOCKLISTS_OPT_IN posture to silence the v4.0 defaults-flip
@@ -33,7 +33,8 @@ related_areas:
 ## Metadata (observation-form, schema validation)
 
 - [topic] Align the crowdsec-blocklist-import deployment with the upstream v3.9.0 config surface and strengthen the degradation-detection plane with the new per-source gauges
-- [status] in-progress (M1+M2 implemented 2026-10-13; M3 pending the first post-merge run)
+- [status] done — M1+M2 shipped 2026-10-13 (0533c42c7, 9dce94667), M3 verified 2026-10-14 (nightly + manual run); only follow-up: first FeedFrozen firing (earliest ~2026-10-19) is investigate-first
+- [closed] 2026-10-14
 - [priority] medium
 - [area] crowdsec, observability, flux-gitops
 - [created] 2026-10-13
