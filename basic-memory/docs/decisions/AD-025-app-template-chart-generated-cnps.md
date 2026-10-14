@@ -74,12 +74,12 @@ tags:
 ## Migration constraint (load-bearing)
 
 - [observation] The chart-rendered CNP has the same name as the Flux-Kustomization-owned hand-written one. Replacing them in one commit races: kustomize-controller prunes the old object before helm-controller creates the new one (policy gap — fail-closed on egress, fail-OPEN on ingress for the 9 apps whose CNP carries ingress rules: cloudflare-tunnel, jellyfin, llama-cpp, paperless, plex, prowlarr, qbittorrent, radarr, sonarr), and if Helm runs first it refuses to take over an object it does not own.
-- [decision] Therefore the migration runs per batch in 2 commits, retire → add: (1) delete the hand-written CNP files and their kustomization entries (Flux prunes them); (2) add `networkpolicies.main` to the HelmReleases (Helm creates the CNPs under the freed names). Retiring first avoids the Helm ownership conflict. A short CNP-less window between the two reconciles is ACCEPTED (user decision 2026-10-13): egress fails closed to the baseline/vocabulary grants, ingress falls back to the vocabulary CCNPs. Rollback = revert. After step 2: `just k8s show-cnp-matrix` + a Hubble DROPPED capture for the batch pods. Execution plan: [[app-template-chart-cnp-migration]].
+- [decision] Therefore the migration runs per batch in 2 commits, retire → add: (1) delete the hand-written CNP files and their kustomization entries (Flux prunes them); (2) add `networkpolicies.main` to the HelmReleases (Helm creates the CNPs under the freed names). Retiring first avoids the Helm ownership conflict. A short CNP-less window between the two reconciles is ACCEPTED (user decision 2026-10-13): egress fails closed to the baseline/vocabulary grants, ingress falls back to the vocabulary CCNPs. Rollback = revert. After step 2: `just k8s show-cnp-matrix` + a Hubble DROPPED capture for the batch pods. Execution plan: [[docs/progress/app-template-chart-cnp-migration]].
 
 ## Related
 
 - refines [[AD-023-cnp-threat-model-audit]]
-- relates_to [[app-template-chart-cnp-migration]]
+- relates_to [[docs/progress/app-template-chart-cnp-migration]]
 - relates_to [[app-template-common-5-3-0-migration]]
 - relates_to [[k8s-workloads]]
 - relates_to [[networking]]

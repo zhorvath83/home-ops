@@ -77,7 +77,7 @@ this item was executed; this session verified the live result and closed the fol
 ## Live verification (2026-10-13)
 
 - [observation] All 15 namespaced `app-template` OCIRepositories store `5.3.0@sha256:0e13b145…`.
-- [observation] 35 of 37 app-template HelmReleases report chart 5.3.0; `flux get hr -A --status-selector ready=false` is empty. The 2 others are plex and plex-trakt-sync — suspended, still at chart 5.1.0; both are no longer needed and are to be removed entirely (user decision 2026-10-13, tracked in [[app-template-chart-cnp-migration]]).
+- [observation] 35 of 37 app-template HelmReleases report chart 5.3.0; `flux get hr -A --status-selector ready=false` is empty. The 2 others are plex and plex-trakt-sync — suspended, still at chart 5.1.0; both are no longer needed and are to be removed entirely (user decision 2026-10-13, tracked in [[docs/progress/app-template-chart-cnp-migration]]).
 - [observation] Render-diff gate, run for the two releases that have not upgraded yet: `helm template` with live HR values, 5.1.0 vs 5.3.0 — the only differences are the `helm.sh/chart` label and the key order inside `spec.selector.matchLabels`. Resuming them is safe with respect to the chart bump (no immutable-selector change).
 - [observation] For the upgraded releases the gate is implicit: an upgrade that changed a Deployment `spec.selector` would have failed on the immutable field, and none failed.
 - [observation] CNP selector check: every one of the 42 live CNPs' endpointSelectors evaluated against running pods. The 4 without a running match are explained: plex + plex-trakt-sync scaled to 0 (suspended), crowdsec-blocklist-import is a CronJob (its Completed job pod carries all three app.kubernetes.io labels), llama-cpp was mid-rollout (new pod labels match).
@@ -86,7 +86,7 @@ this item was executed; this session verified the live result and closed the fol
 ## Follow-on questions — resolved
 
 - [decision] Render-diff scope: done as above (live-value analysis + plex render-diff); no rendered pod label/selector change for repo values.
-- [decision] CNP model: chart-generated per-app CNPs for app-template apps — decided as [[AD-025-app-template-chart-generated-cnps]], executed by [[app-template-chart-cnp-migration]] (docs/roadmap).
+- [decision] CNP model: chart-generated per-app CNPs for app-template apps — decided as [[AD-025-app-template-chart-generated-cnps]], executed by [[docs/progress/app-template-chart-cnp-migration]].
 - [decision] Renovate coverage: already covered by the flux manager; no change.
 - [observation] Other 5.3.0 features (`extraSelectorLabels`, COMMAND probes, `templateEvaluation`, templateable label keys): no consumer in the repo; nothing to do.
 
@@ -95,4 +95,4 @@ this item was executed; this session verified the live result and closed the fol
 - relates_to [[k8s-workloads]]
 - relates_to [[networking]]
 - relates_to [[AD-025-app-template-chart-generated-cnps]]
-- relates_to [[app-template-chart-cnp-migration]]
+- relates_to [[docs/progress/app-template-chart-cnp-migration]]

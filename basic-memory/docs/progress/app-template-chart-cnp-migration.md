@@ -11,7 +11,7 @@ tags:
 
 # Progress — app-template-chart-cnp-migration (AD-025 execution)
 
-Executes roadmap item [[app-template-chart-cnp-migration]] implementing
+Implements
 [[AD-025-app-template-chart-generated-cnps]]: move the per-app CNP of the 17 app-template apps
 from `app/ciliumnetworkpolicy.yaml` into HelmRelease `values.networkpolicies.main` (type: cilium),
 per batch = RETIRE commit (delete CNP + kustomization entry, Flux prunes) then ADD commit
@@ -22,6 +22,10 @@ per AD-025.
 ## Metadata (observation-form)
 
 - [status] done — all 3 batches executed 2026-10-13; 17/17 app-template apps on chart-generated CNPs
+- [closed] 2026-10-14
+- [priority] medium
+- [effort] M — 3 commits per batch, 3 batches, Hubble verification per batch
+- [roadmap] merged into this note — the docs/roadmap/app-template-chart-cnp-migration note was deleted on closure; design rationale now lives in the section below
 - [area] k8s-workloads / networking
 - [created] 2026-10-13
 - [branch] main
@@ -158,3 +162,39 @@ resticprofile 01:00 local backup succeeded 01:02:08+02:00. POLICY_DENIED counter
 since 2026-10-13 20:43:30Z — no new drops under the chart-generated CNPs. This closes the
 overnight-run follow-up. The recyclarr @daily failure in the same window is unrelated
 (Sonarr 5 upgrade 0b1e4a3fe, tracked separately).
+## Design rationale (merged from roadmap)
+
+Merged from docs/roadmap/app-template-chart-cnp-migration on closure (2026-10-14); that roadmap
+note was deleted. The planned batches live in the Batches section above; the roadmap frontmatter's
+[topic], [priority] and [effort] moved into Metadata above.
+
+### Inventory (verified against the repo 2026-10-13)
+
+- [observation] Egress-only CNPs (no ingress rules — a gap would be fail-closed): actual, backrest, calibre-web-automated, crowdsec-blocklist-import, homepage, paperless-gpt, pocket-id, resticprofile, sure (plus plex-trakt-sync — out of scope, see below).
+- [observation] CNPs with ingress rules (a gap was expected to be fail-open; measured fail-CLOSED — see the AD-025 update 2026-10-13 and the Maestro-verified correction above): cloudflare-tunnel, jellyfin, llama-cpp, paperless, prowlarr, qbittorrent, radarr, sonarr (plus plex — out of scope, see below).
+- [observation] Multi-controller releases: paperless (controllers paperless, backup — the CNP selects only paperless → `controller: paperless`); sure (server, worker — the CNP selects both via name only → `controllers: [server, worker]`).
+- [observation] Name-only selectors today: cloudflare-tunnel, crowdsec-blocklist-import, sure — the chart renders name+instance+controller (equivalent for the pods selected today).
+- [decision] plex and plex-trakt-sync are OUT of scope: both apps were removed entirely on 2026-10-13 (commit 573c7eeb5; orphaned Helm releases uninstalled, PVCs pruned). Scope is therefore 17 apps.
+
+### Procedure per batch (2 commits, retire → add, each pushed and reconciled before the next)
+
+A short CNP-less window between the two commits is accepted (user decision 2026-10-13, AD-025).
+
+1. **Retire** — delete every batch `ciliumnetworkpolicy.yaml` and its `app/kustomization.yaml` entry. Flux prunes the CNPs; until step 2 the pods run on the baseline + vocabulary CCNPs only (narrow-world egress fails closed, ingress-bearing pods fall back to their ingress vocabulary labels). Check: `kubectl get cnp -n <ns> <app>` → NotFound for the batch.
+2. **Add** — add `networkpolicies.main` (`type: cilium`, rules copied 1:1, split any rule that mixes peer kinds; `controller`/`controllers` for paperless and sure) to each HelmRelease; keep the AD-023 intent comment on the block. Local gates before commit: `helm template` of each release with the 5.3.0 chart and a diff of the rendered CNP spec against the deleted file (only the selector shape may differ), pre-commit. Push step 2 right after step 1 reconciles, to keep the window short. Check after reconcile: each HR Ready, `kubectl get cnp -n <ns> <app>` exists, Valid, labelled `app.kubernetes.io/managed-by: Helm`.
+
+After step 2: `just k8s show-cnp-matrix` (each batch app shows its APP-CNP under the release name) + `just k8s hubble-live-capture 120` and `just k8s hubble-analyze <app label> DROPPED egress|ingress` for the batch pods; a startup-time app-log check for the narrow-world apps. Rollback = revert.
+
+### Acceptance criteria (all MET — see Outcome and Post-verification above)
+
+- [criterion] No `ciliumnetworkpolicy.yaml` remains under an app-template app (plex and plex-trakt-sync excluded — removed with the apps). — MET: tree check 2026-10-13; no hand-written CNP remained per the 2026-10-14 post-verification.
+- [criterion] Every migrated app has exactly one live CNP named after its release, owned by Helm (`app.kubernetes.io/managed-by: Helm`). — MET: 17/17 render==live identical, all Valid (Post-verification 2026-10-14).
+- [criterion] `flux-local test` green on every PR/commit; zero new policy-denied DROPPED flows attributable to a batch app. — MET: flux-local 146 passed; POLICY_DENIED flat at 8094 since 2026-10-13 20:43:30Z.
+- [criterion] k8s-workloads skill scaffolding reference and the `docs/areas/k8s-workloads` canonical app shape updated to the chart-generated form (separate docs commit). — MET: see the Docs bullet under Outcome.
+
+### Related (carried over from the roadmap note)
+
+- implements [[AD-025-app-template-chart-generated-cnps]]
+- relates_to [[AD-023-cnp-threat-model-audit]]
+- relates_to [[k8s-workloads]]
+- relates_to [[networking]]
