@@ -125,7 +125,17 @@ Verified against upstream v3.9.0 `blocklist_import.py` and the repo; the plan wa
 
 ### Still open (M3)
 
-After the 2026-10-14 04:00 run: new gauge families present in the pushgateway and scraped; no Monty ERROR and no defaults-flip DEPRECATION in logs (once this change is live); sources_enabled == 9; no unexpected Cilium drops for the importer pod; all three new/changed rules loaded in Prometheus.
+Verified 2026-10-14 against the first post-change nightly run (job crowdsec-blocklist-import-29865720, 04:00, Complete in 37s) — logs + Prometheus, cross-checked independently by a second agent:
+
+- [verified] No Monty ERROR and no defaults-flip DEPRECATION in the run log — M1 effective.
+- [verified] 11/11 sources successful, all source_status=1, source_http_status=200, source_entries>0 (Spamhaus DROP 1682, Feodo 5, URLhaus 4928, Emerging Threats 530, Binary Defense 4188, Bruteforce Blocker 542, DShield 40, DShield Top Attackers 17, Botvrij 4, Cybercrime Tracker 478, VXVault 68); 8058 new IPs imported. All four new gauge families present.
+- [correction] The expected sources_enabled is 11, not 9: the 9 enabled ENABLE_* keys expand to 11 sources (ABUSE_CH = Feodo + URLhaus, DSHIELD = DShield + Top Attackers). sources_enabled was 11 at offset 1d and 3d too — unchanged by BLOCKLISTS_OPT_IN.
+- [verified] All four CrowdSecBlocklistImport* rules health=ok, state=inactive, no lastError.
+- [verified] Network: in the 03:50-04:10 window the only cluster-wide hubble_drop_total increase was ICMPv6 UNSUPPORTED_L3_PROTOCOL; zero POLICY_DENIED from the crowdsec namespace. The run already used the chart-generated CNP (commit 5171ea352, pushed 2026-10-13 22:09), so this also validates that migration for the importer.
+- [finding] `Unknown environment variable: ENABLE_FIREHOL=false` on every run: the v3.9.0 validator only knows ENABLE_FIREHOL_LEVEL1-3 (the master is still honoured by config, so all levels were off). Fixed in 9dce94667 by switching to the three explicit level keys. The earlier claim "all 22 registry switches explicit" was wrong: the registry keys are 22 incl. FIREHOL_LEVEL1-3 and DATA_SHIELD; DATA_SHIELD stays unset (opt-in only, off under every scheme — see M4 rejection).
+- [observation] URLhaus 23373 parse errors and DShield 93 / Top Attackers 16 are per-run counts (delete_from_gateway resets the job before each push), not cumulative. URLhaus ships URL/hostname entries that are not IPs, so the parse errors are structural and expected; the source still contributes 1402 IPs.
+- [open] FeedFrozen cannot fire before ~2026-10-19 (5d age gate); first firing (Botvrij expected) is investigate-first.
+- [out-of-scope] hubble_drop_total shows POLICY_DENIED egress from selfhosted sure-worker / sure-server / paperless to database/dragonfly-0 — unrelated to this item, to be looked at separately.
 
 ## Related
 
