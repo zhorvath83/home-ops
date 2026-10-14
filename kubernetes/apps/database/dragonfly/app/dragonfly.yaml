@@ -14,6 +14,8 @@ spec:
     - --proactor_threads=1
     - --maxmemory
     - 384mb
+    # no daily phone-home to version.dragonflydb.io (egress-denied by the cluster baseline; also stops anonymous telemetry)
+    - --version_check=false
     # never set --dbnum: the default 16 keeps SELECT 1 (paperless) and 2 (sure) valid
   authentication:
     passwordFromSecret:
