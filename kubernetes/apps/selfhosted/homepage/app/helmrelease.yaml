@@ -13,7 +13,7 @@ spec:
     defaultPodOptions:
       automountServiceAccountToken: true
       enableServiceLinks: false
-      # AD-023 vocabulary: envoy-routed (ingress-from-gateway-external + -internal CCNPs) + custom egress (the app's own ciliumnetworkpolicy.yaml)
+      # AD-023 vocabulary: envoy-routed (ingress-from-gateway-external + -internal CCNPs) + custom egress (chart-generated from values.networkpolicies.main below)
       labels:
         ingress.home.arpa/allow-gateway-external: "true"
         ingress.home.arpa/allow-gateway-internal: "true"

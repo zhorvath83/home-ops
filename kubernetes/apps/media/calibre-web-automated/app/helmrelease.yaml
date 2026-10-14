@@ -31,7 +31,7 @@ spec:
         annotations:
           reloader.stakater.com/auto: "true"
         # Molyhu metadata-provider DISABLED (AD-023 no-internet posture): the git-sync clone needs github.com egress.
-        # Re-enable with a github.com toFQDNs grant in ciliumnetworkpolicy.yaml AND uncomment the molyhu-repo/molyhu-provider
+        # Re-enable with a github.com toFQDNs grant in values.networkpolicies.main below AND uncomment the molyhu-repo/molyhu-provider
         # persistence volumes below (the app subPath-mounts moly_hu.py from them).
         # initContainers:
         #   01-clone-molyhu:
