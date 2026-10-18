@@ -17,7 +17,7 @@
       description: "Regex versioning for the llama.cpp CPU server image (server-b<build>)",
       matchDatasources: ["docker"],
       matchPackageNames: ["ghcr.io/ggml-org/llama.cpp"],
-      versioning: "regex:^server-b(?<major>\\d+)$",
+      versioning: "regex:^server-b(?<patch>\\d+)$",
     },
     {
       description: "Postgres major upgrades are a planned CNPG pg_upgrade (downtime + fresh dump), not a Renovate bump",
