@@ -154,7 +154,7 @@ spec:
                 subPath: config
               - path: /tmp
                 subPath: tmp
-    # paperless-gpt (AD-023): Mistral OCR + in-cluster paperless API + llama-cpp; DNS via allow-dns-egress CCNP.
+    # paperless-gpt (AD-023): Mistral OCR + in-cluster paperless API + llama-cpp + tiktoken vocab CDN; DNS via allow-dns-egress CCNP.
     networkpolicies:
       main:
         type: cilium
@@ -163,6 +163,14 @@ spec:
           - toFQDNs:
               - matchName: "mistral.ai"
               - matchPattern: "*.mistral.ai"
+            toPorts:
+              - ports:
+                  - port: "443"
+                    protocol: TCP
+          # tiktoken-go downloads the GPT-2 BPE vocab at first token count; without it
+          # langchaingo falls back to chars/4, which undercounts Hungarian and lets prompts overshoot TOKEN_LIMIT.
+          - toFQDNs:
+              - matchName: "openaipublic.blob.core.windows.net"
             toPorts:
               - ports:
                   - port: "443"
