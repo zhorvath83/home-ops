@@ -66,7 +66,9 @@ spec:
               # LLM Provider (for title/tag/correspondent generation): local ai/llama-cpp
               LLM_LANGUAGE: "Hungarian"
               LLM_PROVIDER: "openai"
-              LLM_MODEL: "qwen3.6-35b-a3b"
+              # llama.cpp ignores the request model field; this name only needs to map
+              # to a tiktoken encoding (o200k_base) so TOKEN_LIMIT counting works.
+              LLM_MODEL: "gpt-4o"
               OPENAI_BASE_URL: "http://llama-cpp.ai.svc.cluster.local:8080/v1"
               TOKEN_LIMIT: "5000"
             envFrom:
