@@ -18,6 +18,8 @@ groups:
     friendly_name: Paperless admins
   paperless_users:
     friendly_name: Paperless users
+  paperless_coparents:
+    friendly_name: Paperless co-parents
   sure_admins:
     friendly_name: Sure admins
   sure_users:
@@ -167,6 +169,7 @@ clients:
     groups:
       - paperless_admins
       - paperless_users
+      - paperless_coparents
   actual:
     friendly_name: Actual Budget
     gate: native
