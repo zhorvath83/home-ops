@@ -681,7 +681,17 @@ tests:
       - eval_time: 8641m
         alertname: CrowdSecBlocklistImportFeedFrozen
         exp_alerts: []
-  # (34) Exclusion pin: fixed-size DShield lists and Feodo Tracker are constant for 6d+ but must not
+  # (34) Current-presence pin: constant for 6d but the series ended at 8000m (feed disabled,
+  # Pushgateway job wiped), so it is stale at 8641m. Removing the instant-vector gate makes this fire.
+  - interval: 1m
+    input_series:
+      - series: 'blocklist_import_source_entries{job="crowdsec-blocklist-import",source="Botvrij"}'
+        values: '1000x8000'
+    alert_rule_test:
+      - eval_time: 8641m
+        alertname: CrowdSecBlocklistImportFeedFrozen
+        exp_alerts: []
+  # (35) Exclusion pin: fixed-size DShield lists and Feodo Tracker are constant for 6d+ but must not
   # fire; a non-excluded source in the same input still does. Removing the source matcher fails this.
   - interval: 1m
     input_series:
