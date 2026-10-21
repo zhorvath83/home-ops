@@ -691,7 +691,7 @@ tests:
       - eval_time: 8641m
         alertname: CrowdSecBlocklistImportFeedFrozen
         exp_alerts: []
-  # (35) Exclusion pin: fixed-size DShield lists and Feodo Tracker are constant for 6d+ but must not
+  # (35) Exclusion pin: fixed-size DShield lists are constant for 6d+ but must not
   # fire; a non-excluded source in the same input still does. Removing the source matcher fails this.
   - interval: 1m
     input_series:
@@ -699,8 +699,6 @@ tests:
         values: '40x8700'
       - series: 'blocklist_import_source_entries{job="crowdsec-blocklist-import",source="DShield Top Attackers"}'
         values: '17x8700'
-      - series: 'blocklist_import_source_entries{job="crowdsec-blocklist-import",source="Feodo Tracker"}'
-        values: '5x8700'
       - series: 'blocklist_import_source_entries{job="crowdsec-blocklist-import",source="Spamhaus DROP"}'
         values: '1680x8700'
     alert_rule_test:

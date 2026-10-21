@@ -54,7 +54,8 @@ spec:
               # Tier A only — confirmed-malicious infrastructure. Tier B/C stay disabled
               # and out of this change (roadmap Phase 5, evidence-gated).
               ENABLE_SPAMHAUS: "true"
-              ENABLE_ABUSE_CH: "true"
+              # abuse.ch moved URLhaus downloads behind an Auth-Key (410 Gone); Feodo stale since 2026-03.
+              ENABLE_ABUSE_CH: "false"
               ENABLE_EMERGING_THREATS: "true"
               ENABLE_BINARY_DEFENSE: "true"
               ENABLE_DSHIELD: "true"
@@ -145,8 +146,6 @@ spec:
           # Tier A feed sources — confirmed-malicious infrastructure blocklists only.
           - toFQDNs:
               - matchName: "www.spamhaus.org"
-              - matchName: "feodotracker.abuse.ch"
-              - matchName: "urlhaus.abuse.ch"
               - matchName: "rules.emergingthreats.net"
               - matchName: "www.binarydefense.com"
               - matchName: "binarydefense.com" # 301 redirect target of www.binarydefense.com/banlist.txt
