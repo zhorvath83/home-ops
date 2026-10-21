@@ -60,8 +60,9 @@ spec:
               ENABLE_DSHIELD: "true"
               ENABLE_BRUTEFORCE_BLOCKER: "true"
               ENABLE_CYBERCRIME_TRACKER: "true"
-              ENABLE_VXVAULT: "true"
-              ENABLE_BOTVRIJ: "true"
+              # Frozen upstream (Botvrij Last-Modified 2026-02-03, VXVault FireHOL mirror 2026-08-02).
+              ENABLE_VXVAULT: "false"
+              ENABLE_BOTVRIJ: "false"
               # Per-level keys: the ENABLE_FIREHOL master still works but v3.9.0 logs it as unknown.
               ENABLE_FIREHOL_LEVEL1: "false"
               ENABLE_FIREHOL_LEVEL2: "false"
@@ -153,7 +154,6 @@ spec:
               - matchName: "feeds.dshield.org"
               - matchName: "danger.rulez.sk"
               - matchName: "raw.githubusercontent.com"
-              - matchName: "www.botvrij.eu"
             toPorts:
               - ports:
                   - port: "443"
