@@ -150,7 +150,8 @@ FeedFrozen fired 2026-10-21 04:02 for Botvrij, DShield, DShield Top Attackers, F
 - [false-positive] DShield block.txt and top10-2.txt are fixed-size top-N lists: Last-Modified same day, source_ips 4-39 new per run while the count stays 40/17. The size-based frozen premise does not hold for them; excluded via source!~"DShield.*|Feodo Tracker" on the first operand.
 - [decision] Human approved 2026-10-21: disable Botvrij + VXVault, name-exclude DShield* + Feodo Tracker. Rejected a content-change signal on source_ips (noisy from 24h decision-expiry re-imports, needs subqueries).
 - [verified] just k8s test-prom-rules green incl. new case 34 (exclusion pin: DShield/Top Attackers/Feodo constant do not fire, Spamhaus DROP constant does); mutation-verified (removing the matcher fails exactly case 34). kustomize build + pre-commit green.
-- [commits] 2417d9e00 (feeds), 1f89e61a1 (rule). Expected after deploy: sources_enabled 9 (was 11).
+- [commits] 2417d9e00 (feeds), 1f89e61a1 (rule), daf456b39 (presence gate). Expected after deploy: sources_enabled 9 (was 11).
+- [finding] Post-deploy: Botvrij/VXVault kept firing after being disabled — the 6d min/max_over_time windows keep matching a series until its samples age out (up to 6d). Fixed in daf456b39 with an instant-vector presence gate (and on (source) max by (source) (blocklist_import_source_entries)); test case 34 pins it, mutation-verified. The stale series still sit in the Pushgateway until the next 04:00 run wipes the job (delete_from_gateway), so the two alerts resolve after that run.
 
 ## Related
 
