@@ -681,3 +681,30 @@ tests:
       - eval_time: 8641m
         alertname: CrowdSecBlocklistImportFeedFrozen
         exp_alerts: []
+  # (34) Exclusion pin: fixed-size DShield lists and Feodo Tracker are constant for 6d+ but must not
+  # fire; a non-excluded source in the same input still does. Removing the source matcher fails this.
+  - interval: 1m
+    input_series:
+      - series: 'blocklist_import_source_entries{job="crowdsec-blocklist-import",source="DShield"}'
+        values: '40x8700'
+      - series: 'blocklist_import_source_entries{job="crowdsec-blocklist-import",source="DShield Top Attackers"}'
+        values: '17x8700'
+      - series: 'blocklist_import_source_entries{job="crowdsec-blocklist-import",source="Feodo Tracker"}'
+        values: '5x8700'
+      - series: 'blocklist_import_source_entries{job="crowdsec-blocklist-import",source="Spamhaus DROP"}'
+        values: '1680x8700'
+    alert_rule_test:
+      - eval_time: 8641m
+        alertname: CrowdSecBlocklistImportFeedFrozen
+        exp_alerts:
+          - exp_labels:
+              alertname: CrowdSecBlocklistImportFeedFrozen
+              severity: warning
+              source: Spamhaus DROP
+            exp_annotations:
+              summary: A blocklist-import feed looks frozen
+              description: |-
+                blocklist-import source Spamhaus DROP returned exactly 1680 raw entries on
+                every daily run for 6 days. A live threat feed changes size daily, so the upstream mirror
+                is probably stale (HTTP 200, old content). Investigate first: check the feed's
+                Last-Modified and publish cadence, then prune or disable it if it is abandoned.

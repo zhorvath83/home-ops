@@ -151,9 +151,11 @@ spec:
         # 6d, not longer: Prometheus retention is 7d. The offset presence gate needs >=5d of history,
         # so a new feed (or the first runs after an upgrade) cannot fire on a short constant window.
         # A failed run sets entries=0, which the `min > 0` gate excludes (SourceFailing owns that).
+        # DShield lists are fixed-size top-N (constant count, daily-changing content): size says nothing.
+        # debt: Feodo Tracker excluded because it shares ENABLE_ABUSE_CH with URLhaus, drop when upstream splits the switch.
         - alert: CrowdSecBlocklistImportFeedFrozen
           expr: |
-            min by (source) (min_over_time(blocklist_import_source_entries{job="crowdsec-blocklist-import"}[6d])) > 0
+            min by (source) (min_over_time(blocklist_import_source_entries{job="crowdsec-blocklist-import",source!~"DShield.*|Feodo Tracker"}[6d])) > 0
               and on (source)
             max by (source) (max_over_time(blocklist_import_source_entries{job="crowdsec-blocklist-import"}[6d]))
               == min by (source) (min_over_time(blocklist_import_source_entries{job="crowdsec-blocklist-import"}[6d]))
