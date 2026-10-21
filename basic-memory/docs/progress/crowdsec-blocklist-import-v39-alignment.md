@@ -139,6 +139,19 @@ Verified 2026-10-14 against the first post-change nightly run (job crowdsec-bloc
 - [open] FeedFrozen cannot fire before ~2026-10-19 (5d age gate); first firing (Botvrij expected) is investigate-first.
 - [out-of-scope] hubble_drop_total shows POLICY_DENIED egress from selfhosted sure-worker / sure-server / paperless to database/dragonfly-0 — unrelated to this item, to be looked at separately.
 
+
+### First FeedFrozen firing — investigated 2026-10-21
+
+FeedFrozen fired 2026-10-21 04:02 for Botvrij, DShield, DShield Top Attackers, Feodo Tracker, VXVault (Top Attackers later resolved when its count moved 17->13). Evidence (Prometheus 7d source_entries/source_ips, feed Last-Modified headers, job crowdsec-blocklist-import-29875800 log):
+
+- [finding] Botvrij: ioclist.ip-dst.raw Last-Modified 2026-02-03, 4 IPs, 0 new per run — abandoned. Disabled (ENABLE_BOTVRIJ false), www.botvrij.eu dropped from the CNP.
+- [finding] VXVault: the importer fetches the FireHOL mirror raw.githubusercontent.com/firehol/blocklist-ipsets/master/vxvault.ipset, Source File Date 2026-08-02 — frozen. Disabled (ENABLE_VXVAULT false). raw.githubusercontent.com stays in the CNP (Cybercrime Tracker uses the FireHOL mirror too).
+- [finding] Feodo Tracker: ipblocklist.txt "Last updated: 2026-03-04", 5 IPs, 0 new — effectively dead, but upstream v3.9.0 wires Feodo + URLhaus to the single enable_abuse_ch key (blocklist_import.py L274-289), so it cannot be disabled without losing URLhaus. Excluded from FeedFrozen with a debt: marker (drop when upstream splits the switch).
+- [false-positive] DShield block.txt and top10-2.txt are fixed-size top-N lists: Last-Modified same day, source_ips 4-39 new per run while the count stays 40/17. The size-based frozen premise does not hold for them; excluded via source!~"DShield.*|Feodo Tracker" on the first operand.
+- [decision] Human approved 2026-10-21: disable Botvrij + VXVault, name-exclude DShield* + Feodo Tracker. Rejected a content-change signal on source_ips (noisy from 24h decision-expiry re-imports, needs subqueries).
+- [verified] just k8s test-prom-rules green incl. new case 34 (exclusion pin: DShield/Top Attackers/Feodo constant do not fire, Spamhaus DROP constant does); mutation-verified (removing the matcher fails exactly case 34). kustomize build + pre-commit green.
+- [commits] 2417d9e00 (feeds), 1f89e61a1 (rule). Expected after deploy: sources_enabled 9 (was 11).
+
 ## Related
 
 - relates_to [[crowdsec-blocklist-import]]
