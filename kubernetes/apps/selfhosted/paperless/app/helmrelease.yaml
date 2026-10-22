@@ -39,7 +39,7 @@ spec:
           app:
             image: &image
               repository: ghcr.io/paperless-ngx/paperless-ngx
-              tag: 3.3.3@sha256:4097c7925229c1fd6c2a5230d50ba0e056fb9dde076a08654f5c19ae88dff7db
+              tag: 3.3.4@sha256:b3f480cc5a8beb3ad45cb484b7c606f93240ae58fbfaf4f609be1cfa248267e8
             env:
               # Application settings
               PAPERLESS_TIME_ZONE: "Europe/Budapest"
