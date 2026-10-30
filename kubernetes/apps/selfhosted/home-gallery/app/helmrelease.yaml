@@ -59,7 +59,7 @@ spec:
           app:
             image:
               repository: xemle/home-gallery
-              tag: latest@sha256:93551cb6cf9b42a6fa39224348599b1cec9b1797dd78b3c0e4c5bddfdae36c05
+              tag: latest@sha256:1a07854b0e251525316aa67deb64e9d632cf6b003c6d1ce58df7afecf383ff96
             env:
               # Disable browser opening (not needed in container)
               - name: GALLERY_OPEN_BROWSER
