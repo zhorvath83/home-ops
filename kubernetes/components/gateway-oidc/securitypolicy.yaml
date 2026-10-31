@@ -18,8 +18,11 @@ spec:
   mergeType: StrategicMerge
   oidc:
     provider:
-      # Pocket ID has one issuer for every client; the endpoints come from discovery.
+      # Explicit endpoints skip discovery: EG never retries a failed fetch, so a boot-time 503 stuck every policy Invalid.
       issuer: "https://idm.${PUBLIC_DOMAIN}"
+      authorizationEndpoint: "https://idm.${PUBLIC_DOMAIN}/authorize"
+      tokenEndpoint: "https://idm.${PUBLIC_DOMAIN}/api/oidc/token"
+      endSessionEndpoint: "https://idm.${PUBLIC_DOMAIN}/api/oidc/end-session"
     clientIDRef:
       name: ${APP}-oidc-secret
     clientSecret:
