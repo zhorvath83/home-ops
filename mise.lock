@@ -662,7 +662,7 @@ url_api = "https://api.github.com/repos/siderolabs/talos/releases/assets/6475477
 provenance = "cosign"
 
 [[tools."aqua:terraform-linters/tflint"]]
-version = "0.64.0"
+version = "0.65.0"
 backend = "aqua:terraform-linters/tflint"
 
 [tools."aqua:terraform-linters/tflint"."platforms.linux-arm64"]
