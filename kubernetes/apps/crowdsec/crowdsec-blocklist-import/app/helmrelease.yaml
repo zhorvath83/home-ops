@@ -33,6 +33,8 @@ spec:
         cronjob:
           schedule: "0 4 * * *"
           concurrencyPolicy: Forbid
+          # Chart default is 30s, which drops the missed run after node downtime; decisions expire in 24h.
+          startingDeadlineSeconds: 86400
           backoffLimit: 3
           successfulJobsHistory: 1
           failedJobsHistory: 3
