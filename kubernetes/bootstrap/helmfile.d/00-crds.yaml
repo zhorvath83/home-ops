@@ -18,8 +18,7 @@ helmDefaults:
 releases:
   - name: envoy-gateway
     namespace: networking
-    chart: oci://mirror.gcr.io/envoyproxy/gateway-helm
-    # renovate: registryUrl=https://mirror.gcr.io/envoyproxy chart=gateway-helm
+    chart: oci://docker.io/envoyproxy/gateway-helm
     version: v1.9.1
 
   - name: kube-prometheus-stack
