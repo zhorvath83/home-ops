@@ -34,7 +34,7 @@ spec:
           app:
             image:
               repository: ghcr.io/cloudnative-pg/postgresql
-              tag: 18-standard-trixie@sha256:d72ace96f5803b12c341bb5dac48532e8c1f92f69e8a717a59d779bfc038dea9
+              tag: 18-standard-trixie@sha256:39add80f5b1e573e2f6b641c66fd1a2f8dede67ca0330e870285bc1078551390
             env:
               PGPASSWORD:
                 valueFrom:
