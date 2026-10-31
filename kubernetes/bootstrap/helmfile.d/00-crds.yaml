@@ -25,7 +25,7 @@ releases:
     namespace: observability
     chart: oci://ghcr.io/prometheus-community/charts/kube-prometheus-stack
     # renovate: registryUrl=https://ghcr.io/prometheus-community/charts chart=kube-prometheus-stack
-    version: 92.11.0
+    version: 92.16.1
 
   - name: grafana-operator
     namespace: observability
