@@ -25,7 +25,7 @@ pipx.uvx = true
 "aqua:casey/just" = "1.59.0"
 
 # Kubernetes — bare name kept: aqua 3-part path (kubernetes/kubernetes/kubectl) breaks Renovate
-kubectl = "1.37.1"
+kubectl = "1.37.2"
 
 # Observability (Cilium Hubble) — CLI matches cluster cilium minor; -P auto port-forwards to hubble-relay
 "aqua:cilium/hubble" = "1.20.2"
