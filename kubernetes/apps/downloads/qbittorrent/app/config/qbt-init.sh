@@ -7,7 +7,7 @@ IPFILTER_FILE="/ipfilter/ipfilter.dat"
 IPFILTER_URL="https://github.com/DavidMoore/ipfilter/releases/download/lists/ipfilter.dat.gz"
 # --- Download ipfilter ---
 echo "Downloading ipfilter.dat..."
-if curl --silent --location --fail --retry 5 --retry-all-errors --retry-delay 5 "${IPFILTER_URL}" | gunzip > "${IPFILTER_FILE}" 2>/dev/null; then
+if curl --silent --location --fail --retry 5 --retry-all-errors --retry-delay 15 "${IPFILTER_URL}" | gunzip > "${IPFILTER_FILE}" 2>/dev/null; then
   LINE_COUNT=$(wc -l < "${IPFILTER_FILE}")
   echo "ipfilter.dat downloaded (${LINE_COUNT} lines)."
 else
