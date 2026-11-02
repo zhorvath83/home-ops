@@ -38,7 +38,7 @@ spec:
           app:
             image: &image
               repository: ghcr.io/we-promise/sure
-              tag: 0.7.5-hotfix.2@sha256:aa46be2d8e3f8b2182261dc05933a64b4a12543dd5f44ad12f08868caac1f997
+              tag: 0.7.6@sha256:e830f1a91f9d57960427e0aebda2b48f299669e3744aa93da11e7d1b1cdbc987
             # Ruby's Dir.tmpdir rejects the world-writable, non-sticky emptyDir; give it an
             # owner-only dir, then hand off to the image entrypoint (db:prepare + server).
             command:
