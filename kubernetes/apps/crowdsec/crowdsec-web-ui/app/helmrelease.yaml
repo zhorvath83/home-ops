@@ -34,7 +34,7 @@ spec:
             image:
               # renovate: datasource=docker depName=ghcr.io/theduffman85/crowdsec-web-ui
               repository: ghcr.io/theduffman85/crowdsec-web-ui
-              tag: 2026.10.13@sha256:3b7d608ea3fb1d8ecf12079c188f9a8c705c89cf03685db4a1b89303d8e17477
+              tag: 2026.11.3@sha256:54fabf0c6ac7895bd3b85971128145e54b4d84d9ec3276480d5abc4381a15afc
             env:
               CONFIG_SERVER_PORT: &port 3000
               CONFIG_UI_TIME_ZONE: "Europe/Budapest"
