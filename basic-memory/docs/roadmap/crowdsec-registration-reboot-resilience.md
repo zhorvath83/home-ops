@@ -28,7 +28,7 @@ options:
 ## Metadata (observation-form, schema validation)
 
 - [topic] CrowdSec registration idempotency across node reboot
-- [status] in-progress — implemented on main 2026-11-05 (commit 064001d38, option A+B+D); live-verified incl. a graceful node reboot; only AC1 on an ungraceful (in-place) restart remains
+- [status] in-progress — implemented on main 2026-11-05 (commit 064001d38, option A+B+D); live-verified incl. graceful node reboot and in-place sandbox restart (reuse path); only the live fallback-path check remains
 - [priority] high — single point of failure for all gateway traffic
 
 ## Incident (2026-11-05, measured)
@@ -133,6 +133,16 @@ options:
 - [finding] The 06:36Z incident kept the pod identities (Pending/Unknown, same UID). That points to an ungraceful restart (power loss, panic or watchdog), where kubelet never terminated the pods. Only that kind of event exercises the "reuse stored creds / suffix fallback" path live. M2 covers the logic; AC1 stays open until such an event happens or a deliberate hard power cut is done.
 - [noise] The remaining 503s on envoy-internal are `direct_response` on `httproute/media/jellyfin`, because the jellyfin Deployment is intentionally scaled to 0/0. This is unrelated.
 - [follow-up] Error/Completed husk pods from the reboots (seerr, onepassword-connect, k8tz, reloader, snapshot-controller, homepage, etc.) belong to the existing post-upgrade-pod-cleanup topic and are out of scope here.
+
+
+### In-place restart test (2026-11-05 19:18Z, `talosctl restart --namespace cri crowdsec/<pod>`)
+
+- [method] Restarting the pod sandbox (pause container) through Talos CRI makes kubelet recreate the sandbox with the same pod name and UID, so the init containers run again. This is the same shape as the 06:36Z incident, without a node reboot.
+- [verified] Agent `crowdsec-agent-hwtbz`: UID unchanged (bbc8e7d4...), init restartCount 0->1, init log "reusing stored LAPI credentials", Ready again in ~20s.
+- [verified] Appsec `crowdsec-appsec-7ff9769c7d-2x9ks`: UID unchanged (23227149...), init log "reusing stored LAPI credentials", Ready again in ~10s. No `ext_authz_error` on either gateway and no bouncer ERROR lines in the window.
+- [verified] M1 (sandbox-restart scope): the `/tmp_config` emptyDir survives sandbox recreation for the same UID. Path A works live.
+- [open] Path B live (no stored creds + name conflict) needs the creds file removed before a sandbox restart. `kubectl exec ... rm /tmp_config/local_api_credentials.yaml` was blocked by the agent permission gate and was left to the user. The logic is covered by M2 run1.
+- [status] AC1 — DONE for the reuse path; the fallback path is proven by M2 only.
 
 ## Related
 
