@@ -34,6 +34,11 @@ spec:
                 - "192.168.0.0/16"
                 - "10.0.0.0/8"
                 - "172.16.0.0/12"
+        # Every rollout leaves a stale agent/appsec machine behind; machines with alerts are kept by LAPI.
+        db_config:
+          flush:
+            agents_autodelete:
+              login_password: 7d
       profiles.yaml: |
         # Repeat offender ban grows 4h -> 8h -> 12h; GetDecisionsCount counts CAPI too.
         name: default_ip_remediation
@@ -215,6 +220,39 @@ spec:
   postRenderers:
     - kustomize:
         patches:
+          # Chart init re-registers under the pod name, so an in-place restart (node reboot) 403s
+          # "user already exist" forever: reuse valid stored creds, else fall back to a suffixed name.
+          - target:
+              name: crowdsec-(agent|appsec)
+            patch: |-
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                name: crowdsec-registration
+              spec:
+                template:
+                  spec:
+                    initContainers:
+                      - name: wait-for-lapi-and-register
+                        command:
+                          - sh
+                          - -c
+                          - |
+                            until nc "$$LAPI_HOST" "$$LAPI_PORT" -z; do echo waiting for lapi to start; sleep 5; done
+                            ln -sfn /staging/etc/crowdsec /etc/crowdsec
+                            CRED=/tmp_config/local_api_credentials.yaml
+                            if [ -s "$$CRED" ]; then
+                              cp "$$CRED" /etc/crowdsec/local_api_credentials.yaml
+                              if cscli lapi status >/dev/null 2>&1; then echo "reusing stored LAPI credentials"; exit 0; fi
+                              echo "stored LAPI credentials rejected, registering again"
+                            fi
+                            out=$$(cscli lapi register --machine "$$USERNAME" -u "$$LAPI_URL" --token "$$REGISTRATION_TOKEN" 2>&1); rc=$$?
+                            echo "$$out"
+                            if [ "$$rc" -ne 0 ]; then
+                              case "$$out" in *"already exist"*) ;; *) exit 1 ;; esac
+                              cscli lapi register --machine "$$USERNAME-$$(od -An -N4 -tx1 /dev/urandom | tr -d ' \n')" -u "$$LAPI_URL" --token "$$REGISTRATION_TOKEN" || exit 1
+                            fi
+                            cp /etc/crowdsec/local_api_credentials.yaml "$$CRED"
           - target:
               kind: Deployment
               name: crowdsec-lapi
