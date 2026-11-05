@@ -1,9 +1,9 @@
 ---
 title: crowdsec-registration-reboot-resilience
 type: roadmap
-permalink: docs/roadmap/crowdsec-registration-reboot-resilience
+permalink: docs/progress/crowdsec-registration-reboot-resilience
 topic: CrowdSec agent/appsec LAPI registration survives an in-place pod restart
-status: in-progress
+status: done
 priority: high
 scope: Make the agent and appsec wait-for-lapi-and-register init step idempotent so
   a node reboot (pod restarted in place, same name) no longer crashloops on "user
@@ -28,7 +28,8 @@ options:
 ## Metadata (observation-form, schema validation)
 
 - [topic] CrowdSec registration idempotency across node reboot
-- [status] in-progress — implemented on main 2026-11-05 (commit 064001d38, option A+B+D); live-verified incl. graceful node reboot and in-place sandbox restart (reuse path); only the live fallback-path check remains
+- [status] done — implemented on main 2026-11-05 (commit 064001d38, option A+B+D); live-verified: graceful node reboot, in-place sandbox restart (reuse path) and the no-creds name-conflict fallback path
+- [moved_from] docs/roadmap/crowdsec-registration-reboot-resilience (completed 2026-11-05)
 - [priority] high — single point of failure for all gateway traffic
 
 ## Incident (2026-11-05, measured)
@@ -143,6 +144,13 @@ options:
 - [verified] M1 (sandbox-restart scope): the `/tmp_config` emptyDir survives sandbox recreation for the same UID. Path A works live.
 - [open] Path B live (no stored creds + name conflict) needs the creds file removed before a sandbox restart. `kubectl exec ... rm /tmp_config/local_api_credentials.yaml` was blocked by the agent permission gate and was left to the user. The logic is covered by M2 run1.
 - [status] AC1 — DONE for the reuse path; the fallback path is proven by M2 only.
+
+
+### Fallback path live test (2026-11-05 19:20Z)
+
+- [verified] The user removed `/tmp_config/local_api_credentials.yaml` from `crowdsec-appsec-7ff9769c7d-2x9ks`, then the sandbox was restarted in place (UID 23227149... unchanged). Init log: `403 ... user 'crowdsec-appsec-7ff9769c7d-2x9ks': user already exist` -> "Successfully registered" as `crowdsec-appsec-7ff9769c7d-2x9ks-bfe0f070`. Ready again in ~21s, first heartbeat at 19:22:11Z. No `ext_authz_error` on either gateway, zero bouncer ERRORs, and live requests answer 302. This exact incident shape now self-heals.
+- [note] The previous record `crowdsec-appsec-7ff9769c7d-2x9ks` is now stale and is removed by agents_autodelete after 7d.
+- [status] All acceptance criteria are closed (AC1 both paths live, AC2-AC5 as above). Roadmap item DONE.
 
 ## Related
 
