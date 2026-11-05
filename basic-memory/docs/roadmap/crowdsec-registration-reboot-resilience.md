@@ -28,7 +28,7 @@ options:
 ## Metadata (observation-form, schema validation)
 
 - [topic] CrowdSec registration idempotency across node reboot
-- [status] in-progress — implemented on main 2026-11-05 (commit 064001d38, option A+B+D); live-verified; only AC1 on a real node reboot remains
+- [status] in-progress — implemented on main 2026-11-05 (commit 064001d38, option A+B+D); live-verified incl. a graceful node reboot; only AC1 on an ungraceful (in-place) restart remains
 - [priority] high — single point of failure for all gateway traffic
 
 ## Incident (2026-11-05, measured)
@@ -124,6 +124,15 @@ options:
 - [follow-up] A rollout of the crowdsec-lapi Deployment (`strategy: Recreate`, 1 replica, RWO PVC) gives a short fail-closed 503 window on envoy-internal. Measured as 16:43:28-16:43:30Z during this deploy. This is pre-existing; worth its own item if it matters.
 - [follow-up] The `flux` CLI does not run on the workstation: the mise lock for `aqua:fluxcd/flux2@2.10.0` still points at the 2.9.6 download URL, and `mise lock` regenerates it.
 - [follow-up] BlackboxProbeFailed on `nas.lan:2049` (NFS) since 06:44Z is unrelated to this item.
+
+
+### Reboot test (2026-11-05 18:13Z, `just talos reboot-node k8s-cp0`, mode powercycle)
+
+- [verified] After the reboot the service is healthy: live requests through 192.168.1.18 answer 302, envoy-internal logs zero `ext_authz_error` since its restart, and the bouncer logs no ERROR lines. No crowdsec or envoy alerts are firing. The new machines `crowdsec-agent-hwtbz` and `crowdsec-appsec-7ff9769c7d-2x9ks` are heartbeating.
+- [finding] This graceful powercycle did NOT reproduce the in-place scenario for crowdsec. kubelet graceful shutdown terminated the agent, appsec and lapi pods (phase Succeeded, finished 18:13:49Z), and the controllers created new pods with new names, which registered normally. The husks `crowdsec-appsec-7ff9769c7d-g5dzr` and `crowdsec-lapi-7996dcbddc-dcx5m` stay as Completed. Some pods did restart in place, e.g. envoy-internal (startTime 2026-10-31).
+- [finding] The 06:36Z incident kept the pod identities (Pending/Unknown, same UID). That points to an ungraceful restart (power loss, panic or watchdog), where kubelet never terminated the pods. Only that kind of event exercises the "reuse stored creds / suffix fallback" path live. M2 covers the logic; AC1 stays open until such an event happens or a deliberate hard power cut is done.
+- [noise] The remaining 503s on envoy-internal are `direct_response` on `httproute/media/jellyfin`, because the jellyfin Deployment is intentionally scaled to 0/0. This is unrelated.
+- [follow-up] Error/Completed husk pods from the reboots (seerr, onepassword-connect, k8tz, reloader, snapshot-controller, homepage, etc.) belong to the existing post-upgrade-pod-cleanup topic and are out of scope here.
 
 ## Related
 
