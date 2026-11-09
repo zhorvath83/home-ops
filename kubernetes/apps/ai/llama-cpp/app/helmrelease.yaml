@@ -57,7 +57,7 @@ spec:
           app:
             image:
               repository: ghcr.io/ggml-org/llama.cpp
-              tag: server-b12124@sha256:c0a11067c72bb1eb330b8bddbf9869274c195e596bf4fae55fd527102e644b85
+              tag: server-b12211@sha256:30300ecfcb7ef05dc9413867dd7d03c9ce66eef00fec3576a6a15e9bf2b0bae7
             args:
               - --model
               - /models/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf
