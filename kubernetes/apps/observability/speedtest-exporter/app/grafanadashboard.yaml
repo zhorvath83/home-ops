@@ -11,4 +11,4 @@ spec:
   folderRef: observability
   # heathcliff26 dashboard: no grafana.com inputs — datasource/instance variables resolve via
   # the Grafana default datasource (our Prometheus) and the speedtest-exporter job label.
-  url: https://grafana.com/api/dashboards/20115/revisions/4/download
+  url: https://grafana.com/api/dashboards/20115/revisions/5/download
