@@ -5,11 +5,11 @@
 # language="Any". This reconciler idempotently sets SQP-1's Preferred Language to "Any" right after
 # each recyclarr sync so the Hungarian CF (+9900) can score HUN dubs instead of being hard-gated
 # by the "Original Language (French) is wanted, but found Hungarian" rejection. Remove this script
-# (and the helmrelease command wrapper) when recyclarr ships a language YAML override.
+# (and the helmrelease container) when recyclarr ships a language YAML override.
 #
-# Runtime: recyclarr pod (Alpine) — bash + BusyBox wget + bash /dev/tcp; no curl/jq available, so
-# GET uses wget and the PUT is sent over a raw /dev/tcp socket. The host/port must match the
-# radarr base_url in /config/recyclarr.yml.
+# Runtime: alpine/k8s container (bash + curl + jq), started after the recyclarr sync init
+# container succeeded. JSON is parsed with jq, never by text layout: Radarr 7.0.2 switched API
+# responses from indented to compact JSON (Radarr commit 479b6f2a1).
 set -euo pipefail
 
 RADARR_HOST="radarr.downloads.svc.cluster.local"  # must match /config/recyclarr.yml radarr.base_url
@@ -20,60 +20,60 @@ ANY_NAME="Any"
 
 : "${RADARR_API_KEY:?RADARR_API_KEY env not set}"
 API_BASE="http://${RADARR_HOST}:${RADARR_PORT}/api/v3"
-HDR="X-Api-Key: ${RADARR_API_KEY}"
 
-tmp="$(mktemp -d)"
-trap 'rm -rf "$tmp"' EXIT
+# Call the Radarr API, print the response body, exit 1 with a message on a transport error or non-2xx.
+api() {
+  local method="$1" path="$2" data="${3:-}" resp code body
+  local args=(-sS -X "$method" -H "X-Api-Key: ${RADARR_API_KEY}" -w '\n%{http_code}')
+  [ -n "$data" ] && args+=(-H "Content-Type: application/json" --data-binary "$data")
+  if ! resp=$(curl "${args[@]}" "${API_BASE}${path}" 2>&1); then
+    echo "ERROR: ${method} ${path} -> request failed: ${resp}" >&2
+    exit 1
+  fi
+  code="${resp##*$'\n'}"
+  body="${resp%$'\n'*}"
+  if ! [[ "$code" =~ ^2[0-9][0-9]$ ]]; then
+    echo "ERROR: ${method} ${path} -> HTTP ${code}: ${body:0:300}" >&2
+    exit 1
+  fi
+  printf '%s' "$body"
+}
 
-# Locate SQP-1's profile id by name. Radarr pretty-prints JSON; in each top-level object the
-# 4-space-indent "name" precedes the 4-space-indent "id", and nested ids (items[].quality.id) sit
-# at deeper indent, so the first ^    "id": after the matching name line is the profile id.
-wget -qO "$tmp/arr.json" --header "$HDR" "${API_BASE}/qualityProfile"
-name_line=$(grep -nF "    \"name\": \"${PROFILE_NAME}\"" "$tmp/arr.json" | head -1 | cut -d: -f1)
-if [ -z "$name_line" ]; then
-  echo "ERROR: Radarr quality profile '${PROFILE_NAME}' not found" >&2
+# Parse with jq; exit 1 with a message instead of a silent set -e abort on invalid JSON.
+jqOrDie() {
+  local label="$1" input="$2"; shift 2
+  local out
+  if ! out=$(jq -er "$@" <<<"$input" 2>&1); then
+    echo "ERROR: ${label}: ${out:-no match}" >&2
+    exit 1
+  fi
+  printf '%s' "$out"
+}
+
+profiles=$(api GET /qualityProfile)
+# shellcheck disable=SC2016 # $n, $id, $name are jq --arg bindings, not shell variables
+ids=$(jqOrDie "profile lookup" "$profiles" --arg n "$PROFILE_NAME" '[.[] | select(.name == $n) | .id] | if length == 0 then error("quality profile not found") else map(tostring) | join(" ") end')
+if [ "$(wc -w <<<"$ids")" -ne 1 ]; then
+  echo "ERROR: '${PROFILE_NAME}' matches several profiles (ids: ${ids})" >&2
   exit 1
 fi
-profile_id=$(awk -v n="$name_line" 'NR>n && /^    "id": [0-9]/ {match($0,/[0-9]+/); print substr($0,RSTART,RLENGTH); exit}' "$tmp/arr.json")
-if [ -z "$profile_id" ]; then
-  echo "ERROR: could not extract id for '${PROFILE_NAME}'" >&2
-  exit 1
+profile_id="$ids"
+
+profile=$(api GET "/qualityProfile/${profile_id}")
+current=$(jqOrDie "language read" "$profile" '.language.name // "unset"')
+if [ "$current" = "$ANY_NAME" ]; then
+  echo "OK: '${PROFILE_NAME}' (id=${profile_id}) language already ${ANY_NAME}, nothing to do"
+  exit 0
 fi
 
-# GET the single profile and guard against id drift (the extracted id must still name SQP-1).
-wget -qO "$tmp/prof.json" --header "$HDR" "${API_BASE}/qualityProfile/${profile_id}"
-got_name=$(awk -F'"' '/"name":/ {print $4; exit}' "$tmp/prof.json")
-if [ "$got_name" != "$PROFILE_NAME" ]; then
-  echo "ERROR: id=${profile_id} resolved to '${got_name}', expected '${PROFILE_NAME}'" >&2
+# shellcheck disable=SC2016 # $n, $id, $name are jq --arg bindings, not shell variables
+updated=$(jqOrDie "language rewrite" "$profile" --argjson id "$ANY_ID" --arg name "$ANY_NAME" '.language = {id: $id, name: $name}')
+api PUT "/qualityProfile/${profile_id}" "$updated" >/dev/null
+echo "PUT /qualityProfile/${profile_id} -> 2xx (language ${current} -> ${ANY_NAME})"
+
+verify=$(jqOrDie "verify read" "$(api GET "/qualityProfile/${profile_id}")" '.language.name // "unset"')
+if [ "$verify" != "$ANY_NAME" ]; then
+  echo "ERROR: post-PUT language is '${verify}', expected '${ANY_NAME}'" >&2
   exit 1
 fi
-
-# Rewrite the language field to "Any". The profile has exactly one "language": {...} (flat
-# object); collapse newlines so the multi-line block matches a single sed, then PUT it back whole.
-tr -d '\n' < "$tmp/prof.json" \
-  | sed "s/\"language\":[[:space:]]*{[^}]*}/\"language\":{\"id\":${ANY_ID},\"name\":\"${ANY_NAME}\"}/" \
-  > "$tmp/put.json"
-
-# PUT the modified profile over a raw TCP socket (BusyBox wget cannot do PUT).
-body_len=$(wc -c < "$tmp/put.json" | tr -d '[:space:]')
-put_status=$(
-  exec 3<>/dev/tcp/"${RADARR_HOST}"/"${RADARR_PORT}" 2>/dev/null || { echo CONNECT_FAIL; exit; }
-  printf 'PUT /api/v3/qualityProfile/%s HTTP/1.1\r\nHost: %s\r\n%s\r\nContent-Type: application/json\r\nContent-Length: %s\r\nConnection: close\r\n\r\n' \
-    "$profile_id" "$RADARR_HOST" "$HDR" "$body_len" >&3
-  cat "$tmp/put.json" >&3
-  IFS=' ' read -r _ code _ <&3
-  printf '%s' "$code"
-)
-case "$put_status" in
-  2*) echo "PUT /qualityProfile/${profile_id} -> ${put_status} (language set to ${ANY_NAME})" ;;
-  *) echo "ERROR: PUT returned status '${put_status}'" >&2; exit 1 ;;
-esac
-
-# Verify the language actually landed on "Any".
-wget -qO "$tmp/verify.json" --header "$HDR" "${API_BASE}/qualityProfile/${profile_id}"
-verify_lang=$(awk '/"language":/ {f=1; next} f && /"name":/ {gsub(/.*"name": *"|" *.*/,""); print; exit}' "$tmp/verify.json")
-if [ "$verify_lang" != "$ANY_NAME" ]; then
-  echo "ERROR: post-PUT language is '${verify_lang}', expected '${ANY_NAME}'" >&2
-  exit 1
-fi
-echo "OK: '${PROFILE_NAME}' language=${verify_lang}"
+echo "OK: '${PROFILE_NAME}' language=${verify}"
