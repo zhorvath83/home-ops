@@ -35,7 +35,7 @@ spec:
             image:
               # renovate: datasource=docker depName=ghcr.io/cenodude/crosswatch
               repository: ghcr.io/cenodude/crosswatch
-              tag: 0.14.2@sha256:7c79553e0bb74008d97061681c18a73cdf7ba5ee712664f3c1b80a37c09e966d
+              tag: 0.14.4@sha256:6c6d70cc8f8a7fc7d5657c4b9c4380ee96520b8e16c7b86a243df022c73a5eaf
             env:
               WEB_PORT: &port 8787
               RUNTIME_DIR: /config
