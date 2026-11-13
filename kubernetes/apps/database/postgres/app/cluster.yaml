@@ -6,7 +6,7 @@ metadata:
 spec:
   # Shared Postgres for apps needing a real SQL server (currently sure only).
   # pg_dumpall for backups authenticates via the operator-managed postgres-superuser secret.
-  imageName: ghcr.io/cloudnative-pg/postgresql:18-standard-trixie@sha256:de572898499fab9406f0da51929da562f96f3be40ca79fafea8ec1a8d5b42065
+  imageName: ghcr.io/cloudnative-pg/postgresql:18-standard-trixie@sha256:23719505c7cc417b043ffd9998b44ab8d57fec1d92f0bf11b231a1754a5962f2
   instances: 1
   enableSuperuserAccess: true
   inheritedMetadata:
