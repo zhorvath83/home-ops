@@ -3,27 +3,27 @@
 # promtool unit tests for prometheusrules/tsdb-growth.yaml, covering PrometheusTSDBGrowthTrend
 # and PrometheusTSDBSpike.
 #
-# Trend expr: max by (job) (predict_linear(prometheus_tsdb_storage_blocks_bytes[3d], 7d))
+# Trend expr: predict_linear(max by (job) (prometheus_tsdb_storage_blocks_bytes)[3d:5m], 7d)
 #   > 0.9 * max by (job) (prometheus_tsdb_retention_limit_bytes)
 # Spike expr: max by (job) (delta(prometheus_tsdb_storage_blocks_bytes[1h])) > 100000000
 #
-# Constants: retention_limit_bytes = 4500 MiB = 4 718 592 000 (live-verified). Threshold =
+# Constants: retention_limit_bytes = 4500 MiB = 4 718 592 000 (fixture; live is 18GB). Threshold =
 # 0.9 * 4 718 592 000 = 4 246 732 800. The `max by (job)` on BOTH sides keeps the per-instance job
 # label as the only dimension; the alert inherits {job} + alertname + severity, so exp_labels
 # assert exactly that. Both input series in every trend group carry the same job label so the
 # vector match on job succeeds; a missing retention_limit series would empty the RHS and silence
-# the alert for every case, so it is present in all four trend groups.
+# the alert for every case, so it is present in every trend group.
 #
-# Trend arithmetic (1m eval): predict_linear(v[3d], 7d) at eval T regresses the samples in the
-# (T-3d, T] window and predicts 7d = 10 080 min ahead. For a perfect ramp v(t)=v0+r*t the OLS slope
-# is exactly r, so predict(T) = v(T) + r*10080. The [3d] range is wider than any test series here,
-# so the window simply holds every available sample — the regression is sound with as few as 2
-# points. For a flat series the slope is exactly 0, so predict = the flat value; that is what makes
+# Trend arithmetic (1m eval): the inner max by (job) merges all instances into one series, which
+# the [3d:5m] subquery samples every 5 min; predict_linear regresses those points and predicts
+# 7d = 10 080 min ahead. For a perfect ramp v(t)=v0+r*t the OLS slope is exactly r, so
+# predict(T) = v(T) + r*10080. The [3d] range is wider than any test series here, so the window
+# simply holds every available point — the regression is sound with as few as 2 points. For a flat series the slope is exactly 0, so predict = the flat value; that is what makes
 # the boundary cases float-safe (no epsilon from a slope term).
 #
 # (a) Fire: ramp v0=1.0e9, r=400 000/min -> predict(0) = 1.0e9 + 400000*10080 = 5.032e9 > 4.246e9
-#     from the first 2-sample regression, holds (ramp keeps rising), fires after for:30m at 30m,
-#     eval at 60m -> firing.
+#     from the first 2-point regression (t=5m), holds (ramp keeps rising), fires after for:30m at
+#     35m, eval at 60m -> firing.
 # (b) No-fire: flat 1.0e9 -> predict 1.0e9 < 4.246e9 -> no fire.
 # (c) Boundary no-fire (proves `>` strictness): flat EXACTLY at the threshold (4 246 732 800).
 #     predict = 4 246 732 800.0; RHS = 0.9*4 718 592 000 = 4 246 732 800.0001 (0.9 is slightly above
@@ -32,6 +32,9 @@
 # (d) Boundary fire: flat 4 246 732 900 (just +100 above the threshold). predict = 4 246 732 900 >
 #     4 246 732 800.0001 -> fire after for:30m, eval at 60m -> firing. Pairs with (c) to bracket the
 #     threshold.
+# (h) No-fire, pod-restart artifact: a 15-min instance gaining 28 MB predicted ~22 GB per-instance;
+#     merged at job level it is a flat series with one small step -> predict ~2.2e9 -> no fire.
+# (i) Fire across a restart: the (a) ramp moves to a new instance at t=301 -> still fires.
 #
 # Spike arithmetic (1m eval): delta(v[1h]) at eval T = last value in (T-60, T] minus first value in
 # (T-60, T]. The 2h-block natural persist is ~34 MB, so 100 MB/h is ~3x margin.
@@ -100,6 +103,43 @@ tests:
         values: '4718592000x61'
     alert_rule_test:
       - eval_time: 60m
+        alertname: PrometheusTSDBGrowthTrend
+        exp_alerts:
+          - exp_labels:
+              alertname: PrometheusTSDBGrowthTrend
+              severity: warning
+              job: kube-prometheus-stack-prometheus
+            exp_annotations:
+              description: Prometheus TSDB for job kube-prometheus-stack-prometheus is predicted to exceed 90% of the retention limit within 7 days.
+  # (h) No-fire (pod-restart artifact, regression 2026-11-13): pod A flat, a 15-min pod B whose
+  # block persist adds 28 MB, then pod C flat. A per-instance regression on B's 15 samples
+  # predicted ~22 GB and fired for 3d; the job-level series is flat with one small step.
+  - interval: 1m
+    input_series:
+      - series: 'prometheus_tsdb_storage_blocks_bytes{job="kube-prometheus-stack-prometheus",instance="a"}'
+        values: '1900000000x599 stale'
+      - series: 'prometheus_tsdb_storage_blocks_bytes{job="kube-prometheus-stack-prometheus",instance="b"}'
+        values: '_x600 1900000000+2000000x14 stale'
+      - series: 'prometheus_tsdb_storage_blocks_bytes{job="kube-prometheus-stack-prometheus",instance="c"}'
+        values: '_x615 1928000000x60'
+      - series: 'prometheus_tsdb_retention_limit_bytes{job="kube-prometheus-stack-prometheus"}'
+        values: '4718592000x675'
+    alert_rule_test:
+      - eval_time: 675m
+        alertname: PrometheusTSDBGrowthTrend
+        exp_alerts: []
+  # (i) Fire across a pod restart: the (a) ramp continues on a new instance. Guards that the
+  # job-level aggregation keeps detecting real growth when the instance label changes.
+  - interval: 1m
+    input_series:
+      - series: 'prometheus_tsdb_storage_blocks_bytes{job="kube-prometheus-stack-prometheus",instance="a"}'
+        values: '1000000000+400000x300 stale'
+      - series: 'prometheus_tsdb_storage_blocks_bytes{job="kube-prometheus-stack-prometheus",instance="b"}'
+        values: '_x301 1120400000+400000x59'
+      - series: 'prometheus_tsdb_retention_limit_bytes{job="kube-prometheus-stack-prometheus"}'
+        values: '4718592000x360'
+    alert_rule_test:
+      - eval_time: 360m
         alertname: PrometheusTSDBGrowthTrend
         exp_alerts:
           - exp_labels:

@@ -10,11 +10,11 @@ spec:
       rules:
         # Trend: predict the TSDB block-store size 7d out from a 3d regression and page when it
         # is headed for 90% of the retention limit. The Kör 1 retention-miscalc lesson, automated.
-        # max by (job) on both sides scopes away a stale churned-pod-IP series whose predict_linear
-        # returns garbage; the real per-instance job label is the surviving dimension.
+        # Aggregate BEFORE regressing: each pod restart opens a new instance series, and a
+        # per-instance predict_linear over a few minutes of samples extrapolates to garbage.
         - alert: PrometheusTSDBGrowthTrend
           expr: |
-            max by (job) (predict_linear(prometheus_tsdb_storage_blocks_bytes[3d], 7d))
+            predict_linear(max by (job) (prometheus_tsdb_storage_blocks_bytes)[3d:5m], 7d)
               > 0.9 * max by (job) (prometheus_tsdb_retention_limit_bytes)
           for: 30m
           labels:
