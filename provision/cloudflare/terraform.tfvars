@@ -13,19 +13,11 @@ dns_mx_records = {
     }
 }
 
-# Served via Cloudflare Workers
-mail_mta_sts_params = {
-  mode = "testing" # Sending MTA policy application, https://tools.ietf.org/html/rfc8461#section-5
-  max_age = 604800 # 1 week
-}
-
-# DMARC and MTA-STS reporting destinations
+# DMARC reporting destinations
 # Comma separated list of URIs
 mail_dmarc_rua_dest = ["mailto:35be510b@in.mailhardener.com"]
 
 mail_dmarc_ruf_dest = ["mailto:35be510b@in.mailhardener.com"]
-
-mail_tls_rua_dest = ["mailto:35be510b@in.mailhardener.com"]
 
 dns_spf_record_value = "v=spf1 include:zohomail.eu ~all"
 

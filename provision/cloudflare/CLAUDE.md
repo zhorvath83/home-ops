@@ -1,10 +1,10 @@
 # Cloudflare Terraform Guide
 
-This guide applies to `provision/cloudflare/`. It captures durable guardrails for the Cloudflare Terraform area; for current-state detail (zone, tunnel, Access apps, Workers, R2, mail-stack DNS, WAF, zone settings, notifications, claims, drift risk) read the Basic Memory area-reference `docs/areas/cloudflare` via the `basic-memory` MCP.
+This guide applies to `provision/cloudflare/`. It captures durable guardrails for the Cloudflare Terraform area; for current-state detail (zone, tunnel, Access apps, mail-stack DNS, WAF, zone settings, notifications, claims, drift risk) read the Basic Memory area-reference `docs/areas/cloudflare` via the `basic-memory` MCP.
 
 ## Scope
 
-Terraform files here are the source of truth for Cloudflare resources. State lives in Terraform Cloud (org `zhorvath83`, workspace `cloudflare`). File splits (`dns_records.tf`, `tunnel.tf`, `access.tf`, `workers.tf`, `firewall_rules.tf`, `zone_settings.tf`, `notification.tf`, `r2_bucket.tf`, `managed_transforms.tf`) reflect the current organization and should stay stable unless there is a clear reason to reshape them.
+Terraform files here are the source of truth for Cloudflare resources. State lives in Terraform Cloud (org `zhorvath83`, workspace `cloudflare`). File splits (`dns_records.tf`, `tunnel.tf`, `access.tf`, `firewall_rules.tf`, `zone_settings.tf`, `notification.tf`, `managed_transforms.tf`) reflect the current organization and should stay stable unless there is a clear reason to reshape them.
 
 ## Operating Rules
 

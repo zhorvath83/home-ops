@@ -209,11 +209,10 @@ resource "cloudflare_zero_trust_access_application" "private_cloud_photos" {
 ## Cloudflare Access needs one app per hostname; for_each emits each bypass app.
 locals {
   public_bypass_apps = {
-    "www"     = "Private website"
-    "mta-sts" = "MTA-STS policy"
-    "share"   = "File share"
-    "idm"     = "Identity Management"
-    "books"   = "Calibre"
+    "www"   = "Private website"
+    "share" = "File share"
+    "idm"   = "Identity Management"
+    "books" = "Calibre"
   }
 }
 

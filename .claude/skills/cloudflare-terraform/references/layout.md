@@ -8,8 +8,8 @@ Terraform configuration is split by concern, for example:
 
 - `dns_records.tf`
 - `tunnel.tf`
-- `workers.tf`
-- `redirects.tf`
+- `access.tf`
+- `firewall_rules.tf`
 - `zone_settings.tf`
 - supporting files such as `variables.tf`, `main.tf`, templates, and resource assets
 
