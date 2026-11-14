@@ -1,0 +1,30 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/gateway.envoyproxy.io/securitypolicy_v1alpha1.json
+# Replaces the Gateway's HU-only geo rule for this route (rules are not merged; extAuth is inherited).
+# clientCIDRs is rewritten from api.github.com/meta .hooks by .github/workflows/update-github-hooks-networks.yaml.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: github-webhook
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: github-webhook
+  mergeType: StrategicMerge
+  authorization:
+    defaultAction: Deny
+    rules:
+      - name: allow-github-hooks
+        action: Allow
+        principal:
+          clientCIDRs:
+            - 9.234.106.48/28
+            - 9.234.98.160/28
+            - 9.234.98.176/28
+            - 192.30.252.0/22
+            - 185.199.108.0/22
+            - 140.82.112.0/20
+            - 143.55.64.0/20
+            - 2a0a:a440::/29
+            - 2606:50c0::/32

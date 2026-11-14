@@ -152,7 +152,7 @@ tests:
   # (i) Boundary no-fire: not-Accepted but only for 2m — the 5m `for` hold not yet elapsed.
   - interval: 1m
     input_series:
-      - series: 'envoy_securitypolicy_info{exported_namespace="networking",name="envoy-external-crowdsec",accepted="False",reason="NoMatchingParent"}'
+      - series: 'envoy_securitypolicy_info{exported_namespace="networking",name="envoy-external-edge",accepted="False",reason="NoMatchingParent"}'
         values: '1x8'
     alert_rule_test:
       - eval_time: 2m
@@ -161,7 +161,7 @@ tests:
   # (j) Fire: Accepted condition False.
   - interval: 1m
     input_series:
-      - series: 'envoy_securitypolicy_info{exported_namespace="networking",name="envoy-external-crowdsec",accepted="False",reason="NoMatchingParent"}'
+      - series: 'envoy_securitypolicy_info{exported_namespace="networking",name="envoy-external-edge",accepted="False",reason="NoMatchingParent"}'
         values: '1x8'
     alert_rule_test:
       - eval_time: 7m
@@ -171,13 +171,13 @@ tests:
               alertname: EnvoyGatewayPolicyNotAccepted
               severity: warning
               exported_namespace: networking
-              name: envoy-external-crowdsec
+              name: envoy-external-edge
               accepted: "False"
               reason: NoMatchingParent
             exp_annotations:
               summary: Envoy Gateway SecurityPolicy is not accepted
               description: |-
-                SecurityPolicy envoy-external-crowdsec (namespace networking)
+                SecurityPolicy envoy-external-edge (namespace networking)
                 is not Accepted (accepted=False); it is silently detached and
                 its routes lose the Gateway-level CrowdSec / RFC1918 gates. The rejection
                 reason is in the envoy-gateway controller log.

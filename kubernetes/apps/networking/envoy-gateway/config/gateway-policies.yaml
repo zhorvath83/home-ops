@@ -113,6 +113,12 @@ spec:
         - Remote-Groups
         - Remote-Name
         - Remote-Sub
+        # The geoip filter sets these only on a lookup hit; a client-sent copy would match RBAC on a miss.
+        - x-eg-internal-geoip-country
+        - x-eg-internal-geoip-region
+        - x-eg-internal-geoip-city
+        - x-eg-internal-geoip-asn
+        - x-eg-internal-geoip-isp
     host:
       # "example.com." must not evade hostname-scoped route and admission matching.
       stripTrailingHostDot: true
@@ -334,19 +340,27 @@ spec:
           port: 8080
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/gateway.envoyproxy.io/securitypolicy_v1alpha1.json
-# Stage 2 of the CrowdSec rollout. Stands alone rather than merging into another policy
-# because envoy-external carries no other Gateway-level SecurityPolicy. Defense in depth
-# behind the Cloudflare WAF, and it covers the Pocket ID login page, which has no
-# route-level gate of its own.
+# One Gateway-level policy carries both gates (a second would be Overridden): HU-only geo
+# authorization (on-prem twin of the Cloudflare WAF country rule) and CrowdSec ext_authz.
+# No private-CIDR allow: a request without XFF resolves to the cloudflared pod IP.
+# flux-webhook carries its own route-level rules (GitHub hooks ranges).
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: SecurityPolicy
 metadata:
-  name: envoy-external-crowdsec
+  name: envoy-external-edge
 spec:
   targetRefs:
     - group: gateway.networking.k8s.io
       kind: Gateway
       name: envoy-external
+  authorization:
+    defaultAction: Deny
+    rules:
+      - name: allow-hu
+        action: Allow
+        principal:
+          clientIPGeoLocations:
+            - country: HU
   # No bodyToExtAuth here either — see the envoy-internal policy above.
   extAuth:
     failOpen: false
