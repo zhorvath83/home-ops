@@ -170,7 +170,8 @@ Open:
   - Alert delivery: Pushover sends at 20:32Z (GeoGateFalsePositive fired), 20:57Z (resolved), 22:32Z (fired by the port-forward matrix); 0 failed notifications.
   - CrowdSec AppSec on public traffic: `/.env` via Cloudflare from the home IP → 403 ext_authz_denied, alert `crowdsecurity/vpatch-env-access` with the real IP, no ban from a single hit; a control path passes.
   - Reload-error path: a corrupt file renamed onto the mmdb → db_reload_error 1, previous DB kept (HU 200, US 403 meanwhile); restoring the original → db_reload_success 2, md5 unchanged. GeoIPReloadFailed fires for about 1h as a side effect.
-- [not-tested] A full OIDC login from an external HU client (user to try on mobile data), a full-cluster DR bootstrap with an empty geoip PVC, the hooks-workflow PR path, and an Envoy restart while the mmdb on the PVC is corrupt (would be an outage by design: Envoy rejects the provider; geoipupdate would only fix it on its next daily run or a pod restart).
+- [verified] **External OIDC login (2026-11-14, user on mobile data, IPv6):** docs → paperless OIDC login → idm /authorize → passkey interaction → /authorize 303 → paperless callback 302 → app 200 and websocket 101; dash, books and idm assets all 200. 154 requests with no 403 and no 5xx. Paperless uses app-level OIDC; the Envoy gateway-oidc filter on external serves only the echo test app (redirect verified, full login not exercised).
+- [not-tested] a full-cluster DR bootstrap with an empty geoip PVC, the hooks-workflow PR path, and an Envoy restart while the mmdb on the PVC is corrupt (would be an outage by design: Envoy rejects the provider; geoipupdate would only fix it on its next daily run or a pod restart).
 
 ## Rollback
 
