@@ -35,7 +35,7 @@ related_areas:
 ## Metadata (observation-form, schema validation)
 
 - [topic] On-prem client-IP country filter (HU-only) on envoy-external
-- [status] in-progress — phases 0–5 live on main (2026-11-14); open: e2e foreign test (step 4) and the parallel run (step 6)
+- [status] in-progress — phases 0–5 live on main (2026-11-14); e2e foreign test and IPv6 verified; open: the parallel run (step 6)
 - [priority] medium
 
 ## What we gain
@@ -187,5 +187,8 @@ Executed directly on main (user decision: phase by phase, no PRs, outage accepta
 - [done] **Phase 5** (b45c290ab) alerts + dashboard + `geo_country` log field; every dashboard query returns live data. `geo_country` is empty on allowed requests (confirmed), expected filled on denied ones (to confirm with the e2e test).
 - [resolved] Stat names (the step-3 open question) — recorded in [[networking]] Update 2026-11-14.
 - [observation] `just k8s test-prom-rules` fails locally on a mise shim (`No version is set for shim: promtool` inside the mktemp dir); the pre-commit `promtool-rule-tests` hook passes. Follow-up: pin promtool for the recipe's scratch dir.
-- [open] **e2e foreign test (step 4):** needs a non-HU vantage point plus temporary Terraform entries (`country_block_exceptions` + `public_bypass_apps` for `echo`): expect 403 `rbac_access_denied`, `geo_country` filled, and a spoofed `x-eg-internal-geoip-country: HU` still 403. Then revert both entries. GeoGateFalsePositive will fire on the test 403s (expected).
+- [done] **e2e foreign test (step 4), 2026-11-14:** temporary Terraform entries for `echo` (`country_block_exceptions` + `public_bypass_apps`) applied, then reverted (post-revert `terraform plan`: no changes). check-host.net from CH, MD, IR, US, VN → all 403 from Envoy (`rbac_access_denied_matched_policy[DENY]`), `geo_country` filled with the right country, real client IPs. HU control from the home IP → passed the gate (302 = echo's OIDC redirect). After the revert, foreign requests are 403 at the Cloudflare edge again and never reach Envoy. `GeoGateFalsePositive` fired on the test 403s as expected (ALERTS=1), then self-resolves after 15m. Not testable without a foreign host that can send custom headers: the spoofed `x-eg-internal-geoip-country: HU` case; the early strip of all five `x-eg-internal-geoip-*` headers is confirmed in the live listener config dump instead.
+- [done] **IPv6 (phase 1 follow-up):** a request from the user's mobile network over IPv6 to books resolved to the real IPv6 client (`[2a00:1110:…]`, XFF `<v6 client>,<cloudflared>`), passed the geo gate and reached the upstream (404 from Calibre).
+- [observation] `geo_country` is filled whenever Envoy answers the request itself, not only on RBAC denials: the HU control request answered by the oauth2 redirect also logged `HU`. Requests forwarded upstream log it empty, because the router strips the header.
+- [observation] First ~1h: 286 allowed, 5 denied (all from the e2e test), GeoIP database hits = lookups (no misses).
 - [open] **Parallel run (step 6):** a few weeks with Cloudflare in front; expected geo denials ≈ 0. Then move this note to progress/.
