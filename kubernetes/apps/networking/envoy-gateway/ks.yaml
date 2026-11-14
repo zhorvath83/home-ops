@@ -44,6 +44,32 @@ spec:
   targetNamespace: networking
   timeout: 5m
 ---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+# wait: config depends on this, so the mmdb exists before the geoIP provider reaches Envoy.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: envoy-gateway-geoip
+spec:
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: geoipupdate
+  dependsOn:
+    - name: onepassword-connect
+      namespace: external-secrets
+    - name: democratic-csi
+      namespace: kube-system
+  interval: 1h
+  path: ./kubernetes/apps/networking/envoy-gateway/geoip
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  targetNamespace: networking
+  timeout: 5m
+  wait: true
+---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -54,6 +80,7 @@ spec:
       app.kubernetes.io/name: envoy-gateway
   dependsOn:
     - name: envoy-gateway
+    - name: envoy-gateway-geoip
   interval: 1h
   path: ./kubernetes/apps/networking/envoy-gateway/config
   prune: true
