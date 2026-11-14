@@ -83,11 +83,9 @@ spec:
       requestTimeout: 30m
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/gateway.envoyproxy.io/clienttrafficpolicy_v1alpha1.json
-# Provider-independent client IP: trust is anchored on the pod CIDR (the tunnel
-# daemon is the only ingress path per CiliumNetworkPolicy/envoy-external), not on
-# a vendor header — swapping the edge provider only changes the CIDR. Envoy walks
-# XFF right-to-left and takes the first untrusted address, so client-supplied
-# entries left of the edge-appended real IP are ignored.
+# Provider-independent client IP: the rightmost XFF entry (the edge-appended real client) is
+# trusted; CiliumNetworkPolicy/envoy-external (cloudflared-only ingress) is the trust anchor.
+# numTrustedHops, not trustedCIDRs: geo authorization rejects trustedCIDRs (envoyproxy/gateway#9935).
 # HTTP/3 disabled — cloudflared does not relay QUIC to the origin.
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: ClientTrafficPolicy
@@ -100,8 +98,7 @@ spec:
       name: envoy-external
   clientIPDetection:
     xForwardedFor:
-      trustedCIDRs:
-        - "${POD_CIDR}"
+      numTrustedHops: 1
   connection:
     bufferLimit: 8Mi
     # EG deliberately defaults this to 1; the explicit 0 (unlimited) had no recorded reason.
