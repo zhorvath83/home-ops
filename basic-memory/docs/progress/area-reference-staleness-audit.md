@@ -125,8 +125,8 @@ Out of scope for a documentation audit (`working-principles` 3 — clean up only
 - [followup] `.claude/skills/volsync/references/app-integration.md:20` documents a `VOLSYNC_SCHEDULE`
   substitution variable that does not exist anywhere in the repo. Anyone following that doc sets a
   variable with no effect; the ReplicationSource trigger is a hardcoded `"0 * * * *"`.
-- [followup] `provision/cloudflare/CLAUDE.md` still lists `r2_bucket.tf`; the file and the whole R2
-  stack were deleted.
+- [resolved] `provision/cloudflare/CLAUDE.md` still listed `r2_bucket.tf`; the file and the whole R2
+  stack were deleted. Resolved 2026-11-14 (PR #4776).
 - [followup] `kubernetes/apps/media/suggestarr/` is a fully shaped app directory (wires volsync and
   gateway-oidc, and a `suggestarr` Pocket ID client exists in Terraform) that is commented out of
   `kubernetes/apps/media/kustomization.yaml:15`. Intentional park or stalled rollout cannot be
@@ -138,8 +138,8 @@ Out of scope for a documentation audit (`working-principles` 3 — clean up only
 - [followup] `crowdsec-web-ui` is a native OIDC client carrying no `egress.home.arpa` labels, so
   whether its token-exchange hairpin survives its own CNP posture is unknown without cluster
   observation.
-- [followup] `arfolyam` proxied A/AAAA placeholder DNS records in `provision/cloudflare` are dangling
-  — no Worker and no Access app back them, and the explanatory comment is stale.
+- [resolved] `arfolyam` proxied A/AAAA placeholder DNS records in `provision/cloudflare` were dangling
+  — no Worker and no Access app backed them. Resolved: no `arfolyam` record remains (checked 2026-11-14).
 
 ## Verification
 

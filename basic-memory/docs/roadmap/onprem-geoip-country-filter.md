@@ -47,7 +47,7 @@ related_areas:
 ## Current state (evidence, 2026-11-14)
 
 - [fact] Cloudflare zone ruleset `zone_waf_rules` (provision/cloudflare/firewall_rules.tf): rule 1 blocks flux-webhook unless `ip.src in $github_hooks_cidr_list`; rule 2 blocks `not ip.geoip.country eq "HU"` for every host except `country_block_exceptions`.
-- [fact] `country_block_exceptions` shrinks to flux-webhook only — the mta-sts exception is being removed together with the MTA-STS Worker (uncommitted working-tree change on 2026-11-14). After that the ONLY non-HU-reachable host is flux-webhook.
+- [fact] `country_block_exceptions` shrinks to flux-webhook only — the mta-sts exception was removed together with the MTA-STS Worker (PR #4776, applied 2026-11-14). The ONLY non-HU-reachable host is flux-webhook.
 - [fact] Live HTTPRoutes on envoy-external (2026-11-14): github-webhook (flux-webhook), calibre-web-automated (books), echo-server, https-redirect (wildcard), pocket-id-external (idm), home-gallery (photos + fenykepek), homepage (dash), mealie (recipes), paperless (docs), pingvin-share-x (share), sure-external (fin). All behind `*.${PUBLIC_DOMAIN}` on the tunnel.
 - [fact] envoy-external has only HTTP/HTTPS listeners (gateway-external.yaml) — EG issue #9868 (Gateway authorization silently dropped on TCP/UDP listeners) does not apply.
 - [fact] Gateway-level SecurityPolicy on envoy-external today: `envoy-external-crowdsec` (extAuth only). Route-level: `echo-server-oidc` (oidc, StrategicMerge). No other route policy on external routes.
@@ -123,7 +123,7 @@ Tier 2 — deferred to the Cloudflare-exit item (when non-HU traffic actually re
 
 ## What to do (phased)
 
-0. **Prereq check:** Account ID confirmed in 1Password (`ACCOUNT_ID`); flux-webhook exception = 5a (GitHub CIDR list + refresh workflow, part of step 4). Land the pending mta-sts/Worker removal first.
+0. **Prereq check:** Account ID confirmed in 1Password (`ACCOUNT_ID`); flux-webhook exception = 5a (GitHub CIDR list + refresh workflow, part of step 4). The mta-sts/Worker removal prerequisite is done (PR #4776).
 1a. **Offline shadow evaluation (before any enforcement, no cluster change):** export the distinct client IPs (`downstream_remote_address`) of envoy-external from VictoriaLogs (14d retention), excluding flux-webhook; look each up in a locally downloaded GeoLite2-Country; every non-HU (or miss) result is a would-be false positive, because Cloudflare already classified all of them as HU. Record the count/ratio here; if > 0, inspect the prefixes and decide on a clientCIDRs override before step 4.
 1. **CTP switch (own PR):** trustedCIDRs → numTrustedHops: 1. Verify live: access log `downstream_remote_address` is the real public client (v4 + v6), `downstream_direct_remote_address` the cloudflared pod; CrowdSec bouncer still sees real IPs (X-Envoy-External-Address); a client-sent `X-Forwarded-For: 1.2.3.4` through Cloudflare does NOT become the client IP. Update networking area note (the 2026-08-15 decision is superseded, with reason).
 2. **GeoIP DB plane (own PR):** geoip stage + ExternalSecret + PVC + Deployment + CNP; dependsOn wiring. Verify: pod Ready, file present, size sane; second start does not re-download (md5 match); Hubble shows no policy drops.

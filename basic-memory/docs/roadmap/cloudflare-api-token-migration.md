@@ -8,8 +8,7 @@ status: proposed
 priority: medium
 scope: 'Migrate provision/cloudflare Terraform provider authentication from the account
   Global API Key (var.CF_GLOBAL_APIKEY + var.CF_USERNAME) to a scoped API Token whose
-  permissions cover exactly the managed surface: Zone DNS/settings/WAF/Rulesets, Workers
-  + KV + Routes, R2, Zero Trust Access apps/groups/service-tokens, Tunnel, account
+  permissions cover exactly the managed surface: Zone DNS/settings/WAF/Rulesets, Zero Trust Access apps/groups/service-tokens, Tunnel, account
   resources, notifications.'
 rationale: A scoped token limits the provider credential to exactly the resources
   this repo manages, so the blast radius of that credential shrinks from the whole
@@ -71,8 +70,6 @@ related_areas:
    - Zone → Zone WAF / Config Rules / Rulesets: Edit (`firewall_rules.tf`)
    - Account → Cloudflare Tunnel: Edit (`tunnel.tf`)
    - Account → Access: Apps and Policies + Access: Service Tokens: Edit (`access.tf`)
-   - Account → Workers Scripts + Workers KV Storage + Zone → Workers Routes: Edit (`workers.tf`)
-   - Account → Workers R2 Storage: Edit (if R2 managed)
    - Account → Notifications: Edit (`notification.tf`)
    - Zone → Zone: Read (baseline)
    Create the token in the Cloudflare dashboard (My Profile → API Tokens → Create Custom Token) scoped to the home-ops zone + account only.
@@ -98,7 +95,7 @@ related_areas:
 ### Gotchas & dependencies
 - v5 provider: confirm attribute name is `api_token` (it is in cloudflare/cloudflare v5).
 - Enable `sensitive=true` on the new var (see `cloudflare-tls-and-tfvar-hygiene`).
-- Token needs BOTH zone-scoped and account-scoped permissions (Access/Tunnel/Workers/R2 are account-level).
+- Token needs BOTH zone-scoped and account-scoped permissions (Access/Tunnel/Notifications are account-level).
 
 ### Effort
 M (~3–4h, mostly getting the permission scope exactly right).
