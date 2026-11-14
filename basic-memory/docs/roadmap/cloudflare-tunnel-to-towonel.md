@@ -7,25 +7,25 @@ topic: Public ingress migration — Cloudflare Tunnel (proxied) to managed towon
 status: proposed
 priority: medium
 scope: 'Replace the cloudflared tunnel + proxied Cloudflare records as the public
-  ingress path with the managed towonel edge (edge-eu.towonel.dev) running in TLS
-  passthrough, so TLS terminates only on envoy-external. Cloudflare stays the DNS
-  provider (zone, mail records, ExternalDNS, cert-manager DNS-01). Covers: towonel
-  agent workload, envoy-external client-IP model (PROXY v2), ExternalDNS/Terraform
-  DNS cutover, CAA pinning + CT monitoring, rollback path, and the later Cloudflare
-  Access/WAF/tunnel decommission.'
+  ingress path with the managed towonel edge (edge-eu.towonel.dev) in TLS passthrough,
+  so TLS terminates only on envoy-external. Cloudflare stays the DNS provider (zone,
+  mail records, ExternalDNS, cert-manager DNS-01). Covers: towonel agent workload,
+  envoy-external client-IP model (PROXY v2), pilot gateway, DNS cutover, CAA pinning
+  + CT monitoring, monitoring, rollback, and the Cloudflare tunnel/Access/WAF decommission.'
 rationale: Cloudflare currently terminates and can read every public request (documents,
   photos, IdP traffic). Passthrough keeps keys and plaintext in the cluster; Access
-  is a net negative for the mobile apps; geo filtering, rate limiting, CrowdSec WAF
-  and OIDC gating already run on-prem in Envoy, so Cloudflare's edge layer is largely
-  redundant. Lock-in is low (one agent + DNS), so the alpha-stage managed service
-  is an acceptable, reversible bet if CAA pinning and a tested rollback are in place.
+  is a net negative for the mobile apps; geo filtering (sole country gate since 2026-11-15),
+  rate limiting, CrowdSec WAF and OIDC gating already run on-prem in Envoy, so the
+  Cloudflare edge layer is largely redundant. Lock-in is low (one agent + DNS), so
+  the alpha-stage managed service is an acceptable, reversible bet if CT monitoring,
+  CAA pinning and a tested rollback are in place.
 options:
-- Managed towonel, staged (pilot gateway, then big-bang cutover of envoy-external)
+- Managed towonel, staged (echo on a pilot gateway, then one-PR cutover of envoy-external)
   — recommended
-- Managed towonel, direct big-bang cutover of envoy-external (less YAML, larger blast
-  radius on the first try)
-- Self-hosted towonel hub+edge on a VPS (removes operator dependency; adds a VPS to
-  run, patch and secure)
+- Managed towonel, direct cutover of envoy-external (less YAML, larger blast radius
+  on the first try)
+- Self-hosted towonel hub+edge on a VPS (removes the operator dependency; adds a VPS
+  to run, patch and secure)
 - Stay on Cloudflare Tunnel
 related_areas:
 - networking
@@ -43,146 +43,200 @@ related_areas:
 - [status] proposed
 - [priority] medium
 - [researched_at] 2026-11-14
+- [reviewed_at] 2026-11-15
 
 ## What we gain
 
 - End-to-end TLS: the edge reads only SNI and forwards raw TLS; certificates and plaintext stay on envoy-external. Cloudflare no longer decrypts Paperless, photos, Pocket ID or any other public traffic.
-- No Cloudflare Access in front of the mobile apps (service-token headers no longer needed; apps use native auth / gateway-oidc as on the LAN).
-- No Cloudflare proxy limits: request body size cap (100 MB on the Free plan) and proxy read timeout disappear — relevant to Paperless/photo uploads and long streams.
+- No Cloudflare Access in front of the mobile apps (service-token headers become a no-op; apps use native auth / gateway-oidc exactly as on the LAN).
+- No Cloudflare proxy limits (Free plan request-body cap of 100 MB, proxy read timeout) — relevant to Paperless/photo uploads and long streams.
 - Raw TCP/UDP exposure becomes possible later (per-port, globally unique ports on the shared edge) without WARP.
 - Provider-independent client IP via PROXY protocol v2 instead of an XFF hop from cloudflared.
-- Smaller Cloudflare surface to maintain (tunnel, Access apps/groups/service token, WAF list, 1Password write-back null_resources).
+- Smaller Cloudflare surface (tunnel, Access apps/groups/service token, the GitHub WAF list, 1Password write-back null_resources, the update-cloudflare-networks workflow).
 
 ## What we lose / accept
 
-- No edge WAF, bot management, DDoS absorption or edge rate limiting. On-prem replacements already exist: HU-only geo authorization (SecurityPolicy/envoy-external-edge), CrowdSec extAuth + AppSec WAF, local rate limit (BTP/envoy: 3000/min per client, 30000/min shared). Volumetric DDoS is not absorbed by anyone; the shared edge will rate-limit or cut a tenant under attack.
-- No public HTTP/3 (edge listens TCP 443 only).
-- Port 80 behaviour on the managed edge is undocumented: http:// first visits may fail. HSTS (2y, includeSubDomains) covers returning browsers.
-- Managed service is an invite-only alpha: "best-effort, no uptime guarantee", donation-funded, single maintainer, no ToS/Privacy Policy yet, single documented edge (EU). The operator still sees metadata (SNI, client IPs, byte counts).
+- No edge WAF, bot management, DDoS absorption or edge rate limiting. On-prem replacements already exist: HU-only geo authorization (SecurityPolicy/envoy-external-edge — the only country gate since the Cloudflare rule was removed 2026-11-15), CrowdSec extAuth + AppSec WAF, local rate limit (BTP/envoy: 3000/min per client v4+v6, 30000/min shared). Volumetric DDoS is not absorbed by anyone; the shared edge will rate-limit or cut a tenant under attack.
+- No public HTTP/3 (the edge listens on TCP 443 only).
+- Port 80 on the managed edge is undocumented: http:// first visits may fail. HSTS (2y, includeSubDomains) covers returning browsers.
+- Managed service is an invite-only alpha: "best-effort, no uptime guarantee", donation-funded, single maintainer, no ToS/Privacy Policy yet, one documented edge (EU). The operator sees metadata (SNI, client IPs, byte counts).
+- Per-agent concurrency ceiling: 256 active streams (one stream per client TCP connection) — see Research.
 
-## Research findings (towonel docs + Codeberg, read 2026-11-14)
+## Research findings
 
-### Architecture
-- [fact] One persistent QUIC (iroh) tunnel; the edge accepts TLS on :443, peeks SNI, forwards over a QUIC stream to the agent; the agent dials origin host:port. Edge reverse-dials the agent; behind NAT the hub-advertised iroh relay is the default path ("the agent dials out"). Source: towonel.dev/docs/self-hosted/architecture/, /docs/agent/kubernetes/
+### Architecture (towonel.dev docs, read 2026-11-14)
+- [fact] One persistent QUIC (iroh) tunnel; the edge accepts TLS on :443, peeks SNI, forwards over a QUIC stream to the agent; the agent dials origin host:port. The edge reverse-dials the agent; behind NAT the hub-advertised iroh relay is the default path ("the agent dials out"). Source: /docs/self-hosted/architecture/, /docs/agent/kubernetes/
 - [fact] Tenant config entries are ML-DSA-65 signed ("the hub operator cannot forge entries"); agent auth is an invite token (tt_inv_2_…) → hub-signed short-lived EdgeCreds.
 - [fact] Passthrough is the default and, per /docs/agent/tls-modes/, "The only mode"; the README still documents a terminate mode (edge issues on-demand LE certs via TLS-ALPN-01). Docs/README inconsistent.
 - [fact] In passthrough the agent prepends PROXY v2 by default (per-service "proxy_protocol": "v2"|"none"); "The origin must accept it or the connection will fail."
-- [fact] Managed DNS model: CNAME each hostname (wildcard allowed in the example) to edge-eu.towonel.dev. No ownership verification (TXT/challenge) is documented; hostname conflict rules across tenants are undocumented.
+- [fact] Managed DNS model: CNAME each hostname (wildcard allowed in the example) to edge-eu.towonel.dev. No hostname-ownership verification is documented; cross-tenant hostname conflict rules are undocumented.
 - [fact] Self-hosted edge defaults: MAX_CONNECTIONS_PER_TENANT=1000, MAX_INFLIGHT_CONNECTIONS=50000, drain 25s; managed values unpublished.
 
-### Agent chart (codeberg.org/towonel/towonel charts/towonel-agent, bjw-s common 5.1.0, k8s >=1.31)
-- [fact] Values: agent.services / tcpServices / udpServices (JSON lists), agent.inviteTokenSecret.{name,key=TOWONEL_INVITE_TOKEN}, relayUrl, directConnect (NodePort, off by default), controllers.main.replicas (default 2), probes on /healthz :9090, serviceMonitor.main.enabled (default false), monitoring.prometheusRule/dashboards (default false), hardened securityContext (non-root 10001, RO rootfs, drop ALL), requests 50m/128Mi, limit 256Mi. No networkPolicy key (common passthrough only).
-- [fact] OCI location conflict: README says oci://codeberg.org/towonel/charts/towonel-agent; docs say oci://git.ow-ops.eu/... — git.ow-ops.eu served an Anubis bot-challenge page to automated fetches (Flux pulls may hit the same gate).
-- [conflict] Chart default replicas: 2 vs /docs/agent/tcp-udp/ "run at most one agent per tenant" and README "stale agent IDs for the tenant are revoked" on reconcile.
+### Agent chart — towonel-agent 1.13.7 (pulled from oci://codeberg.org/towonel/charts/towonel-agent, 2026-11-15)
+- [fact] bjw-s common 5.1.0, kubeVersion >=1.31. Values: agent.services / tcpServices / udpServices, agent.inviteTokenSecret.{name,key=TOWONEL_INVITE_TOKEN}, relayUrl, extraLocalAddrs, disableUdpGso, hostNetwork, directConnect (NodePort, off), mesh (off; switches to StatefulSet), controllers.main.replicas 2 (RollingUpdate), probes /healthz on :9090, requests 50m/128Mi, limit 256Mi, hardened securityContext (uid 10001, RO rootfs, drop ALL), serviceMonitor.main.enabled false, monitoring.prometheusRule / dashboards (grafanaOperator option) false.
+- [fact] Default image is git.ow-ops.eu/towonel/towonel-agent pinned by digest sha256:da4b62651a7804d3116a2d5ee9a0a1414e8e3eb6a84de90db602f1679f81b654; codeberg.org/towonel/towonel-agent:1.13.7 serves the SAME index digest; both registries allow anonymous pulls (verified 2026-11-15).
+- [fact] Shipped alerts: TowonelAgentEdgeLinkDown (towonel_agent_edge_session_state == 0 for 5m, critical), TowonelAgentStreamsNearCap (towonel_agent_streams_active > 200 for 15m — "near the 256 cap — the stream-driven path that OOMKilled it before"), TowonelAgentReconnectStorm, TowonelAgentStalled (a replica gets no streams while others do).
+- [fact] Metrics: towonel_agent_{info, edge_path, edge_session_state, edge_session_reconnects_total, streams_active, streams_accepted_total, streams_completed_total, stream_errors_total, bytes_total}. edge_path shows relay vs direct.
+- [resolved] Multi-replica: the 1.13.7 chart is built for 2 replicas (TowonelAgentStalled compares replicas). The "run at most one agent per tenant" sentence on /docs/agent/tcp-udp/ is about separate agent deployments with different env (the env reconciles the hub). Still confirm in Phase 0.
 
-### Project maturity
-- [fact] MIT, Rust, 50 releases from v0.1.0 (2026-05-25) to v1.6.1 (2026-09-10); no release in the 65 days since; HEAD 2026-09-16. Release commits ship with CI e2e (and on 1.6.1 test) failing. No SECURITY.md, SBOM or audit; artifacts/images/charts cosign-signed. No hub/edge/agent version-compatibility statement; README "wire format may change" wording is stale (still says 0.0.x).
-- [fact] Open: 2 issues (#89 PROXY on tcpServices, Renovate dashboard), 4 PRs (major dep bumps with failing CI: sea-orm 2.0, totp-rs 6.0).
+### Project maturity (corrected 2026-11-15)
+- [correction] The Codeberg repo is a stale mirror for code/releases: HEAD 2026-09-16, last release object v1.6.1 (2026-09-10). Development continues elsewhere (docs point at git.ow-ops.eu, blocked to automated fetches by Anubis): the registries carry chart/image 1.7.1 … 1.13.7, and the 1.13.7 image was built 2026-11-13. The "65 days without a release" reading of 2026-11-14 was wrong.
+- [fact] MIT, Rust, single visible maintainer, release commits up to 1.6.1 shipped with CI e2e failing; CI status of 1.7+ is not visible. No SECURITY.md/SBOM/audit; images, binaries and charts cosign-signed. No published hub/edge/agent version-compatibility policy.
 
-### CAA
-- [fact] /docs/agent/caa-pinning/ recommends: `CAA 0 issue "letsencrypt.org;validationmethods=<method>;accounturi=<your-account-uri>"`, CT logs as backstop (certspotter, merklemap), and warns Cloudflare can "silently rewrite or drop CAA records" — verify with `dig @1.1.1.1 +short <host> CAA`.
-- [fact] 2026-11-14: edge-eu.towonel.dev and towonel.dev publish no CAA, so CAA for a CNAME'd tenant host falls back to the apex of PUBLIC_DOMAIN (RFC 8659 tree-climb from the original name). If towonel later publishes CAA on the edge name, it takes precedence — CT monitoring catches that.
+### CAA and Cloudflare (verified 2026-11-15)
+- [fact] towonel /docs/agent/caa-pinning/: `CAA 0 issue "letsencrypt.org;validationmethods=<method>;accounturi=<account-uri>"`, CT logs as backstop.
+- [fact] **Cloudflare: "Cloudflare adds CAA records automatically when you have Universal SSL and add any CAA records to your zone"** — issue + issuewild for pki.goog, letsencrypt.org, ssl.com, sectigo.com, without accounturi/validationmethods, and they "will not appear in the Cloudflare dashboard" (developers.cloudflare.com/ssl/edge-certificates/caa-records/). A plain `letsencrypt.org` issue record authorises ANY Let's Encrypt account, so **our accounturi pin is void while Universal SSL is on.** The page also states "CAA records on a CNAME target also apply" and parent CAA is inherited.
+- [fact] 2026-11-14: edge-eu.towonel.dev and towonel.dev publish no CAA, so a tenant host CNAMEd to the edge falls back to the PUBLIC_DOMAIN apex CAA.
 
-## Current state (repo, 2026-11-14)
+### Envoy Gateway client-IP chain (EG 1.10.0 live CRDs + gateway main geoip.go, 2026-11-15)
+- [fact] ClientTrafficPolicy.proxyProtocol: "the Proxy Protocol header will be interpreted and the Client Address will be added into the X-Forwarded-For header"; `optional: true` admits connections without a header. `enableProxyProtocol` is the legacy boolean.
+- [fact] EG geoip.go: when clientIPDetection.xForwardedFor.numTrustedHops is set, the geoip filter gets xff_config with that hop count; with DirectSourceIP or nothing set, Envoy uses the downstream connection source address. clientIPGeoLocations: client IP is "inferred from the X-Forwarded-For header, a custom header, or the direct downstream connection source address".
+- [inference] PROXY + numTrustedHops 0 → Envoy appends the PROXY client address as the rightmost XFF entry and geo/RBAC/rate-limit read it; a client-sent XFF stays to the left and is ignored. Must be proven live (Pilot test P3).
+- [fact] envoyproxy/gateway#9935 (geo + trustedCIDRs) still open — numTrustedHops remains the only geo-compatible XFF mode.
 
-- [state] cloudflared: kubernetes/apps/networking/cloudflare-tunnel/app/helmrelease.yaml — app-template, 1 replica, ingress `*.${PUBLIC_DOMAIN}` → https://envoy-external.networking.svc.cluster.local (originServerName external.${PUBLIC_DOMAIN}); CNP egress to CiliumCIDRGroup cloudflare.
-- [state] envoy-external: ClusterIP; CNP ingress on 10080/10443 only from the cloudflare-tunnel pod (envoy-gateway/config/ciliumnetworkpolicy-external.yaml).
-- [state] ClientTrafficPolicy/envoy-external: `clientIPDetection.xForwardedFor.numTrustedHops: 1` (gateway-policies.yaml:99-101), chosen because geo authorization rejects trustedCIDRs (envoyproxy/gateway#9935). HTTP/3 off.
-- [state] SecurityPolicy/envoy-external-edge: defaultAction Deny, allow clientIPGeoLocations HU, extAuth → crowdsec-bouncer (fail closed). SecurityPolicy/github-webhook (flux-system) overrides geo with GitHub hook clientCIDRs.
-- [state] BTP/envoy local rate limit is ENABLED (3000/min per client v4+v6, 30000/min shared).
-- [state] ExternalDNS: provider cloudflare, `--cloudflare-proxied`, `--gateway-name=envoy-external`, records target external.${PUBLIC_DOMAIN} (Gateway annotation).
-- [state] Terraform: tunnel.tf CNAME external → <tunnel-id>.cfargotunnel.com proxied; access.tf (Access apps, groups, service token, Google IdP); firewall_rules.tf (GitHub list + non-HU country block); zone_settings.tf. No CAA records. Apex A/AAAA point at the external website host (unproxied).
-- [state] cert-manager ClusterIssuer uses ACME DNS-01 via Cloudflare (kubernetes/apps/cert-manager/cert-manager/issuers/clusterissuer.yaml:15-16).
-- [state] Envoy Gateway chart 1.10.0. 29 manifests reference envoy-external. echo-server routes on envoy-external behind gateway-oidc (pilot candidate).
+## Current state (repo + cluster, 2026-11-15)
 
-## CRITICAL design point — client IP trust after the switch
+- [state] cloudflared: kubernetes/apps/networking/cloudflare-tunnel/app/helmrelease.yaml — app-template, 1 replica, ingress `*.${PUBLIC_DOMAIN}` → https://envoy-external.networking.svc.cluster.local (originServerName external.${PUBLIC_DOMAIN}); CNP egress to CiliumCIDRGroup cloudflare (kept current by .github/workflows/update-cloudflare-networks.yaml).
+- [state] envoy-external: EnvoyProxy ClusterIP Service (envoy.yaml:65-66); CNP ingress on 10080/10443 only from the cloudflare-tunnel pod (ciliumnetworkpolicy-external.yaml). Nothing else in the repo targets envoy-external.networking.svc directly.
+- [state] ClientTrafficPolicy/envoy-external: `xForwardedFor.numTrustedHops: 1`, no HTTP/3 (gateway-policies.yaml:86-101; live: 1 / none). envoy-internal: numTrustedHops 0 + http3 (live).
+- [state] SecurityPolicy/envoy-external-edge: Deny by default, allow clientIPGeoLocations HU, extAuth crowdsec-bouncer (failOpen false) — the only country gate. Route-level SecurityPolicy flux-system/github-webhook replaces geo with GitHub hooks clientCIDRs (mergeType StrategicMerge).
+- [state] EnvoyProxy/envoy-external carries the geoIP provider (MaxMind GeoLite2-Country from PVC `geoip`) and filterOrder geoip + rbac before ext_authz.
+- [state] BTP/envoy (targetSelectors kind Gateway) — live Accepted on both gateways; local rate limit enabled.
+- [state] CrowdSec bouncer walks XFF with trustedProxies [${POD_CIDR}] (1093fb057).
+- [state] CCNP ingress-from-gateway-external admits only pods with owning-gateway-name In [envoy-external] into backends labelled ingress.home.arpa/allow-gateway-external.
+- [state] ExternalDNS: `--cloudflare-proxied`, `--gateway-name=envoy-external`, policy sync, txtPrefix k8s.; records CNAME → external.${PUBLIC_DOMAIN} (Gateway annotation).
+- [state] Terraform: tunnel.tf (tunnel + external CNAME proxied), access.tf, firewall_rules.tf (since a5fb33272 only the GitHub-CIDR rule on flux-webhook; the country rule is gone), zone_settings.tf; no CAA records. Apex A/AAAA at the external web host, unproxied.
+- [state] GeoGateFalsePositive parallel-run alert removed (61639a775).
+- [state] cert-manager ClusterIssuer: ACME DNS-01 via Cloudflare (issuers/clusterissuer.yaml:15-16).
+- [state] Public routes on envoy-external (14 consumers): flux-webhook, sure, pingvin-share-x, homepage, paperless, pocket-id (idm), mealie, home-gallery, echo-server, crowdsec-web-ui, grafana, cilium (hubble), crosswatch, calibre-web-automated.
+- [state] Renovate: docker and helm datasources already automerge: false (.renovate/autoMerge.json5:9-21).
 
-With passthrough, nothing in front of envoy-external appends X-Forwarded-For. Keeping `numTrustedHops: 1` would make Envoy trust the rightmost **client-supplied** XFF entry, which defeats the HU geo rule, per-client rate limiting, CrowdSec decisions and the GitHub-webhook clientCIDRs allowlist. The envoy-external ClientTrafficPolicy MUST change atomically with the traffic switch to: `proxyProtocol` (required, not optional — every connection arrives from the agent) + `numTrustedHops: 0` (same model as envoy-internal). The two client-IP models (cloudflared XFF vs towonel PROXY v2) cannot coexist on one Gateway safely — this is why the pilot uses a separate Gateway.
+## Design decisions
+
+- [decision] **Client IP on envoy-external after the switch: `proxyProtocol: {}` (header required) + `numTrustedHops: 0`.** Keeping numTrustedHops 1 would trust the rightmost client-supplied XFF entry and defeat geo, rate limit, CrowdSec and the GitHub clientCIDRs rule. The two models cannot share one Gateway, hence the pilot gateway.
+- [decision] Agent: chart 1.13.x from oci://codeberg.org/towonel/charts/towonel-agent; image repository overridden to codeberg.org/towonel/towonel-agent (same digest as git.ow-ops.eu, one registry for chart + image, no Anubis risk); pinned by tag + digest; Renovate updates reviewed manually against the release notes.
+- [decision] Agent sizing: replicas 2 (rolling-update continuity; single node, so no node-failure benefit), memory limit 512Mi (chart 256Mi has an OOM history), requests 50m/128Mi. Relay path first (directConnect off).
+- [decision] One agent service: hostname `*.${PUBLIC_DOMAIN}` → origin envoy-external.networking.svc.cluster.local:443, proxy_protocol v2 (pilot: echo host → envoy-towonel). No TCP/UDP services.
+- [decision] CAA is a two-step control: CT monitoring is the guard until Universal SSL is disabled; the accounturi pin becomes effective only after that (Phase 5a).
 
 ## Plan
 
 ### Phase 0 — Clarify with the operator (blocking)
-Ask on console/Discord and record answers here:
-1. Hostname ownership: how does the managed hub prevent another tenant from claiming `*.${PUBLIC_DOMAIN}`? Precedence of exact vs wildcard entries across tenants?
-2. Wildcard SNI routing supported on managed (one service `*.${PUBLIC_DOMAIN}`)?
-3. Replicas: is 2 agent replicas per tenant supported, or "one agent per tenant"?
-4. Egress endpoints for a NetworkPolicy: hub hostname/port, relay URL/ports, edge iroh UDP port, IPv6 need.
-5. Managed limits: per-tenant connections, bandwidth, idle TCP timeout (WebSocket/SSE), port 80 handling.
-6. Agent ↔ managed hub version policy; canonical chart/image registry (codeberg.org vs git.ow-ops.eu).
-7. Is terminate mode ever enabled on the managed edge (must stay off for our hostnames)?
-Exit: answers recorded; no answer that breaks the design (esp. #1, #2).
+Ask on console/Discord; record the answers here.
+1. Hostname ownership: how does the managed hub stop another tenant from claiming `*.${PUBLIC_DOMAIN}` or a single host? Exact-vs-wildcard precedence across tenants?
+2. Wildcard SNI routing on managed for one service `*.${PUBLIC_DOMAIN}`?
+3. Two agent replicas per tenant OK?
+4. Egress: hub hostname/port, relay URL/ports, edge iroh UDP port, IPv6 need.
+5. Limits: per-tenant connections, bandwidth fair-use figure, TCP idle timeout (WebSocket/SSE), port 80 handling.
+6. Version policy agent ↔ managed hub (how far may the agent lag/lead?); is Codeberg the supported registry?
+7. Is terminate mode ever enabled for tenant hostnames on the managed edge?
+8. Release notes / changelog location for 1.7+ (Codeberg stops at 1.6.1).
+Exit: answers recorded; #1, #2, #7 acceptable. If #1 has no ownership check, proceed only with CT monitoring live (Phase 1) and accept "DoS but not interception" until Phase 5a.
 
-### Phase 1 — CAA pinning + CT monitoring (prerequisite, independent of towonel)
-1. Read the cert-manager ACME account URI: `kubectl get clusterissuer <name> -o jsonpath='{.status.acme.uri}'`.
-2. Identify how the apex/www certificate at the external web host is issued (CA + method) via `openssl s_client` on the apex; it needs its own `issue` line or the apex renewal breaks.
-3. Terraform (provision/cloudflare/dns_records.tf): apex CAA records — `issue` + `issuewild` "letsencrypt.org;validationmethods=dns-01;accounturi=<uri>", the apex host's issuer line, optional `iodef`.
-4. Verify: `dig @1.1.1.1 +short CAA ${PUBLIC_DOMAIN}` and on a subdomain; force a cert-manager renewal (staging or a test Certificate) to prove the pin does not block our own issuance.
-5. CT monitoring for ${PUBLIC_DOMAIN} (hosted certspotter/merklemap notification, or an in-cluster job → Pushover). Decide where.
-Exit: CAA visible publicly, own renewal proven, CT alert path tested.
+### Phase 1 — CT monitoring (+ CAA groundwork)
+1. CT alerting for ${PUBLIC_DOMAIN} incl. subdomains (decision D4): hosted Cert Spotter / merklemap notifications to e-mail → Pushover gateway, or an in-cluster certspotter CronJob. Prove the alert path on the next real certificate issuance (the wildcard renewal, or a throwaway production cert for a test host).
+2. Gather CAA inputs, do not publish yet:
+   - cert-manager ACME account URI: `kubectl get clusterissuer <name> -o jsonpath='{.status.acme.uri}'`.
+   - Apex/www certificate issuer and method at the external web host (`openssl s_client -connect <apex>:443 -servername <apex>`), so its renewals keep working.
+3. Prepare (branch only) the Terraform CAA resources in provision/cloudflare/dns_records.tf: apex `issue` + `issuewild` "letsencrypt.org;validationmethods=dns-01;accounturi=<uri>", the apex host's issuer line, `iodef` mailto.
+Exit: CT alert path proven; CAA values known.
 
-### Phase 2 — Agent workload (no traffic yet)
-1. 1Password item `towonel` (vault HomeOps) with field TOWONEL_INVITE_TOKEN; ExternalSecret → Secret `towonel-agent-secret`.
-2. New app kubernetes/apps/networking/towonel-agent/ (ks.yaml dependsOn onepassword-connect, OCIRepository for the chart pinned by version+digest, HelmRelease): replicas 1 (until Phase 0 #3), relay path (directConnect off), agent.services empty or echo-only, serviceMonitor on, reloader annotation, resources sized from cloudflared's footprint.
-3. CNP for the agent: ingress Prometheus → 9090; egress kube-dns, the pilot/external envoy pods on 10443, and internet egress to the towonel endpoints from Phase 0 #4 (start with toFQDNs where possible; tighten after a Hubble capture — `just k8s hubble-live-capture 120` then `just k8s hubble-analyze k8s:app.kubernetes.io/name=towonel-agent DROPPED egress`).
-4. Renovate: track chart + image (OCI datasource), no automerge; note in .renovate/ if a rule is needed.
-Exit: agent Ready, connected (logs/metrics), zero Hubble drops.
+### Phase 2 — Agent workload (no traffic)
+1. 1Password item `towonel` (vault HomeOps), field TOWONEL_INVITE_TOKEN; ExternalSecret → Secret `towonel-agent-secret` (template copies the field).
+2. New app kubernetes/apps/networking/towonel-agent/: ks.yaml (dependsOn onepassword-connect; healthChecks HR), ocirepository.yaml (codeberg chart, tag 1.13.x), externalsecret.yaml, helmrelease.yaml:
+   - agent.inviteTokenSecret.name towonel-agent-secret; agent.services: [] at first; logLevel info.
+   - image.repository codeberg.org/towonel/towonel-agent, tag + digest pinned.
+   - replicas 2; memory limit 512Mi; reloader annotation (secret.reloader.stakater.com/reload).
+   - serviceMonitor.main.enabled true; monitoring.prometheusRule.enabled true (labels as other rules, severity routing to Pushover); monitoring.dashboards.grafanaOperator.enabled true (folder Networking, matchLabels of the grafana instance).
+3. NetworkPolicy (AD-023 vocabulary): labels `egress.home.arpa/allow-world: "true"` (public IPv4 egress; endpoints unknown, iroh learns IPs from the hub so FQDN rules do not fit) + `ingress.home.arpa/allow-prometheus: "true"`; a dedicated CNP egress rule to envoy pods (owning-gateway-name envoy-external | envoy-towonel) on 10443. DNS via the baseline CCNP.
+4. Capture and tighten: `just k8s hubble-live-capture 120`, `just k8s hubble-analyze k8s:app.kubernetes.io/name=towonel-agent DROPPED egress`; check IPv6 attempts (allow-world-egress is IPv4-only).
+Exit: both pods Ready, towonel_agent_edge_session_state == 1, edge_path recorded, zero Hubble drops.
 
-### Phase 3 — Pilot on a dedicated Gateway
-1. New GatewayClass/EnvoyProxy/Gateway `envoy-towonel` (ClusterIP, HTTPS listener `*.${PUBLIC_DOMAIN}`, same wildcard cert) with its own ClientTrafficPolicy (proxyProtocol required, numTrustedHops 0, same header hardening/timeouts as external), SecurityPolicy copy of envoy-external-edge (HU geo + CrowdSec extAuth), CNP ingress only from the towonel-agent pod. BTP/envoy already applies to every Gateway (targetSelectors without labels) — verify.
-2. Confirm geo authorization works with the PROXY-derived address and numTrustedHops 0 (envoyproxy/gateway#9935 concerns trustedCIDRs only; prove it).
-3. Agent service: hostname echo.${PUBLIC_DOMAIN} (or a dedicated pilot host) → envoy-towonel:443, proxy_protocol v2. Attach the echo-server HTTPRoute to envoy-towonel only.
-4. DNS for the pilot host: unproxied CNAME → edge-eu.towonel.dev (ExternalDNS annotations `external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"` + target, or a Terraform record; note the external-dns --gateway-name filter).
-5. Tests (from mobile data, i.e. off-LAN, and from a non-HU vantage):
-   - TLS chain = our cert; `curl -v` shows Envoy, not an edge cert.
-   - echo-server shows the real client IP; a forged `X-Forwarded-For` header does NOT change the detected IP.
-   - Non-HU source → 403; CrowdSec ban on the test IP → blocked; rate limit triggers.
-   - gateway-oidc login round-trip through Pocket ID; WebSocket and a >100 MB upload through a test route; long idle connection (>5 min).
-   - Latency/throughput comparison vs the Cloudflare path (simple curl timing, speedtest to a file route).
-6. Soak ≥ 1–2 weeks; watch agent reconnects, edge outages, error rates.
-Exit: all tests green, soak without unexplained outage.
+### Phase 3 — Pilot: echo on a dedicated gateway
+1. Gateway `envoy-towonel` (new files in envoy-gateway/config, removed at Phase 4): GatewayClass + EnvoyProxy (copy of envoy-external incl. geoIP provider, geoip PVC mount, filterOrder, access log format, ClusterIP) + Gateway (HTTPS `https` listener `*.${PUBLIC_DOMAIN}`, same wildcard Secret; no external-dns annotations) + ClientTrafficPolicy (proxyProtocol {}, numTrustedHops 0, same header hardening/timeouts/TLS floor as envoy-external) + SecurityPolicy copy of envoy-external-edge (HU geo + CrowdSec extAuth) + CNP (ingress 10443 only from towonel-agent, Prometheus 19001, probe 19003). BTP/envoy attaches automatically (verify Accepted on the new gateway).
+2. CCNP ingress-from-gateway-external: add envoy-towonel to the owning-gateway-name In list (otherwise echo-server drops the traffic).
+3. Move echo: echo-server route parentRefs → envoy-towonel (gateway-oidc SecurityPolicy targets the route by name, Pocket ID callback unchanged). Agent service: echo.${PUBLIC_DOMAIN} → envoy-towonel Service:443, proxy_protocol v2.
+4. DNS: ExternalDNS (gateway-name filter) deletes its echo record once the route leaves envoy-external; after the deletion, Terraform adds `echo` CNAME → edge-eu.towonel.dev, proxied false, ttl 60. Order: k8s PR merged + external-dns logs show the delete → terraform apply.
+5. Tests from off-LAN (mobile data) and from abroad (check-host.net for IPv4, Globalping for IPv6/custom headers — pattern from the geo-gate e2e):
+   - P1 TLS: presented chain = our cert (`openssl s_client -servername echo.<domain>`).
+   - P2 IP: echo shows the real client IP; Envoy access log downstream_remote_address = client, direct = agent pod.
+   - P3 Spoof: `curl -H 'X-Forwarded-For: 1.2.3.4'` from HU → still real IP; from abroad with a forged HU XFF → still 403.
+   - P4 Geo: non-HU → 403 rbac_access_denied with geo_country logged.
+   - P5 CrowdSec: `cscli decisions add --ip <own public IP> --duration 5m` → 403 ext_authz_denied; delete afterwards.
+   - P6 Rate limit: burst > 3000/min from one IP → 429.
+   - P7 OIDC: gateway-oidc login round-trip via Pocket ID.
+   - P8 Protocols: WebSocket (echo supports it), >100 MB upload, an idle connection held > 10 min.
+   - P9 Performance: TTFB and throughput vs the Cloudflare path; record towonel_agent_edge_path (relay vs direct).
+6. Soak 1–2 weeks: EdgeLinkDown/ReconnectStorm silent, streams_active baseline, no OOM.
+Exit: P1–P9 green; soak clean. Decision D2 (direct path) taken from P9.
 
-### Phase 4 — Cutover of envoy-external (maintenance window, single PR)
-1. Lower TTLs beforehand (records are proxied/auto now; unproxied target records at 60s).
-2. One PR switching:
-   - ClientTrafficPolicy/envoy-external → proxyProtocol required + numTrustedHops 0 (and comment update).
+### Phase 4 — Cutover of envoy-external (maintenance window)
+Pre-flight: cloudflared still running; announce the window; note current DNS state (`dig` of a few hosts).
+1. Single PR:
+   - ClientTrafficPolicy/envoy-external → proxyProtocol {} + numTrustedHops 0 (update the comment block at gateway-policies.yaml:86-89).
    - CNP/envoy-external ingress source → towonel-agent pod.
-   - Agent service `*.${PUBLIC_DOMAIN}` → envoy-external:443 (pilot gateway removed or kept until Phase 5).
-   - ExternalDNS: drop `--cloudflare-proxied` (records become unproxied CNAMEs to external.${PUBLIC_DOMAIN}).
-   - cloudflared HelmRelease scaled to 0 (or Kustomization suspended), NOT deleted.
-3. Terraform (same window): external CNAME → edge-eu.towonel.dev, proxied=false, ttl 60.
-4. Post-checks: every public host (list from HTTPRoutes on envoy-external) returns via towonel; flux-webhook delivery from GitHub (redeliver a webhook) passes clientCIDRs; Pocket ID passkey login; Paperless + Mealie mobile apps with native auth; CrowdSec sees real IPs; blackbox/external uptime green.
-Rollback (target < 15 min): git revert the PR (restores CTP numTrustedHops 1, CNP, proxied flag, cloudflared replicas) + Terraform revert of the external CNAME. Access apps still exist until Phase 5, so the CF path comes back with its old protections.
+   - Agent service → `*.${PUBLIC_DOMAIN}` → envoy-external:443 (proxy v2); remove the echo entry.
+   - echo-server route back to envoy-external; delete the envoy-towonel files and its CCNP entry.
+   - ExternalDNS: drop `--cloudflare-proxied` (records become unproxied CNAMEs → external.${PUBLIC_DOMAIN}).
+   - cloudflare-tunnel HelmRelease replicas 0 (keep the app and secret).
+2. Terraform in the same window: external CNAME → edge-eu.towonel.dev, proxied false, ttl 60; delete the TF echo record (external-dns takes echo back).
+3. Expected disruption: up to ~5 min (resolver caches of the proxied answers, 300s).
+4. Post-checks: every host in the 14-route list answers through towonel with our cert; P2–P5 repeated on envoy-external; GitHub webhook redelivery → 200 (clientCIDRs); Pocket ID passkey login; Paperless + Mealie mobile apps; home-gallery browsing; geo-gate dashboard, CrowdSec and rate-limit metrics sane.
+Rollback (target < 15 min, rehearsed once): 1) scale cloudflared to 1 and wait Ready; 2) revert the PR (CTP numTrustedHops 1 without proxyProtocol, CNP, proxied flag); 3) Terraform revert of the external CNAME (tunnel target, proxied). Access apps and the GitHub WAF rule are still in place until Phase 5b, so the Cloudflare path returns as before (country gating stays on-prem either way).
 
-### Phase 5 — Decommission (after ≥ 4 weeks stable)
-- Delete cloudflare-tunnel app + CiliumCIDRGroup, 1Password tunnel fields.
-- Terraform: remove tunnel.tf, access.tf (apps, groups, service token, Google IdP), firewall_rules.tf (rules only act on proxied traffic), zone settings that only apply to proxied traffic; drop delete_stale_tunnels.sh; consider disabling Universal SSL if nothing stays proxied (re-check CAA afterwards).
-- Remove the pilot Gateway (if kept).
-- Update BM areas networking, cloudflare, iam; repo CLAUDE.md files and skills (networking-platform, cloudflare-terraform) that reference cloudflared.
+### Phase 5a — Close the CAA gap (after a stable rollback window, ~4 weeks)
+1. Confirm no record is proxied any more (`cloudflare_dns_record` resources + ExternalDNS).
+2. Disable Universal SSL (Terraform if the v5 provider exposes it — verify the resource name — otherwise dashboard; record the manual step in provision/cloudflare/CLAUDE.md).
+3. Publish the prepared CAA records; verify with `dig @1.1.1.1 +short CAA <apex>` and `<host>` that ONLY our pinned lines remain (no auto-added CA lines).
+4. Force a cert-manager renewal (or wait for the next) and confirm success; confirm the apex host renews.
+Note: after this step a rollback to the Cloudflare proxy needs Universal SSL re-enabled first (edge cert issuance can take minutes to hours) — this is why it waits for the rollback window.
 
-## Observability & ops (to build in Phase 2–4)
-- ServiceMonitor for the agent; discover metric names (undocumented) and add a PrometheusRule (agent down / not connected), routed to Pushover.
-- External synthetic check from outside the LAN (in-cluster blackbox-exporter resolves via split-horizon to envoy-internal, so it cannot see the public path) — decide: hosted uptime service vs a probe through a public resolver.
-- Runbook entry: "towonel edge down" → decide wait vs rollback to Cloudflare (Phase 4 rollback steps).
+### Phase 5b — Decommission
+- Kubernetes: delete kubernetes/apps/networking/cloudflare-tunnel/ (+ entry in kubernetes/apps/networking/kustomization.yaml), CiliumCIDRGroup cloudflare; update the comments in ciliumnetworkpolicy-external.yaml, gateway-policies.yaml and crowdsec-bouncer/app/helmrelease.yaml that name cloudflared/CF-Connecting-IP.
+- GitHub: remove .github/workflows/update-cloudflare-networks.yaml + .github/scripts/update_cloudflare_networks.py.
+- Renovate: drop the cloudflared changelog rule in .renovate/changeLogs.json5; optionally add a towonel changelog URL once Phase 0 #8 is known.
+- Terraform: remove tunnel.tf, access.tf (apps, groups, service token, Google IdP), firewall_rules.tf (GitHub list + rule only act on proxied traffic; on-prem github-webhook SecurityPolicy covers it), delete_stale_tunnels.sh and the tunnel vars in variables.tf; review zone_settings.tf for proxy-only settings (security_level, browser_check, bot management, always_use_https, …) and keep zone-wide ones (DNSSEC).
+- 1Password: remove tunnel_* fields and the CF-Access service-token fields from the cloudflare item; remove the Access headers from the Paperless/Mealie mobile app configs.
+- Docs: CLAUDE.md (root), kubernetes/CLAUDE.md, kubernetes/apps/networking/CLAUDE.md, provision/cloudflare/CLAUDE.md, .claude/skills/networking-platform (SKILL.md, references/topology.md, validation.md, change-patterns.md), .claude/skills/cloudflare-terraform; README.md is human-owned — ask before touching it.
+- BM: docs/areas/networking, cloudflare, iam updated; this note → status done, progress note created.
+
+## Observability & operations
+- Alerts: the four chart rules (EdgeLinkDown critical) routed through the existing Alertmanager → Pushover path; plus a towonel_agent_edge_path change notification if direct/relay flapping matters after D2.
+- Dashboard: chart dashboard via GrafanaDashboard (folder Networking).
+- External synthetic check (decision D3): in-cluster blackbox-exporter resolves public names via split-horizon to envoy-internal, so it cannot see the public path. Options: hosted uptime monitor against echo.${PUBLIC_DOMAIN} (cheap, independent) or blackbox probing the edge IP with SNI via a module that pins the target address.
+- Runbook (networking CLAUDE.md or BM): "towonel edge down" → check EdgeLinkDown + operator status; > 30 min or unknown ETA → rollback (Phase 4 steps) while the rollback window is open; afterwards → self-host fallback or Cloudflare re-enable incl. Universal SSL.
+- Upgrades: read release notes (Phase 0 #8), bump chart + image digest together, watch reconnects for 24h.
 
 ## Risks & mitigations
-- Edge-issued cert for our hostnames (terminate mode / rogue ACME) → CAA accounturi+dns-01 at apex, CT monitoring.
-- Another tenant claiming our hostnames on the shared edge → without CAA bypass they can only cause TLS errors (DoS), not interception; Phase 0 #1 answer required.
-- Client IP spoofing via XFF → PROXY required + numTrustedHops 0, tested with forged header.
-- Managed outage / service shutdown / invite revoked → kept CF path + documented rollback; self-host fallback option (VPS: TCP 443, TCP 8443, UDP 51820, IPv6).
-- Version skew agent ↔ managed hub → manual, release-note-read upgrades; pin by digest.
-- Registry gate (Anubis on git.ow-ops.eu) → pull from codeberg.org OCI; verify Flux can pull.
-- Volumetric DDoS → accepted risk for a homelab; rollback to CF proxy is the emergency lever.
+- Edge/rogue-issued cert for our hostnames → CT monitoring (from Phase 1), accounturi CAA once Universal SSL is off (Phase 5a). Until then interception requires a CT-visible certificate.
+- Another tenant claiming our hostnames on the shared edge → TLS errors (DoS) without a cert; with a cert see above. Phase 0 #1.
+- Client-IP spoofing via XFF → PROXY required + numTrustedHops 0, tested (P3).
+- Managed outage / shutdown / invite revoked → rollback path during the window, then self-host fallback (VPS: TCP 443, TCP 8443, UDP 51820, IPv6).
+- Stream cap 256/agent and OOM history → 2 replicas, 512Mi, StreamsNearCap alert.
+- Relay-path throughput (home-gallery media) → measure (P9); D2 directConnect if needed.
+- Version skew agent ↔ managed hub → manual upgrades, Phase 0 #6.
+- Volumetric DDoS → accepted homelab risk; emergency lever is re-proxying through Cloudflare.
+
+## Open decisions (owner: user)
+- D1 Pilot shape: echo moved to a dedicated envoy-towonel gateway (recommended) vs direct cutover.
+- D2 Direct path: keep relay (no inbound port) vs directConnect with a UDP port-forward on the OpenWrt router to the agent NodePort (opens one UDP port on the home IP; iroh-authenticated). Decide after P9.
+- D3 External uptime check: hosted monitor vs edge-pinned blackbox probe.
+- D4 CT monitoring: hosted service vs in-cluster certspotter.
+- D5 Rollback window length before Phase 5a (default 4 weeks).
 
 ## Acceptance criteria
-1. All public hostnames served via towonel with our certificate (verified per host).
-2. Forged X-Forwarded-For does not change the client IP seen by geo, CrowdSec and rate limiting.
+1. Every public hostname is served via towonel with our certificate (checked per host).
+2. A forged X-Forwarded-For does not change the client IP seen by geo, CrowdSec and rate limiting.
 3. Non-HU request → 403; GitHub webhook redelivery → 200.
-4. CAA pinned and verified; own cert renewal succeeds; CT alert tested.
-5. Agent alerting + external uptime check in place.
-6. Rollback rehearsed once (pilot or cutover window) within 15 minutes.
+4. CT alert path tested (Phase 1); after Phase 5a only the pinned CAA lines are published and our renewal succeeds.
+5. Agent alerts + external uptime check live and tested.
+6. Rollback rehearsed once within 15 minutes.
+
+## Review log
+- 2026-11-15 review: (1) CAA pin void under Universal SSL → Phase 1 split into CT first, CAA in Phase 5a; (2) project activity corrected (registry 1.13.7 built 2026-11-13; Codeberg repo is a stale mirror); (3) chart 1.13.7 read: 256-stream cap, OOM history, shipped alerts/metrics, image registry choice; (4) pilot completed: CCNP ingress-from-gateway-external gap, EnvoyProxy geo copy, ExternalDNS gateway filter and record handover order, echo reused for OIDC; (5) cutover ordering, disruption window and rollback order made explicit; (6) decommission inventory from a repo grep; (7) client-IP chain grounded in EG geoip.go + live CRD docs; (8) aligned with the same-day removal of the Cloudflare country rule (a5fb33272) and the GeoGateFalsePositive alert (61639a775).
 
 ## Effort
-L — Phase 0 depends on operator response; Phases 1–3 ~1–2 days of work + soak; Phase 4 ~2h window; Phase 5 ~half day.
+L — Phase 0 depends on the operator; Phases 1–3 ~2 days + soak; Phase 4 ~2h window; Phase 5a ~1h; Phase 5b ~half day.
 
 ## Related
 
