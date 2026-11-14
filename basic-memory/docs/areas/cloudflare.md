@@ -80,7 +80,7 @@ A single Kubernetes consumer of the tunnel lives at `kubernetes/apps/networking/
 - [component] SMTP2GO mail subdomain — `msg` DKIM/return/tracking CNAMEs + `_dmarc.msg` policy (provision/cloudflare/dns_records.tf:91-130)
 - [component] Zone WAF ruleset — `cloudflare_ruleset.zone_waf_rules` (NOT `flux_webhook_waf`) holds TWO rules (provision/cloudflare/firewall_rules.tf:30-54):
   1. GitHub-CIDR allowlist on `flux-webhook`: `cloudflare_list.github_hooks_cidr_list` is populated from `https://api.github.com/meta` `hooks` ranges via a `for_each` `cloudflare_list_item`, and everything not in the list is blocked on that host (:1-15, :41-46).
-  2. **Non-Hungary country block** on all subdomains except an explicit exception set (`flux-webhook` — the GitHub sender is non-HU) (:17-28 locals, :47-52 rule).
+  2. ~~Non-Hungary country block~~ — removed 2026-11-14 (a5fb33272); country gating is on-prem in Envoy `envoy-external-edge` (see "Country gating moved on-prem" below).
 - [component] Zone settings — SSL strict, TLS 1.2 floor, TLS 1.3 + 0-RTT, HTTP/3, IPv6, WebSockets, opportunistic onion, DNSSEC active, security level high, browser/cache TTL = 0, Polish/Rocket Loader off, Brotli on, Bot Management with `fight_mode` + JS challenge, global cache-bypass ruleset (provision/cloudflare/zone_settings.tf)
 - [component] Managed transforms — `add_visitor_location_headers` managed request header (provision/cloudflare/managed_transforms.tf:4-15)
 - [component] Notification policies — Tunnel Health, Tunnel Update, HTTP DDoS (`dos_attack_l7`), Trust-and-Safety abuse report; all email-mechanism, delivered to the `PUSHOVER_CLOUDFLARE_EMAIL` gateway (provision/cloudflare/notification.tf)
@@ -108,7 +108,7 @@ A single Kubernetes consumer of the tunnel lives at `kubernetes/apps/networking/
 - [claim] "The service-token (`non_identity`) policy is scoped to exactly two Access apps — Paperless (`docs`) and Mealie (`recipes`) — and was deliberately removed from the `Private Cloud` wildcard app, so a leaked mobile token can no longer bypass identity on every host. The rationale is recorded as a comment in the Terraform" (evidence: repo, ref: provision/cloudflare/access.tf:99-109,134-151,155-193, verified: 2026-11-14)
 - [claim] "Every Access app session is `24h`. The former `720h` session on the `Private Cloud` wildcard is gone" (evidence: repo, ref: provision/cloudflare/access.tf:143,160,181,201, verified: 2026-11-14)
 - [claim] "The four no-auth public hostnames are not hand-written apps: a single `for_each` over `local.public_bypass_apps` emits one Access app per hostname (www, share, idm, books), because Cloudflare Access requires one app per hostname" (evidence: repo, ref: provision/cloudflare/access.tf:210-230, verified: 2026-11-14)
-- [claim] "The zone WAF blocks all non-Hungary traffic to every proxied subdomain except an explicit exception set (`flux-webhook`). Adding a service that must accept foreign traffic requires adding its host to `local.country_block_exceptions`" (evidence: repo, ref: provision/cloudflare/firewall_rules.tf:17-28,47-52, verified: 2026-11-14)
+- [claim] "The zone WAF holds only the flux-webhook GitHub-CIDR rule; the non-Hungary block was removed on 2026-11-14 and country gating lives in Envoy (`envoy-external-edge`)." (evidence: repo, ref: provision/cloudflare/firewall_rules.tf, verified: 2026-11-14)
 
 ## Drift Risk
 
@@ -139,8 +139,9 @@ A single Kubernetes consumer of the tunnel lives at `kubernetes/apps/networking/
 - 2026-11-14 — the MTA-STS / TLS-RPT stack (Worker, KV, its DNS records, bypass Access app and WAF
   exception) was removed in PR #4776; the touched claims were re-checked. Detail lives in git history.
 
-## On-prem twin of the WAF country rule (since 2026-11-14)
+## Country gating moved on-prem (2026-11-14)
 
-- [fact] `zone_waf_rules` rule 2 (block non-HU except `country_block_exceptions`) is now mirrored in Envoy: SecurityPolicy `envoy-external-edge` (HU-only, MaxMind GeoLite2-Country), and flux-webhook is restricted to GitHub hooks ranges by the route policy `flux-system/github-webhook`. Both layers run in parallel until the Cloudflare exit. See [[networking]] and [[onprem-geoip-country-filter]].
-- [rule] A host that must accept non-HU traffic needs both a `country_block_exceptions` entry here and an Envoy-side Allow; changing only Cloudflare still returns 403 from Envoy.
-- [observation] e2e test pattern (2026-11-14): temporarily add the `echo` host to `country_block_exceptions` + `public_bypass_apps`, probe from abroad (check-host.net for IPv4, the Globalping API for IPv6 and custom headers), then revert and confirm with `terraform plan` that nothing has drifted.
+- [fact] The WAF country rule (former rule 2 of `zone_waf_rules`, "block non-HU except `country_block_exceptions`") was **removed** on 2026-11-14 (a5fb33272) along with its locals. The ruleset now holds only the flux-webhook GitHub-CIDR rule.
+- [fact] Country gating is enforced only in Envoy: SecurityPolicy `envoy-external-edge` (HU-only, MaxMind GeoLite2-Country), with flux-webhook limited to GitHub hooks ranges by `flux-system/github-webhook`. See [[networking]] and [[onprem-geoip-country-filter]].
+- [rule] Do not reintroduce a Cloudflare-side country rule. Access from abroad is granted in Envoy only. Hosts behind the `private_cloud` Access wildcard still hit the Access login first.
+- [observation] e2e test pattern from the parallel run (now historical): temporarily add the `echo` host to the country exception list and `public_bypass_apps`, probe from abroad (check-host.net for IPv4, the Globalping API for IPv6 and custom headers), revert, then confirm with `terraform plan` that nothing has drifted.

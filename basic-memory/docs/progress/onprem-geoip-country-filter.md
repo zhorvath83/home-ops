@@ -1,10 +1,10 @@
 ---
 title: onprem-geoip-country-filter
 type: roadmap
-permalink: home-ops/docs/roadmap/onprem-geoip-country-filter
+permalink: home-ops/docs/progress/onprem-geoip-country-filter
 topic: On-prem client-IP country filter (HU-only) on envoy-external — move the geo
   gate off Cloudflare
-status: in-progress
+status: done
 priority: medium
 scope: Re-implement the Cloudflare WAF rule "block non-HU except flux-webhook" natively
   in Envoy Gateway on envoy-external (EnvoyProxy geoIP provider + Gateway-level SecurityPolicy
@@ -35,7 +35,7 @@ related_areas:
 ## Metadata (observation-form, schema validation)
 
 - [topic] On-prem client-IP country filter (HU-only) on envoy-external
-- [status] in-progress — phases 0–5 live on main (2026-11-14); e2e foreign test and IPv6 verified; open: the parallel run (step 6)
+- [status] done — completed 2026-11-14; the Cloudflare country rule was removed the same day by user decision, so Envoy is the only country gate
 - [priority] medium
 
 ## What we gain
@@ -172,6 +172,15 @@ Open:
   - Reload-error path: a corrupt file renamed onto the mmdb → db_reload_error 1, previous DB kept (HU 200, US 403 meanwhile); restoring the original → db_reload_success 2, md5 unchanged. GeoIPReloadFailed fires for about 1h as a side effect.
 - [verified] **External OIDC login (2026-11-14, user on mobile data, IPv6):** docs → paperless OIDC login → idm /authorize → passkey interaction → /authorize 303 → paperless callback 302 → app 200 and websocket 101; dash, books and idm assets all 200. 154 requests with no 403 and no 5xx. Paperless uses app-level OIDC; the Envoy gateway-oidc filter on external serves only the echo test app (redirect verified, full login not exercised).
 - [not-tested] a full-cluster DR bootstrap with an empty geoip PVC, the hooks-workflow PR path, and an Envoy restart while the mmdb on the PVC is corrupt (would be an outage by design: Envoy rejects the provider; geoipupdate would only fix it on its next daily run or a pod restart).
+
+## Closure — 2026-11-14: Cloudflare country rule removed
+
+- [decision] User decision: stop the parallel run early and remove the Cloudflare WAF country rule. Evidence: 14 days of real clients all HU in GeoLite2 (0 would-be false positives), foreign v4/v6 e2e tests, the full port-forward matrix, and a real external OIDC login.
+- [done] 61639a775: `GeoGateFalsePositive` deleted (with foreign traffic reaching Envoy, denials are normal); the dashboard tripwire row became a plain "Geo denials per 15m" panel; the networking guide names envoy-external-edge as the only country gate.
+- [done] a5fb33272: `provision/cloudflare/firewall_rules.tf` loses rule 2 and the `country_block_exceptions` locals; the GitHub-CIDR rule on flux-webhook stays. Applied; `terraform plan` shows no changes.
+- [verified] After the removal, foreign requests via Cloudflare (check-host.net): idm (ID, IR) and books (CH, SI, US) → 403 `rbac_access_denied` from Envoy; dash → 302 to the Cloudflare Access login (Access still gates first); flux-webhook → 403 from the Cloudflare GitHub-CIDR rule. HU idm → 200. One HU check-host node got 403 `ext_authz_denied` (on a CrowdSec blocklist): the bouncer fix at work.
+- [fact] Pocket ID (`idm`, route pocket-id-external) is covered by the gateway-level HU gate: no route policy with authorization, US → 403 in the matrix. It is a Cloudflare Access bypass app, so geo + CrowdSec + passkey-only login are its only gates now.
+- [residual] Without Cloudflare in front, nothing distinguishes a misclassified Hungarian client from a foreign one. Watch the dashboard's deny panels and vmui (`stats by (geo_country)`); fix such a case with a `clientCIDRs` Allow in envoy-external-edge.
 
 ## Rollback
 
