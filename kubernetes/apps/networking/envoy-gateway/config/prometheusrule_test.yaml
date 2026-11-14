@@ -180,7 +180,7 @@ tests:
               description: |-
                 SecurityPolicy envoy-external-edge (namespace networking)
                 is not Accepted (accepted=False); it is silently detached and
-                its routes lose the Gateway-level CrowdSec / RFC1918 gates. The rejection
+                its routes lose the Gateway-level CrowdSec / RFC1918 / geo gates. The rejection
                 reason is in the envoy-gateway controller log.
   # (k) Fire: no ancestor at all (accepted="" / reason="") — the missing-ancestorRef case.
   - interval: 1m
@@ -204,7 +204,7 @@ tests:
               description: |-
                 SecurityPolicy paperless-oidc (namespace selfhosted)
                 is not Accepted (accepted=); it is silently detached and
-                its routes lose the Gateway-level CrowdSec / RFC1918 gates. The rejection
+                its routes lose the Gateway-level CrowdSec / RFC1918 / geo gates. The rejection
                 reason is in the envoy-gateway controller log.
 
   # === EnvoyGatewayPolicyStatusMissing ===
@@ -335,7 +335,7 @@ tests:
                 The cause can be the bouncer (up but erroring) or an AppSec outage
                 underneath it; CrowdSecBouncerDown only catches a dead pod.
   # === GeoIPDatabaseStale ===
-  # build_epoch is a negative offset, so age = eval time + |epoch|; threshold 10d, for: 1h.
+  # build_epoch is a negative offset, so age = eval time + |epoch|; threshold 7d, for: 1h.
   # (u) No-fire: a 1-day-old database.
   - interval: 1m
     input_series:
@@ -345,20 +345,20 @@ tests:
       - eval_time: 70m
         alertname: GeoIPDatabaseStale
         exp_alerts: []
-  # (v) Boundary no-fire: older than 10d since t=0+, but the 1h `for` hold not yet elapsed.
+  # (v) Boundary no-fire: older than 7d since t=0+, but the 1h `for` hold not yet elapsed.
   - interval: 1m
     input_series:
       - series: 'envoy_maxmind_country_db__geoip_GeoLite2_Country_mmdb_db_build_epoch{namespace="networking",pod="envoy-external-abc"}'
-        values: '-864000x80'
+        values: '-604800x80'
     alert_rule_test:
       - eval_time: 30m
         alertname: GeoIPDatabaseStale
         exp_alerts: []
-  # (w) Fire: stale past the hold (age 10d + 70m).
+  # (w) Fire: stale past the hold (age 7d + 70m).
   - interval: 1m
     input_series:
       - series: 'envoy_maxmind_country_db__geoip_GeoLite2_Country_mmdb_db_build_epoch{namespace="networking",pod="envoy-external-abc"}'
-        values: '-864000x80'
+        values: '-604800x80'
     alert_rule_test:
       - eval_time: 70m
         alertname: GeoIPDatabaseStale
@@ -372,7 +372,7 @@ tests:
               summary: GeoIP country database on envoy-external is stale
               description: |-
                 The GeoLite2-Country database loaded by envoy-external-abc was built
-                10d 1h 10m 0s ago. The geoipupdate Deployment
+                7d 1h 10m 0s ago. The geoipupdate Deployment
                 (networking) is not delivering updates; check its log and the
                 MaxMind credentials in the 1Password item maxmind.
   # === GeoIPReloadFailed ===

@@ -130,7 +130,7 @@
       "type": "stat",
       "id": 3,
       "title": "GeoIP DB age",
-      "description": "Days since MaxMind built the loaded GeoLite2-Country database (rebuilt Tue+Fri). GeoIPDatabaseStale fires above 10d.",
+      "description": "Days since MaxMind built the loaded GeoLite2-Country database (rebuilt Tue+Fri, fetched daily). GeoIPDatabaseStale fires above 7d.",
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
@@ -166,11 +166,11 @@
               },
               {
                 "color": "yellow",
-                "value": 7
+                "value": 5
               },
               {
                 "color": "red",
-                "value": 10
+                "value": 7
               }
             ]
           },

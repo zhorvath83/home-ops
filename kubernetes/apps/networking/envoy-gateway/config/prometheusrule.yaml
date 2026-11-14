@@ -51,10 +51,10 @@ spec:
               a 503 on the public AND LAN surfaces — exemptIPs cover only 10.0.0.0/8.
               The cause can be the bouncer (up but erroring) or an AppSec outage
               underneath it; CrowdSecBouncerDown only catches a dead pod.
-        # Build epoch, not file mtime: MaxMind rebuilds twice a week, so 10d means the
-        # updater has missed several releases (and the EULA's 30-day deletion clock runs).
+        # Build epoch, not file mtime: MaxMind rebuilds Tue + Fri and the updater runs daily, so a
+        # healthy age stays under ~5d; 7d means missed releases. Sole signal for update failures.
         - alert: GeoIPDatabaseStale
-          expr: (time() - envoy_maxmind_country_db__geoip_GeoLite2_Country_mmdb_db_build_epoch{namespace="networking"}) > 10 * 86400
+          expr: (time() - envoy_maxmind_country_db__geoip_GeoLite2_Country_mmdb_db_build_epoch{namespace="networking"}) > 7 * 86400
           for: 1h
           labels:
             severity: warning
@@ -121,7 +121,7 @@ spec:
         # custom-resource-state (envoy_securitypolicy_info) — EG itself exposes no
         # per-policy status metric. Not-Accepted, or no ancestor at all (accepted=""),
         # means the policy silently detached and its routes lost the Gateway-level
-        # CrowdSec/RFC1918 gates while traffic kept flowing.
+        # CrowdSec/RFC1918/geo gates while traffic kept flowing.
         - alert: EnvoyGatewayPolicyNotAccepted
           expr: envoy_securitypolicy_info{accepted!="True"}
           for: 5m
@@ -132,7 +132,7 @@ spec:
             description: |-
               SecurityPolicy {{ $labels.name }} (namespace {{ $labels.exported_namespace }})
               is not Accepted (accepted={{ $labels.accepted }}); it is silently detached and
-              its routes lose the Gateway-level CrowdSec / RFC1918 gates. The rejection
+              its routes lose the Gateway-level CrowdSec / RFC1918 / geo gates. The rejection
               reason is in the envoy-gateway controller log.
         # Sentinel on the guardrail: envoy_securitypolicy_info vanishing (KSM down, its
         # securitypolicies RBAC/CRS entry broken, all policies deleted) silently blinds
