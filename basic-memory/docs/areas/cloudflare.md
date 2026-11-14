@@ -5,7 +5,7 @@ permalink: home-ops/docs/areas/cloudflare
 area: cloudflare
 status: current
 confidence: high
-verified_at: '2026-08-03'
+verified_at: '2026-11-14'
 summary: Cloudflare resources for the public domain (DNS zone, Zero Trust Access apps,
   Cloudflared tunnel, WAF rules, zone settings,
   notifications) are managed by Terraform in `provision/cloudflare/`. State lives
@@ -51,7 +51,7 @@ tags:
 - [area] cloudflare
 - [status] current
 - [confidence] high
-- [verified_at] 2026-08-03
+- [verified_at] 2026-11-14
 
 ## Summary
 
@@ -92,27 +92,27 @@ A single Kubernetes consumer of the tunnel lives at `kubernetes/apps/networking/
 
 ## Claims (verified against repo)
 
-- [claim] "Terraform state lives in Terraform Cloud, org `zhorvath83`, workspace `cloudflare`" (evidence: repo, ref: provision/cloudflare/main.tf:5-10, verified: 2026-05-19)
-- [claim] "Cloudflare provider is pinned with an inline `# renovate:disablePlugin terraform cloudflare/cloudflare` directive — Renovate is intentionally not bumping this provider automatically" (evidence: repo, ref: provision/cloudflare/main.tf:18-22, verified: 2026-05-19)
+- [claim] "Terraform state lives in Terraform Cloud, org `zhorvath83`, workspace `cloudflare`" (evidence: repo, ref: provision/cloudflare/main.tf:5-10, verified: 2026-11-14)
+- [claim] "Cloudflare provider is pinned with an inline `# renovate:disablePlugin terraform cloudflare/cloudflare` directive — Renovate is intentionally not bumping this provider automatically" (evidence: repo, ref: provision/cloudflare/main.tf:18-22, verified: 2026-11-14)
 - [claim] "Cloudflare provider authentication uses Global API Key (`var.CF_GLOBAL_APIKEY`) + account email (`var.CF_USERNAME`), not an API Token" (evidence: repo, ref: provision/cloudflare/main.tf:46-49 + variables.tf:91-100, verified: 2026-11-14)
-- [claim] "The Cloudflared tunnel resource writes its `tunnel_id`/`tunnel_name`/`tunnel_secret` back into 1Password item `cloudflare` (vault `HomeOps`) via a local-exec `op item edit` after creation — the kubernetes-side consumer fetches those from 1Password via ExternalSecret" (evidence: repo, ref: provision/cloudflare/tunnel.tf:9-16 + kubernetes/apps/networking/cloudflare-tunnel/app/externalsecret.yaml, verified: 2026-05-19)
-- [claim] "Access mobile-app service token (`MobileAppsServiceToken`) is written back into the same 1Password `cloudflare` item as `CF-Access-Client-Id` + `CF-Access-Client-Secret` via a local-exec `op item edit` after creation" (evidence: repo, ref: provision/cloudflare/access.tf:5-19, verified: 2026-05-19)
+- [claim] "The Cloudflared tunnel resource writes its `tunnel_id`/`tunnel_name`/`tunnel_secret` back into 1Password item `cloudflare` (vault `HomeOps`) via a local-exec `op item edit` after creation — the kubernetes-side ExternalSecret reads `account_id`, `tunnel_id` and `tunnel_secret` from that item (not `tunnel_name`; `account_id` is not written by Terraform)" (evidence: repo, ref: provision/cloudflare/tunnel.tf:9-16 + kubernetes/apps/networking/cloudflare-tunnel/app/externalsecret.yaml, verified: 2026-11-14)
+- [claim] "Access mobile-app service token (`MobileAppsServiceToken`) is written back into the same 1Password `cloudflare` item as `CF-Access-Client-Id` + `CF-Access-Client-Secret` via a local-exec `op item edit` after creation" (evidence: repo, ref: provision/cloudflare/access.tf:5-19, verified: 2026-11-14)
 - [claim] "Flux webhook is double-protected: a Zero Trust Access app with the `CIDRbasedBypass` policy AND a zone-level WAF ruleset that blocks everything not in `github_hooks_cidr_list` on `flux-webhook.${PUBLIC_DOMAIN}`" (evidence: repo, ref: provision/cloudflare/access.tf:234-243 + firewall_rules.tf:1-15,41-46, verified: 2026-11-14)
 - [claim] "DMARC policy is `p=reject` with strict aspf+adkim and 100% application; aggregate + forensic reports go to a Mailhardener mailbox (`mailto:35be510b@in.mailhardener.com`)" (evidence: repo, ref: provision/cloudflare/dns_records.tf:81-88 + terraform.tfvars:16-20, verified: 2026-11-14)
-- [claim] "Zone settings enforce strict SSL, TLS 1.2 floor, TLS 1.3 + 0-RTT, HTTP/3, IPv6, DNSSEC active, security level high, Bot Management `fight_mode` with JS challenge, and a zone-wide cache-bypass ruleset for any `*.${PUBLIC_DOMAIN}` request" (evidence: repo, ref: provision/cloudflare/zone_settings.tf:2-203, verified: 2026-05-19)
-- [claim] "Notification policies route Tunnel Health, Tunnel Update, HTTP DDoS, and Abuse Report events to the Pushover email gateway via `PUSHOVER_CLOUDFLARE_EMAIL`" (evidence: repo, ref: provision/cloudflare/notification.tf:6-63, verified: 2026-05-19)
-- [claim] "GitHub hook IP ranges are pulled live from `https://api.github.com/meta` on every plan; both the Access bypass policy and the WAF ruleset list depend on that single `data "http" "github_ip_ranges"` source" (evidence: repo, ref: provision/cloudflare/main.tf:59-64 + access.tf:85-97 + firewall_rules.tf:1-15, verified: 2026-05-19)
-- [claim] "All four Just recipes (`init`, `plan`, `apply`, `unlock`) wrap a single Terraform subcommand inside `op run --no-masking --env-file=./.env -- terraform ...` — there is no raw-terraform path documented" (evidence: repo, ref: provision/cloudflare/mod.just:1-34, verified: 2026-05-19)
-- [claim] "The Kubernetes cloudflare-tunnel workload (kubernetes/apps/networking/cloudflare-tunnel/) consumes tunnel credentials only — it does not create or mutate Cloudflare resources; the source of truth for tunnel name/ID/secret remains this Terraform stack" (evidence: repo, ref: kubernetes/apps/networking/cloudflare-tunnel/app/externalsecret.yaml + provision/cloudflare/tunnel.tf, verified: 2026-05-19)
+- [claim] "Zone settings enforce strict SSL, TLS 1.2 floor, TLS 1.3 + 0-RTT, HTTP/3, IPv6, DNSSEC active, security level high, Bot Management `fight_mode` with JS challenge, and a zone-wide cache-bypass ruleset for any `*.${PUBLIC_DOMAIN}` request" (evidence: repo, ref: provision/cloudflare/zone_settings.tf:2-203, verified: 2026-11-14)
+- [claim] "Notification policies route Tunnel Health, Tunnel Update, HTTP DDoS, and Abuse Report events to the Pushover email gateway via `PUSHOVER_CLOUDFLARE_EMAIL`" (evidence: repo, ref: provision/cloudflare/notification.tf:6-63, verified: 2026-11-14)
+- [claim] "GitHub hook IP ranges are pulled live from `https://api.github.com/meta` on every plan; both the Access bypass policy and the WAF ruleset list depend on that single `data "http" "github_ip_ranges"` source" (evidence: repo, ref: provision/cloudflare/main.tf:59-64 + access.tf:85-97 + firewall_rules.tf:1-15, verified: 2026-11-14)
+- [claim] "All four Just recipes (`init`, `plan`, `apply`, `unlock`) wrap a single Terraform subcommand inside `op run --no-masking --env-file=./.env -- terraform ...` — there is no raw-terraform path documented" (evidence: repo, ref: provision/cloudflare/mod.just:1-34, verified: 2026-11-14)
+- [claim] "The Kubernetes cloudflare-tunnel workload (kubernetes/apps/networking/cloudflare-tunnel/) consumes tunnel credentials only — it does not create or mutate Cloudflare resources; the source of truth for tunnel name/ID/secret remains this Terraform stack" (evidence: repo, ref: kubernetes/apps/networking/cloudflare-tunnel/app/externalsecret.yaml + provision/cloudflare/tunnel.tf, verified: 2026-11-14)
 
-- [claim] "The service-token (`non_identity`) policy is scoped to exactly two Access apps — Paperless (`docs`) and Mealie (`recipes`) — and was deliberately removed from the `Private Cloud` wildcard app, so a leaked mobile token can no longer bypass identity on every host. The rationale is recorded as a comment in the Terraform" (evidence: repo, ref: provision/cloudflare/access.tf:99-109,134-151,155-193, verified: 2026-08-03)
-- [claim] "Every Access app session is `24h`. The former `720h` session on the `Private Cloud` wildcard is gone" (evidence: repo, ref: provision/cloudflare/access.tf:143,160,181,201, verified: 2026-08-03)
+- [claim] "The service-token (`non_identity`) policy is scoped to exactly two Access apps — Paperless (`docs`) and Mealie (`recipes`) — and was deliberately removed from the `Private Cloud` wildcard app, so a leaked mobile token can no longer bypass identity on every host. The rationale is recorded as a comment in the Terraform" (evidence: repo, ref: provision/cloudflare/access.tf:99-109,134-151,155-193, verified: 2026-11-14)
+- [claim] "Every Access app session is `24h`. The former `720h` session on the `Private Cloud` wildcard is gone" (evidence: repo, ref: provision/cloudflare/access.tf:143,160,181,201, verified: 2026-11-14)
 - [claim] "The four no-auth public hostnames are not hand-written apps: a single `for_each` over `local.public_bypass_apps` emits one Access app per hostname (www, share, idm, books), because Cloudflare Access requires one app per hostname" (evidence: repo, ref: provision/cloudflare/access.tf:210-230, verified: 2026-11-14)
 - [claim] "The zone WAF blocks all non-Hungary traffic to every proxied subdomain except an explicit exception set (`flux-webhook`). Adding a service that must accept foreign traffic requires adding its host to `local.country_block_exceptions`" (evidence: repo, ref: provision/cloudflare/firewall_rules.tf:17-28,47-52, verified: 2026-11-14)
 
 ## Drift Risk
 
-- [drift] Cloudflare provider version is pinned with a Renovate disable annotation (`main.tf:18-22`, `.terraform.lock.hcl` constraints `5.22.0`) — major-version bumps must be done manually. (The earlier claim that `.terraform/providers/` holds "many older versions" is not supportable: the local cache currently holds only 5.22.0, and `.terraform/` is a gitignored, non-authoritative artifact anyway.)
+- [drift] Cloudflare provider version is pinned with a Renovate disable annotation (`main.tf:18-22`, `.terraform.lock.hcl` constraint `5.29.0`) — major-version bumps must be done manually.
 - [drift] The two `null_resource` blocks (tunnel + service token) write secrets back to 1Password via `op item edit` as a one-shot `local-exec` after create. Terraform does not track the 1Password side — if the 1Password item is renamed, deleted, or its fields differ, the Kubernetes consumers silently break. There is no automated reconciliation.
 - [drift] Mail-stack DNS uses Zoho as the primary mailbox provider plus SMTP2GO for the `.msg` subdomain. Provider switches require coordinated edits to MX/SPF/DKIM/DMARC.
 - [drift] Access uses Cloudflare's **Global API Key** (`CF_GLOBAL_APIKEY`) for the Terraform provider rather than a scoped API Token. Wider blast radius if compromised — flagged as a hardening follow-up rather than current blocker.
@@ -134,5 +134,7 @@ A single Kubernetes consumer of the tunnel lives at `kubernetes/apps/networking/
 ## History
 
 - 2026-08-03 — full re-verification against the HCL source (`area-reference-staleness-audit`).
+- 2026-11-14 — full re-verification against the HCL source and the live plan (no changes); fixed the
+  provider pin (5.29.0) and the tunnel ExternalSecret field list.
 - 2026-11-14 — the MTA-STS / TLS-RPT stack (Worker, KV, its DNS records, bypass Access app and WAF
   exception) was removed in PR #4776; the touched claims were re-checked. Detail lives in git history.
