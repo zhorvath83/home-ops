@@ -20,7 +20,6 @@ locals {
   # (e.g. a new webhook receiver, or an endpoint fetched by foreign peers).
   country_block_exceptions = toset([
     "flux-webhook.${var.CF_DOMAIN_NAME}", # GitHub webhook sender is non-HU
-    "mta-sts.${var.CF_DOMAIN_NAME}",      # foreign MX validators fetch the MTA-STS policy
   ])
   country_block_expression = join(" and ", concat(
     [for host in local.country_block_exceptions : "not http.host eq \"${host}\""],

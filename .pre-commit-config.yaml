@@ -104,7 +104,6 @@ repos:
     rev: v1.5.6
     hooks:
       - id: remove-crlf
-        exclude: mta_sts_policy.tpl
       - id: remove-tabs
   - repo: https://github.com/sirosen/texthooks
     rev: 1.0.0
