@@ -101,7 +101,7 @@ Cloudflare's edge. Gateway-level SecurityPolicies: `envoy-external-edge` (HU-onl
 authorization + CrowdSec extAuth, since 2026-11-14) and `envoy-internal-rfc1918` (RFC1918
 authorization + CrowdSec extAuth). Baseline security response headers are set natively by both
 ClientTrafficPolicies (`headers.lateResponseHeaders`; the former Lua EnvoyExtensionPolicy is gone).
-The shared `envoy` BTP serves Hungarian pages for Envoy-local 401s and 403s (`responseOverride`). Split DNS by `k8s-gateway`
+The shared `envoy` BTP serves a Hungarian page for Envoy-local 401s (`responseOverride`); a 403 override was tried and reverted (Envoy use-after-free, see Update 2026-11-14). Split DNS by `k8s-gateway`
 (LAN) and ExternalDNS (public Cloudflare). LAN clients reach the same public
 hostnames without hairpinning through Cloudflare.
 Cluster-wide substitution variables (`${PUBLIC_DOMAIN}`,
@@ -126,7 +126,7 @@ and injected into every child Kustomization via Flux `postBuild.substituteFrom`.
 - [component] SecurityPolicy/envoy-external-edge — Gateway-level on envoy-external: `authorization` defaultAction Deny + rule `allow-hu` (clientIPGeoLocations HU) and the CrowdSec `extAuth` (failOpen false, statusOnError 503). Route-level exception: flux-system/github-webhook (GitHub hooks CIDRs). (gateway-policies.yaml)
 - [component] EnvoyProxy/envoy-external geo wiring — MaxMind GeoLite2-Country from the read-only PVC `geoip` at /geoip; `filterOrder` geoip + rbac before ext_authz/oauth2 (envoy.yaml)
 - [component] geoipupdate — Flux stage `envoy-gateway-geoip` (wait: true; envoy-gateway-config depends on it); app-template Deployment running a shell loop around `geoipupdate` (daily; a failed update is logged, the pod stays Ready while the mmdb exists); PVC `geoip` 64Mi; ExternalSecret from 1Password `maxmind` (envoy-gateway/geoip/)
-- [component] BackendTrafficPolicy/envoy `responseOverride` — Hungarian HTML for Envoy-local 401 (oauth2 failure) and 403 (geo/RFC1918 RBAC deny, CrowdSec ban) (gateway-policies.yaml)
+- [component] BackendTrafficPolicy/envoy `responseOverride` — Hungarian HTML for Envoy-local 401 (oauth2 failure) only; no 403 override (see the use-after-free finding) (gateway-policies.yaml)
 - [component] HTTPRoute/https-redirect — shared HTTP→HTTPS 301 redirect, attached to both Gateways at sectionName=http (gateway-policies.yaml)
 - [component] CiliumNetworkPolicy/envoy-external — ingress allowed only from cloudflare-tunnel pod (10080/10443 TCP) + prometheus + kubelet probe (ciliumnetworkpolicy-external.yaml)
 - [component] CiliumNetworkPolicy/envoy-internal — ingress restricted to RFC1918 fromCIDR + cluster/host/remote-node entities on data ports, prometheus + kubelet separately (ciliumnetworkpolicy-internal.yaml)
@@ -487,3 +487,4 @@ Executed from [[onprem-geoip-country-filter]] (roadmap), phases 0–5, directly 
 
 - [fixed] **CrowdSec on envoy-external (2026-11-14, 1093fb057):** the bouncer's `trustedIPHeader: X-Envoy-External-Address` resolved every public request to the cloudflared pod IP, which `exemptIPs: 10.0.0.0/8` skips, so no decision or AppSec check ever applied to public traffic (proven by a self-ban test; likely since the CrowdSec rollout). The bouncer now walks XFF with `trustedProxies: [${POD_CIDR}]`. This supersedes the X-Envoy-External-Address decision recorded in the 2026-07-28 CrowdSec section. Regression test: a short `cscli decisions add --ip <own public IP>` must yield 403 `ext_authz_denied` through Cloudflare.
 - [verified] mmdb hot reload works across pods on the shared PVC (db_reload_success 0 → 1 after a same-content rename).
+- [finding] **Envoy use-after-free with a 403 responseOverride (2026-11-14):** with BTP `responseOverride` (source Local, 403), every RBAC deny logged a corrupted `response_code_details`: the first 8 bytes were a heap pointer in place of `rbac_acc`. Reproduced on envoy-external and envoy-internal (no geo involved); ext_authz denials stayed clean (static string). Before the override (19:44Z) and after the revert (f3f1f4989) the value is clean. No crash was observed, but it is a memory-safety bug reachable by any denied client. Do not re-add it until fixed upstream (EG 1.10.0 / Envoy 1.40.2). Not yet reported upstream.

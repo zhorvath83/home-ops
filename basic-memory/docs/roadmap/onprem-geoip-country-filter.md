@@ -146,7 +146,7 @@ Verified OK (live):
 
 Fixed in the review (f588992a3, 6615bcf8d, b408746d6):
 - [fixed] geoipupdate v8 + entry.sh exited on the first failed update, so a MaxMind outage CrashLooped the pod, made envoy-gateway-geoip NotReady and stalled envoy-gateway-config and k8s-gateway. A shell loop now logs the failure and keeps the pod Ready; GeoIPDatabaseStale went from 10d to 7d.
-- [fixed] Hungarian 403 page (BTP responseOverride, source Local) next to the 401 page; it also covers RFC1918 denials and CrowdSec bans (generic wording).
+- [reverted] Hungarian 403 page (BTP responseOverride): the test matrix showed it triggers an Envoy use-after-free in the RBAC response_code_details, so it was reverted in f3f1f4989 (see [[networking]] Update 2026-11-14).
 - [fixed] Guardrails in kubernetes/apps/networking/CLAUDE.md: a route-level authorization replaces the parent's rules; keep numTrustedHops until gateway#9935; access from abroad needs both the Cloudflare and the Envoy exception. The alert, admission message and bouncer comment now name the geo gate and the current client-IP model.
 
 Open:
@@ -154,6 +154,16 @@ Open:
 - [fixed] **CrowdSec bouncer never saw external client IPs (found 2026-11-14, likely pre-existing).** A self-ban test (`cscli decisions add` on the home public IP, request through Cloudflare) reached the bouncer cache (`decisions_added_total{origin="cscli"}`), but 12 requests over 60s passed. With `trustedIPHeader: X-Envoy-External-Address` the bouncer resolved public requests to the cloudflared pod IP, so `exemptIPs: 10.0.0.0/8` skipped decisions AND AppSec for all envoy-external traffic. Fix 1093fb057: drop trustedIPHeader and set `trustedProxies: [${POD_CIDR}]`. The bouncer walks XFF right-to-left past pod IPs; Envoy appends its direct peer, so the result is the public client externally and the LAN client internally. Retest: 403 `ext_authz_denied` (with the Hungarian 403 page) within one 10s sync, and access was back about 10s after the decision was deleted; LAN hosts are unaffected and the bouncer shows no errors. Side effect: AppSec WAF now inspects all public traffic for the first time; watch for false positives (uploads, unusual APIs).
 - [note] flux-local CI only runs on PRs, so the direct-to-main commits were validated by the live reconcile, not by CI.
 - [note] At the Cloudflare exit: delete or retune GeoGateFalsePositive and revisit client-IP detection (see the Post-Cloudflare-exit section).
+
+## Test matrix — 2026-11-14 (direct port-forward to the proxy, arbitrary XFF)
+
+- [verified] envoy-external, idm: no XFF → 403 · XFF private 192.168.1.50 → 403 · reserved 240.0.0.1 (DB miss) → 403 · US 8.8.8.8 → 403 · HU v4 → 200 · HU v6 → 200 · DE v6 → 403 · "HU, US" → 403 (rightmost wins) · "US, HU" → 200 (left entries ignored, which is correct because the edge appends the real client) · garbage XFF → 403 · DB miss + spoofed geo header → 403 · US + spoofed header (any case) → 403.
+- [verified] http listener (80): US → 403, HU → 301 redirect.
+- [verified] flux-webhook /hook/: GitHub v4 + v6 → reach the Receiver (404 for the fake token) · HU, US, no XFF → 403. So the route policy does not inherit the HU allow.
+- [observation] Requests that match no route (unknown path or host) get 404 `route_not_found` before RBAC, whatever the country. This is not a hole, because no backend is reachable that way.
+- [verified] geoipupdate failure path: an invalid licence key gives rc=1 (401 AUTHORIZATION_INVALID), the mmdb md5 is unchanged and no temp file is left behind.
+- [finding] Envoy use-after-free with the 403 responseOverride (found by this matrix, reverted).
+- [not-tested] A full OIDC login flow from a real HU external client through the new filter order (only the redirect was checked). A full-cluster DR bootstrap with an empty geoip PVC (only the first deploy, which did download fine, was observed). The reload-error path with a corrupt mmdb (risky on a live proxy). Alertmanager/Pushover delivery of the new alerts. The update-github-hooks-networks PR path (only the no-change run). AppSec false positives now that public traffic is inspected (watch `bouncer_waf_requests_total{action="ban"}`).
 
 ## Rollback
 
