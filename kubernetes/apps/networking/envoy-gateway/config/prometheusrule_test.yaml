@@ -3,7 +3,7 @@
 # promtool unit tests for config/prometheusrule.yaml, covering EnvoyProxyDown,
 # EnvoyGatewayXDSRejected, EnvoyGatewayPolicyNotAccepted,
 # EnvoyGatewayPolicyStatusMissing, EnvoyInternalConnectionsHigh,
-# EnvoyExtAuthzErrors, GeoIPDatabaseStale and GeoIPReloadFailed.
+# EnvoyExtAuthzErrors, GeoIPDatabaseStale, GeoIPReloadFailed and GeoGateInactive.
 # The EnvoyProxyDown expr
 # `count(up{job="networking/envoy-proxy", namespace="networking"} == 1) < 2` aggregates away
 # all labels, so exp_labels are alertname + severity only — it fires whenever fewer than 2
@@ -414,3 +414,125 @@ tests:
                 envoy-external-abc failed to hot-reload GeoLite2-Country.mmdb and keeps
                 the previous database. Check the file written by geoipupdate on the
                 geoip PVC.
+  # === GeoGateInactive ===
+  # (ad) No-fire: healthy — RBAC allows slightly more than is forwarded (ext_authz denies the rest).
+  - interval: 1m
+    input_series:
+      - series: 'envoy_cluster_upstream_rq_total{namespace="networking",pod="envoy-external-abc",envoy_cluster_name="httproute/selfhosted/mealie/rule/0"}'
+        values: '0+20x30'
+      - series: 'envoy_http_rbac_allowed{namespace="networking",pod="envoy-external-abc",envoy_http_conn_manager_prefix="https-10443"}'
+        values: '0+21x30'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: GeoGateInactive
+        exp_alerts: []
+  # (ae) No-fire: no traffic at all (night floor).
+  - interval: 1m
+    input_series:
+      - series: 'envoy_cluster_upstream_rq_total{namespace="networking",pod="envoy-external-abc",envoy_cluster_name="httproute/selfhosted/mealie/rule/0"}'
+        values: '0x30'
+      - series: 'envoy_http_rbac_allowed{namespace="networking",pod="envoy-external-abc",envoy_http_conn_manager_prefix="https-10443"}'
+        values: '0x30'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: GeoGateInactive
+        exp_alerts: []
+  # (af) Boundary no-fire: gate gone but only 4 forwarded in 10m (not > 5).
+  - interval: 1m
+    input_series:
+      - series: 'envoy_cluster_upstream_rq_total{namespace="networking",pod="envoy-external-abc",envoy_cluster_name="httproute/selfhosted/mealie/rule/0"}'
+        values: '0+0.4x30'
+      - series: 'envoy_http_rbac_allowed{namespace="networking",pod="envoy-external-abc",envoy_http_conn_manager_prefix="https-10443"}'
+        values: '0x30'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: GeoGateInactive
+        exp_alerts: []
+  # (ag) Boundary no-fire: allowed exactly half of forwarded (strict <).
+  - interval: 1m
+    input_series:
+      - series: 'envoy_cluster_upstream_rq_total{namespace="networking",pod="envoy-external-abc",envoy_cluster_name="httproute/selfhosted/mealie/rule/0"}'
+        values: '0+20x30'
+      - series: 'envoy_http_rbac_allowed{namespace="networking",pod="envoy-external-abc",envoy_http_conn_manager_prefix="https-10443"}'
+        values: '0+10x30'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: GeoGateInactive
+        exp_alerts: []
+  # (ah) Boundary no-fire: gate gone, but the 5m `for` hold has not elapsed.
+  - interval: 1m
+    input_series:
+      - series: 'envoy_cluster_upstream_rq_total{namespace="networking",pod="envoy-external-abc",envoy_cluster_name="httproute/selfhosted/mealie/rule/0"}'
+        values: '0+20x30'
+      - series: 'envoy_http_rbac_allowed{namespace="networking",pod="envoy-external-abc",envoy_http_conn_manager_prefix="https-10443"}'
+        values: '0x30'
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: GeoGateInactive
+        exp_alerts: []
+  # (ai) Fire: gate gone — 200 forwarded, RBAC flat.
+  - interval: 1m
+    input_series:
+      - series: 'envoy_cluster_upstream_rq_total{namespace="networking",pod="envoy-external-abc",envoy_cluster_name="httproute/selfhosted/mealie/rule/0"}'
+        values: '0+20x30'
+      - series: 'envoy_http_rbac_allowed{namespace="networking",pod="envoy-external-abc",envoy_http_conn_manager_prefix="https-10443"}'
+        values: '0x30'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: GeoGateInactive
+        exp_alerts:
+          - exp_labels:
+              alertname: GeoGateInactive
+              severity: critical
+            exp_annotations:
+              summary: Envoy external geo gate is not evaluating traffic
+              description: |-
+                envoy-external forwarded 200 requests to backends in 10m,
+                but fewer than half passed the RBAC geo gate. SecurityPolicy envoy-external-edge
+                is likely Overridden/detached or the rbac filter is gone, so the public routes
+                are open to every country. Check the policy status conditions and the
+                listener config dump.
+  # (aj) Fire: partial loss — a heavy route bypasses RBAC (allowed 50 of 200).
+  - interval: 1m
+    input_series:
+      - series: 'envoy_cluster_upstream_rq_total{namespace="networking",pod="envoy-external-abc",envoy_cluster_name="httproute/selfhosted/mealie/rule/0"}'
+        values: '0+20x30'
+      - series: 'envoy_http_rbac_allowed{namespace="networking",pod="envoy-external-abc",envoy_http_conn_manager_prefix="https-10443"}'
+        values: '0+5x30'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: GeoGateInactive
+        exp_alerts:
+          - exp_labels:
+              alertname: GeoGateInactive
+              severity: critical
+            exp_annotations:
+              summary: Envoy external geo gate is not evaluating traffic
+              description: |-
+                envoy-external forwarded 200 requests to backends in 10m,
+                but fewer than half passed the RBAC geo gate. SecurityPolicy envoy-external-edge
+                is likely Overridden/detached or the rbac filter is gone, so the public routes
+                are open to every country. Check the policy status conditions and the
+                listener config dump.
+  # (ak) Fire: RBAC series absent entirely (filter removed before stats existed).
+  - interval: 1m
+    input_series:
+      - series: 'envoy_cluster_upstream_rq_total{namespace="networking",pod="envoy-external-abc",envoy_cluster_name="httproute/selfhosted/mealie/rule/0"}'
+        values: '0+20x30'
+      - series: 'envoy_http_rbac_allowed{namespace="networking",pod="envoy-external-abc",envoy_http_conn_manager_prefix="https-10443"}'
+        values: '_x30'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: GeoGateInactive
+        exp_alerts:
+          - exp_labels:
+              alertname: GeoGateInactive
+              severity: critical
+            exp_annotations:
+              summary: Envoy external geo gate is not evaluating traffic
+              description: |-
+                envoy-external forwarded 200 requests to backends in 10m,
+                but fewer than half passed the RBAC geo gate. SecurityPolicy envoy-external-edge
+                is likely Overridden/detached or the rbac filter is gone, so the public routes
+                are open to every country. Check the policy status conditions and the
+                listener config dump.

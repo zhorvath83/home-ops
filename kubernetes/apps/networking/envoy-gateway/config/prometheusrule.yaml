@@ -76,6 +76,26 @@ spec:
               {{ $labels.pod }} failed to hot-reload GeoLite2-Country.mmdb and keeps
               the previous database. Check the file written by geoipupdate on the
               geoip PVC.
+        # Sole country gate since the Cloudflare rule was removed: every forwarded request must have
+        # passed RBAC, so forwarded >> allowed means the gate detached (Overridden, filter dropped) —
+        # states the Accepted-only KSM metric cannot see. Unmatched-route 404s never reach a backend.
+        - alert: GeoGateInactive
+          expr: |-
+            sum(increase(envoy_cluster_upstream_rq_total{namespace="networking", pod=~"envoy-external-.*", envoy_cluster_name=~"httproute/.*"}[10m])) > 5
+            and on ()
+            (sum(increase(envoy_http_rbac_allowed{namespace="networking", pod=~"envoy-external-.*"}[10m])) or vector(0))
+              < 0.5 * sum(increase(envoy_cluster_upstream_rq_total{namespace="networking", pod=~"envoy-external-.*", envoy_cluster_name=~"httproute/.*"}[10m]))
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: Envoy external geo gate is not evaluating traffic
+            description: |-
+              envoy-external forwarded {{ $value | humanize }} requests to backends in 10m,
+              but fewer than half passed the RBAC geo gate. SecurityPolicy envoy-external-edge
+              is likely Overridden/detached or the rbac filter is gone, so the public routes
+              are open to every country. Check the policy status conditions and the
+              listener config dump.
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/monitoring.coreos.com/prometheusrule_v1.json
 apiVersion: monitoring.coreos.com/v1
