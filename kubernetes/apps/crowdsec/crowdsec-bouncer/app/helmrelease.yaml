@@ -28,9 +28,11 @@ spec:
     config:
       server:
         logLevel: info
-      # Envoy already resolved the client IP (rightmost XFF hop externally, TCP source on
-      # the LAN gateway) and stamps it here, so no XFF walking or proxy CIDR list.
-      trustedIPHeader: X-Envoy-External-Address
+      # Walk XFF right-to-left past pod IPs: Envoy appends its direct peer (cloudflared externally,
+      # the LAN client internally). The former X-Envoy-External-Address source resolved public
+      # requests to the cloudflared pod IP, so exemptIPs skipped all of them (self-ban test 2026-11-14).
+      trustedProxies:
+        - "${POD_CIDR}"
       # Cluster-internal callers only (pod + service CIDR): in-cluster probes and OIDC
       # hairpins must never be evaluated. LAN clients stay in scope so the WAF applies
       # to them on envoy-internal.
