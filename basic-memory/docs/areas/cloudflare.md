@@ -138,3 +138,9 @@ A single Kubernetes consumer of the tunnel lives at `kubernetes/apps/networking/
   provider pin (5.29.0) and the tunnel ExternalSecret field list.
 - 2026-11-14 — the MTA-STS / TLS-RPT stack (Worker, KV, its DNS records, bypass Access app and WAF
   exception) was removed in PR #4776; the touched claims were re-checked. Detail lives in git history.
+
+## On-prem twin of the WAF country rule (since 2026-11-14)
+
+- [fact] `zone_waf_rules` rule 2 (block non-HU except `country_block_exceptions`) is now mirrored in Envoy: SecurityPolicy `envoy-external-edge` (HU-only, MaxMind GeoLite2-Country), and flux-webhook is restricted to GitHub hooks ranges by the route policy `flux-system/github-webhook`. Both layers run in parallel until the Cloudflare exit. See [[networking]] and [[onprem-geoip-country-filter]].
+- [rule] A host that must accept non-HU traffic needs both a `country_block_exceptions` entry here and an Envoy-side Allow; changing only Cloudflare still returns 403 from Envoy.
+- [observation] e2e test pattern (2026-11-14): temporarily add the `echo` host to `country_block_exceptions` + `public_bypass_apps`, probe from abroad (check-host.net for IPv4, the Globalping API for IPv6 and custom headers), then revert and confirm with `terraform plan` that nothing has drifted.
