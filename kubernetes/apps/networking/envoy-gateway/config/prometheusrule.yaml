@@ -51,6 +51,46 @@ spec:
               a 503 on the public AND LAN surfaces — exemptIPs cover only 10.0.0.0/8.
               The cause can be the bouncer (up but erroring) or an AppSec outage
               underneath it; CrowdSecBouncerDown only catches a dead pod.
+        # Build epoch, not file mtime: MaxMind rebuilds twice a week, so 10d means the
+        # updater has missed several releases (and the EULA's 30-day deletion clock runs).
+        - alert: GeoIPDatabaseStale
+          expr: (time() - envoy_maxmind_country_db__geoip_GeoLite2_Country_mmdb_db_build_epoch{namespace="networking"}) > 10 * 86400
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: GeoIP country database on envoy-external is stale
+            description: |-
+              The GeoLite2-Country database loaded by {{ $labels.pod }} was built
+              {{ $value | humanizeDuration }} ago. The geoipupdate Deployment
+              (networking) is not delivering updates; check its log and the
+              MaxMind credentials in the 1Password item maxmind.
+        # A failed reload keeps serving the previous database, so this fails silently otherwise.
+        - alert: GeoIPReloadFailed
+          expr: increase(envoy_maxmind_country_db__geoip_GeoLite2_Country_mmdb_db_reload_error{namespace="networking"}[1h]) > 0
+          labels:
+            severity: warning
+          annotations:
+            summary: Envoy failed to reload the GeoIP country database
+            description: |-
+              {{ $labels.pod }} failed to hot-reload GeoLite2-Country.mmdb and keeps
+              the previous database. Check the file written by geoipupdate on the
+              geoip PVC.
+        # Parallel-run tripwire: while Cloudflare drops non-HU (and non-GitHub on flux-webhook)
+        # traffic at the edge, any Envoy RBAC denial is a MaxMind-vs-Cloudflare disagreement,
+        # i.e. a blocked Hungarian user. Remove or retune at the Cloudflare exit.
+        - alert: GeoGateFalsePositive
+          expr: sum by (pod) (increase(envoy_http_rbac_denied{namespace="networking", pod=~"envoy-external-.*"}[15m])) > 0
+          labels:
+            severity: warning
+          annotations:
+            summary: Envoy geo gate denied traffic that Cloudflare let through
+            description: |-
+              {{ $labels.pod }} denied {{ $value | humanize }} request(s) in 15m on
+              the HU-only geo gate although Cloudflare already filters by country.
+              Find the client in vmui: response_code_details:rbac_access_denied*
+              (geo_country, downstream_remote_address), and add a clientCIDRs
+              override if it is a misclassified Hungarian prefix.
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/monitoring.coreos.com/prometheusrule_v1.json
 apiVersion: monitoring.coreos.com/v1

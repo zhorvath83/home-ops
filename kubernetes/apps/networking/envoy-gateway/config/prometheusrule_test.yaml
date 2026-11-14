@@ -2,8 +2,9 @@
 # yaml-language-server: $schema=https://json.schemastore.org/prometheus.rules.test.json
 # promtool unit tests for config/prometheusrule.yaml, covering EnvoyProxyDown,
 # EnvoyGatewayXDSRejected, EnvoyGatewayPolicyNotAccepted,
-# EnvoyGatewayPolicyStatusMissing, EnvoyInternalConnectionsHigh and
-# EnvoyExtAuthzErrors. The EnvoyProxyDown expr
+# EnvoyGatewayPolicyStatusMissing, EnvoyInternalConnectionsHigh,
+# EnvoyExtAuthzErrors, GeoIPDatabaseStale, GeoIPReloadFailed and GeoGateFalsePositive.
+# The EnvoyProxyDown expr
 # `count(up{job="networking/envoy-proxy", namespace="networking"} == 1) < 2` aggregates away
 # all labels, so exp_labels are alertname + severity only — it fires whenever fewer than 2
 # envoy-proxy targets are up: one-down, both-down, and all-vanished (count of an empty vector
@@ -333,3 +334,127 @@ tests:
                 a 503 on the public AND LAN surfaces — exemptIPs cover only 10.0.0.0/8.
                 The cause can be the bouncer (up but erroring) or an AppSec outage
                 underneath it; CrowdSecBouncerDown only catches a dead pod.
+  # === GeoIPDatabaseStale ===
+  # build_epoch is a negative offset, so age = eval time + |epoch|; threshold 10d, for: 1h.
+  # (u) No-fire: a 1-day-old database.
+  - interval: 1m
+    input_series:
+      - series: 'envoy_maxmind_country_db__geoip_GeoLite2_Country_mmdb_db_build_epoch{namespace="networking",pod="envoy-external-abc"}'
+        values: '-86400x80'
+    alert_rule_test:
+      - eval_time: 70m
+        alertname: GeoIPDatabaseStale
+        exp_alerts: []
+  # (v) Boundary no-fire: older than 10d since t=0+, but the 1h `for` hold not yet elapsed.
+  - interval: 1m
+    input_series:
+      - series: 'envoy_maxmind_country_db__geoip_GeoLite2_Country_mmdb_db_build_epoch{namespace="networking",pod="envoy-external-abc"}'
+        values: '-864000x80'
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: GeoIPDatabaseStale
+        exp_alerts: []
+  # (w) Fire: stale past the hold (age 10d + 70m).
+  - interval: 1m
+    input_series:
+      - series: 'envoy_maxmind_country_db__geoip_GeoLite2_Country_mmdb_db_build_epoch{namespace="networking",pod="envoy-external-abc"}'
+        values: '-864000x80'
+    alert_rule_test:
+      - eval_time: 70m
+        alertname: GeoIPDatabaseStale
+        exp_alerts:
+          - exp_labels:
+              alertname: GeoIPDatabaseStale
+              severity: warning
+              namespace: networking
+              pod: envoy-external-abc
+            exp_annotations:
+              summary: GeoIP country database on envoy-external is stale
+              description: |-
+                The GeoLite2-Country database loaded by envoy-external-abc was built
+                10d 1h 10m 0s ago. The geoipupdate Deployment
+                (networking) is not delivering updates; check its log and the
+                MaxMind credentials in the 1Password item maxmind.
+  # === GeoIPReloadFailed ===
+  # (x) No-fire: no reload error.
+  - interval: 1m
+    input_series:
+      - series: 'envoy_maxmind_country_db__geoip_GeoLite2_Country_mmdb_db_reload_error{namespace="networking",pod="envoy-external-abc"}'
+        values: '0x80'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: GeoIPReloadFailed
+        exp_alerts: []
+  # (y) Boundary no-fire: an error at 1m has left the 1h window by 70m.
+  - interval: 1m
+    input_series:
+      - series: 'envoy_maxmind_country_db__geoip_GeoLite2_Country_mmdb_db_reload_error{namespace="networking",pod="envoy-external-abc"}'
+        values: '0 1x80'
+    alert_rule_test:
+      - eval_time: 70m
+        alertname: GeoIPReloadFailed
+        exp_alerts: []
+  # (z) Fire: a reload error inside the window.
+  - interval: 1m
+    input_series:
+      - series: 'envoy_maxmind_country_db__geoip_GeoLite2_Country_mmdb_db_reload_error{namespace="networking",pod="envoy-external-abc"}'
+        values: '0 1x80'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: GeoIPReloadFailed
+        exp_alerts:
+          - exp_labels:
+              alertname: GeoIPReloadFailed
+              severity: warning
+              namespace: networking
+              pod: envoy-external-abc
+            exp_annotations:
+              summary: Envoy failed to reload the GeoIP country database
+              description: |-
+                envoy-external-abc failed to hot-reload GeoLite2-Country.mmdb and keeps
+                the previous database. Check the file written by geoipupdate on the
+                geoip PVC.
+  # === GeoGateFalsePositive ===
+  # (aa) No-fire: no denial on envoy-external; envoy-internal (RFC1918 gate) denials are out of scope.
+  - interval: 1m
+    input_series:
+      - series: 'envoy_http_rbac_denied{namespace="networking",pod="envoy-external-abc",envoy_http_conn_manager_prefix="https-10443"}'
+        values: '0x20'
+      - series: 'envoy_http_rbac_denied{namespace="networking",pod="envoy-internal-abc",envoy_http_conn_manager_prefix="https-10443"}'
+        values: '0+1x20'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: GeoGateFalsePositive
+        exp_alerts: []
+  # (ab) Boundary no-fire: a denial at 1m has left the 15m window by 20m.
+  - interval: 1m
+    input_series:
+      - series: 'envoy_http_rbac_denied{namespace="networking",pod="envoy-external-abc",envoy_http_conn_manager_prefix="https-10443"}'
+        values: '0 1x20'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: GeoGateFalsePositive
+        exp_alerts: []
+  # (ac) Fire: one denial inside the window (http + https listeners summed per pod).
+  - interval: 1m
+    input_series:
+      - series: 'envoy_http_rbac_denied{namespace="networking",pod="envoy-external-abc",envoy_http_conn_manager_prefix="https-10443"}'
+        values: '0x15 1x5'
+      - series: 'envoy_http_rbac_denied{namespace="networking",pod="envoy-external-abc",envoy_http_conn_manager_prefix="http-10080"}'
+        values: '0x20'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: GeoGateFalsePositive
+        exp_alerts:
+          - exp_labels:
+              alertname: GeoGateFalsePositive
+              severity: warning
+              pod: envoy-external-abc
+            exp_annotations:
+              summary: Envoy geo gate denied traffic that Cloudflare let through
+              description: |-
+                envoy-external-abc denied 1 request(s) in 15m on
+                the HU-only geo gate although Cloudflare already filters by country.
+                Find the client in vmui: response_code_details:rbac_access_denied*
+                (geo_country, downstream_remote_address), and add a clientCIDRs
+                override if it is a misclassified Hungarian prefix.

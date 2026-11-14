@@ -12,3 +12,13 @@ resources:
   - ./ciliumnetworkpolicy-internal.yaml
   - ./observability.yaml
   - ./prometheusrule.yaml
+  - ./grafanadashboard.yaml
+configMapGenerator:
+  - name: envoy-external-geo-gate-dashboard
+    files:
+      - ./dashboards/envoy-external-geo-gate.json
+generatorOptions:
+  disableNameSuffixHash: true
+  # Grafana's ${datasource} / $__rate_interval must survive Flux postBuild substitution.
+  annotations:
+    kustomize.toolkit.fluxcd.io/substitute: disabled
