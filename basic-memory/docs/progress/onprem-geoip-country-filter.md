@@ -182,6 +182,16 @@ Open:
 - [fact] Pocket ID (`idm`, route pocket-id-external) is covered by the gateway-level HU gate: no route policy with authorization, US → 403 in the matrix. It is a Cloudflare Access bypass app, so geo + CrowdSec + passkey-only login are its only gates now.
 - [residual] Without Cloudflare in front, nothing distinguishes a misclassified Hungarian client from a foreign one. Watch the dashboard's deny panels and vmui (`stats by (geo_country)`); fix such a case with a `clientCIDRs` Allow in envoy-external-edge.
 
+## Post-closure review — 2026-11-15
+
+- [verified] **iCloud Private Relay:** all 361 HU egress ranges in Apple's list (mask-api.icloud.com/egress-ip-ranges.csv; 29 IPv4, 332 IPv6) resolve to HU in GeoLite2-Country. Cloudflare geolocated relay IPs natively; MaxMind agrees for HU, so iPhone users with Private Relay are not locked out.
+- [verified] Every Cloudflare-proxied host is an ExternalDNS record pointing to the tunnel → envoy-external; none of the Terraform-managed DNS records is proxied, so removing the Cloudflare country rule left no host without the Envoy gate.
+- [verified] Load after the removal is negligible (first 30 min: 7 denials vs about 1800 allowed). RBAC denies before ext_authz, so foreign scans cost neither CrowdSec nor AppSec calls. Cloudflare `security_level: high` and L7 DDoS stay in front.
+- [fixed] **GeoGateInactive** (d8e765d17, critical): KSM's `envoy_securitypolicy_info` only exposes the Accepted condition, so an Overridden or detached edge policy, or an rbac filter dropped by an EG upgrade, would open every public route silently now that no Cloudflare backstop exists. The alert fires when backends receive traffic that mostly never passed RBAC (allowed < 0.5 × forwarded over 10m, for 5m). Unmatched-route 404s cannot trigger it; an idle night cannot either. Eight promtool cases. Live ratio allowed/forwarded = 1.0.
+- [known-risk] The Cloudflare GitHub-hooks list refreshes only on a manual `terraform apply`, while the Envoy list refreshes via the daily workflow PR (pre-existing).
+- [known-risk] No automatic signal for a Hungarian client misclassified by GeoLite (it silently gets a 403); find it via vmui `stats by (geo_country)`.
+- [decision] The Envoy use-after-free (403 responseOverride) will not be reported upstream (user decision); the guardrail in the networking guide stays.
+
 ## Rollback
 
 - Each phase is one revert. Removing the authorization block restores today's behaviour instantly; the geoip filter disappears from the listener once no route uses clientIPGeoLocations. The DB plane is inert without the policy. CTP revert returns to trustedCIDRs.
