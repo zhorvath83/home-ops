@@ -163,7 +163,14 @@ Open:
 - [observation] Requests that match no route (unknown path or host) get 404 `route_not_found` before RBAC, whatever the country. This is not a hole, because no backend is reachable that way.
 - [verified] geoipupdate failure path: an invalid licence key gives rc=1 (401 AUTHORIZATION_INVALID), the mmdb md5 is unchanged and no temp file is left behind.
 - [finding] Envoy use-after-free with the 403 responseOverride (found by this matrix, reverted).
-- [not-tested] A full OIDC login flow from a real HU external client through the new filter order (only the redirect was checked). A full-cluster DR bootstrap with an empty geoip PVC (only the first deploy, which did download fine, was observed). The reload-error path with a corrupt mmdb (risky on a live proxy). Alertmanager/Pushover delivery of the new alerts. The update-github-hooks-networks PR path (only the no-change run). AppSec false positives now that public traffic is inspected (watch `bouncer_waf_requests_total{action="ban"}`).
+- [verified] **Matrix extension (2026-11-14 night), port-forward + live:**
+  - Client identity: IPv4-mapped v6 HU → 200 / US → 403 · XFF with port → 403 even for HU (unparseable, fail-closed; Cloudflare never sends ports) · two XFF headers are joined, the rightmost wins (HU,US → 403; US,HU → 200) · empty XFF → 403 · padded whitespace HU → 200 · `Forwarded`, `X-Real-IP`, `CF-Connecting-IP`, `X-Envoy-External-Address` carrying HU with a US or missing XFF → 403 (ignored) · 60-entry XFF ending in HU → 200.
+  - Hosts: all 10 external app hosts → US 403 / HU passes (200/30x); flux-webhook `/` → 404 route_not_found for both · host variants (trailing dot, uppercase, `:443`) with US → 403.
+  - Protocol/method with US: HTTP/1.1, HTTP/2, OPTIONS (CORS preflight), HEAD, POST, WebSocket upgrade → 403 · webhook `/hook/../hook/x` normalised → 403; `/HOOK/x` → 404 (no route).
+  - Alert delivery: Pushover sends at 20:32Z (GeoGateFalsePositive fired), 20:57Z (resolved), 22:32Z (fired by the port-forward matrix); 0 failed notifications.
+  - CrowdSec AppSec on public traffic: `/.env` via Cloudflare from the home IP → 403 ext_authz_denied, alert `crowdsecurity/vpatch-env-access` with the real IP, no ban from a single hit; a control path passes.
+  - Reload-error path: a corrupt file renamed onto the mmdb → db_reload_error 1, previous DB kept (HU 200, US 403 meanwhile); restoring the original → db_reload_success 2, md5 unchanged. GeoIPReloadFailed fires for about 1h as a side effect.
+- [not-tested] A full OIDC login from an external HU client (user to try on mobile data), a full-cluster DR bootstrap with an empty geoip PVC, the hooks-workflow PR path, and an Envoy restart while the mmdb on the PVC is corrupt (would be an outage by design: Envoy rejects the provider; geoipupdate would only fix it on its next daily run or a pod restart).
 
 ## Rollback
 
