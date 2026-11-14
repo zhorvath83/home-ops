@@ -5,6 +5,20 @@ kind: EnvoyProxy
 metadata:
   name: envoy-external
 spec:
+  # Geo + RBAC ahead of ext_authz/oauth2: a foreign client gets a 403, not an IdP redirect or a CrowdSec call.
+  filterOrder:
+    - name: envoy.filters.http.geoip
+      before: envoy.filters.http.ext_authz
+    - name: envoy.filters.http.rbac
+      before: envoy.filters.http.ext_authz
+  # Written by the geoipupdate Deployment (tmp + rename triggers Envoy's inotify hot reload).
+  geoIP:
+    provider:
+      type: MaxMind
+      maxMind:
+        countryDbSource:
+          local:
+            path: /geoip/GeoLite2-Country.mmdb
   logging:
     level:
       default: info
@@ -22,6 +36,16 @@ spec:
               cpu: 5m
             limits:
               memory: 1Gi
+          volumeMounts:
+            - name: geoip
+              mountPath: /geoip
+              readOnly: true
+        pod:
+          volumes:
+            - name: geoip
+              persistentVolumeClaim:
+                claimName: geoip
+                readOnly: true
         patch:
           type: StrategicMerge
           value:
