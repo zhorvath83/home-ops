@@ -12,7 +12,7 @@ summary: Gateway API with Envoy Gateway provides cluster ingress, split across t
   (named `https`), SNI-restricted to `*.${PUBLIC_DOMAIN}` — the apex stays at an
   external provider and never enters the cluster. cloudflared ingress mirrors that
   scope (only the wildcard rule plus a 404 catch-all). ClientTrafficPolicy is
-  per-gateway — external derives the client IP from XFF trusted to the pod CIDR, internal
+  per-gateway — external takes the rightmost XFF hop (numTrustedHops=1, cloudflared-only CNP as trust anchor), internal
   rejects client-supplied XFF (numTrustedHops=0). HTTP/3 enabled internal-only
   (CF Tunnel cannot relay QUIC to origin). Baseline security response headers
   (HSTS, nosniff, Referrer-Policy) set natively via lateResponseHeaders. Per-EnvoyProxy access
@@ -58,10 +58,9 @@ drift_risk: 'HSTS includeSubDomains with 2-year max-age is a one-way commitment 
   Apex `${PUBLIC_DOMAIN}` DNS points straight at the external website provider
   (Hetzner A/AAAA, proxied=false) — moving the apex into the cluster would
   require DNS rewrite, an apex HTTPRoute, and either widening or splitting the
-  listener hostname filter. rate-limit-external BackendTrafficPolicy still
-  disabled (envoy-gateway v1.8.0/v1.8.1 CRD regression, fix #8798 merged to main
-  but not cherry-picked to release/v1.8) — Cloudflare WAF covers external rate
-  limiting in the meantime. The envoy v1.39.0 image tag is hardcoded in
+  listener hostname filter. The local rate limit lives in BackendTrafficPolicy/envoy
+  and is enabled on both gateways (3000/min per client v4+v6, 30000/min shared).
+  The envoy v1.39.0 image tag is hardcoded in
   EnvoyProxy spec, not chart-managed. EnvoyPatchPolicy listener naming uses the
   EG IR format gateway-namespace/gateway-name/listener-name (single `https`,
   plus `https-quic` on internal).'
@@ -150,7 +149,7 @@ and injected into every child Kustomization via Flux `postBuild.substituteFrom`.
 - [claim] "Each Gateway exposes a single HTTPS/443 listener named `https` with hostname filter `*.${PUBLIC_DOMAIN}` (All-namespace route attach, single-label subdomains only) plus a HTTP/80 listener restricted to local-namespace routes that only attaches the shared https-redirect. HTTPRoutes outside the wildcard pattern are rejected with NoMatchingParent at attach time." (evidence: repo, ref: gateway-external.yaml + gateway-internal.yaml, verified: 2026-06-14)
 - [claim] "cloudflared ingress contains a single rule forwarding `*.${PUBLIC_DOMAIN}` (originServerName=external.${PUBLIC_DOMAIN}) to envoy-external, plus a final http_status:404 catch-all — the apex is served entirely by an external provider (Hetzner A/AAAA, proxied=false) and never enters the tunnel." (evidence: repo, ref: cloudflare-tunnel/app/helmrelease.yaml + provision/cloudflare/dns_records.tf, verified: 2026-06-14)
 - [claim] "cloudflare-tunnel runs a dedicated custom-egress CiliumNetworkPolicy (AD-023 opt-out) as its sole egress source: CoreDNS 53/UDP, envoy-external 10080/10443 TCP, Cloudflare edge (CIDRGroup `cloudflare`) 80/443/7844 TCP+UDP, plus ICMP echo+unreachable to the Cloudflare edge (cloudflared ICMP-proxy + QUIC control path) and unrestricted egress to the Cloudflare public resolvers 1.1.1.1/1.0.0.1 for the remote connectivity diagnostic (traceroute). The ICMP + resolver grants are not tunnel-function-critical (QUIC/H2 prechecks pass without them) — they exist solely to clear recurring HubblePolicyDeny drops." (evidence: repo, ref: cloudflare-tunnel/app/ciliumnetworkpolicy.yaml + ciliumcidrgroup.yaml, verified: 2026-07-10)
-- [claim] "ClientTrafficPolicy is per-gateway: envoy-external uses CF-Connecting-IP customHeader (failClosed=false), envoy-internal uses numTrustedHops=0 and enables HTTP/3" (evidence: repo, ref: gateway-policies.yaml, verified: 2026-06-14)
+- [claim] "ClientTrafficPolicy is per-gateway: envoy-external uses xForwardedFor.numTrustedHops=1 (rightmost XFF hop, appended by cloudflared; CNP/envoy-external is the trust anchor), envoy-internal uses numTrustedHops=0 and enables HTTP/3" (evidence: repo, ref: gateway-policies.yaml:88-101,171-183, verified: 2026-11-14)
 - [claim] "Both EnvoyProxy resources emit JSON access logs to /dev/stdout, picked up by the cluster log pipeline" (evidence: repo, ref: envoy.yaml, verified: 2026-06-14)
 - [claim] "BackendTrafficPolicy/envoy declares circuitBreaker thresholds (2048 for connections/pending/parallel, 128 for retries) so a misbehaving backend cannot exhaust envoy worker capacity" (evidence: repo, ref: gateway-policies.yaml, verified: 2026-06-14)
 - [claim] "EnvoyExtensionPolicy/security-response-headers injects HSTS + X-Content-Type-Options (replace) and Referrer-Policy (add-if-absent) on every response via inline Lua, targets both Gateways" (evidence: repo, ref: security-headers.yaml, verified: 2026-06-14)
@@ -165,7 +164,7 @@ and injected into every child Kustomization via Flux `postBuild.substituteFrom`.
 - [drift] HSTS includeSubDomains with 2-year max-age is a one-way commitment — once a browser caches it, any future HTTP-only subdomain under ${PUBLIC_DOMAIN} (IoT, legacy tool, dev instance) is unreachable from that browser until the entry expires. `preload` was intentionally omitted to keep this revocable (preload registers the domain with browser vendors and is far harder to unwind). (ref: security-headers.yaml)
 - [drift] Listener hostname filter is `*.${PUBLIC_DOMAIN}` (single-label wildcard). Adding a multi-label hostname HTTPRoute (e.g. `foo.bar.${PUBLIC_DOMAIN}`) or an apex route would fail NoMatchingParent — either widen the listener pattern (split apex+wildcard with HTTPRoute parentRef migration) or adjust the route hostname. The hostname split was attempted in commit 6e890d8f7 and reverted because every HTTPRoute pinned `sectionName: https`; the current setup avoids that by keeping the listener name `https` and only adding the hostname filter. (ref: gateway-external.yaml, gateway-internal.yaml)
 - [drift] EnvoyPatchPolicy is a workaround for missing native Zstd compressor fine-tuning options on EnvoyProxy/BackendTrafficPolicy — drop both EnvoyPatchPolicy/envoy-external and envoy-internal when the EnvoyProxy CRD exposes `choose_first` and `remove_accept_encoding_header` on the compressor field. (ref: gateway-policies.yaml)
-- [drift] rate-limit-external BackendTrafficPolicy still disabled (commented out) — envoy-gateway v1.8.0 CRD regression (envoyproxy/gateway#8798: uint32 Requests field emits format: int32 + maximum: 4294967295, rejected by K8s 1.36 strict OpenAPI validation). The fix is merged to main but not cherry-picked to release/v1.8, so v1.8.1 is still affected. Re-enable when v1.9.0 GA lands or a v1.8.2 patch backport ships, then bump the OCIRepository tag. Cloudflare WAF covers external rate limiting in the meantime. (ref: gateway-policies.yaml)
+- [resolved] The former "rate-limit-external BTP disabled (envoyproxy/gateway#8798)" drift is closed: the Local rateLimit lives in BackendTrafficPolicy/envoy and is enabled on both gateways — 3000/min per client (Distinct sourceCIDR rules for 0.0.0.0/0 and ::/0) plus one shared 30000/min bucket (ref: gateway-policies.yaml:20-45, verified: 2026-11-14).
 - [drift] envoy container image tag (v1.39.0) is hardcoded in EnvoyProxy spec rather than chart-managed — track manually via inline `# renovate:` annotation. (ref: envoy.yaml:17)
 - [drift] cloudflare-tunnel ICMP egress is scoped to the Cloudflare edge CIDRGroup + 1.1.1.1/1.0.0.1, but cloudflared's ICMP-proxy forwards pings to arbitrary WARP-requested targets — a ping through the tunnel to a non-Cloudflare address would drop and re-trigger HubblePolicyDeny. If that recurs, extend the grant point-wise or disable the ICMP-proxy rather than widening egress broadly. (ref: cloudflare-tunnel/app/ciliumnetworkpolicy.yaml)
 
@@ -280,6 +279,8 @@ applying.
   ~15000. Client IP comes from `trustedIPHeader: X-Envoy-External-Address`, i.e. the value the
   existing ClientTrafficPolicies already resolve (CF-Connecting-IP externally, TCP source on
   the LAN gateway) — no XFF walking, no proxy CIDR list to maintain.
+  **Superseded 2026-11-14 (1093fb057):** the bouncer now walks XFF with `trustedProxies: [${POD_CIDR}]`
+  (see the 2026-11-14 update below); the header-based approach skipped all public traffic (resolved to the cloudflared pod IP, which exemptIPs skips).
 - [guardrail] Recorded in `kubernetes/apps/networking/CLAUDE.md`: a route-level SecurityPolicy
   needs `mergeType` or it silently drops the Gateway-level policy for that route; and
   `bodyToExtAuth` 413s any body over the cap.
