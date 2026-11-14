@@ -886,7 +886,7 @@
     {
       "type": "row",
       "id": 12,
-      "title": "Parallel-run tripwire",
+      "title": "Denials",
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -899,8 +899,8 @@
     {
       "type": "timeseries",
       "id": 13,
-      "title": "Denials in 15m (GeoGateFalsePositive)",
-      "description": "While Cloudflare filters by country in front, any denial here is a MaxMind/Cloudflare disagreement: a blocked Hungarian user. The red line is the alert threshold (> 0). Drill down in vmui: response_code_details:rbac_access_denied* | stats by (geo_country) count().",
+      "title": "Geo denials per 15m",
+      "description": "Requests denied by the HU-only gate (non-HU or unknown client IP). Since the Cloudflare country rule was removed (2026-11-14), foreign scanners land here; spikes are normal. Drill down in vmui: response_code_details:rbac_access_denied* | stats by (geo_country) count().",
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
@@ -932,7 +932,7 @@
             "showPoints": "never",
             "spanNulls": false,
             "thresholdsStyle": {
-              "mode": "line"
+              "mode": "off"
             }
           },
           "min": 0,
@@ -940,12 +940,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "transparent",
-                "value": null
-              },
-              {
                 "color": "red",
-                "value": 0.5
+                "value": null
               }
             ]
           }

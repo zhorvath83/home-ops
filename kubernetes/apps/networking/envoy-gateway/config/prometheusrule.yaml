@@ -76,21 +76,6 @@ spec:
               {{ $labels.pod }} failed to hot-reload GeoLite2-Country.mmdb and keeps
               the previous database. Check the file written by geoipupdate on the
               geoip PVC.
-        # Parallel-run tripwire: while Cloudflare drops non-HU (and non-GitHub on flux-webhook)
-        # traffic at the edge, any Envoy RBAC denial is a MaxMind-vs-Cloudflare disagreement,
-        # i.e. a blocked Hungarian user. Remove or retune at the Cloudflare exit.
-        - alert: GeoGateFalsePositive
-          expr: sum by (pod) (increase(envoy_http_rbac_denied{namespace="networking", pod=~"envoy-external-.*"}[15m])) > 0
-          labels:
-            severity: warning
-          annotations:
-            summary: Envoy geo gate denied traffic that Cloudflare let through
-            description: |-
-              {{ $labels.pod }} denied {{ $value | humanize }} request(s) in 15m on
-              the HU-only geo gate although Cloudflare already filters by country.
-              Find the client in vmui: response_code_details:rbac_access_denied*
-              (geo_country, downstream_remote_address), and add a clientCIDRs
-              override if it is a misclassified Hungarian prefix.
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/monitoring.coreos.com/prometheusrule_v1.json
 apiVersion: monitoring.coreos.com/v1

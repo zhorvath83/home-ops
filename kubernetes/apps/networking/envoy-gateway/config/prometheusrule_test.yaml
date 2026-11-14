@@ -3,7 +3,7 @@
 # promtool unit tests for config/prometheusrule.yaml, covering EnvoyProxyDown,
 # EnvoyGatewayXDSRejected, EnvoyGatewayPolicyNotAccepted,
 # EnvoyGatewayPolicyStatusMissing, EnvoyInternalConnectionsHigh,
-# EnvoyExtAuthzErrors, GeoIPDatabaseStale, GeoIPReloadFailed and GeoGateFalsePositive.
+# EnvoyExtAuthzErrors, GeoIPDatabaseStale and GeoIPReloadFailed.
 # The EnvoyProxyDown expr
 # `count(up{job="networking/envoy-proxy", namespace="networking"} == 1) < 2` aggregates away
 # all labels, so exp_labels are alertname + severity only — it fires whenever fewer than 2
@@ -414,47 +414,3 @@ tests:
                 envoy-external-abc failed to hot-reload GeoLite2-Country.mmdb and keeps
                 the previous database. Check the file written by geoipupdate on the
                 geoip PVC.
-  # === GeoGateFalsePositive ===
-  # (aa) No-fire: no denial on envoy-external; envoy-internal (RFC1918 gate) denials are out of scope.
-  - interval: 1m
-    input_series:
-      - series: 'envoy_http_rbac_denied{namespace="networking",pod="envoy-external-abc",envoy_http_conn_manager_prefix="https-10443"}'
-        values: '0x20'
-      - series: 'envoy_http_rbac_denied{namespace="networking",pod="envoy-internal-abc",envoy_http_conn_manager_prefix="https-10443"}'
-        values: '0+1x20'
-    alert_rule_test:
-      - eval_time: 10m
-        alertname: GeoGateFalsePositive
-        exp_alerts: []
-  # (ab) Boundary no-fire: a denial at 1m has left the 15m window by 20m.
-  - interval: 1m
-    input_series:
-      - series: 'envoy_http_rbac_denied{namespace="networking",pod="envoy-external-abc",envoy_http_conn_manager_prefix="https-10443"}'
-        values: '0 1x20'
-    alert_rule_test:
-      - eval_time: 20m
-        alertname: GeoGateFalsePositive
-        exp_alerts: []
-  # (ac) Fire: one denial inside the window (http + https listeners summed per pod).
-  - interval: 1m
-    input_series:
-      - series: 'envoy_http_rbac_denied{namespace="networking",pod="envoy-external-abc",envoy_http_conn_manager_prefix="https-10443"}'
-        values: '0x15 1x5'
-      - series: 'envoy_http_rbac_denied{namespace="networking",pod="envoy-external-abc",envoy_http_conn_manager_prefix="http-10080"}'
-        values: '0x20'
-    alert_rule_test:
-      - eval_time: 20m
-        alertname: GeoGateFalsePositive
-        exp_alerts:
-          - exp_labels:
-              alertname: GeoGateFalsePositive
-              severity: warning
-              pod: envoy-external-abc
-            exp_annotations:
-              summary: Envoy geo gate denied traffic that Cloudflare let through
-              description: |-
-                envoy-external-abc denied 1 request(s) in 15m on
-                the HU-only geo gate although Cloudflare already filters by country.
-                Find the client in vmui: response_code_details:rbac_access_denied*
-                (geo_country, downstream_remote_address), and add a clientCIDRs
-                override if it is a misclassified Hungarian prefix.
