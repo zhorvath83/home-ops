@@ -184,7 +184,7 @@ Pre-flight: Phase 3 exit met; cloudflared still running; announce the window; no
    Abort → immediate rollback if P1, P3, P4 or P5 fails.
 Rollback (target < 15 min; revert PR + Terraform revert prepared in Phase 3): 1) scale cloudflared to 1 and wait Ready; 2) revert the PR (CTP numTrustedHops 1 without proxyProtocol, CNP, proxied flag); 3) Terraform revert of the external CNAME (tunnel target, proxied). Access apps and the GitHub WAF rule are still in place until Phase 5b, so the Cloudflare path returns as before (country gating stays on-prem either way).
 
-### Phase 5a — Close the CAA gap (after a stable rollback window, ~4 weeks)
+### Phase 5a — Close the CAA gap (4 weeks after a stable cutover — D5)
 1. Confirm no record is proxied any more (`cloudflare_dns_record` resources + ExternalDNS).
 2. Disable Universal SSL (Terraform if the v5 provider exposes it — verify the resource name — otherwise dashboard; record the manual step in provision/cloudflare/CLAUDE.md).
 3. Publish the prepared CAA records; verify with `dig @1.1.1.1 +short CAA <apex>` and `<host>` that ONLY our pinned lines remain (no auto-added CA lines).
@@ -221,8 +221,8 @@ Note: after this step a rollback to the Cloudflare proxy needs Universal SSL re-
 - D1 Cutover shape: direct one-PR cutover of envoy-external, preceded by the Phase 3 smoke test (no pilot gateway).
 - D2 Path: relay first (no inbound port); revisit directConnect + an OpenWrt UDP port-forward only if P9 shows the relay path is too slow. iroh hole punching may give a direct path anyway (towonel_agent_edge_path).
 - D3 External check: in-cluster blackbox probe through the edge (see Observability).
-- D4 CT monitoring: Cloudflare CT Monitoring (free, e-mail) — recommended, pending user confirmation. Checked 2026-11-15: SSLMate Cert Spotter has no free tier (Hobbyist $15/month, 30-day trial), merklemap has no free e-mail alerts, Meta's CT tool page returned 404.
-- D5 Rollback window before Phase 5a: open (default 4 weeks).
+- D4 CT monitoring: Cloudflare CT Monitoring (free, e-mail to the Pushover gateway) — confirmed 2026-11-15. Checked 2026-11-15: SSLMate Cert Spotter has no free tier (Hobbyist $15/month, 30-day trial), merklemap has no free e-mail alerts, Meta's CT tool page returned 404.
+- D5 Rollback window before Phase 5a: 4 weeks after the cutover — confirmed 2026-11-15.
 
 ## Acceptance criteria
 1. Every public hostname is served via towonel with our certificate (checked per host).
