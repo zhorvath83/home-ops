@@ -4,7 +4,7 @@ type: roadmap
 permalink: home-ops/docs/roadmap/onprem-geoip-country-filter
 topic: On-prem client-IP country filter (HU-only) on envoy-external — move the geo
   gate off Cloudflare
-status: proposed
+status: in-progress
 priority: medium
 scope: Re-implement the Cloudflare WAF rule "block non-HU except flux-webhook" natively
   in Envoy Gateway on envoy-external (EnvoyProxy geoIP provider + Gateway-level SecurityPolicy
@@ -35,7 +35,7 @@ related_areas:
 ## Metadata (observation-form, schema validation)
 
 - [topic] On-prem client-IP country filter (HU-only) on envoy-external
-- [status] proposed
+- [status] in-progress — phases 0–5 live on main (2026-11-14); open: e2e foreign test (step 4) and the parallel run (step 6)
 - [priority] medium
 
 ## What we gain
@@ -174,3 +174,18 @@ Tier 2 — deferred to the Cloudflare-exit item (when non-HU traffic actually re
 - relates_to [[observability]]
 - relates_to [[iam]]
 - relates_to [[client-ip-trust-topology]]
+
+## Execution log — 2026-11-14
+
+Executed directly on main (user decision: phase by phase, no PRs, outage acceptable).
+
+- [result] **1a shadow evaluation:** 14 days of envoy-external access logs (2026-10-31 → 11-14, flux-webhook excluded) contain 8 distinct public client IPs (4 IPv4, 4 IPv6), all `HU` in GeoLite2-Country (build 2026-11-13) → **0 would-be false positives**. The 1199 IP-less lines are Envoy stderr, not access logs.
+- [done] **Phase 1** (273a4602d) CTP `numTrustedHops: 1`, Accepted. Verified: `X-Forwarded-For: 1.2.3.4` via Cloudflare → client 94.21.207.197 (XFF `1.2.3.4,<client>,<cloudflared>`); GitHub hooks resolve to 140.82.x / 9.234.98.161 (inside the hooks ranges). IPv6 not re-tested from the workstation (no v6 path through Cloudflare from here); the 14d log has v6 clients resolved the same way.
+- [done] **Phase 2** (4e4aeaed4) envoy-gateway-geoip stage: ExternalSecret synced, PVC Bound, mmdb 3.3MB mode 0644 uid 65532; restart → same hash, no re-download.
+- [done] **Phase 3** (b7ac8cc8c) EnvoyProxy geoIP provider + read-only PVC + filterOrder: EnvoyProxy Accepted, proxy rolled, mmdb readable from the envoy container, no NACK.
+- [done] **Phase 4** (5b11a4fc3) envoy-external-edge (HU allow, Deny default) + header strip + flux-webhook route policy (5a) + hooks refresh workflow. Both policies Accepted/Merged, old policy pruned. Live chain: header_mutation > geoip > rbac > ext_authz > oauth2. HU client 200/302 on idm/books; GitHub webhook after enforcement 200 from 140.82.115.44. A spoofed `x-eg-internal-geoip-country` from a HU IP is harmless (allowed anyway); the non-HU spoof case is part of the pending e2e test.
+- [done] **Phase 5** (b45c290ab) alerts + dashboard + `geo_country` log field; every dashboard query returns live data. `geo_country` is empty on allowed requests (confirmed), expected filled on denied ones (to confirm with the e2e test).
+- [resolved] Stat names (the step-3 open question) — recorded in [[networking]] Update 2026-11-14.
+- [observation] `just k8s test-prom-rules` fails locally on a mise shim (`No version is set for shim: promtool` inside the mktemp dir); the pre-commit `promtool-rule-tests` hook passes. Follow-up: pin promtool for the recipe's scratch dir.
+- [open] **e2e foreign test (step 4):** needs a non-HU vantage point plus temporary Terraform entries (`country_block_exceptions` + `public_bypass_apps` for `echo`): expect 403 `rbac_access_denied`, `geo_country` filled, and a spoofed `x-eg-internal-geoip-country: HU` still 403. Then revert both entries. GeoGateFalsePositive will fire on the test 403s (expected).
+- [open] **Parallel run (step 6):** a few weeks with Cloudflare in front; expected geo denials ≈ 0. Then move this note to progress/.
