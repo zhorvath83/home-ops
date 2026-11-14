@@ -484,3 +484,6 @@ Executed from [[onprem-geoip-country-filter]] (roadmap), phases 0–5, directly 
 - [component] Dashboard **Envoy external — geo gate** (folder Networking) — first in-repo dashboard JSON: `config/dashboards/envoy-external-geo-gate.json` via configMapGenerator (substitute: disabled so `${datasource}` survives Flux) + GrafanaDashboard `configMapRef`.
 - [observation] vmui drill-down: `kubernetes.pod_name:envoy-external* response_code_details:rbac_access_denied* | stats by (geo_country) count()` and `... | stats by (":authority") count()`.
 - [fact] The Cloudflare WAF country rule stays in front (parallel run).
+
+- [fixed] **CrowdSec on envoy-external (2026-11-14, 1093fb057):** the bouncer's `trustedIPHeader: X-Envoy-External-Address` resolved every public request to the cloudflared pod IP, which `exemptIPs: 10.0.0.0/8` skips, so no decision or AppSec check ever applied to public traffic (proven by a self-ban test; likely since the CrowdSec rollout). The bouncer now walks XFF with `trustedProxies: [${POD_CIDR}]`. This supersedes the X-Envoy-External-Address decision recorded in the 2026-07-28 CrowdSec section. Regression test: a short `cscli decisions add --ip <own public IP>` must yield 403 `ext_authz_denied` through Cloudflare.
+- [verified] mmdb hot reload works across pods on the shared PVC (db_reload_success 0 → 1 after a same-content rename).
