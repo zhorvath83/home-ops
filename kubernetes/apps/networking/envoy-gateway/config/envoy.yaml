@@ -93,7 +93,7 @@ spec:
               bytes_received: "%BYTES_RECEIVED%"
               bytes_sent: "%BYTES_SENT%"
               route_name: "%ROUTE_NAME%"
-              # Set by the geoip filter, stripped by the router: present on RBAC-denied requests only.
+              # Set by the geoip filter, stripped by the router: empty on forwarded requests, set on local replies (e.g. RBAC 403).
               geo_country: "%REQ(X-EG-INTERNAL-GEOIP-COUNTRY)%"
           sinks:
             - type: File
