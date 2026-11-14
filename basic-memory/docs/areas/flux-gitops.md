@@ -161,3 +161,9 @@ roadmap item. Previous `verified_at` was 2026-07-05. Verdict on arrival: MAJOR-D
 - Namespace: app Kustomizations may live in their app's namespace (e.g. kube-prometheus-stack in observability), not the default flux-system — pass --namespace <ns> when reconciling.
 
 - [drift] 2026-10-13 — plex and plex-trakt-sync were removed from the cluster (commit 573c7eeb5: app trees, ks entries, PLEX_IP var, Plex Renovate rules, the plex-trakt-sync HubblePolicyDeny tier; PVCs pruned, orphaned Helm releases uninstalled). PLEX_IP is no longer part of the cluster-settings variable set.
+
+## Update — 2026-11-14: envoy-gateway gains a geoip stage
+
+- [fact] `kubernetes/apps/networking/envoy-gateway/ks.yaml` now has four stages: certificate → envoy-gateway (controller) → **envoy-gateway-geoip** (wait: true; dependsOn onepassword-connect + democratic-csi) → envoy-gateway-config (dependsOn envoy-gateway + envoy-gateway-geoip). k8s-gateway still depends on envoy-gateway-config.
+- [why] Envoy rejects a MaxMind geoIP provider whose mmdb is missing, so the database must exist before the EnvoyProxy geo config reaches the proxy. The geoipupdate pod is Ready once the file exists and stays Ready on a failed update, so a MaxMind outage does not stall envoy-gateway-config. Details: [[networking]], [[onprem-geoip-country-filter]].
+- [observation] envoy-gateway-config ships the first in-repo Grafana dashboard JSON via `configMapGenerator`, with `generatorOptions.annotations: kustomize.toolkit.fluxcd.io/substitute: disabled` so Grafana's `${datasource}` / `$__rate_interval` survive Flux postBuild substitution. Reuse this pattern for future in-repo dashboards.

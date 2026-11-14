@@ -92,16 +92,16 @@ unrelated domain) are rejected with `NoMatchingParent`. The apex
 reaches the cluster; cloudflared's ingress mirrors that, forwarding only
 `*.${PUBLIC_DOMAIN}` to envoy-external and falling through to a 404 catch-all
 otherwise.
-Per-gateway `ClientTrafficPolicy`: external uses `CF-Connecting-IP` (set authoritatively by
-Cloudflare edge, overwritten on every request, `failClosed: false` falls back to TCP
-source for non-CF callers), internal sets `numTrustedHops: 0` (LAN-direct, no proxy
-in front, client-supplied XFF must not be trusted). HTTP/3 enabled internally only —
-cloudflared cannot relay QUIC to the origin, public clients still get HTTP/3 via
-Cloudflare's edge. Baseline security response headers (HSTS 2y + includeSubDomains,
-X-Content-Type-Options: nosniff, Referrer-Policy: strict-origin-when-cross-origin)
-are injected via an inline Lua filter in `EnvoyExtensionPolicy/security-response-headers`;
-HSTS and nosniff are gateway-authoritative (`replace`), Referrer-Policy is set
-only when absent so apps can supply a stricter value. Split DNS by `k8s-gateway`
+Per-gateway `ClientTrafficPolicy`: external uses `xForwardedFor.numTrustedHops: 1` (rightmost
+XFF hop = the edge-appended real client; CiliumNetworkPolicy/envoy-external, which admits only
+the cloudflared pod, is the trust anchor). Internal sets `numTrustedHops: 0` (LAN-direct, no proxy
+in front, so client-supplied XFF is not trusted). HTTP/3 is enabled internally only:
+cloudflared cannot relay QUIC to the origin, and public clients still get HTTP/3 via
+Cloudflare's edge. Gateway-level SecurityPolicies: `envoy-external-edge` (HU-only geo
+authorization + CrowdSec extAuth, since 2026-11-14) and `envoy-internal-rfc1918` (RFC1918
+authorization + CrowdSec extAuth). Baseline security response headers are set natively by both
+ClientTrafficPolicies (`headers.lateResponseHeaders`; the former Lua EnvoyExtensionPolicy is gone).
+The shared `envoy` BTP serves Hungarian pages for Envoy-local 401s and 403s (`responseOverride`). Split DNS by `k8s-gateway`
 (LAN) and ExternalDNS (public Cloudflare). LAN clients reach the same public
 hostnames without hairpinning through Cloudflare.
 Cluster-wide substitution variables (`${PUBLIC_DOMAIN}`,
@@ -123,6 +123,10 @@ and injected into every child Kustomization via Flux `postBuild.substituteFrom`.
 - [component] EnvoyPatchPolicy/envoy-external — zstd compressor fine-tuning on networking/envoy-external/https (no -quic, HTTP/3 disabled here) (gateway-policies.yaml)
 - [component] EnvoyPatchPolicy/envoy-internal — zstd compressor fine-tuning on networking/envoy-internal/{https,https-quic} (gateway-policies.yaml)
 - [component] SecurityPolicy/envoy-internal-rfc1918 — TWO features: (1) `authorization` with defaultAction Deny and allow 10.0.0.0/8 + 172.16.0.0/12 + 192.168.0.0/16, (2) `extAuth` to the CrowdSec gRPC bouncer with `failOpen: false` and `statusOnError: 503` (gateway-policies.yaml:257-266)
+- [component] SecurityPolicy/envoy-external-edge — Gateway-level on envoy-external: `authorization` defaultAction Deny + rule `allow-hu` (clientIPGeoLocations HU) and the CrowdSec `extAuth` (failOpen false, statusOnError 503). Route-level exception: flux-system/github-webhook (GitHub hooks CIDRs). (gateway-policies.yaml)
+- [component] EnvoyProxy/envoy-external geo wiring — MaxMind GeoLite2-Country from the read-only PVC `geoip` at /geoip; `filterOrder` geoip + rbac before ext_authz/oauth2 (envoy.yaml)
+- [component] geoipupdate — Flux stage `envoy-gateway-geoip` (wait: true; envoy-gateway-config depends on it); app-template Deployment running a shell loop around `geoipupdate` (daily; a failed update is logged, the pod stays Ready while the mmdb exists); PVC `geoip` 64Mi; ExternalSecret from 1Password `maxmind` (envoy-gateway/geoip/)
+- [component] BackendTrafficPolicy/envoy `responseOverride` — Hungarian HTML for Envoy-local 401 (oauth2 failure) and 403 (geo/RFC1918 RBAC deny, CrowdSec ban) (gateway-policies.yaml)
 - [component] HTTPRoute/https-redirect — shared HTTP→HTTPS 301 redirect, attached to both Gateways at sectionName=http (gateway-policies.yaml)
 - [component] CiliumNetworkPolicy/envoy-external — ingress allowed only from cloudflare-tunnel pod (10080/10443 TCP) + prometheus + kubelet probe (ciliumnetworkpolicy-external.yaml)
 - [component] CiliumNetworkPolicy/envoy-internal — ingress restricted to RFC1918 fromCIDR + cluster/host/remote-node entities on data ports, prometheus + kubelet separately (ciliumnetworkpolicy-internal.yaml)
@@ -474,9 +478,9 @@ Executed from [[onprem-geoip-country-filter]] (roadmap), phases 0–5, directly 
 - [component] **SecurityPolicy/envoy-external-edge** (renamed from `envoy-external-crowdsec`) — Gateway-level, carries `authorization` (defaultAction Deny, rule `allow-hu`: clientIPGeoLocations country HU) + the unchanged CrowdSec `extAuth`. No private-CIDR allow (a request without XFF resolves to the cloudflared pod IP).
 - [component] **SecurityPolicy/github-webhook** (flux-system, route-level, StrategicMerge) — replaces the geo rule for the flux-webhook route with rule `allow-github-hooks` (clientCIDRs = api.github.com/meta `hooks`), defaultAction Deny; CrowdSec extAuth inherited. Refreshed daily by `.github/workflows/update-github-hooks-networks.yaml` + `.github/scripts/update_github_hooks_networks.py` (opens a PR on change; copy of the update-cloudflare-networks pattern).
 - [component] **EnvoyProxy/envoy-external** — `geoIP.provider` MaxMind countryDbSource `/geoip/GeoLite2-Country.mmdb`, PVC `geoip` mounted read-only, `filterOrder` puts geoip + rbac before ext_authz (live chain: header_mutation > geoip > rbac > ext_authz > oauth2). Access log gains `geo_country` (`%REQ(X-EG-INTERNAL-GEOIP-COUNTRY)%`): empty on requests forwarded upstream (the router strips it), filled whenever Envoy answers itself (RBAC 403, oauth2 redirect); verified by the 2026-11-14 e2e test (CH/MD/IR/US/VN denials logged with their country).
-- [component] **geoipupdate** — new Flux stage `envoy-gateway-geoip` (wait: true; envoy-gateway-config dependsOn it): app-template Deployment `ghcr.io/maxmind/geoipupdate` v8.0.0, GeoLite2-Country, `GEOIPUPDATE_FREQUENCY=24`, PVC `geoip` 64Mi local-hostpath (not in VolSync), ExternalSecret `geoipupdate` from 1Password item `maxmind`, custom-egress FQDN rule to MaxMind + its R2 bucket, readiness = mmdb present. Restart verified: hash match, no re-download.
+- [component] **geoipupdate** — new Flux stage `envoy-gateway-geoip` (wait: true; envoy-gateway-config dependsOn it): app-template Deployment `ghcr.io/maxmind/geoipupdate` v8.0.0, GeoLite2-Country, a shell loop around `geoipupdate` (daily; since the 2026-11-14 review a failed update is logged and the pod stays Ready instead of exiting), PVC `geoip` 64Mi local-hostpath (not in VolSync), ExternalSecret `geoipupdate` from 1Password item `maxmind`, custom-egress FQDN rule to MaxMind + its R2 bucket, readiness = mmdb present. Restart verified: hash match, no re-download.
 - [observation] Envoy stats (Prometheus names): `envoy_http_rbac_allowed|denied{envoy_http_conn_manager_prefix="https-10443"|"http-10080"}`, `envoy_http_geoip_total`, `envoy_http_maxmind_country_db_total|hit`, `envoy_maxmind_country_db__geoip_GeoLite2_Country_mmdb_db_build_epoch|db_reload_success|db_reload_error`. No per-country or per-route split.
-- [component] Alerts (PrometheusRule envoy-proxy, promtool-tested): `GeoIPDatabaseStale` (>10d, for 1h), `GeoIPReloadFailed`, `GeoGateFalsePositive` (any RBAC denial on envoy-external in 15m — parallel-run tripwire; remove or retune at the Cloudflare exit).
+- [component] Alerts (PrometheusRule envoy-proxy, promtool-tested): `GeoIPDatabaseStale` (>7d since the review, for 1h; the only update-failure signal), `GeoIPReloadFailed`, `GeoGateFalsePositive` (any RBAC denial on envoy-external in 15m — parallel-run tripwire; remove or retune at the Cloudflare exit).
 - [component] Dashboard **Envoy external — geo gate** (folder Networking) — first in-repo dashboard JSON: `config/dashboards/envoy-external-geo-gate.json` via configMapGenerator (substitute: disabled so `${datasource}` survives Flux) + GrafanaDashboard `configMapRef`.
 - [observation] vmui drill-down: `kubernetes.pod_name:envoy-external* response_code_details:rbac_access_denied* | stats by (geo_country) count()` and `... | stats by (":authority") count()`.
 - [fact] The Cloudflare WAF country rule stays in front (parallel run).

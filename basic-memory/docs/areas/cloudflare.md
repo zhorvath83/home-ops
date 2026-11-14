@@ -55,7 +55,7 @@ tags:
 
 ## Summary
 
-All Cloudflare-side resources for the public domain are declared as Terraform under `provision/cloudflare/`. The configuration covers one zone (the Terraform variable `CF_DOMAIN_NAME`), one Cloudflared tunnel (`CF_TUNNEL_NAME`), Zero Trust Access apps with Google OAuth plus a service-token policy scoped to the two hosts that need header-based access, mail-stack DNS (MX/SPF/DKIM/DMARC/SMTP2GO), Cloudflare-managed transforms, WAF rules (GitHub-CIDR allowlist on the Flux webhook plus a non-Hungary country block on every other subdomain), zone hardening (SSL strict, TLS 1.2 floor, TLS 1.3 + 0-RTT, HTTP/3, DNSSEC, Bot Management), and Pushover-email-gateway notification policies. There is no R2 bucket in the stack any more.
+All Cloudflare-side resources for the public domain are declared as Terraform under `provision/cloudflare/`. The configuration covers one zone (the Terraform variable `CF_DOMAIN_NAME`), one Cloudflared tunnel (`CF_TUNNEL_NAME`), Zero Trust Access apps with Google OAuth plus a service-token policy scoped to the two hosts that need header-based access, mail-stack DNS (MX/SPF/DKIM/DMARC/SMTP2GO), Cloudflare-managed transforms, WAF rules (GitHub-CIDR allowlist on the Flux webhook plus a non-Hungary country block on every other subdomain), zone hardening (SSL strict, TLS 1.2 floor, TLS 1.3 + 0-RTT, HTTP/3, DNSSEC, Bot Management), and Pushover-email-gateway notification policies.
 
 Terraform state is held in **Terraform Cloud** (organization `zhorvath83`, workspace `cloudflare`). All Cloudflare credentials and Pushover gateway email come in as `TF_VAR_*` environment variables, injected from 1Password through `op run --no-masking --env-file=./.env -- terraform ...`. The four operational entry points are `just cloudflare init|plan|apply|unlock`.
 
@@ -76,7 +76,6 @@ A single Kubernetes consumer of the tunnel lives at `kubernetes/apps/networking/
   - `Flux webhook` (`flux-webhook`) — GitHub-CIDR bypass (:235-244).
   - `public_bypass` — one `for_each` over `local.public_bypass_apps` emitting four no-auth apps: `www` (Private website), `share` (File share), `idm` (Identity Management), `books` (Calibre) (:210-230). Cloudflare Access needs one app per hostname, hence the loop.
 - [component] Access groups + identity — `UnrestrictedUsers` and `RestrictedUsers` email-include groups, Google OAuth IdP with PKCE, mobile-app service token written back to 1Password as `CF-Access-Client-Id`/`CF-Access-Client-Secret` (provision/cloudflare/access.tf:5-49, :119-129)
-- [removed 2026-08-03] R2 downloads bucket — `cloudflare_r2_bucket.downloads`, its `downloads.${CF_DOMAIN_NAME}` custom domain and the matching `Private R2 downloads` Access app have all been DELETED from the stack. `provision/cloudflare/r2_bucket.tf` no longer exists and no `r2`/`downloads` reference survives in any .tf file. (`provision/cloudflare/CLAUDE.md` still lists `r2_bucket.tf` in its file-split enumeration — a repo-side leftover, logged as a follow-up.)
 - [component] Mail DNS records — MX (3 Zoho hosts with priorities 10/20/50), SPF, DKIM (zmail+zcal selectors), DMARC (p=reject, strict aspf/adkim) (provision/cloudflare/dns_records.tf, provision/cloudflare/terraform.tfvars)
 - [component] SMTP2GO mail subdomain — `msg` DKIM/return/tracking CNAMEs + `_dmarc.msg` policy (provision/cloudflare/dns_records.tf:159-193)
 - [component] Zone WAF ruleset — `cloudflare_ruleset.zone_waf_rules` (NOT `flux_webhook_waf`) holds TWO rules (provision/cloudflare/firewall_rules.tf:31-55):
@@ -103,7 +102,6 @@ A single Kubernetes consumer of the tunnel lives at `kubernetes/apps/networking/
 - [claim] "Zone settings enforce strict SSL, TLS 1.2 floor, TLS 1.3 + 0-RTT, HTTP/3, IPv6, DNSSEC active, security level high, Bot Management `fight_mode` with JS challenge, and a zone-wide cache-bypass ruleset for any `*.${PUBLIC_DOMAIN}` request" (evidence: repo, ref: provision/cloudflare/zone_settings.tf:2-203, verified: 2026-05-19)
 - [claim] "Notification policies route Tunnel Health, Tunnel Update, HTTP DDoS, and Abuse Report events to the Pushover email gateway via `PUSHOVER_CLOUDFLARE_EMAIL`" (evidence: repo, ref: provision/cloudflare/notification.tf:6-63, verified: 2026-05-19)
 - [claim] "GitHub hook IP ranges are pulled live from `https://api.github.com/meta` on every plan; both the Access bypass policy and the WAF ruleset list depend on that single `data "http" "github_ip_ranges"` source" (evidence: repo, ref: provision/cloudflare/main.tf:59-64 + access.tf:85-97 + firewall_rules.tf:1-15, verified: 2026-05-19)
-- [claim] (OBSOLETE as of 2026-08-03) "R2 bucket `downloads` is in location `EEUR` and exposed via a custom domain with min TLS 1.2; the matching Access app uses bypass-everyone (no auth)" — the entire R2 stack was removed; `r2_bucket.tf` does not exist and no `r2`/`downloads` reference remains in any .tf file (verified: 2026-08-03)
 - [claim] "All four Just recipes (`init`, `plan`, `apply`, `unlock`) wrap a single Terraform subcommand inside `op run --no-masking --env-file=./.env -- terraform ...` — there is no raw-terraform path documented" (evidence: repo, ref: provision/cloudflare/mod.just:1-34, verified: 2026-05-19)
 - [claim] "The Kubernetes cloudflare-tunnel workload (kubernetes/apps/networking/cloudflare-tunnel/) consumes tunnel credentials only — it does not create or mutate Cloudflare resources; the source of truth for tunnel name/ID/secret remains this Terraform stack" (evidence: repo, ref: kubernetes/apps/networking/cloudflare-tunnel/app/externalsecret.yaml + provision/cloudflare/tunnel.tf, verified: 2026-05-19)
 
@@ -117,12 +115,11 @@ A single Kubernetes consumer of the tunnel lives at `kubernetes/apps/networking/
 - [drift] Cloudflare provider version is pinned with a Renovate disable annotation (`main.tf:18-22`, `.terraform.lock.hcl` constraints `5.22.0`) — major-version bumps must be done manually. (The earlier claim that `.terraform/providers/` holds "many older versions" is not supportable: the local cache currently holds only 5.22.0, and `.terraform/` is a gitignored, non-authoritative artifact anyway.)
 - [drift] The two `null_resource` blocks (tunnel + service token) write secrets back to 1Password via `op item edit` as a one-shot `local-exec` after create. Terraform does not track the 1Password side — if the 1Password item is renamed, deleted, or its fields differ, the Kubernetes consumers silently break. There is no automated reconciliation.
 - [drift] Mail-stack DNS uses Zoho as the primary mailbox provider plus SMTP2GO for the `.msg` subdomain. Provider switches require coordinated edits to MX/SPF/DKIM/DMARC.
-- [drift] No proxied placeholder A/AAAA records (`192.0.2.1` / `100::`) remain in the stack: the `mta-sts` pair was removed with the MTA-STS stack (2026-11-14) and the dangling `arfolyam` pair is no longer present either. A future Worker-fronted hostname would need such a proxied carrier record again.
 - [drift] Access uses Cloudflare's **Global API Key** (`CF_GLOBAL_APIKEY`) for the Terraform provider rather than a scoped API Token. Wider blast radius if compromised — flagged as a hardening follow-up rather than current blocker.
 
 ## Open Questions / Gaps
 
-- [gap] No verification was run against the live Cloudflare API or Terraform Cloud workspace in this pass — claims are repo-evidence only. `just cloudflare plan` from a credentialed shell is the live-state validation path.
+- [gap] Claims are repo evidence. The live state was last confirmed on 2026-11-14, when `just cloudflare plan` on `main` reported "No changes. Your infrastructure matches the configuration." Re-run it from a credentialed shell to re-validate.
 - [gap] The relationship between this stack and the in-cluster cloudflare-tunnel deployment was traced only at the contract level (1Password item shape). Detailed cluster wiring is documented in the networking area-reference.
 - [gap] Several Access apps (`Private Cloud` and `Private Cloud Photos` in particular) rely on Google OAuth + user-email allowlists that are themselves Terraform-managed — but the actual `CF_ACCESS_*_USERS` lists come from `TF_VAR_*` env vars not visible in the repo. The note treats those as black-box inputs.
 - [gap] No formal disaster-recovery procedure is captured for the case where Terraform Cloud state is lost. Re-importing would require manual coordination with the live Cloudflare account.
@@ -199,3 +196,9 @@ not block delivery; senders holding a cached policy may emit TLS-RPT fetch-error
   `provision/cloudflare/CLAUDE.md` file split, and the stale R2/Workers mentions were removed from
   `README.md`, the root `CLAUDE.md` (tree + area table) and the `cloudflare-terraform` skill
   (description; `layout.md` no longer lists the non-existent `redirects.tf`).
+
+## Update — 2026-11-14: the WAF country rule has an on-prem twin
+
+- [fact] `zone_waf_rules` rule 2 (block non-HU except `country_block_exceptions`) is now mirrored in Envoy: SecurityPolicy `envoy-external-edge` (HU-only, MaxMind GeoLite2-Country), and flux-webhook is restricted to GitHub hooks ranges by the route policy `flux-system/github-webhook`. Both layers run in parallel until the Cloudflare exit. See [[networking]] and [[onprem-geoip-country-filter]].
+- [rule] A host that must accept non-HU traffic needs both a `country_block_exceptions` entry here and an Envoy-side Allow; changing only Cloudflare still returns 403 from Envoy.
+- [observation] e2e test pattern (2026-11-14): temporarily add the `echo` host to `country_block_exceptions` + `public_bypass_apps`, probe from abroad (check-host.net for IPv4, the Globalping API for IPv6 and custom headers), then revert and confirm with `terraform plan` that nothing has drifted.

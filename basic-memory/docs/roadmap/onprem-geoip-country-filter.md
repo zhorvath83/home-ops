@@ -133,6 +133,28 @@ Tier 2 — deferred to the Cloudflare-exit item (when non-HU traffic actually re
 5b. **False-positive tripwire for the parallel run:** a warning alert on any `rbac denied` increase on envoy-external outside the GitHub route — while Cloudflare is in front, every such denial is a MaxMind/Cloudflare disagreement, i.e. a blocked Hungarian user.
 6. **Parallel run:** a few weeks with Cloudflare still blocking; expected Envoy geo denials ≈ 0 outside tests. Then the item is done; the Cloudflare rule stays until the Cloudflare-exit project removes the tunnel.
 
+## Post-rollout review — 2026-11-14
+
+Verified OK (live):
+- [verified] Only `flux-system/github-webhook` carries its own `authorization` among the 11 envoy-external routes; `echo-server-oidc` merges without one; `components/gateway-oidc` has no authorization block.
+- [verified] All 5 direct TCP peers of envoy-external over 14 days were cloudflared pods (one per rollout); only CiliumNetworkPolicy/envoy-external grants ingress to the proxy, so there is no in-cluster path to forge XFF.
+- [verified] The http (80) listener carries the same geoip > rbac chain as https.
+- [verified] CrowdSec parses 100% of the envoy-external access lines (the unparsed lines are Envoy's stderr), and geo 403s are poured into buckets.
+- [verified] Renovate tracks app-template images without a comment (cloudflared precedent), so the geoipupdate image is tracked.
+- [verified] `update-github-hooks-networks` dispatched manually: success, 9 ranges, no changes, no PR.
+- [verified] No envoy-gateway controller errors in 1h; webhook delivery after a merge took about 5s.
+
+Fixed in the review (f588992a3, 6615bcf8d, b408746d6):
+- [fixed] geoipupdate v8 + entry.sh exited on the first failed update, so a MaxMind outage CrashLooped the pod, made envoy-gateway-geoip NotReady and stalled envoy-gateway-config and k8s-gateway. A shell loop now logs the failure and keeps the pod Ready; GeoIPDatabaseStale went from 10d to 7d.
+- [fixed] Hungarian 403 page (BTP responseOverride, source Local) next to the 401 page; it also covers RFC1918 denials and CrowdSec bans (generic wording).
+- [fixed] Guardrails in kubernetes/apps/networking/CLAUDE.md: a route-level authorization replaces the parent's rules; keep numTrustedHops until gateway#9935; access from abroad needs both the Cloudflare and the Envoy exception. The alert, admission message and bouncer comment now name the geo gate and the current client-IP model.
+
+Open:
+- [open] **Hot reload not exercised.** db_reload_success has been 0 since rollout. A manual rename test inside the pod was blocked by the session permission check. The next MaxMind release (Tue/Fri) exercises it naturally: expect db_reload_success ≥ 1 and the DB age on the dashboard to drop.
+- [open] **CrowdSec bouncer client IP after the numTrustedHops switch is unverified.** The bouncer reads X-Envoy-External-Address and exempts 10.0.0.0/8; if it ever saw the cloudflared IP, every external request would skip CrowdSec. It should see the real client, because the header is derived from the same resolved address the access log shows, but no read-only evidence exists (the bouncer and AppSec do not log IPs). Test: a temporary `cscli decisions add --ip <own public IP> --duration 3m`, a request through Cloudflare should get 403, then delete the decision. The session permission check blocked this test.
+- [note] flux-local CI only runs on PRs, so the direct-to-main commits were validated by the live reconcile, not by CI.
+- [note] At the Cloudflare exit: delete or retune GeoGateFalsePositive and revisit client-IP detection (see the Post-Cloudflare-exit section).
+
 ## Rollback
 
 - Each phase is one revert. Removing the authorization block restores today's behaviour instantly; the geoip filter disappears from the listener once no route uses clientIPGeoLocations. The DB plane is inert without the policy. CTP revert returns to trustedCIDRs.
