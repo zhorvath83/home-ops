@@ -55,7 +55,7 @@ home-ops
 │   ├── talos/        # Talos machine config templates
 │   └── volsync/      # backup plane helpers
 ├── provision/        # provider-facing infrastructure (Terraform)
-│   ├── cloudflare/   # DNS, Tunnel, Access, WAF, R2, Workers
+│   ├── cloudflare/   # DNS, Tunnel, Access, WAF
 │   ├── ovh/          # S3 backup storage
 │   ├── pocket-id/    # OIDC clients and groups in the cluster IdP
 │   ├── openmediavault/
@@ -249,7 +249,7 @@ Provisioning areas:
 
 | Area | Read before you… | Covers |
 |---|---|---|
-| `docs/areas/cloudflare` | Modify Cloudflare zone/tunnel/Access/Workers/R2/mail DNS/WAF (Terraform) | zone, tunnel, Access apps, Workers, R2, mail-stack DNS, WAF |
+| `docs/areas/cloudflare` | Modify Cloudflare zone/tunnel/Access/mail DNS/WAF (Terraform) | zone, tunnel, Access apps, mail-stack DNS, WAF |
 | `docs/areas/ovh-storage` | Modify OVH S3 buckets, object-store user, or S3 policy (Terraform) | S3 buckets, object-store user, S3 policy, 1Password sync |
 
 Application area:

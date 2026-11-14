@@ -1,6 +1,6 @@
 ---
 name: cloudflare-terraform
-description: Work on the Cloudflare Terraform area in the home-ops repository. Use when modifying provision/cloudflare Terraform resources, file layout, the `just cloudflare` recipes, or credential and validation flows tied to Cloudflare DNS, tunnel, workers, redirects, pages, or zone configuration.
+description: Work on the Cloudflare Terraform area in the home-ops repository. Use when modifying provision/cloudflare Terraform resources, file layout, the `just cloudflare` recipes, or credential and validation flows tied to Cloudflare DNS, tunnel, Access, WAF, or zone configuration.
 ---
 
 # Home Ops Cloudflare Terraform
