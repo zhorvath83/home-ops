@@ -60,7 +60,7 @@ spec:
 ---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/refs/heads/master/v1.36.0/validatingadmissionpolicy-admissionregistration-v1.json
 # Route-level SecurityPolicy must opt into StrategicMerge explicitly: without it the
-# most-specific-policy-wins semantics silently detach the Gateway-level CrowdSec/RFC1918
+# most-specific-policy-wins semantics silently detach the Gateway-level CrowdSec/RFC1918/geo
 # gates for that route (mergeType defaults to Merge). Gateway-level policies (kind
 # Gateway) need no mergeType and are unaffected.
 apiVersion: admissionregistration.k8s.io/v1
@@ -87,7 +87,7 @@ spec:
           || object.spec.targetRefs.all(t, !has(t.kind) || t.kind != 'HTTPRoute'))
         || object.spec.mergeType == 'StrategicMerge'
       reason: Forbidden
-      message: "route-level SecurityPolicy must set spec.mergeType: StrategicMerge, or its route silently loses the Gateway-level CrowdSec/RFC1918 gates"
+      message: "route-level SecurityPolicy must set spec.mergeType: StrategicMerge, or its route silently loses the Gateway-level CrowdSec/RFC1918/geo gates"
 ---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/refs/heads/master/v1.36.0/validatingadmissionpolicybinding-admissionregistration-v1.json
 apiVersion: admissionregistration.k8s.io/v1

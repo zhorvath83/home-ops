@@ -28,7 +28,7 @@ spec:
     config:
       server:
         logLevel: info
-      # Envoy already resolved the client IP (CF-Connecting-IP externally, TCP source on
+      # Envoy already resolved the client IP (rightmost XFF hop externally, TCP source on
       # the LAN gateway) and stamps it here, so no XFF walking or proxy CIDR list.
       trustedIPHeader: X-Envoy-External-Address
       # Cluster-internal callers only (pod + service CIDR): in-cluster probes and OIDC
