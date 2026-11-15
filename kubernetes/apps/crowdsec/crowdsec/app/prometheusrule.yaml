@@ -83,8 +83,8 @@ spec:
             summary: CrowdSec banned a source
             description: |-
               CrowdSec banned a source after the scenario below tripped. The ban lasts 4h
-              and doubles for each repeat offence; no action is needed. If it was you,
-              clear it with `cscli decisions delete <ip>`.
+              plus 4h for each earlier decision on the same IP (4h, 8h, 12h, ...); no action
+              is needed. If it was you, clear it with `cscli decisions delete <ip>`.
         # MAX_DECISIONS is a TOTAL cap (CAPI included); on budget exhaustion the importer
         # exits 0 (KubeJobFailed never fires), so this predicts silent truncation. 85% of 75000.
         # keep_firing_for 48h ≥ the daily 24h-TTL sawtooth, so a peak crossing does not resolve/refire.

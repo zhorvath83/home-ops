@@ -442,8 +442,8 @@ tests:
               summary: CrowdSec banned a source
               description: |-
                 CrowdSec banned a source after the scenario below tripped. The ban lasts 4h
-                and doubles for each repeat offence; no action is needed. If it was you,
-                clear it with `cscli decisions delete <ip>`.
+                plus 4h for each earlier decision on the same IP (4h, 8h, 12h, ...); no action
+                is needed. If it was you, clear it with `cscli decisions delete <ip>`.
   # (19) No-fire, origin exclusion load-bearing: CAPI origin (excluded by origin!~"CAPI|...") with a
   # high value must NOT fire — the ~25k community blocklist is expected noise, not a paged ban.
   - interval: 1m
@@ -486,8 +486,8 @@ tests:
               summary: CrowdSec banned a source
               description: |-
                 CrowdSec banned a source after the scenario below tripped. The ban lasts 4h
-                and doubles for each repeat offence; no action is needed. If it was you,
-                clear it with `cscli decisions delete <ip>`.
+                plus 4h for each earlier decision on the same IP (4h, 8h, 12h, ...); no action
+                is needed. If it was you, clear it with `cscli decisions delete <ip>`.
   # === CrowdSecAcquisitionStalled === envoy 6h increase > 0 AND parser 6h increase == 0, for:10m,
   # keep_firing_for:3h. Both halves are sum() with NO by(), so exp_labels = alertname + severity
   # only. The `or vector(0)` makes parser absence read as 0 (== 0 true); the parser-constant-0
