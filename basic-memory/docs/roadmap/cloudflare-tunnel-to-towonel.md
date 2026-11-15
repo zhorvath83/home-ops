@@ -245,3 +245,7 @@ L — Phase 0 depends on the operator; Phases 1–3 ~1.5 days; Phase 4 ~2–3h w
 - relates_to [[iam]]
 - relates_to [[cloudflare-api-token-migration]]
 - relates_to [[onprem-geoip-country-filter]]
+
+## Update — 2026-11-15: CrowdSec local-deny whitelist and the cutover
+
+- [fact] CrowdSec now ignores Envoy local denies (RBAC 403, route_not_found) by response_code_details only ([[crowdsec-envoy-local-deny-whitelist]]), independent of the client-IP model, so the PROXY v2 switch needs no CrowdSec change. Without Cloudflare the volume of geo-denied foreign scanning grows; those requests stay out of CrowdSec by design. A cutover misconfiguration that makes every request an RBAC 403 also leaves CrowdSec blind on envoy-external — detect it with the P-tests, not with CrowdSec.
