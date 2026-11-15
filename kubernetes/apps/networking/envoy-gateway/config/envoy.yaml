@@ -110,6 +110,10 @@ kind: EnvoyProxy
 metadata:
   name: envoy-internal
 spec:
+  # RFC1918 RBAC ahead of ext_authz/oauth2 (EG default puts RBAC last): a non-LAN client gets a 403, not a CrowdSec call or IdP redirect.
+  filterOrder:
+    - name: envoy.filters.http.rbac
+      before: envoy.filters.http.ext_authz
   logging:
     level:
       default: info
