@@ -242,3 +242,7 @@ D) Permissions-Policy does NOT block WebAuthn. Pocket ID is passkey-based (no pa
 - relates_to [[networking]] — Envoy Gateway admission, connection, redirect, response headers.
 - relates_to [[observability]] — the SecurityPolicy-attach-failure alert.
 - relates_to [[iam]] — the idm path-deny normalization and the OIDC redirect-target constraint.
+
+## Update — 2026-11-15: the 401 page is gone
+
+- [note] The gateway 401 responseOverride page was removed (64beaed28, Envoy use-after-free; see [[crowdsec-envoy-local-deny-whitelist]]), so its inline script no longer constrains the gateway CSP. The CSP stays frame-ancestors-only; widening it still needs the per-app audit described above. The gateway-policies.yaml CSP comments were shortened accordingly.
