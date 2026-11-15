@@ -68,7 +68,7 @@ related_areas:
 ## Follow-ups
 
 - [open] Watch 24h: no foreign local bans; CrowdSecAcquisitionStalled stays quiet (cs_parser_hits_ok_total should still count whitelisted events).
-- [open] Envoy corrupted response_code_details prefix — likely an upstream bug, investigate separately.
+- [resolved-elsewhere] The corrupted response_code_details prefix is the known Envoy use-after-free from the 403 responseOverride (reverted in f3f1f4989; upstream report declined by user decision, see [[onprem-geoip-country-filter]]). All 14 corrupted lines fall in 2026-11-14 22:28:39–55Z, none in ~5300 later requests. Root cause (2026-11-15 upstream read): envoyproxy/envoy#46600 (merged 2026-08-24, in v1.40.x) resolves `details` as a string_view into StreamInfo's own response_code_details when preserve_response_code_details is set; sendLocalReply → setResponseCodeDetails → `response_code_details_.emplace(view)` destroys the string before copying from it (stream_info_impl.h, v1.40.2). Envoy Gateway always sets PreserveResponseCodeDetails: true for responseOverride (internal/xds/translator/custom_response.go). No upstream issue or fix found as of 2026-11-15 (v1.40.2 latest). The remaining source:Local 401 override (BTP envoy) uses the same path; no local 401 in the last 24h, so no evidence either way.
 - [open] 17 stale bouncer and machine registrations in LAPI (old envoy@ / blocklist_import@ pod IPs).
 - [open] envoy-internal has no explicit filterOrder (ext_authz vs RBAC order is the EG default).
 - [open] CrowdSecBanActive description says the ban "doubles"; profiles.yaml grows it linearly (4h → 8h → 12h …).
