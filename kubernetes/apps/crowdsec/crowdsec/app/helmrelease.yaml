@@ -39,6 +39,19 @@ spec:
           flush:
             agents_autodelete:
               login_password: 7d
+      parsers:
+        s02-enrich:
+          # A ban for these is never consulted: RBAC answers before ext_authz. Fixtures: tools/crowdsec-whitelist/.
+          # contains, not startsWith: Envoy occasionally emits a corrupted prefix in this field.
+          envoy-local-deny.yaml: |
+            name: home-ops/envoy-local-deny
+            description: Envoy local replies that never reached an upstream (RBAC deny, no route)
+            filter: evt.Parsed.program == 'envoy'
+            whitelist:
+              reason: envoy local deny, no upstream reached
+              expression:
+                - (evt.Unmarshaled.envoy?.response_code_details ?? "") contains "_denied_matched_policy["
+                - (evt.Unmarshaled.envoy?.response_code_details ?? "") == "route_not_found"
       profiles.yaml: |
         # Repeat offender ban grows 4h -> 8h -> 12h; GetDecisionsCount counts CAPI too.
         name: default_ip_remediation
