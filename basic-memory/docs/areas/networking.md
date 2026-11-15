@@ -496,3 +496,7 @@ Executed from [[onprem-geoip-country-filter]] (roadmap), phases 0–5, directly 
 
 - [component] CrowdSec s02-enrich whitelist `home-ops/envoy-local-deny` (kubernetes/apps/crowdsec/crowdsec/app/helmrelease.yaml, `config.parsers.s02-enrich`) drops envoy access-log events whose response_code_details is an RBAC policy deny (`contains "_denied_matched_policy["`) or `route_not_found`, on both gateways. Upstream responses, ext_authz denies, rate limits and AppSec blocks still feed the scenarios, so a local ban (and CrowdSecBanActive) now means an allowed source reached an application.
 - [fact] Rationale: a ban for a geo-denied source is never consulted — on envoy-external geoip + RBAC run before ext_authz, and the Envoy bouncer is the only decision consumer. Fixture suite: tools/crowdsec-whitelist/ (`testWhitelist.sh candidate|live`). Detail and verification: [[crowdsec-envoy-local-deny-whitelist]].
+
+## Update — 2026-11-15: no responseOverride at all
+
+- [component] BTP/envoy carries no responseOverride any more: the 401 OIDC-failure page was removed (64beaed28) because it hit the same Envoy use-after-free as the reverted 403 page (envoyproxy/envoy#46600; EG always sets preserve_response_code_details). OIDC failures now return Envoy's plain "OAuth flow failed." 401. The networking guide forbids responseOverride until an Envoy release fixes the path. Detail: [[crowdsec-envoy-local-deny-whitelist]].
