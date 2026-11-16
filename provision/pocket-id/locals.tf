@@ -15,6 +15,12 @@ locals {
       callback_url = "https://${c.subdomain}.${local.public_domain}${c.gate == "envoy" ? "/oauth2/callback" : c.callback_path}"
       logout_url   = "https://${c.subdomain}.${local.public_domain}/"
 
+      # Native companion apps (e.g. a mobile client's custom-scheme redirect) on the same client.
+      extra_callback_urls = try(c.extra_callback_urls, [])
+
+      # A public client has no secret; only for an app that must do the code exchange itself.
+      is_public = try(c.is_public, false)
+
       # Default-on: Envoy always sends a code_challenge, and leaving PKCE optional lets a
       # stolen authorization code be redeemed without the verifier. Override per client
       # only for an app that provably cannot send one.
