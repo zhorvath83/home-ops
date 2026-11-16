@@ -144,6 +144,23 @@ spec:
           - backendRefs:
               - identifier: app
                 port: *port
+          # OPDS (HTTP Basic) and Kobo sync (URL token) bypass Pocket ID; nobody uses them.
+          - matches:
+              - path:
+                  type: PathPrefix
+                  value: /opds
+              - path:
+                  type: PathPrefix
+                  value: /kobo
+              - path:
+                  type: PathPrefix
+                  value: /kobo_auth
+            filters:
+              - type: ExtensionRef
+                extensionRef:
+                  group: gateway.envoyproxy.io
+                  kind: HTTPRouteFilter
+                  name: calibre-web-automated-deny-403
     persistence:
       cache:
         type: emptyDir
