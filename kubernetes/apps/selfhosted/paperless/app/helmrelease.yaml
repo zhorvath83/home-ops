@@ -220,9 +220,11 @@ spec:
                 port: *port
           # Pocket ID is the only way in: block every path that accepts or issues a local password.
           - matches:
+              # POST only: Swift Paperless probes the API version with a GET here and expects 405.
               - path:
                   type: PathPrefix
                   value: /api/token
+                method: POST
               - path:
                   type: PathPrefix
                   value: /accounts/password
