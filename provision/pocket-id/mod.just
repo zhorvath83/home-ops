@@ -34,7 +34,8 @@ plan: lint
 [script]
 apply: lint
     cd {{ tf_dir }} && {{ tf }} apply
-    just pocket-id sync-secrets
+    just pocket-id sync-secrets \
+      || { just log error "IdP changed but 1Password is stale - run 'just pocket-id sync-secrets' now"; exit 1; }
 
 [doc('Mint a fresh secret for one client by recreating it (positional arg: app) — the app is locked out until Flux resyncs')]
 [script]
@@ -42,14 +43,18 @@ rotate app:
     cd {{ tf_dir }}
     gum confirm "Rotate the Pocket ID client secret for '$1'?" || { just log info "Aborted"; exit 0; }
     {{ tf }} apply -replace="pocketid_client.this[\"$1\"]"
-    just pocket-id sync-secrets
+    just pocket-id sync-secrets \
+      || { just log error "IdP changed but 1Password is stale - run 'just pocket-id sync-secrets' now"; exit 1; }
 
 [doc('Push the client secrets from terraform state into 1Password (implied by apply/rotate)')]
 [script]
 sync-secrets:
     cd {{ tf_dir }}
-    op item get pocket-id-clients --vault HomeOps >/dev/null 2>&1 \
-      || op item create --category "Secure Note" --title pocket-id-clients --vault HomeOps >/dev/null
+    # Every `op item` call gets a closed stdin: on a non-TTY stdin op reads it as a JSON item template.
+    # Create only on a confirmed absence: a transient `op` error must not mint a duplicate item.
+    items="$(op item list --vault HomeOps --format json </dev/null)"
+    printf '%s' "${items}" | jq -e 'any(.[]; .title == "pocket-id-clients")' >/dev/null \
+      || op item create --category "Secure Note" --title pocket-id-clients --vault HomeOps </dev/null >/dev/null
     secrets="$({{ tf }} output -json client_secrets)"
     fields=()
     while IFS= read -r app; do
@@ -60,7 +65,12 @@ sync-secrets:
       fields+=("${app}_client_secret[password]=${value}")
     done < <(printf '%s' "${secrets}" | jq -r 'keys[]')
     [ "${#fields[@]}" -gt 0 ] || { just log error "No client secrets in state — refusing to report success"; exit 1; }
-    op item edit pocket-id-clients --vault HomeOps "${fields[@]}" >/dev/null
+    op item edit pocket-id-clients --vault HomeOps "${fields[@]}" </dev/null >/dev/null
+    # Post-condition on labels only, never values: every client in state must have its field.
+    labels="$(op item get pocket-id-clients --vault HomeOps --format json </dev/null | jq -c '[.fields[].label]')"
+    missing="$(printf '%s' "${secrets}" | jq -r --argjson have "${labels}" \
+      'keys[] | select((. + "_client_secret") as $l | $have | index($l) | not)')"
+    [ -z "${missing}" ] || { just log error "1Password is missing client secret fields" missing "$(paste -sd, - <<<"${missing}")"; exit 1; }
     just log info "Synced ${#fields[@]} client secrets to HomeOps/pocket-id-clients"
 
 [doc('Report clients whose group restriction is off — catches clients created outside Terraform')]
