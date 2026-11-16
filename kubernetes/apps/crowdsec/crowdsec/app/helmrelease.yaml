@@ -34,6 +34,9 @@ spec:
                 - "192.168.0.0/16"
                 - "10.0.0.0/8"
                 - "172.16.0.0/12"
+        # LAPI-only pod: the chart's LAPI docker_start.sh drops the DISABLE_AGENT -> -no-cs handling, so disable the agent here.
+        crowdsec_service:
+          enable: false
         # Every rollout leaves a stale agent/appsec machine behind; machines with alerts are kept by LAPI.
         db_config:
           flush:
@@ -89,8 +92,6 @@ spec:
             - ALL
       env:
         - name: USE_WAL
-          value: "true"
-        - name: ENABLE_CONSOLE_MANAGEMENT
           value: "true"
         - name: ENROLL_INSTANCE_NAME
           value: home-ops
