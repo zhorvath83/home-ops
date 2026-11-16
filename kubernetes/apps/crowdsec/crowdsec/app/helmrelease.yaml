@@ -39,6 +39,10 @@ spec:
           flush:
             agents_autodelete:
               login_password: 7d
+            # A known key seen from a new pod IP auto-creates <name>@<ip>; 7d > the daily import interval.
+            # If every row of a key ages out the client gets 403 until a LAPI restart re-adds BOUNCER_KEY_*.
+            bouncers_autodelete:
+              api_key: 7d
       parsers:
         s02-enrich:
           # A ban for these is never consulted: RBAC answers before ext_authz. Fixtures: tools/crowdsec-whitelist/.
