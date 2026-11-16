@@ -9,15 +9,21 @@ spec:
     labels:
       app.kubernetes.io/name: home-gallery
   components:
+    - ../../../../components/gateway-oidc
     - ../../../../components/zeroscaler
   dependsOn:
+    - name: onepassword-connect
+      namespace: external-secrets
     - name: democratic-csi
       namespace: kube-system
+    - name: pocket-id
+      namespace: security
   interval: 1h
   path: ./kubernetes/apps/selfhosted/home-gallery/app
   postBuild:
     substitute:
       APP: home-gallery
+      APP_SUBDOMAIN: fenykepek
   prune: true
   sourceRef:
     kind: GitRepository

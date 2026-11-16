@@ -131,7 +131,6 @@ spec:
           gethomepage.dev/group: Selfhosted
           gethomepage.dev/icon: mdi-image-multiple
         hostnames:
-          - "photos.${PUBLIC_DOMAIN}"
           - "fenykepek.${PUBLIC_DOMAIN}"
         parentRefs:
           - name: envoy-external

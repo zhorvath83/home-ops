@@ -28,6 +28,8 @@ groups:
     friendly_name: Mealie admins
   mealie_users:
     friendly_name: Mealie users
+  home-gallery_users:
+    friendly_name: Home Gallery users
 
 clients:
   bazarr:
@@ -135,6 +137,12 @@ clients:
     subdomain: backup
     groups:
       - infra_admins
+  home-gallery:
+    friendly_name: Home Gallery
+    gate: envoy
+    subdomain: fenykepek
+    groups:
+      - home-gallery_users
   paperless-gpt:
     friendly_name: Paperless GPT
     gate: envoy
