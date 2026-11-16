@@ -82,7 +82,7 @@ error: recipe `sync-secrets` failed with exit code 1
 - [verified] AC1: `echo yes | just pocket-id sync-secrets` → exit 0, "Synced 25 client secrets".
 - [verified] AC2: post-condition with an injected fake client → exit 1, `missing=no-such-app`, no values printed.
 - [open] AC3 / no-op `echo yes | just pocket-id apply` was not run by the agent (blocked by its permission classifier); `just pocket-id plan` showed no changes. Verified by inspection only.
-- [follow_up] The `paperless_client_secret` field is now orphaned in the item (paperless became a public client); `sync-secrets` only adds or updates fields, it never prunes.
+- [resolved] The orphaned `paperless_client_secret` field (paperless became a public client) was deleted from the item on 2026-11-16 after checking that no repo file, Terraform output or live ExternalSecret referenced it; all 85 ExternalSecrets stayed Ready. `sync-secrets` still never prunes, so a removed client leaves its field behind.
 
 ## Related
 
