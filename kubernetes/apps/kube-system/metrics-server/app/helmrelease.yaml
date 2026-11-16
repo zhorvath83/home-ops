@@ -16,6 +16,7 @@ spec:
       - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname
       - --kubelet-use-node-status-port
       - --metric-resolution=15s
+      - --flate-probe=${FLATE_UNDEFINED_PROBE}
       - --kubelet-request-timeout=2s
     resources:
       requests:
