@@ -1,6 +1,7 @@
 ---
 # yaml-language-server: $schema=https://json.schemastore.org/prometheus.rules.test.json
-# promtool unit tests for app/prometheusrule.yaml, covering CrowdSecBouncerDown. Same shape
+# promtool unit tests for app/prometheusrule.yaml, covering CrowdSecBouncerDown and
+# CrowdSecBouncerMemoryHigh. CrowdSecBouncerDown has the same shape
 # as CrowdSecAgentDown: `up == 0 or absent(up{...})`, so the `absent()` branch covers
 # scale-to-0 / crashloop / readiness-split where the `up` series vanishes — without it the
 # alert never fires for the common outage shapes. for:2m, so every fire case evals past 2m
@@ -59,4 +60,51 @@ tests:
     alert_rule_test:
       - eval_time: 3m
         alertname: CrowdSecBouncerDown
+        exp_alerts: []
+  # === CrowdSecBouncerMemoryHigh ===
+  # Ratio of working set to the memory limit, so the 80% gate follows a limit change with no
+  # rule edit. 256Mi limit = 268435456 B; 80% = 214748364.8 B. for:15m -> fire at 16m.
+  # (d) Fire: 220000000 B (~82%) for 20m. Labels = alertname + severity + pod (by(pod) join).
+  - interval: 1m
+    input_series:
+      - series: 'container_memory_working_set_bytes{namespace="crowdsec",container="envoy-proxy-bouncer",pod="crowdsec-bouncer-x"}'
+        values: '220000000x20'
+      - series: 'kube_pod_container_resource_limits{namespace="crowdsec",container="envoy-proxy-bouncer",pod="crowdsec-bouncer-x",resource="memory"}'
+        values: '268435456x20'
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: CrowdSecBouncerMemoryHigh
+        exp_alerts:
+          - exp_labels:
+              alertname: CrowdSecBouncerMemoryHigh
+              severity: warning
+              pod: crowdsec-bouncer-x
+            exp_annotations:
+              summary: CrowdSec Envoy bouncer is near its memory limit
+              description: |-
+                Bouncer pod crowdsec-bouncer-x uses over 80% of its memory limit. Its decision cache
+                grows with every LAPI decision (CAPI, console lists, blocklist-import), and the
+                bouncer is fail-closed, so an OOMKill 5xx-es every route on the gateway. Check
+                for a newly subscribed console blocklist, then drop it or raise the limit.
+  # (e) No-fire: 200000000 B (~75%) stays under the 80% gate.
+  - interval: 1m
+    input_series:
+      - series: 'container_memory_working_set_bytes{namespace="crowdsec",container="envoy-proxy-bouncer",pod="crowdsec-bouncer-x"}'
+        values: '200000000x20'
+      - series: 'kube_pod_container_resource_limits{namespace="crowdsec",container="envoy-proxy-bouncer",pod="crowdsec-bouncer-x",resource="memory"}'
+        values: '268435456x20'
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: CrowdSecBouncerMemoryHigh
+        exp_alerts: []
+  # (f) `for` not yet met: the firing series at eval 14m, before 15m elapses — pins for:15m.
+  - interval: 1m
+    input_series:
+      - series: 'container_memory_working_set_bytes{namespace="crowdsec",container="envoy-proxy-bouncer",pod="crowdsec-bouncer-x"}'
+        values: '220000000x20'
+      - series: 'kube_pod_container_resource_limits{namespace="crowdsec",container="envoy-proxy-bouncer",pod="crowdsec-bouncer-x",resource="memory"}'
+        values: '268435456x20'
+    alert_rule_test:
+      - eval_time: 14m
+        alertname: CrowdSecBouncerMemoryHigh
         exp_alerts: []

@@ -86,10 +86,10 @@ spec:
               plus 4h for each earlier decision on the same IP (4h, 8h, 12h, ...); no action
               is needed. If it was you, clear it with `cscli decisions delete <ip>`.
         # MAX_DECISIONS is a TOTAL cap (CAPI included); on budget exhaustion the importer
-        # exits 0 (KubeJobFailed never fires), so this predicts silent truncation. 85% of 75000.
+        # exits 0 (KubeJobFailed never fires), so this predicts silent truncation. 85% of 150000.
         # keep_firing_for 48h ≥ the daily 24h-TTL sawtooth, so a peak crossing does not resolve/refire.
         - alert: CrowdSecDecisionBudgetNearCap
-          expr: sum(cs_active_decisions{job="crowdsec-service", namespace="crowdsec"}) > 63750
+          expr: sum(cs_active_decisions{job="crowdsec-service", namespace="crowdsec"}) > 127500
           for: 30m
           keep_firing_for: 48h
           labels:
@@ -98,7 +98,7 @@ spec:
             summary: CrowdSec decisions approaching the MAX_DECISIONS cap
             description: |-
               Total active LAPI decisions (all origins, CAPI included) are above 85% of the
-              blocklist-import MAX_DECISIONS cap (75000). When the cap is reached the importer
+              blocklist-import MAX_DECISIONS cap (150000). When the cap is reached the importer
               logs "skipping remaining sources" and exits 0, so KubeJobFailed never fires and
               the tail feeds (Cybercrime Tracker, VXVault) drop silently. Raise MAX_DECISIONS
               or prune a feed before that happens. keep_firing_for: 48h latches the alert: once

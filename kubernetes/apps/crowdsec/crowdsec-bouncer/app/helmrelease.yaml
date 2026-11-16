@@ -68,7 +68,7 @@ spec:
         cpu: 20m
         memory: 64Mi
       limits:
-        memory: 128Mi
+        memory: 256Mi
   # envoy-proxy-bouncer exposes no Deployment-metadata annotation hook (only podAnnotations,
   # which Reloader does not read), and adds no config checksum to the pod template either — so a
   # bouncer ConfigMap change never rolls the pod. Inject the Reloader trigger the chart omits,

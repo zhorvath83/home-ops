@@ -25,3 +25,21 @@ spec:
               The ext_authz bouncer is unreachable. If a bouncer SecurityPolicy is attached
               to a Gateway, every route on it now fails closed (5xx). Remove that
               SecurityPolicy to restore traffic, then fix the bouncer.
+        # Console blocklists bypass MAX_DECISIONS and the decision cache grows ~0.55KiB/decision
+        # (measured 2026-11-16); a ratio keeps the 80% gate correct across limit changes.
+        - alert: CrowdSecBouncerMemoryHigh
+          expr: |
+            max by (pod) (container_memory_working_set_bytes{namespace="crowdsec", container="envoy-proxy-bouncer"})
+              / on (pod)
+            max by (pod) (kube_pod_container_resource_limits{namespace="crowdsec", container="envoy-proxy-bouncer", resource="memory"})
+              > 0.8
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: CrowdSec Envoy bouncer is near its memory limit
+            description: |-
+              Bouncer pod {{ $labels.pod }} uses over 80% of its memory limit. Its decision cache
+              grows with every LAPI decision (CAPI, console lists, blocklist-import), and the
+              bouncer is fail-closed, so an OOMKill 5xx-es every route on the gateway. Check
+              for a newly subscribed console blocklist, then drop it or raise the limit.

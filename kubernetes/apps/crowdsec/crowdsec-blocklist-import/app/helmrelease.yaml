@@ -82,7 +82,7 @@ spec:
               DECISION_DURATION: "24h"
               DECISION_ORIGIN: "blocklist-import"
               # TOTAL cap across all origins (CAPI included), not per-run.
-              MAX_DECISIONS: "75000"
+              MAX_DECISIONS: "150000"
               # Alert-record granularity (decisions per POST /v1/alerts), not throughput.
               BATCH_SIZE: "5000"
               CONSOLIDATE_ALERTS: "true"
