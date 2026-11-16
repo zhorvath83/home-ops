@@ -89,7 +89,7 @@ HelmRelease `spec` is intentionally minimal — see `kubernetes/CLAUDE.md` "Helm
 - One peer kind per rule (`toEndpoints` and `toFQDNs` in one rule are rejected — split them), and `icmps` cannot share a rule with `toPorts`.
 - Same-release peers use `fromControllers` / `toControllers`; cross-release peers stay raw `matchLabels` with `k8s:io.kubernetes.pod.namespace`.
 - Only app-unique rules go here (AD-023); vocabulary labels stay in `defaultPodOptions.labels` and the generic grants in the clusterwide CCNPs. The one-line AD-023 intent comment sits on the `networkpolicies:` block.
-- Validate with `helm template` against the pinned chart; `flux-local test` runs the same render in CI.
+- Validate with `helm template` against the pinned chart; `flate test --strict-substitutions` runs the same render locally (FLATE_PATH is set by mise) and in CI.
 - Non-app-template workloads (upstream charts, operators) keep a hand-written `app/ciliumnetworkpolicy.yaml`.
 
 ```yaml

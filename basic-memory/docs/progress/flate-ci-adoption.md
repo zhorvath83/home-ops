@@ -1,10 +1,10 @@
 ---
 title: flate-ci-adoption
 type: roadmap
-permalink: home-ops/docs/roadmap/flate-ci-adoption
+permalink: home-ops/docs/progress/flate-ci-adoption
 topic: Replace the deprecated flux-local in CI (and locally) with flate, fail-closed
   on render errors
-status: proposed
+status: done
 priority: high
 scope: 'Swap the flux-local test and diff jobs in .github/workflows/flux-local.yaml
   and the pipx:flux-local pin in .mise.toml for flate (home-operations/flate), after
@@ -30,7 +30,7 @@ related_areas:
 ## Metadata (observation-form, schema validation)
 
 - [topic] Replace the deprecated flux-local in CI and locally with flate, fail-closed on render errors
-- [status] proposed
+- [status] done (PR #4787, squash-merged 2026-11-16)
 - [priority] high
 - [researched_at] 2026-11-16
 - [effort] M
@@ -56,10 +56,48 @@ related_areas:
 ## Research findings
 
 - [verified] 2026-11-15: `flux-local build all --enable-helm --skip-secrets kubernetes/flux/cluster` returned **exit 0 with 0 lines of output** twice, both times because a chart fetch failed (ghcr.io unreachable from the sandbox and from the then-current network).
-- [unverified] Whether `flux-local test` (the command CI runs) also exits 0 on a chart-fetch failure. Phase 0 measures it.
+- [measured] `flux-local test` (the command CI runs) exits 1 on a chart-fetch failure — see Phase 0 results.
 - [fact] flate (README, read 2026-11-15): renders Kustomizations with postBuild substitution, HelmReleases incl. OCI charts, and source objects. Supports local checkouts. `flate test` "exit 1 on failure"; `flate diff` exits 1 when a render fails. `--strict-substitutions` fails on unresolved variables. Secrets and CRDs are excluded from output by default. GitHub Action `home-operations/flate/action` (README pins v0.7.0), image `ghcr.io/home-operations/flate`, a pre-commit hook, and `--cache-dir`.
 - [caveat] With `--allow-missing-kinds Secret`, unavailable source credentials skip the source with a warning (`SourceCredentialsUnavailable`), which can exit 0. Do not use that flag unless Phase 0 proves it is needed, and then guard it.
 - [unverified] The `flate build` output format/destination and the exact exit code on a chart-fetch failure are not documented. Phase 0 measures both.
+
+## Phase 0 results (measured locally, 2026-11-16)
+
+Method: flate v0.7.3 darwin_arm64 (release checksum verified) and flux-local 8.4.0 (mise pipx install, with flux 2.10.0, helm 4.3.2, kustomize 5.7.0) run against a throwaway clone of main @ 30fc9802b under $TMPDIR. Broken inputs were edited in the clone only.
+
+- [measured] Clean tree: `flate test -p kubernetes/flux/cluster --strict-substitutions` → exit 0, 195 passed (80 Kustomization, 68 HelmRelease, sources), 7.0s cold / ~2s warm cache. flux-local test → 148 passed, ~37s in CI, ~70s locally.
+- [measured] The missing `GitRepository flux-system` manifest (it is created by the FluxInstance) is NOT a problem: flate resolves the root `cluster-apps` from the local checkout with the `kubernetes/flux/cluster` entry. Both root patches apply; every cluster-settings variable (PUBLIC_DOMAIN, LAN_SUBNET, NAS_IP, ENVOY_INTERNAL_IP, CLUSTER_DNS_IP) is substituted, 0 literals left. The remaining literal `${...}` strings in the render are escaped or substitution-disabled and pass strict mode.
+- [measured] Broken chart (metrics-server OCIRepository tag → non-existent): `flate test` exit 1 (1 failed, 1 blocked), `flate diff hr` exit 1 with `DiffSuppressed`. **flux-local test ALSO exit 1** (1 failed, 147 passed, helm FetchReference not found). So today's CI test job is NOT fail-open on a chart fetch failure; the 2026-11-15 fail-open observation applies to `flux-local build all` only.
+- [measured] flate reports the non-existent ghcr tag as "machine credential acquisition failed" (ghcr answers an unknown tag with an auth error). Consequence: `--allow-missing-kinds Secret` would turn this real failure into a skipped source (SourceCredentialsUnavailable). Never set that flag.
+- [measured] Unresolved `${FLATE_UNDEFINED_PROBE}` in a HelmRelease value: flate --strict-substitutions exit 1 ("postBuild: variable not set (strict mode)"); flate without strict exit 0 and renders an empty string; **flux-local test exit 0** (148 passed). This is the real fail-open gap that flate closes.
+- [measured] `flate diff hr|ks -o github` gives a compact semantic diff (dyff-style, per-field `@@ path @@` blocks) that fits the existing sticky-comment pattern. There is no `--limit-bytes` equivalent; truncation must happen in the comment script. Default `--strip-attr` matches today's list.
+- [measured] `flate build ks <name> -n <ns>` emits the same kinds as `flux-local build ks` (checked metrics-server, external-dns); output differs only in ordering, dropped kustomize-internal index annotations and added `kustomize.toolkit.fluxcd.io/*` labels (closer to what kustomize-controller applies). The repo has no raw Secret/CRD manifests, so flate's default Secret/CRD output exclusion does not change `just k8s apply-ks`.
+- [fact] The official action exports `FLATE_BASE=<default branch>` (changed-only mode). A push-to-main run must unset/override it to render the full tree.
+- [gap-fixed] Missed by the original plan: `kubernetes/mod.just` `render-local-ks` (used by `apply-ks`/`delete-ks`) and the `mise.lock` entry also depend on flux-local.
+
+## Decisions taken (2026-11-16)
+
+- D1+D3: mise — `aqua:home-operations/flate` in `.mise.toml`, installed in CI by `jdx/mise-action` (SHA-pinned, install_args limited to flate). One version pin for CI and local.
+- D2: also run `flate test` on `push` to `main`, full tree (no FLATE_BASE).
+- Phase 0 run locally instead of a throwaway PR.
+
+## CI validation on PR #4787 (2026-11-16)
+
+- [verified] Clean run (664a08947): all four jobs green, `flate test` 195 passed in 5.4s, whole workflow ~23s (flux-local was ~70s).
+- [verified] AC2 — temporary broken metrics-server chart tag (0336ec7c6): Flate - Test failure ("machine credential acquisition failed"), Diff (hr) failure, Flate - Success failure.
+- [verified] AC3 — temporary unresolved `${FLATE_UNDEFINED_PROBE}`: Test, Diff (hr), Diff (ks) and Success all failure ("postBuild: variable not set (strict mode)").
+- [verified] AC4 — temporary benign value change (d2406534b): green, and both sticky comments (HelmRelease → Deployment args, Kustomization → HelmRelease values) posted in the expected format. Real Renovate PR comparison happens on the first Renovate PR after merge.
+- [verified] AC5 — flux-local is gone from the workflows, .mise.toml and mise.lock; actionlint, zizmor (auditor persona) and the full pre-commit suite pass.
+- [verified] All temporary changes reverted; net PR diff = .github/workflows/flate.yaml (+), flux-local.yaml (-), .mise.toml, mise.lock, kubernetes/mod.just.
+- [known] A sticky comment is not removed when a later push makes that diff empty (same behaviour as the flux-local workflow), so PR #4787 still shows the temporary metric-resolution diff.
+- [verified] `.claude/skills/k8s-workloads/references/app-scaffolding.md:92` now points at `flate test --strict-substitutions` (commit 99e32e321, approved by the user); no flux-local reference is left outside BM.
+- [follow-up] onedr0p/home-ops uses `flate diff images` to pre-pull changed images onto the Talos node before merge. Not in scope here; candidate idea.
+
+## Reference repos (checked 2026-11-16)
+
+- onedr0p/cluster-template: `flate test -p ./kubernetes/apps` via jdx/mise-action + FLATE_BASE (changed-only). Not usable as-is here: skipping the root would drop our two cluster-apps patches.
+- onedr0p/home-ops: flate only for `diff images` (image pre-pull), FLATE_PATH in mise env, no render test in CI.
+- bjw-s-labs/home-ops (Forgejo): no flate in CI, in-cluster konflate instead; locally `github:home-operations/flate = latest`, FLATE_PATH, and render-local-ks via `flate build ks` (same shape as ours). We pin the version and add --strict-substitutions on purpose.
 
 ## Plan
 
