@@ -1,10 +1,10 @@
 ---
 title: flate-ci-adoption
 type: roadmap
-permalink: home-ops/docs/roadmap/flate-ci-adoption
+permalink: home-ops/docs/progress/flate-ci-adoption
 topic: Replace the deprecated flux-local in CI (and locally) with flate, fail-closed
   on render errors
-status: in-progress
+status: done
 priority: high
 scope: 'Swap the flux-local test and diff jobs in .github/workflows/flux-local.yaml
   and the pipx:flux-local pin in .mise.toml for flate (home-operations/flate), after
@@ -30,7 +30,7 @@ related_areas:
 ## Metadata (observation-form, schema validation)
 
 - [topic] Replace the deprecated flux-local in CI and locally with flate, fail-closed on render errors
-- [status] in-progress (PR #4787)
+- [status] done (PR #4787, squash-merged 2026-11-16)
 - [priority] high
 - [researched_at] 2026-11-16
 - [effort] M
@@ -90,7 +90,7 @@ Method: flate v0.7.3 darwin_arm64 (release checksum verified) and flux-local 8.4
 - [verified] AC5 — flux-local is gone from the workflows, .mise.toml and mise.lock; actionlint, zizmor (auditor persona) and the full pre-commit suite pass.
 - [verified] All temporary changes reverted; net PR diff = .github/workflows/flate.yaml (+), flux-local.yaml (-), .mise.toml, mise.lock, kubernetes/mod.just.
 - [known] A sticky comment is not removed when a later push makes that diff empty (same behaviour as the flux-local workflow), so PR #4787 still shows the temporary metric-resolution diff.
-- [open] `.claude/skills/k8s-workloads/references/app-scaffolding.md:92` still names flux-local; the skills dir is agent write-protected, the user applies the one-line edit.
+- [verified] `.claude/skills/k8s-workloads/references/app-scaffolding.md:92` now points at `flate test --strict-substitutions` (commit 99e32e321, approved by the user); no flux-local reference is left outside BM.
 - [follow-up] onedr0p/home-ops uses `flate diff images` to pre-pull changed images onto the Talos node before merge. Not in scope here; candidate idea.
 
 ## Reference repos (checked 2026-11-16)
