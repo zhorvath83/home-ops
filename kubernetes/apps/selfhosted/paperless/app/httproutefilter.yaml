@@ -1,0 +1,13 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/gateway.envoyproxy.io/httproutefilter_v1alpha1.json
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: HTTPRouteFilter
+metadata:
+  name: paperless-deny-403
+spec:
+  directResponse:
+    contentType: text/plain
+    statusCode: 403
+    body:
+      type: Inline
+      inline: "Forbidden\n"

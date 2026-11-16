@@ -218,6 +218,54 @@ spec:
           - backendRefs:
               - identifier: app
                 port: *port
+          # Pocket ID is the only way in: block every path that accepts or issues a local password.
+          - matches:
+              - path:
+                  type: PathPrefix
+                  value: /api/token
+              - path:
+                  type: PathPrefix
+                  value: /accounts/password
+              - path:
+                  type: PathPrefix
+                  value: /accounts/signup
+              - path:
+                  type: PathPrefix
+                  value: /api/auth/headless/browser/v1/auth/login
+              - path:
+                  type: PathPrefix
+                  value: /api/auth/headless/browser/v1/auth/signup
+              - path:
+                  type: PathPrefix
+                  value: /api/auth/headless/browser/v1/auth/password
+              - path:
+                  type: PathPrefix
+                  value: /api/auth/headless/browser/v1/auth/code
+              - path:
+                  type: PathPrefix
+                  value: /api/auth/headless/app/v1/auth/login
+              - path:
+                  type: PathPrefix
+                  value: /api/auth/headless/app/v1/auth/signup
+              - path:
+                  type: PathPrefix
+                  value: /api/auth/headless/app/v1/auth/password
+              - path:
+                  type: PathPrefix
+                  value: /api/auth/headless/app/v1/auth/code
+              - path:
+                  type: PathPrefix
+                  value: /
+                headers:
+                  - name: Authorization
+                    type: RegularExpression
+                    value: "(?i)basic\\s.*"
+            filters:
+              - type: ExtensionRef
+                extensionRef:
+                  group: gateway.envoyproxy.io
+                  kind: HTTPRouteFilter
+                  name: paperless-deny-403
     persistence:
       tmpfs:
         globalMounts:
