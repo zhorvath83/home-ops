@@ -1,7 +1,7 @@
 ---
 title: pocket-id-sync-secrets-stdin
 type: roadmap
-permalink: home-ops/docs/roadmap/pocket-id-sync-secrets-stdin
+permalink: home-ops/docs/progress/pocket-id-sync-secrets-stdin
 topic: just pocket-id apply/rotate can leave 1Password stale — op item edit reads
   a piped stdin as an item template
 status: done
@@ -20,6 +20,8 @@ options:
 related_areas:
 - iam
 ---
+
+> Originally at `docs/roadmap/pocket-id-sync-secrets-stdin`. Moved to `docs/progress/` upon completion per the project's "Fully implemented roadmap items → progress/" convention.
 
 # Pocket ID sync-secrets fails on a piped stdin
 
