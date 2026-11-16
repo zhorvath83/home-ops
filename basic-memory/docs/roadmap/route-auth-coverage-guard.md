@@ -225,3 +225,22 @@ A separate entry point (`provision/pocket-id/lint-rendered.sh <rendered.yaml>`) 
 - [done] calibre `/opds` and `/kobo` blocked at the route (30d017bd1).
 - [open] crosswatch, jellyfin, llm still have no Pocket ID gate (own login or API key). D1 decides how the guard treats them.
 - [note] Design input for the guard: the `is_public` / `extra_callback_urls` registry fields exist now; R3 must also allow the home-gallery shape (gate envoy, single hostname).
+
+## Scope extension — 2026-11-16: remaining gaps and the LAN-side password audit
+
+Folded into this item at the user's request (replaces the first "Follow-ups" bullet). The guard alone only stops *new* gaps; this phase closes the known ones.
+
+### Phase 6 — Remaining Pocket ID gaps (LAN-only hosts)
+- [open] **crosswatch** (`crosswatch.`, envoy-internal): own login (`/` → 302 `/login`, API 401). Add the gateway-oidc component + a `gate: envoy` client (group `media_users` or `infra_admins`). Its own login then sits behind the gate; disable it if the app allows.
+- [open] **jellyfin** (`jellyfin.`, envoy-internal): own login. D4: the native SSO plugin (keeps the TV/mobile clients, which cannot do a browser OIDC redirect through Envoy) or a permanent exemption with Jellyfin auth as the control. Do not put gateway-oidc in front: it breaks every non-browser client.
+- [open] **llm** (`llm.`, envoy-internal): API key enforced; only `/health` open. If nothing outside the cluster uses it (open-webui calls the Service in-cluster), remove the route. Otherwise add an exemption with the API key as the control.
+
+### Phase 7 — LAN-side Basic / password audit
+The 2026-11-16 Basic-auth analysis covered only the public gateway. Repeat it for every native-OIDC app reachable only on envoy-internal: actual (`pfm`), wallos (`subscriptions`), open-webui (`chat`), crowdsec-web-ui (`crowdsec`), grafana, sure (internal route incl. `/api`, `/admin`, `/sidekiq`).
+- Method (same as the public audit): unauthenticated and dummy-credential probes per auth surface (`WWW-Authenticate`, password login, token-for-password endpoints, password reset, signup, admin paths), plus an upstream source check where a response is ambiguous.
+- Known item: grafana keeps HTTP Basic for the provisioning admin (operator credential, LAN-only); decide between exemption and an internal-only path.
+- Output: per app, either "no password path" or a route block like paperless/calibre, recorded here.
+
+### Acceptance (additional)
+8. crosswatch, jellyfin and llm are each either Pocket ID-gated, removed, or a justified exemption in `clients.yaml`.
+9. The Phase 7 table is recorded, and every password path found is blocked or a justified exemption.
