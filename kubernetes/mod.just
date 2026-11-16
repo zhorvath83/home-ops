@@ -174,7 +174,7 @@ view-secret secret ns:
 [private]
 [script]
 render-local-ks name ns:
-    flux-local build ks --namespace "{{ ns }}" --path "{{ kubernetes_dir }}/flux/cluster" "{{ name }}"
+    flate build ks "{{ name }}" --namespace "{{ ns }}" --strict-substitutions --no-progress
 
 # === hubble ===
 #
