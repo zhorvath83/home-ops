@@ -59,6 +59,13 @@ repos:
         pass_filenames: false
         # Only run when a PrometheusRule, a prometheusrules/ rule, or a beside-rule _test.yaml changes — never slow down unrelated commits.
         files: 'prometheusrule\.yaml$|prometheusrules/.*\.yaml$|_test\.yaml$'
+      - id: flate-test
+        name: flate-test
+        language: system
+        # Changed-only render of the staged tree vs HEAD; direct pushes to main otherwise get only a post-hoc CI check.
+        entry: flate test --path kubernetes/flux/cluster --base HEAD --strict-substitutions --no-progress
+        pass_filenames: false
+        files: ^kubernetes/
       - id: zizmor
         name: zizmor
         language: system

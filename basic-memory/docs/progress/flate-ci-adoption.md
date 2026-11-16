@@ -99,6 +99,13 @@ Method: flate v0.7.3 darwin_arm64 (release checksum verified) and flux-local 8.4
 - onedr0p/home-ops: flate only for `diff images` (image pre-pull), FLATE_PATH in mise env, no render test in CI.
 - bjw-s-labs/home-ops (Forgejo): no flate in CI, in-cluster konflate instead; locally `github:home-operations/flate = latest`, FLATE_PATH, and render-local-ks via `flate build ks` (same shape as ours). We pin the version and add --strict-substitutions on purpose.
 
+
+## Follow-ups from the reference review (PR #4788, 2026-11-16)
+
+- [fact] `.github/workflows/workflow-lint.yaml` — actionlint + online zizmor (`--format github`, GH_TOKEN) on `.github/workflows/**` and `.mise.toml` changes, PR and push to main; tool versions from .mise.toml via jdx/mise-action (`mise install --locked`). Closes the gap that Renovate action bumps never ran zizmor's online audits (impostor-commit, known-vulnerable-actions). Verified on the PR: a temporary unpinned `jdx/mise-action@v5` turned the job red (exit 14, unpinned-uses annotation), reverted.
+- [fact] `flate-test` pre-commit hook — `flate test --path kubernetes/flux/cluster --base HEAD --strict-substitutions` on `^kubernetes/` changes; ~2s idle, ~2.7s for one HelmRelease change (full tree would be ~4.7s). Verified: unresolved ${VAR} → Failed, benign change → Passed, non-kubernetes file → Skipped. Needs network for chart fetches.
+- [decision] Not adopted: onedr0p image pre-pull (`flate diff images` + talosctl on an in-cluster runner — no self-hosted runner here), bjw-s AI upgrade-impact review (needs an LLM key and the long-running konflate), CI yamllint (Renovate does not change YAML structure).
+
 ## Plan
 
 ### Phase 0 — Measure (throwaway PR)
