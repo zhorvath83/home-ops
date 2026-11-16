@@ -4,7 +4,7 @@ type: roadmap
 permalink: home-ops/docs/roadmap/pocket-id-sync-secrets-stdin
 topic: just pocket-id apply/rotate can leave 1Password stale — op item edit reads
   a piped stdin as an item template
-status: proposed
+status: done
 priority: medium
 scope: Make the sync-secrets step of provision/pocket-id/mod.just immune to a non-TTY
   stdin, make the failure impossible to miss, and add a post-condition that every
@@ -26,7 +26,7 @@ related_areas:
 ## Metadata (observation-form, schema validation)
 
 - [topic] `just pocket-id apply/rotate` can leave 1Password stale — `op item edit` reads a piped stdin as an item template
-- [status] proposed
+- [status] done
 - [priority] medium
 - [researched_at] 2026-11-16
 - [effort] S
@@ -71,6 +71,18 @@ error: recipe `sync-secrets` failed with exit code 1
 1. The piped-stdin reproduction passes.
 2. The post-condition catches a missing field and names it, without printing any secret.
 3. A failed sync after a successful apply prints the recovery command.
+
+## Implementation (2026-11-16, commit 216f33be2 on main)
+
+- [implemented] Every `op item` call in `sync-secrets` has `</dev/null` stdin.
+- [implemented] Post-condition after the edit: every key of `terraform output client_secrets` must have its `<key>_client_secret` label in the item; on a miss it logs `missing=<keys>` (labels only) and exits 1.
+- [implemented] `apply` and `rotate` log "IdP changed but 1Password is stale - run 'just pocket-id sync-secrets' now" and exit 1 when the sync fails.
+- [implemented] Found during verification: `op item get … || op item create` minted a duplicate `pocket-id-clients` item on a transient `op` error (desktop-app authorization), after which every by-name call failed with "More than one item matches". The item is now created only when `op item list` confirms it is absent; a failing list aborts. The duplicate (empty) was deleted by hand.
+- [not_done] Option 4 (`apply-auto`) was skipped as not needed.
+- [verified] AC1: `echo yes | just pocket-id sync-secrets` → exit 0, "Synced 25 client secrets".
+- [verified] AC2: post-condition with an injected fake client → exit 1, `missing=no-such-app`, no values printed.
+- [open] AC3 / no-op `echo yes | just pocket-id apply` was not run by the agent (blocked by its permission classifier); `just pocket-id plan` showed no changes. Verified by inspection only.
+- [follow_up] The `paperless_client_secret` field is now orphaned in the item (paperless became a public client); `sync-secrets` only adds or updates fields, it never prunes.
 
 ## Related
 
