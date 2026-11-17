@@ -1,10 +1,8 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
 # grafana instance (AD-023): envoy + prometheus ingress via CCNPs; custom-egress → egress comes from
-# this CNP (gravatar avatars, in-cluster Prometheus/Alertmanager datasources) plus the allow-gateways
-# label (public-issuer OIDC hairpin via the allow-gateways-egress CCNP).
-# Operator model: no sidecars (kube-apiserver gone), dashboards fetched by the operator (grafana.com/
-# raw.githubusercontent.com gone), no plugins per D13 (plugin CDN + victoria-logs egress gone).
+# this CNP (gravatar avatars, VictoriaLogs plugin download, in-cluster datasources) plus the
+# allow-gateways label (public-issuer OIDC hairpin via the allow-gateways-egress CCNP).
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -24,6 +22,14 @@ spec:
             - port: "3000"
               protocol: TCP
   egress:
+    # victoriametrics-logs-datasource preinstall: catalog API + plugin archive CDN.
+    - toFQDNs:
+        - matchName: "grafana.com"
+        - matchName: "storage.googleapis.com"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
     - toFQDNs:
         - matchName: "gravatar.com"
         - matchPattern: "*.gravatar.com"
@@ -48,4 +54,13 @@ spec:
       toPorts:
         - ports:
             - port: "9093"
+              protocol: TCP
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: observability
+            app.kubernetes.io/name: victoria-logs-single
+            app.kubernetes.io/instance: victoria-logs
+      toPorts:
+        - ports:
+            - port: "9428"
               protocol: TCP

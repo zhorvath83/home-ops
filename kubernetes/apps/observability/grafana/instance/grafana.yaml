@@ -44,11 +44,11 @@ spec:
       news_feed_enabled: "false"
     plugins:
       plugin_admin_enabled: "false"
-      # D13: no plugins — don't fetch the default preinstall apps from grafana.com at startup.
-      preinstall_disabled: "true"
-      # D13: skip the plugin signature key manifest fetch (plugin.signature.key_retriever)
-      # from grafana.com/api/plugins/ci/keys. No plugins → nothing to verify; fall back to the
-      # bundled hardcoded key. Closes the recurring HubblePolicyDeny on this endpoint.
+      # Async preinstall: a failed download leaves Grafana up with only the log panels empty.
+      preinstall: "victoriametrics-logs-datasource@${VL_PLUGIN_VERSION}"
+      # Drop the default preinstall apps (and their grafana.com fetches) from the list.
+      disable_plugins: "grafana-lokiexplore-app,grafana-pyroscope-app,grafana-exploretraces-app,grafana-metricsdrilldown-app,elasticsearch,grafana-advisor-app,grafana-pathfinder-app"
+      # Verify signatures with the bundled key; skips the grafana.com/api/plugins/ci/keys fetch.
       public_key_retrieval_disabled: "true"
     security:
       allow_embedding: "true"

@@ -1,7 +1,7 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/grafana.integreatly.org/grafanadashboard_v1beta1.json
 # The chart emits its dashboards as ConfigMaps (dashboards.enabled); referenced here by name.
-# Queries Prometheus (D13: no VL datasource/plugin needed). The vector dashboard needs vector.enabled (unused).
+# Queries Prometheus. The vector dashboard needs vector.enabled (unused).
 apiVersion: grafana.integreatly.org/v1beta1
 kind: GrafanaDashboard
 metadata:

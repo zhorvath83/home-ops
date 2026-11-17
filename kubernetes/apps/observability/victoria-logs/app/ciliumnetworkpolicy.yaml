@@ -41,3 +41,12 @@ spec:
         - ports:
             - port: "9428"
               protocol: TCP
+    # grafana — VictoriaLogs datasource queries (proxy access).
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: observability
+            app.kubernetes.io/name: grafana
+      toPorts:
+        - ports:
+            - port: "9428"
+              protocol: TCP

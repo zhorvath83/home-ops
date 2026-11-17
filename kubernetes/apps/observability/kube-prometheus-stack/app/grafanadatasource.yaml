@@ -1,7 +1,7 @@
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/grafana.integreatly.org/grafanadatasource_v1beta1.json
 # Owned by kube-prometheus-stack: the Prometheus (default) + Alertmanager datasources it ships.
-# No VictoriaLogs datasource (D13) — the only runtime plugin is dropped, not migrated.
+# The VictoriaLogs datasource lives with its app (victoria-logs/app/grafanadatasource.yaml).
 apiVersion: grafana.integreatly.org/v1beta1
 kind: GrafanaDatasource
 metadata:
