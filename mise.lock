@@ -889,7 +889,7 @@ version = "0.24.1"
 backend = "npm:markdownlint-cli2"
 
 [[tools."pipx:ansible"]]
-version = "14.6.0"
+version = "15.0.0"
 backend = "pipx:ansible"
 
 [[tools."pipx:ansible-core"]]
