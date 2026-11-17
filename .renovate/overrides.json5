@@ -20,6 +20,12 @@
       versioning: "regex:^server-b(?<patch>\\d+)$",
     },
     {
+      description: "Grafana plugin versions are bare semver; the GitHub release tags carry a v prefix",
+      matchDatasources: ["github-releases"],
+      matchPackageNames: ["VictoriaMetrics/victorialogs-datasource"],
+      extractVersion: "^v(?<version>.+)$",
+    },
+    {
       description: "Postgres major upgrades are a planned CNPG pg_upgrade (downtime + fresh dump), not a Renovate bump",
       matchDatasources: ["docker"],
       matchPackageNames: ["ghcr.io/cloudnative-pg/postgresql"],
