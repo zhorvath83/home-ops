@@ -260,3 +260,9 @@ The manufacturer's word, kept because it governs the steady state.
 - part_of [[k8s-workloads]]
 - depends_on [[jellyfin]]
 - relates_to [[resticprofile-backup]]
+
+## Update — 2026-11-17: Pocket ID native OIDC
+- [decision] crosswatch is a `gate: native` Pocket ID client (`media_users`, callback `/api/app-auth/oidc/callback`), commit def81f5a8, applied 2026-11-17. PKCE S256 is always on upstream. The OIDC settings live in the app UI (Settings → UI Settings → Security → OIDC sign-in), so the client secret sits in the app config, not in an ExternalSecret.
+- [fact] The local login cannot be disabled while OIDC is on (upstream keeps it as the recovery path); accepted because the route is LAN-only (envoy-internal).
+- [gotcha] crosswatch v0.14.4 only honours `X-Forwarded-Proto/Host` from `security.trusted_proxies` (UI: "Trusted reverse proxies", `api/appAuthAPI.py:112-208`). Empty list → it builds `http://crosswatch.<domain>/api/app-auth/oidc/callback` and Pocket ID rejects the redirect_uri. Set it to the node pod CIDR `10.244.0.0/24` (envoy pod IPs change on restart); the CNP admits ingress only from the gateway, so other pods cannot reach the app to spoof headers.
+- [fact] Profile page "Single sign-on: Unavailable / Not available on this server" just means server-side OIDC is not configured yet (enabled + issuer + client_id, `services/authOidc.py:237-239`).

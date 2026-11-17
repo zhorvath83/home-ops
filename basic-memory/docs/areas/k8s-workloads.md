@@ -234,3 +234,9 @@ Full re-verification against the repo at HEAD and the live cluster, closing the 
 - [correction] Boundary: `database/` and `ai/` subtrees now exist under kubernetes/apps; open-webui is back under `ai/` (outside this area), searxng remains gone.
 - [correction] Citation refresh: cluster-root HR patch at `kubernetes/flux/cluster/ks.yaml:21-52`; paperless ks substitute block `kubernetes/apps/selfhosted/paperless/ks.yaml:24-31`; app-scaffolding secret pattern at `:109-115`; backrest reloader `:30-31`; ESO pattern guide `kubernetes/apps/external-secrets/CLAUDE.md:34-36`; shared app-template chart tag 5.3.0 (nameOverride behavior re-checked at 5.3.0 by pulling the chart).
 - [observation] Hand-written `ciliumnetworkpolicy.yaml` no longer exists in media/downloads/selfhosted (15 files remain repo-wide, all platform apps); 13 of the 25 area apps render their CNP from `values.networkpolicies.main` — matching the live CNP counts (selfhosted 7, downloads 4, media 2).
+
+## Update — 2026-11-17: route auth guard, exposure changes
+- [observation] [exposure] Every route hostname must now be a Pocket ID client subdomain or an `exempt` key in `provision/pocket-id/clients.yaml`; `provision/pocket-id/lint.sh` (pre-commit) and the Route Auth Guard workflow enforce it. Guardrail line added to `kubernetes/apps/selfhosted/CLAUDE.md`; onboarding hint in `.claude/skills/k8s-workloads/references/publication-and-jobs.md`. Details: [[iam]], [[route-auth-coverage-guard]].
+- [observation] [exposure] ai/llama-cpp no longer has a route (in-cluster consumers only).
+- [observation] [auth] crosswatch: native Pocket ID OIDC (UI-configured; needs trusted reverse proxies = pod CIDR). jellyfin: permanent `exempt` entry (own login, LAN-only; TV/mobile clients cannot do a browser OIDC redirect).
+- [observation] [auth] actual: `ACTUAL_ALLOWED_LOGIN_METHODS=openid` closes a leftover password-login path.

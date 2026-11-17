@@ -301,3 +301,6 @@ The 2026-11-16 Basic-auth analysis covered only the public gateway. Repeat it fo
 ## Update — 2026-11-17: crosswatch client applied
 - [done] Owner renewed the provisioning API key. `just pocket-id plan` → exactly 1 to add (pocketid_client crosswatch); `apply` → "Creation complete", "Synced 26 client secrets to HomeOps/pocket-id-clients" (27 clients; paperless is public, no secret). `just pocket-id audit` → all 27 clients group-restricted.
 - [open] CrossWatch UI OIDC sign-in configuration (owner). After that AC8 is met and this note moves to docs/progress.
+
+- [gotcha] crosswatch UI setup: Pocket ID rejected `http://crosswatch.<domain>/api/app-auth/oidc/callback`. Cause: crosswatch trusts forwarded headers only from `security.trusted_proxies`; fix = "Trusted reverse proxies" `10.244.0.0/24` (pod CIDR). Recorded in [[crosswatch-implementation]] and in a one-line comment in its HelmRelease.
+- [done] Docs sweep 2026-11-17: selfhosted CLAUDE.md guardrail, k8s-workloads skill Auth section (the stale "no shared auth platform" sentence replaced), BM local-ai-stack, crosswatch-implementation, app-auth-coverage, k8s-workloads, observability, networking.

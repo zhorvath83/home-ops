@@ -315,3 +315,6 @@ Resolved the `PrometheusTSDBGrowthTrend` alert (TSDB predicted to exceed 90% of 
 - [evidence] Live 2026-11-14: Flux applied 7bb5f8dd, rule health ok, state inactive, ALERTS empty.
 - [note] PrometheusTSDBSpike left unchanged: delta() does not extrapolate a short series to the 1h window edges and a restart-persist step (~28 MB) is far below 100 MB.
 - [gotcha] `just k8s test-prom-rules` fails inside the Claude Bash sandbox (mktemp lands in /var/folders: Operation not permitted); run it, and `git commit` (pre-commit hook), unsandboxed.
+
+## Update — 2026-11-17: grafana route refuses local credentials
+- [observation] [security] `kubernetes/apps/observability/grafana/instance/httproute.yaml` sends any `Authorization: Basic` request and `POST /login` to `HTTPRouteFilter/grafana-deny-403` (commit 4a9d88fe6). Before, HTTP Basic on the API evaluated the provisioning admin credential from the LAN. The grafana-operator uses the in-cluster Service, so dashboards/datasources keep syncing (verified); OIDC login (`/login/generic_oauth`) is unaffected. Context: [[route-auth-coverage-guard]].

@@ -500,3 +500,7 @@ Executed from [[onprem-geoip-country-filter]] (roadmap), phases 0–5, directly 
 ## Update — 2026-11-15: no responseOverride at all
 
 - [component] BTP/envoy carries no responseOverride any more: the 401 OIDC-failure page was removed (64beaed28) because it hit the same Envoy use-after-free as the reverted 403 page (envoyproxy/envoy#46600; EG always sets preserve_response_code_details). OIDC failures now return Envoy's plain "OAuth flow failed." 401. The networking guide forbids responseOverride until an Envoy release fixes the path. Detail: [[crowdsec-envoy-local-deny-whitelist]].
+
+## Update — 2026-11-17: route auth coverage guard
+- [observation] [guardrail] Route hostnames are now gated at commit time: each must be owned in `provision/pocket-id/clients.yaml` (client or `exempt` with reason, control, gateways). Layer 2 in CI checks the flate render: each gate-envoy route carries a StrategicMerge OIDC SecurityPolicy with the right redirect host. The ValidatingAdmissionPolicy is unchanged (it checks hostname claims and gateways, not auth). Rules: `provision/pocket-id/CLAUDE.md`; record: [[route-auth-coverage-guard]].
+- [observation] [route-filter] One more route-level deny filter follows the paperless pattern: `grafana-deny-403` (Basic + POST /login). The `llm` route was removed.

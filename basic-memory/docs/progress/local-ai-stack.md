@@ -320,3 +320,6 @@ Qwen3.6 (no MTP, 2 slots), temperature 0.1. Read-only exports: tools/llm-bakeoff
 - reference https://www.jetson-ai-lab.com/models/gemma4-26b-a4b
 - reference https://mintlify.wiki/we-promise/sure/hosting/ai-features
 - reference https://huggingface.co/Qwen/Qwen3-30B-A3B-Instruct-2507 (fallback)
+
+## Update — 2026-11-17: llm route removed
+- [decision] Supersedes the "llm.${PUBLIC_DOMAIN} (llama-cpp API), envoy-internal" hostname decision: the HTTPRoute and the `ingress.home.arpa/allow-gateway-internal` label were removed (commit 1a715a663). Every consumer (open-webui, paperless-gpt, sure) calls `http://llama-cpp.ai.svc.cluster.local:8080/v1`, and no LLAMA_API_KEY entry belonged to a LAN client. Live: the llm host answers 404. LAN testing goes through `kubectl port-forward`. Context: [[route-auth-coverage-guard]].

@@ -174,3 +174,6 @@ Unauthenticated probe confirms the gates live: the 4 envoy-gated apps 302 to idm
 5. [done] calibre-web-automated protection verified by login test (Phase 0 closed).
 
 Status: done.
+
+## Update — 2026-11-17: exceptions moved into an enforced registry
+- [observation] The "documented exceptions" list is superseded by the `exempt` map in `provision/pocket-id/clients.yaml` (idm, flux-webhook, the http redirect, jellyfin), each with reason, compensating control and allowed gateways, enforced by the route auth guard in pre-commit and CI. home-gallery is no longer an exception (gateway-oidc on `fenykepek` since 2026-11-16). crosswatch became a native client, the llm route was removed. See [[route-auth-coverage-guard]].
