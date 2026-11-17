@@ -28,6 +28,18 @@
         },
         "hide": 0,
         "refresh": 1
+      },
+      {
+        "name": "vl",
+        "label": "VictoriaLogs",
+        "type": "datasource",
+        "query": "victoriametrics-logs-datasource",
+        "current": {
+          "text": "VictoriaLogs",
+          "value": "VictoriaLogs"
+        },
+        "hide": 0,
+        "refresh": 1
       }
     ]
   },
@@ -957,6 +969,257 @@
           "mode": "multi",
           "sort": "desc"
         }
+      }
+    },
+    {
+      "type": "row",
+      "id": 14,
+      "title": "Denied requests (log)",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 32
+      },
+      "panels": []
+    },
+    {
+      "type": "table",
+      "id": 15,
+      "title": "Geo-denied requests",
+      "description": "Per-request list of HU-gate denials in the dashboard time range (newest 500). The regex also catches the access-log lines whose response_code_details prefix is corrupted.",
+      "datasource": {
+        "type": "victoriametrics-logs-datasource",
+        "uid": "${vl}"
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 33
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "victoriametrics-logs-datasource",
+            "uid": "${vl}"
+          },
+          "expr": "kubernetes.pod_name:envoy-external* response_code_details:~\"denied_matched_policy\" | fields _time, downstream_remote_address, geo_country, \":authority\", method, x-envoy-origin-path, user-agent, response_code_details | sort by (_time desc) | limit 500",
+          "queryType": "instant",
+          "refId": "A"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "source": "labels",
+            "format": "json",
+            "replace": false,
+            "keepTime": false
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Line": true,
+              "id": true,
+              "labels": true,
+              "streams": true,
+              "streamId": true,
+              "_time": true
+            },
+            "renameByName": {
+              "downstream_remote_address": "Client",
+              "geo_country": "Country",
+              ":authority": "Host",
+              "method": "Method",
+              "x-envoy-origin-path": "Path",
+              "user-agent": "User agent",
+              "response_code_details": "Detail"
+            },
+            "indexByName": {
+              "Time": 0,
+              "downstream_remote_address": 1,
+              "geo_country": 2,
+              ":authority": 3,
+              "method": 4,
+              "x-envoy-origin-path": 5,
+              "user-agent": 6,
+              "response_code_details": 7
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "filterable": true
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      }
+    },
+    {
+      "type": "table",
+      "id": 16,
+      "title": "Top geo-denied sources",
+      "description": "Geo denials by client IP (port stripped), top 20.",
+      "datasource": {
+        "type": "victoriametrics-logs-datasource",
+        "uid": "${vl}"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 45
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "victoriametrics-logs-datasource",
+            "uid": "${vl}"
+          },
+          "expr": "kubernetes.pod_name:envoy-external* response_code_details:~\"denied_matched_policy\" | extract \"<ip>:<_>\" from downstream_remote_address | stats by (ip, geo_country) count() hits | sort by (hits desc) | limit 20",
+          "queryType": "instant",
+          "refId": "A"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "source": "labels",
+            "format": "json",
+            "replace": false,
+            "keepTime": false
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Line": true,
+              "id": true,
+              "labels": true,
+              "streams": true,
+              "streamId": true,
+              "_time": true,
+              "Time": true
+            },
+            "renameByName": {
+              "ip": "Client IP",
+              "geo_country": "Country",
+              "hits": "Hits"
+            },
+            "indexByName": {
+              "ip": 0,
+              "geo_country": 1,
+              "hits": 2
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "filterable": true
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      }
+    },
+    {
+      "type": "table",
+      "id": 17,
+      "title": "CrowdSec-denied requests",
+      "description": "Requests the CrowdSec bouncer (ext_authz) refused, newest 500 — a separate gate behind the geo filter.",
+      "datasource": {
+        "type": "victoriametrics-logs-datasource",
+        "uid": "${vl}"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 45
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "victoriametrics-logs-datasource",
+            "uid": "${vl}"
+          },
+          "expr": "kubernetes.pod_name:envoy-external* response_code_details:ext_authz_denied | fields _time, downstream_remote_address, geo_country, \":authority\", method, x-envoy-origin-path, user-agent, response_code_details | sort by (_time desc) | limit 500",
+          "queryType": "instant",
+          "refId": "A"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "source": "labels",
+            "format": "json",
+            "replace": false,
+            "keepTime": false
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Line": true,
+              "id": true,
+              "labels": true,
+              "streams": true,
+              "streamId": true,
+              "_time": true
+            },
+            "renameByName": {
+              "downstream_remote_address": "Client",
+              "geo_country": "Country",
+              ":authority": "Host",
+              "method": "Method",
+              "x-envoy-origin-path": "Path",
+              "user-agent": "User agent",
+              "response_code_details": "Detail"
+            },
+            "indexByName": {
+              "Time": 0,
+              "downstream_remote_address": 1,
+              "geo_country": 2,
+              ":authority": 3,
+              "method": 4,
+              "x-envoy-origin-path": 5,
+              "user-agent": 6,
+              "response_code_details": 7
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "filterable": true
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
       }
     }
   ]
