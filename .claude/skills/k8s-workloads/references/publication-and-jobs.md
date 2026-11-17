@@ -27,9 +27,9 @@ Common fields include:
 
 ## Auth
 
-There is no shared auth platform declared under `kubernetes/apps/`.
+Every published app sits behind Pocket ID (`kubernetes/apps/security/pocket-id`): native OIDC when the app supports it well, otherwise the shared `kubernetes/components/gateway-oidc` component. See `kubernetes/apps/security/CLAUDE.md`.
 
-- prefer app-native auth or OIDC when the target app supports it well
+- prefer native OIDC when the target app supports it well; use `gateway-oidc` for apps without it
 - inspect sibling apps before inventing an auth dependency
 - register every new hostname in `provision/pocket-id/clients.yaml` (a `clients` entry, or an `exempt` entry with reason, control and gateways); `provision/pocket-id/lint.sh` fails pre-commit and CI otherwise
 

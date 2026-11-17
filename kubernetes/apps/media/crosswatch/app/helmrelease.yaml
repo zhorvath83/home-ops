@@ -84,6 +84,7 @@ spec:
       app:
         # LAN-only: envoy-internal, never envoy-external. The Trakt ZIP upload + P1 measurement
         # come from the LAN; the app stays off the public internet while the import is unverified.
+        # OIDC (UI-configured) needs Security > Trusted reverse proxies = the pod CIDR, else the callback is http://.
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/name: CrossWatch

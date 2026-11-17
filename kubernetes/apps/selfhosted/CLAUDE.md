@@ -11,6 +11,7 @@ User-facing application workloads — one app per directory with a `ks.yaml` ent
 - Inspect 2-3 sibling apps with similar exposure, storage, and auth before changing structure.
 - Chart preference order: official chart → bjw-s `app-template` → custom manifests only when needed.
 - Routes for published apps target `envoy-external` in namespace `networking`; add `envoy-internal` as a second parent when the app should also be reachable directly from the LAN. Technical endpoints can stay `envoy-external`-only.
+- Every route hostname needs a Pocket ID client or a justified `exempt` entry in `provision/pocket-id/clients.yaml`; the route auth guard fails pre-commit and CI otherwise.
 - Dashboard apps carry Homepage annotations; match group and icon conventions of nearby siblings.
 - App-managed secrets come from an `ExternalSecret` backed by the `onepassword-connect` ClusterSecretStore (see the canonical pattern in `kubernetes/apps/external-secrets/CLAUDE.md`).
 - Backed-up apps use the shared VolSync component via `ks.yaml`, not app-local backup manifests.
