@@ -13,9 +13,8 @@ spec:
     defaultPodOptions:
       automountServiceAccountToken: false
       enableServiceLinks: false
-      # AD-023 vocabulary: envoy-internal + Prometheus ingress, open-webui via the app CNP; custom-egress (HuggingFace only)
+      # AD-023 vocabulary: Prometheus ingress, in-cluster consumers via the app CNP (no route); custom-egress (HuggingFace only)
       labels:
-        ingress.home.arpa/allow-gateway-internal: "true"
         ingress.home.arpa/allow-prometheus: "true"
         egress.home.arpa/custom-egress: "true"
       securityContext:
@@ -131,18 +130,6 @@ spec:
               credentials:
                 name: llama-cpp-secret
                 key: METRICS_API_KEY
-    route:
-      app:
-        hostnames:
-          - "llm.${PUBLIC_DOMAIN}"
-        parentRefs:
-          - name: envoy-internal
-            namespace: networking
-            sectionName: https
-        rules:
-          - backendRefs:
-              - identifier: app
-                port: *port
     persistence:
       models:
         existingClaim: llama-cpp-models
