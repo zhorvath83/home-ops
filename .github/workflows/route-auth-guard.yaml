@@ -1,0 +1,82 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+name: Route Auth Guard
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "kubernetes/**"
+      - "provision/pocket-id/**"
+      - ".mise.toml"
+      - ".github/workflows/route-auth-guard.yaml"
+  push:
+    branches:
+      - main
+    paths:
+      - "kubernetes/**"
+      - "provision/pocket-id/**"
+      - ".mise.toml"
+      - ".github/workflows/route-auth-guard.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions: {}
+
+jobs:
+  static:
+    name: Route Auth Guard - Static
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup tools
+        uses: jdx/mise-action@d5574b52816a478f9d4e6529a3f6ff17a8a36785 # v5.2.8
+        with:
+          install_args: aqua:mikefarah/yq aqua:jqlang/jq
+          cache: false
+
+      - name: Run guard tests
+        run: provision/pocket-id/tests/run.sh
+
+      - name: Run static guard
+        run: provision/pocket-id/lint.sh
+
+  rendered:
+    name: Route Auth Guard - Rendered
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup tools
+        uses: jdx/mise-action@d5574b52816a478f9d4e6529a3f6ff17a8a36785 # v5.2.8
+        with:
+          install_args: aqua:mikefarah/yq aqua:jqlang/jq aqua:home-operations/flate
+          cache: false
+
+      # Full tree; a failed render fails here, and the parity check catches a partial one regardless.
+      - name: Render routes and policies
+        run: >-
+          flate build all
+          --path kubernetes/flux/cluster
+          --strict-substitutions
+          --no-progress
+          --only-kinds HTTPRoute,SecurityPolicy
+          --output json
+          > "$RUNNER_TEMP/rendered.json"
+
+      - name: Run rendered guard
+        run: provision/pocket-id/lint-rendered.sh "$RUNNER_TEMP/rendered.json"

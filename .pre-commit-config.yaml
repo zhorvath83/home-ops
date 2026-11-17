@@ -66,6 +66,19 @@ repos:
         entry: flate test --path kubernetes/flux/cluster --base HEAD --strict-substitutions --no-progress
         pass_filenames: false
         files: ^kubernetes/
+      - id: pocket-id-route-guard
+        name: pocket-id-route-guard
+        language: system
+        # Every published hostname needs a Pocket ID client or a justified exemption (L1, offline).
+        entry: provision/pocket-id/lint.sh
+        pass_filenames: false
+        files: ^(kubernetes/.*\.ya?ml|provision/pocket-id/(clients\.yaml|lint\.sh))$
+      - id: pocket-id-route-guard-tests
+        name: pocket-id-route-guard-tests
+        language: system
+        entry: provision/pocket-id/tests/run.sh
+        pass_filenames: false
+        files: ^provision/pocket-id/(lint\.sh|lint-rendered\.sh|tests/)
       - id: zizmor
         name: zizmor
         language: system
