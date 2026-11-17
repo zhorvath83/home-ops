@@ -235,3 +235,5 @@ not from an independent AI cluster observation.
 - [observation] [security] **grafana**: `HTTPRouteFilter/grafana-deny-403` answers 403 for any `Authorization: Basic` and for `POST /login`; the provisioning admin is in-cluster only (the operator uses the Service). OIDC login unaffected.
 - [observation] [audit] LAN password audit: wallos, open-webui, crowdsec-web-ui and sure have no password path (details and evidence in [[route-auth-coverage-guard]]).
 - [observation] [verify-status] verified_at deliberately NOT bumped; only the claims above were verified 2026-11-17.
+
+- [observation] [client] crosswatch client applied 2026-11-17 after the provisioning key renewal (27 clients, all group-restricted); its UI-side OIDC configuration is the owner's step.

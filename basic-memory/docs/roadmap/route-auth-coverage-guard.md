@@ -39,7 +39,7 @@ related_areas:
 ## Metadata (observation-form, schema validation)
 
 - [topic] Route auth coverage guard — every published hostname has a declared Pocket ID gate or a justified exemption
-- [status] in-progress — guard, CI and Phase 7 done 2026-11-17; crosswatch client apply pending
+- [status] in-progress — guard, CI and Phase 7 done 2026-11-17; crosswatch UI OIDC setup pending
 - [priority] high
 - [researched_at] 2026-11-15
 - [effort] M
@@ -297,3 +297,7 @@ The 2026-11-16 Basic-auth analysis covered only the public gateway. Repeat it fo
 - [open] `.claude/skills/k8s-workloads` onboarding checklist: add "claim the hostname in provision/pocket-id/clients.yaml (client or exempt)" — owner edit.
 - [unrelated] GrafanaDashboard victoria-logs-vector-k8s-monitoring InvalidSpec since 2026-11-09 (configmap not found) — pre-existing, not touched.
 - [kept] Earlier follow-ups (blackbox probes for gate-envoy hosts, Cloudflare public_bypass_apps cross-check) remain open.
+
+## Update — 2026-11-17: crosswatch client applied
+- [done] Owner renewed the provisioning API key. `just pocket-id plan` → exactly 1 to add (pocketid_client crosswatch); `apply` → "Creation complete", "Synced 26 client secrets to HomeOps/pocket-id-clients" (27 clients; paperless is public, no secret). `just pocket-id audit` → all 27 clients group-restricted.
+- [open] CrossWatch UI OIDC sign-in configuration (owner). After that AC8 is met and this note moves to docs/progress.
