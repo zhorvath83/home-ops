@@ -504,3 +504,11 @@ Executed from [[onprem-geoip-country-filter]] (roadmap), phases 0–5, directly 
 ## Update — 2026-11-17: route auth coverage guard
 - [observation] [guardrail] Route hostnames are now gated at commit time: each must be owned in `provision/pocket-id/clients.yaml` (client or `exempt` with reason, control, gateways). Layer 2 in CI checks the flate render: each gate-envoy route carries a StrategicMerge OIDC SecurityPolicy with the right redirect host. The ValidatingAdmissionPolicy is unchanged (it checks hostname claims and gateways, not auth). Rules: `provision/pocket-id/CLAUDE.md`; record: [[route-auth-coverage-guard]].
 - [observation] [route-filter] One more route-level deny filter follows the paperless pattern: `grafana-deny-403` (Basic + POST /login). The `llm` route was removed.
+
+## Update — 2026-11-17: geo-gate dashboard per-request log row
+
+- [fact] `envoy-external-geo-gate.json` has a `vl` (VictoriaLogs) datasource variable and a "Denied requests (log)" row: Geo-denied requests (newest 500), Top geo-denied sources (top 20 by IP), CrowdSec-denied requests. Implemented by [[grafana-victorialogs-datasource]].
+- [logsql] Geo denials: `kubernetes.pod_name:envoy-external* response_code_details:~"denied_matched_policy" | fields _time, downstream_remote_address, geo_country, ":authority", method, x-envoy-origin-path, user-agent, response_code_details | sort by (_time desc) | limit 500`
+- [logsql] Top sources (strip port): `... | extract "<ip>:<_>" from downstream_remote_address | stats by (ip, geo_country) count() hits | sort by (hits desc) | limit 20`
+- [logsql] CrowdSec bouncer denials: `kubernetes.pod_name:envoy-external* response_code_details:ext_authz_denied` (8 rows in 7 days, 2026-11-17).
+- [anomaly] 7-day 403 breakdown (2026-11-17): 629 `rbac_access_denied_matched_policy[DENY]`, but 14 more lines whose `response_code_details` begins with garbage bytes then `ess_denied_matched_policy[DENY]` — the prefix is overwritten in the access log. A prefix filter `rbac_access_denied*` misses them, hence the regex. Root cause not investigated (Envoy access-log formatter suspected) — follow-up.

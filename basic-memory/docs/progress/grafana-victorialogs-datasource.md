@@ -1,10 +1,10 @@
 ---
 title: grafana-victorialogs-datasource
 type: roadmap
-permalink: home-ops/docs/roadmap/grafana-victorialogs-datasource
+permalink: docs/progress/grafana-victorialogs-datasource
 topic: Revert D13 — VictoriaLogs datasource in Grafana, first consumer a per-request
   denial list on the geo-gate dashboard
-status: proposed
+status: implemented
 priority: low
 scope: Add the victoriametrics-logs-datasource plugin (operator-managed, version-pinned,
   Renovate-tracked) and a VictoriaLogs GrafanaDatasource to the operator-managed Grafana,
@@ -38,7 +38,7 @@ related_areas:
 ## Metadata (observation-form, schema validation)
 
 - [topic] Revert D13 — VictoriaLogs datasource in Grafana, first consumer a per-request denial list on the geo-gate dashboard
-- [status] proposed
+- [status] implemented — option A (async-preinstall variant) live 2026-11-17, direct to main; two acceptance checks open (see Implementation); moved from docs/roadmap
 - [priority] low
 - [researched_at] 2026-11-16
 - [effort] S–M (one PR, ~6 files, plus a live spike)
@@ -132,3 +132,20 @@ related_areas:
 - [risk] Grafana 13 major upgrades may lag plugin compatibility → Renovate grafana bumps now also need a log-panel smoke check (add to the observability area checklist).
 - [open] Top-sources table and CrowdSec table: in or out?
 - [open] Should the CrowdSec 403 list later move here too (one "edge denials" view)?
+
+## Implementation (2026-11-17)
+
+Decisions (user, 2026-11-17): option A; both optional tables IN (top sources + CrowdSec 403); rollout direct to main.
+
+- [deviation] Install path changed from `GrafanaDatasource.spec.plugins` to Grafana's async `plugins.preinstall` in the Grafana CR. Source-verified (grafana v13.0.1 setting_plugins.go + plugininstaller/service.go, run.sh; grafana-operator v5.25.0 deployment_reconciler.go): the operator only sets `GF_INSTALL_PLUGINS`; Grafana migrates it to `preinstall_sync`, which returns an error and halts startup on a failed download; `GF_INSTALL_PLUGINS_FORCE` instead runs `grafana cli` under `set -e`. Both would break the "Grafana up without grafana.com" acceptance criterion.
+- [resolved] Unknown 1 — `preinstall_disabled: true` suppresses everything, including a migrated `GF_INSTALL_PLUGINS`. Removed; default apps blocked via `disable_plugins` (advisor included: `grafanaAdvisor=true` is live).
+- [resolved] Unknown 2 — commercial signature verifies with `public_key_retrieval_disabled: true` (no signature error in the log).
+- [resolved] Unknown 3 — download hosts: grafana.com + storage.googleapis.com suffice; Hubble capture 19:23–19:27 showed zero DROPPED for grafana egress / victoria-logs ingress.
+- [resolved] Unknown 4 — version is a bare `0.34.0` in grafana ks `postBuild.substitute.VL_PLUGIN_VERSION` (the inline regex needs the version as its own quoted value); `.renovate/overrides.json5` adds `extractVersion: ^v(?<version>.+)$`.
+- [commits] 6bbd18b0c (datasource, Grafana CR, CNPs, dependsOn grafana-operator, D13 comments), 8b9c277b7 (Renovate rule), 085bc62c4 (dashboard row).
+- [verified] Plugin 0.34.0 installed ~7 s after pod start; datasource Test = "Data source is working"; dashboard live with 17 panels, `vl` variable, three tables; each panel query returned rows over 7 d (500 / 20 / 8).
+- [finding] 14 envoy-external access-log lines in 7 d have a corrupted `response_code_details` prefix (`…ess_denied_matched_policy[DENY]`); the geo table uses `response_code_details:~"denied_matched_policy"` so they are not dropped. Root cause open (docs/areas/networking).
+- [finding] After any Grafana restart, datasources are absent until the operator's next resync (≤10 min) — pre-existing; follow-up candidate.
+- [incident] During verification the provisioning admin password was echoed into the session output by BusyBox wget (unsupported `--password` flag). Rotated by the user in 1Password the same evening; ESO synced and Grafana restarted; operator authenticates with the new value. Lesson: in the Grafana pod pass credentials only as a computed `Authorization` header, never as CLI flags.
+- [open] Acceptance "Renovate tracks the plugin version": not yet observed — check the Renovate Dashboard issue after the next Renovate run.
+- [open] Acceptance "Grafana serves Prometheus dashboards with grafana.com unreachable": verified from source (async path logs and continues), NOT exercised live.

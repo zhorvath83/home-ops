@@ -1283,3 +1283,7 @@ Acceptance:
 - relates_to [[networking]]
 - decided_in [[AD-023-cnp-threat-model-audit]]
 - continues [[alertmanager-introduction]]
+
+## Update — 2026-11-17: D13 superseded
+
+- [superseded] D13 (no VictoriaLogs datasource/plugin) is superseded by [[grafana-victorialogs-datasource]]: a per-request geo-denial list needed a log datasource in Grafana. The revert did NOT use the `spec.plugins` path named in the follow-up — the operator's `GF_INSTALL_PLUGINS` becomes a sync preinstall that halts Grafana startup on a download failure; Grafana's async `plugins.preinstall` is used instead (detail: docs/areas/observability, 2026-11-17 update).
