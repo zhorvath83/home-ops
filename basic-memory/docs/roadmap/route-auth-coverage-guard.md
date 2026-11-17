@@ -4,7 +4,7 @@ type: roadmap
 permalink: home-ops/docs/roadmap/route-auth-coverage-guard
 topic: Route auth coverage guard — every published hostname must have a declared Pocket
   ID gate or a justified exemption
-status: proposed
+status: in-progress
 priority: high
 scope: 'A two-layer, fail-closed check that every HTTPRoute hostname in the repo is
   owned by a Pocket ID client (gate envoy or native) or by an explicit, justified
@@ -39,7 +39,7 @@ related_areas:
 ## Metadata (observation-form, schema validation)
 
 - [topic] Route auth coverage guard — every published hostname has a declared Pocket ID gate or a justified exemption
-- [status] proposed
+- [status] in-progress — guard, CI and Phase 7 done 2026-11-17; crosswatch client apply pending
 - [priority] high
 - [researched_at] 2026-11-15
 - [effort] M
@@ -244,3 +244,56 @@ The 2026-11-16 Basic-auth analysis covered only the public gateway. Repeat it fo
 ### Acceptance (additional)
 8. crosswatch, jellyfin and llm are each either Pocket ID-gated, removed, or a justified exemption in `clients.yaml`.
 9. The Phase 7 table is recorded, and every password path found is blocked or a justified exemption.
+
+## Implementation — 2026-11-17 (direct to main, owner decision)
+
+### Decisions taken
+- D1: no temporary exemptions were needed. crosswatch → native OIDC client (`media_users`, callback `/api/app-auth/oidc/callback`, PKCE S256 always on upstream); jellyfin → permanent exemption (own login, LAN-only, envoy-internal); llm → route removed (all consumers use the in-cluster Service; no LAN-client API key existed).
+- D2: flate (settled by [[flate-ci-adoption]]; Phase 0 superseded by its measurements).
+- D3: unchanged, no required status check. D4: jellyfin permanent exemption.
+- Grafana (Phase 7): block local credentials at the route rather than an exemption.
+
+### Commits (main)
+- 1a715a663 remove(llama-cpp): drop the unused llm route
+- def81f5a8 feat(pocket-id): native OIDC client for crosswatch
+- 9a3f8708a feat(pocket-id): guard route auth coverage (lint.sh L1, lint-rendered.sh L2, tests, `exempt` registry)
+- 380b6458a ci(pocket-id): Route Auth Guard workflow + two pre-commit hooks
+- d789adf3b docs(pocket-id): CLAUDE.md guides (security, pocket-id, networking)
+- b6c759a6c security(actual): ACTUAL_ALLOWED_LOGIN_METHODS=openid
+- 4a9d88fe6 security(grafana): 403 for Basic and POST /login on the route
+
+### Design deltas vs the plan
+- [decision] R3 also requires exactly ONE route per gate-envoy host (a second route would be ungated: the SecurityPolicy targets one HTTPROUTE_NAME).
+- [decision] Extra fail-closed tags: OWN (route file under no Flux Kustomization spec.path) and PARSE (unparsable YAML under kubernetes/).
+- [decision] L2 parity compares per-subdomain route COUNTS, not just the host set; L2 reads the L1 claims via `lint.sh --claims-json`.
+- [decision] Discovery = any map with a `hostnames` list or `parentRefs` list; the rules run as one jq program over yq-collected JSON (bash + yq + jq, no new dependency).
+- [measured] `flate build all` on a chart-fetch failure exits 1 BUT still writes the partial render to stdout; parity (L2.2) is therefore an independent second signal, demonstrated: broken victoria-logs chart tag → flate exit 1 and `[L2.2] logs: 0 rendered route(s) vs 1`.
+- [gotcha] yq 4.54 emits stray `{"backends":0}` objects from the object constructor for non-matching documents; lint.sh filters on `.file != null`. A top-level YAML list document (kustomize patch) crashed a naive `.kind` select — regression case `top-level-list-doc`.
+- [gotcha] pre-commit refuses to run while .pre-commit-config.yaml is unstaged; the hook wiring was parked and committed last.
+
+### Acceptance criteria
+1. [partial] Local pre-commit rejection demonstrated (unclaimed hostname → R2 + R6, revert → Passed). The PR-red demonstration was not done: delivery was direct to main by owner decision; the push run of Route Auth Guard is green.
+2. [verified] 38 fixture cases (29 L1 incl. clean + top-level list, 9 L2 incl. clean) pass locally and in CI.
+3. [verified] Real repo: L1 0 violations, 33 host claims, no temporary exemptions.
+4. [verified] Local: HTTPROUTE_NAME victoria-logs-server → victoria-logs gives L1 green, L2 `[L2.3] logs: route observability/victoria-logs-server has no OIDC SecurityPolicy targeting it` (reverted).
+5. [verified] See the flate partial-render measurement above.
+6. [verified] actionlint + zizmor clean; actions SHA-pinned; permissions {} with contents: read per job; persist-credentials: false.
+7. [verified] security/pocket-id/networking CLAUDE.md updated; BM iam updated. Not done: `.claude/skills/k8s-workloads` onboarding checklist (write-protected in the agent sandbox — owner applies).
+8. [partial] llm removed (live: llm host 404, ai namespace keeps only the open-webui route); jellyfin exempt; crosswatch client in the registry but NOT applied — `just pocket-id plan` gets HTTP 401 "You are not signed in" on every group read (provisioning API key invalid/expired again, renewed only 2026-11-16). After the key is fixed: `just pocket-id apply` (confirm the `Synced N client secrets` line), then CrossWatch UI → Settings → UI Settings → Security → OIDC sign-in (issuer https://idm.${PUBLIC_DOMAIN}, client id crosswatch, secret from HomeOps/pocket-id-clients crosswatch_client_secret, scopes openid profile email).
+9. [verified] Phase 7 table below; both password paths found are blocked and live-verified.
+
+### Phase 7 — LAN-side password audit (2026-11-17, unauthenticated + dummy-credential probes, upstream source at the deployed tag where ambiguous)
+| App (host) | Finding | Action |
+|---|---|---|
+| actual (pfm) | **Password path**: POST /account/login with body loginMethod=password → `invalid-password` (evaluated). Source v26.11.0: getLoginMethod honours a body method if it is in ACTUAL_ALLOWED_LOGIN_METHODS (default password,header,openid) AND an auth row exists — a password row is left from bootstrap. | ACTUAL_ALLOWED_LOGIN_METHODS=openid. Live after rollout: same probe → `Invalid redirect URL` (OpenID handler); login-methods lists only openid. |
+| wallos (subscriptions) | No password path. Form not rendered; POST login.php returns the generic "Login details are incorrect", which v5.11.1 login.php:162-165 sets WITHOUT evaluating when password_login_disabled. registration/passwordreset 302. API uses api_key (token). | none |
+| open-webui (chat) | No password path. /api/config: enable_login_form false, enable_signup false, ldap false; POST /api/v1/auths/signin → 403 "restricted". API keys are tokens. | none |
+| crowdsec-web-ui (crowdsec) | No password path observed: /api/auth/me and Basic → 401; OIDC with UNMATCHED_ROLE deny. LAPI password is backend-only. | none |
+| grafana | **Password path**: Basic on /api → `password-auth.failed` (provisioning admin usable from the LAN). | HTTPRouteFilter grafana-deny-403 for any `Authorization: Basic` and POST /login (Exact). Live: both 403; /login/generic_oauth still 302 → idm with PKCE; operator dashboards/datasources still Synchronized (it uses the Service). |
+| sure (fin, internal) | No password path. sessions/new has no password field; SessionsController#create (v0.7.6) refuses with local_login_disabled; /api/v1/auth/login → 403 "Local login is disabled", signup → 403 "Registration is currently closed", sso_link needs an SSO linking code (401), OAuth password grant unsupported; /admin, /sidekiq 404. Web POST /sessions returned 422 (CSRF) in the probe — source is the evidence. | none |
+
+### Follow-ups
+- [open] crosswatch: fix the Pocket ID provisioning API key, apply, configure the UI (AC8). Then move this note to docs/progress.
+- [open] `.claude/skills/k8s-workloads` onboarding checklist: add "claim the hostname in provision/pocket-id/clients.yaml (client or exempt)" — owner edit.
+- [unrelated] GrafanaDashboard victoria-logs-vector-k8s-monitoring InvalidSpec since 2026-11-09 (configmap not found) — pre-existing, not touched.
+- [kept] Earlier follow-ups (blackbox probes for gate-envoy hosts, Cloudflare public_bypass_apps cross-check) remain open.
