@@ -31,6 +31,7 @@ There is no shared auth platform declared under `kubernetes/apps/`.
 
 - prefer app-native auth or OIDC when the target app supports it well
 - inspect sibling apps before inventing an auth dependency
+- register every new hostname in `provision/pocket-id/clients.yaml` (a `clients` entry, or an `exempt` entry with reason, control and gateways); `provision/pocket-id/lint.sh` fails pre-commit and CI otherwise
 
 ## Media App Questions
 
