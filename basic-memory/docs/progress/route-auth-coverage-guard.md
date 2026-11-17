@@ -1,10 +1,10 @@
 ---
 title: route-auth-coverage-guard
 type: roadmap
-permalink: home-ops/docs/roadmap/route-auth-coverage-guard
+permalink: docs/progress/route-auth-coverage-guard
 topic: Route auth coverage guard — every published hostname must have a declared Pocket
   ID gate or a justified exemption
-status: in-progress
+status: done
 priority: high
 scope: 'A two-layer, fail-closed check that every HTTPRoute hostname in the repo is
   owned by a Pocket ID client (gate envoy or native) or by an explicit, justified
@@ -39,7 +39,7 @@ related_areas:
 ## Metadata (observation-form, schema validation)
 
 - [topic] Route auth coverage guard — every published hostname has a declared Pocket ID gate or a justified exemption
-- [status] in-progress — guard, CI and Phase 7 done 2026-11-17; crosswatch UI OIDC setup pending
+- [status] done — guard, CI, Phase 6 and Phase 7 completed 2026-11-17 (direct to main); moved from docs/roadmap
 - [priority] high
 - [researched_at] 2026-11-15
 - [effort] M
@@ -304,3 +304,8 @@ The 2026-11-16 Basic-auth analysis covered only the public gateway. Repeat it fo
 
 - [gotcha] crosswatch UI setup: Pocket ID rejected `http://crosswatch.<domain>/api/app-auth/oidc/callback`. Cause: crosswatch trusts forwarded headers only from `security.trusted_proxies`; fix = "Trusted reverse proxies" `10.244.0.0/24` (pod CIDR). Recorded in [[crosswatch-implementation]] and in a one-line comment in its HelmRelease.
 - [done] Docs sweep 2026-11-17: selfhosted CLAUDE.md guardrail, k8s-workloads skill Auth section (the stale "no shared auth platform" sentence replaced), BM local-ai-stack, crosswatch-implementation, app-auth-coverage, k8s-workloads, observability, networking.
+
+## Closure — 2026-11-17
+- [done] Owner declared the item complete after the crosswatch UI OIDC setup (trusted reverse proxies + OIDC sign-in); AC8 met. All nine acceptance criteria are met except the PR-red demonstration of AC1, which was skipped by the owner's direct-to-main delivery decision (local pre-commit rejection and green push CI stand in for it).
+- [moved] docs/roadmap/route-auth-coverage-guard → docs/progress/route-auth-coverage-guard.
+- [open, carried forward] blackbox probes asserting a 302 to idm for gate-envoy hosts; Cloudflare Access public_bypass_apps cross-check against the registry; GrafanaDashboard victoria-logs-vector-k8s-monitoring InvalidSpec (pre-existing, unrelated).
