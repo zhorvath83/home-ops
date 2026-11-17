@@ -1,0 +1,37 @@
+---
+groups:
+  g1:
+    friendly_name: Group one
+
+clients:
+  gated:
+    gate: envoy
+    subdomain: gate
+    groups:
+      - g1
+  native:
+    gate: native
+    subdomain: native
+    callback_path: /cb
+    groups:
+      - g1
+  nested:
+    gate: native
+    subdomain: vlogs
+    callback_path: /cb
+    groups:
+      - g1
+
+exempt:
+  hook:
+    reason: Machine caller.
+    control: HMAC token.
+    gateways:
+      - envoy-external
+  "*":
+    reason: Plain-HTTP redirect, no backend.
+    control: RequestRedirect only.
+    gateways:
+      - envoy-external
+      - envoy-internal
+    redirect_only: true

@@ -1,0 +1,19 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: gated
+spec:
+  values:
+    route:
+      app:
+        hostnames:
+          - "${APP_SUBDOMAIN}.${PUBLIC_DOMAIN}"
+        parentRefs:
+          - name: envoy-internal
+            namespace: networking
+            sectionName: https
+        rules:
+          - backendRefs:
+              - identifier: app
+                port: 80

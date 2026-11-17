@@ -3,6 +3,7 @@
 # Consumers set APP (+ optional APP_SUBDOMAIN, HTTPROUTE_NAME) via Flux
 # postBuild.substitute. Per-app group ACL is enforced at Pocket ID (client
 # allowed_user_groups) — this policy carries no authorization block.
+# The route auth guard (provision/pocket-id/lint*.sh, R3 + L2.3) mirrors this target/redirect contract; change both together.
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: SecurityPolicy
 metadata:

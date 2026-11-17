@@ -3,6 +3,7 @@
 # The map key is the client_id (and the ExternalSecret field prefix); friendly_name is
 # only what the IdP shows to the user.
 # gate: envoy -> protected by components/gateway-oidc; native -> the app speaks OIDC itself.
+# Every published hostname must be a clients subdomain or an exempt key (lint.sh, pre-commit + CI).
 groups:
   media_users:
     friendly_name: Media users
@@ -221,3 +222,30 @@ clients:
     callback_path: /api/app-auth/oidc/callback
     groups:
       - media_users
+
+# Hostnames published without a Pocket ID gate. reason, control and gateways are mandatory;
+# temporary: true needs tracking: <BM permalink> and warns on every lint run.
+exempt:
+  idm:
+    reason: The identity provider itself.
+    control: Passkey-only; the public route returns 403 for X-API-KEY, setup, signup and internal paths.
+    gateways:
+      - envoy-external
+      - envoy-internal
+  flux-webhook:
+    reason: GitHub webhook receiver, machine caller.
+    control: Route SecurityPolicy allows only the GitHub hooks CIDRs; Flux Receiver HMAC token.
+    gateways:
+      - envoy-external
+  "*":
+    reason: Plain-HTTP to HTTPS redirect, no backend.
+    control: RequestRedirect only, http listener only (admission policy).
+    gateways:
+      - envoy-external
+      - envoy-internal
+    redirect_only: true
+  jellyfin:
+    reason: TV and mobile clients cannot follow a browser OIDC redirect.
+    control: Jellyfin's own login; LAN-only (envoy-internal).
+    gateways:
+      - envoy-internal

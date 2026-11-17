@@ -1,0 +1,10 @@
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: native
+spec:
+  path: ./kubernetes/apps/web/native/app
+  postBuild:
+    substitute:
+      APP: native

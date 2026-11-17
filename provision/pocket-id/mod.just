@@ -20,7 +20,7 @@ default:
 init:
     cd {{ tf_dir }} && {{ tf }} init -upgrade
 
-[doc('Cross-check clients.yaml against the gateway-oidc consumers in the ks.yaml tree')]
+[doc('Route auth guard: every published hostname needs a Pocket ID client or an exemption')]
 [script]
 lint:
     {{ tf_dir }}/lint.sh

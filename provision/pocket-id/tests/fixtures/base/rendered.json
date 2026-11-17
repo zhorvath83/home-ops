@@ -1,0 +1,182 @@
+[
+  {
+    "apiVersion": "gateway.networking.k8s.io/v1",
+    "kind": "HTTPRoute",
+    "metadata": {
+      "name": "gated",
+      "namespace": "web"
+    },
+    "spec": {
+      "hostnames": [
+        "gate.example.com"
+      ],
+      "parentRefs": [
+        {
+          "name": "envoy-internal",
+          "namespace": "networking",
+          "sectionName": "https"
+        }
+      ],
+      "rules": [
+        {
+          "backendRefs": [
+            {
+              "name": "gated",
+              "port": 80
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "apiVersion": "gateway.networking.k8s.io/v1",
+    "kind": "HTTPRoute",
+    "metadata": {
+      "name": "native",
+      "namespace": "web"
+    },
+    "spec": {
+      "hostnames": [
+        "native.example.com"
+      ],
+      "parentRefs": [
+        {
+          "name": "envoy-external",
+          "namespace": "networking",
+          "sectionName": "https"
+        },
+        {
+          "name": "envoy-internal",
+          "namespace": "networking",
+          "sectionName": "https"
+        }
+      ],
+      "rules": [
+        {
+          "backendRefs": [
+            {
+              "name": "native",
+              "port": 80
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "apiVersion": "gateway.networking.k8s.io/v1",
+    "kind": "HTTPRoute",
+    "metadata": {
+      "name": "nested-server",
+      "namespace": "web"
+    },
+    "spec": {
+      "hostnames": [
+        "vlogs.example.com"
+      ],
+      "parentRefs": [
+        {
+          "name": "envoy-internal",
+          "namespace": "networking",
+          "sectionName": "https"
+        }
+      ],
+      "rules": [
+        {
+          "backendRefs": [
+            {
+              "name": "nested-server",
+              "port": 80
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "apiVersion": "gateway.networking.k8s.io/v1",
+    "kind": "HTTPRoute",
+    "metadata": {
+      "name": "https-redirect",
+      "namespace": "net"
+    },
+    "spec": {
+      "hostnames": [
+        "*.example.com"
+      ],
+      "parentRefs": [
+        {
+          "name": "envoy-external",
+          "namespace": "networking",
+          "sectionName": "http"
+        },
+        {
+          "name": "envoy-internal",
+          "namespace": "networking",
+          "sectionName": "http"
+        }
+      ],
+      "rules": [
+        {
+          "filters": [
+            {
+              "type": "RequestRedirect"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "apiVersion": "gateway.networking.k8s.io/v1",
+    "kind": "HTTPRoute",
+    "metadata": {
+      "name": "hook",
+      "namespace": "net"
+    },
+    "spec": {
+      "hostnames": [
+        "hook.example.com"
+      ],
+      "parentRefs": [
+        {
+          "name": "envoy-external",
+          "namespace": "networking",
+          "sectionName": "https"
+        }
+      ],
+      "rules": [
+        {
+          "backendRefs": [
+            {
+              "name": "hook",
+              "port": 80
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "apiVersion": "gateway.envoyproxy.io/v1alpha1",
+    "kind": "SecurityPolicy",
+    "metadata": {
+      "name": "gated-oidc",
+      "namespace": "web"
+    },
+    "spec": {
+      "targetRefs": [
+        {
+          "group": "gateway.networking.k8s.io",
+          "kind": "HTTPRoute",
+          "name": "gated"
+        }
+      ],
+      "mergeType": "StrategicMerge",
+      "oidc": {
+        "redirectURL": "https://gate.example.com/oauth2/callback"
+      }
+    }
+  }
+]
