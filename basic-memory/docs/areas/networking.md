@@ -512,3 +512,9 @@ Executed from [[onprem-geoip-country-filter]] (roadmap), phases 0–5, directly 
 - [logsql] Top sources (strip port): `... | extract "<ip>:<_>" from downstream_remote_address | stats by (ip, geo_country) count() hits | sort by (hits desc) | limit 20`
 - [logsql] CrowdSec bouncer denials: `kubernetes.pod_name:envoy-external* response_code_details:ext_authz_denied` (8 rows in 7 days, 2026-11-17).
 - [anomaly] 7-day 403 breakdown (2026-11-17): 629 `rbac_access_denied_matched_policy[DENY]`, but 14 more lines whose `response_code_details` begins with garbage bytes then `ess_denied_matched_policy[DENY]` — the prefix is overwritten in the access log. A prefix filter `rbac_access_denied*` misses them, hence the regex. Root cause not investigated (Envoy access-log formatter suspected) — follow-up.
+
+## Update — 2026-11-18: geo denials by host
+
+- [fact] The geo-gate dashboard log row has a "Geo denials by host" table (id 18) and a Host column on "Top geo-denied sources"; host is `:authority` lowercased with the port stripped (`copy ":authority" as host | replace_regexp (":[0-9]+$", "") at host | format "<lc:host>" as host`). Commit da812d569.
+- [observation] 7d window to 2026-11-17: 598 of 646 geo denials hit `idm.`; every non-idm denial predates 2026-11-15 10:26 UTC, and part of those are test traffic (TEST-NET 203.0.113.x, spoofed 127.0.0.1 / 8.8.8.8).
+- [explanation] Cloudflare Access (wildcard `*.` app) stops unauthenticated scanners before the tunnel, so only the bypass hosts (www, share, idm, books) and flux-webhook (GitHub CIDRs) can reach the envoy-external geo gate; idm, an OIDC endpoint, is the scanners' target. Expect the host spread to widen once [[cloudflare-access-decommission]] lands.
