@@ -213,3 +213,11 @@ clients:
     callback_path: /oauth/oidc/callback
     groups:
       - infra_admins
+  # OIDC is configured in the CrossWatch UI (Settings > UI Settings > Security); the local login stays as recovery.
+  crosswatch:
+    friendly_name: CrossWatch
+    gate: native
+    subdomain: crosswatch
+    callback_path: /api/app-auth/oidc/callback
+    groups:
+      - media_users
