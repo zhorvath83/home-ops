@@ -19,6 +19,38 @@ spec:
       namespace: networking
       sectionName: https
   rules:
+    # Local credentials (the operator's provisioning admin) stay in-cluster: the operator uses the Service, never this route.
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+          headers:
+            - name: Authorization
+              type: RegularExpression
+              value: "(?i)basic\\s.*"
+        - path:
+            type: Exact
+            value: /login
+          method: POST
+      filters:
+        - type: ExtensionRef
+          extensionRef:
+            group: gateway.envoyproxy.io
+            kind: HTTPRouteFilter
+            name: grafana-deny-403
     - backendRefs:
         - name: grafana-service
           port: 3000
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/gateway.envoyproxy.io/httproutefilter_v1alpha1.json
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: HTTPRouteFilter
+metadata:
+  name: grafana-deny-403
+spec:
+  directResponse:
+    contentType: text/plain
+    statusCode: 403
+    body:
+      type: Inline
+      inline: "Forbidden\n"
