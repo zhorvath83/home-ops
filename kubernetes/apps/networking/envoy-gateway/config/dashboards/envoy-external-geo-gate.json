@@ -1068,16 +1068,16 @@
     },
     {
       "type": "table",
-      "id": 16,
-      "title": "Top geo-denied sources",
-      "description": "Geo denials by client IP (port stripped), top 20.",
+      "id": 18,
+      "title": "Geo denials by host",
+      "description": "Geo denials per host (lowercased, port stripped).",
       "datasource": {
         "type": "victoriametrics-logs-datasource",
         "uid": "${vl}"
       },
       "gridPos": {
         "h": 10,
-        "w": 12,
+        "w": 8,
         "x": 0,
         "y": 45
       },
@@ -1087,7 +1087,79 @@
             "type": "victoriametrics-logs-datasource",
             "uid": "${vl}"
           },
-          "expr": "kubernetes.pod_name:envoy-external* response_code_details:~\"denied_matched_policy\" | extract \"<ip>:<_>\" from downstream_remote_address | stats by (ip, geo_country) count() hits | sort by (hits desc) | limit 20",
+          "expr": "kubernetes.pod_name:envoy-external* response_code_details:~\"denied_matched_policy\" | copy \":authority\" as host | replace_regexp (\":[0-9]+$\", \"\") at host | format \"<lc:host>\" as host | stats by (host) count() hits | sort by (hits desc) | limit 20",
+          "queryType": "instant",
+          "refId": "A"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "source": "labels",
+            "format": "json",
+            "replace": false,
+            "keepTime": false
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Line": true,
+              "id": true,
+              "labels": true,
+              "streams": true,
+              "streamId": true,
+              "_time": true,
+              "Time": true
+            },
+            "renameByName": {
+              "host": "Host",
+              "hits": "Hits"
+            },
+            "indexByName": {
+              "host": 0,
+              "hits": 1
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "filterable": true
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      }
+    },
+    {
+      "type": "table",
+      "id": 16,
+      "title": "Top geo-denied sources",
+      "description": "Geo denials by client IP (port stripped) and host (lowercased, port stripped), top 20.",
+      "datasource": {
+        "type": "victoriametrics-logs-datasource",
+        "uid": "${vl}"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 16,
+        "x": 8,
+        "y": 45
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "victoriametrics-logs-datasource",
+            "uid": "${vl}"
+          },
+          "expr": "kubernetes.pod_name:envoy-external* response_code_details:~\"denied_matched_policy\" | extract \"<ip>:<_>\" from downstream_remote_address | copy \":authority\" as host | replace_regexp (\":[0-9]+$\", \"\") at host | format \"<lc:host>\" as host | stats by (ip, geo_country, host) count() hits | sort by (hits desc) | limit 20",
           "queryType": "instant",
           "refId": "A"
         }
@@ -1117,12 +1189,14 @@
             "renameByName": {
               "ip": "Client IP",
               "geo_country": "Country",
-              "hits": "Hits"
+              "hits": "Hits",
+              "host": "Host"
             },
             "indexByName": {
               "ip": 0,
               "geo_country": 1,
-              "hits": 2
+              "host": 2,
+              "hits": 3
             }
           }
         }
@@ -1151,9 +1225,9 @@
       },
       "gridPos": {
         "h": 10,
-        "w": 12,
-        "x": 12,
-        "y": 45
+        "w": 24,
+        "x": 0,
+        "y": 55
       },
       "targets": [
         {
