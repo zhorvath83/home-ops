@@ -1,0 +1,32 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/monitoring.coreos.com/prometheusrule_v1.json
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: node-temperature
+spec:
+  groups:
+    - name: node-temperature
+      rules:
+        # Thresholds come from the sensor's own high/crit values; NVMe temps are covered by Smartctl*.
+        - alert: NodeCPUTemperatureHigh
+          expr: max by (instance) (node_hwmon_temp_celsius{chip=~".*coretemp.*"} >= on (instance, chip, sensor) node_hwmon_temp_max_celsius)
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: Node CPU temperature above the sensor high threshold
+            description: |-
+              The hottest CPU sensor on {{ $labels.instance }} is at {{ $value }} C, at or above its
+              high threshold for 15 minutes. Check fan, airflow and dust before it reaches the
+              critical threshold and the CPU starts thermal throttling.
+        - alert: NodeCPUTemperatureCritical
+          expr: max by (instance) (node_hwmon_temp_celsius{chip=~".*coretemp.*"} >= on (instance, chip, sensor) node_hwmon_temp_crit_celsius)
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: Node CPU temperature at the sensor critical threshold
+            description: |-
+              The hottest CPU sensor on {{ $labels.instance }} is at {{ $value }} C, at or above its
+              critical threshold. The CPU is thermal throttling and the node may shut down.

@@ -7,3 +7,4 @@ resources:
   - ./hubble-policy-deny.yaml
   - ./dns-exfil.yaml
   - ./tsdb-growth.yaml
+  - ./node-temperature.yaml
