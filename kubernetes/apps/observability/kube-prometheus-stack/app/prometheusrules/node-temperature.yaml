@@ -8,7 +8,7 @@ spec:
   groups:
     - name: node-temperature
       rules:
-        # Thresholds come from the sensor's own high/crit values; NVMe temps are covered by Smartctl*.
+        # High uses the sensor's own threshold; crit is pinned at 90 C, well below the 100 C Tjmax. NVMe is Smartctl*.
         - alert: NodeCPUTemperatureHigh
           expr: max by (instance) (node_hwmon_temp_celsius{chip=~".*coretemp.*"} >= on (instance, chip, sensor) node_hwmon_temp_max_celsius)
           for: 15m
@@ -21,12 +21,12 @@ spec:
               high threshold for 15 minutes. Check fan, airflow and dust before it reaches the
               critical threshold and the CPU starts thermal throttling.
         - alert: NodeCPUTemperatureCritical
-          expr: max by (instance) (node_hwmon_temp_celsius{chip=~".*coretemp.*"} >= on (instance, chip, sensor) node_hwmon_temp_crit_celsius)
-          for: 2m
+          expr: max by (instance) (node_hwmon_temp_celsius{chip=~".*coretemp.*"}) >= 90
+          for: 1m
           labels:
             severity: critical
           annotations:
-            summary: Node CPU temperature at the sensor critical threshold
+            summary: Node CPU temperature at or above 90 C
             description: |-
-              The hottest CPU sensor on {{ $labels.instance }} is at {{ $value }} C, at or above its
-              critical threshold. The CPU is thermal throttling and the node may shut down.
+              The hottest CPU sensor on {{ $labels.instance }} is at {{ $value }} C, at or above 90 C
+              for 1 minute. The CPU is close to thermal throttling and the node may shut down.

@@ -2,8 +2,8 @@
 # yaml-language-server: $schema=https://json.schemastore.org/prometheus.rules.test.json
 # promtool unit tests for prometheusrules/node-temperature.yaml.
 # Two coretemp sensors (package + one core) prove the max-by-instance aggregation; an NVMe sensor
-# above its own max proves the coretemp chip filter. Thresholds mirror the live k8s-cp0 values
-# (max 80, crit 100). Run via `just k8s test-prom-rules`.
+# above its own max proves the coretemp chip filter. High mirrors the live k8s-cp0 sensor max (80);
+# Critical is a fixed 90. Run via `just k8s test-prom-rules`.
 rule_files:
   - ./.extracted_prometheus_rules.yaml
 evaluation_interval: 1m
@@ -69,21 +69,19 @@ tests:
         alertname: NodeCPUTemperatureCritical
         exp_alerts: []
   # === NodeCPUTemperatureCritical ===
-  # (3) Positive + `>=` boundary: the package reaches crit (100) at 5m and holds; fires after
-  # `for: 2m`, not before.
+  # (3) Positive + `>=` boundary: the package reaches exactly 90 at 5m and holds; fires after
+  # `for: 1m`, not before. The 100 crit series proves the rule no longer reads the sensor's crit.
   - interval: 1m
     input_series:
       - series: 'node_hwmon_temp_celsius{instance="n1:9100",chip="platform_coretemp_0",sensor="temp1"}'
-        values: '75x5 100x10'
-      - series: 'node_hwmon_temp_max_celsius{instance="n1:9100",chip="platform_coretemp_0",sensor="temp1"}'
-        values: '80x15'
+        values: '75x5 90x10'
       - series: 'node_hwmon_temp_crit_celsius{instance="n1:9100",chip="platform_coretemp_0",sensor="temp1"}'
         values: '100x15'
     alert_rule_test:
-      - eval_time: 6m
+      - eval_time: 5m
         alertname: NodeCPUTemperatureCritical
         exp_alerts: []
-      - eval_time: 8m
+      - eval_time: 7m
         alertname: NodeCPUTemperatureCritical
         exp_alerts:
           - exp_labels:
@@ -91,17 +89,15 @@ tests:
               severity: critical
               instance: n1:9100
             exp_annotations:
-              summary: Node CPU temperature at the sensor critical threshold
+              summary: Node CPU temperature at or above 90 C
               description: |-
-                The hottest CPU sensor on n1:9100 is at 100 C, at or above its
-                critical threshold. The CPU is thermal throttling and the node may shut down.
-  # (4) Negative boundary: one degree below crit does not fire Critical.
+                The hottest CPU sensor on n1:9100 is at 90 C, at or above 90 C
+                for 1 minute. The CPU is close to thermal throttling and the node may shut down.
+  # (4) Negative boundary: 89 C (one below) held for 10m does not fire Critical.
   - interval: 1m
     input_series:
       - series: 'node_hwmon_temp_celsius{instance="n1:9100",chip="platform_coretemp_0",sensor="temp1"}'
-        values: '99x15'
-      - series: 'node_hwmon_temp_crit_celsius{instance="n1:9100",chip="platform_coretemp_0",sensor="temp1"}'
-        values: '100x15'
+        values: '89x15'
     alert_rule_test:
       - eval_time: 10m
         alertname: NodeCPUTemperatureCritical
