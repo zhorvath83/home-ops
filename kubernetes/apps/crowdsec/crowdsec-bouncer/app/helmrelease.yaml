@@ -69,6 +69,8 @@ spec:
         memory: 64Mi
       limits:
         memory: 256Mi
+        # Chart default 100m throttled GC bursts (~25%); 1 core is ~75x the peak, so throttling means a real runaway.
+        cpu: "1"
   # envoy-proxy-bouncer exposes no Deployment-metadata annotation hook (only podAnnotations,
   # which Reloader does not read), and adds no config checksum to the pod template either — so a
   # bouncer ConfigMap change never rolls the pod. Inject the Reloader trigger the chart omits,
