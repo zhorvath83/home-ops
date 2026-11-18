@@ -333,3 +333,15 @@ Implements [[grafana-victorialogs-datasource]]; supersedes D13 of [[grafana-oper
 - [guardrail] VictoriaLogs has no auth; the grafana → :9428 allow is read+write in principle (/insert shares the port), same as crowdsec's allow.
 - [checklist] Grafana major/minor bumps now need a log-panel smoke check (geo-gate "Denied requests (log)" row).
 - [observation] After any Grafana pod restart the operator re-provisions datasources only at the next resync (≤10 min, default resyncPeriod): for that window Grafana has **no datasources at all** (measured 2026-11-17, 20:07 → 20:16). Pre-existing behaviour of the stateless instance, not caused by this change — follow-up candidate (shorter `resyncPeriod` on the datasource CRs).
+
+## Update — 2026-11-18: node CPU temperature alerts
+
+- [finding] node-exporter scraped the `coretemp` hwmon sensors (`node_hwmon_temp_celsius`, package + 8 cores on k8s-cp0) but no rule watched them; NVMe temperatures were already covered by `SmartctlTempHigh/Critical`. 14-day CPU peak: 74 C. Sensor thresholds: max 80 C, crit 100 C (Tjmax).
+- [change] New `kube-prometheus-stack/app/prometheusrules/node-temperature.yaml` (+ `node-temperature_test.yaml`, listed in the subtree kustomization) — commits a1d45547d, 1378e0cdc:
+  - `NodeCPUTemperatureHigh` (warning): hottest `coretemp` sensor `>=` its own `node_hwmon_temp_max_celsius` (matched `on (instance, chip, sensor)`), `for: 15m`.
+  - `NodeCPUTemperatureCritical` (critical): hottest `coretemp` sensor `>= 90` (fixed, human decision), `for: 1m` — the sensor crit (100 C) is where the CPU already throttles, too late to page.
+  - Both aggregate `max by (instance)`, so one alert per node, `$value` = hottest sensor.
+- [evidence] Live 2026-11-18: promtool suite green; both rules loaded with health ok, state inactive; the High join was checked on live data with a lowered threshold (one series, 54 C).
+- [observation] Node-level coverage after this change: Watchdog heartbeat (node down), NodeSystemSaturation, NodeCPUHighUsage, NodeMemoryHighUtilization, OOMKilled, NodeFilesystem*, Smartctl*, NodeDiskIOSaturation, TargetDown, and now CPU temperature. `kubelet`/`kubernetesSystem` default groups stay off (no KubeNodeNotReady/KubeNodePressure) — accepted on one node.
+- [observation] Alertmanager routes every alert except Watchdog/InfoInhibitor to pushover (root receiver), so info-severity alerts (CPUThrottlingHigh, NodeCPUHighUsage) also notify; firing alerts repeat every 12h (`repeatInterval`).
+- [gotcha] An alert latched by `keep_firing_for` keeps its OLD annotation text after a rule edit: during the latch the expr returns nothing, so annotations are not re-templated. Seen 2026-11-16..18 with CrowdSecDecisionBudgetNearCap still quoting the 75000 cap after it was raised to 150000; each 12h repeat looked like a new alert.
