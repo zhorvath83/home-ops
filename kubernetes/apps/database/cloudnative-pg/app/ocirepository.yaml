@@ -11,5 +11,5 @@ spec:
     operation: copy
   ref:
     # renovate: registryUrl=https://ghcr.io/cloudnative-pg/charts chart=cloudnative-pg
-    tag: 0.29.1
+    tag: 0.29.2
   url: oci://ghcr.io/cloudnative-pg/charts/cloudnative-pg
