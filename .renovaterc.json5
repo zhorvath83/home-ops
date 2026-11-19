@@ -21,7 +21,9 @@
     'github>zhorvath83/home-ops//.renovate/semanticCommits.json5',
     'github>zhorvath83/home-ops//.renovate/talosFactory.json5',
   ],
-  dependencyDashboardTitle: 'Renovate Dashboard 🤖',
+  dependencyDashboard: {
+    title: 'Renovate Dashboard 🤖',
+  },
   baseBranchPatterns: [
     'main',
   ],
