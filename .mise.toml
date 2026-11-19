@@ -62,5 +62,5 @@ kubectl = "1.37.2"
 "aqua:home-operations/flate" = "0.7.3"
 
 # Python tooling (pipx backend)
-"pipx:ansible" = "14.6.0"
+"pipx:ansible" = "15.0.0"
 "pipx:ansible-core" = "2.22.0"
