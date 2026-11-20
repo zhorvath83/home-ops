@@ -23,7 +23,7 @@ jobs:
           persist-credentials: false
 
       - name: Download Pluto
-        uses: FairwindsOps/pluto/github-action@ed98c5d42b0d7903b3792acea95df469974fc70f # master
+        uses: FairwindsOps/pluto/github-action@d3ea8529af12665fed34ef178204b7d945abd147 # master
 
       - name: Use pluto
         run: |
