@@ -59,7 +59,7 @@ kubectl = "1.37.2"
 "aqua:zizmorcore/zizmor" = "1.32.0"
 
 # Flux render/test/diff (CI + just k8s render-local-ks)
-"aqua:home-operations/flate" = "0.7.3"
+"aqua:home-operations/flate" = "0.8.0"
 
 # Python tooling (pipx backend)
 "pipx:ansible" = "15.0.0"
