@@ -28,6 +28,8 @@ jobs:
   test:
     name: Flate - Test
     runs-on: ubuntu-latest
+    # A hung flate otherwise burns the 6h default job timeout.
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -50,6 +52,7 @@ jobs:
     if: ${{ github.event_name == 'pull_request' }}
     name: Flate - Diff
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
       pull-requests: write # sticky diff comment
