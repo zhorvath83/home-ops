@@ -1,10 +1,10 @@
 ---
 title: homepage-gateway-oidc
-type: roadmap
+type: progress
 permalink: docs/roadmap/homepage-gateway-oidc
 topic: Move the Homepage dashboard (dash) from its built-in OIDC login to the Envoy
   gateway-oidc gate
-status: proposed
+status: done
 priority: medium
 scope: 'Switch homepage from gate native (next-auth inside the app) to gate envoy
   (components/gateway-oidc SecurityPolicy on the homepage HTTPRoute), and turn the
@@ -28,6 +28,7 @@ related_areas:
 - iam
 - k8s-workloads
 - networking
+completed: '2026-11-23'
 ---
 
 # Homepage behind gateway-oidc
@@ -35,7 +36,7 @@ related_areas:
 ## Metadata (observation-form, schema validation)
 
 - [topic] Move the Homepage dashboard from its built-in OIDC login to the Envoy gateway-oidc gate
-- [status] in-progress — deployed 2026-11-23 (commit e2da05c17), AC2 and Phase 4 pending
+- [status] done — deployed 2026-11-23 (commit e2da05c17), all acceptance criteria met, Phase 4 cleanup done
 - [priority] medium
 - [researched_at] 2026-11-23
 - [effort] S
@@ -116,12 +117,12 @@ Revert the Phase 2 commit (native auth back) — the `extra_callback_urls` entry
 
 ## Execution — 2026-11-23 (direct to main, commit e2da05c17)
 
-- [status] deployed; AC1 + AC3 verified, AC2 (logged-in dashboard) awaits the owner's browser check, Phase 4 cleanup pending
+- [status] done; AC1 + AC3 verified by the AI, AC2 confirmed by the owner (logged-in dashboard, widgets, logout, non-member refused)
 - [deviation] No transitional `extra_callback_urls`: the field is passed to Pocket ID verbatim (`locals.tf` does no substitution, Flux never reads `provision/`), and a literal domain may not be committed. Accepted a few-minute dash login gap instead (owner's decision). Consequence: a rollback also needs the Pocket ID client reverted (`gate: native` + `callback_path`, `just pocket-id apply`).
 - [evidence] Phase 0: Cilium endpoint for homepage allows ingress only from envoy-external, envoy-internal and reserved:host. Upstream v2.8.0 `src/proxy.js`: auth off disables the whole next-auth middleware; `HOMEPAGE_EXTERNAL_URL` only feeds `NEXTAUTH_URL` and the secure-cookie decision, so it was dropped. Without auth Homepage stops sending `Cache-Control: private, no-store`; harmless here because Cloudflare bypasses cache zone-wide and anonymous traffic never reaches the app.
 - [evidence] `just pocket-id plan`: 0 add / 1 change / 0 destroy, only `callback_urls`; apply synced 26 client secrets.
 - [evidence] After reconcile: SecurityPolicy `homepage-oidc` Accepted on both gateways, ExternalSecrets `homepage` + `homepage-oidc` synced, pod env has `HOMEPAGE_AUTH_ENABLED=false` only.
 - [evidence] Unauthenticated probe (LAN): `/`, `/api/services`, `/api/widgets`, `/api/healthcheck`, `/api/auth/providers`, `/api/auth/session`, `/api/config/custom.css`, `/api/mcp`, `/api/kubernetes/status`, `/auth/signin` → 302 to `idm/authorize` with `client_id=homepage`, `code_challenge_method=S256`, `redirect_uri=.../oauth2/callback`. CVE-2025-29927 header probe → 403.
 - [evidence] Validation: `just pocket-id lint`, `lint-rendered.sh` on a flate render (16 gate-envoy routes carry their policy), pre-commit green. `flate-test` was skipped on the commit: flate 0.8.0 `test --base` livelocks (see [[flate-ci-adoption]]); flate 0.7.3 on the same tree passed 198 checks in 10 s.
-- [todo] Owner: log in as an `infra_admins` member, check Kubernetes and service widgets, `/oauth2/logout`; a non-member must be refused at the IdP.
-- [todo] Phase 4: delete `homepage.auth_secret` in 1Password; then move this note to docs/progress.
+- [done] AC2 confirmed by the owner 2026-11-23.
+- [done] Phase 4: field `auth_secret` deleted from the 1Password item `HomeOps/homepage` (remaining: `notesPlain`, `services_yaml`); ExternalSecret `homepage` force-synced afterwards → `SecretSynced`. Note moved from docs/roadmap to docs/progress (the permalink keeps the roadmap path; BM refuses to change a permalink).

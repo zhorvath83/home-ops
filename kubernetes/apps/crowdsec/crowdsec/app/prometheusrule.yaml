@@ -85,6 +85,30 @@ spec:
               CrowdSec banned a source after the scenario below tripped. The ban lasts 4h
               plus 4h for each earlier decision on the same IP (4h, 8h, 12h, ...); no action
               is needed. If it was you, clear it with `cscli decisions delete <ip>`.
+        # A single WAF hit never bans, so BanActive misses it. The series is born on its first hit
+        # (increase() sees 0 there), hence the `unless offset` branch; its `up offset` gate keeps a
+        # >15m Prometheus gap from re-announcing every old series. `source` is the bouncer pod IP.
+        - alert: CrowdSecWAFRuleHit
+          expr: |
+            sum by (rule_name, type) (increase(cs_appsec_rule_hits{job="crowdsec-appsec-service", namespace="crowdsec"}[15m])) > 0
+              or
+            (
+              sum by (rule_name, type) (
+                cs_appsec_rule_hits{job="crowdsec-appsec-service", namespace="crowdsec"}
+                  unless
+                cs_appsec_rule_hits{job="crowdsec-appsec-service", namespace="crowdsec"} offset 15m
+              )
+                and on ()
+              group(up{job="crowdsec-appsec-service", namespace="crowdsec"} offset 15m)
+            )
+          labels:
+            severity: critical
+          annotations:
+            summary: WAF rule {{ $labels.rule_name }} matched a request
+            description: |-
+              CrowdSec AppSec rule {{ $labels.rule_name }} ({{ $labels.type }}) matched a request in the
+              last 15m; an inband match was blocked with 403. A single hit does not ban the source.
+              Client IP: `cscli alerts list --since 30m` in the LAPI pod, or the Envoy geo-gate dashboard.
         # MAX_DECISIONS is a TOTAL cap (CAPI included); on budget exhaustion the importer
         # exits 0 (KubeJobFailed never fires), so this predicts silent truncation. 85% of 150000.
         # keep_firing_for 48h ≥ the daily 24h-TTL sawtooth, so a peak crossing does not resolve/refire.

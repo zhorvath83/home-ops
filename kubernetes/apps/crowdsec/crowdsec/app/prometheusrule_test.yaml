@@ -3,8 +3,8 @@
 # promtool unit tests for app/prometheusrule.yaml, covering CrowdSecLAPIDown,
 # CrowdSecAgentDown, CrowdSecAppsecDown, CrowdSecBanActive, CrowdSecAcquisitionStalled,
 # CrowdSecDecisionBudgetNearCap, CrowdSecBlocklistImportSourceFailing,
-# CrowdSecBlocklistImportMetricsAbsent, CrowdSecBlocklistImportFeedEmpty, and
-# CrowdSecBlocklistImportFeedFrozen. The three `*Down` alerts share the shape
+# CrowdSecBlocklistImportMetricsAbsent, CrowdSecBlocklistImportFeedEmpty,
+# CrowdSecBlocklistImportFeedFrozen, and CrowdSecWAFRuleHit. The three `*Down` alerts share the shape
 # `up == 0 or absent(up{...})`, so the `absent()` branch covers scale-to-0 / crashloop /
 # evicted where the `up` series vanishes — that is the branch the tests exercise most,
 # since `up == 0` alone would never fire for those outage shapes. for:5m, so every fire
@@ -417,6 +417,100 @@ tests:
     alert_rule_test:
       - eval_time: 6m
         alertname: CrowdSecLAPIDown
+        exp_alerts: []
+  # === CrowdSecWAFRuleHit === increase()[15m] > 0 OR (new series unless offset 15m, gated on
+  # up offset 15m). `sum by (rule_name, type)` drops pod/source -> exp_labels = alertname + severity
+  # + rule_name + type. No for:, fires on the first eval that sees the hit.
+  # (W1) FIRE new series: born with value 1 at 31m. increase() sees one sample (0), so only the
+  # unless-offset branch can fire; up existed 15m ago, so the gate passes.
+  - interval: 1m
+    input_series:
+      - series: 'cs_appsec_rule_hits{job="crowdsec-appsec-service",namespace="crowdsec",pod="crowdsec-appsec-a",source="10.244.0.82",type="inband",rule_name="crowdsecurity/vpatch-env-access"}'
+        values: '_x30 1x20'
+      - series: 'up{job="crowdsec-appsec-service",namespace="crowdsec"}'
+        values: '1x50'
+    alert_rule_test:
+      - eval_time: 32m
+        alertname: CrowdSecWAFRuleHit
+        exp_alerts:
+          - exp_labels:
+              alertname: CrowdSecWAFRuleHit
+              severity: critical
+              rule_name: crowdsecurity/vpatch-env-access
+              type: inband
+            exp_annotations:
+              summary: WAF rule crowdsecurity/vpatch-env-access matched a request
+              description: |-
+                CrowdSec AppSec rule crowdsecurity/vpatch-env-access (inband) matched a request in the
+                last 15m; an inband match was blocked with 403. A single hit does not ban the source.
+                Client IP: `cscli alerts list --since 30m` in the LAPI pod, or the Envoy geo-gate dashboard.
+  # (W2) FIRE existing series: 1 -> 2 at 31m, increase()[15m] = 1. The offset branch is empty.
+  - interval: 1m
+    input_series:
+      - series: 'cs_appsec_rule_hits{job="crowdsec-appsec-service",namespace="crowdsec",pod="crowdsec-appsec-a",source="10.244.0.82",type="inband",rule_name="crowdsecurity/vpatch-env-access"}'
+        values: '1x30 2x10'
+      - series: 'up{job="crowdsec-appsec-service",namespace="crowdsec"}'
+        values: '1x40'
+    alert_rule_test:
+      - eval_time: 32m
+        alertname: CrowdSecWAFRuleHit
+        exp_alerts:
+          - exp_labels:
+              alertname: CrowdSecWAFRuleHit
+              severity: critical
+              rule_name: crowdsecurity/vpatch-env-access
+              type: inband
+            exp_annotations:
+              summary: WAF rule crowdsecurity/vpatch-env-access matched a request
+              description: |-
+                CrowdSec AppSec rule crowdsecurity/vpatch-env-access (inband) matched a request in the
+                last 15m; an inband match was blocked with 403. A single hit does not ban the source.
+                Client IP: `cscli alerts list --since 30m` in the LAPI pod, or the Envoy geo-gate dashboard.
+  # (W3) NO-FIRE: series constant for 40m, no increase and present 15m ago.
+  - interval: 1m
+    input_series:
+      - series: 'cs_appsec_rule_hits{job="crowdsec-appsec-service",namespace="crowdsec",pod="crowdsec-appsec-a",source="10.244.0.82",type="inband",rule_name="crowdsecurity/vpatch-env-access"}'
+        values: '1x40'
+      - series: 'up{job="crowdsec-appsec-service",namespace="crowdsec"}'
+        values: '1x40'
+    alert_rule_test:
+      - eval_time: 35m
+        alertname: CrowdSecWAFRuleHit
+        exp_alerts: []
+  # (W4) FIRE counter reset: appsec container restart, 4 -> 1 at 21m; increase() counts the reset.
+  - interval: 1m
+    input_series:
+      - series: 'cs_appsec_rule_hits{job="crowdsec-appsec-service",namespace="crowdsec",pod="crowdsec-appsec-a",source="10.244.0.82",type="inband",rule_name="crowdsecurity/vpatch-env-access"}'
+        values: '4x20 1x10'
+      - series: 'up{job="crowdsec-appsec-service",namespace="crowdsec"}'
+        values: '1x30'
+    alert_rule_test:
+      - eval_time: 25m
+        alertname: CrowdSecWAFRuleHit
+        exp_alerts:
+          - exp_labels:
+              alertname: CrowdSecWAFRuleHit
+              severity: critical
+              rule_name: crowdsecurity/vpatch-env-access
+              type: inband
+            exp_annotations:
+              summary: WAF rule crowdsecurity/vpatch-env-access matched a request
+              description: |-
+                CrowdSec AppSec rule crowdsecurity/vpatch-env-access (inband) matched a request in the
+                last 15m; an inband match was blocked with 403. A single hit does not ban the source.
+                Client IP: `cscli alerts list --since 30m` in the LAPI pod, or the Envoy geo-gate dashboard.
+  # (W5) NO-FIRE Prometheus gap: no samples 11m..30m, then the old value 3 again. The offset branch
+  # sees no series 15m ago, but neither up -> the gate blocks a false 'new series'. Mutation pin:
+  # removing the `and on () group(up offset 15m)` gate makes this case fire.
+  - interval: 1m
+    input_series:
+      - series: 'cs_appsec_rule_hits{job="crowdsec-appsec-service",namespace="crowdsec",pod="crowdsec-appsec-a",source="10.244.0.82",type="inband",rule_name="crowdsecurity/vpatch-env-access"}'
+        values: '3x10 _x20 3x10'
+      - series: 'up{job="crowdsec-appsec-service",namespace="crowdsec"}'
+        values: '1x10 _x20 1x10'
+    alert_rule_test:
+      - eval_time: 35m
+        alertname: CrowdSecWAFRuleHit
         exp_alerts: []
   # === CrowdSecBanActive === sum by(reason,origin,action)(cs_active_decisions{...,origin!~"CAPI|
   # lists(:.*)?|blocklist-import"}) > 0, for:1m, keep_firing_for:5m. `sum by` keeps reason/origin/
