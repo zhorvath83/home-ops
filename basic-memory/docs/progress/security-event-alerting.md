@@ -1,10 +1,10 @@
 ---
 title: security-event-alerting
-type: roadmap
+type: progress
 permalink: docs/roadmap/security-event-alerting
 topic: Security-event alerting — WAF rule hits and Pocket ID identity events reach
   Alertmanager/Pushover
-status: proposed
+status: done
 priority: high
 scope: Two detection gaps from the 2026-11-23 public-endpoint review. (a) A CrowdSec
   AppSec (WAF) rule hit blocks the request but notifies nobody unless a ban follows.
@@ -45,7 +45,7 @@ related_areas:
 ## Metadata (observation-form, schema validation)
 
 - [topic] Security-event alerting — WAF rule hits and Pocket ID identity events reach Alertmanager/Pushover
-- [status] proposed
+- [status] done — Phases 1–4 delivered and live 2026-11-23 (direct to main); passkey live trigger still open (see Implementation)
 - [priority] high
 - [researched_at] 2026-11-23
 - [effort] M
@@ -68,7 +68,7 @@ related_areas:
 
 ### (a) WAF
 - [evidence] `cs_appsec_rule_hits{rule_name, source=<bouncer pod IP>, type=inband}` is scraped (job `crowdsec-appsec-service`). Current values: `vpatch-CVE-2025-29927` 4 (the 2026-11-23 test), `vpatch-env-access` 2 and `vpatch-git-config` 1 (from the previous bouncer pod IP — real probes nobody was told about).
-- [evidence] `cs_appsec_block_total` increased by 0 over 7 days while the 4 test requests were blocked (403). Which counter reflects a block must be confirmed (Phase 0); `cs_appsec_rule_hits` is the one that moved.
+- [evidence] ~~`cs_appsec_block_total` increased by 0 over 7 days~~ — corrected in Phase 0: it did move (3 on source .82, 4 on .95, equal to the rule_hits sums). The "0" was the new-series pitfall: each series was born with its first value, so `increase()` saw nothing. `cs_appsec_rule_hits` is used because it carries `rule_name`.
 - [evidence] LAPI recorded the 4 test hits as alerts without decisions (LAN source whitelisted by `crowdsecurity/whitelists`). The appsec pod has `crowdsecurity/appsec-vpatch` and `appsec-native` scenarios installed, so a repeated external offender is banned and then `CrowdSecBanActive` fires; a single attempt is not.
 - [evidence] Alertmanager: default receiver `pushover`, `severity=critical` routed to pushover, `Watchdog` heartbeat, critical inhibits warning per alertname+namespace (`observability/kube-prometheus-stack/app/alertmanagerconfig.yaml`).
 - [fact] Repo precedent: alerts read the TSDB with range queries, not instant presence (see [[crowdsec-alert-tsdb-sourced]]); rules ship with a `prometheusrule_test.yaml` promtool test.
@@ -149,6 +149,42 @@ Rules (LogsQL; each `stats by (...)` row becomes one alert with those fields as 
 ### Phase 4 — Docs
 - BM `docs/areas/observability` (log-based alerting path), `docs/areas/iam` (event → alert map, the upstream audit gap), Grafana annotation/runbook text in alert descriptions.
 - Follow-up trigger recorded: when a Pocket ID release ships the extended audit events, re-evaluate option C (audit-API poller) — it would add actor identity and cover admin actions done through non-HTTP paths (CLI).
+
+
+## Implementation (2026-11-23)
+
+### Commits (main)
+- WAF rule + promtool tests: landed inside `1e906c73d` (📝 docs(homepage): close homepage-gateway-oidc) — a concurrent session's commit swept the already-staged files; content correct, message misleading, not rewritten (pushed).
+- `a815cfd14` ✨ feat(observability): add vmalert-logs for log alerts (promtool hook skipped on request: a concurrent session edited files during the hook; suite passed on the same content).
+- `deb024e89` 🔒 security(pocket-id): pin explicit login notification.
+
+### Decisions taken
+- [decision] D1 vmalert vlogs, D2 alert on every admin write (incl. Terraform), D3 `browserRecognition`, D4 critical — all as recommended.
+- [decision] Admin-change rule is **fail-closed** (deviation from the Design's route allowlist): every successful write alerts unless its route is a known sign-in/session flow (`/authorize`, `/api/oidc/{token,interactions/:id/complete,par,userinfo,introspect,end-session}`, `/api/webauthn/{login/finish,logout,reauthenticate}`) or owned by the passkey / login-code rules. A write route added by an upgrade alerts instead of being silently ignored. Route list pinned from the v2.19.3 source (all `.POST/.PUT/.DELETE/.PATCH` registrations).
+- [decision] Split `PocketIDAdminChange` (warning, client IP in 10/8, 172.16/12, 192.168/16) and `PocketIDAdminChangeExternal` (critical, any other or missing IP). Distinct names so the critical→warning inhibit rule cannot hide LAN changes during an external incident.
+- [decision] `PocketIDLoginCodeIssued` became `PocketIDLoginCodeUsed`: covers admin issuance (`/api/users/:id/one-time-access-{token,email}`) and redemption (`/api/one-time-access-token/:token`, `/api/one-time-access-email`). `PocketIDFailedSignIns` became `PocketIDFailedRequests`: any 4xx write, ≥5 per IP in 10m.
+- [decision] Stream filter keys on Kubernetes metadata (`{kubernetes.pod_namespace="security",kubernetes.container_name="app"}` + pod label `app.kubernetes.io/name=pocket-id`), not the app-emitted `app` field, so another pod cannot forge Pocket ID lines.
+- [decision] WAF rule: the new-series branch is gated by `and on () group(up{job="crowdsec-appsec-service"} offset 15m)` so a >15m Prometheus gap does not re-announce every old series (mutation-pinned by promtool case W5).
+
+### Findings
+- [fact] vmalert vlogs: when the expr has no `_time` filter, vmalert sends `start=time-interval`; with an explicit `_time:5m` it sends only `time` (vmalert v1.157.0 `datasource/client_vlogs.go`). Every rule therefore carries `_time:5m` (10m/15m where needed) at a 1m interval.
+- [evidence] The overlapping window is load-bearing: the 22:20:18Z API-key events were absent at the 22:21:20Z evaluation and first seen at 22:22:20Z (collector ingestion lag > 1 min). A plain 1m window would have dropped them permanently.
+- [fact] vmalert pods carry `app.kubernetes.io/name=victoria-metrics-alert`, `instance=vmalert-logs` (chart 0.54.0); metrics: `vmalert_alerting_rules_errors_total`, `vmalert_alerts_send_errors_total`, `vmalert_config_last_reload_successful`.
+- [fact] Rules ship as a kustomize-generated ConfigMap (`vmalert-logs-rules`, Flux substitution disabled) mounted as a directory; `-configCheckInterval=1m` hot-reloads, a bad reload keeps the old rules and raises `VMAlertLogsConfigReloadFailed`.
+
+### Verification
+- [verified] Phase 0 LogsQL: every rule expr run against 14d of real logs via `stats_query`; admin rule returned exactly the 8 known LAN admin writes; the silent rule returns one zero row on no match (so it fires).
+- [verified] promtool: crowdsec suite +5 cases (new series, existing series, counter reset, quiet, Prometheus gap); vmalert-logs self-monitoring 10 cases; all 18 suites green.
+- [verified] AC1 live: a LAN `/.env` probe created a brand-new `vpatch-env-access` series (value 2); `CrowdSecWAFRuleHit` fired critical via the new-series branch → Alertmanager → pushover.
+- [verified] AC2 partial: throwaway API key create/revoke → two `PocketIDAdminChange` warnings (labels method/route/ip, `source=vmalert-logs`) → Alertmanager → pushover; vmalert sent 2, 0 send errors.
+- [verified] AC3 partial: `VMAlertLogsDown` went pending before the first scrape and cleared after it; rule errors 0, reload ok.
+- [verified] AC4: pod env `EMAIL_LOGIN_NOTIFICATION_MODE=browserRecognition`, pod healthy.
+
+### Open
+- [open] Passkey live trigger not yet run (enrol + delete a test passkey → 2× `PocketIDPasskeyChanged`); the rule is query-verified only.
+- [open] Deliberate failure-path drill (victoria-logs down → `VMAlertLogsRuleErrors`; pocket-id at 0 → `PocketIDLogsSilent`) not run; promtool + live health checks only.
+- [follow-up] When a Pocket ID release ships the extended audit events (actor identity, admin events), re-evaluate the audit-API poller (option C).
+- [follow-up] vmalert -dryRun was not run locally (binary download blocked by the harness); startup validation + `VMAlertLogsDown` cover a bad rules file.
 
 ## Acceptance criteria
 

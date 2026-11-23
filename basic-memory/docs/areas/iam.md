@@ -248,3 +248,23 @@ not from an independent AI cluster observation.
 - [observation] [taxonomy] `infra_admins` still grants homepage; the Pocket ID group restriction remains the only access control (Homepage has none of its own).
 - [observation] [verify-status] verified_at deliberately NOT bumped; only the homepage claims were verified 2026-11-23.
 - relates_to [[homepage-gateway-oidc]]
+
+## Update — 2026-11-23: identity-plane event alerting
+
+Pocket ID v2.19.3 audits no admin action, exposes no security metric and sends no admin notification, so the JSON request log in VictoriaLogs is the only signal. `vmalert-logs` (observability) evaluates these rules (`kubernetes/apps/observability/vmalert-logs/app/rules/pocket-id.yaml`):
+
+| Alert | Severity | Trigger |
+|---|---|---|
+| `PocketIDAdminChange` | warning | any successful write from a private IP that is not a sign-in/session flow and not owned by the rules below (fail-closed: a new admin route alerts by default) |
+| `PocketIDAdminChangeExternal` | critical | same, from a non-private or missing client IP |
+| `PocketIDPasskeyChanged` | critical | `POST /api/webauthn/register/finish`, `DELETE /api/webauthn/credentials/:id`, `DELETE /api/users/:id/webauthn-credentials/:credentialId` |
+| `PocketIDLoginCodeUsed` | critical | one-time login code issued by an admin or redeemed |
+| `PocketIDFailedRequests` | warning | ≥5 4xx write answers per IP in 10m |
+| `PocketIDRateLimited` | warning | any 429 |
+| `PocketIDLogsSilent` | critical | no Pocket ID log line in 15m (blackbox `idm_probe` hits it every minute) |
+
+- [fact] Every `just pocket-id apply` produces `PocketIDAdminChange` warnings by design (D2: the alert doubles as a change log; suppressing the operator IP would hide a compromised LAN device).
+- [security] The stream filter keys on Kubernetes metadata (namespace + container + pod label), not the app-emitted `app` field, so another pod cannot forge Pocket ID lines.
+- [maintenance] On a Pocket ID upgrade, re-check the write-route list against the release (`.POST/.PUT/.DELETE/.PATCH` registrations); a new sign-in-flow route will surface as a `PocketIDAdminChange` false positive and belongs in the rule's exclusion list.
+- [config] `EMAIL_LOGIN_NOTIFICATION_MODE: browserRecognition` replaces the legacy `EMAIL_LOGIN_NOTIFICATION_ENABLED` (removed in v3, where it would silently fall back to disabled).
+- [follow-up] When Pocket ID ships the extended audit events (actor identity, admin events), re-evaluate an audit-API poller. Detail: [[security-event-alerting]].
