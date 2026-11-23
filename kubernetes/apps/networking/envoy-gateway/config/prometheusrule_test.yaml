@@ -3,7 +3,8 @@
 # promtool unit tests for config/prometheusrule.yaml, covering EnvoyProxyDown,
 # EnvoyGatewayXDSRejected, EnvoyGatewayPolicyNotAccepted,
 # EnvoyGatewayPolicyStatusMissing, EnvoyInternalConnectionsHigh,
-# EnvoyExtAuthzErrors, GeoIPDatabaseStale, GeoIPReloadFailed and GeoGateInactive.
+# EnvoyExtAuthzErrors, EnvoyRateLimited, GeoIPDatabaseStale, GeoIPReloadFailed and
+# GeoGateInactive.
 # The EnvoyProxyDown expr
 # `count(up{job="networking/envoy-proxy", namespace="networking"} == 1) < 2` aggregates away
 # all labels, so exp_labels are alertname + severity only — it fires whenever fewer than 2
@@ -334,6 +335,51 @@ tests:
                 a 503 on the public AND LAN surfaces — exemptIPs cover only 10.0.0.0/8.
                 The cause can be the bouncer (up but erroring) or an AppSec outage
                 underneath it; CrowdSecBouncerDown only catches a dead pod.
+  # === EnvoyRateLimited ===
+  # Counter starts at 0, so increase() over the 0→3 step is exactly 3 (no extrapolation).
+  # (rl-a) Boundary no-fire: counter flat at 0 on both gateways (increase == 0, not > 0).
+  - interval: 1m
+    input_series:
+      - series: 'envoy_http_local_rate_limit_rate_limited{job="networking/envoy-proxy",namespace="networking",pod="envoy-external"}'
+        values: '0x20'
+      - series: 'envoy_http_local_rate_limit_rate_limited{job="networking/envoy-proxy",namespace="networking",pod="envoy-internal"}'
+        values: '0x20'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: EnvoyRateLimited
+        exp_alerts: []
+  # (rl-b) Fire: 3 requests limited on envoy-external only; envoy-internal stays silent.
+  - interval: 1m
+    input_series:
+      - series: 'envoy_http_local_rate_limit_rate_limited{job="networking/envoy-proxy",namespace="networking",pod="envoy-external"}'
+        values: '0x10 3x10'
+      - series: 'envoy_http_local_rate_limit_rate_limited{job="networking/envoy-proxy",namespace="networking",pod="envoy-internal"}'
+        values: '0x20'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: EnvoyRateLimited
+        exp_alerts:
+          - exp_labels:
+              alertname: EnvoyRateLimited
+              severity: warning
+              pod: envoy-external
+            exp_annotations:
+              summary: Envoy Gateway is rate limiting clients
+              description: |-
+                envoy-external answered 3 requests with 429 in the
+                last 15m. Find the client and host in VictoriaLogs:
+                kubernetes.pod_name:envoy-* response_code_details:local_rate_limited.
+                An attacker needs no action; a legitimate client means its host's tier in
+                BackendTrafficPolicy networking/envoy is too low.
+  # (rl-c) No-fire: the 15m window has slid past the last limited request.
+  - interval: 1m
+    input_series:
+      - series: 'envoy_http_local_rate_limit_rate_limited{job="networking/envoy-proxy",namespace="networking",pod="envoy-external"}'
+        values: '0x5 3x30'
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: EnvoyRateLimited
+        exp_alerts: []
   # === GeoIPDatabaseStale ===
   # build_epoch is a negative offset, so age = eval time + |epoch|; threshold 7d, for: 1h.
   # (u) No-fire: a 1-day-old database.

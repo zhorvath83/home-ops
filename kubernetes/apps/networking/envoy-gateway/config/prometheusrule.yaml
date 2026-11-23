@@ -51,6 +51,19 @@ spec:
               a 503 on the public AND LAN surfaces — exemptIPs cover only 10.0.0.0/8.
               The cause can be the bouncer (up but erroring) or an AppSec outage
               underneath it; CrowdSecBouncerDown only catches a dead pod.
+        # Either an attack or a legitimate client outgrowing its tier; both need a look.
+        - alert: EnvoyRateLimited
+          expr: sum by (pod) (increase(envoy_http_local_rate_limit_rate_limited{job="networking/envoy-proxy", namespace="networking"}[15m])) > 0
+          labels:
+            severity: warning
+          annotations:
+            summary: Envoy Gateway is rate limiting clients
+            description: |-
+              {{ $labels.pod }} answered {{ $value | humanize }} requests with 429 in the
+              last 15m. Find the client and host in VictoriaLogs:
+              kubernetes.pod_name:envoy-* response_code_details:local_rate_limited.
+              An attacker needs no action; a legitimate client means its host's tier in
+              BackendTrafficPolicy networking/envoy is too low.
         # Build epoch, not file mtime: MaxMind rebuilds Tue + Fri and the updater runs daily, so a
         # healthy age stays under ~5d; 7d means missed releases. Sole signal for update failures.
         - alert: GeoIPDatabaseStale

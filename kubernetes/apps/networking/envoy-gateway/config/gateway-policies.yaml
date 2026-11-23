@@ -18,31 +18,80 @@ spec:
       brotli: {}
     - type: Gzip
       gzip: {}
-  # Local (no rate-limit backend deployed). Per-client buckets, not one shared per route:
-  # a single gallery visitor exhausted the old shared 600/min and 429'd everyone else on
-  # that route. Both address families are listed because an IPv4-only selector matches no
-  # IPv6 client and would silently leave them unlimited. Behavioural abuse detection is
-  # CrowdSec's job; this is only a volumetric backstop.
+  # Local, per-client tiers by Host; the strictest matching rule wins. Each tier lists both
+  # address families: an IPv4-only selector would leave IPv6 clients unlimited. Exact Host
+  # match fails safe: a variant Host (port, case) falls into the stricter default tier.
   rateLimit:
     type: Local
     local:
       rules:
+        # High tier: the gallery fetches hundreds of thumbnails per scroll.
         - clientSelectors:
-            - sourceCIDR:
+            - headers: &galleryHost
+                - name: ":authority"
+                  type: Exact
+                  value: "fenykepek.${PUBLIC_DOMAIN}"
+              sourceCIDR:
                 value: 0.0.0.0/0
                 type: Distinct
           limit:
             requests: 3000
             unit: Minute
         - clientSelectors:
-            - sourceCIDR:
+            - headers: *galleryHost
+              sourceCIDR:
                 value: ::/0
                 type: Distinct
           limit:
             requests: 3000
             unit: Minute
-        # No clientSelectors: one shared bucket for every request on this gateway, so
-        # IP rotation cannot defeat it and unrouted-404 floods are covered too.
+        # Mid tier: a CWA browse measured 1030/min (static assets and covers).
+        - clientSelectors:
+            - headers: &booksHost
+                - name: ":authority"
+                  type: Exact
+                  value: "books.${PUBLIC_DOMAIN}"
+              sourceCIDR:
+                value: 0.0.0.0/0
+                type: Distinct
+          limit:
+            requests: 1200
+            unit: Minute
+        - clientSelectors:
+            - headers: *booksHost
+              sourceCIDR:
+                value: ::/0
+                type: Distinct
+          limit:
+            requests: 1200
+            unit: Minute
+        # Default tier: every other host; highest legitimate peak measured was 472/min.
+        - clientSelectors:
+            - headers: &otherHosts
+                - name: ":authority"
+                  type: Exact
+                  value: "fenykepek.${PUBLIC_DOMAIN}"
+                  invert: true
+                - name: ":authority"
+                  type: Exact
+                  value: "books.${PUBLIC_DOMAIN}"
+                  invert: true
+              sourceCIDR:
+                value: 0.0.0.0/0
+                type: Distinct
+          limit:
+            requests: 600
+            unit: Minute
+        - clientSelectors:
+            - headers: *otherHosts
+              sourceCIDR:
+                value: ::/0
+                type: Distinct
+          limit:
+            requests: 600
+            unit: Minute
+        # No clientSelectors: one bucket per route, shared by all clients (EG ignores `shared` on
+        # Local limits, so a gateway-wide bucket is not possible). Unrouted requests are not limited.
         - limit:
             requests: 30000
             unit: Minute

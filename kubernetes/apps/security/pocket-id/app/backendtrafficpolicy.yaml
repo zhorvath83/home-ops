@@ -2,7 +2,8 @@
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/gateway.envoyproxy.io/backendtrafficpolicy_v1alpha1.json
 # Route-level rate limit for the public IdP surface. mergeType is mandatory here: without
 # it this policy REPLACES the Gateway-level `envoy` BackendTrafficPolicy for this route and
-# silently drops its circuit breaker, compression, retry and timeouts.
+# silently drops its circuit breaker, compression, retry and timeouts. StrategicMerge appends
+# these rules to the gateway's (the stricter limit wins) and replaces its no-selector bucket.
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: BackendTrafficPolicy
 metadata:
