@@ -127,9 +127,8 @@ clients:
       - infra_admins
   homepage:
     friendly_name: Homepage
-    gate: native
+    gate: envoy
     subdomain: dash
-    callback_path: /api/auth/callback/homepage-oidc
     groups:
       - infra_admins
   backrest:
