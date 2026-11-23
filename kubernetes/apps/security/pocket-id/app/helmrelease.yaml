@@ -97,7 +97,8 @@ spec:
               ACCENT_COLOR: "default"
               # LDAP unused here; gate off (attribute maps left to defaults).
               LDAP_ENABLED: "false"
-              EMAIL_LOGIN_NOTIFICATION_ENABLED: "true"
+              # Explicit mode: the legacy EMAIL_LOGIN_NOTIFICATION_ENABLED is dropped in v3 and would fall back to disabled.
+              EMAIL_LOGIN_NOTIFICATION_MODE: "browserRecognition"
               EMAIL_ONE_TIME_ACCESS_AS_ADMIN_ENABLED: "true"
               EMAIL_API_KEY_EXPIRATION_ENABLED: "true"
               EMAIL_VERIFICATION_ENABLED: "true"
