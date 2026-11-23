@@ -151,3 +151,9 @@ Method: flate v0.7.3 darwin_arm64 (release checksum verified) and flux-local 8.4
 - relates_to [[route-auth-coverage-guard]] (L2 render engine, D2 there)
 - relates_to [[flux-gitops]]
 - relates_to [[main-branch-protection-and-commit-signing]]
+
+## Update — 2026-11-23: flate 0.8.0 `test --base` livelocks
+
+- [evidence] `flate test --path kubernetes/flux/cluster --base HEAD` (the `flate-test` pre-commit hook) never finishes on 0.8.0: after 2 kustomize builds it loops on `discovery: loaded objects count=0 rounds=1` for both snapshots (~8 events/s, 140-170% CPU, no network) until killed. Same with `--path-orig` and even with an identical baseline tree, so the repo content is not the trigger.
+- [evidence] Without a baseline, 0.8.0 `flate test` takes 7 s and `flate build all` 9 s. flate 0.7.3 `test --base HEAD` on the same tree: 198 passed in 10 s. The regression arrived with the Renovate bump 0.7.3 → 0.8.0 (#4809, 2026-11-20); the 15-minute CI cap (#4825, 2026-11-22) is likely the same symptom.
+- [todo] Fix options: pin flate to 0.7.3 in `.mise.toml` (+ Renovate hold) until upstream fixes it, and report upstream with the debug log; separately consider moving the hook to `pre-push`.

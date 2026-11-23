@@ -240,3 +240,9 @@ Full re-verification against the repo at HEAD and the live cluster, closing the 
 - [observation] [exposure] ai/llama-cpp no longer has a route (in-cluster consumers only).
 - [observation] [auth] crosswatch: native Pocket ID OIDC (UI-configured; needs trusted reverse proxies = pod CIDR). jellyfin: permanent `exempt` entry (own login, LAN-only; TV/mobile clients cannot do a browser OIDC redirect).
 - [observation] [auth] actual: `ACTUAL_ALLOWED_LOGIN_METHODS=openid` closes a leftover password-login path.
+
+## Update — 2026-11-23: homepage behind gateway-oidc
+
+- [observation] [auth] `homepage` is now a `gateway-oidc` consumer (`ks.yaml` components + `APP: homepage`, `APP_SUBDOMAIN: dash`, `dependsOn` security/pocket-id), with app auth off. This supersedes the 2026-08-15 "native OIDC client" observation above.
+- [observation] [gotcha] The kubelet probe `Host: localhost:3000` header is still required: host validation (`HOMEPAGE_ALLOWED_HOSTS`) rejects the pod IP even with auth off.
+- relates_to [[homepage-gateway-oidc]]

@@ -239,3 +239,12 @@ not from an independent AI cluster observation.
 - [observation] [client] crosswatch client applied 2026-11-17 after the provisioning key renewal (27 clients, all group-restricted); its UI-side OIDC configuration is the owner's step.
 
 - [gotcha] crosswatch OIDC: set the app's "Trusted reverse proxies" to the pod CIDR `10.244.0.0/24`, otherwise it ignores X-Forwarded-Proto and sends an http:// redirect_uri that Pocket ID rejects ("redirect_uri ... is not registered for this client").
+
+## Update — 2026-11-23: homepage moved from native OIDC to gateway-oidc
+
+- [observation] [client] **homepage** is now a gateway-oidc client (`gate: envoy`, subdomain `dash`, `infra_admins`), no longer native. The client was updated in place (callback `/oauth2/callback`), so the client secret did not change; `components/gateway-oidc` reads the same `homepage_client_secret` field.
+- [observation] [security] App auth is off (`HOMEPAGE_AUTH_ENABLED=false`); `HOMEPAGE_AUTH_SECRET` and the `HOMEPAGE_OIDC_*` env are gone. Envoy answers every unauthenticated path, including `/api/healthcheck`, `/api/auth/*`, `/api/mcp` and `/api/config/custom.css`, with 302 to `idm/authorize` (PKCE S256), measured live 2026-11-23. A CVE-2025-29927 `x-middleware-subrequest` probe got 403.
+- [observation] [security] With app auth off, the pod trusts whatever reaches it. Measured in the Cilium agent: the homepage endpoint admits ingress only from the envoy-external and envoy-internal identities and `reserved:host` (kubelet probes). Keep the `ingress.home.arpa/allow-gateway-*` labels as the ONLY ingress labels on this pod.
+- [observation] [taxonomy] `infra_admins` still grants homepage; the Pocket ID group restriction remains the only access control (Homepage has none of its own).
+- [observation] [verify-status] verified_at deliberately NOT bumped; only the homepage claims were verified 2026-11-23.
+- relates_to [[homepage-gateway-oidc]]
