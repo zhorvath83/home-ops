@@ -12,6 +12,7 @@ resources:
   - ./speedtest-exporter/ks.yaml
   - ./prometheus-pushgateway/ks.yaml
   - ./victoria-logs/ks.yaml
+  - ./vmalert-logs/ks.yaml
   - ./blackbox-exporter/ks.yaml
   - ./smartctl-exporter/ks.yaml
   - ./prometheus-adapter/ks.yaml

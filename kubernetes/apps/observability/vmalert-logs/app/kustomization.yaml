@@ -1,0 +1,17 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ./ocirepository.yaml
+  - ./helmrelease.yaml
+  - ./ciliumnetworkpolicy.yaml
+  - ./prometheusrule.yaml
+configMapGenerator:
+  - name: vmalert-logs-rules
+    files:
+      - alert-rules.yaml=./rules/pocket-id.yaml
+generatorOptions:
+  disableNameSuffixHash: true
+  annotations:
+    kustomize.toolkit.fluxcd.io/substitute: disabled

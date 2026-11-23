@@ -1,0 +1,53 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/monitoring.coreos.com/prometheusrule_v1.json
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: vmalert-logs
+spec:
+  groups:
+    - name: vmalert-logs
+      rules:
+        # vmalert cannot report its own death or a broken query path: every log-based security
+        # alert depends on these. absent() covers crashloop / scale-to-0 where `up` vanishes.
+        - alert: VMAlertLogsDown
+          expr: up{job="vmalert-logs", namespace="observability"} == 0 or absent(up{job="vmalert-logs", namespace="observability"})
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: vmalert-logs is down
+            description: |-
+              vmalert-logs has no scrapeable target, so no log-based alert (Pocket ID identity
+              events) is evaluated. A rules file it cannot parse also crash-loops it. Check the
+              vmalert-logs pod logs in observability.
+        - alert: VMAlertLogsRuleErrors
+          expr: sum by (alertname) (increase(vmalert_alerting_rules_errors_total{job="vmalert-logs", namespace="observability"}[15m])) > 0
+          labels:
+            severity: critical
+          annotations:
+            summary: vmalert-logs rule {{ $labels.alertname }} fails to evaluate
+            description: |-
+              Log-based rule {{ $labels.alertname }} failed to evaluate in the last 15m, so it cannot
+              fire. Likely VictoriaLogs is unreachable (pod, CNP) or the LogsQL query is invalid.
+              Check the vmalert-logs logs and its /vmalert/groups page.
+        - alert: VMAlertLogsNotifierErrors
+          expr: sum(increase(vmalert_alerts_send_errors_total{job="vmalert-logs", namespace="observability"}[15m])) > 0
+          labels:
+            severity: critical
+          annotations:
+            summary: vmalert-logs cannot deliver alerts to Alertmanager
+            description: |-
+              vmalert-logs failed to send alert batches to Alertmanager in the last
+              15m, so log-based security alerts are evaluated but never notified. Check the Alertmanager
+              pod and the vmalert-logs / alertmanager CNPs.
+        - alert: VMAlertLogsConfigReloadFailed
+          expr: vmalert_config_last_reload_successful{job="vmalert-logs", namespace="observability"} == 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: vmalert-logs rejected its rules file
+            description: |-
+              The last rules reload failed, so vmalert-logs still runs the previous rules and the latest
+              change to rules/pocket-id.yaml is not in effect. Check the vmalert-logs logs for the parse error.

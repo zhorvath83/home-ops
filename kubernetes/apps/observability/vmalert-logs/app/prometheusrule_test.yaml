@@ -1,0 +1,144 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/prometheus.rules.test.json
+# promtool unit tests for app/prometheusrule.yaml (vmalert-logs self-monitoring).
+# Run via `just k8s test-prom-rules`.
+rule_files:
+  - ./.extracted_prometheus_rules.yaml
+evaluation_interval: 1m
+tests:
+  # === VMAlertLogsDown === (a) FIRE: no up series (crashloop / scale-to-0); absent() carries job+namespace.
+  - interval: 1m
+    input_series: []
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: VMAlertLogsDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              job: vmalert-logs
+              namespace: observability
+            exp_annotations:
+              summary: vmalert-logs is down
+              description: |-
+                vmalert-logs has no scrapeable target, so no log-based alert (Pocket ID identity
+                events) is evaluated. A rules file it cannot parse also crash-loops it. Check the
+                vmalert-logs pod logs in observability.
+  # (b) FIRE: target present but up == 0 for 6m.
+  - interval: 1m
+    input_series:
+      - series: 'up{job="vmalert-logs",namespace="observability",instance="10.244.0.9:8880"}'
+        values: '0x10'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: VMAlertLogsDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              job: vmalert-logs
+              namespace: observability
+              instance: 10.244.0.9:8880
+            exp_annotations:
+              summary: vmalert-logs is down
+              description: |-
+                vmalert-logs has no scrapeable target, so no log-based alert (Pocket ID identity
+                events) is evaluated. A rules file it cannot parse also crash-loops it. Check the
+                vmalert-logs pod logs in observability.
+  # (c) NO-FIRE: healthy target.
+  - interval: 1m
+    input_series:
+      - series: 'up{job="vmalert-logs",namespace="observability",instance="10.244.0.9:8880"}'
+        values: '1x10'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: VMAlertLogsDown
+        exp_alerts: []
+  # (d) NO-FIRE boundary: down for 4m only, for:5m not met.
+  - interval: 1m
+    input_series:
+      - series: 'up{job="vmalert-logs",namespace="observability",instance="10.244.0.9:8880"}'
+        values: '1x5 0x4'
+    alert_rule_test:
+      - eval_time: 9m
+        alertname: VMAlertLogsDown
+        exp_alerts: []
+  # === VMAlertLogsRuleErrors === (e) FIRE: one evaluation error in the window (counter 0 -> 1).
+  - interval: 1m
+    input_series:
+      - series: 'vmalert_alerting_rules_errors_total{job="vmalert-logs",namespace="observability",alertname="PocketIDAdminChange",group="pocket-id"}'
+        values: '0x10 1x5'
+    alert_rule_test:
+      - eval_time: 12m
+        alertname: VMAlertLogsRuleErrors
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              alertname: PocketIDAdminChange
+            exp_annotations:
+              summary: vmalert-logs rule PocketIDAdminChange fails to evaluate
+              description: |-
+                Log-based rule PocketIDAdminChange failed to evaluate in the last 15m, so it cannot
+                fire. Likely VictoriaLogs is unreachable (pod, CNP) or the LogsQL query is invalid.
+                Check the vmalert-logs logs and its /vmalert/groups page.
+  # (f) NO-FIRE: counter flat (boundary: increase == 0 is not > 0).
+  - interval: 1m
+    input_series:
+      - series: 'vmalert_alerting_rules_errors_total{job="vmalert-logs",namespace="observability",alertname="PocketIDAdminChange",group="pocket-id"}'
+        values: '3x30'
+    alert_rule_test:
+      - eval_time: 25m
+        alertname: VMAlertLogsRuleErrors
+        exp_alerts: []
+  # === VMAlertLogsNotifierErrors === (g) FIRE: send errors 0 -> 2 at 16m, eval 20m (inside the 15m window).
+  - interval: 1m
+    input_series:
+      - series: 'vmalert_alerts_send_errors_total{job="vmalert-logs",namespace="observability",addr="http://alertmanager-operated.observability.svc.cluster.local:9093/api/v2/alerts"}'
+        values: '0x15 2x15'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: VMAlertLogsNotifierErrors
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+            exp_annotations:
+              summary: vmalert-logs cannot deliver alerts to Alertmanager
+              description: |-
+                vmalert-logs failed to send alert batches to Alertmanager in the last
+                15m, so log-based security alerts are evaluated but never notified. Check the Alertmanager
+                pod and the vmalert-logs / alertmanager CNPs.
+  # (h) NO-FIRE: no send errors.
+  - interval: 1m
+    input_series:
+      - series: 'vmalert_alerts_send_errors_total{job="vmalert-logs",namespace="observability",addr="http://alertmanager-operated.observability.svc.cluster.local:9093/api/v2/alerts"}'
+        values: '0x30'
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: VMAlertLogsNotifierErrors
+        exp_alerts: []
+  # === VMAlertLogsConfigReloadFailed === (i) FIRE: reload failed for 6m.
+  - interval: 1m
+    input_series:
+      - series: 'vmalert_config_last_reload_successful{job="vmalert-logs",namespace="observability",instance="10.244.0.9:8880"}'
+        values: '1x5 0x10'
+    alert_rule_test:
+      - eval_time: 12m
+        alertname: VMAlertLogsConfigReloadFailed
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job: vmalert-logs
+              namespace: observability
+              instance: 10.244.0.9:8880
+            exp_annotations:
+              summary: vmalert-logs rejected its rules file
+              description: |-
+                The last rules reload failed, so vmalert-logs still runs the previous rules and the latest
+                change to rules/pocket-id.yaml is not in effect. Check the vmalert-logs logs for the parse error.
+  # (j) NO-FIRE boundary: failed for 4m, then a good reload.
+  - interval: 1m
+    input_series:
+      - series: 'vmalert_config_last_reload_successful{job="vmalert-logs",namespace="observability",instance="10.244.0.9:8880"}'
+        values: '1x5 0x4 1x5'
+    alert_rule_test:
+      - eval_time: 12m
+        alertname: VMAlertLogsConfigReloadFailed
+        exp_alerts: []

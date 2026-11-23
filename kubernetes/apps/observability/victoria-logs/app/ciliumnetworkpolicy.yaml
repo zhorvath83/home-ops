@@ -50,3 +50,13 @@ spec:
         - ports:
             - port: "9428"
               protocol: TCP
+    # vmalert-logs — LogsQL alerting rule evaluation.
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: observability
+            app.kubernetes.io/name: victoria-metrics-alert
+            app.kubernetes.io/instance: vmalert-logs
+      toPorts:
+        - ports:
+            - port: "9428"
+              protocol: TCP

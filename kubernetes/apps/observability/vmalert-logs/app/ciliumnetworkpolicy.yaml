@@ -1,0 +1,40 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/cilium.io/ciliumnetworkpolicy_v2.json
+# vmalert-logs (AD-023): custom-egress opt-out, so this CNP is the sole egress source — LogsQL queries to
+# VictoriaLogs and alert delivery to Alertmanager. Prometheus scrape arrives via the allow-prometheus CCNP.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: vmalert-logs
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: victoria-metrics-alert
+      app.kubernetes.io/instance: vmalert-logs
+  ingress:
+    # kubelet liveness/readiness probes (:8880); node IP carries the kube-apiserver identity on the single node.
+    - fromEntities:
+        - kube-apiserver
+        - host
+      toPorts:
+        - ports:
+            - port: "8880"
+              protocol: TCP
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: observability
+            app.kubernetes.io/name: victoria-logs-single
+            app.kubernetes.io/instance: victoria-logs
+      toPorts:
+        - ports:
+            - port: "9428"
+              protocol: TCP
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: observability
+            app.kubernetes.io/name: alertmanager
+      toPorts:
+        - ports:
+            - port: "9093"
+              protocol: TCP

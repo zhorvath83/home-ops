@@ -1,0 +1,80 @@
+---
+# vmalert (vlogs) rules over the Pocket ID request log. Pocket ID v2.19.3 has no admin audit, webhook
+# or security metric, so the request log is the only signal. Every expr carries its own `_time` window
+# wider than the 1m interval: a late-ingested line is still seen by a later evaluation, never skipped.
+groups:
+  - name: pocket-id
+    type: vlogs
+    interval: 1m
+    rules:
+      # Fail-closed: every successful write alerts unless it is a sign-in/session flow or owned by a
+      # rule below, so a write route added by an upgrade is reported instead of silently ignored.
+      - alert: PocketIDAdminChange
+        expr: '_time:5m {kubernetes.pod_namespace="security",kubernetes.container_name="app"} "kubernetes.pod_labels.app.kubernetes.io/name":=pocket-id method:in(POST,PUT,DELETE,PATCH) status:<400 -route:in("/authorize","/api/oidc/token","/api/oidc/interactions/:id/complete","/api/oidc/par","/api/oidc/userinfo","/api/oidc/introspect","/api/oidc/end-session","/api/webauthn/login/finish","/api/webauthn/logout","/api/webauthn/reauthenticate","/api/webauthn/register/finish","/api/webauthn/credentials/:id","/api/users/:id/webauthn-credentials/:credentialId","/api/users/:id/one-time-access-token","/api/users/:id/one-time-access-email","/api/one-time-access-token/:token","/api/one-time-access-email") ip:(ipv4_range("10.0.0.0/8") or ipv4_range("172.16.0.0/12") or ipv4_range("192.168.0.0/16")) | stats by (method, route, ip) count() as requests'
+        labels:
+          severity: warning
+        annotations:
+          summary: "Pocket ID admin change: {{ $labels.method }} {{ $labels.route }}"
+          description: |-
+            {{ $labels.method }} {{ $labels.route }} succeeded {{ $value }}x in the last 5m from LAN/cluster
+            address {{ $labels.ip }}. Expected after `just pocket-id apply` or an admin UI change;
+            if neither was you, review the Pocket ID admin UI and revoke sessions and API keys.
+      # Non-private or missing client IP: an identity-plane write from outside the LAN.
+      - alert: PocketIDAdminChangeExternal
+        expr: '_time:5m {kubernetes.pod_namespace="security",kubernetes.container_name="app"} "kubernetes.pod_labels.app.kubernetes.io/name":=pocket-id method:in(POST,PUT,DELETE,PATCH) status:<400 -route:in("/authorize","/api/oidc/token","/api/oidc/interactions/:id/complete","/api/oidc/par","/api/oidc/userinfo","/api/oidc/introspect","/api/oidc/end-session","/api/webauthn/login/finish","/api/webauthn/logout","/api/webauthn/reauthenticate","/api/webauthn/register/finish","/api/webauthn/credentials/:id","/api/users/:id/webauthn-credentials/:credentialId","/api/users/:id/one-time-access-token","/api/users/:id/one-time-access-email","/api/one-time-access-token/:token","/api/one-time-access-email") -ip:(ipv4_range("10.0.0.0/8") or ipv4_range("172.16.0.0/12") or ipv4_range("192.168.0.0/16")) | stats by (method, route, ip) count() as requests'
+        labels:
+          severity: critical
+        annotations:
+          summary: "Pocket ID admin change from outside the LAN: {{ $labels.method }} {{ $labels.route }}"
+          description: |-
+            {{ $labels.method }} {{ $labels.route }} succeeded {{ $value }}x in the last 5m from non-LAN
+            address {{ $labels.ip }}. Admin writes are expected only from the LAN. Treat as a possible
+            hijacked session: review the change, revoke the user's sessions and API keys.
+      - alert: PocketIDPasskeyChanged
+        expr: '_time:5m {kubernetes.pod_namespace="security",kubernetes.container_name="app"} "kubernetes.pod_labels.app.kubernetes.io/name":=pocket-id status:<400 ((method:=POST route:="/api/webauthn/register/finish") or (method:=DELETE route:in("/api/webauthn/credentials/:id","/api/users/:id/webauthn-credentials/:credentialId"))) | stats by (method, route, ip) count() as requests'
+        labels:
+          severity: critical
+        annotations:
+          summary: "Pocket ID passkey {{ if eq $labels.method \"DELETE\" }}removed{{ else }}enrolled{{ end }}"
+          description: |-
+            {{ $labels.method }} {{ $labels.route }} succeeded from {{ $labels.ip }}. A passkey you did not
+            enrol is a persistent account takeover: delete it in the admin UI and revoke the user's sessions.
+      # Login codes bypass the passkey: issuing (admin) or redeeming one is always worth a look.
+      - alert: PocketIDLoginCodeUsed
+        expr: '_time:5m {kubernetes.pod_namespace="security",kubernetes.container_name="app"} "kubernetes.pod_labels.app.kubernetes.io/name":=pocket-id status:<400 method:=POST route:in("/api/users/:id/one-time-access-token","/api/users/:id/one-time-access-email","/api/one-time-access-token/:token","/api/one-time-access-email") | stats by (route, ip) count() as requests'
+        labels:
+          severity: critical
+        annotations:
+          summary: "Pocket ID login code: {{ $labels.route }}"
+          description: |-
+            POST {{ $labels.route }} succeeded from {{ $labels.ip }}. One-time login codes bypass the passkey;
+            if you did not issue or redeem one, revoke the user's sessions and check the audit log.
+      - alert: PocketIDFailedRequests
+        expr: '_time:10m {kubernetes.pod_namespace="security",kubernetes.container_name="app"} "kubernetes.pod_labels.app.kubernetes.io/name":=pocket-id method:in(POST,PUT,DELETE,PATCH) status:>=400 status:<500 | stats by (ip) count() as failures | filter failures:>=5'
+        labels:
+          severity: warning
+        annotations:
+          summary: "Pocket ID rejected {{ $value }} write requests from {{ $labels.ip }}"
+          description: |-
+            {{ $labels.ip }} got {{ $value }} 4xx answers to write requests in the last 10m (failed passkey
+            logins, bad login codes, rejected client credentials or forbidden admin calls).
+      - alert: PocketIDRateLimited
+        expr: '_time:5m {kubernetes.pod_namespace="security",kubernetes.container_name="app"} "kubernetes.pod_labels.app.kubernetes.io/name":=pocket-id status:=429 | stats by (route, ip) count() as requests'
+        labels:
+          severity: warning
+        annotations:
+          summary: "Pocket ID rate-limited {{ $labels.ip }} on {{ $labels.route }}"
+          description: |-
+            {{ $labels.ip }} hit the Pocket ID rate limit on {{ $labels.route }} {{ $value }}x in the last 5m.
+      # The blackbox idm probe hits Pocket ID every minute, so a silent stream means the log path
+      # (Pocket ID logging, collector or this query's filter) broke and every rule above is blind.
+      - alert: PocketIDLogsSilent
+        expr: '_time:15m {kubernetes.pod_namespace="security",kubernetes.container_name="app"} "kubernetes.pod_labels.app.kubernetes.io/name":=pocket-id | stats count() as logs | filter logs:=0'
+        labels:
+          severity: critical
+        annotations:
+          summary: Pocket ID request log is silent
+          description: |-
+            VictoriaLogs holds no Pocket ID request log line for 15m although the blackbox probe hits it every
+            minute. Every Pocket ID security alert is blind until this is fixed: check the pocket-id pod,
+            the victoria-logs collector and the stream filter in vmalert-logs rules.
