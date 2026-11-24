@@ -24,6 +24,33 @@ resource "cloudflare_dns_record" "aaaa_record_root" {
   ttl     = 1
 }
 
+#
+# CAA - Let's Encrypt only (cert-manager + statichost); Cloudflare injects its own Universal SSL CAs
+#
+resource "cloudflare_dns_record" "caa_issue_le" {
+  zone_id = local.cf_zone_id
+  name    = local.domain_name
+  type    = "CAA"
+  ttl     = 1
+  data = {
+    flags = 0
+    tag   = "issue"
+    value = "letsencrypt.org"
+  }
+}
+
+resource "cloudflare_dns_record" "caa_issuewild_le" {
+  zone_id = local.cf_zone_id
+  name    = local.domain_name
+  type    = "CAA"
+  ttl     = 1
+  data = {
+    flags = 0
+    tag   = "issuewild"
+    value = "letsencrypt.org"
+  }
+}
+
 resource "cloudflare_dns_record" "www" {
   name    = "www"
   zone_id = local.cf_zone_id

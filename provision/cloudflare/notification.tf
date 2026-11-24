@@ -47,6 +47,13 @@ resource "cloudflare_notification_policy" "http_ddos_attack" {
   }
 }
 
+# Certificate Transparency - every certificate logged for a hostname in the zone
+resource "cloudflare_ct_alerting" "zone" {
+  zone_id = cloudflare_zone.domain.id
+  enabled = true
+  emails  = [var.PUSHOVER_CLOUDFLARE_EMAIL]
+}
+
 # Trust and Safety - Abuse Report Alert
 resource "cloudflare_notification_policy" "abuse_report" {
   account_id  = var.CF_ACCOUNT_ID
