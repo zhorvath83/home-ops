@@ -39,7 +39,7 @@ related_areas:
 ## Metadata (observation-form, schema validation)
 
 - [topic] CAA records and Certificate Transparency monitoring for the public domain
-- [status] in-progress — Phases 0–2 live 2026-11-24 (commit c0b47a64d); AC1+AC2 met; AC3 (CT email → Pushover) pending
+- [status] in-progress — Phases 0–2 live 2026-11-24 (commit c0b47a64d); Phases 0–3 done, AC1–AC3 met 2026-11-25; Phase 4 (pinning) gated on cloudflare-tunnel-to-towonel + Universal SSL off, D3 open
 - [priority] medium
 - [researched_at] 2026-11-23
 - [effort] S (Phases 1–3), S (Phase 4, later)
@@ -142,7 +142,7 @@ Cloudflare's hidden additions (GTS, Let's Encrypt, SSL.com, Sectigo) keep Univer
 - [fact] `cloudflare_ct_alerting` cannot be destroyed from Terraform; rollback is `enabled = false`.
 - [fact] Cloudflare's injected CAA set is 5 CAs incl. `digicert.com` and lists Sectigo as `comodoca.com` — differs from the research list.
 - [done] AC2 (2026-11-24, forced re-issuance via the cert-manager `Issuing=True ManuallyTriggered` status condition — the `cmctl renew` mechanism, `cmctl` not installed locally): `security/pocket-id-tls` revision 27 Ready (notBefore 22:01:19Z), `networking/horvathzoltan-me` revision 42 Ready (notBefore 22:02:50Z), both ACME DNS-01 orders valid, no CAA error.
-- [open] AC3: confirm the CT alert for these two certificates arrives as a Pushover notification (Cloudflare documents delivery within hours).
+- [done] AC3 (2026-11-25): Pushover received the `[Confirmation] CT monitoring enabled` mail and two `[Alert] New certificate activity` alerts ("outside routine Cloudflare types") for the forced renewals, within ~30 min. This also proves end-to-end that the Free plan honours the custom `emails` list. As expected, Pushover truncates the body (certificate details cut after "Log date"); the full list stays in the dashboard.
 
 ## Acceptance criteria
 
