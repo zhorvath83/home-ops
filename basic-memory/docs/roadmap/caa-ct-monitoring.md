@@ -3,7 +3,7 @@ title: caa-ct-monitoring
 type: roadmap
 permalink: docs/roadmap/caa-ct-monitoring
 topic: CAA records and Certificate Transparency monitoring for the public domain
-status: proposed
+status: in-progress
 priority: medium
 scope: 'Add CAA records to the Cloudflare zone (Terraform, provision/cloudflare) so
   only the CAs actually in use may issue for ${PUBLIC_DOMAIN} and its subdomains,
@@ -39,7 +39,7 @@ related_areas:
 ## Metadata (observation-form, schema validation)
 
 - [topic] CAA records and Certificate Transparency monitoring for the public domain
-- [status] proposed
+- [status] in-progress — Phases 0–2 live 2026-11-24 (commit c0b47a64d); AC1+AC2 met; AC3 (CT email → Pushover) pending
 - [priority] medium
 - [researched_at] 2026-11-23
 - [effort] S (Phases 1–3), S (Phase 4, later)
@@ -96,7 +96,7 @@ At the apex only (tree-climbing covers every subdomain), via `cloudflare_dns_rec
 | `issue` | `letsencrypt.org` | cert-manager (apex, `idm`) and statichost (apex, `www`) |
 | `issuewild` | `letsencrypt.org` | cert-manager wildcard |
 
-Cloudflare's hidden additions (GTS, Let's Encrypt, SSL.com, Sectigo) keep Universal SSL working. Effective allow-list: 4 CAs. No explicit Cloudflare CA entries in Terraform — they would duplicate what Cloudflare injects anyway and drift when Cloudflare changes its CA list.
+Cloudflare's hidden additions (GTS, Let's Encrypt, SSL.com, Sectigo) keep Universal SSL working. Effective allow-list: 5 CAs (live 2026-11-24: Let's Encrypt, `pki.goog`, `ssl.com`, `comodoca.com`, `digicert.com`). No explicit Cloudflare CA entries in Terraform — they would duplicate what Cloudflare injects anyway and drift when Cloudflare changes its CA list.
 
 ### Pinning (Phase 4, after towonel + Universal SSL off)
 - Apex `issuewild`: `letsencrypt.org; accounturi=<production account URI>; validationmethods=dns-01`.
@@ -131,6 +131,18 @@ Cloudflare's hidden additions (GTS, Let's Encrypt, SSL.com, Sectigo) keep Univer
 - After the cutover nothing is proxied: confirm `dig CAA` (DoH) on every CNAME target (towonel edge name) returns nothing, else its set overrides ours for that host.
 - Disable Universal SSL; confirm the injected CAA set disappears.
 - Add the pinned records from the Design section; force renewals; verify; document in the ClusterIssuer comment that losing `letsencrypt-production` breaks issuance until the CAA URI is updated.
+
+## Implementation (2026-11-24)
+
+- [done] Phase 0 inventory (crt.sh, issued since 2024-11-24, 259 entries): Let's Encrypt 174 (apex, wildcard, `www`, `idm`, `id`, smtp2go `link.*`), Google Trust Services 68 (apex, wildcard, `downloads`), Sectigo 17 (apex + wildcard only — Cloudflare's own). No other CA.
+- [done] statichost apex serves Let's Encrypt `YE2` (openssl, 2026-11-24).
+- [fact] `link.msg` CNAMEs to `track.smtp2go.net`, which publishes its own `issue letsencrypt.org`; that set governs the host, so our apex CAA cannot break it.
+- [decision] CT recipients reuse the existing `PUSHOVER_CLOUDFLARE_EMAIL` variable (same dedicated Pushover gateway the notification policies use) instead of a new `CF_CT_ALERT_EMAILS`; the resource sits in `notification.tf` instead of a new `ct_alerting.tf`, keeping the file split stable.
+- [done] `just cloudflare apply`: `cloudflare_ct_alerting.zone` + `caa_issue_le` + `caa_issuewild_le` created; second plan empty (AC1). Free plan accepted the custom `emails` list — the mailbox-rule fallback is not needed.
+- [fact] `cloudflare_ct_alerting` cannot be destroyed from Terraform; rollback is `enabled = false`.
+- [fact] Cloudflare's injected CAA set is 5 CAs incl. `digicert.com` and lists Sectigo as `comodoca.com` — differs from the research list.
+- [done] AC2 (2026-11-24, forced re-issuance via the cert-manager `Issuing=True ManuallyTriggered` status condition — the `cmctl renew` mechanism, `cmctl` not installed locally): `security/pocket-id-tls` revision 27 Ready (notBefore 22:01:19Z), `networking/horvathzoltan-me` revision 42 Ready (notBefore 22:02:50Z), both ACME DNS-01 orders valid, no CAA error.
+- [open] AC3: confirm the CT alert for these two certificates arrives as a Pushover notification (Cloudflare documents delivery within hours).
 
 ## Acceptance criteria
 

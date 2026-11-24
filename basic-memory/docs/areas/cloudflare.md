@@ -5,7 +5,7 @@ permalink: home-ops/docs/areas/cloudflare
 area: cloudflare
 status: current
 confidence: high
-verified_at: '2026-11-14'
+verified_at: '2026-11-24'
 summary: Cloudflare resources for the public domain (DNS zone, Zero Trust Access apps,
   Cloudflared tunnel, WAF rules, zone settings,
   notifications) are managed by Terraform in `provision/cloudflare/`. State lives
@@ -51,7 +51,7 @@ tags:
 - [area] cloudflare
 - [status] current
 - [confidence] high
-- [verified_at] 2026-11-14
+- [verified_at] 2026-11-24
 
 ## Summary
 
@@ -77,13 +77,15 @@ A single Kubernetes consumer of the tunnel lives at `kubernetes/apps/networking/
   - `public_bypass` — one `for_each` over `local.public_bypass_apps` emitting four no-auth apps: `www` (Private website), `share` (File share), `idm` (Identity Management), `books` (Calibre) (:210-230). Cloudflare Access needs one app per hostname, hence the loop.
 - [component] Access groups + identity — `UnrestrictedUsers` and `RestrictedUsers` email-include groups, Google OAuth IdP with PKCE, mobile-app service token written back to 1Password as `CF-Access-Client-Id`/`CF-Access-Client-Secret` (provision/cloudflare/access.tf:5-49, :119-129)
 - [component] Mail DNS records — MX (3 Zoho hosts with priorities 10/20/50), SPF, DKIM (zmail+zcal selectors), DMARC (p=reject, strict aspf/adkim) (provision/cloudflare/dns_records.tf, provision/cloudflare/terraform.tfvars)
-- [component] SMTP2GO mail subdomain — `msg` DKIM/return/tracking CNAMEs + `_dmarc.msg` policy (provision/cloudflare/dns_records.tf:91-130)
+- [component] SMTP2GO mail subdomain — `msg` DKIM/return/tracking CNAMEs + `_dmarc.msg` policy (provision/cloudflare/dns_records.tf:118-157)
 - [component] Zone WAF ruleset — `cloudflare_ruleset.zone_waf_rules` (NOT `flux_webhook_waf`) holds TWO rules (provision/cloudflare/firewall_rules.tf:30-54):
   1. GitHub-CIDR allowlist on `flux-webhook`: `cloudflare_list.github_hooks_cidr_list` is populated from `https://api.github.com/meta` `hooks` ranges via a `for_each` `cloudflare_list_item`, and everything not in the list is blocked on that host (:1-15, :41-46).
   2. ~~Non-Hungary country block~~ — removed 2026-11-14 (a5fb33272); country gating is on-prem in Envoy `envoy-external-edge` (see "Country gating moved on-prem" below).
 - [component] Zone settings — SSL strict, TLS 1.2 floor, TLS 1.3 + 0-RTT, HTTP/3, IPv6, WebSockets, opportunistic onion, DNSSEC active, security level high, browser/cache TTL = 0, Polish/Rocket Loader off, Brotli on, Bot Management with `fight_mode` + JS challenge, global cache-bypass ruleset (provision/cloudflare/zone_settings.tf)
 - [component] Managed transforms — `add_visitor_location_headers` managed request header (provision/cloudflare/managed_transforms.tf:4-15)
 - [component] Notification policies — Tunnel Health, Tunnel Update, HTTP DDoS (`dos_attack_l7`), Trust-and-Safety abuse report; all email-mechanism, delivered to the `PUSHOVER_CLOUDFLARE_EMAIL` gateway (provision/cloudflare/notification.tf)
+- [component] Certificate Transparency alerting — `cloudflare_ct_alerting.zone`, enabled, `emails = [PUSHOVER_CLOUDFLARE_EMAIL]`; reports every logged certificate for a hostname in the zone except Cloudflare's own (provision/cloudflare/notification.tf:51-55)
+- [component] CAA — apex `issue` + `issuewild` `letsencrypt.org` (cert-manager + statichost); Cloudflare injects its Universal SSL CAs on top, invisible to Terraform (provision/cloudflare/dns_records.tf:27-52)
 - [component] Just recipes — `just cloudflare init|plan|apply|unlock` all wrap `op run --no-masking --env-file=./.env -- terraform ...` (provision/cloudflare/mod.just)
 - [component] GitHub IP source — `data "http" "github_ip_ranges"` fetches `https://api.github.com/meta` once per plan; reused by `access.tf` (GitHub-CIDR bypass policy) and `firewall_rules.tf` (WAF list) (provision/cloudflare/main.tf:59-64)
 
@@ -98,9 +100,11 @@ A single Kubernetes consumer of the tunnel lives at `kubernetes/apps/networking/
 - [claim] "The Cloudflared tunnel resource writes its `tunnel_id`/`tunnel_name`/`tunnel_secret` back into 1Password item `cloudflare` (vault `HomeOps`) via a local-exec `op item edit` after creation — the kubernetes-side ExternalSecret reads `account_id`, `tunnel_id` and `tunnel_secret` from that item (not `tunnel_name`; `account_id` is not written by Terraform)" (evidence: repo, ref: provision/cloudflare/tunnel.tf:9-16 + kubernetes/apps/networking/cloudflare-tunnel/app/externalsecret.yaml, verified: 2026-11-14)
 - [claim] "Access mobile-app service token (`MobileAppsServiceToken`) is written back into the same 1Password `cloudflare` item as `CF-Access-Client-Id` + `CF-Access-Client-Secret` via a local-exec `op item edit` after creation" (evidence: repo, ref: provision/cloudflare/access.tf:5-19, verified: 2026-11-14)
 - [claim] "Flux webhook is double-protected: a Zero Trust Access app with the `CIDRbasedBypass` policy AND a zone-level WAF ruleset that blocks everything not in `github_hooks_cidr_list` on `flux-webhook.${PUBLIC_DOMAIN}`" (evidence: repo, ref: provision/cloudflare/access.tf:234-243 + firewall_rules.tf:1-15,41-46, verified: 2026-11-14)
-- [claim] "DMARC policy is `p=reject` with strict aspf+adkim and 100% application; aggregate + forensic reports go to a Mailhardener mailbox (`mailto:35be510b@in.mailhardener.com`)" (evidence: repo, ref: provision/cloudflare/dns_records.tf:81-88 + terraform.tfvars:16-20, verified: 2026-11-14)
+- [claim] "DMARC policy is `p=reject` with strict aspf+adkim and 100% application; aggregate + forensic reports go to a Mailhardener mailbox (`mailto:35be510b@in.mailhardener.com`)" (evidence: repo, ref: provision/cloudflare/dns_records.tf:108-115 + terraform.tfvars:16-20, verified: 2026-11-14)
 - [claim] "Zone settings enforce strict SSL, TLS 1.2 floor, TLS 1.3 + 0-RTT, HTTP/3, IPv6, DNSSEC active, security level high, Bot Management `fight_mode` with JS challenge, and a zone-wide cache-bypass ruleset for any `*.${PUBLIC_DOMAIN}` request" (evidence: repo, ref: provision/cloudflare/zone_settings.tf:2-203, verified: 2026-11-14)
-- [claim] "Notification policies route Tunnel Health, Tunnel Update, HTTP DDoS, and Abuse Report events to the Pushover email gateway via `PUSHOVER_CLOUDFLARE_EMAIL`" (evidence: repo, ref: provision/cloudflare/notification.tf:6-63, verified: 2026-11-14)
+- [claim] "Notification policies route Tunnel Health, Tunnel Update, HTTP DDoS, and Abuse Report events to the Pushover email gateway via `PUSHOVER_CLOUDFLARE_EMAIL`" (evidence: repo, ref: provision/cloudflare/notification.tf:6-70, verified: 2026-11-24)
+- [claim] "CT alerting is enabled with a custom recipient list on the Free plan: the apply accepted `emails` and a second plan is empty" (evidence: live, ref: provision/cloudflare/notification.tf:51-55, `just cloudflare plan` 2026-11-24, verified: 2026-11-24)
+- [claim] "The served apex CAA set is our `letsencrypt.org` issue/issuewild plus Cloudflare's injected `pki.goog; cansignhttpexchanges=yes`, `ssl.com`, `comodoca.com`, `digicert.com; cansignhttpexchanges=yes` (5 CAs); `www` inherits via CNAME, `idm` has no own set" (evidence: live DoH type=CAA, AD=true, ref: provision/cloudflare/dns_records.tf:27-52, verified: 2026-11-24)
 - [claim] "GitHub hook IP ranges are pulled live from `https://api.github.com/meta` on every plan; both the Access bypass policy and the WAF ruleset list depend on that single `data "http" "github_ip_ranges"` source" (evidence: repo, ref: provision/cloudflare/main.tf:59-64 + access.tf:85-97 + firewall_rules.tf:1-15, verified: 2026-11-14)
 - [claim] "All four Just recipes (`init`, `plan`, `apply`, `unlock`) wrap a single Terraform subcommand inside `op run --no-masking --env-file=./.env -- terraform ...` — there is no raw-terraform path documented" (evidence: repo, ref: provision/cloudflare/mod.just:1-34, verified: 2026-11-14)
 - [claim] "The Kubernetes cloudflare-tunnel workload (kubernetes/apps/networking/cloudflare-tunnel/) consumes tunnel credentials only — it does not create or mutate Cloudflare resources; the source of truth for tunnel name/ID/secret remains this Terraform stack" (evidence: repo, ref: kubernetes/apps/networking/cloudflare-tunnel/app/externalsecret.yaml + provision/cloudflare/tunnel.tf, verified: 2026-11-14)
