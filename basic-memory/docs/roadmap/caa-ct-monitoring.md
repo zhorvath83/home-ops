@@ -75,7 +75,7 @@ related_areas:
   | proxied hosts at the Cloudflare edge | Cloudflare Universal SSL | Google Trust Services (WE1), SAN apex + wildcard |
 - [fact] statichost.eu documents on-demand certificates but not the CA or validation method; the served chain is Let's Encrypt, most likely HTTP-01/TLS-ALPN-01. **Never set `validationmethods=dns-01` at the apex** — it would break statichost renewals.
 - [fact] Cloudflare provider is pinned at 5.29.0 (`provision/cloudflare/main.tf`). `cloudflare_ct_alerting` (zone_id, enabled, emails) exists since 5.24.0. CAA uses `cloudflare_dns_record` with `type = "CAA"` and a `data = { flags, tag, value }` block, one resource per tag/value; earlier v5 releases had CAA bugs (#5411 permanent diff, #5957/#6009 flags), reported fixed — expect a clean second `plan`.
-- [fact] Cloudflare CT Monitoring is GA on all plans (Free included) since 2026-08-13, off by default; it reports every logged certificate for hostnames in the zone, including non-Cloudflare CAs and DNS-only names. API `PATCH /zones/{id}/ct/alerting {enabled, emails[]}`. One API reference states Free/Pro zones can only toggle and mail every user with SSL permission — whether a custom `emails` list is accepted on Free is **unverified** (Phase 0).
+- [fact] Cloudflare CT Monitoring is GA on all plans (Free included) since 2026-08-13, off by default; it reports every logged certificate for hostnames in the zone, including non-Cloudflare CAs and DNS-only names. API `PATCH /zones/{id}/ct/alerting {enabled, emails[]}`. The docs conflict (re-checked 2026-11-24): the API reference and the older docs say Free/Pro zones can only toggle `enabled` and mail every account member with SSL permission on the zone, `emails` being Business/Enterprise only (max 10; the Go SDK page says 100); the GA announcement promises unified recipient settings across plans without stating that Free accepts custom addresses. Whether Free accepts a custom `emails` list stays **unverified** — the dashboard (SSL/TLS → Edge Certificates → Certificate Transparency Monitoring) or the Phase 1 apply decides (Phase 0).
 - [fact] Let's Encrypt enforces RFC 8657 in production; CA/B Forum ballot SC098v2 makes it mandatory for all CAs from March 2027. Value syntax: `letsencrypt.org; accounturi=https://acme-v02.api.letsencrypt.org/acme/acct/<id>; validationmethods=dns-01`. The URI is `ClusterIssuer.status.acme.uri`. It changes if the `letsencrypt-production` account key secret is lost/rotated or the server changes — then renewals fail with a CAA error.
 - [fact] RFC 8659 tree-climbing: the CA checks the exact name, then each parent, stopping at the first non-empty set; CNAMEs are followed at each step, so a CAA set **at a CNAME target's exact name** overrides our apex policy for that host. Relevant after towonel, where hosts CNAME to the edge (`edge-eu.towonel.dev` published no CAA on 2026-11-14).
 - [fact] `iodef` is informational; no CA is documented to send reports. Not used.
@@ -85,6 +85,8 @@ related_areas:
 
 ### CT monitoring
 `cloudflare_ct_alerting` in a new `provision/cloudflare/ct_alerting.tf`, `enabled = true`, `emails` from a new `CF_CT_ALERT_EMAILS` variable injected by `op run` like the other `CF_*` variables (never a literal address in the repo). The value is the dedicated Pushover email address (Pushover turns each mail into a notification), stored in 1Password next to the other Pushover credentials. If the Free plan rejects a custom `emails` list (Phase 0 step 2), fallback: alerts go to the account users with SSL permission and a mailbox rule forwards them to the same Pushover address.
+
+Rejected workaround: inviting the Pushover address as a Cloudflare account member with SSL permission just to receive the alerts — it would create a privileged Cloudflare identity whose mailbox (password-reset mail included) is Pushover, a worse posture than the one CT monitoring improves. Third-party monitors (SSLMate hosted, self-hosted certspotter, crt.sh polling) are not reconsidered for the Free-plan case: the mailbox-rule fallback adds no new dependency.
 
 ### CAA records (Phases 2–3)
 At the apex only (tree-climbing covers every subdomain), via `cloudflare_dns_record`:
@@ -106,7 +108,7 @@ Cloudflare's hidden additions (GTS, Let's Encrypt, SSL.com, Sectigo) keep Univer
 
 ### Phase 0 — Preconditions
 1. Inventory every CA that issued for the zone in the last 2 years on crt.sh (manual, in a browser: it sends the domain to a third party). Expected: Let's Encrypt, Google Trust Services, maybe SSL.com/Sectigo (Cloudflare). Any other CA (e.g. a mail or hosting provider) must be added to the `issue` list or explained.
-2. Check whether the Free plan accepts a custom `emails` list on `cloudflare_ct_alerting` (one-off `terraform plan`/`apply` in Phase 1 tells).
+2. Check whether the Free plan accepts a custom `emails` list on `cloudflare_ct_alerting`: look for a recipients field in the dashboard first; otherwise the Phase 1 `terraform plan`/`apply` tells.
 3. Decide D3 (D1, D2 decided 2026-11-23).
 
 ### Phase 1 — CT monitoring first
