@@ -19,7 +19,7 @@ spec:
     substitute:
       APP: grafana
       # renovate: datasource=github-releases depName=VictoriaMetrics/victorialogs-datasource
-      VL_PLUGIN_VERSION: "0.34.0"
+      VL_PLUGIN_VERSION: "0.35.0"
   prune: true
   sourceRef:
     kind: GitRepository
